@@ -1,44 +1,39 @@
 ---
 title: "Apothem と素の Hermes 設定の比較"
-description: "Hermes 設定を手で保守するか、Apothem の共有プロファイル経由で管理するか。"
+description: "Hermes の設定を手作業で保守する方法と、Apothem の共有プロファイルを通じて管理する方法の比較。"
 machineTranslated: true
-sourceHash: "30eff4ccddef295b"
+sourceHash: "8cbfaa7f64491754"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Hermes は `~/.hermes/config.yaml` を読み込みます。Apothem はネイティブの YAML 設定を
-書き込み（プロファイルの MCP インベントリを `auxiliary.mcp` に投影します）、共有の
-コマンド群とスキル群を `~/.hermes/.apothem/support/skills/` の下に設置します。Hermes 自身の
-`skills.config` はレジストリパッケージのリストであるため、Apothem はそれを書き込み
-ません。
+Hermes は `~/.hermes/config.yaml` を読み取ります。
+Apothem はネイティブの YAML 設定を書き込み（プロファイルの MCP インベントリを `mcp_servers` へ投影します）、共有のコマンドコホートとスキルコホートを `~/.hermes/.apothem/support/skills/` 配下にインストールします。
+Hermes 自身の `skills.config` はレジストリパッケージのリストであるため、Apothem はそれを作成しません。
 
 ## ステータス
 
-**プレビュー。** Hermes アダプターは、現在ドキュメント化されている設定ファイルと
-スキル探索面を対象とします。スキル以外の群は Apothem のサポート材料のままです。
+**プレビュー。** Hermes アダプターは、現在ドキュメント化されている設定ファイルとスキル探索の面を対象とします。
+スキル以外のコホートは、Apothem のサポート素材のままです。
 
-## 工数の比較
+## 労力の比較
 
-| タスク | 素の手動設定 | Apothem 管理 |
+| タスク | 素の手作業設定 | Apothem による管理 |
 | ---- | --------------- | --------------- |
-| 再利用可能なスキルを書く | 設定とスキルディレクトリを手で編集 | 共有コーパスに一度書く |
-| 群を他の環境と揃えておく | ツールごとに手動 | `apothem update` で自動 |
+| 再利用可能なスキルを作成する | 設定とスキルディレクトリを手作業で編集 | 共有コーパスに一度だけ書く |
+| コホートを他のハーネスと揃えておく | ツールごとに手動 | `apothem update` で自動 |
 | 設定をインストール／削除する | 手動 | `apothem install` / `apothem uninstall` |
-| 設定が正しいか検証する | 手動の確認 | `apothem verify --harness hermes` |
+| 設定が正しいことを検証する | 手動での確認 | `apothem verify --harness hermes` |
 
 ## Apothem が管理するもの
 
-Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキル
-として包み、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、
-テンプレート、agents、hook 材料を Apothem サポートサブツリーの下に保持します。
+Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキルとしてラップし、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、テンプレート、エージェント、フックの素材を Apothem のサポートサブツリー配下に保持します。
 
-## 移行手順
+## 移行パス
 
-1. まだ作成していない場合は `apothem profile init` を実行して共有プロファイルを作成
-   します。
+1. まだ作成していない場合は、`apothem profile init` を実行して共有プロファイルを作成します。
 2. 再利用可能な Hermes のスキルやコマンドプロンプトを共有コーパスへ移します。
-3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキル
-   ディレクトリをレンダリングします。
+3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキルディレクトリを
+   レンダリングします。
 4. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
 
 ## 次に読む

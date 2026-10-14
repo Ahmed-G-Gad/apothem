@@ -1,22 +1,25 @@
 ---
 title: "Runbooks"
-description: "Runbooks d'Apothem — procédures opérationnelles pas à pas pour les versions, la configuration du publieur, l'activation de Pages, la récupération et la rédaction d'adaptateurs."
+description: "Runbooks d'Apothem — procédures opérationnelles pas à pas pour les publications, la configuration de l'éditeur, l'activation de Pages, la récupération et la rédaction d'adaptateurs."
 machineTranslated: true
-sourceHash: "63bed63ad7506d0b"
+sourceHash: "cd67c6a222612ca3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Procédures opérationnelles pour les mainteneurs. Chaque runbook est une
 procédure séquencée et sans contexte : elle mène un état initial connu à un état
-final vérifié, rédigée de sorte qu'un contributeur compétent puisse la suivre
-sans contexte préalable.
+final vérifié, et elle est rédigée de sorte qu'un contributeur compétent puisse
+la suivre sans contexte préalable.
 
 ## Pages
 
 | Page | Description |
 |------|-------------|
-| [Activation de Pages](/docs/runbooks/pages-enablement) | Mène `apothem.ahmedgad.com` d'une configuration GitHub Pages neuve à une page d'accueil HTTPS renvoyant `200 OK`. |
-| [Cycle de version](/docs/runbooks/release-cycle) | Mène une version `vX.Y.Z` d'un arbre de travail propre jusqu'aux surfaces vérifiées de GitHub Release et de npm. |
-| [Configuration du compte du publieur](/docs/runbooks/publisher-account-setup) | Configure le publieur de confiance npmjs.com pour `@ahmed-g-gad/apothem` ainsi que les prérequis de version côté GitHub. |
-| [Récupération de version](/docs/runbooks/release-recovery) | Restaure `ahmed-g-gad/apothem` à un état fonctionnel lorsque la séquence de bascule de version échoue en cours de route. |
-| [Rédaction d'un nouvel adaptateur d'environnement](/docs/runbooks/new-harness-adapter-authoring) | Rédigez et publiez un nouvel adaptateur d'environnement en vue de son inclusion en première partie. |
+| [Activation de Pages](/docs/runbooks/pages-enablement) | Menez `apothem.ahmedgad.com` d'une configuration GitHub Pages neuve à une page d'accueil HTTPS qui renvoie `200 OK`. |
+| [Cycle de publication](/docs/runbooks/release-cycle) | Menez une publication `vX.Y.Z` d'un arbre de travail propre jusqu'aux surfaces GitHub Release et npm vérifiées. |
+| [Configuration du compte d'éditeur](/docs/runbooks/publisher-account-setup) | Configurez l'éditeur de confiance npmjs.com pour `@ahmed-g-gad/apothem` ainsi que les prérequis de publication côté GitHub. |
+| [Récupération de publication](/docs/runbooks/release-recovery) | Restaurez `ahmed-g-gad/apothem` à un état fonctionnel lorsque la séquence de bascule de publication échoue en cours de route. |
+| [Création d'un nouvel adaptateur d'environnement](/docs/runbooks/new-harness-adapter-authoring) | Rédigez et publiez un nouvel adaptateur d'environnement en vue de son inclusion en première partie. |
+| [Liste de contrôle de déploiement](/docs/runbooks/deployment-checklist) | Exécutez la liste de vérification préalable avant de déployer ou de partager l'écosystème Apothem. |
+| [Cérémonie de fusion pour mainteneur unique](/docs/runbooks/solo-maintainer-merge) | Quand le mainteneur peut fusionner directement sa propre pull request, et la cérémonie d'auto-fusion pour une protection qui exige une approbation et l'applique aux administrateurs. |
+| [Liste de vérification de synchronisation inter-machines](/docs/runbooks/cross-machine-sync-checklist) | Vérifiez que l'adaptateur Claude Code s'installe, se valide et se désinstalle correctement sur un hôte neuf, avec des vérifications de portabilité complètes. |

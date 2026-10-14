@@ -2,11 +2,11 @@
 title: "quickstart"
 description: "apothem quickstart 引导式首次运行命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "2de815559e9e2e4e"
+sourceHash: "f564c70124345bea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-引导式首次运行：确保存在配置文件，预览写入内容，然后安装。
+引导式首次运行：确保存在配置档案，预览写入内容，然后安装。
 
 ## 概要
 
@@ -16,38 +16,40 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-`quickstart` 是新操作者的唯一引导式入口。在一条线性流程中，它会：(1) 确保存在共享配置文件——若未找到则创建一个起始配置文件并提示进行个性化设置；(2) 预览所选harness将写入的具体文件，按项目根目录与你的主目录分组；(3) 请求确认；(4) 以分组、去噪的能力说明输出进行安装；(5) 打印推荐的后续命令。
+`quickstart` 是面向新操作者的唯一引导式入口。它在一条线性流程中：(1) 确保存在共享配置档案——若未找到，则创建一个起始配置档案并提醒你将其个性化；(2) 预览所选工具将要写入的具体文件，按项目根目录与你的主目录分组；(3) 请求确认；(4) 以分组、去除冗余信息的能力说明输出进行安装；(5) 打印推荐的后续命令。
 
-它复用 `install` 命令所用的相同构件——并不重新实现它们。`--harness` 默认为 `all`，`--project` 默认为当前目录。
+它组合使用 `install` 命令所用的相同构件——而不重新实现它们。`--project` 默认为当前目录。`--harness` 没有默认值：省略它时，`quickstart` 会询问要安装哪个工具，因此首次运行写入的是一个工具的配置。`--harness all` 会安装每个受支持的工具，并且始终是一项显式选择。
 
 ## 行为
 
-- **配置文件** — 若解析出的配置文件路径没有文件，`quickstart` 会主动提供创建起始配置文件（在 `--yes`、非交互式 shell 或 `--format json` 下自动创建），并指出需要个性化的占位身份字段。
-- **预览 + 确认** — 在任何写入之前，目标会列在两个标题下（项目根目录与你的主目录）；交互式运行会在写入项目之外的内容前进行确认。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝会在任何写入之前中止。
-- **安装** — harness原生不支持的能力会被汇总为每个harness一条分组说明（传入 `--verbose` 以获取每项能力的详情）；完整集合始终包含在 `--format json` 的 warnings 数组中。
-- **后续步骤** — 终端输出会指明后续命令（`apothem verify …`、`apothem doctor`）。
+- **工具**——未提供 `--harness` 时，交互式运行会列出受支持的名称（外加 `all`），并在写入任何内容之前要求选择一个。无法询问的运行——`--yes`、`--format json` 或没有终端——会以一个指出 `--harness` 选项的用法错误停止，并且不写入任何内容。
+- **配置档案**——如果解析出的配置档案路径下没有文件，`quickstart` 会提议创建一个起始配置档案（在 `--yes`、非交互式 shell 或 `--format json` 下自动创建），并指出需要个性化的占位身份字段。
+- **预览 + 确认**——在任何写入之前，目标会列在两个标题下（项目根目录与你的主目录）；交互式运行会在写入项目之外的内容之前进行确认。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝会在任何写入之前中止。
+- **安装**——工具原生不支持的能力会被汇总为每个工具一条分组说明（传入 `--verbose` 可获取逐项能力的详情）；完整集合始终位于 `--format json` 的 warnings 数组中。
+- **下一步**——终端输出会指出后续命令（`apothem verify …`、`apothem doctor`）。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要安装的harness适配器，或 `all` 表示注册表范围内的集合（默认：`all`）。 |
-| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
-| `--project PATH` | 项目范围harness的项目根目录。默认为当前目录。 |
+| `--harness NAME` | 要安装的工具适配器，或用 `all` 表示覆盖整个注册表的集合。没有默认值：交互式运行会询问；非交互式运行必须传入它。 |
+| `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | 项目作用域工具的项目根目录。默认为当前目录。 |
 | `--yes` | 以非交互方式运行完整的引导式序列（跳过每个提示）。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 打印每项未投影能力的理由，而非分组说明。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 打印每项未投射能力的理由，而不是分组说明。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 禁用输出中的 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
 
-`--format json` 会发出一个总结每个引导步骤的单一文档：
+`--format json` 会输出单个文档，汇总每个引导步骤：
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "quickstart",
   "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
@@ -63,23 +65,24 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 ## 示例
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
 | 0 | 引导式运行已完成 |
-| 1 | 预期内的校验、配置文件、harness、项目或适配器错误 |
-| 2 | 至少一次写入后的部分批量物化 |
+| 1 | 预期内的校验、配置档案、工具、项目或适配器错误 |
+| 2 | 在至少一次写入之后发生的部分批量物化 |
+| 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem install](/docs/cli-reference/install) — 从共享配置文件物化某个harness
-- [apothem verify](/docs/cli-reference/verify) — 确认安装已生效
-- [apothem doctor](/docs/cli-reference/doctor) — 环境与安装健康状况
-- [开始使用](/docs/install) — 完整安装指南
+- [apothem install](/docs/cli-reference/install)——从共享配置档案物化一个工具
+- [apothem verify](/docs/cli-reference/verify)——确认安装已生效
+- [apothem doctor](/docs/cli-reference/doctor)——环境与安装的健康状况
+- [入门](/docs/install)——完整安装指南

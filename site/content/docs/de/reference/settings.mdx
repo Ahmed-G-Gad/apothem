@@ -1,31 +1,60 @@
 ---
 title: "Einstellungen"
-description: "Claude Code Harness-Konfiguration in settings.json, die Tool-Berechtigungen, Hook-Verdrahtung, Umgebungsvariablen und Statuszeilen-Vorlagen abdeckt."
+description: "Konfiguration des Claude Code-Harness in settings.json mit Tool-Berechtigungen, Hook-Verdrahtung, Umgebungsvariablen und Statuszeilen-Vorlagen."
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` trägt die Claude Code Harness-Konfiguration: Hook-Verdrahtung,
-Tool-Berechtigungen, Umgebungsvariablen und Statuszeilen-Einstellungen.
+`settings.json` enthält die Konfiguration des Claude Code-Harness:
+Hook-Verdrahtung, Tool-Berechtigungen, Umgebungsvariablen und
+Statuszeilen-Einstellungen.
 
 Die vollständige kanonische Referenz liegt unter
 [settings-reference.md](/docs/reference/settings-reference). Diese Seite fasst den Vertrag
-zusammen und verweist auf die tiefere Referenz.
+zusammen und verweist auf die ausführlichere Referenz.
 
 ## Abschnitte
 
 | Abschnitt | Zweck |
 |---------|---------|
-| `permissions` | Tool-Whitelists und -Blacklists je Matcher |
-| `hooks` | Ereignisgeschlüsselte Hook-Befehlstabelle (die kanonische Verdrahtung) |
-| `env` | Umgebungsvariablen je Sitzung |
+| `permissions` | Tool-Whitelists und -Blacklists pro Matcher |
+| `hooks` | Nach Ereignis geschlüsselte Tabelle der Hook-Befehle (die kanonische Verdrahtung) |
+| `env` | Umgebungsvariablen pro Sitzung |
 | `statusLine` | Statuszeilen-Vorlage, die der Host rendert |
 
-## Einzel-Vorlagen-Invariante
+## Invariante der einzelnen Vorlage
 
-Der Claude Code Adapter liefert eine einzige `settings.json`-Vorlage aus.
+Der Claude Code-Adapter liefert eine einzige `settings.json`-Vorlage aus.
 Hook-Befehle verwenden die Exec-Form (`command` plus `args`) statt
-Shell-spezifischer Befehlszeichenketten, sodass das betriebssystemübergreifende
-Verhalten innerhalb einer Datei geprüft wird. Neue Berechtigungseinträge und
+shell-spezifischer Befehlszeichenketten, sodass das betriebssystemübergreifende
+Verhalten in einer einzigen Datei geprüft wird. Neue Berechtigungseinträge und
 Hook-Ereignisse landen atomar in dieser Datei.
+
+## Zusammenführen mit Ihrer eigenen Settings-Datei
+
+`settings.json` ist auch Ihre Datei. Die Installation führt die Vorlage in sie
+zusammen, statt sie zu ersetzen, und hält im Installations-Ledger
+(`~/.apothem/state/<harness>/ledger.jsonl`) genau fest, welche Schlüssel und
+Listeneinträge sie hinzugefügt hat:
+
+- `permissions.allow` und `permissions.deny` werden als Vereinigungsmenge
+  zusammengeführt: Ihre Regeln bleiben vorn, und die von Apothem werden
+  angehängt. Eine Deny-Regel, die Sie geschrieben haben, bleibt immer erhalten,
+  und Claude Code wendet Deny-Regeln vor Allow-Regeln an.
+- Ihre eigenen Hook-Handler bleiben an Ort und Stelle. Ein Handler gilt nur
+  dann als Apothems, wenn er ein Skript ausführt, das Apothem unter der
+  Harness-Wurzel installiert hat; ein Handler, der irgendein anderes
+  `hooks/dispatch.py` aufruft, gehört also Ihnen.
+- Eine erneute Installation ersetzt nur, was Apothem beim letzten Mal
+  hinzugefügt hat; ein Eintrag, den die Vorlage nicht mehr enthält, wird also
+  entfernt, und ein Eintrag, den Sie hinzugefügt haben, bleibt erhalten.
+- Die Deinstallation entfernt nur die Einträge, die das Ledger als Apothems
+  verzeichnet. Eine Regel, die zufällig einer von Apothems Regeln gleicht (zum
+  Beispiel `Read` in Ihrer eigenen `allow`-Liste vor der ersten Installation),
+  bleibt erhalten. Die Datei wird nur gelöscht, wenn Apothem sie erstellt hat
+  und nichts von Ihnen übrig ist.
+
+Dieselben Regeln gelten für die anderen Settings-Dateien, in die Apothem
+zusammenführt, etwa die MCP-Server-Maps in der `settings.json` von Qwen Code
+und in der `opencode.json` von OpenCode.

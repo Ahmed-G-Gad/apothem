@@ -2,39 +2,54 @@
 title: "verify"
 description: "Referensi CLI untuk perintah apothem verify."
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Memverifikasi instalasi adaptor asisten-pengkodean.
+Memverifikasi pemasangan adapter harness.
 
 ## Ringkasan
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-Memanggil implementasi `verify()` dari setiap adaptor yang dipilih. Keluar dengan 0 hanya ketika semua adaptor yang dipilih melaporkan bahwa target yang dikelolanya ada dan valid.
+Memanggil implementasi `verify()` milik setiap adapter yang dipilih. Keluar
+dengan 0 hanya ketika semua adapter yang dipilih melaporkan bahwa target
+terkelolanya ada dan valid. Tanpa `--profile`, pemeriksaannya bersifat
+**struktural** — setiap target terkelola harus ada dan valid. Dengan
+`--profile`, pemeriksaan juga mensyaratkan **fidelitas profil**, sehingga
+pemasangan yang ada tetapi telah menyimpang gagal dalam verify, menjawab
+"apakah profil INI terpasang secara setia?" alih-alih sekadar "apakah ia ada?".
+
+Sapuan `--harness all` mematuhi `exclude_harnesses` milik profil — pengecualian
+yang sama dengan yang diterapkan batch `install`/`update` — sehingga verify
+tidak pernah melaporkan harness yang sengaja dikecualikan sebagai hilang.
+Pengecualian tersebut berasal dari `--profile` jika diberikan, dan jika tidak,
+dari profil default; profil default yang tidak dapat dibaca atau tidak ada
+jatuh kembali ke registri lengkap.
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adaptor asisten-pengkodean yang akan diverifikasi, atau `all` untuk himpunan seluruh registri (wajib). |
-| `--project PATH` | Akar proyek untuk asisten-pengkodean dengan cakupan proyek. |
-| `--quiet`, `-q` | Menyembunyikan keluaran informatif; hanya kesalahan yang dikeluarkan. |
-| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
-| `--format plain\|json` | Format keluaran (bawaan: `plain`). |
+| `--harness NAME` | Adapter harness yang akan diverifikasi, atau `all` untuk himpunan selingkup registri (wajib). |
+| `--profile PATH` | YAML profil bersama yang menjadi acuan pemeriksaan fidelitas. Tanpanya, pemeriksaan murni bersifat struktural. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
-| `--no-color` | Menonaktifkan kode warna ANSI pada keluaran. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
 | `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ## Keluaran JSON
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +74,9 @@ Memanggil implementasi `verify()` dari setiap adaptor yang dipilih. Keluar denga
 }
 ```
 
-Ketika salah satu asisten-pengkodean yang dipilih hilang atau tidak valid, `status` adalah `error`, baris hasil yang gagal membawa `verified: false`, dan proses keluar dengan kode 1.
+Ketika salah satu harness yang dipilih hilang atau tidak valid, `status`
+bernilai `error`, baris hasil yang gagal membawa `verified: false`, dan proses
+keluar dengan kode 1.
 
 ## Contoh
 
@@ -73,11 +90,12 @@ apothem verify --harness all --project .
 
 | Kode | Arti |
 |---|---|
-| 0 | Asisten-pengkodean terpasang |
-| 1 | Asisten-pengkodean tidak terpasang |
+| 0 | Harness terverifikasi — semua target terkelola ada dan valid |
+| 1 | Harness tidak terverifikasi — target terkelola hilang atau tidak valid |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem install](/docs/cli-reference/install) — pasang konfigurasi asisten-pengkodean
-- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah asisten-pengkodean
-- [apothem doctor](/docs/install/concepts) — diagnostik instalasi seluruh sistem
+- [apothem install](/docs/cli-reference/install) — memasang konfigurasi harness
+- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah harness
+- [apothem doctor](/docs/cli-reference/doctor) — diagnostik pemasangan seluruh sistem

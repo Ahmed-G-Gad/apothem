@@ -1,22 +1,25 @@
 ---
 title: "Runbooks"
-description: "Runbooks de Apothem: procedimientos operativos paso a paso para versiones, configuración del publicador, habilitación de Pages, recuperación y creación de adaptadores."
+description: "Runbooks de Apothem — procedimientos operativos paso a paso para lanzamientos, configuración del publicador, habilitación de Pages, recuperación y creación de adaptadores."
 machineTranslated: true
-sourceHash: "63bed63ad7506d0b"
+sourceHash: "cd67c6a222612ca3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Procedimientos operativos para los mantenedores. Cada runbook es un
-procedimiento secuenciado y sin contexto: lleva un estado inicial conocido a un
-estado final verificado, escrito de modo que un colaborador competente pueda
-seguirlo sin contexto previo.
+procedimiento secuenciado e independiente del contexto: lleva un estado inicial
+conocido a un estado final verificado, y está escrito para que un colaborador
+competente pueda seguirlo sin contexto previo.
 
 ## Páginas
 
 | Página | Descripción |
 |------|-------------|
-| [Habilitación de Pages](/docs/runbooks/pages-enablement) | Lleva `apothem.ahmedgad.com` desde una configuración nueva de GitHub Pages hasta una página de aterrizaje HTTPS con `200 OK`. |
-| [Ciclo de versiones](/docs/runbooks/release-cycle) | Lleva una versión `vX.Y.Z` desde un árbol de trabajo limpio hasta las superficies verificadas de GitHub Release y npm. |
-| [Configuración de la cuenta del publicador](/docs/runbooks/publisher-account-setup) | Configura el publicador de confianza de npmjs.com para `@ahmed-g-gad/apothem` y los requisitos previos de la versión en GitHub. |
-| [Recuperación de versiones](/docs/runbooks/release-recovery) | Restaura `ahmed-g-gad/apothem` a un estado funcional cuando la secuencia de cambio de versión falla a mitad de camino. |
-| [Creación de un nuevo adaptador de entorno](/docs/runbooks/new-harness-adapter-authoring) | Crea y publica un nuevo adaptador de entorno para su inclusión de primera parte. |
+| [Habilitación de Pages](/docs/runbooks/pages-enablement) | Lleva `apothem.ahmedgad.com` desde una configuración nueva de GitHub Pages hasta una página de destino HTTPS que responde `200 OK`. |
+| [Ciclo de lanzamiento](/docs/runbooks/release-cycle) | Lleva un lanzamiento `vX.Y.Z` desde un árbol de trabajo limpio hasta las superficies verificadas de GitHub Release y npm. |
+| [Configuración de la cuenta de publicador](/docs/runbooks/publisher-account-setup) | Configura el publicador de confianza de npmjs.com para `@ahmed-g-gad/apothem` y los requisitos previos de lanzamiento del lado de GitHub. |
+| [Recuperación de lanzamientos](/docs/runbooks/release-recovery) | Restaura `ahmed-g-gad/apothem` a un estado funcional cuando la secuencia de transición del lanzamiento falla a mitad de camino. |
+| [Creación de un nuevo adaptador de entorno](/docs/runbooks/new-harness-adapter-authoring) | Crea y publica un nuevo adaptador de entorno para incluirlo como adaptador propio del proyecto. |
+| [Lista de verificación de despliegue](/docs/runbooks/deployment-checklist) | Ejecuta la lista de verificación previa antes de desplegar o compartir el ecosistema Apothem. |
+| [Ceremonia de fusión para mantenedor único](/docs/runbooks/solo-maintainer-merge) | Cuándo el mantenedor puede fusionar directamente su propia pull request, y la ceremonia de autofusión para una protección que exige una aprobación y la aplica a los administradores. |
+| [Lista de verificación de sincronización entre máquinas](/docs/runbooks/cross-machine-sync-checklist) | Verifica que el adaptador de Claude Code se instala, se valida y se desinstala correctamente en un host nuevo, con comprobaciones completas de portabilidad. |

@@ -2,39 +2,43 @@
 title: "verify"
 description: "apothem verify 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-验证某个harness适配器的安装。
+验证一个工具适配器的安装。
 
 ## 概要
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-调用每个选定适配器的 `verify()` 实现。仅当所有选定的适配器都报告其托管目标存在且有效时才以 0 退出。
+调用每个所选适配器的 `verify()` 实现。只有当所有所选适配器都报告其受管目标存在且有效时，才以 0 退出。未提供 `--profile` 时，该检查是**结构性**的——每个受管目标都必须存在且有效。提供 `--profile` 时，该检查还额外要求**配置档案保真度**，因此一个存在但已漂移的安装无法通过验证；它回答的是“被忠实安装的是否正是这份配置档案？”，而不只是“它是否存在？”。
+
+`--harness all` 扫查会遵循配置档案的 `exclude_harnesses`——即 `install`/`update` 批处理所应用的相同排除项——因此验证绝不会将一个被有意排除的工具报告为缺失。提供 `--profile` 时，排除项来自它，否则来自默认配置档案；默认配置档案不可读或不存在时，会降级为完整的注册表。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要验证的harness适配器，或用 `all` 表示整个注册表的集合（必填）。 |
-| `--project PATH` | 项目范围harness的项目根目录。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--harness NAME` | 要验证的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。 |
+| `--profile PATH` | 用于核对保真度的共享配置档案 YAML。不提供它时，该检查纯粹是结构性的。 |
+| `--project PATH` | 项目作用域工具的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 禁用输出中的 ANSI 颜色代码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +63,7 @@ apothem verify --harness NAME|all [--project PATH]
 }
 ```
 
-当任何选定的harness缺失或无效时，`status` 为 `error`，失败的结果行带有 `verified: false`，进程以代码 1 退出。
+当任何所选工具缺失或无效时，`status` 为 `error`，失败的结果行带有 `verified: false`，并且进程以代码 1 退出。
 
 ## 示例
 
@@ -73,11 +77,12 @@ apothem verify --harness all --project .
 
 | 代码 | 含义 |
 |---|---|
-| 0 | harness已安装 |
-| 1 | harness未安装 |
+| 0 | 工具已通过验证——所有受管目标都存在且有效 |
+| 1 | 工具未通过验证——受管目标缺失或无效 |
+| 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem install](/docs/cli-reference/install) — 安装harness配置
-- [apothem update](/docs/cli-reference/update) — 将当前配置文件重新应用到某个harness
-- [apothem doctor](/docs/install/concepts) — 系统级安装诊断
+- [apothem install](/docs/cli-reference/install)——安装一个工具配置
+- [apothem update](/docs/cli-reference/update)——将当前配置档案重新应用到一个工具
+- [apothem doctor](/docs/cli-reference/doctor)——系统范围的安装诊断

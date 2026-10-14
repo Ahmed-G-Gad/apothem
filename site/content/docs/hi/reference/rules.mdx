@@ -1,19 +1,19 @@
 ---
 title: "नियम"
-description: "व्यवहार-नियम सेट में समस्या-समाधान, कोड शिल्प, क्लीन आर्किटेक्चर, योजना, और गुणवत्ता को नियंत्रित करने वाले सदैव-सक्रिय और पथ-फ़िल्टर किए गए व्यवहार-नियम।"
+description: "व्यवहार-नियम सेट में समस्या-समाधान, कोड शिल्प, क्लीन आर्किटेक्चर, योजना और गुणवत्ता को नियंत्रित करने वाले सदैव-सक्रिय और पथ-फ़िल्टर किए गए व्यवहार-नियम।"
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-व्यवहार-नियम `src/apothem/rules/` के अंतर्गत सपाट फ़ाइलों के रूप में `*.md`
-प्रत्यय के साथ रहते हैं। प्रत्येक नियम स्व-निहित है — Purpose,
-Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — और
-या तो सदैव-सक्रिय है या पथ-फ़िल्टर किया गया है।
+व्यवहार-नियम `src/apothem/rules/` के अंतर्गत `*.md` प्रत्यय वाली सपाट फ़ाइलों के
+रूप में रहते हैं। प्रत्येक नियम स्व-निहित है — Purpose, Obligations, Seriousness
+Scaling, Anti-Patterns, Enforcement, Bindings — और या तो सदैव-सक्रिय है या
+पथ-फ़िल्टर किया गया।
 
 ## सक्रिय नियम
 
-विहित रजिस्ट्री नियम कोहॉर्ट है। वही सेट सपाट रूप में:
+विहित रजिस्ट्री नियम समूह है। वही सेट सपाट रूप में:
 
 | नियम | दायरा | लागू करता है |
 |------|-------|------------|
@@ -29,13 +29,13 @@ Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — औ�
 | Worker Orchestration | सदैव-सक्रिय | CM-17 / CM-25 |
 | Clean Architecture | पथ-फ़िल्टर किया गया | CM-27 |
 | Large File Generation | पथ-फ़िल्टर किया गया | CM-23 |
-| Performance Discipline | पथ-फ़िल्टर किया गया | Performance अक्ष |
+| Performance Discipline | पथ-फ़िल्टर किया गया | प्रदर्शन अक्ष |
 | Planning Techniques | पथ-फ़िल्टर किया गया | CM-20 / CM-21 |
 | Python Senior Architect | पथ-फ़िल्टर किया गया | CM-28 |
 
-## Frontmatter कॉन्ट्रैक्ट
+## Frontmatter अनुबंध
 
-हर नियम फ़ाइल धारण करती है:
+हर नियम फ़ाइल में यह होता है:
 
 ```yaml
 ---
@@ -46,21 +46,43 @@ alwaysApply: <true | false>
 ---
 ```
 
-`pathFilter` फ़ील्ड सदैव-सक्रिय नियमों पर छोड़ दी जाती है और पथ-फ़िल्टर किए गए
-नियमों पर मौजूद रहती है। वैलिडेटर की `frontmatter-cohort` जाँच हर नियम फ़ाइल पर
-कॉन्ट्रैक्ट को सत्यापित करती है।
+सदैव-सक्रिय नियम पर `pathFilter` खाली स्ट्रिंग (`""`) होता है और `alwaysApply`
+`true` होता है; पथ-फ़िल्टर किए गए नियम पर `pathFilter` ग्लोब सूची रखता है और
+`alwaysApply` `false` होता है। मशीन-पठनीय अनुबंध
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`) है; वैलिडेटर की
+`frontmatter-cohort` जाँच इसे हर नियम फ़ाइल पर सत्यापित करती है।
+
+`pathFilter` और `alwaysApply` हार्नेस-तटस्थ हैं। जहाँ किसी अडैप्टर के हार्नेस में
+एक नेटिव दायरा-निर्धारण फ़ील्ड होती है, वहाँ अडैप्टर उनका अनुवाद करता है। Claude
+Code किसी नियम से केवल `paths:` पढ़ता है और हर उस नियम को जिसमें यह नहीं होता,
+लॉन्च पर ही लोड कर लेता है, इसलिए इंजन इंस्टॉल
+(`apothem install --harness claude-code`) प्रत्येक पथ-फ़िल्टर किए गए नियम को
+उसके `pathFilter` से बनी `paths:` सूची के साथ `~/.claude/rules/` में लिखता है,
+और सदैव-सक्रिय नियमों को अपरिवर्तित कॉपी करता है। 28 सदैव-सक्रिय नियम हर सत्र
+में लोड होते हैं; 63 पथ-फ़िल्टर किए गए साथी नियम तब लोड होते हैं जब सहायक कोई
+मेल खाती फ़ाइल पढ़ता है।
+
+OpenCode में कोई प्रति-नियम दायरा-निर्धारण फ़ील्ड नहीं है: यह अपनी
+`opencode.json` की `instructions` सूची में नामित हर फ़ाइल को हर सत्र में जोड़
+देता है। इसलिए OpenCode इंस्टॉल (`apothem install --harness opencode`) आपके
+प्रोफ़ाइल दस्तावेज़ को और केवल उन्हीं नियमों को सूचीबद्ध करता है जिनका
+`alwaysApply` `true` है, प्रति फ़ाइल एक स्पष्ट `~/.config/opencode/...` पथ के
+साथ, और यह जानकारी कॉन्फ़िग लिखे जाते समय नियम फ़ाइलों से पढ़ी जाती है। हर नियम,
+पथ-फ़िल्टर किए गए नियमों सहित, फिर भी
+`~/.config/opencode/.apothem/support/rules/` के अंतर्गत इंस्टॉल होता है, जहाँ
+किसी नियम को उद्धृत करने वाला कोई नियम, स्किल या कमांड उसे माँग पर पढ़ता है।
 
 ## लेखन अनुशासन
 
-- **स्व-निहित।** प्रत्येक नियम के अपने Purpose, Obligations, Anti-Patterns,
-  और Enforcement अनुभाग होते हैं।
-- **Bindings ब्लॉक।** हर नियम विहित पाँच-दिशा Bindings ब्लॉक के साथ समाप्त होता है
-  (Drives → / Satisfies → / Established by ↑ / Gated by ← /
-  Cross-bound with ↔)।
-- **केवल डोमेन भाषा।** कोई प्लान-आंतरिक संदर्भ नहीं — देखें
-  `CLAUDE.md` CM-7।
+- **स्व-निहित।** प्रत्येक नियम के अपने Purpose, Obligations, Anti-Patterns, और
+  Enforcement अनुभाग होते हैं।
+- **Bindings ब्लॉक।** हर नियम विहित पाँच-दिशा Bindings ब्लॉक (Drives → /
+  Satisfies → / Established by ↑ / Gated by ← / Cross-bound with ↔) के साथ
+  समाप्त होता है।
+- **केवल डोमेन भाषा।** कोई प्लान-आंतरिक संदर्भ नहीं — `CLAUDE.md` CM-7 देखें।
 
-## उत्पन्न नियम सूची
+## जनित नियम इन्वेंट्री
 
 {/* apothem:generated-reference:start */}
 

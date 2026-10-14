@@ -1,8 +1,8 @@
 ---
 title: "Kiro"
-description: "Adaptor alat Apothem untuk Kiro (GA)."
+description: "Adaptor harness Apothem untuk Kiro (GA)."
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "bfe95271c18cd23e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,25 +17,31 @@ sourceHash: "409a9949239d4b5f"
 apothem install --harness kiro --project /path/to/project
 ```
 
-Adaptor menulis satu berkas pengarahan (steering) Kiro berlingkup proyek dari
-aturan bersama Apothem dan permukaan tata kelola.
+Adaptor menulis satu berkas steering Kiro berlingkup proyek dari aturan dan
+permukaan tata kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.kiro/steering/apothem-rules.md`
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender berkas pengarahan proyek pada
-setiap jalannya `apothem install` atau `apothem update`. Profil bersama adalah
-sumber kebenaran; suntingan lokal proyek pada berkas yang dihasilkan dicadangkan
-sebelum sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+Adaptor membaca profil bersama Apothem dan merender berkas steering proyek pada
+setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
+adalah sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan
+dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
+Apothem.
+
+Berkas dibuka dengan front matter `inclusion: always`-nya, karena Kiro
+mewajibkan konfigurasi inclusion menjadi konten pertama dalam berkas. Blok yang
+dikelola Apothem mengikutinya; teks yang Anda tambahkan setelah blok tersebut
+dipertahankan pada setiap sinkronisasi.
 
 ## Catatan kompatibilitas
 
-Permukaan pengarahan Kiro berlingkup proyek di bawah `.kiro/steering/`. Adaptor
-menulis berkas pengarahan khusus `apothem-rules.md` dengan front matter
-`inclusion: always` dan tidak pernah menimpa berkas fondasi yang ditulis operator
-Kiro (`product.md`, `tech.md`, `structure.md`). Spesifikasi Kiro (`.kiro/specs/`)
-dan hook asisten dimiliki operator; Apothem tidak menulisnya.
+Permukaan steering Kiro berlingkup proyek di bawah `.kiro/steering/`. Adaptor
+menulis berkas steering khusus `apothem-rules.md` dengan front matter
+`inclusion: always` dan tidak pernah menimpa berkas fondasi Kiro yang ditulis
+operator (`product.md`, `tech.md`, `structure.md`). Spec Kiro (`.kiro/specs/`)
+dan hook agen dimiliki operator; Apothem tidak menulisnya.
 
 ## Verifikasi
 
@@ -43,10 +49,10 @@ dan hook asisten dimiliki operator; Apothem tidak menulisnya.
 apothem verify --harness kiro --project /path/to/project
 ```
 
-Perintah verify memastikan bahwa:
+Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama tersedia.
+2. Semua bidang wajib dari profil bersama hadir.
 3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
 
 ## Pembaruan
@@ -55,7 +61,7 @@ Perintah verify memastikan bahwa:
 apothem update --harness kiro --project /path/to/project
 ```
 
-Menurunkan ulang berkas pengarahan proyek dari status profil bersama saat ini.
+Menurunkan ulang berkas steering proyek dari keadaan profil bersama saat ini.
 
 ## Pencopotan
 
@@ -78,10 +84,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness kiro --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness kiro --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness kiro --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness kiro --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI

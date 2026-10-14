@@ -1,20 +1,23 @@
 ---
 title: "스킬"
-description: "탐지 신호, 절차, 그리고 계획 스위트와 생태계 감사를 위한 시행 훅을 갖춘 SKILL.md 파일 속 재사용 가능한 탐지형 기법."
+description: "플랜 스위트와 생태계 감사를 위한 탐지 신호, 절차, 시행 훅을 갖춘, SKILL.md 파일 속 재사용 가능한 탐지형 기법입니다."
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-스킬은 `src/apothem/skills/` 아래의 폴더로 존재하며, 각각 `SKILL.md` 진입
-점을 가집니다. 스킬은 재사용 가능한 탐지형 기법을 담습니다 — 탐지 신호,
-절차, 그리고 시행 훅을 가집니다.
+스킬은 `src/apothem/skills/` 아래의 폴더로 있으며, 각각 `SKILL.md` 진입점을
+가집니다. 스킬은 재사용 가능한 탐지형 기법을 담습니다 — 탐지 신호, 절차, 시행
+훅을 가집니다.
 
-전체 스킬 카탈로그는 이 페이지 끝의 「생성된 스킬 인벤토리」 섹션에 생성됩니다.
+전체 스킬 카탈로그는 아래 [생성된 스킬
+인벤토리](#생성된-스킬-인벤토리)에 생성됩니다.
 
 ## Frontmatter 계약
 
-`SKILL.md`는 다음을 담습니다:
+`SKILL.md`는 정규 여덟 개 키의 frontmatter를 담습니다. 기계 판독 가능한
+계약은 [`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)
+(`additionalProperties: false`)이며, 이 블록은 그 계약을 그대로 반영합니다.
 
 ```yaml
 ---
@@ -29,13 +32,30 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## 하니스별 방출
+
+소스 스킬은 위의 키를 사용합니다. 일부 하니스는 다른 키를 읽으므로, 설치는 그
+하니스에 대해서만 키를 변환합니다.
+
+| 하니스 | 설치가 바꾸는 것 |
+| --- | --- |
+| Claude Code(설치 및 플러그인) | `userInvocable`을 Claude Code가 읽는 키인 `user-invocable`로 이름을 바꿉니다. Claude Code는 camelCase 키를 무시하므로, 이름을 바꾸지 않으면 `userInvocable: false`로 표시된 스킬이 여전히 `/` 메뉴에 나타납니다. |
+| Codex | `SKILL.md`는 그대로 두고, 소스가 `disable-model-invocation: true`를 설정한 모든 스킬 옆에 `policy.allow_implicit_invocation: false`를 담은 `agents/openai.yaml`을 씁니다. Codex가 그 키를 무시하기 때문입니다. |
+| 기타 하니스 | 변경 없음. |
+
+`skill.schema.json`은 사용자 호출 가능 여부 플래그의 두 철자 중 어느 쪽이든
+받아들이며, 둘 중 정확히 하나를 요구합니다.
+
 ## 작성 규율
 
-- **스킬별 폴더.** 모든 스킬은 진입점이 `SKILL.md`인 자체 폴더입니다.
+- **스킬별 폴더.** 모든 스킬은 진입점이 `SKILL.md`에 있는 자체 폴더입니다.
 - **탐지 신호.** 스킬 본문은 해당 기법을 촉발하는 탐지 신호로
   시작합니다.
 - **절차 + 시행.** 스킬은 적용할 절차와 루프를 닫는 시행 신호를 모두
   담습니다.
+- **설명 길이.** `description`은 최대 1,024자이며, 이는
+  [Agent Skills](https://agentskills.io/specification) 한도입니다. 더 엄격한
+  도구는 더 긴 설명을 거부하거나 잘라 내며, 스키마가 이 한도를 강제합니다.
 
 ## 생성된 스킬 인벤토리
 

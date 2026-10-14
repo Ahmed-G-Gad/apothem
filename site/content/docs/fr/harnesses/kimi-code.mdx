@@ -1,15 +1,15 @@
 ---
 title: "Kimi Code"
-description: "Apothem harness adapter for Kimi Code (GA)."
+description: "Adaptateur d'environnement Apothem pour Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "f8cfda1978e7aeae"
+sourceHash: "4bcd687aeabc46b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Moonshot
-**Install name:** `kimi-code`
-**Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**Éditeur :** Moonshot
+**Nom d'installation :** `kimi-code`
+**Statut :** GA
+**Configuration native :** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
 
 ## Installation
 
@@ -17,94 +17,115 @@ sourceHash: "f8cfda1978e7aeae"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-The adapter writes the shared Apothem governance surface into the project-root
-`AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+L'adaptateur écrit la surface de gouvernance partagée d'Apothem dans le
+`AGENTS.md` à la racine du projet, sous la forme d'un bloc géré délimité par des
+sentinelles (la prose de l'opérateur située hors des sentinelles est préservée),
+et conserve les cohortes Markdown non natives sous l'arborescence de support
+détenue par Apothem, à `<project>/.kimi-code/.apothem/support/`.
+Un `AGENTS.md` de projet est lu par de nombreux outils de développement en plus
+de Kimi Code ; le bloc est donc rédigé comme une consigne valable pour tout le
+projet, qui ne désigne aucun outil unique comme son lecteur.
 
-Kimi Code reads the project-root `AGENTS.md` instruction file following the
-universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+Kimi Code lit le fichier d'instructions `AGENTS.md` à la racine du projet selon
+la convention universelle AGENTS.md, et la configuration du projet se trouve
+sous `<project>/.kimi-code/`. La surface `<project>/.kimi-code/mcp.json` est
+détenue par l'opérateur ; Apothem la nomme mais n'y rédige aucune entrée.
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
+**Fichiers écrits :** `<project>/AGENTS.md` (bloc géré) et les cohortes de
+commandes, de skills, de hooks, d'agents, de règles et de templates sous
 `<project>/.kimi-code/.apothem/support/`.
 
-## Profile-to-native-config mapping
+## Correspondance entre le profil et la configuration native
 
-The adapter reads Apothem's shared profile and renders the project-root
-`AGENTS.md` instruction surface on every `apothem install` or `apothem update`
-run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+L'adaptateur lit le profil partagé d'Apothem et rend la surface d'instructions
+`AGENTS.md` à la racine du projet à chaque exécution de `apothem install` ou de
+`apothem update`. Les règles comportementales et le corpus de gouvernance
+atterrissent dans le bloc géré de `AGENTS.md` ; les cohortes de commandes, de
+skills, de hooks, d'agents, de règles et de templates sont placées sous
+`.kimi-code/.apothem/support/` et référencées depuis la surface d'instructions.
+Il s'agit de la disposition choisie par l'adaptateur, et non d'une lacune de
+Kimi Code : Kimi Code charge les skills depuis `.kimi-code/skills/` et
+`.agents/skills/`, les assistants personnalisés depuis `.kimi-code/agents/` et
+`.agents/agents/`, et les hooks depuis le tableau `[[hooks]]` de
+`~/.kimi-code/config.toml`, mais il ne les charge pas depuis l'arborescence de
+support ; les copies Apothem qui s'y trouvent sont donc du matériel de
+référence vers lequel pointe le bloc `AGENTS.md`. Le bloc se termine par une
+section consacrée aux fichiers de support Apothem, qui nomme, relativement à la
+racine du projet, le répertoire sous `.kimi-code/.apothem/support/` par rapport
+auquel se résout chaque citation de style dépôt (`rules/<name>.md`,
+`templates/...`, `hooks/...`), de sorte qu'un `AGENTS.md` commité ne porte aucun
+chemin propre à une machine. (Comportement de Kimi Code selon ses pages de
+personnalisation consacrées aux
+[skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
+aux [sous-assistants](https://moonshotai.github.io/kimi-code/en/customization/agents) et
+aux [hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks),
+consultées le 2026-10-02.)
 
-## Compatibility notes
+## Notes de compatibilité
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+Kimi Code lit les instructions du projet depuis `AGENTS.md` ou
+`.kimi-code/AGENTS.md` et reconnaît `.kimi-code/mcp.json` comme la surface MCP
+détenue par l'opérateur ; Apothem nomme cette surface mais n'y rédige aucune
+entrée. La surface d'instructions rendue pilote directement le projet. Kimi Code
+n'expose aucune surface de fichier pour la ligne d'état ni pour les
+output-styles ; ces cohortes ne sont donc pas matérialisées.
 
-Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
-for the current model and configuration surface.
+Kimi Code s'exécute sur la famille de modèles Kimi de Moonshot ; consultez la
+[référence de configuration de l'éditeur](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+pour le modèle et la surface de configuration actuels.
 
-## Verification
+## Vérification
 
 ```bash
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-The verify command confirms that:
+La commande verify confirme que :
 
-1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
-3. The adapter-specific verification routine reports success.
+1. La configuration native existe au chemin attendu.
+2. Tous les champs obligatoires du profil partagé sont présents.
+3. La routine de vérification propre à l'adaptateur signale un succès.
 
-## Updating
+## Mise à jour
 
 ```bash
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+Redérive le bloc géré de `AGENTS.md` à la racine du projet et les cohortes de
+support à partir de l'état actuel du profil partagé.
 
-## Uninstalling
+## Désinstallation
 
 ```bash
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Supprime les fichiers de configuration native écrits par l'adaptateur.
+Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
-## Conformity gate
+## Portail de conformité
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## Dépannage
 
-| Symptom | Fix |
+| Symptôme | Correctif |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
-| Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
+| Fichier de configuration introuvable | Relancez `apothem install --harness kimi-code --project /path/to/project` |
+| Échec de la vérification | Exécutez `apothem update --harness kimi-code --project /path/to/project`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness kimi-code --project /path/to/project` |
 
-## Configuration knobs
+## Paramètres de configuration
 
-| Flag | Default | Description |
+| Option | Par défaut | Description |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |
 
-## See also
+## Voir aussi
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [Tous les environnements](/docs/harnesses) — le catalogue complet des outils pris en charge
+- [Guide d'installation](/docs/install) — installer Apothem dans cet environnement
+- [Référence de `apothem harnesses`](/docs/cli-reference/harnesses) — lister et inspecter les adaptateurs depuis la CLI

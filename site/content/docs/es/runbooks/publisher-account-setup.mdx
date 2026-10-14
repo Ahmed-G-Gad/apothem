@@ -1,31 +1,32 @@
 ---
-title: "Configuración de la cuenta del publicador"
-description: "Configura el publicador de confianza de npmjs.com para @ahmed-g-gad/apothem y los requisitos previos de la versión en el lado de GitHub."
+title: "Configuración de la cuenta de publicador"
+description: "Configura el publicador de confianza de npmjs.com para @ahmed-g-gad/apothem y los requisitos previos de lanzamiento del lado de GitHub."
 machineTranslated: true
-sourceHash: "7261839cafc59c09"
+sourceHash: "c0ff17cce209d1d0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Este runbook configura el lado del publicador de la superficie de versiones. La
-historia de distribución tiene un único registro: el paquete npm con alcance
+Este runbook configura el lado del publicador de la superficie de lanzamiento.
+El esquema de distribución tiene un único registro: el paquete npm con alcance
 `@ahmed-g-gad/apothem` en npmjs.com, publicado por el flujo de trabajo
-`publish-npm.yml` despachado manualmente después de que los flujos de trabajo de
-GitHub Release, Pages, CI, conformity y harness estén en verde. Todos los demás
-artefactos se distribuyen en la propia página de GitHub Release y no necesitan
-ninguna cuenta de publicador externa.
+`publish-npm.yml`, despachado manualmente, después de que los flujos de trabajo
+de GitHub Release, Pages, CI, conformidad y entornos estén en verde. Todos los
+demás artefactos se distribuyen en la propia página del GitHub Release y no
+necesitan ninguna cuenta de publicador externa.
 
-## Mapa de identidad
+## Mapa de identidades
 
 | Superficie | Cuenta | Identidad del paquete |
 |---|---|---|
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Se permite que el propietario de GitHub cambie en el futuro. La lógica del flujo
-de trabajo y del instalador lee `github.repository`, `github.repository_owner` o
-`APOTHEM_GITHUB_REPOSITORY` donde una plataforma permite la resolución dinámica.
-El identificador del paquete del registro permanece estable porque los usuarios
-instalan el nombre del paquete, no el nombre de la cuenta del mantenedor.
+Se permite que el propietario de GitHub cambie en el futuro. La lógica de los
+flujos de trabajo y del instalador lee `github.repository`,
+`github.repository_owner` o `APOTHEM_GITHUB_REPOSITORY` donde una plataforma
+permite la resolución dinámica. El identificador del paquete en el registro
+permanece estable porque los usuarios instalan el nombre del paquete, no el
+nombre de la cuenta del mantenedor.
 
 ## npm (npmjs.com)
 
@@ -37,63 +38,71 @@ instalan el nombre del paquete, no el nombre de la cuenta del mantenedor.
    npm view @ahmed-g-gad/apothem name
    ```
 
-   Un `404` significa que el paquete con alcance aún no se ha publicado.
-   Cualquier otra respuesta del paquete debe coincidir con este repositorio y
+   Un `404` significa que el paquete con alcance todavía no se ha publicado.
+   Cualquier otra respuesta de paquete debe coincidir con este repositorio y
    esta cuenta antes de publicar.
-4. Crea el paquete en npm si la interfaz requiere un primer registro de paquete.
-   Mantén el nombre con alcance: `@ahmed-g-gad/apothem`.
-5. Configura la publicación de confianza (Trusted Publishing) para
-   `@ahmed-g-gad/apothem` desde GitHub Actions:
+4. Crea el paquete en npm si la interfaz requiere un primer registro del
+   paquete. Mantén el nombre con alcance: `@ahmed-g-gad/apothem`.
+5. Configura Trusted Publishing para `@ahmed-g-gad/apothem` desde GitHub Actions:
    - Propietario de GitHub: `ahmed-g-gad`
    - Repositorio: `apothem`
    - Nombre de archivo del flujo de trabajo: `publish-npm.yml`
-   - Entorno: `npmjs`
+   - Entorno: `release` (el `environment:` del trabajo de publicación en
+     `publish-npm.yml`; ambos deben coincidir)
    - Acción permitida: `npm publish`.
-6. En GitHub, verifica que el entorno `npmjs` existe en `ahmed-g-gad/apothem` y
-   que requiere aprobación manual para el despliegue.
-7. Mantén la superficie de npm en un único paquete de registro público:
+6. En GitHub, verifica que el entorno `release` existe en `ahmed-g-gad/apothem`
+   y que requiere aprobación manual para el despliegue.
+7. Limita la superficie de npm a un único paquete de registro público:
    `@ahmed-g-gad/apothem` en npmjs.com.
-8. Confirma la disponibilidad para la versión:
+8. Confirma que el lanzamiento está listo:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
 9. Ejecuta `Publish — npm` (`publish-npm.yml`) desde la pestaña GitHub Actions
-   con `tag=<release-tag>` y aprueba el despliegue del entorno `npmjs`.
-10. Verifica el paquete en vivo:
+   con `tag=<release-tag>` y aprueba el despliegue del entorno `release`.
+10. Verifica el paquete publicado:
 
     ```bash title="npm verification"
     npm view @ahmed-g-gad/apothem version
     npx @ahmed-g-gad/apothem@<version> --version
     ```
 
-No se requiere ningún secreto `NPM_TOKEN`, nombre de usuario ni contraseña. El
-flujo de trabajo publica mediante npm Trusted Publishing (OIDC) con la versión de
-Node y el piso de OIDC de la CLI de npm fijados dentro de
-`.github/workflows/publish-npm.yml`. Ejecuta `npm publish --access public`
-contra npmjs.com; npm emite automáticamente la procedencia (provenance) para los
-paquetes públicos publicados desde un flujo de trabajo público de GitHub Actions.
-Un `404` del registro durante el `PUT` significa que el publicador de confianza
-del lado de npm, el alcance del paquete o la autorización de la cuenta aún no
-están alineados; corrige la configuración del paquete de npm antes de reintentar
-el flujo de trabajo.
+No se requiere ningún secreto `NPM_TOKEN`, de nombre de usuario ni de
+contraseña. El flujo de trabajo publica mediante npm Trusted Publishing (OIDC),
+con la versión de Node y la versión mínima de la CLI de npm para OIDC fijadas
+dentro de `.github/workflows/publish-npm.yml`. Ejecuta
+`npm publish --access public` contra npmjs.com; npm emite automáticamente la
+procedencia para los paquetes públicos publicados desde un flujo de trabajo
+público de GitHub Actions. Un `404` del registro durante `PUT` significa que el
+publicador de confianza del lado de npm, el alcance del paquete o la
+autorización de la cuenta todavía no están alineados; corrige la configuración
+del paquete en npm antes de reintentar el flujo de trabajo.
+
+Una vez que una publicación de confianza haya tenido éxito, cierra
+definitivamente la vía de los tokens: en **Settings → Publishing access** del
+paquete en npmjs.com, selecciona **Require two-factor authentication and
+disallow tokens** y elimina cualquier secreto de token de npm que quede en el
+repositorio. El flujo de trabajo ya no lee ninguno.
 
 Referencias: [Publicadores de confianza de npm](https://docs.npmjs.com/trusted-publishers/), [procedencia de npm](https://docs.npmjs.com/generating-provenance-statements/) y [alcances de npm](https://docs.npmjs.com/about-scopes/).
 
-## Requisitos previos de la versión en el lado de GitHub
+## Requisitos previos de lanzamiento del lado de GitHub
 
-Las superficies de versión restantes son nativas de GitHub y se autentican con el
-`GITHUB_TOKEN` con alcance de repositorio; no interviene ninguna cuenta externa.
+Las superficies de lanzamiento restantes son nativas de GitHub y se autentican
+con el `GITHUB_TOKEN` con alcance de repositorio; no interviene ninguna cuenta
+externa.
 
-1. **GitHub Release.** `.github/workflows/release.yml` se ejecuta en la etiqueta
-   de versión y solo necesita su permiso local de trabajo `contents: write`.
-   Confirma que el archivo del flujo de trabajo está presente en `main` antes de
-   etiquetar.
+1. **GitHub Release.** `.github/workflows/release.yml` se ejecuta con la
+   etiqueta de versión y solo necesita su permiso `contents: write`, local del
+   trabajo. Confirma que el archivo del flujo de trabajo está presente en
+   `main` antes de etiquetar.
 2. **Dominio personalizado de Pages.** El sitio de documentación se despliega
-   mediante `publish-static-site.yml` al dominio personalizado
-   `apothem.ahmedgad.com`. El dominio, el DNS y la imposición de HTTPS los
-   establece el [runbook de habilitación de Pages](/docs/runbooks/pages-enablement);
+   mediante `publish-static-site.yml` en el dominio personalizado
+   `apothem.ahmedgad.com`. El dominio, el DNS y la aplicación obligatoria de
+   HTTPS los establece el
+   [runbook de habilitación de Pages](/docs/runbooks/pages-enablement);
    verifica:
 
    ```bash title="Pages verification"
@@ -104,7 +113,7 @@ Las superficies de versión restantes son nativas de GitHub y se autentican con 
 3. **Instaladores de script.** `install.sh` e `install.ps1` se sirven desde el
    sitio de Pages (`https://apothem.ahmedgad.com/install.sh` y
    `https://apothem.ahmedgad.com/install.ps1`). Se publican con el mismo
-   despliegue de Pages; no se requiere ninguna cuenta o token por separado.
+   despliegue de Pages; no se requiere ninguna cuenta ni token aparte.
 
 ## Matriz de verificación
 
@@ -113,6 +122,6 @@ comprobación canónica:
 
 | Superficie | Comprobación |
 |---|---|
-| npmjs.com | `npm view @ahmed-g-gad/apothem version` devuelve la versión publicada |
-| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` lista sdist, wheel, SBOM, paquetes cosign, procedencia y archivos de plataforma |
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` devuelve la versión lanzada |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` lista el sdist, el wheel, el SBOM, los bundles de cosign, la procedencia y los archivos comprimidos por plataforma |
 | Pages | `curl -sSI https://apothem.ahmedgad.com/` devuelve `200` en el dominio personalizado |

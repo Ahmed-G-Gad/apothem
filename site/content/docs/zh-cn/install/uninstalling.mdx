@@ -2,13 +2,13 @@
 title: "卸载"
 description: "移除 Apothem 并清理工具配置。"
 machineTranslated: true
-sourceHash: "e96d67dfc6af5311"
+sourceHash: "11d7a265fc5e60b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 先移除工具配置
 
-在卸载 Apothem 之前，先移除每个工具适配器的配置，让你的harness回到干净的状态。运行 `apothem harnesses list` 查看当前已安装了哪些适配器，然后逐个移除，或使用面向整个注册表的选择器：
+在卸载 Apothem 之前，先移除每个工具适配器的配置，让你的工具回到干净的状态。运行 `apothem harnesses list` 查看当前已安装了哪些适配器，然后逐个移除，或使用覆盖整个注册表的选择器：
 
 ```bash
 apothem uninstall --harness claude-code
@@ -20,17 +20,22 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## 移除引擎
 
-移除方式与你使用的安装渠道一致：
+移除方式与你所使用的安装渠道相对应：
 
-- **Claude Code 插件**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（marketplace 条目可通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
-- **npx**——无需移除；`npx` 从其缓存中运行。如果你想清除缓存的副本，使用 `npm cache clean --force`。
-- **一键安装脚本**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。两者在移除前都会确认，并拒绝处理不安全的目标。
-- **备份与状态**——安装备份位于 `~/.apothem/backups/` 下；当你不再需要它们时，删除 `~/.apothem/`。
+- **Claude Code 插件**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（插件市场条目可通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
+- **npx**——无需移除任何内容；`npx` 从其缓存中运行。如果你想删除缓存的副本，可使用 `npm cache clean --force` 清除缓存。
+- **一键安装器**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。两者在移除之前都会请求确认，并拒绝不安全的目标。
+- **备份与状态**——安装备份位于 `~/.apothem/backups/` 下，安装台账位于 `~/.apothem/state/` 下。两者的规模都保持有界：每次安装、卸载和回滚之后，Apothem 会为每个安装根目录保留最新的 10 条安装记录，为每个工具保留最新的 10 组备份，并且绝不删除某条被保留的记录仍需要的备份，因此最近 10 次安装仍可回滚。若要保留更少，运行 [`apothem backups prune --keep N`](/docs/cli-reference/backups)（加上 `--dry-run` 可先查看它将移除哪些内容）；它绝不会移除回滚某个工具最近一次安装时所要恢复的那份备份。一旦引擎已被移除，且你不再需要任何历史记录，删除 `~/.apothem/`。
 
 ## 不会被移除的内容
 
-- 位于 `~/.config/apothem/profile.yaml` 的共享配置 YAML 或 `--profile PATH` 永远不会被 `apothem uninstall` 移除。
-- 工具目录中与之无关、由操作者编写的文件会被保留。
+- 位于 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 的共享配置档案 YAML 绝不会被 `apothem uninstall` 移除。
+- 工具目录中无关的、由操作者编写的文件会被保留。
+- 你添加到共享设置文件中的条目会被保留：你自己的权限规则、MCP 服务器和钩子处理程序都会保留。卸载只移除安装台账记录为属于 Apothem 的键和列表条目（参见[设置](/docs/reference/settings#合并到你自己的设置文件)）。
 - `<project>/.apothem/plans/`（以及旧版 `<project>/.plans/`）下的计划套件不受影响。
 
-要彻底清理某个工具的根目录，请在确认你已备份所有想要保留的自定义规则、辅助文件或配置文件之后，移除[工具参考页面](/docs/harnesses)上记录的工具原生路径。
+## 目录
+
+卸载还会移除安装所创建的目录（例如首次安装之前并不存在的 `~/.claude/`），前提是这些目录已为空。仍存放着你的文件、或存放着另一个已安装工具所使用数据的目录会被保留。安装之前就已存在的目录绝不会被移除。
+
+要彻底清理某个工具的根目录，请先确认你已备份所有想要保留的自定义规则、辅助程序或配置档案文件，然后移除[工具参考页面](/docs/harnesses)上记录的工具原生路径。

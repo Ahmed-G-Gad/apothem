@@ -2,14 +2,14 @@
 title: "profile"
 description: "Referencia de la CLI para el grupo de comandos apothem profile."
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Gestiona el perfil compartido de Apothem.
 
 `profile` es un grupo de comandos con cuatro subcomandos: `init`, `show`, `set` y `edit`.
-El perfil compartido es la única fuente de verdad que cada adaptador de harness
+El perfil compartido es la única fuente de verdad que cada adaptador de entorno
 materializa en su configuración nativa.
 
 ## Sinopsis
@@ -46,8 +46,16 @@ Cada subcomando acepta las opciones compartidas que se indican a continuación.
 ### `profile init`
 
 Crea un andamiaje de perfil mínimo y válido según el esquema en
-`~/.config/apothem/profile.yaml` o `--profile PATH`. Los archivos existentes se
-conservan a menos que se proporcione `--force`.
+`~/.config/apothem/profile.yaml` o en `--profile PATH`. Los archivos existentes
+se conservan, a menos que se proporcione `--force`.
+
+La primera línea del andamiaje es una modeline de `yaml-language-server` que
+nombra el `$id` del esquema del perfil,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. El sitio sirve el
+esquema empaquetado en esa dirección, de modo que un editor con soporte del
+lenguaje YAML valida el perfil mientras lo editas. Cada esquema empaquetado bajo
+`src/apothem/schemas/` se sirve de la misma manera en
+`https://apothem.ahmedgad.com/schemas/<file>`.
 
 | Opción | Descripción |
 |---|---|
@@ -55,27 +63,62 @@ conservan a menos que se proporcione `--force`.
 
 ### `profile show`
 
-Muestra el perfil compartido validado y con los valores por defecto expandidos.
+Muestra el perfil compartido validado y con los valores predeterminados
+expandidos. Con `--json`, el documento es el propio perfil, encabezado por
+`schema_version`: la versión del esquema del perfil con la que el motor lo leyó
+(consulta el
+[contrato de la salida JSON](/docs/cli-reference#contrato-de-la-salida-json)).
 
 ### `profile set KEY VALUE`
 
-Establece una clave en el perfil compartido. `KEY` es una ruta con puntos que desciende por el
-perfil anidado (`identity.name`, `preferences.style`, `enforcement.sprints`,
-`harnesses.<harness>.preferences.style`); una clave única sin punto establece un
-nodo de nivel superior. `VALUE` se almacena como una cadena literal — las palabras simples no se
-coaccionan (`no` permanece `"no"`, `2024-01-01` y `1.0` permanecen como cadenas) — excepto
-`true`/`false` (las banderas booleanas de aplicación) y la entrada explícita `[...]`/`{...}`
-de lista/mapa. El perfil completamente ensamblado se valida contra el esquema
-antes de escribir; un set inválido se rechaza y el perfil en disco queda sin cambios.
+Establece una clave en el perfil compartido. `KEY` es una ruta con puntos que
+desciende por el perfil anidado (`identity.name`, `preferences.style`,
+`enforcement.sprints`, `harnesses.<harness>.preferences.style`); una clave única
+sin punto establece un nodo de nivel superior. `VALUE` se almacena como una
+cadena literal —las palabras sueltas no se convierten (`no` sigue siendo `"no"`,
+`2024-01-01` y `1.0` siguen siendo cadenas)—, excepto `true`/`false` (los
+indicadores booleanos de aplicación) y la entrada explícita de lista o mapa
+`[...]`/`{...}`. El perfil completamente ensamblado se valida contra el esquema
+antes de escribir; una asignación no válida se rechaza y el perfil en disco
+queda sin cambios.
 
 | Argumento | Descripción |
 |---|---|
 | `KEY` | Ruta con puntos dentro del perfil que se va a establecer (obligatorio). |
-| `VALUE` | Valor literal a asignar; validado antes de escribir (obligatorio). |
+| `VALUE` | Valor literal que se asigna; se valida antes de escribir (obligatorio). |
 
 ### `profile edit`
 
 Abre el perfil compartido en el editor del sistema.
+
+## Errores de validación
+
+Cada comando que lee el perfil lo valida contra el esquema empaquetado e informa
+de **todos** los problemas que encuentra en una sola pasada, de modo que una sola
+edición puede corregirlos todos:
+
+- **La salida en texto plano** nombra el primer problema por completo (`Field`,
+  `Reason`, `Fix` y `Offending value (redacted)`: la entrada que falló, con los
+  valores con forma de secreto reemplazados por `<redacted>`; nunca es un
+  reemplazo sugerido) y después lista hasta diez más bajo `Other problems`.
+- **La salida JSON** conserva el primer problema en los campos de nivel superior
+  del objeto `error` y agrega un arreglo `errors` con cada problema (`code`,
+  `field`, `reason`, `fix`, `safe_value`).
+- **Las claves desconocidas** repiten solo la clave inesperada y su valor
+  ocultado, no el perfil completo.
+- **Marcadores de bloque gestionado.** Ninguna clave ni ningún valor de texto
+  puede contener `<!-- BEGIN APOTHEM MANAGED BLOCK -->` ni
+  `<!-- END APOTHEM MANAGED BLOCK -->`. Apothem escribe esos marcadores alrededor
+  del bloque que gestiona en los archivos de instrucciones, y el texto del perfil
+  acaba dentro de ese bloque, de modo que un marcador en él dividiría el bloque.
+  Cada uno de esos campos falla con `profile.managed_block_marker`: `field` es su
+  ruta con puntos (por ejemplo `rules.2` o
+  `mcp_servers.search.env.SEARCH_MODE`) y `reason` nombra el marcador. El valor
+  en sí nunca se repite (`safe_value` es `null`), ya que puede ser una
+  credencial.
+
+`profile init` (y cualquier otro comando que crea el andamiaje de un perfil) escribe
+`schema_version: 1`. Un perfil sin `schema_version` se lee como versión 1.
 
 ## Ejemplos
 
@@ -94,9 +137,10 @@ apothem profile edit
 | Código | Significado |
 |---|---|
 | 0 | Éxito (o, para `edit`, el editor salió con normalidad) |
-| 1 | Perfil ausente, inválido, ya existe sin `--force`, o no se puede escribir |
+| 1 | El perfil falta, no es válido, ya existe sin `--force` o no se puede escribir |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
-- [apothem install](/docs/cli-reference/install) — materializa el perfil en un harness
-- [apothem doctor](/docs/cli-reference/doctor) — ejecuta diagnósticos de instalación a nivel de todo el sistema
+- [apothem install](/docs/cli-reference/install) — materializa el perfil en un entorno
+- [apothem doctor](/docs/cli-reference/doctor) — ejecuta diagnósticos de instalación de todo el sistema

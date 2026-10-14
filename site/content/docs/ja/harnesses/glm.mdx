@@ -1,113 +1,116 @@
 ---
 title: "GLM (Z.ai)"
-description: "Apothem harness adapter for GLM (Z.ai) as a configurable model backend."
+description: "設定可能なモデルバックエンドとしての GLM (Z.ai) 向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "c2f9dc937ca0e8cc"
+sourceHash: "c222107e05bf1ef2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Z.ai
-**Install name:** `glm`
-**Status:** GA
-**Native config:** `<project>/.apothem/providers/glm.toml`
+**ベンダー：** Z.ai
+**インストール名：** `glm`
+**ステータス：** GA
+**ネイティブ設定：** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+GLM (Z.ai) はハーネスではなく、**モデルバックエンド**です。Z.ai はファーストパーティの GLM
+コマンドラインを提供していません。代わりに、Anthropic 互換または OpenAI 互換のプロトコルを話す
+ツールを、バックエンドのベース URL とキーを設定することで GLM に向けます。`glm` アダプターは、
+両方の互換面を記録したプロバイダー設定ファイルを書き込むため、互換性のある任意のツールを GLM
+モデルファミリーに接続できます。
 
-## Installation
+## インストール
 
 ```bash
 apothem install --harness glm --project /path/to/project
 ```
 
-The adapter writes one project-scope provider file recording the GLM backend
-endpoints and operator-configurable placeholders.
+アダプターは、GLM バックエンドのエンドポイントと、オペレーターが設定可能なプレースホルダーを
+記録した、プロジェクトスコープのプロバイダーファイルを 1 つ書き込みます。
 
-**Files written:** `<project>/.apothem/providers/glm.toml`
+**書き込まれるファイル：** `<project>/.apothem/providers/glm.toml`
 
-## Profile-to-native-config mapping
+## プロファイルからネイティブ設定へのマッピング
 
-The provider file records two backends. The Anthropic-compatible backend uses
-the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
-protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+プロバイダーファイルは 2 つのバックエンドを記録します。Anthropic 互換バックエンドは、ベース URL
+`https://api.z.ai/api/anthropic` を使用します。Anthropic プロトコルを話すツールは、
+`ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、および任意で `API_TIMEOUT_MS` を設定することで
+GLM へルーティングされます。同じ env テーブルには `ANTHROPIC_DEFAULT_OPUS_MODEL`、
+`ANTHROPIC_DEFAULT_SONNET_MODEL`、`ANTHROPIC_DEFAULT_HAIKU_MODEL` も列挙されており、これらは
+ツールの opus、sonnet、haiku の役割を GLM のモデルに対応付けます。OpenAI 互換バックエンドは、
+ベース URL `https://api.z.ai/api/coding/paas/v4` を使用します。認証トークンは、あなた自身の
+Z.ai キーに置き換えるプレースホルダーです。Apothem が本物のシークレットを書き込むことは決して
+ありません。モデル ID はバージョンによって変わりやすいため、Apothem はどれもピン留めしません。
+ファイルには `<GLM_MODEL_ID>` プレースホルダーが含まれており、最新の
+[Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して埋めます。
 
-## Compatibility notes
+## 互換性に関する注意
 
-Because GLM is a backend rather than a harness, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+GLM はハーネスではなくバックエンドであるため、ルール、コマンド、スキル、フックのための面を
+公開しません。アダプターはバックエンドのプロバイダーファイルのみを書き込み、それ以外は何も
+書き込みません。あなたの Z.ai キーとモデル ID の選択は、オペレーターの所有のままです。アダプターが
+依拠するベンダー面の規約は `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` にピン留め
+されており、公開中の Z.ai ドキュメントに対してスナップショットが取られています。
 
-GLM runs the GLM model family from Z.ai; see the
-[vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
-current backend, model, and Anthropic-compatible configuration surface.
+GLM は Z.ai の GLM モデルファミリーを実行します。現在のバックエンド、モデル、Anthropic 互換の
+設定面については、[ベンダーの設定リファレンス](https://docs.z.ai/devpack/tool/claude)を参照して
+ください。
 
-## Verification
+## 検証
 
 ```bash
 apothem verify --harness glm --project /path/to/project
 ```
 
-The verify command confirms that:
+verify コマンドは次のことを確認します。
 
-1. The native config exists at the expected path.
-2. The provider file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+1. ネイティブ設定が想定されたパスに存在すること。
+2. プロバイダーファイルが存在し、空でないこと。
+3. アダプター固有の検証ルーチンが成功を報告すること。
 
-## Updating
+## 更新
 
 ```bash
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+プロバイダーファイルは、いったん存在すればあなたのものです。`install` は
+`.apothem/providers/glm.toml` が存在しない場合にのみテンプレートを書き込み、その後は `install` も
+`update` も決してそれを上書きしないため、あなたのキー参照とモデルの選択はすべての再実行を経ても
+残ります。より新しいテンプレートを取り込むには、自分のファイルを別の場所へ移動し、`update` を
+実行してから、自分の値を新しいファイルにコピーしてください。
 
-## Uninstalling
+## アンインストール
 
 ```bash
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+プロバイダーファイルを削除するのは、Apothem がそれを作成し、かつ編集されていないテンプレートの
+ままである場合のみで、その際は先に Apothem のバックアップルート配下にバックアップします。あなたが
+作成または編集したファイルはそのまま残されます。共有プロファイルの YAML と Apothem エンジンには
+影響しません。
 
-## Conformity gate
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## トラブルシューティング
 
-| Symptom | Fix |
+| 症状 | 対処 |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| 設定ファイルが見つからない | `apothem install --harness glm --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness glm --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness glm --project /path/to/project` を再実行する |
 
-## Configuration knobs
+## 設定ノブ
 
-| Flag | Default | Description |
+| フラグ | デフォルト | 説明 |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
 
-## See also
+## 関連項目
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

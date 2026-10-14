@@ -1,13 +1,13 @@
 ---
 title: "Claude Code"
-description: "Adaptor harness Apothem untuk Claude Code (GA)."
+description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3e22dcf3597b4cc3"
+sourceHash: "8dec50c1d13fe4aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Anthropic
-**Nama instal:** `claude-code`
+**Nama instalasi:** `claude-code`
 **Status:** GA
 **Konfigurasi native:** `~/.claude/`
 
@@ -17,42 +17,87 @@ sourceHash: "3e22dcf3597b4cc3"
 apothem install --harness claude-code
 ```
 
-Adaptor `claude-code` menginstal korpus Apothem bersama ke dalam pohon penemuan
-native Claude Code. Agen Markdown, aturan, skill, gaya keluaran, pembantu baris
-status, dan pengaturan diinstal di lokasi native-nya; prompt perintah juga
-dibungkus sebagai skill agar alur kerja yang dapat digunakan kembali tetap terlihat
-melalui permukaan skill Claude Code saat ini.
+Adapter `claude-code` memasang korpus Apothem bersama ke dalam pohon penemuan
+native Claude Code. Agen Markdown, aturan, skill, output style, dan pengaturan
+dipasang di lokasi native-nya; prompt command dikonversi menjadi skill sehingga
+alur kerja yang dapat digunakan ulang tetap terlihat melalui permukaan skill
+Claude Code saat ini. Perender statusline disalin ke `~/.claude/statuslines/`
+tetapi tidak disambungkan: Claude Code membaca baris statusnya dari pengaturan
+`statusLine`, yang dibiarkan tidak disetel oleh adapter. Untuk mengaktifkannya,
+tambahkan ke `settings.json` sebuah entri `statusLine` dengan
+`"type": "command"` yang menjalankan `~/.claude/statuslines/render.py`.
 
-**Berkas yang ditulis:** `settings.json`, `agents/`, `rules/`, `skills/`,
-`statuslines/`, `output-styles/`, dan subpohon dukungan `apothem/`
-(`apothem/hooks/`, `apothem/conformity/`, `apothem/schemas/`,
-`apothem/templates/`) di bawah `~/.claude/`. Berkas perintah dikonversi menjadi
-direktori skill anak. Dispatcher hook dan gerbang konformitas berjalan dari salinan
-materialisasinya — entri hook di `settings.json` memanggil
+**Berkas yang ditulis:** `settings.json`, blok Apothem di `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
+`statuslines/`, `output-styles/`, dan support subtree `.apothem/support/`
+(`.apothem/support/hooks/`, `.apothem/support/conformity/`,
+`.apothem/support/schemas/`, `.apothem/support/templates/`) di bawah `~/.claude/`.
+Berkas command dikonversi menjadi
+direktori skill anak. Dispatcher hook dan gerbang konformitas berjalan dari
+salinan termaterialisasinya — entri hook di `settings.json` memanggil
 `~/.claude/.apothem/support/hooks/dispatch.py` dan
-`~/.claude/.apothem/support/conformity/gate.py` melalui jalur absolut, sehingga tidak
-diperlukan paket `apothem` yang dapat diimpor pada host.
+`~/.claude/.apothem/support/conformity/gate.py` melalui jalur absolut, sehingga
+tidak diperlukan paket `apothem` yang dapat diimpor di host.
 
-Adaptor **tidak** mengelola `CLAUDE.md` — berkas itu adalah wilayah milik operator.
-Permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/` yang
-dipropagasikan dan hook SessionStart, bukan melalui `CLAUDE.md` yang
-dimaterialisasi.
+`~/.claude/CLAUDE.md` tetap milik operator. Adapter menulis satu blok Apothem
+yang dibatasi sentinel ke dalamnya, yang memuat proyeksi profil (identitas,
+preferensi, aturan, tingkat keseriusan, dan perilaku yang dipilih untuk
+diaktifkan) serta bagian berkas pendukung Apothem, dan mempertahankan setiap
+baris di luar sentinel apa adanya. Bagian berkas pendukung menyebutkan
+direktori absolut tempat setiap kutipan bergaya repositori dalam aturan, skill,
+dan agen yang terpasang di-resolve: `rules/<name>.md` di bawah
+`~/.claude/rules/`, serta `templates/...`, `schemas/...`, `hooks/...`, dan
+`conformity/...` di bawah `~/.claude/.apothem/support/`. Bagian lain dari
+permukaan tata kelola Apothem menjangkau Claude Code melalui pohon `rules/`
+yang dipropagasikan dan hook SessionStart. OpenCode juga memuat
+`~/.claude/CLAUDE.md` ketika tidak ada `~/.config/opencode/AGENTS.md`, sehingga
+blok tersebut tidak menyebut satu alat pun sebagai pembacanya.
 
 ## Pemetaan profil ke konfigurasi native
 
-Pada setiap `apothem install` atau `apothem update`, adaptor mempropagasikan korpus
-`apothem` bersama ke `~/.claude/` sesuai manifes propagasi. Adaptor menggunakan
-direktori native secara langsung jika memungkinkan dan mengonversi prompt perintah
-menjadi folder skill. Anak yang cocok dan dikelola Apothem yang sudah ada
-dicadangkan sebelum penggantian; entri tak terkait yang ditulis operator
-dipertahankan. `settings.json` digabungkan agar kunci yang ditulis operator tetap
-dapat dipulihkan.
+Pada setiap `apothem install` atau `apothem update`, adapter mempropagasikan
+korpus `apothem` bersama ke `~/.claude/` sesuai manifest propagasi. Adapter
+menggunakan direktori native secara langsung bila memungkinkan dan mengonversi
+prompt command menjadi folder skill. Anak terkelola-Apothem yang sudah ada dan
+cocok dicadangkan sebelum penggantian; entri tak terkait yang ditulis operator
+dipertahankan. `settings.json` digabungkan sehingga kunci yang ditulis operator
+tetap dapat dipulihkan.
+
+Skill yang terpasang, dan skill yang dibundel dalam plugin Claude Code, membawa
+`user-invocable` alih-alih `userInvocable` milik korpus sumber, karena Claude
+Code hanya membaca kunci yang memakai tanda hubung. Dua kontainer templat
+(`plan-suite`, `research-suite`) menyetelnya ke `false`, sehingga keduanya
+tidak muncul di menu `/`. Setiap output style menyetel
+`keep-coding-instructions: true`, sehingga memilih salah satunya tetap
+mempertahankan instruksi rekayasa perangkat lunak bawaan Claude Code.
 
 ## Catatan kompatibilitas
 
-Tidak ada penerjemahan yang terjadi. Instalasi memvalidasi bahwa profil terbentuk dengan baik dan semua ikatan hook di settings.json dapat di-resolve.
+Prompt command dikonversi menjadi direktori skill; agen, aturan, skill, dan
+output style disalin apa adanya. Instalasi memvalidasi bahwa profil terbentuk
+dengan baik dan semua ikatan hook di settings.json dapat di-resolve. Adapter
+tidak menulis entri server MCP apa pun: daftarkan server dengan
+`claude mcp add` (lihat [Server MCP](/docs/reference/mcp)).
 
-Claude Code menerapkan semua ikatan hook di settings.json pada setiap awal sesi. Setiap adaptor diverifikasi terhadap harness native-nya sendiri — tidak ada harness "referensi" yang diistimewakan.
+Claude Code menerapkan semua ikatan hook di settings.json pada setiap awal sesi. Setiap adapter diverifikasi terhadap harness native-nya sendiri — tidak ada harness "referensi" yang diistimewakan.
+
+### Batas aturan izin
+
+Templat pengaturan menolak `Read(...)` pada jalur rahasia dan cache seperti
+`.env*` dan `~/.ssh/**`. Claude Code menerapkan penolakan `Read` pada alat
+berkasnya, pada perintah berkas yang dikenalinya di Bash (`cat`, `head`,
+`tail`, `sed`, `tee`), dan pada target pengalihan. Claude Code tidak menerapkan
+penolakan itu pada pencarian yang membaca berkas tanpa menyebut namanya,
+seperti `grep -r pattern .`, atau pada skrip yang membuka berkas sendiri
+([referensi izin](https://code.claude.com/docs/en/permissions)). Di macOS,
+Linux, dan WSL, Claude Code tidak menyertakan alat `Glob` dan `Grep` dalam
+kumpulan alat default dan melakukan pencarian melalui Bash sebagai gantinya,
+sehingga entri allow `Glob` dan `Grep` milik templat hanya berlaku di tempat
+alat-alat tersebut tersedia. Untuk memblokir setiap proses agar tidak membaca
+suatu jalur, aktifkan sandbox Claude Code.
+
+Skill dan definisi helper yang menyebut `TodoWrite` juga menyebut `TaskCreate`,
+`TaskGet`, `TaskList`, dan `TaskUpdate`, karena Claude Code menonaktifkan
+`TodoWrite` secara default dan mengutamakan alat-alat tersebut.
 
 ## Verifikasi
 
@@ -60,22 +105,23 @@ Claude Code menerapkan semua ikatan hook di settings.json pada setiap awal sesi.
 apothem verify --harness claude-code
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Semua bidang wajib dari profil bersama ada.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness claude-code
 ```
 
-Menurunkan-ulang konfigurasi native dari profil bersama saat ini. Jalankan setelah
-paket `apothem` yang terinstal diperbarui, agar permukaan konvensi yang
-dipropagasikan (agen, aturan, skill, baris status, gaya keluaran) mencerminkan versi
-baru. `CLAUDE.md` adalah milik operator dan tidak pernah disentuh oleh adaptor.
+Menurunkan ulang konfigurasi native dari profil bersama saat ini. Jalankan
+setelah paket `apothem` yang terpasang diperbarui, sehingga permukaan konvensi
+yang dipropagasikan (agen, aturan, skill, statusline, output-style)
+mencerminkan versi baru. Di `CLAUDE.md`, perintah update hanya menulis ulang
+blok Apothem di antara sentinelnya.
 
 ## Pencopotan
 
@@ -83,8 +129,10 @@ baru. `CLAUDE.md` adalah milik operator dan tidak pernah disentuh oleh adaptor.
 apothem uninstall --harness claude-code
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-Paket `apothem` yang terinstal dan repositori sumber tidak terpengaruh.
+Menghapus berkas konfigurasi native yang ditulis oleh adapter dan mencabut blok
+Apothem dari `CLAUDE.md`, dengan membiarkan prosa Anda sendiri tetap di
+tempatnya.
+Paket `apothem` yang terpasang dan repositori sumber tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -98,10 +146,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness claude-code` |
 | Verifikasi gagal | Jalankan `apothem update --harness claude-code`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Jalankan ulang `apothem update`; profil `apothem` bersama adalah sumber kebenaran, bukan `~/.claude/` |
+| Konten konfigurasi tidak terduga | Jalankan ulang `apothem update`; profil `apothem` bersama adalah sumber kebenaran, bukan `~/.claude/` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

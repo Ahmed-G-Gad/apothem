@@ -1,38 +1,90 @@
 ---
 title: "doctor"
-description: "Référence CLI pour la commande apothem doctor."
+description: "Référence de la CLI pour la commande apothem doctor."
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "9f6e0ade5485e0a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Exécute des diagnostics système pour l'installation d'Apothem.
+Vérifie l'état de santé de ce qui est installé. Là où
+[`apothem verify`](/docs/cli-reference/verify) vérifie un seul environnement
+nommé, `doctor` vérifie chaque environnement installé ainsi que le profil
+partagé en une seule passe.
 
 ## Synopsis
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-Vérifie l'installation d'Apothem et signale l'état de chaque adaptateur de
-harness enregistré. Lorsqu'un profil partagé est présent, il est validé par
-rapport au schéma fourni — sa simple existence ne suffit pas —, de sorte qu'un
-profil mal formé est signalé comme un échec de diagnostic plutôt que comme un
-« trouvé » vert. La sortie JSON comporte un champ `profile_valid` (`true` /
-`false`, ou `null` lorsqu'aucun profil n'est présent) et un champ `profile_error`
-en cas d'échec de la validation. Quitte avec 0 lorsque toutes les vérifications
-réussissent, et avec 1 lorsqu'un ou plusieurs harnesses ne sont pas installés ou
-lorsque le profil présent échoue à la validation du schéma.
+## Ce qui est vérifié
+
+- **Profil partagé.** Un profil présent est validé par rapport au schéma
+  fourni avec le paquet ; un profil mal formé échoue avec son code de
+  diagnostic. Un profil absent est signalé, sans échec (`install` en crée un).
+- **Environnements installés uniquement.** Un environnement qui n'est pas
+  installé est signalé comme `not_installed` et ne constitue pas un échec ; une
+  machine dotée d'un seul environnement en bonne santé réussit donc la
+  vérification. Les environnements à portée de projet sont vérifiés lorsque
+  `--project` nomme leur racine ; sans cette option, ils sont signalés comme
+  `needs_project`.
+- **Vérification.** Chaque environnement installé doit réussir la même
+  vérification que [`verify`](/docs/cli-reference/verify).
+- **Runtime des hooks.** Pour chaque environnement vérifié, doctor lit les
+  fichiers écrits par sa dernière installation, trouve les commandes de hook
+  qu'Apothem y a enregistrées, et démarre une fois chaque interpréteur et chaque
+  script de hook avec une charge utile sans effet (les arguments enregistrés
+  plus `--help`, `{}` sur stdin, un répertoire de travail temporaire, et
+  `PYTHONPATH` retiré). Rien n'est écrit. Un interpréteur manquant, un script
+  manquant ou un plantage au moment de l'import fait échouer la vérification.
+
+Chaque vérification en échec nomme une correction. Quitte avec 0 lorsqu'aucune
+vérification n'échoue, et avec 1 sinon.
+
+## Sortie JSON
+
+`--json` conserve les champs antérieurs (`version`, `python`, `platform`,
+`profile_path`, `profile_exists`, `profile_valid`, `harnesses`, `all_ok`,
+et `profile_error` lorsque le profil est invalide) et ajoute :
+
+- `profile_error_code` — le code de diagnostic du profil, lorsque le profil est
+  invalide.
+- `project` — la racine `--project` résolue, ou `null`.
+- `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
+  `verify_failed`, `hook_failed` ou `error` ; plus `verified` et `hooks`
+  (`{"probed": N, "failed": [...]}`, ou `null` lorsqu'aucun enregistrement
+  d'installation n'existe).
+- `checks` — un enregistrement par vérification : `code` (par exemple
+  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` ou un code
+  `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` et
+  `fix`.
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## Options
 
 | Option | Description |
 |---|---|
+| `--project PATH` | Racine de projet pour les environnements à portée de projet ; sans cette option, ils sont signalés comme `needs_project`. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
 | `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
-| `--json` | Raccourci pour `--format json`. |
+| `--json` | Raccourci de `--format json`. |
 | `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
@@ -40,17 +92,23 @@ lorsque le profil présent échoue à la validation du schéma.
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+Le format `plain` par défaut affiche des diagnostics lisibles par un humain ;
+`--json` (équivalent à `--format json`) émet sur stdout un document lisible par
+une machine, adapté à un acheminement par pipe vers d'autres outils.
 
 ## Codes de sortie
 
 | Code | Signification |
 |---|---|
-| 0 | Toutes les vérifications ont réussi |
-| 1 | Un harness n'est pas installé, ou un profil présent a échoué à la validation du schéma |
+| 0 | Toutes les vérifications ont réussi (y compris lorsqu'aucun environnement n'est encore installé) |
+| 1 | Un environnement installé ne passe pas la vérification, une commande de hook enregistrée ne peut pas démarrer, un adaptateur n'a pas pu être chargé ou sondé, ou un profil présent a échoué à la validation du schéma |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi
 
-- [apothem harnesses](/docs/cli-reference/harnesses) — liste et inspecte les harnesses enregistrés
-- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un harness spécifique
+- [apothem harnesses](/docs/cli-reference/harnesses) — liste et inspecte les environnements enregistrés
+- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un environnement spécifique

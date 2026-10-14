@@ -1,113 +1,120 @@
 ---
 title: "GLM (Z.ai)"
-description: "Apothem harness adapter for GLM (Z.ai) as a configurable model backend."
+description: "구성 가능한 모델 백엔드인 GLM (Z.ai)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "c2f9dc937ca0e8cc"
+sourceHash: "c222107e05bf1ef2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Z.ai
-**Install name:** `glm`
-**Status:** GA
-**Native config:** `<project>/.apothem/providers/glm.toml`
+**벤더:** Z.ai
+**설치 이름:** `glm`
+**상태:** GA
+**네이티브 구성:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+GLM (Z.ai)은 하니스가 아니라 **모델 백엔드**입니다. Z.ai는 자사 GLM 명령줄
+도구를 제공하지 않습니다. 대신 Anthropic 호환 또는 OpenAI 호환 프로토콜을
+사용하는 도구에 백엔드 기본 URL과 키를 설정하여 GLM을 가리키게 합니다. `glm`
+어댑터는 두 호환 표면을 모두 기록하는 프로바이더 구성 파일을 작성하므로,
+호환되는 어떤 도구든 GLM 모델 제품군에 연결할 수 있습니다.
 
-## Installation
+## 설치
 
 ```bash
 apothem install --harness glm --project /path/to/project
 ```
 
-The adapter writes one project-scope provider file recording the GLM backend
-endpoints and operator-configurable placeholders.
+어댑터는 GLM 백엔드 엔드포인트와 운영자가 구성할 수 있는 플레이스홀더를
+기록하는 프로젝트 범위 프로바이더 파일 하나를 작성합니다.
 
-**Files written:** `<project>/.apothem/providers/glm.toml`
+**작성되는 파일:** `<project>/.apothem/providers/glm.toml`
 
-## Profile-to-native-config mapping
+## 프로필-네이티브 구성 매핑
 
-The provider file records two backends. The Anthropic-compatible backend uses
-the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
-protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+프로바이더 파일은 두 백엔드를 기록합니다. Anthropic 호환 백엔드는 기본 URL
+`https://api.z.ai/api/anthropic`을 사용합니다. Anthropic 프로토콜을 사용하는
+도구는 `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, 그리고 선택적으로
+`API_TIMEOUT_MS`를 설정하여 GLM으로 라우팅합니다. 같은 env 테이블에는
+`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`,
+`ANTHROPIC_DEFAULT_HAIKU_MODEL`도 나열되며, 이 변수들은 도구의 opus, sonnet,
+haiku 역할을 GLM 모델에 매핑합니다. OpenAI 호환 백엔드는 기본 URL
+`https://api.z.ai/api/coding/paas/v4`를 사용합니다. 인증 토큰은 여러분 자신의
+Z.ai 키로 교체하는 플레이스홀더입니다 — Apothem은 실제 시크릿을 절대 작성하지
+않습니다. 모델 ID는 버전에 따라 바뀌기 쉬우므로 Apothem은 어떤 모델 ID도
+고정하지 않습니다. 파일에는 현재
+[Z.ai 문서](https://docs.z.ai/devpack/tool/claude)를 참고하여 채우는
+`<GLM_MODEL_ID>` 플레이스홀더가 들어 있습니다.
 
-## Compatibility notes
+## 호환성 참고 사항
 
-Because GLM is a backend rather than a harness, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+GLM은 하니스가 아니라 백엔드이므로 규칙, 커맨드, 스킬, 훅을 위한 표면을
+노출하지 않습니다 — 어댑터는 백엔드 프로바이더 파일만 작성하며 그 밖에는
+아무것도 작성하지 않습니다. 여러분의 Z.ai 키와 모델 ID 선택은 운영자 소유로
+남습니다. 어댑터가 의존하는 벤더 표면 규약은
+`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`에 고정되어 있으며,
+현재 게시된 Z.ai 문서를 기준으로 스냅샷됩니다.
 
-GLM runs the GLM model family from Z.ai; see the
-[vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
-current backend, model, and Anthropic-compatible configuration surface.
+GLM은 Z.ai의 GLM 모델 제품군을 실행합니다. 현재 백엔드, 모델, Anthropic 호환
+구성 표면은 [벤더 구성 참조](https://docs.z.ai/devpack/tool/claude)를
+확인하세요.
 
-## Verification
+## 검증
 
 ```bash
 apothem verify --harness glm --project /path/to/project
 ```
 
-The verify command confirms that:
+verify 명령은 다음을 확인합니다.
 
-1. The native config exists at the expected path.
-2. The provider file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 프로바이더 파일이 존재하며 비어 있지 않습니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
-## Updating
+## 업데이트
 
 ```bash
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+프로바이더 파일은 일단 존재하면 여러분의 것입니다. `install`은
+`.apothem/providers/glm.toml`이 없을 때만 템플릿을 작성하며, 그 후에는
+`install`도 `update`도 이 파일을 절대 덮어쓰지 않으므로, 여러분의 키 참조와
+모델 선택은 다시 실행할 때마다 그대로 유지됩니다. 더 새로운 템플릿을 받으려면
+기존 파일을 다른 곳으로 옮기고, `update`를 실행한 다음, 여러분의 값을 새 파일에
+복사하세요.
 
-## Uninstalling
+## 제거
 
 ```bash
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+프로바이더 파일은 Apothem이 만들었고 여전히 편집되지 않은 템플릿인 경우에만
+제거하며, 제거 전에 먼저 Apothem 백업 루트 아래에 백업합니다. 여러분이
+만들었거나 편집한 파일은 그대로 남습니다. 공유 프로필 YAML과 Apothem 엔진은
+영향을 받지 않습니다.
 
-## Conformity gate
+## 적합성 게이트
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## 문제 해결
 
-| Symptom | Fix |
+| 증상 | 해결 방법 |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| 구성 파일을 찾을 수 없음 | `apothem install --harness glm --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness glm --project /path/to/project`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness glm --project /path/to/project`를 다시 실행 |
 
-## Configuration knobs
+## 구성 노브
 
-| Flag | Default | Description |
+| 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
 
-## See also
+## 함께 보기
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

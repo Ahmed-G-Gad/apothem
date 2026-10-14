@@ -2,7 +2,7 @@
 title: "Référence de la CLI"
 description: "Référence de la CLI d'Apothem — toutes les sous-commandes et options."
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "8b8d7dc1647136bd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,7 @@ partagé et les adaptateurs d'environnement.
 Installe un adaptateur d'environnement depuis le profil partagé.
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | Option | Description |
@@ -32,6 +32,8 @@ apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-ru
 | `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut, `~/.config/apothem/profile.yaml`. |
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. |
 | `--dry-run` | Prévisualise l'installation sans écrire de fichiers. |
+| `--clean`, `--fresh` | Table rase sur demande explicite : sauvegarde puis supprime l'état d'installation antérieur (`~/.claude`, `~/.codex`, `~/.agents`, `~/.config/apothem`) avant l'installation. |
+| `--yes` | Ignore la confirmation par cible lors d'une suppression en table rase (obligatoire pour les exécutions `--clean` non interactives). |
 
 Valeurs canoniques de `--harness` :
 
@@ -43,7 +45,9 @@ codex
 cursor
 gemini-cli
 github-copilot
+glm
 hermes
+kimi-code
 kiro
 open-claw
 opencode
@@ -93,20 +97,61 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 
 ### `apothem verify`
 
-Vérifie qu'un adaptateur d'environnement est installé et que son chemin de sortie
-est présent.
+Vérifie que les cibles gérées d'un adaptateur d'environnement sont présentes et
+valides.
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--harness <name>` | Nom de l'adaptateur d'environnement ou `all`. Obligatoire. |
+| `--profile PATH` | YAML du profil partagé par rapport auquel vérifier la fidélité. Sans cette option, la vérification est purement structurelle. |
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. |
 
-Le code de sortie est `0` lorsque l'adaptateur est installé, et `1` lorsqu'il ne
-l'est pas.
+Sans `--profile`, la vérification est structurelle : chaque cible gérée doit être
+présente et valide. Avec `--profile`, elle exige en plus la fidélité, de sorte
+qu'une installation qui existe mais a dérivé par rapport à ce profil échoue à
+verify — utilisez cette option pour confirmer qu'un profil précis est fidèlement
+installé.
+
+Le code de sortie est `0` lorsque l'environnement est vérifié (et, avec
+`--profile`, fidèle à ce profil), et `1` lorsqu'une cible est manquante ou
+invalide, ou lorsque `--profile` est fourni et que l'installation a dérivé.
+
+### `apothem status`
+
+Signale l'état d'installation, de vérification et de dérive de chaque
+environnement enregistré.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--profile PATH` | Profil partagé à utiliser comme référence de dérive. Un profil par défaut illisible dégrade la dérive en `unknown` plutôt que d'interrompre le balayage. |
+| `--project PATH` | Racine du projet pour les environnements à portée de projet. Sans cette option, ces environnements signalent `needs-project`. |
+
+Chaque ligne associe un indicateur `installed` à un indicateur `verified`, et les
+deux se combinent pour donner l'état de dérive :
+
+| État | Signification |
+|-------|---------|
+| `absent` | Apothem n'a effectué aucune installation dans cet environnement. |
+| `in-sync` | Installé et conforme au profil de référence. |
+| `drift` | Installé mais plus conforme — corrigez avec `apothem update`. |
+| `unknown` | Installé, mais le profil de référence n'a pas pu être lu. |
+
+`installed` répond à « Apothem a-t-il effectué une installation ici ? », et non à
+« cet environnement est-il présent sur la machine ? ». Il repose sur les propres
+artefacts d'Apothem — le bloc géré à l'intérieur d'une ancre d'instructions et
+le contenu de la sous-arborescence `.apothem/` détenue par Apothem —, jamais sur
+un fichier détenu par l'éditeur que l'environnement écrit pour lui-même. Un
+environnement dont le répertoire de configuration existe mais auquel Apothem n'a
+jamais touché signale `absent`, et un environnement désinstallé signale `absent`
+même si les répertoires vidés subsistent.
 
 ### `apothem profile`
 
@@ -123,7 +168,7 @@ apothem profile edit [--profile PATH]
 |------------|-------------|
 | `profile init` | Crée un échafaudage de profil minimal valide selon le schéma. |
 | `profile show` | Affiche le profil résolu (YAML) sur stdout. |
-| `profile set <key> <value>` | Définit un champ du profil. La valeur est analysée en YAML (chaînes, nombres, booléens, listes et mappages sont tous acceptés). |
+| `profile set <key> <value>` | Définit un champ du profil. La valeur est stockée sous forme de chaîne littérale — les mots nus ne sont pas convertis, donc `no` reste `"no"` et `1.0` reste une chaîne —, sauf `true`/`false` et les saisies explicites de liste et de mappage `[...]` / `{...}`. Le profil assemblé est validé selon le schéma avant d'être écrit. |
 | `profile edit` | Ouvre le profil dans `$EDITOR` (à défaut, l'éditeur par défaut de la plateforme). |
 
 L'option `--profile PATH` dirige chaque sous-commande vers un autre fichier de
@@ -153,8 +198,9 @@ apothem doctor
 
 Affiche la version d'Apothem, l'interpréteur Python, la plateforme, le chemin du
 profil résolu et un tableau d'état d'installation par environnement. Le code de
-sortie est `0` lorsque chaque adaptateur enregistré se déclare installé ; sinon,
-`1`.
+sortie n'est `0` que lorsque chaque contrôle réussit ; un profil invalide, un
+environnement désinstallé ou un adaptateur qui n'a pas pu être sondé forcent
+chacun une sortie non nulle.
 
 ## Référence générée des commandes et options
 

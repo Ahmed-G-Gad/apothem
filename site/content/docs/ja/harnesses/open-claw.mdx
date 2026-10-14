@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "84ea02c4a5281c11"
+sourceHash: "435a8075d4d83b4f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,26 +17,40 @@ sourceHash: "84ea02c4a5281c11"
 apothem install --harness open-claw
 ```
 
-アダプターは共有プロファイルを OpenClaw のユーザーグローバル設定ファイルに翻訳し、
-ハーネスルート配下に Apothem サポートコホートをインストールします。OpenClaw の
-ネイティブ設定は JSON です。materializer はそれに合わせて JSON をレンダリングします。
+アダプターは共有プロファイルを OpenClaw のユーザーグローバル設定ファイルへ変換し、
+Apothem のサポートコホートをハーネスルート配下にインストールします。OpenClaw の
+ネイティブ設定は JSON であり、マテリアライザーはそれに合わせて JSON をレンダリングします。
 
-**書き込まれるファイル：** `~/.openclaw/openclaw.json` および `~/.openclaw/.apothem/support/`
-配下のサポートファイル
+**書き込まれるファイル：** `~/.openclaw/openclaw.json`、プロファイルドキュメント
+`~/.openclaw/apothem/rules/00-apothem-profile.md`、および
+`~/.openclaw/.apothem/support/` 配下のサポートファイル
+
+プロファイルドキュメントは Apothem サポートファイルのセクションで終わります。このセクションは、
+リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、
+`~/.openclaw/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取ります。OpenClaw のネイティブ skills
-フィールドは名前の許可リスト（ディレクトリローダーではない）であり、MCP は CLI 面で
-あるため、Apothem は設定キーを書き込みません。共有されたコマンド、スキル、ルール、
-テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート資料として
+アダプターは Apothem の共有プロファイルを読み取りますが、設定キーは一切作成しません。
+`openclaw.json` は空のオブジェクトとして書き込まれます。プロファイルのアイデンティティ、
+プリファレンス、ルールはプロファイルドキュメントに入ります。共有のコマンド、スキル、ルール、
+テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材として
 インストールされます。
 
 ## 互換性に関する注意
 
-プレビュー版アダプターです。ネイティブの JSON 設定が Open-Claw のアクティブな面です。
-Apothem はスキルに対して文書化された追加の skill-directory フックを使用し、その他の
-コホートはインストール済みガイダンスのための参照資料として保持します。
+プレビュー版のアダプターです。OpenClaw は、サポートツリーもプロファイルドキュメントも
+自力では読み込みません。スキルの場所、ワークスペースの命令ファイル、設定のいずれも
+そこを指していないため、インストール後の OpenClaw は Apothem のルール、スキル、MCP サーバー
+なしで動作します。OpenClaw は、ワークスペースの `skills/` フォルダーと `.agents/skills/`
+フォルダー、`~/.agents/skills`、自身の状態ディレクトリ、そして `skills.load.extraDirs` に
+列挙された任意のフォルダーからスキルを読み込みます。Apothem のスキルを使うには、
+`~/.openclaw/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、
+あなたが `openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の
+`mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。
+アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、
+[スキル](https://docs.openclaw.ai/tools/skills)と [MCP CLI](https://docs.openclaw.ai/cli/mcp) に
+関するドキュメントに基づきます。2026-10-02 に参照。）
 
 ## 検証
 
@@ -44,9 +58,9 @@ Apothem はスキルに対して文書化された追加の skill-directory フ�
 apothem verify --harness open-claw
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -58,7 +72,7 @@ apothem update --harness open-claw
 
 現在の共有プロファイルの状態からネイティブ設定を再導出します。
 `~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
-パッケージをアップグレードした後に実行します。
+パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
 
@@ -66,10 +80,10 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除します。
-共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -80,11 +94,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness open-claw` を再実行する |
-| 検証に失敗した | `apothem update --harness open-claw` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness open-claw` を再実行する |
+| 検証が失敗した | `apothem update --harness open-claw` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness open-claw` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

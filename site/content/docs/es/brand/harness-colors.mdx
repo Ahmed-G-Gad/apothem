@@ -1,26 +1,29 @@
 ---
 title: "Colores de marca de los entornos"
-description: "Paleta de colores de marca por entorno usada en todo el sitio web del proyecto Apothem, en el logotipo de Apothem y en cada diagrama de arquitectura. Una única fuente de verdad: diecisiete colores de marca, un concentrador apothem."
+description: "Paleta de colores por entorno usada en el sitio web del proyecto Apothem y en cada diagrama de arquitectura. Una única fuente de verdad: un color por entorno, un concentrador apothem."
 machineTranslated: true
-sourceHash: "768e5d5df16f7fa9"
+sourceHash: "7a191edb550076ef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Las enumeraciones canónicas de nombre-de-marca × código-de-color de abajo están envueltas en una valla `text` para preservar los identificadores literales por entorno que requiere el propósito de catálogo de la paleta.
+Las enumeraciones canónicas de nombre de marca × código de color de abajo están envueltas en un bloque delimitado `text` para preservar los identificadores literales por entorno que requiere el propósito de catálogo de la paleta.
 
 ## Núcleo de Apothem
 
 | Token | Claro | Oscuro | Uso |
 |---|---|---|---|
-| `apothem-hub` | `#0F172A` | `#F1F5F9` | El nodo central de distribución ("apothem") en cada diagrama de arquitectura y el concentrador central del logotipo de Apothem. |
-| `shared-profile` | `#10B981` | `#34D399` | El perfil fuente-de-verdad que alimenta el núcleo de apothem. |
+| `apothem-hub` | `#0F172A` | `#F1F5F9` | El nodo central de distribución («apothem») en cada diagrama de arquitectura. |
+| `shared-profile` | `#10B981` | `#34D399` | El perfil que es la fuente de verdad y alimenta el núcleo de apothem. |
 
 ## Paleta de entornos
 
 Quince de los diecisiete entornos están coloreados para coincidir con su
-identidad de marca principal. Los dos restantes — `glm` y `kimi-code` — aún no
-tienen un color de marca definido; sus filas se añaden una vez que se fija el
-color de marca aguas arriba, según el paso de propagación en
+identidad de marca principal, de modo que un lector pueda distinguir las
+herramientas en un diagrama. La propia marca de Apothem usa solo los colores
+pizarra y esmeralda de la página de [paleta](/docs/brand/palette); no lleva
+ningún color de entorno. Los dos restantes — `glm` y `kimi-code` — aún no tienen
+un color de marca definido; sus filas se añaden una vez que se fija el color de
+marca aguas arriba, según el paso de propagación de
 [Actualizaciones](#actualizaciones).
 
 ```text
@@ -31,7 +34,7 @@ color de marca aguas arriba, según el paso de propagación en
 | `codebuddy`       | `#0052D9` | `#5E8EF7` | Tencent CodeBuddy blue.                                                                                                                             |
 | `codex`           | `#10A37F` | `#19C796` | OpenAI signature teal.                                                                                                                              |
 | `cursor`          | `#6E56CF` | `#9B85E3` | Cursor brand purple.                                                                                                                                |
-| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue (primary); the Apothem mark renders the node with all four Google brand hues `#4285F4` / `#34A853` / `#FBBC04` / `#EA4335`.             |
+| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue.                                                                                                                                        |
 | `github-copilot`  | `#0A3069` | `#5B8FE3` | GitHub Mona deep-blue.                                                                                                                              |
 | `hermes`          | `#71717A` | `#A1A1AA` | Community silver-grey.                                                                                                                              |
 | `kiro`            | `#790ECB` | `#A862DD` | Kiro violet.                                                                                                                                        |
@@ -43,13 +46,23 @@ color de marca aguas arriba, según el paso de propagación en
 | `zed`             | `#084CCF` | `#5E8BE0` | Zed Industries blue.                                                                                                                                |
 ```
 
+## Marcas comerciales
+
+Los nombres de los entornos, los nombres de productos y los colores de marca de
+esta página y de todo el sitio pertenecen a sus propietarios y son marcas
+comerciales de sus respectivos propietarios. Apothem nombra una herramienta solo
+para indicar cuál configura, y usa el color de una herramienta solo para
+distinguirla en un diagrama. Apothem es un proyecto independiente; no está
+afiliado a ninguna de estas empresas o proyectos, ni patrocinado ni respaldado
+por ellos, y no distribuye ninguno de sus logotipos.
+
 ## Justificación de los nombres
 
-- **`apothem-hub`**: el centro geométrico que evoca el nombre (el apotema de un polígono regular apunta hacia su núcleo).
-- **`shared-profile`**: la fuente aguas arriba, distinta de cualquier color de un único entorno para que se lea como la flecha de "entrada" en cada diagrama.
-- **Tokens por entorno** que reflejan el slug del entorno usado en toda la base de código (`harnesses/<slug>/`, la clave del punto de entrada, el argumento `--harness <slug>` de la CLI). Una palabra por concepto; la misma cadena en todas partes.
+- **`apothem-hub`** — el centro geométrico que evoca el nombre (la apotema de un polígono regular apunta hacia dentro, a su núcleo).
+- **`shared-profile`** — la fuente aguas arriba, distinta de cualquier color de un único entorno para que se lea como la flecha de «entrada» en cada diagrama.
+- **Los tokens por entorno** reflejan el slug del entorno usado en toda la base de código (`harnesses/<slug>/`, la clave del punto de entrada, el argumento `--harness <slug>` de la CLI). Una palabra por concepto; la misma cadena en todas partes.
 
-## Uso de Mermaid
+## Uso en Mermaid
 
 ```mermaid
 graph LR
@@ -91,8 +104,8 @@ graph LR
 
 ## Accesibilidad
 
-Cada token de modo claro cumple el contraste WCAG 2.2 AA frente a texto blanco (≥4,5 : 1) donde el contraste lo permite sin distorsionar el color de marca. Cuando el color de marca nativo de un entorno cae por debajo del umbral AA frente a texto blanco por sí solo (en especial la familia ámbar / naranja y la familia azul cielo / verde azulado de tokens enumerada arriba), los diagramas que necesitan contraste WCAG AA de texto-sobre-color usan la **variante de modo oscuro** (el tono elevado) como relleno del diagrama para que el texto blanco se lea con claridad. La columna de modo oscuro está calibrada para este fin: cada token de modo oscuro supera el AA frente a texto blanco.
+Cada token de modo claro cumple el contraste WCAG 2.2 AA frente a texto blanco (≥4.5 : 1) donde el contraste lo permite sin distorsionar el color de marca. Cuando el color de marca nativo de un entorno, por sí solo, queda por debajo del umbral AA frente a texto blanco (en particular, la familia ámbar / naranja y la familia azul cielo / verde azulado de los tokens enumerados arriba), los diagramas que necesitan un contraste WCAG AA de texto sobre color usan la **variante de modo oscuro** (el tono elevado) como relleno del diagrama para que el texto blanco se lea con claridad. La columna de modo oscuro está calibrada para este fin: cada token de modo oscuro supera AA frente a texto blanco.
 
 ## Actualizaciones
 
-La paleta se actualiza solo cuando un entorno ratifica un cambio de marca aguas arriba. Los cambios de marca por entorno se propagan de forma atómica a través de `site/app/global.css`, esta página y cada máster SVG afectado bajo `assets/src/`.
+La paleta se actualiza solo cuando un entorno ratifica un cambio de marca aguas arriba. Los cambios de marca por entorno se propagan de forma atómica a `site/app/global.css`, a esta página y a cada SVG maestro afectado bajo `assets/src/`.

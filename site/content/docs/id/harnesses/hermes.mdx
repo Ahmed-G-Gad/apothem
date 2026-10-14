@@ -2,12 +2,12 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "7d64ffd668c14134"
+sourceHash: "f077a9851e126be5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Hermes
-**Nama instal:** `hermes`
+**Nama instalasi:** `hermes`
 **Status:** Pratinjau
 **Konfigurasi native:** `~/.hermes/config.yaml`
 
@@ -17,29 +17,46 @@ sourceHash: "7d64ffd668c14134"
 apothem install --harness hermes
 ```
 
-Adapter menerjemahkan profil bersama ke file konfigurasi global pengguna Hermes
-Agent dan memasang kohort dukungan Apothem di bawah akar harness.
+Adapter menerjemahkan profil bersama ke berkas konfigurasi global-pengguna
+Hermes Agent dan memasang kohor pendukung Apothem di bawah akar harness.
 
-**File yang ditulis:** `~/.hermes/config.yaml` dan file dukungan di bawah
+**Berkas yang ditulis:** `~/.hermes/config.yaml`, dokumen profil
+`~/.hermes/apothem/rules/00-apothem-profile.md`, dan berkas pendukung di bawah
 `~/.hermes/.apothem/support/`
+
+Dokumen profil diakhiri dengan bagian berkas pendukung Apothem yang menyebutkan
+direktori absolut di bawah `~/.hermes/.apothem/support/` tempat setiap kutipan
+bergaya repositori (`rules/<name>.md`, `templates/...`, `hooks/...`)
+di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native.
-Permukaan keterampilan milik Hermes sendiri adalah `skills.config` — paket
-registry yang dapat dipasang yang Hermes ekspos secara otomatis sebagai perintah
-garis miring dinamis — yang tidak ditulis Apothem. Sebaliknya, Apothem
-mengirimkan konten perintah dan keterampilan bersama sebagai materi dukungan di
-bawah `~/.hermes/.apothem/support/`, yang dirujuk dari jangkar instruksi native. Definisi
-pembantu, aturan, templat, dan prompt hook juga tetap menjadi materi dukungan di
-bawah `~/.hermes/.apothem/support/`.
+Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native,
+termasuk inventaris MCP milik profil. Identitas, preferensi, dan aturan milik
+profil dimasukkan ke dalam dokumen profil. Command, skill, definisi helper,
+aturan, templat, dan prompt hook bersama ditempatkan sebagai materi pendukung
+di bawah `~/.hermes/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
-Adapter pratinjau. Konfigurasi YAML native adalah permukaan Hermes yang aktif;
-Apothem menggunakan hook direktori keterampilan eksternal yang terdokumentasi
-untuk keterampilan dan menjaga kohort lainnya sebagai materi referensi untuk
-panduan yang terpasang.
+Adapter pratinjau. Hermes tidak memuat pohon pendukung maupun dokumen profil
+dengan sendirinya: tidak ada apa pun di `config.yaml` dan tidak ada satu pun
+berkas konteks yang dibaca Hermes yang menunjuk ke sana, sehingga setelah
+instalasi Hermes berjalan tanpa aturan, skill, atau hook Apothem. Hermes
+membaca skill dari `~/.hermes/skills/` dan dari setiap folder yang tercantum di
+bawah `skills.external_dirs` di `config.yaml`; untuk menggunakan skill Apothem,
+tambahkan sendiri `~/.hermes/.apothem/support/skills` ke daftar tersebut;
+`apothem update` mempertahankan kunci yang Anda tambahkan ke `config.yaml`.
+Adapter menulis inventaris MCP milik profil di bawah kunci tingkat atas
+`mcp_servers`, tempat Hermes membaca server MCP. Rilis Apothem sebelumnya
+menulisnya di bawah `auxiliary.mcp`, yang dibaca Hermes sebagai model auxiliary
+untuk dispatch alat MCP; baik `apothem update` maupun `apothem uninstall`
+menghapus blok tersebut selama blok itu masih memuat persis apa yang ditulis
+oleh rilis semacam itu (lihat [Pencopotan](#pencopotan)). (Perilaku Hermes
+menurut halaman panduan penggunanya tentang
+[skill](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+dan [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+dibaca 2026-10-02.)
 
 ## Verifikasi
 
@@ -47,20 +64,20 @@ panduan yang terpasang.
 apothem verify --harness hermes
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua field wajib dari profil bersama ada.
-3. Rutin verifikasi spesifik-adapter melaporkan keberhasilan.
+2. Semua bidang wajib dari profil bersama ada.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness hermes
 ```
 
-Menurunkan ulang konfigurasi native dari state profil bersama saat ini.
-Jalankan setelah mengedit `~/.config/apothem/profile.yaml` atau memutakhirkan
+Menurunkan ulang konfigurasi native dari status profil bersama saat ini.
+Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
 paket Apothem yang terpasang.
 
 ## Pencopotan
@@ -69,8 +86,21 @@ paket Apothem yang terpasang.
 apothem uninstall --harness hermes
 ```
 
-Menghapus file konfigurasi native yang ditulis oleh adapter.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus apa yang ditambahkan adapter: entri `mcp_servers` yang dicatat oleh
+instalasinya di `config.yaml` (kunci milik Anda sendiri tetap ada, dan berkas
+tersebut dihapus hanya ketika Apothem yang membuatnya dan tidak ada lagi milik
+Anda yang tersisa di dalamnya), dokumen profil, dan pohon pendukung. YAML
+profil bersama dan mesin Apothem tidak terpengaruh.
+
+Pada instalasi yang dibuat oleh rilis sebelumnya, yang menulis server milik
+profil di bawah `auxiliary.mcp`, blok tersebut juga dihapus ketika blok itu
+masih memuat persis apa yang ditulis rilis tersebut, sebagaimana dirender dari
+profil bersama di `~/.config/apothem/profile.yaml`. Ini adalah aturan yang sama
+dengan yang diterapkan `apothem update`, sehingga mencopot tanpa memperbarui
+terlebih dahulu tidak meninggalkan blok usang. Blok yang telah Anda sunting,
+atau blok yang tidak memiliki profil bersama yang dapat dibaca sebagai
+pembanding, tetap di tempatnya, dan pengaturan `auxiliary` Anda yang lain
+selalu tetap ada.
 
 ## Gerbang konformitas
 
@@ -82,12 +112,18 @@ python -m apothem.conformity.gate --all .
 
 | Gejala | Perbaikan |
 |---------|-----|
-| File konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness hermes` |
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness hermes` |
 | Verifikasi gagal | Jalankan `apothem update --harness hermes`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness hermes` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness hermes` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
-| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis file. |
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

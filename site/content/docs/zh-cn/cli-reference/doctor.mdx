@@ -2,52 +2,84 @@
 title: "doctor"
 description: "apothem doctor 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "9f6e0ade5485e0a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-为 Apothem 安装运行系统诊断。
+检查已安装内容的健康状况。[`apothem verify`](/docs/cli-reference/verify) 检查单个指定的工具，而 `doctor` 一次性检查每个已安装的工具以及共享配置档案。
 
 ## 概要
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-检查 Apothem 安装并报告每个已注册环境适配器的状态。当存在共享配置文件时，会依据
-随附的 schema 对其进行校验——而不仅仅是检查其是否存在——因此格式错误的配置文件会
-作为诊断失败暴露出来，而非绿色的"已找到"。JSON 输出包含一个 `profile_valid` 字段
-（`true` / `false`，当不存在配置文件时为 `null`）以及校验失败时的 `profile_error`
-字段。所有检查通过时退出码为 0，当有一个或多个环境未安装，或存在的配置文件未通过
-schema 校验时退出码为 1。
+## 检查内容
+
+- **共享配置档案。** 存在的配置档案会依据打包的模式进行校验；格式错误的配置档案会以其诊断代码判定为失败。缺失的配置档案会被报告，而不判定为失败（`install` 会创建一个）。
+- **仅限已安装的工具。** 未安装的工具被报告为 `not_installed`，且不算失败，因此一台只有一个健康工具的机器也会通过。当 `--project` 指明项目范围工具的根目录时，这些工具会被检查；没有它时，它们被报告为 `needs_project`。
+- **验证。** 每个已安装的工具都必须通过与 [`verify`](/docs/cli-reference/verify) 相同的检查。
+- **钩子运行时。** 对于每个已通过验证的工具，doctor 会读取其最近一次安装所写入的文件，找到 Apothem 在其中注册的钩子命令，并以一个空操作载荷将每个解释器和钩子脚本各启动一次（已注册的参数加上 `--help`、stdin 上的 `{}`、一个临时工作目录，并移除 `PYTHONPATH`）。不会写入任何内容。缺失的解释器、缺失的脚本或导入时崩溃都会使该检查失败。
+
+每项失败的检查都会给出一个修复方法。没有任何检查失败时退出码为 0，否则为 1。
+
+## JSON 输出
+
+`--json` 保留先前的字段（`version`、`python`、`platform`、`profile_path`、`profile_exists`、`profile_valid`、`harnesses`、`all_ok`，以及配置档案无效时的 `profile_error`），并新增：
+
+- `profile_error_code`——配置档案无效时的配置档案诊断代码。
+- `project`——解析后的 `--project` 根目录，或 `null`。
+- `harnesses[].status`——`ok`、`not_installed`、`needs_project`、`verify_failed`、`hook_failed` 或 `error`；外加 `verified` 和 `hooks`（`{"probed": N, "failed": [...]}`，当不存在安装记录时为 `null`）。
+- `checks`——每项检查一条记录：`code`（例如 `harness.verify_failed`、`hook.start_failed`、`ledger.unreadable` 或某个 `profile.*` 代码）、`status`（`pass`、`fail` 或 `info`）、`harness`、`message` 和 `fix`。
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--project PATH` | 项目范围工具的项目根目录；没有它时，这些工具被报告为 `needs_project`。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 禁用输出中的 ANSI 颜色代码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## 示例
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+默认的 `plain` 格式打印人类可读的诊断信息；`--json`（等同于 `--format json`）在 stdout 上输出一个机器可读的文档，适合通过管道传给其他工具链。
 
 ## 退出码
 
 | 代码 | 含义 |
 |---|---|
-| 0 | 所有检查通过 |
-| 1 | 某个环境未安装，或存在的配置文件未通过 schema 校验 |
+| 0 | 所有检查均通过（尚未安装任何工具时也是如此） |
+| 1 | 某个已安装的工具未通过验证、某个已注册的钩子命令无法启动、某个适配器无法加载或探测，或者存在的配置档案未通过模式校验 |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem harnesses](/docs/cli-reference/harnesses) — 列出并检查已注册的环境
-- [apothem verify](/docs/cli-reference/verify) — 检查特定环境的安装
+- [apothem harnesses](/docs/cli-reference/harnesses)——列出并检查已注册的工具
+- [apothem verify](/docs/cli-reference/verify)——检查特定工具的安装

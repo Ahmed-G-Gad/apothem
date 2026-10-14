@@ -1,8 +1,8 @@
 ---
 title: "OpenCode"
-description: "Adaptor alat Apothem untuk OpenCode (Beta)."
+description: "Adaptor harness Apothem untuk OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "1d807fc5d00e08ca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,9 @@ sourceHash: "4469c3fbcf489bd8"
 apothem install --harness opencode
 ```
 
-Adaptor menulis konfigurasi JSON OpenCode, memasang keterampilan Apothem ke
-permukaan keterampilan OpenCode, mengonversi prompt perintah menjadi berkas
-perintah Markdown OpenCode, dan menormalkan definisi asisten Apothem sebagai
-sub-asisten OpenCode.
+Adaptor menulis konfigurasi JSON OpenCode, memasang skill Apothem ke permukaan
+skill OpenCode, mengonversi prompt command menjadi berkas command Markdown
+OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 
 **Berkas yang ditulis:**
 
@@ -34,16 +33,38 @@ sub-asisten OpenCode.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor merender `opencode.json` dengan daftar berkas `instructions` yang menunjuk
-ke aturan Apothem yang terpasang, lalu menyebarkan setiap kumpulan bersama Apothem
-ke permukaan native OpenCode atau ke subpohon dukungan milik Apothem. Anak yang
-cocok dan sudah dikelola Apothem dicadangkan sebelum penggantian.
+Adaptor merender `opencode.json` dengan daftar berkas `instructions` yang
+menyebut dokumen profil Anda dan aturan always-on Apothem, lalu menyebarkan
+setiap kohor Apothem bersama ke permukaan native OpenCode atau ke support
+subtree milik Apothem. Anak yang dikelola Apothem dan cocok yang sudah ada
+dicadangkan sebelum penggantian.
 
 ## Catatan kompatibilitas
 
-Aturan dirujuk melalui daftar native `instructions`. Templat dan prompt hook adalah
-material rujukan di bawah `~/.config/opencode/.apothem/support/`; perintah, keterampilan,
-dan definisi asisten menggunakan lokasi penemuan native.
+OpenCode menggabungkan setiap berkas yang disebut daftar `instructions` ke dalam
+setiap sesi ([aturan OpenCode](https://opencode.ai/docs/rules/)). Karena itu,
+daftar tersebut menyebut dokumen profil Anda terlebih dahulu, lalu hanya aturan
+yang `alwaysApply`-nya bernilai `true`, masing-masing dengan satu jalur
+`~/.config/opencode/.apothem/support/rules/<name>.md` eksplisit; OpenCode
+mengekspansi `~/` di awal terhadap direktori home Anda. Aturan yang difilter
+berdasarkan jalur, templat, dan prompt hook tetap terpasang sebagai materi
+rujukan di bawah `~/.config/opencode/.apothem/support/`, tempat aturan, skill,
+atau command yang mengutip salah satunya membacanya sesuai kebutuhan. Command,
+skill, dan definisi helper menggunakan lokasi penemuan native.
+
+Dokumen profil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+membawa identitas dan preferensi Anda dari profil bersama, dan diakhiri dengan
+bagian berkas dukungan Apothem yang menyebutkan direktori absolut di bawah
+`~/.config/opencode/.apothem/support/` yang menjadi acuan resolusi setiap
+sitasi bergaya repositori (`rules/<name>.md`, `templates/...`, `hooks/...`).
+Dokumen ini adalah entri `instructions` pertama, sehingga OpenCode memuatnya di
+setiap sesi.
+
+`opencode.json` yang ditulis oleh rilis sebelumnya mencantumkan satu glob
+`~/.config/opencode/.apothem/support/rules/*.md`, yang memuat setiap aturan.
+`apothem install` dan `apothem update` menggantinya dengan daftar always-on, dan
+`apothem uninstall` menghapus kedua bentuk tersebut. Entri `instructions` milik
+Anda sendiri dipertahankan dalam setiap kasus.
 
 ## Verifikasi
 
@@ -51,10 +72,10 @@ dan definisi asisten menggunakan lokasi penemuan native.
 apothem verify --harness opencode
 ```
 
-Perintah verify memastikan bahwa:
+Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama tersedia.
+2. Semua bidang wajib dari profil bersama hadir.
 3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
 
 ## Pembaruan
@@ -63,8 +84,8 @@ Perintah verify memastikan bahwa:
 apothem update --harness opencode
 ```
 
-Menyegarkan `opencode.json`, perintah native, keterampilan, definisi asisten, dan
-pohon dukungan Apothem.
+Menyegarkan `opencode.json`, command native, skill, definisi helper, dan pohon
+dukungan Apothem.
 
 ## Pencopotan
 
@@ -87,10 +108,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness opencode` |
 | Verifikasi gagal | Jalankan `apothem update --harness opencode`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness opencode` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness opencode` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI

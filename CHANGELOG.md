@@ -446,6 +446,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   gives the same result as on PowerShell 7.2 and later: a valid signature
   passes, a missing maintainer key gets key-import guidance, and an unsigned
   or tampered tag aborts.
+- **Translated release and security pages match their English pages again.**
+  In all eleven translations, the release-recovery runbook still told readers
+  to reset `main` to a safety tag, force-push it, and delete a malformed
+  release and its tag. The English runbook and the release-engineering policy
+  forbid all three: `main` is never force-pushed, and no published tag, GitHub
+  Release or npm version is deleted, moved or reused. The translated policy
+  also lacked its "Release model: additive" subsection, and the translated
+  branch-protection page listed settings that are not live. Those three pages,
+  the release-cycle, solo-maintainer merge and publisher-account runbooks, the
+  runbooks index, the Scorecard posture page and the security index are
+  translated again from their current English text in every language, and the
+  site no longer marks them out of date.
+- **Every translated docs page matches its English page again.** The other 66
+  pages in each language, 726 in all, were translations of older English text.
+  For example, the translated quickstart said `apothem doctor` fails when a
+  harness is not installed, where it now lists that harness and passes, and
+  the translated installer-variables page lacked `APOTHEM_VERIFY`,
+  `APOTHEM_RELEASE_BASE` and `NO_COLOR`. These pages are translated again from
+  their current English text in all eleven languages, and no page is marked out
+  of date. Links to a section of a translated page now reach that section: they
+  had pointed at English heading names the translated pages do not use. The
+  translated source-layout, conformity-gate and pipeline pages now show the
+  generated tables their English pages carry.
 
 ### Security
 

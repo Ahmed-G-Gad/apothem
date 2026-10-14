@@ -1,15 +1,15 @@
 ---
 title: "Pengaturan"
-description: "Konfigurasi harness Claude Code di settings.json yang mencakup izin alat, pengabelan hook, variabel lingkungan, dan templat baris status."
+description: "Konfigurasi harness Claude Code di settings.json yang mencakup izin tool, pengabelan hook, variabel lingkungan, dan templat baris status."
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `settings.json` membawa konfigurasi harness Claude Code: pengabelan hook, izin
-alat, variabel lingkungan, dan pengaturan baris status.
+tool, variabel lingkungan, dan pengaturan baris status.
 
-Referensi kanonis lengkap ada di
+Referensi kanonik lengkap berada di
 [settings-reference.md](/docs/reference/settings-reference). Halaman ini meringkas kontraknya
 dan menunjuk ke referensi yang lebih mendalam.
 
@@ -17,14 +17,42 @@ dan menunjuk ke referensi yang lebih mendalam.
 
 | Bagian | Tujuan |
 |---------|---------|
-| `permissions` | Daftar putih dan daftar hitam alat per matcher |
-| `hooks` | Tabel perintah hook berkunci-peristiwa (pengabelan kanonis) |
+| `permissions` | Daftar putih dan daftar hitam tool per matcher |
+| `hooks` | Tabel perintah hook berkunci peristiwa (pengabelan kanonik) |
 | `env` | Variabel lingkungan per sesi |
 | `statusLine` | Templat baris status yang dirender host |
 
 ## Invarian templat tunggal
 
-Adaptor Claude Code mengirimkan satu templat `settings.json`. Perintah hook
-menggunakan bentuk exec (`command` plus `args`) alih-alih string perintah khusus
-shell, sehingga perilaku lintas-OS ditinjau di dalam satu berkas. Entri izin baru
-dan peristiwa hook mendarat di berkas itu secara atomik.
+Adapter Claude Code mengirimkan satu templat `settings.json`. Perintah hook
+menggunakan bentuk exec (`command` ditambah `args`) alih-alih string perintah
+khusus shell, sehingga perilaku lintas OS ditinjau di dalam satu berkas. Entri
+izin dan peristiwa hook yang baru masuk ke berkas tersebut secara atomik.
+
+## Menggabungkan ke dalam berkas pengaturan Anda sendiri
+
+`settings.json` juga merupakan berkas Anda. Instalasi menggabungkan templat ke
+dalamnya alih-alih menggantinya, dan mencatat di ledger instalasi
+(`~/.apothem/state/<harness>/ledger.jsonl`) secara persis kunci dan entri daftar
+mana yang ditambahkannya:
+
+- `permissions.allow` dan `permissions.deny` digabungkan sebagai union: aturan
+  Anda tetap berada di depan dan aturan Apothem ditambahkan di belakangnya.
+  Aturan deny yang Anda tulis selalu dipertahankan, dan Claude Code menerapkan
+  aturan deny sebelum aturan allow.
+- Handler hook Anda sendiri tetap di tempatnya. Sebuah handler dianggap milik
+  Apothem hanya jika handler tersebut menjalankan skrip yang dipasang Apothem di
+  bawah root harness, sehingga handler yang memanggil `hooks/dispatch.py` lain
+  adalah milik Anda.
+- Instalasi ulang hanya mengganti apa yang ditambahkan Apothem pada instalasi
+  sebelumnya, sehingga entri yang tidak lagi ada di templat akan dihapus dan
+  entri yang Anda tambahkan dipertahankan.
+- Pencopotan hanya menghapus entri yang dicatat ledger sebagai milik Apothem.
+  Aturan yang kebetulan sama dengan salah satu aturan Apothem (misalnya `Read`
+  dalam daftar `allow` Anda sendiri sebelum instalasi pertama) tetap ada. Berkas
+  tersebut hanya dihapus ketika Apothem yang membuatnya dan tidak ada lagi milik
+  Anda yang tersisa di dalamnya.
+
+Aturan yang sama berlaku untuk berkas pengaturan lain yang digabungkan oleh
+Apothem, seperti peta server MCP di `settings.json` milik Qwen Code dan
+`opencode.json` milik OpenCode.

@@ -1,35 +1,39 @@
 ---
 title: "出力スタイル"
-description: "操作者トーンのプロファイル（シニアアーキテクト、簡潔エンジニア、フォレンジック監査者）。/output-style コマンドでセッションごとに有効化される。"
+description: "/output-style コマンドでセッションごとに有効化される、オペレーター向けトーンのプロファイル（シニアアーキテクト、簡潔なエンジニア、フォレンジック監査者）。"
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-出力スタイルプロファイルは `src/apothem/output-styles/` 配下に存在し、スタイルごとの
-操作者トーンガイダンスを保持します。ホストのハーネスランタイムは、
-`/output-style <name>` を介してスタイルをセッションごとに有効化します。
+出力スタイルのプロファイルは `src/apothem/output-styles/` 配下にあり、スタイルごとのオペレーター向けトーンのガイダンスを保持します。ホストのハーネスは、`/output-style <name>` によってセッション単位でスタイルを有効にします。
 
-## 規約上のプロファイル
+## 正規のプロファイル
 
 | プロファイル | ファイル | トーン |
 |---------|------|------|
-| デフォルトアーキテクト | `src/apothem/output-styles/default-architect.md` | シニアソフトウェアアーキテクトのトーン（デフォルト） |
-| 簡潔エンジニア | `src/apothem/output-styles/concise-engineer.md` | 短文のエンジニアリングトーン |
-| フォレンジック監査者 | `src/apothem/output-styles/forensic-auditor.md` | 発見ごとの監査トーン |
+| デフォルト | `src/apothem/output-styles/default.md` | 他のすべてのスタイルが上乗せする基準のトーン |
+| デフォルトアーキテクト | `src/apothem/output-styles/default-architect.md` | シニアソフトウェアアーキテクトのトーン |
+| 簡潔なエンジニア | `src/apothem/output-styles/concise-engineer.md` | 短い形式のエンジニアリングのトーン |
+| フォレンジック監査者 | `src/apothem/output-styles/forensic-auditor.md` | 検出結果を 1 件ずつ扱う監査のトーン |
 
-## Frontmatter 契約
+## スタイルのインストール先
+
+`apothem install --harness claude-code` は、スタイルを `~/.claude/output-styles/` にコピーします。Claude Code プラグインは同じファイルを自身の `output-styles/` フォルダーで出荷しており、Claude Code はこのフォルダーをプラグインの出力スタイルとしてスキャンします（[プラグインリファレンス](https://code.claude.com/docs/en/plugins-reference)）。そのため、プラグインをインストールするだけでスタイルを選択できます。他のハーネスには出力スタイルの面がないため、他のインストールではスタイルは出荷されません。
+
+## フロントマターの契約
 
 ```yaml
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
+`name` と `description` は必須です。出荷されるすべてのスタイルは、`keep-coding-instructions: true` も設定しています。Claude Code は、このキーが `true` でない限り、組み込みのソフトウェアエンジニアリングの指示（変更の範囲の決め方、コメントの書き方、作業の検証方法）をカスタム出力スタイルから除外します。このキーのデフォルトは `false` です。
+Apothem のスタイルは、作業のやり方ではなく作業の提示のしかたを変えるものなので、これらの指示を保持します。[Claude Code の出力スタイルのリファレンス](https://code.claude.com/docs/en/output-styles)を参照してください。
+
 ## 新しいプロファイルの作成
 
-`src/apothem/output-styles/` 配下に規約上の frontmatter を備えた新しい `<name>.md`
-ファイルを作成し、本文でトーンを宣言し、次のセッションの開始時に
-`/output-style <name>` を呼び出して批准します。
+`src/apothem/output-styles/` 配下に、正規のフロントマター（スタイルがエンジニアリング作業向けでない場合を除き `keep-coding-instructions: true` を含む）を持つ新しい `<name>.md` ファイルを作成し、本文でトーンを宣言し、次のセッションの開始時に `/output-style <name>` を呼び出して承認します。

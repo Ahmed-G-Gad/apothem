@@ -1,90 +1,123 @@
 ---
 title: "دليل تشغيل دورة الإصدار"
-description: "سير عمل إصدار كامل من البوابات المحلية مرورًا بإصدار GitHub موقَّع وصولًا إلى إرسال النشر الاختياري إلى npm."
+description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى التشغيل اليدوي الاختياري لنشر npm."
 machineTranslated: true
-sourceHash: "aee761a8994b9503"
+sourceHash: "2373679e2d500c4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يقود دليل التشغيل هذا إصدار <bdi>`vX.Y.Z`</bdi> لـ<bdi>`apothem`</bdi> من
-شجرة عمل نظيفة إلى أسطح توزيع مُتحقَّق منها. كُتب الإجراء للمشرف الذي يستخدم
-<bdi>`gh`</bdi> و<bdi>`git`</bdi> وصدفة طبقة الإصدار؛ وينتهي بصفحة
-<bdi>Release</bdi> مُتحقَّق منها، و<bdi>CHANGELOG</bdi> مُعبَّأ، واختبار
-دخان لمسار التثبيت يؤكد أن كل سطح يواجه المستخدم يستجيب لأمر التثبيت
-المعياري.
+يقود دليل التشغيل هذا إصدار <bdi>`vX.Y.Z`</bdi> من <bdi>`apothem`</bdi> من شجرة عمل
+نظيفة إلى أسطح توزيع مُتحقَّق منها. كُتب الإجراء للمشرف الذي يستخدم <bdi>`gh`</bdi>
+و<bdi>`git`</bdi> وصدفة طبقة الإصدار؛ وينتهي بصفحة إصدار مُتحقَّق منها،
+و<bdi>CHANGELOG</bdi> مُدوَّن، واختبار دخان لمسار التثبيت يؤكّد أن كل سطح يواجه
+المستخدم يستجيب لأمر التثبيت المرجعي.
 
-شكل الإصدار **وسم واحد، مرحلتان**. وسم إصدار موقَّع واحد على
-<bdi>`main`</bdi> يُشغِّل <bdi>`.github/workflows/release.yml`</bdi>، الذي
-يبني ويُوقِّع ويُشهِد ويَنشُر إصدار <bdi>GitHub</bdi> بمجموعة الأدوات
-الكاملة الخاصة به — <bdi>sdist</bdi> و<bdi>wheel</bdi> و<bdi>CycloneDX
-SBOM</bdi> وحُزم <bdi>Sigstore cosign</bdi> ومنشأ <bdi>SLSA-3</bdi> وأرشيفات
-وقت تشغيل المنصة. المرحلة الثانية الاختيارية هي إرسال يدوي لـ<bdi>`publish-npm.yml`</bdi>،
-الذي ينشر <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi> بعد أن
-يصبح <bdi>`scripts/release/check-release-ready.sh`</bdi> أخضر. يُكتب قسم
-<bdi>CHANGELOG</bdi> المُرقَّم بالإصدار جنبًا إلى جنب مع كوميت الوسم؛ يُشغِّل
-المُشغِّل اختبار دخان مسار التثبيت بعد هبوط كلتا المرحلتين.
+نموذج الإصدار **تراكمي**. يضيف كل إصدار كوميتًا واحدًا على <bdi>`main`</bdi> ووسم
+<bdi>`vX.Y.Z`</bdi> واحدًا موقَّعًا ومُعلَّقًا؛ لا يُدفَع أي شيء بالقوة، ولا يُزال
+أي وسم سابق أو إصدار <bdi>GitHub</bdi> سابق أو نسخة <bdi>npm</bdi> سابقة. للمشروع
+ثلاثة إصدارات، لكلٍّ منها وسمه وإصدار <bdi>GitHub</bdi> الخاص به ونسخة <bdi>npm</bdi>
+الخاصة به، وتبقى جميعها منشورة: نسخ <bdi>npm</bdi> غير قابلة للتغيير (لا يمكن أبدًا
+استبدال <bdi>`name@version`</bdi> منشور)، وعمليات التثبيت المقيّدة بنسخة محدّدة
+تعتمد على الوسوم.
 
-## 1. المتطلبات المسبقة
+يبدأ دفعُ الوسم سيرَي عمل. يبني <bdi>`.github/workflows/release.yml`</bdi> إصدار
+<bdi>GitHub</bdi> ويوقّعه ويُصدِر شهاداته وينشره مع مجموعة مُنتَجاته الكاملة:
+<bdi>sdist</bdi>، و<bdi>wheel</bdi>، و<bdi>CycloneDX SBOM</bdi>، وحِزم
+<bdi>Sigstore cosign</bdi>، وإثبات المنشأ <bdi>SLSA-3</bdi>، وأرشيفات بيئة التشغيل
+الخاصة بالمنصّات. وينشر <bdi>`publish-npm.yml`</bdi> الحزمة
+<bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في
+<bdi>npm</bdi>. يصل قسم <bdi>CHANGELOG</bdi> المُرقَّم بالنسخة في كوميت الإصدار؛
+ويُشغِّل المُشغِّل اختبار دخان مسار التثبيت بعد انتهاء سيرَي العمل كليهما.
 
-يؤكد المشرف ما يلي قبل الوسم:
+## 1. المتطلّبات المسبقة
 
-- **شجرة العمل.** نظيفة (<bdi>`git status`</bdi> لا يُظهر شيئًا معلَّقًا).
-  كل عمل المزايا الخاص بالإصدار موجود على <bdi>`main`</bdi>.
-- **CI أخضر.** أحدث <bdi>`main`</bdi> يُرجِع <bdi>`gh run list
-  --branch=main --limit=1 --json conclusion --jq '.[0].conclusion'`</bdi>
+يتأكّد المشرف مما يلي قبل وضع الوسم:
+
+- **شجرة العمل.** نظيفة (لا يُظهر <bdi>`git status`</bdi> شيئًا معلّقًا). كل عمل
+  الميزات الخاص بالإصدار موجود على <bdi>`main`</bdi>.
+- **<bdi>CI</bdi> أخضر.** بالنسبة لأحدث <bdi>`main`</bdi>، يُرجِع
+  <bdi>`gh run list --branch=main --limit=1 --json conclusion --jq '.[0].conclusion'`</bdi>
   القيمة <bdi>`success`</bdi>.
-- **الأدوات.** <bdi>`gh`</bdi> (<bdi>GitHub CLI</bdi>) الإصدار 2.40 أو
-  أحدث، مُصادَقًا عليه مقابل <bdi>`ahmed-g-gad`</bdi>؛ و<bdi>`git`</bdi>
-  2.40 أو أحدث مع تحميل مفتاح توقيع <bdi>GPG</bdi> الفرعي؛ ورابط الناشر
-  الموثوق لـ<bdi>npm</bdi> الخاص بـ<bdi>`@ahmed-g-gad/apothem`</bdi> نشط
-  (مُتحقَّق منه وفق
+- **الأدوات.** <bdi>`gh`</bdi> (<bdi>GitHub CLI</bdi>) بالنسخة 2.40 أو أحدث،
+  مُصادَق عليه لحساب <bdi>`ahmed-g-gad`</bdi>؛ و<bdi>`git`</bdi> 2.40 أو أحدث مع
+  تحميل مفتاح توقيع <bdi>GPG</bdi> الفرعي؛ وربط الناشر الموثوق في <bdi>npm</bdi>
+  للحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> فعّال (مُتحقَّق منه وفق
   [دليل تشغيل إعداد حساب الناشر](/docs/runbooks/publisher-account-setup)).
-- **مراسي الإصدار متوائمة.** سلسلة الإصدار المُعلَنة في
-  <bdi>`pyproject.toml`</bdi> تطابق الوسم المخطط له دون البادئة
-  <bdi>`v`</bdi>. تحقَّق:
+- **مراسي النسخة متوائمة.** سلسلة النسخة المُعلَنة في <bdi>`pyproject.toml`</bdi>
+  تطابق الوسم المُخطَّط له دون البادئة <bdi>`v`</bdi> (يضبطها القسم 2.1، مع كل
+  مرساة أخرى). تحقّق:
 
   ```bash
   grep '^version' pyproject.toml
   ```
 
-  المخرجات المتوقعة (لإصدار <bdi>`vX.Y.Z`</bdi>؛ النوائب تُمثِّل وسم الإصدار
-  الجاري):
+  المخرجات المتوقّعة (لإصدار <bdi>`vX.Y.Z`</bdi>؛ العناصر النائبة تُمثّل وسم الإصدار الجاري):
 
   ```text
   version = "X.Y.Z"
   ```
 
-- **قسم CHANGELOG مُجهَّز.** يحمل <bdi>`CHANGELOG.md`</bdi> قسمًا مُرقَّمًا
-  بالإصدار تحت عناوين <bdi>Keep-a-Changelog</bdi>. يُحدِّث المشرف التاريخ
-  ونقاط الإصدار في الكوميت نفسه الذي يُهبِط الوسم.
+- **مدخلات <bdi>CHANGELOG</bdi> مُجهَّزة.** تقع نقاط الإصدار تحت
+  <bdi>`## [Unreleased]`</bdi> ضمن عناوين <bdi>Keep-a-Changelog</bdi>؛ ويحوّلها
+  القسم 2.1 إلى قسم النسخة المؤرَّخ في الكوميت الذي يحمل الوسم.
 
 ## 2. الوسم والتشغيل
 
 ### 2.1 تأليف كوميت الإصدار
 
-يُهبِط كوميت الإصدار تغييرَين:
-
-- قسم إصدار <bdi>`CHANGELOG.md`</bdi> مُؤرَّخ بتاريخ <bdi>UTC</bdi> الفعلي
-  للإصدار.
-- إصدار <bdi>`pyproject.toml`</bdi> مرفوع إلى الإصدار الجديد (فقط عندما يحمل
-  الكوميت السابق على <bdi>`main`</bdi> بالفعل تثبيت الإصدار السابق وتلزم
-  زيادة جديدة؛ قد يهبط الكوميت أيضًا أثناء دورة رفع الإصدار قبل وقت الوسم
-  بأيام).
-
-كوميت مثال:
+تعيش النسخة في أكثر من اثني عشر ملفًا، لذا لا تعدّلها يدويًا. أمر واحد يُحرّكها
+جميعًا:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# Author CHANGELOG and pyproject.toml edits via Edit tool, then:
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+يُحدّث <bdi>`bump_version.py`</bdi> كل مراسي النسخة معًا:
+
+- كل بيان تحزيم، وامتداد، وإضافة، وسوق إضافات، إضافةً إلى ملف الاستشهاد (النسخة
+  وتاريخ الإصدار). القائمة الكاملة:
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- <bdi>`CHANGELOG.md`</bdi>: تصبح مدخلات <bdi>`[Unreleased]`</bdi> قسمًا مؤرَّخًا
+  <bdi>`## [X.Y.Z]`</bdi>، ويقارن <bdi>`[Unreleased]`</bdi> بدءًا من
+  <bdi>`vX.Y.Z`</bdi>، ويُضاف رابط <bdi>`[X.Y.Z]`</bdi>.
+- <bdi>`SECURITY.md`</bdi>: يحصل الإصدار الثانوي الجديد على صفّ مدعوم
+  <bdi>`X.Y.x`</bdi>. أمّا بقاء الإصدارات الثانوية الأقدم مُدرَجة فقرارك؛ ويطبع
+  السكربت تذكيرًا.
+
+ثم يُعيد توليد الأشجار المشتقّة: حزمة إضافة <bdi>Claude Code</bdi>، واللقطات
+الذهبية لفارق السلوك، وصفحات مرجع الوثائق وسجلّ التغييرات. مرِّر
+<bdi>`--dry-run`</bdi> لسرد التغييرات أولًا، أو <bdi>`--date YYYY-MM-DD`</bdi> لضبط
+تاريخ الإصدار (الافتراضي: تاريخ اليوم بتوقيت <bdi>UTC</bdi>)، أو
+<bdi>`--no-regen`</bdi> لتخطّي إعادة التوليد. يرفض السكربت النسخة المشوّهة أو خفض
+النسخة، وإعادة تشغيله بالنسخة الحالية لا تفعل سوى إعادة مواءمة المراسي الشاردة.
+
+راجِع الفرق، ثم أنشئ الكوميت:
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```
 
-تُوقِّع الراية <bdi>`-S`</bdi> الكوميت بمفتاح <bdi>GPG</bdi>. يُشغِّل الدفع
-مصفوفة <bdi>CI</bdi> القياسية (<bdi>lint</bdi> و<bdi>test</bdi>
-و<bdi>build</bdi>)؛ انتظر الأخضر قبل الوسم.
+تُوقّع الراية <bdi>`-S`</bdi> الكوميت بمفتاح <bdi>GPG</bdi>. يُطلِق الدفع مصفوفة
+<bdi>CI</bdi> القياسية (<bdi>lint</bdi>، <bdi>test</bdi>، <bdi>build</bdi>)؛ انتظر
+النتيجة الخضراء قبل وضع الوسم.
 
 ### 2.2 توقيع الوسم ودفعه
 
@@ -93,9 +126,9 @@ git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-يُنتج تركيب <bdi>`-a -s`</bdi> وسمًا مُعلَّقًا موقَّعًا بـ<bdi>GPG</bdi>.
-يُشغِّل الدفع <bdi>`.github/workflows/release.yml`</bdi>، الذي يبني ويُوقِّع
-ويُشهِد ويَنشُر.
+يُنتِج الجمع بين <bdi>`-a -s`</bdi> وسمًا مُعلَّقًا موقَّعًا بـ <bdi>GPG</bdi>.
+يُطلِق الدفع <bdi>`.github/workflows/release.yml`</bdi>، الذي يبني ويوقّع ويُصدِر
+الشهادات وينشر.
 
 ### 2.3 تأكيد اكتمال سير عمل الإصدار
 
@@ -103,151 +136,170 @@ git push origin vX.Y.Z
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-يُشغِّل سير العمل البناء (<bdi>sdist + wheel</bdi>)، وتوليد
-<bdi>SBOM</bdi> (<bdi>CycloneDX</bdi>)، وتوقيع <bdi>cosign</bdi> دون مفتاح،
-وتوليد منشأ <bdi>SLSA-3</bdi> والتحقق منه، وبناء أرشيفات المنصة
-(<bdi>darwin / linux / windows</bdi>)، وتوقيع الأرشيفات بملف بيان
-<bdi>`SHA256SUMS`</bdi> مُجمَّع، ونشر إصدار <bdi>GitHub</bdi> النهائي. يفحص
-المشرف سجل مهمة <bdi>`publish GitHub Release`</bdi> بحثًا عن تأكيدات رفع
-الأصول.
+يُشغِّل سير العمل البناء (<bdi>sdist + wheel</bdi>، ثم <bdi>CycloneDX SBOM</bdi>
+لتلك التوزيعات يُكتَب بجانبها)، وتوقيع <bdi>cosign</bdi> بلا مفاتيح، وتوليد إثبات
+المنشأ <bdi>SLSA-3</bdi> والتحقّق منه، وبناء أرشيفات المنصّات
+(<bdi>darwin / linux / windows</bdi>)، وتوقيع الأرشيفات مع بيان
+<bdi>`SHA256SUMS`</bdi> مُجمَّع، والنشر النهائي لإصدار <bdi>GitHub</bdi>. يفحص
+المشرف سجلّ مهمة <bdi>`publish GitHub Release`</bdi> بحثًا عن تأكيدات رفع الأصول.
 
-### 2.4 إرسال نشر npm (مرحلة اختيارية)
+### 2.4 تأكيد نشر <bdi>npm</bdi>
 
-بعد أن يصبح إصدار <bdi>GitHub</bdi> وبوابة الجاهزية أخضرَين:
+يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi>. وافِق على عملية النشر إلى
+بيئة <bdi>`release`</bdi> عند المطالبة. ينشر سير العمل
+<bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق
+في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع.
+ثم تأكّد من الجاهزية:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-اعتمد نشر بيئة <bdi>`npmjs`</bdi> عند المطالبة. يَنشُر سير العمل
-<bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر
-<bdi>npm Trusted Publishing</bdi> (<bdi>OIDC</bdi>)؛ لا يُخزَّن أي رمز سجل
-في المستودع.
+لإعادة النشر بعد تشغيل فاشل، شغِّل سير العمل يدويًا للوسم نفسه
+(<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>). يتخطّى سير العمل
+النشر عندما تكون النسخة موجودة بالفعل في السجلّ، لأن نسخ <bdi>npm</bdi> غير قابلة
+للتغيير.
 
 ## 3. أسطح التوزيع
 
-يملك كل سطح أمر تحقق يجيب على «هل هبط الإصدار هنا؟»:
+لكل سطح أمر تحقّق يجيب عن السؤال «هل وصل الإصدار إلى هنا؟»:
 
-| # | السطح | الأداة | التحقق |
+| # | السطح | المُنتَج | التحقّق |
 |---|---|---|---|
-| 1 | إصدار GitHub (توزيعات Python) | <bdi>`apothem-X.Y.Z.tar.gz`</bdi> (<bdi>sdist</bdi>) + <bdi>`apothem-X.Y.Z-py3-none-any.whl`</bdi> | <bdi>`gh release view vX.Y.Z --json assets --jq '.assets[].name'`</bdi> يتضمن اسمَي الملفَّين كليهما |
-| 2 | إصدار GitHub (SBOM) | <bdi>`sbom.cdx.json`</bdi> | كما في الصف 1؛ تتضمن قائمة الأصول <bdi>CycloneDX SBOM</bdi> |
-| 3 | إصدار GitHub (التوقيعات) | <bdi>`*.cosign.bundle`</bdi> لكل أداة توزيع؛ <bdi>`*.sig`</bdi> لكل أرشيف؛ <bdi>`SHA256SUMS`</bdi> + <bdi>`SHA256SUMS.sig`</bdi> | <bdi>`cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>`</bdi> يخرج بالقيمة 0 (مع رايات هوية سير العمل) |
-| 4 | إصدار GitHub (المنشأ) | <bdi>`provenance.intoto.jsonl`</bdi> | <bdi>`bash scripts/release/verify-provenance.sh vX.Y.Z`</bdi> يخرج بالقيمة 0 |
-| 5 | إصدار GitHub (أرشيفات المنصة) | <bdi>`apothem-vX.Y.Z-darwin.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-linux.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-windows.zip`</bdi> | تتضمن قائمة الأصول كل أرشيف بالإضافة إلى <bdi>`SHA256SUMS`</bdi> |
-| 6 | npmjs.com | <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> | <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> يُرجِع <bdi>`X.Y.Z`</bdi>؛ <bdi>`npx @ahmed-g-gad/apothem@X.Y.Z --version`</bdi> يطبع <bdi>`apothem X.Y.Z`</bdi> |
-| 7 | Pages (مُثبِّتات السكربت) | <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> على موقع الوثائق | <bdi>`curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1`</bdi> يُرجِع ترويسة السكربت |
+| 1 | إصدار <bdi>GitHub</bdi> (توزيعات <bdi>Python</bdi>) | <bdi>`apothem-X.Y.Z.tar.gz`</bdi> (<bdi>sdist</bdi>) + <bdi>`apothem-X.Y.Z-py3-none-any.whl`</bdi> | يتضمّن خرج <bdi>`gh release view vX.Y.Z --json assets --jq '.assets[].name'`</bdi> اسمَي الملفّين كليهما |
+| 2 | إصدار <bdi>GitHub</bdi> (<bdi>SBOM</bdi>) | <bdi>`sbom.cdx.json`</bdi> + <bdi>`sbom.cdx.json.cosign.bundle`</bdi> | تتضمّن قائمة الأصول كليهما؛ وقيمة <bdi>`metadata.component.purl`</bdi> في الـ <bdi>SBOM</bdi> هي <bdi>`pkg:pypi/apothem@X.Y.Z`</bdi>، وتتضمّن مكوّناته كل حزمة في <bdi>`src/apothem/_vendor/vendor.txt`</bdi> |
+| 3 | إصدار <bdi>GitHub</bdi> (التوقيعات) | ملف <bdi>`<asset>.cosign.bundle`</bdi> واحد لكلٍّ من الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وامتداد <bdi>VS Code</bdi> وكل أرشيف منصّة و<bdi>`SHA256SUMS`</bdi> (تُسمّي الإصدارات السابقة حِزم الأرشيفات و<bdi>`SHA256SUMS`</bdi> بالاسم <bdi>`<asset>.sig`</bdi>) | يخرج <bdi>`cosign verify-blob`</bdi> بالقيمة 0 مع الهوية الدقيقة الواردة في القسم 5.5 |
+| 4 | إصدار <bdi>GitHub</bdi> (إثبات المنشأ) | <bdi>`provenance.intoto.jsonl`</bdi> | يخرج <bdi>`bash scripts/release/verify-provenance.sh <download-dir>`</bdi> بالقيمة 0 (القسم 5.5) |
+| 5 | إصدار <bdi>GitHub</bdi> (أرشيفات المنصّات) | <bdi>`apothem-vX.Y.Z-darwin.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-linux.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-windows.zip`</bdi> | تتضمّن قائمة الأصول كل أرشيف إضافةً إلى <bdi>`SHA256SUMS`</bdi>. أرشيفا <bdi>darwin</bdi> و<bdi>linux</bdi> هما البايتات نفسها تحت اسمين (بيئة التشغيل محايدة تجاه المنصّة؛ ولا يختار <bdi>`--platform`</bdi> إلا بين <bdi>tar.gz</bdi> و<bdi>zip</bdi>)، لذا تُظهر سطورهما في <bdi>`SHA256SUMS`</bdi> بصمةً واحدة مرّتين |
+| 6 | إصدار <bdi>GitHub</bdi> (امتداد <bdi>VS Code</bdi>) | <bdi>`apothem.vsix`</bdi> + <bdi>`apothem.vsix.cosign.bundle`</bdi> | تتضمّن قائمة الأصول كليهما؛ ويُثبّته <bdi>`code --install-extension apothem.vsix`</bdi>. الإصدارات التي سبقت تحزيم سير عمل الإصدار للامتداد لا تحمل أيًّا منهما |
+| 7 | <bdi>npmjs.com</bdi> | <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> | يُرجِع <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> القيمة <bdi>`X.Y.Z`</bdi>؛ ويطبع <bdi>`npx @ahmed-g-gad/apothem@X.Y.Z --version`</bdi> النص <bdi>`Apothem, version X.Y.Z`</bdi> |
+| 8 | <bdi>Pages</bdi> (مُثبِّتات السكربت) | <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> على موقع الوثائق | يُرجِع <bdi>`curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1`</bdi> ترويسة السكربت |
 
-إصدار <bdi>GitHub</bdi> هو سطح الأدوات المعياري؛ وحزمة <bdi>npm</bdi>
-ومُثبِّتات السكربت هي مسارات التثبيت المُركَّبة فوقه. نشر <bdi>npm</bdi> هو
-عمدًا المرحلة الأخيرة.
+إصدار <bdi>GitHub</bdi> هو سطح المُنتَجات المرجعي؛ وحزمة <bdi>npm</bdi> ومُثبِّتات
+السكربت هي مسارات التثبيت المبنيّة فوقه. ويعمل نشر <bdi>npm</bdi> بجانب سير عمل
+الإصدار على دفع الوسم نفسه.
 
-## 4. انضباط CHANGELOG
+## 4. انضباط <bdi>CHANGELOG</bdi>
 
-يحمل <bdi>`CHANGELOG.md`</bdi> قسمًا واحدًا لكل إصدار وفق اتفاقية
+يحمل <bdi>`CHANGELOG.md`</bdi> قسمًا واحدًا لكل إصدار وفق اصطلاح
 <bdi>Keep-a-Changelog</bdi>. تعديل <bdi>CHANGELOG</bdi> في كوميت الإصدار:
 
-- يؤكد أن قسم الإصدار يستخدم العنوان <bdi>`## [X.Y.Z] — YYYY-MM-DD`</bdi>.
-- يؤكد أن العناوين القياسية — <bdi>Added</bdi>، <bdi>Changed</bdi>،
-  <bdi>Deprecated</bdi>، <bdi>Removed</bdi>، <bdi>Fixed</bdi>،
-  <bdi>Security</bdi> — تُستخدَم حيثما ينطبق. تُسقَط العناوين الفارغة من
-  الملف المُعروَض.
-- يلتقط **القدرات**، لا التنفيذ. لغة المجال فقط؛ لا مراجع داخلية للخطة؛ لا
-  تجزئات كوميت؛ لا مُعرِّفات خطة أو مرحلة.
+- يتأكّد من أن قسم النسخة يستخدم العنوان <bdi>`## [X.Y.Z] - YYYY-MM-DD`</bdi>
+  (بشَرطة قصيرة؛ يكتبه <bdi>`bump_version.py`</bdi>، ويطابق
+  <bdi>`extract_release_notes.py`</bdi> البادئة <bdi>`## [X.Y.Z]`</bdi>).
+- يتأكّد من استخدام العناوين القياسية — <bdi>Added</bdi>، <bdi>Changed</bdi>،
+  <bdi>Deprecated</bdi>، <bdi>Removed</bdi>، <bdi>Fixed</bdi>، <bdi>Security</bdi> —
+  حيثما ينطبق. تُسقَط العناوين الفارغة من الملف المعروض.
+- يلتقط **القدرات**، لا التنفيذ. لغة المجال فقط؛ بلا مراجع داخلية للخطط؛ بلا
+  بصمات كوميتات؛ بلا مُعرِّفات خطط أو مراحل.
 
-قسم <bdi>CHANGELOG</bdi> الذي نجا من مراجعة المشرف يُقرأ بوصفه مرساة
-ملاحظات الإصدار لسرد الإعلان.
+قسم <bdi>CHANGELOG</bdi> الذي اجتاز مراجعة المشرف يُقرأ بوصفه مرساة ملاحظات
+الإصدار لسرد الإعلان.
 
 ## 5. اختبار دخان مسار التثبيت
 
-بعد اكتمال كلتا المرحلتين، يُشغِّل المشرف اختبار الدخان. اختبار الدخان هو
-التحقق المعياري من أن أوامر التثبيت التي تواجه المستخدم تستجيب.
+بعد اكتمال المرحلتين كلتيهما، يُشغِّل المشرف اختبار الدخان. اختبار الدخان هو
+التحقّق المرجعي من أن أوامر التثبيت التي تواجه المستخدم تستجيب.
 
-### 5.1 إضافة Claude Code
+### 5.1 إضافة <bdi>Claude Code</bdi>
 
 ```text
 /plugin marketplace add ahmed-g-gad/apothem
 /plugin install apothem@apothem
 ```
 
-المتوقع: تُثبَّت الإضافة وتصبح أوامر <bdi>`apothem`</bdi> متاحة داخل
+المتوقّع: تُثبَّت الإضافة وتصبح أوامر <bdi>`apothem`</bdi> متاحة داخل
 <bdi>Claude Code</bdi>.
 
-### 5.2 Node.js (npx)
+### 5.2 <bdi>Node.js</bdi> (<bdi>npx</bdi>)
 
 ```bash
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-المخرجات المتوقعة: <bdi>`apothem X.Y.Z`</bdi>.
+المخرجات المتوقّعة: <bdi>`Apothem, version X.Y.Z`</bdi>.
 
-### 5.3 مُثبِّت سكربت بخطوة واحدة (POSIX)
+### 5.3 مُثبِّت السكربت بخطوة واحدة (<bdi>POSIX</bdi>)
 
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-المخرجات المتوقعة: <bdi>`apothem X.Y.Z`</bdi>.
+المخرجات المتوقّعة: <bdi>`Apothem, version X.Y.Z`</bdi>.
 
-### 5.4 مُثبِّت سكربت بخطوة واحدة (Windows)
+### 5.4 مُثبِّت السكربت بخطوة واحدة (<bdi>Windows</bdi>)
 
 ```powershell
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-المخرجات المتوقعة: <bdi>`apothem X.Y.Z`</bdi>.
+المخرجات المتوقّعة: <bdi>`Apothem, version X.Y.Z`</bdi>.
 
-### 5.5 التحقق من الأدوات (دليل سلسلة التوريد)
+### 5.5 التحقّق من المُنتَجات (أدلّة سلسلة التوريد)
+
+نزِّل كل الأصول إلى دليل فارغ، ثم تحقّق. هوية الشهادة هي سير عمل الإصدار عند هذا
+الوسم بالضبط. فحوص الهوية حسّاسة لحالة الأحرف، وتحمل الشهادات اسم المالك كما
+يُبلغ عنه <bdi>GitHub</bdi>، أي <bdi>`Ahmed-G-Gad`</bdi>، لذا يفشل اسم المالك
+المكتوب بأحرف صغيرة.
 
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-المتوقع: يخرج كلا التحققَين بالقيمة 0.
+المتوقّع: <bdi>`Verified OK`</bdi>، و<bdi>`PASSED: SLSA verification passed`</bdi>،
+و<bdi>`verify-provenance: chain OK (3 of 3 layers verified)`</bdi>. يفحص السكربت
+<bdi>`SHA256SUMS`</bdi>، وكل حزمة توقيع، وإثبات المنشأ في تشغيل واحد؛ ويستنتج
+الوسم من اسم الـ <bdi>wheel</bdi> (ويتجاوزه <bdi>`--tag vX.Y.Z`</bdi>).
 
-يُنتج اختبار الدخان صفًا واحدًا <bdi>PASS / FAIL</bdi> لكل سطح؛ سجِّل الصفوف
-في سجل إصدار المشرف.
+يُنتِج اختبار الدخان صفًّا من سطر واحد <bdi>PASS / FAIL</bdi> لكل سطح؛ سجِّل الصفوف
+في سجلّ إصدار المشرف.
 
-## 6. التعافي من الفشل
+## 6. الاسترداد من الفشل
 
-يملك سير عمل الإصدار أنماط فشل موثَّقة لمحرك الإصدار وناشر <bdi>npm</bdi>:
+لسير عمل الإصدار أنماط فشل موثّقة لمحرّك الإصدار ولناشر <bdi>npm</bdi>:
 
-| الفشل | التشخيص | التعافي |
+| الفشل | التشخيص | الاسترداد |
 |---|---|---|
-| رُفض دفع الوسم (فشل التوقيع) | <bdi>`git push origin vX.Y.Z`</bdi> يُرجِع <bdi>`error: failed to push some refs`</bdi> برسالة متعلقة بـ<bdi>GPG</bdi> | تحقَّق من تحميل مفتاح <bdi>GPG</bdi> الفرعي (<bdi>`gpg --list-secret-keys --keyid-format=long`</bdi>)؛ أعِد الوسم محليًا بـ<bdi>`-s`</bdi> بعد إصلاح حلقة المفاتيح؛ أعِد الدفع |
-| فشل مهمة <bdi>`release.yml`</bdi> في مرحلة واحدة | <bdi>`gh run view <run-id> --log`</bdi> يُسمِّي المهمة الفاشلة (<bdi>build / sbom / sign / provenance / archive / publish</bdi>) | أعِد تشغيل المهمة الفاشلة وحدها عبر <bdi>`gh run rerun <run-id> --failed`</bdi>؛ إذا تكرر الفشل، أصلِح مُدخَل المهمة عند مصدره قبل إعادة الوسم |
-| فشل التحقق من منشأ <bdi>SLSA</bdi> | تخرج مهمة <bdi>`verify SLSA provenance artifact`</bdi> بقيمة غير صفرية | افحص أداة المنشأ بحثًا عن عدم تطابق تجزئة الموضوع؛ أعِد البناء من الوسم نفسه — يرتبط المنشأ بتجزئات الأدوات الدقيقة، لذا تتطلب أي إعادة توليد للأداة إعادة تشغيل كاملة لسير العمل |
-| رُفض النشر على <bdi>npmjs.com</bdi> | تخرج مهمة <bdi>npm</bdi> بقيمة غير صفرية أثناء <bdi>`npm publish`</bdi>؛ خطأ سجل <bdi>`404`</bdi> أثناء <bdi>`PUT`</bdi> هو عدم تطابق في التفويض / الناشر الموثوق، لا دليل على أن كود الحزمة مفقود | تحقَّق من أن <bdi>npm Trusted Publishing</bdi> لـ<bdi>`@ahmed-g-gad/apothem`</bdi> يُسمِّي المالك <bdi>`ahmed-g-gad`</bdi> والمستودع <bdi>`apothem`</bdi> وسير العمل <bdi>`publish-npm.yml`</bdi> والإجراء المسموح <bdi>`npm publish`</bdi>؛ أكِّد أن المهمة تعمل بإصدار <bdi>Node</bdi> وأرضية <bdi>OIDC</bdi> لـ<bdi>npm CLI</bdi> المُثبَّتَين في سير العمل |
-| الوسم ظاهر لكن الأصول مفقودة | <bdi>`gh release view vX.Y.Z`</bdi> يُرجِع إصدارًا جذعيًا | أعِد تشغيل مهمة النشر في سير عمل الإصدار؛ إذا بقي الجذع، احذف صفحة الإصدار (<bdi>`gh release delete vX.Y.Z --cleanup-tag`</bdi>) وأعِد الوسم من <bdi>SHA</bdi> نفسه |
+| رُفِض دفع الوسم (فشل التوقيع) | يُرجِع <bdi>`git push origin vX.Y.Z`</bdi> الخطأ <bdi>`error: failed to push some refs`</bdi> مع رسالة متعلّقة بـ <bdi>GPG</bdi> | تحقّق من أن مفتاح <bdi>GPG</bdi> الفرعي مُحمَّل (<bdi>`gpg --list-secret-keys --keyid-format=long`</bdi>)؛ أعِد وضع الوسم محليًا باستخدام <bdi>`-s`</bdi> بعد إصلاح حلقة المفاتيح؛ أعِد الدفع |
+| يتوقّف بناء الإصدار عند <bdi>`Check the plugin version changed with the plugin`</bdi> | يُسمّي سجلّ مهمة البناء الإضافةَ والوسمَ السابق؛ لم يُبنَ أي أصل ولم يُنشَر | تغيّرت حزمة الإضافة منذ الإصدار السابق لكن نسختها لم تتغيّر. احذف الوسم (<bdi>`git push --delete origin vX.Y.Z`</bdi>، <bdi>`git tag -d vX.Y.Z`</bdi>)، وشغِّل <bdi>`python scripts/release/bump_version.py X.Y.Z`</bdi>، وأنشئ الكوميت، ثم وقِّع الوسم وادفعه مجددًا (القسم 2.2). يعمل الفحص نفسه على كل طلب سحب بوصفه تعليقًا تحذيريًا، لذا يظهر هذا عادةً قبل وضع الوسم |
+| تفشل مهمة في <bdi>`release.yml`</bdi> في مرحلة واحدة | يُسمّي <bdi>`gh run view <run-id> --log`</bdi> المهمة الفاشلة (<bdi>build</bdi>، التي تكتب الـ <bdi>SBOM</bdi> أيضًا / <bdi>sign</bdi> / <bdi>provenance</bdi> / <bdi>archive</bdi> / <bdi>publish</bdi>) | أعِد تشغيل المهمة الفاشلة وحدها عبر <bdi>`gh run rerun <run-id> --failed`</bdi>؛ وإذا تكرّر الفشل، أصلِح مُدخَل المهمة عند مصدره قبل إعادة وضع الوسم |
+| يفشل التحقّق من إثبات المنشأ <bdi>SLSA</bdi> | تخرج مهمة <bdi>`verify SLSA provenance artifact`</bdi> بقيمة غير صفرية | افحص مُنتَج إثبات المنشأ بحثًا عن عدم تطابق بصمة الموضوع؛ أعِد البناء من الوسم نفسه — يرتبط إثبات المنشأ ببصمات المُنتَجات الدقيقة، لذا تتطلّب أي إعادة توليد لمُنتَج إعادة تشغيل كاملة لسير العمل |
+| رُفِض النشر على <bdi>npmjs.com</bdi> | تخرج مهمة <bdi>npm</bdi> بقيمة غير صفرية أثناء <bdi>`npm publish`</bdi>؛ والخطأ <bdi>`404`</bdi> من السجلّ أثناء <bdi>`PUT`</bdi> هو عدم تطابق في التفويض / الناشر الموثوق، لا دليل على أن شيفرة الحزمة مفقودة | تحقّق من أن <bdi>npm Trusted Publishing</bdi> للحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> يُسمّي المالك <bdi>`ahmed-g-gad`</bdi>، والمستودع <bdi>`apothem`</bdi>، وسير العمل <bdi>`publish-npm.yml`</bdi>، والإجراء المسموح به <bdi>`npm publish`</bdi>؛ وتأكّد من أن المهمة تعمل بنسخة <bdi>Node</bdi> وبالحدّ الأدنى لدعم <bdi>OIDC</bdi> في <bdi>npm CLI</bdi>، المُثبَّتين في سير العمل |
+| الوسم ظاهر لكن الأصول مفقودة | يُرجِع <bdi>`gh release view vX.Y.Z`</bdi> إصدارًا هيكليًا فارغًا | أعِد تشغيل مهمة النشر في سير عمل الإصدار؛ فهي تُعدِّل الإصدار الموجود وتُعيد رفع كل الأصول. لا تحذف الوسم وتُعِد وضعه إلا عندما لا يكون أي شيء من الوسم قد وصل إلى المستخدمين (لا أصول، ولا نسخة <bdi>npm</bdi>)؛ وإلا فأصلِح إلى الأمام بالإصدار التصحيحي التالي ([دليل تشغيل استرداد الإصدار](/docs/runbooks/release-recovery)، القسم 2) |
 
-إذا فشلت دورة تعافٍ في إهباط سطح خلال تمريرة تشخيصية واحدة، يُسجَّل السطح
-بوصفه فشلًا معروفًا في ملاحظات الإصدار مع رابط للمشكلة المفتوحة؛ ويُوجَّه
-المستخدمون النهائيون إلى الأسطح العاملة بينما يُصلَح السطح المعطوب في إصدار
+إذا أخفقت دورة استرداد في إيصال سطحٍ ما خلال تمريرة تشخيص واحدة، يُسجَّل السطح
+بوصفه فشلًا معروفًا في ملاحظات الإصدار مع رابط إلى المسألة المفتوحة؛ ويُوجَّه
+المستخدمون اللاحقون إلى الأسطح العاملة بينما يُصلَح السطح المعطوب في إصدار
 تصحيحي.
 
-## 7. المراجع المتقاطعة
+## 7. الإحالات المرجعية
 
-- **إعداد الناشر.** [دليل تشغيل إعداد حساب الناشر](/docs/runbooks/publisher-account-setup)
-  يُؤسِّس رابط الناشر الموثوق لـ<bdi>npm</bdi> والمتطلبات المسبقة على جانب
+- **إعداد الناشر.** يُؤسِّس
+  [دليل تشغيل إعداد حساب الناشر](/docs/runbooks/publisher-account-setup)
+  ربط الناشر الموثوق في <bdi>npm</bdi> والمتطلّبات المسبقة على جانب
   <bdi>GitHub</bdi> التي يفترضها دليل التشغيل هذا.
-- **تدفق التعافي.** دليل تشغيل تعافي الإصدار
-  (<bdi>`site/content/docs/runbooks/release-recovery.mdx`</bdi>) يحكم مسار
-  الفشل عبر المراحل أثناء انتقال الإصدار، لا حالات فشل الإصدار لكل سطح
-  المُسمَّاة في §6.
-- **تفعيل Pages.** يتحقق سير العمل <bdi>`publish-static-site.yml`</bdi> من
-  موقع المشروع ويَنشُره على النطاق المخصص؛ ودليل تشغيل تفعيل <bdi>Pages</bdi>
-  (<bdi>`site/content/docs/runbooks/pages-enablement.mdx`</bdi>) هو الإجراء
-  الأعلى الذي أسَّس النطاق المخصص في المقام الأول.
-- **سياسة الإصدارات.**
-  <bdi>`site/content/docs/governance/release-engineering-policy.mdx`</bdi>
-  يحمل سياسة <bdi>SemVer</bdi> + التوقيع + الإهمال التي يحترمها دليل التشغيل
-  هذا.
+- **مسار الاسترداد.** يتبع [دليل تشغيل استرداد الإصدار](/docs/runbooks/release-recovery)
+  النموذج التراكمي نفسه: فهو يستردّ وسمًا أو مرحلة ناشر فاشلة مرحلةً بمرحلة، ويتراجع
+  بإصدار الإصلاح بوصفه نسخة تصحيحية جديدة، لا بحذف وسم أو إصدار أو نسخة
+  <bdi>npm</bdi> منشورة أو إعادة توجيهها أبدًا.
+- **تفعيل <bdi>Pages</bdi>.** يتحقّق سير العمل <bdi>`publish-static-site.yml`</bdi>
+  من موقع المشروع وينشره على النطاق المخصّص؛ ودليل تشغيل تفعيل <bdi>Pages</bdi>
+  (<bdi>`site/content/docs/runbooks/pages-enablement.mdx`</bdi>) هو الإجراء السابق
+  الذي أسّس النطاق المخصّص في المقام الأول.
+- **سياسة ترقيم النسخ.**
+  <bdi>`site/content/docs/governance/release-engineering-policy.mdx`</bdi> يحمل
+  سياسة <bdi>SemVer</bdi> + التوقيع + الإهمال التي يلتزم بها دليل التشغيل هذا.

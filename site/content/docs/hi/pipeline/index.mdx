@@ -2,24 +2,25 @@
 title: "पाइपलाइन कमांड"
 description: "Apothem पाइपलाइन कमांड संदर्भ — /plan प्रवाह और ऑडिट कमांड कैटलॉग।"
 machineTranslated: true
-sourceHash: "e253b99f0f41003c"
+sourceHash: "08dadaaf1914c388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem एक आर्किटेक्चर-जागरूक `/plan` पाइपलाइन, एक तेरह-चरणीय `/research`
-पाइपलाइन, साथ ही एक ग्यारह-कमांड ऑडिट अनुक्रम के साथ आता है — जो हर परियोजना
-को कच्चे गद्य से बहु-अक्षीय रूप से समीक्षित, उत्पादन-स्तरीय कोड तक, और एक कच्चे
-विचार से एक प्रसारित, सहकर्मी-समीक्षित शोध-पत्र तक का एक संरचित मार्ग देता है।
+पाइपलाइन, और साथ में एक ग्यारह-कमांड ऑडिट अनुक्रम शिप करता है — जो हर परियोजना को
+कच्चे गद्य से प्रोडक्शन-स्तरीय, बहु-अक्षीय रूप से समीक्षित कोड तक, और एक कच्चे विचार
+से एक प्रसारित, सहकर्मी-समीक्षित शोध-पत्र तक एक संरचित मार्ग देता है।
 
 ## पाइपलाइन अवलोकन
 
 ```mermaid
 flowchart LR
     accTitle: Plan pipeline command flow
-    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop, and the re-entrant amend stage revises an existing suite and returns it to review.
     A[/plan-spec] --> B[/plan-generate]
     B --> C[/plan-review]
     AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    AM[/plan-amend<br/>re-entrant: revises an existing suite] -.->|re-review| C
     C --> Q{Architecture-bearing suite?}
     Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
     Q -->|no| D[/plan-execute]
@@ -31,39 +32,40 @@ flowchart LR
 
 ## योजना चरण
 
-पाइपलाइन आठ प्रथम-श्रेणी स्लैश कमांड के रूप में आती है, प्रति चरण एक — प्रत्येक
-स्वतंत्र रूप से `/plan-<stage>` के रूप में आह्वान-योग्य।
+पाइपलाइन आठ प्रथम-श्रेणी स्लैश कमांड के रूप में शिप होती है, प्रति चरण एक — प्रत्येक
+को `/plan-<stage>` के रूप में स्वतंत्र रूप से आह्वान किया जा सकता है।
+[/plan](/docs/pipeline/plan) ऑर्केस्ट्रेटर इन्हें एक मिशन से एक निष्पादित सूट तक
+संचालित करता है।
 
 | चरण | भूमिका | स्थिति |
 |-------|------|----------|
-| [/plan-spec](/docs/pipeline/plan-spec) | फ़ोर्ज — गद्य से विनिर्देश तक | प्रारंभिक |
-| [/plan-generate](/docs/pipeline/plan-generate) | जनरेटर — विनिर्देश से प्लान-सूट तक | मध्य-श्रृंखला |
-| [/plan-review](/docs/pipeline/plan-review) | ऑडिटर — फ़ोरेंसिक प्लान ऑडिट | मध्य-श्रृंखला |
-| [/plan-design](/docs/pipeline/plan-design) | आर्किटेक्ट — आर्किटेक्चर-धारक सूट के लिए `_inputs/design.md` | सशर्त गेट |
-| [/plan-execute](/docs/pipeline/plan-execute) | एक्ज़ीक्यूटर — फ़ेज़ निष्पादन | टर्मिनल |
-| [/plan-status](/docs/pipeline/plan-status) | रिपोर्टर — केवल-पढ़ने वाली स्थिति | केवल-पढ़ने |
-| [/plan-audit](/docs/pipeline/plan-audit) | गार्जियन — spec → generate → review का बंद-लूप रैपर | ऑर्थोगोनल (पूर्व-निष्पादन) |
-| /plan-amend | स्टीवर्ड — मौजूदा सूट का पुनः-प्रवेश योग्य संशोधन | पुनः-प्रवेश योग्य |
+| [/plan-spec](/docs/pipeline/plan-spec) | फ़ोर्ज — गद्य से स्पेक तक | आरंभ |
+| [/plan-generate](/docs/pipeline/plan-generate) | जनरेटर — स्पेक से प्लान सूट तक | मध्य-श्रृंखला |
+| [/plan-review](/docs/pipeline/plan-review) | ऑडिटर — फ़ॉरेंसिक प्लान ऑडिट | मध्य-श्रृंखला |
+| [/plan-design](/docs/pipeline/plan-design) | आर्किटेक्ट — आर्किटेक्चर-प्रभावी सूट के लिए `_inputs/design.md` | सशर्त गेट |
+| [/plan-execute](/docs/pipeline/plan-execute) | निष्पादक — चरण निष्पादन | अंतिम |
+| [/plan-status](/docs/pipeline/plan-status) | रिपोर्टर — केवल-पठन स्थिति | केवल-पठन |
+| [/plan-audit](/docs/pipeline/plan-audit) | संरक्षक — spec → generate → review का बंद-लूप आवरण | ऑर्थोगोनल (निष्पादन-पूर्व) |
+| [/plan-amend](/docs/pipeline/plan-amend) | प्रबंधक — किसी मौजूदा सूट का पुनः-प्रवेशी संशोधन | पुनः-प्रवेशी |
 
-`/plan-audit` रैखिक प्रवाह के लिए ऑर्थोगोनल है, इसके भीतर एक चरण नहीं। यह
-`/plan-spec → /plan-generate → /plan-review` को एक एकल बंद लूप के रूप में लपेटता
-है, केवल लुप्त ऊपरी-धारा चरणों को चलाता है, निष्कर्षों का सक्रिय रूप से निवारण
-करता है, और सूट को `/plan-execute` के लिए तैयार छोड़ देता है। यह नीचे दिए ऑडिट
-समीक्षा अनुक्रम से भिन्न है, जो एक प्लान-सूट के बजाय एक निष्पादित कोडबेस का ऑडिट
-करता है।
+`/plan-audit` रैखिक प्रवाह के प्रति ऑर्थोगोनल है, उसके भीतर का कोई चरण नहीं। यह
+`/plan-spec → /plan-generate → /plan-review` को एक ही बंद लूप के रूप में आवृत करता
+है, केवल लुप्त अपस्ट्रीम चरण चलाता है, निष्कर्षों का सक्रिय रूप से निवारण करता है, और
+सूट को `/plan-execute` के लिए तैयार छोड़ता है। यह नीचे दिए गए ऑडिट समीक्षा अनुक्रम से
+भिन्न है, जो किसी प्लान सूट के बजाय एक निष्पादित कोडबेस का ऑडिट करता है।
 
-`/plan-design` एक सार्वभौमिक अनुष्ठान नहीं है। `/plan-review` वर्गीकृत करता है कि
-क्या सूट आर्किटेक्चर-धारक सतहों को बदलता है। यदि हाँ, तो `/plan-design` वह डिज़ाइन
-ट्रेस उत्सर्जित करता है जिसका उपभोग `/plan-execute` और `/architecture-review`
+`/plan-design` कोई सार्वभौमिक औपचारिकता नहीं है। `/plan-review` यह वर्गीकृत करता है
+कि सूट आर्किटेक्चर-प्रभावी सतहों को बदलता है या नहीं। यदि हाँ, तो `/plan-design` वह
+डिज़ाइन ट्रेस एमिट करता है जिसका उपयोग `/plan-execute` और `/architecture-review`
 करते हैं। यदि नहीं, तो समीक्षित सूट सीधे निष्पादन में चला जाता है।
 
 ## शोध पाइपलाइन
 
-शोध पाइपलाइन तेरह प्रथम-श्रेणी स्लैश कमांड के रूप में आती है, प्रति चरण एक —
-प्रत्येक स्वतंत्र रूप से `/research-<stage>` के रूप में आह्वान-योग्य, एक अनुक्रम
-गेट और एक हैंडऑफ़ मेनिफ़ेस्ट द्वारा शृंखलित, दस कठोरता अधिदेशों के तहत (आधिकारिक
-स्रोत, पुनरुत्पादकता, मिथ्याकरणीयता, उद्धरण अखंडता, पूर्व-पंजीकरण,
-नैतिकता / हितों का टकराव, सांख्यिकीय कठोरता, मुक्त-विज्ञान / FAIR,
+शोध पाइपलाइन तेरह प्रथम-श्रेणी स्लैश कमांड के रूप में शिप होती है, प्रति चरण एक —
+प्रत्येक को `/research-<stage>` के रूप में स्वतंत्र रूप से आह्वान किया जा सकता है,
+और ये एक अनुक्रम गेट और एक हैंडऑफ़ मैनिफ़ेस्ट से जुड़े होते हैं, दस कठोरता मैंडेट के
+अंतर्गत (आधिकारिक स्रोत, पुनरुत्पादनीयता, खंडनीयता, उद्धरण अखंडता, पूर्व-पंजीकरण,
+नैतिकता / हितों का टकराव, सांख्यिकीय कठोरता, ओपन-साइंस / FAIR,
 रिपोर्टिंग-दिशानिर्देश अनुरूपता, सैद्धांतिक आधार / प्रभाव)।
 
 ```mermaid
@@ -87,38 +89,38 @@ flowchart LR
 
 | चरण | भूमिका | स्थिति |
 |-------|------|----------|
-| [/research-ideate](/docs/pipeline/research-ideate) | समस्या तैयार करना — एक डोमेन बीज से उम्मीदवार प्रश्न | प्रारंभिक |
-| [/research-spec](/docs/pipeline/research-spec) | प्रश्न को रूपायित करना — मिथ्याकरणीय परिकल्पनाएँ + दायरा | मध्य-श्रृंखला |
+| [/research-ideate](/docs/pipeline/research-ideate) | समस्या का निरूपण — किसी डोमेन बीज से उम्मीदवार प्रश्न | आरंभ |
+| [/research-spec](/docs/pipeline/research-spec) | प्रश्न का निर्धारण — खंडनीय परिकल्पनाएँ + दायरा | मध्य-श्रृंखला |
 | [/research-theory](/docs/pipeline/research-theory) | वैचारिक ढाँचा + परिवर्तन-सिद्धांत | मध्य-श्रृंखला |
 | [/research-sources](/docs/pipeline/research-sources) | व्यवस्थित स्रोत संग्रह | मध्य-श्रृंखला |
 | [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA मानचित्र + अंतराल विश्लेषण | मध्य-श्रृंखला |
 | [/research-proposal](/docs/pipeline/research-proposal) | उद्देश्य + व्यवहार्यता + प्रभाव + पूर्व-पंजीकरण योजना | मध्य-श्रृंखला |
 | [/research-design](/docs/pipeline/research-design) | अध्ययन डिज़ाइन + पूर्व-पंजीकरण | मध्य-श्रृंखला |
-| [/research-experiment](/docs/pipeline/research-experiment) | चलाना + रिकॉर्ड करना, पुनरुत्पाद्य | मध्य-श्रृंखला |
+| [/research-experiment](/docs/pipeline/research-experiment) | चलाना + दर्ज करना, पुनरुत्पादनीय | मध्य-श्रृंखला |
 | [/research-analysis](/docs/pipeline/research-analysis) | परिणाम + सांख्यिकी | मध्य-श्रृंखला |
 | [/research-paper](/docs/pipeline/research-paper) | शीर्ष-स्तरीय शोध-पत्र मसौदा | मध्य-श्रृंखला |
 | [/research-review](/docs/pipeline/research-review) | सहकर्मी-समीक्षा-स्तरीय आलोचना | मध्य-श्रृंखला |
 | [/research-publish](/docs/pipeline/research-publish) | प्रकाशन-स्थल पैकेज + प्रस्तुति | मध्य-श्रृंखला |
-| [/research-disseminate](/docs/pipeline/research-disseminate) | प्रसार + प्रभाव + FAIR अभिलेखन | टर्मिनल |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | प्रसार + प्रभाव + FAIR संग्रहण | अंतिम |
 
-`/research` लिपटा हुआ वर्कफ़्लो ऑर्केस्ट्रेटर इन चरणों को कच्चे प्रश्न से
-प्रकाशित शोध-पत्र तक संचालित करता है (यह स्वयं एक चरण नहीं है), अगला चरण उस पर
-निर्माण करने से पहले प्रत्येक चरण के आउटपुट की स्वतंत्र रूप से जाँच करता है;
-`--quick` एक एकल-शॉट उद्धृत रिपोर्ट के लिए केवल `/research-sources` +
+[/research](/docs/pipeline/research) रैप्ड-वर्कफ़्लो ऑर्केस्ट्रेटर इन चरणों को कच्चे
+प्रश्न से प्रकाशित शोध-पत्र तक संचालित करता है (यह स्वयं कोई चरण नहीं है), और अगला
+चरण किसी चरण के आउटपुट पर निर्माण करे, उससे पहले उस आउटपुट की स्वतंत्र रूप से
+जाँच करता है; `--quick` एकल-शॉट उद्धृत रिपोर्ट के लिए केवल `/research-sources` +
 `/research-synthesis` चलाता है।
 
-आनुभविक चरण (स्रोत, डिज़ाइन, प्रयोग, विश्लेषण) और लेखन चरण (शोधपत्र, समीक्षा,
-प्रकाशन, प्रसार) अतिरिक्त रूप से कठोरता को परिचालित करने वाली सतहों पर आधारित
-होते हैं — निष्पक्ष बहु-विधि तुलना, तुलनित्र उद्गम, एक प्रयोग-कार्यक्रम मचान, एक
-संगणना-उपयोग योजना, एक ऑप्ट-इन स्वायत्त प्रयोग लूप, एक परिभाषा-समाप्ति उन्नति
-द्वार, और चरणबद्ध प्रकटन सहित अंधीकरण — जो दस अधिदेशों को उन्हें विस्तारित किए
-बिना परिचालनात्मक विवरण जोड़ती हैं।
+अनुभवजन्य चरण (स्रोत, डिज़ाइन, प्रयोग, विश्लेषण) और लेखन चरण (शोध-पत्र, समीक्षा,
+प्रकाशन, प्रसार) इसके अतिरिक्त कठोरता को व्यवहार में उतारने वाली सतहों का भी सहारा
+लेते हैं — निष्पक्ष बहु-विधि तुलना, तुलना-आधार की उत्पत्ति, एक प्रयोग-कार्यक्रम
+ढाँचा, एक कंप्यूट-उपयोग योजना, एक ऑप्ट-इन स्वायत्त प्रयोग लूप, एक
+पूर्णता-परिभाषा आधारित प्रगति गेट, और चरणबद्ध प्रकटीकरण के साथ ब्लाइंडिंग — जो दस
+मैंडेट का विस्तार किए बिना उनमें परिचालन विवरण जोड़ती हैं।
 
 ## ऑडिट समीक्षा अनुक्रम
 
-`/audit` लिपटा हुआ वर्कफ़्लो ऑर्केस्ट्रेटर नीचे दिए सभी ग्यारह आयामों को एक एकल समानांतर पास के रूप में बहार देता है — यह `/plan` और `/research` का ऑडिट-दुर्ग सादृश्य है — एक एकल अद्वितीयकृत, गंभीरता-त्रिआज किया गया निष्कर्ष-रिपोर्ट संश्लेषित करता है (केवल-रिपोर्ट; निवारण `/elevate` को रूट किया जाता है)। प्रत्येक आयाम व्यक्तिगत रूप से भी आह्वान-योग्य है।
+[/audit](/docs/pipeline/audit) रैप्ड-वर्कफ़्लो ऑर्केस्ट्रेटर नीचे दिए सभी ग्यारह आयामों को एक ही समानांतर पास में स्वीप करता है — यह `/plan` और `/research` का ऑडिट-फ़ोर्ट्रेस समकक्ष है — और एक ही डुप्लिकेट-रहित, गंभीरता के अनुसार वर्गीकृत निष्कर्ष रिपोर्ट संश्लेषित करता है (केवल रिपोर्ट; निवारण `/elevate` को भेजा जाता है)। प्रत्येक आयाम को अलग से भी आह्वान किया जा सकता है।
 
-`/fortress` लिपटा हुआ वर्कफ़्लो ऑर्केस्ट्रेटर उस लूप को बंद करता है जिसकी `/audit` रिपोर्ट करता है: यह `/audit` के माध्यम से पता लगाता है, प्रत्येक निष्कर्ष को सत्यापित करता है, प्रत्येक उत्तरजीवी का उसकी स्वामी सतह पर निवारण करता है, एक बद्ध लूप में पुनः-ऑडिट करता है, और परिणाम को `/release-readiness` गेट से गुज़ारता है — यह `/plan` और `/research` का उत्पादन-सुदृढ़ीकरण सादृश्य है।
+[/fortress](/docs/pipeline/fortress) रैप्ड-वर्कफ़्लो ऑर्केस्ट्रेटर उस लूप को बंद करता है जिसकी `/audit` रिपोर्ट करता है: यह `/audit` के माध्यम से पता लगाता है, हर निष्कर्ष को सत्यापित करता है, हर बचे हुए निष्कर्ष का निवारण उसकी स्वामी सतह पर करता है, एक सीमित लूप में फिर से ऑडिट करता है, और परिणाम को [/release-readiness](/docs/pipeline/release-readiness) से गेट करता है — यह `/plan` और `/research` का प्रोडक्शन-हार्डनिंग समकक्ष है।
 
 | कमांड | गुणवत्ता क्षेत्र |
 |---------|--------------|
@@ -128,8 +130,66 @@ flowchart LR
 | [/perf-audit](/docs/pipeline/perf-audit) | प्रदर्शन |
 | [/architecture-review](/docs/pipeline/architecture-review) | आर्किटेक्चर |
 | [/ux-review](/docs/pipeline/ux-review) | डेवलपर अनुभव |
-| [/a11y-audit](/docs/pipeline/a11y-audit) | अभिगम्यता |
-| [/docs-review](/docs/pipeline/docs-review) | प्रलेखन |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | सुगम्यता |
+| [/docs-review](/docs/pipeline/docs-review) | दस्तावेज़ |
 | [/dependency-audit](/docs/pipeline/dependency-audit) | निर्भरताएँ |
-| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | आपूर्ति शृंखला |
-| [/threat-model-audit](/docs/pipeline/threat-model-audit) | खतरा मॉडल |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | आपूर्ति श्रृंखला |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | ख़तरा मॉडल |
+
+## सभी कमांड
+
+हर शिप किया गया कमांड, `src/apothem/commands/` के अंतर्गत उसकी परिभाषा से उत्पन्न।
+जिन कमांड का हाथ से लिखा पृष्ठ नहीं है, उन्हें उसी परिभाषा से उत्पन्न एक पृष्ठ मिलता
+है।
+
+{/* apothem:generated-reference:start */}
+
+| Command | Summary |
+| --- | --- |
+| [/plan](/docs/pipeline/plan) | The plan-suite pipeline wrapped as one dynamic multi-agent workflow. |
+| [/plan-spec](/docs/pipeline/plan-spec) | Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. |
+| [/plan-generate](/docs/pipeline/plan-generate) | Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five … |
+| [/plan-review](/docs/pipeline/plan-review) | Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and … |
+| [/plan-design](/docs/pipeline/plan-design) | Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation … |
+| [/plan-execute](/docs/pipeline/plan-execute) | Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and … |
+| [/plan-amend](/docs/pipeline/plan-amend) | Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream … |
+| [/plan-audit](/docs/pipeline/plan-audit) | Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than … |
+| [/plan-status](/docs/pipeline/plan-status) | Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the … |
+| [/research](/docs/pipeline/research) | The research pipeline wrapped as a single dynamic multi-agent workflow. |
+| [/research-ideate](/docs/pipeline/research-ideate) | Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with … |
+| [/research-spec](/docs/pipeline/research-spec) | Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing … |
+| [/research-theory](/docs/pipeline/research-theory) | Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. |
+| [/research-sources](/docs/pipeline/research-sources) | Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the … |
+| [/research-proposal](/docs/pipeline/research-proposal) | Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record — the proposal stage of the /research pipeline. |
+| [/research-design](/docs/pipeline/research-design) | Operationalizes the synthesized research gap into testable predictions and a complete study design, then freezes the analysis plan in a preregistration before … |
+| [/research-experiment](/docs/pipeline/research-experiment) | Executes the designed study and captures raw data with full provenance — the run-and-record stage of the /research pipeline. |
+| [/research-analysis](/docs/pipeline/research-analysis) | Analyzes the raw data per the frozen preregistration — runs the planned statistical tests, reports effect sizes with confidence intervals (R7: never p-values … |
+| [/research-paper](/docs/pipeline/research-paper) | Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, … |
+| [/research-review](/docs/pipeline/research-review) | Subjects the finished paper to a peer-review-grade adversarial critique against venue standards — scores novelty, rigor, reproducibility, clarity, ethics, … |
+| [/research-publish](/docs/pipeline/research-publish) | Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability … |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer … |
+| [/audit](/docs/pipeline/audit) | The audit fortress wrapped as a single dynamic multi-agent workflow. |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Operator-driven accessibility audit pass against WCAG 2.2 AA. |
+| [/architecture-review](/docs/pipeline/architecture-review) | Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at … |
+| [/code-audit](/docs/pipeline/code-audit) | Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · … |
+| [/code-review](/docs/pipeline/code-review) | Operator-driven per-file code-quality review pass. |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Operator-driven per-dependency audit pass (direct + transitive). |
+| [/docs-review](/docs/pipeline/docs-review) | Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. |
+| [/perf-audit](/docs/pipeline/perf-audit) | Audits a deployed repository against the per-class performance budgets at `rules/performance-discipline.md` §1 — hook-handler runtime (10s/30s/60s tiers), … |
+| [/security-audit](/docs/pipeline/security-audit) | Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Operator-driven threat-modeling audit pass against STRIDE + PASTA. |
+| [/ux-review](/docs/pipeline/ux-review) | Developer-experience review of a host repository — audits CLI ergonomics (argument naming, help text, error messages, progress indicators), installation flow, … |
+| [/fortress](/docs/pipeline/fortress) | The production-hardening fortress wrapped as a single dynamic multi-agent workflow. |
+| [/elevate](/docs/pipeline/elevate) | Aggressive, zero-trust, open-loop MASTER repository-elevation command. |
+| [/eval](/docs/pipeline/eval) | Model-agnostic language-model evaluation campaign. |
+| [/freshify](/docs/pipeline/freshify) | Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. |
+| [/github-deploy-fresh](/docs/pipeline/github-deploy-fresh) | GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: &lt;repo-name&gt; v0.1.0 … |
+| [/github-deploy-next](/docs/pipeline/github-deploy-next) | Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull … |
+| [/projectify](/docs/pipeline/projectify) | Chat-app Project elevation command. |
+| [/release-readiness](/docs/pipeline/release-readiness) | Operator-driven pre-release gate sweep against the production-ready discipline. |
+| [/test-suite](/docs/pipeline/test-suite) | Behavior-first test authoring and execution workflow for a deployed repository. |
+| [/workflow](/docs/pipeline/workflow) | General-purpose workflow-harnessing command. |
+
+{/* apothem:generated-reference:end */}

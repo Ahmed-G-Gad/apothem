@@ -1,31 +1,88 @@
 ---
 title: "Référence de la CLI"
-description: "Référence de la CLI Apothem — synopsis par commande, options et codes de sortie de l'interface en ligne de commande apothem."
+description: "Référence de la CLI Apothem — synopsis, options et codes de sortie de chaque commande de l'interface en ligne de commande apothem."
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-L'interface en ligne de commande `apothem` gère les configurations d'adaptateurs de harness à partir du profil partagé. Chaque page ci-dessous documente une sous-commande : son synopsis, ses options, son comportement et ses codes de sortie.
+L'interface en ligne de commande `apothem` gère les configurations
+d'adaptateurs d'environnement à partir du profil partagé. Chaque page
+ci-dessous documente une sous-commande : son synopsis, ses options, son
+comportement et ses codes de sortie.
 
-Chacune des commandes `install`, `update` et `uninstall` accepte aussi un alias en forme continue (`installing`, `updating`, `uninstalling`) identique en options et en comportement à la commande de base. La mise à jour et la désinstallation via les canaux d'installation — le plugin Claude Code, `npx` et les scripts d'installation en une étape — sont documentées dans les guides d'installation [Mise à jour](/docs/install/updating) et [Désinstallation](/docs/install/uninstalling), pas par les alias eux-mêmes.
+Chacune des commandes `install`, `update` et `uninstall` accepte aussi un alias
+en forme continue (`installing`, `updating`, `uninstalling`), identique à la
+commande de base en options et en comportement. La mise à jour et la
+désinstallation via les canaux d'installation — le plugin Claude Code, `npx` et
+les scripts d'installation en une seule étape — sont documentées dans les
+guides d'installation [Mise à jour](/docs/install/updating) et
+[Désinstallation](/docs/install/uninstalling), et non par les alias
+eux-mêmes.
 
 ## Commandes
 
 | Commande | Description |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | Première exécution guidée : assure un profil, prévisualise les écritures, puis installe. |
-| [install](/docs/cli-reference/install) | Installe la configuration d'un adaptateur de harness à partir du profil partagé (alias : `installing`). |
-| [update](/docs/cli-reference/update) | Réinstalle la configuration d'un adaptateur de harness à partir du profil partagé actuel (alias : `updating`). |
-| [uninstall](/docs/cli-reference/uninstall) | Supprime la configuration d'un adaptateur de harness (alias : `uninstalling`). |
-| [rollback](/docs/cli-reference/rollback) | Restaure un harness à l'état précédant son installation enregistrée. |
-| [verify](/docs/cli-reference/verify) | Vérifie l'installation d'un adaptateur de harness. |
-| [status](/docs/cli-reference/status) | Indique l'état d'installation, de vérification et de dérive de chaque harness enregistré. |
-| [diff](/docs/cli-reference/diff) | Prévisualise les changements de configuration en attente pour un seul harness. |
-| [harnesses](/docs/cli-reference/harnesses) | Liste et inspecte les adaptateurs de harness enregistrés. |
+| [quickstart](/docs/cli-reference/quickstart) | Première exécution guidée : garantit l'existence d'un profil, prévisualise les écritures, puis installe. |
+| [install](/docs/cli-reference/install) | Installe la configuration d'un adaptateur d'environnement à partir du profil partagé (alias : `installing`). |
+| [update](/docs/cli-reference/update) | Réinstalle la configuration d'un adaptateur d'environnement à partir du profil partagé actuel (alias : `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | Supprime la configuration d'un adaptateur d'environnement (alias : `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | Restaure un environnement à l'état précédant son installation enregistrée. |
+| [backups](/docs/cli-reference/backups) | Élague les sauvegardes d'installation et l'historique du journal qu'Apothem conserve (`backups prune`). |
+| [verify](/docs/cli-reference/verify) | Vérifie l'installation d'un adaptateur d'environnement. |
+| [status](/docs/cli-reference/status) | Indique l'état d'installation, de vérification et de dérive de chaque environnement enregistré. |
+| [diff](/docs/cli-reference/diff) | Prévisualise les changements de configuration en attente pour un seul environnement. |
+| [harnesses](/docs/cli-reference/harnesses) | Liste et inspecte les adaptateurs d'environnement enregistrés. |
 | [profile](/docs/cli-reference/profile) | Gère le profil partagé Apothem. |
-| [doctor](/docs/cli-reference/doctor) | Exécute les diagnostics système pour l'installation d'Apothem. |
-| [completion](/docs/cli-reference/completion) | Émet un script de complétion shell chargeable via source (bash, zsh, fish, powershell). |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | Migre un espace de travail hérité propre à chaque environnement vers la disposition partagée `.apothem`. |
+| [doctor](/docs/cli-reference/doctor) | Exécute les diagnostics système de l'installation d'Apothem. |
+| [completion](/docs/cli-reference/completion) | Émet un script de complétion shell chargeable avec source (bash, zsh, fish, powershell). |
 
-Pour les commandes slash et la vue d'ensemble de la CLI de plus haut niveau, consultez les pages de référence
-[Vue d'ensemble de la CLI](/docs/reference/cli) et [Commandes slash](/docs/reference/commands).
+## Contrat de sortie JSON
+
+Chaque commande accepte `--json` (raccourci de `--format json`) et écrit alors
+exactement un document JSON sur stdout. Chaque document commence par une clé
+`schema_version` de premier niveau, un entier qui vaut `1` aujourd'hui :
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **Stabilité.** Au sein d'une même `schema_version`, les changements sont
+  additifs : une nouvelle clé peut apparaître, mais aucune clé n'est renommée
+  ni supprimée et aucune valeur ne change de type. Tout autre changement
+  incrémente `schema_version`.
+- **Artefacts versionnés.** `profile show --json` émet le profil lui-même ; son
+  `schema_version` est donc la version du schéma de profil (également `1`
+  aujourd'hui).
+- **Une exception.** `harnesses list --json` émet un tableau JSON (un objet par
+  environnement), comme il l'a toujours fait ; il n'a donc aucune clé de
+  premier niveau pour porter la version. L'envelopper dans un objet casserait
+  les analyseurs existants ; tant qu'un changement de version ne le fait pas,
+  traitez sa forme comme `schema_version` `1`.
+- **Erreurs.** Les échecs attendus utilisent la même forme de document avec
+  `"status": "error"` et un objet `error` portant `code`, `field`,
+  `reason` et `fix`.
+
+## Codes de sortie
+
+Chaque commande utilise le même petit ensemble de codes de sortie ; chaque page
+liste ceux qu'elle peut renvoyer.
+
+| Code | Signification |
+|---|---|
+| 0 | Succès |
+| 1 | Échec attendu : une erreur de validation, de profil, d'environnement, de projet ou d'adaptateur |
+| 2 | Résultat partiel : un lot a écrit ou supprimé quelque chose avant un échec (uniquement les commandes dont la page le liste) |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, une option requise manquante ou une valeur d'option invalide |
+
+Une erreur d'utilisation ne touche jamais au système de fichiers. Sous `--json`
+(ou `--format json`), elle affiche un document d'erreur avec
+`"code": "cli.usage"` au lieu du texte d'utilisation brut, afin que
+l'automatisation puisse distinguer une option mal saisie d'une écriture
+partielle.
+
+Pour les commandes slash et la vue d'ensemble de la CLI de plus haut niveau,
+consultez les pages de référence [Vue d'ensemble de la CLI](/docs/reference/cli)
+et [Commandes slash](/docs/reference/commands).

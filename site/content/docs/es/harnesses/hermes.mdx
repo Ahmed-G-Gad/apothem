@@ -1,8 +1,8 @@
 ---
 title: "Hermes"
-description: "Adaptador de entorno de Apothem para Hermes (Vista previa)."
+description: "Adaptador de entorno de Apothem para Hermes (vista previa)."
 machineTranslated: true
-sourceHash: "7d64ffd668c14134"
+sourceHash: "f077a9851e126be5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,30 +18,48 @@ apothem install --harness hermes
 ```
 
 El adaptador traduce el perfil compartido al archivo de configuración global de
-usuario del Hermes Agent e instala los conjuntos de soporte de Apothem bajo la
+usuario de Hermes Agent e instala las cohortes de soporte de Apothem bajo la
 raíz del entorno.
 
-**Archivos escritos:** `~/.hermes/config.yaml` y archivos de soporte bajo
+**Archivos escritos:** `~/.hermes/config.yaml`, el documento de perfil
+`~/.hermes/apothem/rules/00-apothem-profile.md` y archivos de soporte bajo
 `~/.hermes/.apothem/support/`
 
-## Mapeo de perfil a configuración nativa
+El documento de perfil termina con una sección de archivos de soporte de
+Apothem que nombra el directorio absoluto bajo `~/.hermes/.apothem/support/`
+contra el que se resuelve cada cita con estilo de repositorio
+(`rules/<name>.md`, `templates/...`, `hooks/...`).
+
+## Asignación del perfil a la configuración nativa
 
 El adaptador lee el perfil compartido de Apothem y renderiza la configuración
-YAML nativa. La superficie de habilidades propia de Hermes es `skills.config`
-—paquetes de registro instalables que Hermes expone automáticamente como
-comandos de barra dinámicos— que Apothem no escribe. En su lugar, Apothem
-entrega el contenido compartido de comandos y habilidades como material de
-soporte bajo `~/.hermes/.apothem/support/`, referenciado desde el anclaje de
-instrucciones nativo. Las definiciones auxiliares, las reglas, las plantillas y
-los prompts de hook permanecen igualmente como material de soporte bajo
+YAML nativa, incluido el inventario MCP del perfil. La identidad, las
+preferencias y las reglas del perfil van al documento de perfil. Los comandos,
+las skills, las definiciones de ayudantes, las reglas, las plantillas y los
+prompts de hook compartidos quedan como material de soporte bajo
 `~/.hermes/.apothem/support/`.
 
 ## Notas de compatibilidad
 
-Adaptador en vista previa. La configuración YAML nativa es la superficie activa
-de Hermes; Apothem usa el hook documentado de directorio de habilidades externo
-para las habilidades y mantiene los demás conjuntos como material de referencia
-para la orientación instalada.
+Adaptador en vista previa. Hermes no carga por sí mismo el árbol de
+soporte ni el documento de perfil: nada en `config.yaml` ni ninguno de los
+archivos de contexto que lee Hermes apunta allí, así que después de la
+instalación Hermes se ejecuta sin las reglas, las skills ni los hooks de
+Apothem. Hermes lee skills de `~/.hermes/skills/` y de cada carpeta listada
+bajo `skills.external_dirs` en `config.yaml`; para usar las skills de Apothem,
+agrega tú mismo `~/.hermes/.apothem/support/skills` a esa lista;
+`apothem update` conserva las claves que agregues a `config.yaml`. El adaptador
+escribe el inventario MCP del perfil bajo la clave de nivel superior
+`mcp_servers`, donde Hermes lee los servidores MCP. Los lanzamientos anteriores
+de Apothem lo escribían bajo `auxiliary.mcp`, que Hermes lee como el modelo
+auxiliar para el despacho de herramientas MCP; tanto `apothem update` como
+`apothem uninstall` eliminan ese bloque mientras siga conteniendo exactamente lo
+que escribió uno de esos lanzamientos (consulta
+[Desinstalación](#desinstalación)). (Comportamiento de Hermes según las páginas
+de su guía de usuario sobre
+[skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+y [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+consultadas el 2026-10-02).
 
 ## Verificación
 
@@ -62,8 +80,9 @@ apothem update --harness hermes
 ```
 
 Vuelve a derivar la configuración nativa a partir del estado actual del perfil
-compartido. Ejecútalo después de editar `~/.config/apothem/profile.yaml` o de
-actualizar el paquete de Apothem instalado.
+compartido.
+Ejecútalo después de editar `~/.config/apothem/profile.yaml` o de actualizar el
+paquete de Apothem instalado.
 
 ## Desinstalación
 
@@ -71,8 +90,21 @@ actualizar el paquete de Apothem instalado.
 apothem uninstall --harness hermes
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador.
-El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+Elimina lo que agregó el adaptador: las entradas de `mcp_servers` que su
+instalación registró en `config.yaml` (tus propias claves se conservan, y el
+archivo se elimina solo cuando Apothem lo creó y no queda nada tuyo en él), el
+documento de perfil y el árbol de soporte. El YAML del perfil compartido y el
+motor de Apothem no se ven afectados.
+
+En una instalación hecha por un lanzamiento anterior, que escribía los
+servidores del perfil bajo `auxiliary.mcp`, también se elimina ese bloque
+cuando sigue conteniendo exactamente lo que escribió ese lanzamiento, tal como
+se renderiza a partir del perfil compartido en
+`~/.config/apothem/profile.yaml`. Es la misma regla que aplica
+`apothem update`, así que desinstalar sin actualizar antes no deja ningún bloque
+obsoleto. Un bloque que hayas editado, o uno sin un perfil compartido legible
+con el que compararlo, se queda en su lugar, y el resto de tus ajustes de
+`auxiliary` siempre se conserva.
 
 ## Puerta de conformidad
 
@@ -80,16 +112,22 @@ El YAML del perfil compartido y el motor de Apothem no se ven afectados.
 python -m apothem.conformity.gate --all .
 ```
 
-## Resolución de problemas
+## Solución de problemas
 
 | Síntoma | Solución |
 |---------|-----|
-| Archivo de configuración no encontrado | Vuelve a ejecutar `apothem install --harness hermes` |
-| Verificación fallida | Ejecuta `apothem update --harness hermes` y vuelve a verificar |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, luego vuelve a ejecutar `apothem update --harness hermes` |
+| No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness hermes` |
+| La verificación falló | Ejecuta `apothem update --harness hermes` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness hermes` |
 
-## Parámetros de configuración
+## Opciones de configuración
 
-| Bandera | Predeterminado | Descripción |
+| Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI

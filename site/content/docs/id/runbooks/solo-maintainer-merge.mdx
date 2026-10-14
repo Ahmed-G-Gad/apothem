@@ -1,33 +1,40 @@
 ---
 title: "Seremoni Merge PR untuk Pemelihara Tunggal"
-description: "Seremoni untuk men-merge sendiri pull request ketika aturan proteksi branch dan enforce_admins akan membuat pemelihara tunggal terkunci."
+description: "Kapan pemelihara dapat men-merge pull request miliknya sendiri secara langsung, dan seremoni untuk proteksi branch yang mensyaratkan persetujuan dan memberlakukannya bagi admin."
 machineTranslated: true
-sourceHash: "13c2dbd96642df48"
+sourceHash: "a71e0b9bd24c0df8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Rujukan kanonik untuk men-merge sendiri PR di bawah invarian proteksi branch proyek.** Ketika pemelihara adalah satu-satunya kontributor dengan akses tulis, aturan proteksi branch GitHub `enforce_admins=true` + `required_approving_review_count=1` menciptakan kebuntuan merge-mandiri yang resolusinya didokumentasikan halaman ini.
+> **Rujukan kanonik untuk men-merge sendiri PR di bawah proteksi branch proyek.** Proteksi aktif pada `main` mensyaratkan 0 tinjauan yang menyetujui dan membiarkan `enforce_admins` nonaktif, sebagaimana tercatat di halaman [Proteksi branch](/docs/security/branch-protection-ruleset). Karena itu, pemelihara men-merge pull request miliknya sendiri secara langsung. Seremoni alih-sementara di halaman ini hanya berlaku ketika proteksi mensyaratkan persetujuan dan memberlakukannya bagi admin.
 
 ---
 
 ## 1. Kebuntuan
 
-Branch `main` repositori membawa set proteksi ini:
+Proteksi `main` yang aktif membawa:
+
+- `required_pull_request_reviews.required_approving_review_count: 0`
+- `enforce_admins: false`
+
+Di bawah pengaturan ini tidak ada kebuntuan. Pull request pemelihara di-merge dengan `gh pr merge <pr-number> --squash --delete-branch` setelah pemeriksaan status wajibnya hijau dan percakapan tinjauannya diselesaikan.
+
+Kebuntuan hanya ada ketika proteksi membawa kedua pengaturan yang lebih ketat ini:
 
 - `required_pull_request_reviews.required_approving_review_count: 1`
 - `enforce_admins: true`
 
-Aturan ini benar untuk skenario multi-pemelihara (setiap perubahan mencapai `main` melalui PR yang ditinjau rekan; admin tidak dikecualikan). Aturan ini menghasilkan kebuntuan bagi pemelihara tunggal: kebijakan GitHub melarang persetujuan-mandiri atas PR yang Anda buat sendiri, dan `enforce_admins=true` memblokir penimpaan `gh pr merge --admin` terhadap persyaratan persetujuan tinjauan.
+Aturan ini benar untuk skenario multi-pemelihara (setiap perubahan mencapai `main` melalui PR yang ditinjau rekan; admin tidak dikecualikan). Aturan ini menghasilkan kebuntuan bagi pemelihara tunggal: kebijakan GitHub melarang persetujuan-mandiri atas PR yang Anda buat sendiri, dan `enforce_admins=true` memblokir penimpaan `gh pr merge --admin` terhadap persyaratan persetujuan tinjauan. Dengan `enforce_admins: false`, `--admin` melewati persyaratan persetujuan dan tidak ada alih yang diperlukan, tetapi opsi itu juga melewati pemeriksaan wajib yang merah, jadi pastikan pemeriksaan tersebut hijau sebelum menggunakannya.
 
 Ada tiga jalur resolusi:
 
 | Jalur | Kapan digunakan |
 |------|-------------|
-| **Seremoni alih-sementara (kanonik untuk repositori ini)** | Bawaan untuk merge-mandiri pemelihara tunggal; menjaga invarian proteksi di luar jendela merge |
+| Setel `required_approving_review_count: 0` secara permanen (**pengaturan aktif**) | Pakai hanya jika repositori akan tetap dengan pemelihara tunggal tanpa batas waktu; membalik maksud tinjauan dari proteksi |
+| **Seremoni alih-sementara** | Pemelihara tunggal men-merge sendiri selama proteksi mensyaratkan persetujuan dengan `enforce_admins=true`; menjaga invarian proteksi di luar jendela merge |
 | Sediakan identitas bot CI dengan akses tulis | Pakai hanya jika onboarding multi-pemelihara sudah dekat; persetujuan oleh bot melemahkan maksud tinjauan manusia dari proteksi |
-| Setel `required_approving_review_count: 0` secara permanen | Pakai hanya jika repositori akan tetap pemelihara tunggal tanpa batas; membalik maksud tinjauan dari proteksi |
 
-Repositori ini meratifikasi **seremoni alih-sementara** sebagai jalur kanonik. Dua lainnya adalah pintu darurat terdokumentasi, bukan bawaan.
+Repositori ini saat ini menggunakan jalur **nol-persetujuan permanen**. **Seremoni alih-sementara** adalah jalur kanonik setiap kali proteksi mensyaratkan persetujuan dan memberlakukannya bagi admin.
 
 ## 2. Seremoni Alih-Sementara
 
@@ -63,10 +70,12 @@ python scripts/dev/admin_merge.py <pr-number>
 
 - **Jendela alih diminimalkan.** Langkah 2 → 3 → 4 dieksekusi dalam satu urutan non-interaktif. Proteksi berada dalam keadaan longgar hanya selama durasi panggilan API merge — di bawah satu detik pada setiap eksekusi yang teramati.
 - **Pemulihan bersifat tanpa syarat.** Langkah 4 berjalan bahkan ketika langkah 3 gagal (klausa `try` / `finally` pembungkus memastikan pemulihan pada jalur keluar mana pun). Upaya merge yang gagal tidak meninggalkan proteksi dalam keadaan longgar.
-- **Gerbang CI dipertahankan sepanjang proses.** `required_status_checks` tidak terpengaruh oleh alih; merge tetap mensyaratkan konteks pemeriksaan status yang dikonfigurasi berstatus hijau.
+- **Gerbang CI dipertahankan sepanjang proses, selama `enforce_admins` aktif.** `required_status_checks` tidak terpengaruh oleh alih; dengan `enforce_admins: true` merge tetap mensyaratkan konteks pemeriksaan status yang dikonfigurasi berstatus hijau. Dengan `enforce_admins: false`, merge `--admin` pada langkah 3 juga melewati pemeriksaan wajib yang merah, jadi jangan jalankan seremoni dalam keadaan tersebut.
 - **Jejak audit terlihat.** Anotasi `gh pr merge --admin` muncul dalam metadata merge PR; alih API proteksi muncul dalam log audit repositori di bawah identitas pemelihara.
 
 ## 4. Kapan TIDAK Menggunakan Seremoni
+
+Selama proteksi mensyaratkan 0 tinjauan yang menyetujui atau membiarkan `enforce_admins` nonaktif, seremoni tidak diperlukan: lakukan merge secara langsung seperti yang dijelaskan bagian 1.
 
 Seremoni ini untuk **merge-mandiri** atas PR milik pemelihara sendiri. Ketika peninjau rekan tersedia (kontributor dengan akses tulis), jalur standar `gh pr review --approve` + `gh pr merge --squash --delete-branch` adalah yang benar dan seremoni tidak diperlukan.
 

@@ -2,12 +2,12 @@
 title: "Trae"
 description: "Adaptor harness Apothem untuk Trae (GA)."
 machineTranslated: true
-sourceHash: "229e541ddce9cc3e"
+sourceHash: "f55f43bb42d94d1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** ByteDance
-**Nama instal:** `trae`
+**Nama instalasi:** `trae`
 **Status:** GA
 **Konfigurasi native:** `<project>/.trae/rules/apothem-rules.md`
 
@@ -17,25 +17,33 @@ sourceHash: "229e541ddce9cc3e"
 apothem install --harness trae --project /path/to/project
 ```
 
-Adaptor menulis satu berkas aturan Trae berlingkup-proyek dari permukaan aturan dan
-tata kelola Apothem bersama.
+Adaptor menulis satu berkas aturan Trae berlingkup proyek dari aturan dan
+permukaan tata kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.trae/rules/apothem-rules.md`
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada setiap
-jalannya `apothem install` atau `apothem update`. Profil bersama adalah sumber
-kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan dicadangkan sebelum
-sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada
+setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
+adalah sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan
+dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
+Apothem.
+
+Berkas dibuka dengan frontmatter YAML yang menetapkan `alwaysApply: true` dan
+sebuah `description`, yang merupakan mode Always Apply Trae menurut
+[dokumentasi aturan Trae](https://docs.trae.ai/ide/rules). Blok yang dikelola
+Apothem mengikutinya; teks yang Anda tambahkan setelah blok tersebut
+dipertahankan pada setiap sinkronisasi.
 
 ## Catatan kompatibilitas
 
-Permukaan aturan Trae saat ini berlingkup-proyek di bawah `.trae/rules/`. Adaptor
-menulis berkas `apothem-rules.md` khusus yang berdampingan dengan jangkar
-`project_rules.md` dan `user_rules.md` milik operator dan tidak pernah menimpanya.
-Permukaan server alat `.trae/mcp.json` dan permukaan skill `.trae/skills/` milik
-operator; Apothem tidak menulisnya.
+Permukaan aturan Trae saat ini berlingkup proyek di bawah `.trae/rules/`;
+aturan global berada di bawah `~/.trae/user_rules`. Adaptor menulis berkas
+`apothem-rules.md` khusus dan tidak pernah menimpa berkas aturan lain di
+direktori tersebut maupun aturan global Anda. Permukaan server alat
+`.trae/mcp.json` dan permukaan skill `.trae/skills/` dimiliki operator; Apothem
+tidak menulisnya.
 
 ## Verifikasi
 
@@ -49,13 +57,13 @@ Perintah verify mengonfirmasi bahwa:
 2. Semua bidang wajib dari profil bersama hadir.
 3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness trae --project /path/to/project
 ```
 
-Menurunkan-ulang berkas aturan proyek dari keadaan profil bersama saat ini.
+Menurunkan ulang berkas aturan proyek dari keadaan profil bersama saat ini.
 
 ## Pencopotan
 
@@ -78,10 +86,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness trae --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness trae --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness trae --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness trae --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI

@@ -2,23 +2,23 @@
 title: "Skema Frontmatter"
 description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
 machineTranslated: true
-sourceHash: "9c6a607ba1dd7651"
+sourceHash: "79d900f52578b1b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi kanonik untuk frontmatter YAML pada setiap kelas artefak.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; JSON Schema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) adalah kontrak yang dapat dibaca mesin; halaman ini adalah referensi mandiri yang dikutip oleh kontributor hilir.
+> **Referensi kanonik untuk frontmatter YAML pada setiap kelas artefak.** Ringkasan Konvensi di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) adalah deklarasi inline; JSON Schema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` menolak kunci yang tidak dikenal) adalah kontrak yang terbaca mesin dan yang berlaku jika ada ketidaksesuaian. Halaman ini adalah indeks kunci wajib, dan [`artifact-schema.mdx`](/docs/reference/artifact-schema) memuat templat dan contoh lengkap per kelas — keduanya adalah proyeksi yang dapat dibaca manusia dari skema-skema tersebut.
 
 ---
 
-## 1. Struktur blok frontmatter
+## 1. Bentuk Blok Frontmatter
 
-Setiap artefak membawa frontmatter YAML di bagian kepala, dibatasi oleh baris `---`. Banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) berada di atas frontmatter pada berkas keluarga Markdown; frontmatter mengikuti tepat setelahnya.
+Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) berada di atas frontmatter pada berkas keluarga Markdown; frontmatter mengikuti tepat setelahnya.
 
-Kunci menggunakan `kebab-case`. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter signifikan-YAML lainnya diberi tanda kutip.
+Kunci menggunakan `kebab-case`. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter lain yang bermakna dalam YAML diberi tanda kutip.
 
-## 2. Bidang wajib per kelas
+## 2. Field Wajib per Kelas
 
-Himpunan kunci wajib bervariasi menurut kelas artefak. Struktur otoritatif ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `schemas/` (satu berkas skema per kelas artefak).
+Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `schemas/` (satu berkas skema per kelas artefak).
 
 ```text
 schemas/agent.schema.json
@@ -32,12 +32,13 @@ schemas/plan.schema.json
 |-------|---------------|
 | `CLAUDE.md` (konfigurasi root) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Aturan (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
-| Perintah (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
-| Asisten (direktori kanonik yang ditunjukkan di bawah) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Keterampilan (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+| Command (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
+| Pekerja terdelegasi (direktori kanonik ditunjukkan di bawah) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema menerima tepat salah satu dari kedua ejaan tersebut |
+| Gaya keluaran (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 
-Skema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) membawa himpunan batasan lengkap termasuk batasan tipe, format, enum, dan pola.
+Skema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Validator
 
-`scripts/dev/validate_ecosystem.py` menelusuri pohon artefak, menerapkan himpunan kunci wajib di atas, dan melaporkan `[FAIL]` pada artefak apa pun yang kehilangan bidang wajib. `frontmatter-grep` per-penulisan di `src/apothem/conformity/frontmatter_grep.py` menegakkan struktur yang sama pada batas hook PreToolUse Write/Edit.
+`scripts/dev/validate_ecosystem.py` menelusuri pohon artefak, menerapkan himpunan kunci wajib di atas, dan melaporkan `[FAIL]` untuk setiap artefak yang tidak memiliki field wajib. `frontmatter-grep` per penulisan di `src/apothem/conformity/frontmatter_grep.py` menegakkan bentuk yang sama pada batas hook PreToolUse Write/Edit.

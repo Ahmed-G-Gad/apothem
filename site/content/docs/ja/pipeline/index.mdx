@@ -1,26 +1,26 @@
 ---
 title: "パイプラインコマンド"
-description: "Apothem パイプラインコマンドリファレンス — /plan フローと監査コマンドカタログ。"
+description: "Apothem のパイプラインコマンドリファレンス — /plan フローと監査コマンドのカタログ。"
 machineTranslated: true
-sourceHash: "e253b99f0f41003c"
+sourceHash: "08dadaaf1914c388"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem は、アーキテクチャを意識した `/plan` パイプライン、13 ステージの
-`/research` パイプライン、さらに 11 コマンドの監査シーケンスを提供します。
-これにより、あらゆるプロジェクトに、生のプロセから多軸でレビューされた
-プロダクション級コードへ、そして生のアイデアから普及されピアレビューを
-受けた論文へと至る構造化された道筋がもたらされます。
+Apothem は、アーキテクチャを考慮した `/plan` パイプライン、13 ステージの
+`/research` パイプライン、そして 11 コマンドの監査シーケンスを出荷しています。
+これにより、すべてのプロジェクトに、生の散文から本番品質で多軸のレビューを経たコードへ、
+そして生のアイデアから広く発信され査読を経た論文へと至る、構造化された道筋が与えられます。
 
 ## パイプラインの概要
 
 ```mermaid
 flowchart LR
     accTitle: Plan pipeline command flow
-    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop, and the re-entrant amend stage revises an existing suite and returns it to review.
     A[/plan-spec] --> B[/plan-generate]
     B --> C[/plan-review]
     AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    AM[/plan-amend<br/>re-entrant: revises an existing suite] -.->|re-review| C
     C --> Q{Architecture-bearing suite?}
     Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
     Q -->|no| D[/plan-execute]
@@ -30,44 +30,40 @@ flowchart LR
     G --> H[Completion milestone]
 ```
 
-## プランニングステージ
+## プランニングのステージ
 
-このパイプラインは 8 つのファーストクラスのスラッシュコマンドとして、
-ステージごとに 1 つずつ提供され、それぞれ `/plan-<stage>` として独立して
-呼び出せます。
+パイプラインは、ステージごとに 1 つずつ、8 つのファーストクラスのスラッシュコマンドとして出荷されます —
+それぞれ `/plan-<stage>` として個別に呼び出せます。
+[/plan](/docs/pipeline/plan) オーケストレーターは、ミッションから実行済みのスイートまで、これらのステージを駆動します。
 
 | ステージ | 役割 | 位置 |
 |-------|------|----------|
-| [/plan-spec](/docs/pipeline/plan-spec) | フォージ — プロセから仕様へ | 先頭 |
-| [/plan-generate](/docs/pipeline/plan-generate) | ジェネレーター — 仕様からプランスイートへ | 中盤 |
-| [/plan-review](/docs/pipeline/plan-review) | 監査担当 — フォレンジックなプラン監査 | 中盤 |
-| [/plan-design](/docs/pipeline/plan-design) | アーキテクト — アーキテクチャを伴うスイートのための `_inputs/design.md` | 条件付きゲート |
-| [/plan-execute](/docs/pipeline/plan-execute) | 実行担当 — フェーズの実行 | 終端 |
-| [/plan-status](/docs/pipeline/plan-status) | レポーター — 読み取り専用ステータス | 読み取り専用 |
-| [/plan-audit](/docs/pipeline/plan-audit) | ガーディアン — spec → generate → review のクローズドループラッパー | 直交（実行前） |
-| /plan-amend | スチュワード — 既存スイートの再入可能な修正 | 再入可能 |
+| [/plan-spec](/docs/pipeline/plan-spec) | フォージ — 散文から仕様へ | 先頭 |
+| [/plan-generate](/docs/pipeline/plan-generate) | ジェネレーター — 仕様からプランスイートへ | チェーンの中間 |
+| [/plan-review](/docs/pipeline/plan-review) | オーディター — フォレンジックなプラン監査 | チェーンの中間 |
+| [/plan-design](/docs/pipeline/plan-design) | アーキテクト — アーキテクチャに関わるスイートのための `_inputs/design.md` | 条件付きゲート |
+| [/plan-execute](/docs/pipeline/plan-execute) | エグゼキューター — フェーズの実行 | 終端 |
+| [/plan-status](/docs/pipeline/plan-status) | レポーター — 読み取り専用のステータス | 読み取り専用 |
+| [/plan-audit](/docs/pipeline/plan-audit) | ガーディアン — spec → generate → review のクローズドループによるラップ | 直交（実行前） |
+| [/plan-amend](/docs/pipeline/plan-amend) | スチュワード — 既存スイートの再入可能な修正 | 再入可能 |
 
-`/plan-audit` は線形フローに対して直交しており、その中の 1 ステージでは
-ありません。`/plan-spec → /plan-generate → /plan-review` を単一のクローズド
-ループとしてラップし、不足している上流ステージのみを実行し、発見事項を能動的に
-是正し、スイートを `/plan-execute` の準備が整った状態にします。これは下記の
-監査レビューシーケンスとは異なります。後者はプランスイートではなく実行済みの
-コードベースを監査します。
+`/plan-audit` は線形フローに対して直交しており、その中のステージではありません。
+`/plan-spec → /plan-generate → /plan-review` を 1 つのクローズドループとしてラップし、
+欠けている上流のステージだけを実行し、検出結果を能動的に是正し、スイートを `/plan-execute` の準備が整った状態にします。
+これは後述の監査レビューシーケンスとは別物です。監査レビューシーケンスは、プランスイートではなく、実行済みのコードベースを監査します。
 
-`/plan-design` は普遍的な儀式ではありません。`/plan-review` は、スイートが
-アーキテクチャを伴うサーフェスを変更するかどうかを分類します。変更する場合、
-`/plan-design` は `/plan-execute` と `/architecture-review` が消費する設計
-トレースを出力します。変更しない場合、レビュー済みのスイートはそのまま実行へ
-進みます。
+`/plan-design` は、すべての場合に行う儀式ではありません。`/plan-review` は、
+スイートがアーキテクチャに関わる面を変更するかどうかを分類します。
+変更する場合、`/plan-design` は、`/plan-execute` と `/architecture-review` が利用する設計トレースを出力します。
+変更しない場合、レビュー済みのスイートはそのまま実行に進みます。
 
 ## リサーチパイプライン
 
-リサーチパイプラインは 13 のファーストクラスのスラッシュコマンドとして、
-ステージごとに 1 つずつ提供され、それぞれ `/research-<stage>` として独立して
-呼び出せます。シーケンスゲートと引き継ぎマニフェストによって連鎖し、10 の
-厳密性マンデート（権威ある情報源、再現性、反証可能性、引用の完全性、事前登録、
-倫理／利益相反、統計的厳密性、オープンサイエンス／FAIR、レポーティング
-ガイドライン適合、理論的根拠／インパクト）の下にあります。
+リサーチパイプラインは、ステージごとに 1 つずつ、13 のファーストクラスのスラッシュコマンドとして出荷されます —
+それぞれ `/research-<stage>` として個別に呼び出せ、シーケンスゲートとハンドオフマニフェストによって連結され、
+10 の厳密性マンデート（権威ある情報源、再現性、反証可能性、引用の完全性、事前登録、
+倫理 / 利益相反、統計的厳密性、オープンサイエンス / FAIR、報告ガイドラインへの準拠、
+理論的基盤 / インパクト）の下で動作します。
 
 ```mermaid
 flowchart LR
@@ -90,33 +86,35 @@ flowchart LR
 
 | ステージ | 役割 | 位置 |
 |-------|------|----------|
-| [/research-ideate](/docs/pipeline/research-ideate) | 問題の定式化 — ドメインシードから候補となる問い | 先頭 |
-| [/research-spec](/docs/pipeline/research-spec) | 問いの枠づけ — 反証可能な仮説 + スコープ | 中盤 |
-| [/research-theory](/docs/pipeline/research-theory) | 概念フレームワーク + 変化の理論 | 中盤 |
-| [/research-sources](/docs/pipeline/research-sources) | 体系的な情報源収集 | 中盤 |
-| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA マップ + ギャップ分析 | 中盤 |
-| [/research-proposal](/docs/pipeline/research-proposal) | 目的 + 実現可能性 + インパクト + 事前登録計画 | 中盤 |
-| [/research-design](/docs/pipeline/research-design) | 研究デザイン + 事前登録 | 中盤 |
-| [/research-experiment](/docs/pipeline/research-experiment) | 実行 + 記録、再現可能 | 中盤 |
-| [/research-analysis](/docs/pipeline/research-analysis) | 結果 + 統計 | 中盤 |
-| [/research-paper](/docs/pipeline/research-paper) | トップティアの論文ドラフト | 中盤 |
-| [/research-review](/docs/pipeline/research-review) | ピアレビュー水準の批評 | 中盤 |
-| [/research-publish](/docs/pipeline/research-publish) | 投稿先パッケージ + 提出 | 中盤 |
-| [/research-disseminate](/docs/pipeline/research-disseminate) | 普及 + インパクト + FAIR アーカイブ | 終端 |
+| [/research-ideate](/docs/pipeline/research-ideate) | 問題の定式化 — ドメインのシードから候補となる問いを導く | 先頭 |
+| [/research-spec](/docs/pipeline/research-spec) | 問いの枠組み — 反証可能な仮説 + スコープ | チェーンの中間 |
+| [/research-theory](/docs/pipeline/research-theory) | 概念フレームワーク + 変化の理論 | チェーンの中間 |
+| [/research-sources](/docs/pipeline/research-sources) | 体系的な情報源の収集 | チェーンの中間 |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA マップ + ギャップ分析 | チェーンの中間 |
+| [/research-proposal](/docs/pipeline/research-proposal) | 目的 + 実現可能性 + インパクト + 事前登録の計画 | チェーンの中間 |
+| [/research-design](/docs/pipeline/research-design) | 研究デザイン + 事前登録 | チェーンの中間 |
+| [/research-experiment](/docs/pipeline/research-experiment) | 実行 + 記録、再現可能 | チェーンの中間 |
+| [/research-analysis](/docs/pipeline/research-analysis) | 結果 + 統計 | チェーンの中間 |
+| [/research-paper](/docs/pipeline/research-paper) | トップティアの論文ドラフト | チェーンの中間 |
+| [/research-review](/docs/pipeline/research-review) | 査読レベルの批評 | チェーンの中間 |
+| [/research-publish](/docs/pipeline/research-publish) | 投稿先向けのパッケージ + 投稿 | チェーンの中間 |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | 普及 + インパクト + FAIR なアーカイブ | 終端 |
 
-`/research` のラップされたワークフローオーケストレーターは、これらのステージを
-生の問いから公開された論文まで駆動し（それ自体はステージではありません）、次の
-ステージがそれに基づいて構築する前に各ステージの出力を独立して確認します。
-`--quick` は、一回限りの引用付きレポートのために `/research-sources` +
-`/research-synthesis` のみを実行します。
+[/research](/docs/pipeline/research) のラップ型ワークフローオーケストレーターは、生の問いから公開された論文まで、
+これらのステージを駆動します（オーケストレーター自体はステージではありません）。
+次のステージが前のステージの出力に基づいて構築を始める前に、各ステージの出力を独立してチェックします。
+`--quick` は、1 回限りの引用付きレポートのために `/research-sources` + `/research-synthesis` だけを実行します。
 
-経験的な各段階（ソース、設計、実験、分析）と執筆の各段階（論文、レビュー、公開、普及）はさらに、厳密性を運用化するサーフェス——公平な複数手法比較、比較対象の出所、実験プログラムの足場、計算利用計画、オプトインの自律実験ループ、完了定義の進出ゲート、そして段階的な開示を伴う盲検化——を活用します。これらは 10 のマンデートを拡張することなく、運用上の詳細を付け加えるものです。
+経験的なステージ（情報源、研究デザイン、実験、分析）と執筆のステージ（論文、レビュー、公開、普及）は、
+さらに厳密性を運用に落とし込む面 — 公平な複数手法の比較、比較対象の来歴、実験プログラムの足場、
+計算資源の利用計画、オプトインの自律実験ループ、完了の定義による前進ゲート、段階的な開示を伴う盲検化 — を活用します。
+これらは 10 のマンデートを拡張することなく、運用上の詳細を加えるものです。
 
 ## 監査レビューシーケンス
 
-`/audit` のラップされたワークフローオーケストレーターは、以下の 11 のすべての次元を単一の並列パスとして一掃します — `/plan` と `/research` の監査フォートレス版です — そして、重複を排除し重大度でトリアージされた単一の発見事項レポートを統合します（レポートのみ。是正は `/elevate` にルーティングされます）。各次元は個別にも呼び出せます。
+[/audit](/docs/pipeline/audit) のラップ型ワークフローオーケストレーターは、以下の 11 の次元すべてを 1 回の並列パスで一掃します — `/plan` と `/research` に相当する監査フォートレス版です — そして、重複を排除し重大度で振り分けた 1 つの検出結果レポートにまとめます（レポートのみ。是正は `/elevate` に回されます）。各次元は個別に呼び出すこともできます。
 
-`/fortress` のラップされたワークフローオーケストレーターは、`/audit` が報告するループを閉じます。`/audit` を介して検出し、各発見事項を検証し、それぞれの生存項目をその所有サーフェスで是正し、境界付きループで再監査し、結果を `/release-readiness` のゲートに通します — `/plan` と `/research` のプロダクション堅牢化版です。
+[/fortress](/docs/pipeline/fortress) のラップ型ワークフローオーケストレーターは、`/audit` が報告するループを閉じます。`/audit` を通じて検出し、各検出結果を検証し、検証を通過したすべての検出結果をその所有元の面で是正し、上限のあるループで再監査し、結果を [/release-readiness](/docs/pipeline/release-readiness) でゲートします — `/plan` と `/research` に相当する本番堅牢化版です。
 
 | コマンド | 品質領域 |
 |---------|--------------|
@@ -131,3 +129,60 @@ flowchart LR
 | [/dependency-audit](/docs/pipeline/dependency-audit) | 依存関係 |
 | [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | サプライチェーン |
 | [/threat-model-audit](/docs/pipeline/threat-model-audit) | 脅威モデル |
+
+## すべてのコマンド
+
+出荷されるすべてのコマンドです。`src/apothem/commands/` 配下の定義から生成されます。
+手書きのページがないコマンドには、同じ定義から生成されたページが用意されます。
+
+{/* apothem:generated-reference:start */}
+
+| Command | Summary |
+| --- | --- |
+| [/plan](/docs/pipeline/plan) | The plan-suite pipeline wrapped as one dynamic multi-agent workflow. |
+| [/plan-spec](/docs/pipeline/plan-spec) | Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. |
+| [/plan-generate](/docs/pipeline/plan-generate) | Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five … |
+| [/plan-review](/docs/pipeline/plan-review) | Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and … |
+| [/plan-design](/docs/pipeline/plan-design) | Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation … |
+| [/plan-execute](/docs/pipeline/plan-execute) | Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and … |
+| [/plan-amend](/docs/pipeline/plan-amend) | Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream … |
+| [/plan-audit](/docs/pipeline/plan-audit) | Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than … |
+| [/plan-status](/docs/pipeline/plan-status) | Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the … |
+| [/research](/docs/pipeline/research) | The research pipeline wrapped as a single dynamic multi-agent workflow. |
+| [/research-ideate](/docs/pipeline/research-ideate) | Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with … |
+| [/research-spec](/docs/pipeline/research-spec) | Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing … |
+| [/research-theory](/docs/pipeline/research-theory) | Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. |
+| [/research-sources](/docs/pipeline/research-sources) | Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the … |
+| [/research-proposal](/docs/pipeline/research-proposal) | Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record — the proposal stage of the /research pipeline. |
+| [/research-design](/docs/pipeline/research-design) | Operationalizes the synthesized research gap into testable predictions and a complete study design, then freezes the analysis plan in a preregistration before … |
+| [/research-experiment](/docs/pipeline/research-experiment) | Executes the designed study and captures raw data with full provenance — the run-and-record stage of the /research pipeline. |
+| [/research-analysis](/docs/pipeline/research-analysis) | Analyzes the raw data per the frozen preregistration — runs the planned statistical tests, reports effect sizes with confidence intervals (R7: never p-values … |
+| [/research-paper](/docs/pipeline/research-paper) | Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, … |
+| [/research-review](/docs/pipeline/research-review) | Subjects the finished paper to a peer-review-grade adversarial critique against venue standards — scores novelty, rigor, reproducibility, clarity, ethics, … |
+| [/research-publish](/docs/pipeline/research-publish) | Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability … |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer … |
+| [/audit](/docs/pipeline/audit) | The audit fortress wrapped as a single dynamic multi-agent workflow. |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Operator-driven accessibility audit pass against WCAG 2.2 AA. |
+| [/architecture-review](/docs/pipeline/architecture-review) | Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at … |
+| [/code-audit](/docs/pipeline/code-audit) | Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · … |
+| [/code-review](/docs/pipeline/code-review) | Operator-driven per-file code-quality review pass. |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Operator-driven per-dependency audit pass (direct + transitive). |
+| [/docs-review](/docs/pipeline/docs-review) | Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. |
+| [/perf-audit](/docs/pipeline/perf-audit) | Audits a deployed repository against the per-class performance budgets at `rules/performance-discipline.md` §1 — hook-handler runtime (10s/30s/60s tiers), … |
+| [/security-audit](/docs/pipeline/security-audit) | Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Operator-driven threat-modeling audit pass against STRIDE + PASTA. |
+| [/ux-review](/docs/pipeline/ux-review) | Developer-experience review of a host repository — audits CLI ergonomics (argument naming, help text, error messages, progress indicators), installation flow, … |
+| [/fortress](/docs/pipeline/fortress) | The production-hardening fortress wrapped as a single dynamic multi-agent workflow. |
+| [/elevate](/docs/pipeline/elevate) | Aggressive, zero-trust, open-loop MASTER repository-elevation command. |
+| [/eval](/docs/pipeline/eval) | Model-agnostic language-model evaluation campaign. |
+| [/freshify](/docs/pipeline/freshify) | Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. |
+| [/github-deploy-fresh](/docs/pipeline/github-deploy-fresh) | GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: &lt;repo-name&gt; v0.1.0 … |
+| [/github-deploy-next](/docs/pipeline/github-deploy-next) | Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull … |
+| [/projectify](/docs/pipeline/projectify) | Chat-app Project elevation command. |
+| [/release-readiness](/docs/pipeline/release-readiness) | Operator-driven pre-release gate sweep against the production-ready discipline. |
+| [/test-suite](/docs/pipeline/test-suite) | Behavior-first test authoring and execution workflow for a deployed repository. |
+| [/workflow](/docs/pipeline/workflow) | General-purpose workflow-harnessing command. |
+
+{/* apothem:generated-reference:end */}

@@ -2,11 +2,12 @@
 title: "update"
 description: "Referência da CLI para o comando apothem update."
 machineTranslated: true
-sourceHash: "fc03f27749f2a77a"
+sourceHash: "e6bb232cf7e7fd02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Reinstala a configuração de um adaptador de harness a partir do perfil compartilhado atual.
+Reinstala a configuração de um adaptador de harness a partir do perfil
+compartilhado atual.
 
 ## Sinopse
 
@@ -17,7 +18,10 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` rematerializa a saída do harness a partir do perfil compartilhado atual. Ele usa a mesma validação de perfil, seleção com `--harness all`, verificação de escopo de projeto, comportamento de dry-run e envelope JSON que `install`.
+`update` rematerializa a saída do harness a partir do perfil compartilhado
+atual. Ele usa a mesma validação de perfil, a mesma seleção com
+`--harness all`, a mesma verificação de escopo de projeto, o mesmo
+comportamento de simulação e o mesmo envelope JSON que `install`.
 
 O alias na forma contínua `apothem updating` resolve para o mesmo manipulador.
 
@@ -26,10 +30,10 @@ O alias na forma contínua `apothem updating` resolve para o mesmo manipulador.
 | Opção | Descrição |
 |---|---|
 | `--harness NAME` | Adaptador de harness a atualizar, ou `all` para o conjunto de todo o registro (obrigatório). |
-| `--profile PATH` | Caminho para o perfil compartilhado YAML. Padrão: `~/.config/apothem/profile.yaml`. |
-| `--dry-run` | Pré-visualiza a atualização sem escrever arquivos. |
-| `--project PATH` | Raiz do projeto para os harness com escopo de projeto. Obrigatório quando o conjunto de harness selecionado inclui adaptadores com escopo de projeto. |
-| `--quiet`, `-q` | Suprime a saída informativa; somente erros são emitidos. |
+| `--profile PATH` | Caminho para o YAML do perfil compartilhado. O padrão é `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Mostra uma prévia da atualização sem gravar arquivos. |
+| `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. Obrigatório quando o conjunto de harnesses selecionado inclui adaptadores com escopo de projeto. |
+| `--quiet`, `-q` | Suprime a saída informativa; apenas os erros são emitidos. |
 | `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
 | `--json` | Abreviação de `--format json`. |
@@ -40,6 +44,7 @@ O alias na forma contínua `apothem updating` resolve para o mesmo manipulador.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "update",
   "action": "updated",
@@ -70,9 +75,10 @@ apothem updating --harness claude-code   # lowercase variant
 
 | Código | Significado |
 |---|---|
-| 0 | Adaptador atualizado com sucesso ou dry-run planejado sem problemas |
-| 1 | Erro esperado de validação, perfil, harness, projeto ou adaptador |
-| 2 | Materialização em lote parcial após pelo menos uma escrita |
+| 0 | Adaptador atualizado com sucesso ou execução de simulação planejada sem erros |
+| 1 | Erro esperado de validação, de perfil, de harness, de projeto ou de adaptador |
+| 2 | Materialização parcial do lote após pelo menos uma gravação |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 

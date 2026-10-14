@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Zed（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "490d423446686f01"
+sourceHash: "03b431e47b5d9acd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,28 +17,48 @@ sourceHash: "490d423446686f01"
 apothem install --harness zed --project /path/to/project
 ```
 
-アダプターは、共有された Apothem のルールおよびガバナンス面から、プロジェクト
-スコープの Zed 指示ファイルを 1 つ書き込みます。Zed はプロジェクトルートにある
-単一のフラットな `.rules` ファイル（`AGENTS.md` / `CLAUDE.md` ファミリと並ぶ）を
-指示として読み取ります。ツールごとのルールディレクトリはないため、Apothem 面
-全体がこの 1 つのファイルに収まります。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Zed
+命令ファイルを 1 つ書き込みます。Zed が読み込むプロジェクト命令ファイルは 1 つだけで、
+次のリストで最初に一致したものです。
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+ツールごとのルールディレクトリはないため、Apothem 面全体が、このリストの先頭にある
+フラットな `.rules` ファイルに収まります。
 
 **書き込まれるファイル：** `<project>/.rules`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の実行のたびにプロジェクト `.rules` ファイルをレンダリングします。
-共有プロファイルが真実の源です。既存の `.rules`（または生成されたファイルへの
-プロジェクトローカルな編集）は、次回の同期が Apothem 管理下のコンテンツを置き換える
-前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
+実行するたびに、プロジェクトの `.rules` ファイルをレンダリングします。共有プロファイルが
+信頼できる情報源です。既存の `.rules`（または生成されたファイルへのプロジェクトローカルな
+編集）は、次回の同期が Apothem 管理のコンテンツを置き換える前にバックアップされます。
 
 ## 互換性に関する注意
 
-Zed の現在の指示面は、プロジェクトルートのフラットな `.rules` ファイルです。
-グローバルな `~/.config/zed/AGENTS.md` 指示ファイルと MCP コンテキストサーバー
-ブロック（`.zed/settings.json` の `context_servers`）はオペレーターの所有物であり、
-Apothem はそれらを書き込みません。
+Zed は `AGENTS.md` を主要な命令ファイルとし、プロジェクトの `.rules` をサポート対象の
+互換ファイルとして維持しています（[Zed の命令](https://zed.dev/docs/ai/instructions)）。
+Zed は最初に一致したものだけを読み込むため、新しい `.rules` は、プロジェクトがすでに依存して
+いる `AGENTS.md`、`CLAUDE.md`、またはリストのより下位にある他のファイルを隠してしまいます。
+インストールがそれらのファイルを編集することは決してありません。`.rules` に Apothem ブロック
+しかなく、より優先度の低いファイルにあなたのテキストがある場合、インストールと更新は、
+隠されたファイルを名指しする警告を出力します。必要な命令を Zed で維持するには、それらを
+`.rules` の Apothem ブロックの外側にコピーしてください。
+
+グローバルな `~/.config/zed/AGENTS.md` 命令ファイルと MCP コンテキストサーバーブロック
+（`.zed/settings.json` の `context_servers`）はオペレーターの所有であり、Apothem はそれらを
+書き込みません。
 
 ## 検証
 
@@ -46,9 +66,9 @@ Apothem はそれらを書き込みません。
 apothem verify --harness zed --project /path/to/project
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -58,7 +78,7 @@ verify コマンドは、次のことを確認します。
 apothem update --harness zed --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクト `.rules` ファイルを再導出します。
+現在の共有プロファイルの状態から、プロジェクトの `.rules` ファイルを再導出します。
 
 ## アンインストール
 
@@ -66,11 +86,11 @@ apothem update --harness zed --project /path/to/project
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除し、まずタイムスタンプ
-付きのバックアップにリネームします。共有プロファイルの YAML と Apothem エンジンは
-影響を受けません。
+アダプターが書き込んだネイティブ設定ファイルを、まずタイムスタンプ付きのバックアップへ
+名前を変更したうえで削除します。共有プロファイルの YAML と Apothem エンジンには
+影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -81,11 +101,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness zed --project /path/to/project` を再実行する |
-| 検証に失敗した | `apothem update --harness zed --project /path/to/project` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness zed --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness zed --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness zed --project /path/to/project` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

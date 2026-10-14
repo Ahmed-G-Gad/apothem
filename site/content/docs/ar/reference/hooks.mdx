@@ -1,52 +1,118 @@
 ---
 title: "الخطّافات"
-description: "معالِجات أحداث الأدوات التي تنطلق عند SessionStart وPreToolUse وStop، وتُحمِّل سياقات الرسائل التي تفرض عزل git وانضباط الخطط."
+description: "معالِجات أحداث الأدوات التي تنطلق عند SessionStart وPreToolUse وPostToolUse وStop، وتُحمِّل سياقات رسائل تفرض عزل git وانضباط الخطط، مع عقد وقت تشغيل مُختبَر وحالة لكل مستخدم."
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تنطلق الخطّافات عند أحداث الأدوات وتُحمِّل سياقات رسائل يعاملها المساعِد بوصفها
-مُوجِّهات نظام إضافيّة. يعيش التوصيل في كتلة خطّافات <bdi>`settings.json`</bdi>
-الخاصّة بـ <bdi>Claude Code</bdi>، وملف خطّافات <bdi>`hooks.json`</bdi> الخاصّ بـ
-<bdi>Codex</bdi>، وخريطة خطّافات <bdi>`settings.json`</bdi> الخاصّة بـ
+تنطلق الخطّافات عند أحداث الأدوات وتُحمِّل سياقات رسائل يعاملها المساعد بوصفها
+مُوجِّهات نظام إضافية. ويعيش التوصيل في كتلة الخطّافات في <bdi>`settings.json`</bdi>
+الخاص بـ <bdi>Claude Code</bdi> (تثبيت المحرّك) أو في <bdi>`hooks.json`</bdi> الخاص
+بالإضافة (تثبيت الإضافة)، وفي ملف الخطّافات <bdi>`hooks.json`</bdi> الخاص بـ
+<bdi>Codex</bdi>، وفي خريطة الخطّافات في <bdi>`settings.json`</bdi> الخاص بـ
 <bdi>Qwen Code</bdi>.
 
-| الحدث | المُهلة | الغرض |
+| الحدث | المهلة | الغرض |
 |-------|--------:|---------|
-| SessionStart | 30 ثانية | قراءة الذاكرة، فحص حالة الخطّة، الإبلاغ عن الجاهزيّة |
-| PreCompact | 30 ثانية | التحقّق من أنّ الحالة قد أُخرِجت خارجيًّا قبل الضغط |
-| PostCompact | 30 ثانية | استعادة حالة العمل بعد الضغط |
-| Stop | 60 ثانية | الإخراج الخارجيّ عند انتهاء الجلسة |
-| PreToolUse (Bash) | 10 ثوانٍ | التحقّق من Bash — عزل مُخرَجات git |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 ثوانٍ | عزل مراجع الخطط، فحوص frontmatter |
+| <bdi>SessionStart</bdi> | 30 ثانية | قراءة الذاكرة، وفحص حالة الخطة، والإبلاغ عن الجاهزية؛ وبعد الضغط، تسليم سياق الاستعادة |
+| <bdi>PreCompact</bdi> | 30 ثانية | التحقّق من إخراج الحالة خارجيًا قبل الضغط (<bdi>Codex</bdi>، و<bdi>Qwen Code</bdi>؛ غير مُسجَّل على <bdi>Claude Code</bdi>) |
+| <bdi>PostCompact</bdi> | 30 ثانية | استعادة حالة العمل بعد الضغط (<bdi>Codex</bdi>، و<bdi>Qwen Code</bdi>؛ غير مُسجَّل على <bdi>Claude Code</bdi>) |
+| <bdi>Stop</bdi> | 60 ثانية | بروتوكول نهاية الجلسة، اختياري |
+| <bdi>PostToolUse</bdi> | 10 ثوانٍ | تنبيه استباقي بالضغط، مرتين على الأكثر لكل جلسة |
+| <bdi>PreToolUse</bdi> (الصدفة: <bdi>Bash</bdi>، و<bdi>PowerShell</bdi>، و<bdi>`run_shell_command`</bdi>) | 10 ثوانٍ | عزل مُنتَجات <bdi>Git</bdi>، ومحلّية الخطط، وحارس التقييم الديناميكي |
+| <bdi>PreToolUse (Write/Edit/NotebookEdit/apply_patch)</bdi> | 10 ثوانٍ | عزل مراجع الخطط، وترويسة التأليف، ومحلّية الخطط، وحارسا الاعتماديات والتقييم الديناميكي |
+| <bdi>PreToolUse (AskUserQuestion)</bdi> | 10 ثوانٍ | سلامة صياغة الواسم <bdi>`(Recommended)`</bdi> |
 
 ## المُوزِّع
 
-تستدعي مدخلات الخطّافات المثبَّتة المُوزِّع عبر مسار السكربت المطلق. تحمل قوالب
-الإعدادات الرمز <bdi>`${HARNESS_ROOT}`</bdi> —
-<bdi>`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`</bdi>
-— الذي يرسمه المُثبِّت إلى المسار الحقيقيّ لجذر الـ harness وقت التثبيت
-(يُجسِّد <bdi>Claude Code</bdi> و<bdi>Qwen Code</bdi> المُوزِّع تحت
-<bdi>`<harness-root>/apothem/hooks/`</bdi>؛ و<bdi>Codex</bdi> تحت
-<bdi>`<harness-root>/hooks/`</bdi>). المُوزِّع سكربت مستقلّ من المكتبة القياسيّة:
-فهو يُمهِّد <bdi>`sys.path`</bdi> الخاصّ به، فلا حاجة إلى حزمة <bdi>`apothem`</bdi>
-قابلة للاستيراد على المضيف. من سحب مصدريّ، يُشغِّل الشكل الوحدويّ
-<bdi>`python -m apothem.hooks.dispatch <event>`</bdi> (مع <bdi>`PYTHONPATH=src`</bdi>)
-الشيفرة نفسها للتطوير. يُحمِّل المُوزِّع <bdi>`hooks/lib/resolve_root.py`</bdi> لحلّ
-جذر المنظومة، ويفوِّض إلى <bdi>`hooks/emit_hook_context.py`</bdi> و
-<bdi>`hooks/session_start_bootstrap.py`</bdi>.
+تستدعي مُدخَلات الخطّافات التي يثبّتها المحرّك المُوزِّعَ عبر المسار المطلق للبرنامج
+النصّي، مع مُفسِّر يُحَلّ وقت التثبيت. وتحمل القوالب الرمزين <bdi>`${PYTHON_BIN}`</bdi>
+و<bdi>`${HARNESS_ROOT}`</bdi>، اللذين يُصيِّرهما المُثبِّت وقت التثبيت. يُجسِّد
+<bdi>Claude Code</bdi> و<bdi>Qwen Code</bdi> المُوزِّع تحت
+<bdi>`<harness-root>/.apothem/support/hooks/`</bdi>؛ و<bdi>Codex</bdi> تحت
+<bdi>`<harness-root>/hooks/`</bdi>. تستخدم مُدخَلات <bdi>Claude Code</bdi> صيغة التنفيذ
+المباشر (<bdi>`command`</bdi> مع <bdi>`args`</bdi>)، فلا تحتاج إلى صدفة. وتُشغِّل إضافة
+<bdi>Claude Code</bdi> كل خطّاف بالصيغة
+<bdi>`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`</bdi>،
+في صدفة الخطّافات الافتراضية لـ <bdi>Claude Code</bdi> (<bdi>`sh`</bdi> على
+<bdi>macOS</bdi> و<bdi>Linux</bdi>، و<bdi>Git Bash</bdi> على <bdi>Windows</bdi>)؛ ويعثر
+برنامج التمهيد على مُفسِّر <bdi>Python 3.10+</bdi> ويُشغِّل المُوزِّع المُحزَّم. وعلى
+<bdi>Windows</bdi> من دون <bdi>Git for Windows</bdi>، استخدم تثبيت المحرّك
+(<bdi>`apothem install --harness claude-code`</bdi>)، الذي لا تحتاج خطّافاته ذات صيغة
+التنفيذ المباشر إلى صدفة. المُوزِّع برنامج نصّي مستقل يعتمد على المكتبة القياسية
+وحدها: فهو يُمهِّد <bdi>`sys.path`</bdi> الخاص به، فلا حاجة إلى حزمة
+<bdi>`apothem`</bdi> قابلة للاستيراد على المضيف. ومن نسخة مسحوبة من المصدر، تُشغِّل
+صيغة الوحدة <bdi>`python -m apothem.hooks.dispatch <event>`</bdi> (مع
+<bdi>`PYTHONPATH=src`</bdi>) الشيفرة نفسها لأغراض التطوير. ويُحمِّل المُوزِّع
+<bdi>`hooks/lib/resolve_root.py`</bdi> لحلّ جذر المنظومة، ويُفوِّض إلى
+<bdi>`hooks/emit_hook_context.py`</bdi> و<bdi>`hooks/session_start_bootstrap.py`</bdi>.
 
 ## سياقات الرسائل
 
-تعيش سياقات Markdown لكلّ حدث تحت <bdi>`src/apothem/hooks/messages/`</bdi>:
+تعيش سياقات <bdi>Markdown</bdi> لكل حدث تحت <bdi>`src/apothem/hooks/messages/`</bdi>:
 
-- <bdi>`postcompact.md`</bdi>، <bdi>`precompact.md`</bdi>، <bdi>`stop.md`</bdi>
-- <bdi>`pretooluse-bash.md`</bdi>، <bdi>`pretooluse-write.md`</bdi>،
-  <bdi>`pretooluse-edit.md`</bdi>، <bdi>`pretooluse-notebookedit.md`</bdi>
+- دورة حياة الجلسة: <bdi>`sessionstart.md`</bdi>، و<bdi>`precompact.md`</bdi>،
+  و<bdi>`postcompact.md`</bdi>، و<bdi>`stop.md`</bdi>،
+  و<bdi>`posttooluse-proactive-compaction.md`</bdi>
+- استدعاءات الصدفة: <bdi>`pretooluse-bash.md`</bdi>، و<bdi>`pretooluse-bash-plan-guard.md`</bdi>
+- كتابة الملفات: <bdi>`pretooluse-write.md`</bdi>، و<bdi>`pretooluse-edit.md`</bdi>،
+  و<bdi>`pretooluse-notebookedit.md`</bdi>، و<bdi>`pretooluse-write-plan-guard.md`</bdi>،
+  و<bdi>`pretooluse-write-header-guard.md`</bdi>، و<bdi>`pretooluse-edit-header-guard.md`</bdi>،
+  و<bdi>`pretooluse-conformity.md`</bdi>
+- حرّاس على المحتوى: <bdi>`pretooluse-dependency-guard.md`</bdi>،
+  و<bdi>`pretooluse-eval-guard.md`</bdi>
+- الأسئلة: <bdi>`pretooluse-askuserquestion-recommended.md`</bdi>
 
-يُحمِّل المُوزِّع كلّ ملفّ سياق عندما ينطلق حدثه وتكون وسيطة سياقه مُسجَّلة في ملفّ
-الإعدادات.
+على <bdi>Claude Code</bdi>، يُسلِّم خطّافُ <bdi>SessionStart</bdi> الملفَّ
+<bdi>`postcompact.md`</bdi> عندما تُستأنَف الجلسة بعد الضغط، لأن <bdi>Claude Code</bdi>
+لا يُمرِّر مُخرَجات خطّاف <bdi>PreCompact</bdi> أو <bdi>PostCompact</bdi> إلى المساعد.
+
+يُحمِّل المُوزِّع كل ملف سياق عندما ينطلق حدثه وتكون وسيطة سياقه مُسجَّلة في ملف
+الإعدادات. ويُزال سطر تعليق الترخيص وقسم <bdi>`## Bindings`</bdi> الختامي قبل أن يصل
+النص إلى المساعد؛ فكلاهما موجود للمشرفين ولبوابة المطابقة.
+
+## عقد وقت التشغيل
+
+يفي كل أمر خطّاف مُسجَّل بالعقد نفسه، الذي يفحصه
+<bdi>`tests/hooks/test_hook_contract.py`</bdi> على الإضافة، وعلى تثبيت المحرّك لـ
+<bdi>Claude Code</bdi>، وعلى <bdi>Codex</bdi>، وعلى <bdi>Qwen Code</bdi>:
+
+- **يعمل من نسخة مسحوبة عادية.** يخرج بالرمز 0، ويكون الخرج القياسي فارغًا أو كائن
+  <bdi>JSON</bdi> واحدًا. ولا يعتمد أي خطّاف على بِتّ التنفيذ لملف.
+- **مُسجَّل مرة واحدة.** تظهر كل تركيبة من الحدث والمُطابِق والرسالة مرة واحدة لكل
+  سطح، فلا يعمل خطّاف أبدًا مرتين على استدعاء أداة واحد.
+- **محدود.** لا يتجاوز أي نص مُصدَر 10,000 حرف. ولا يتكلّم حارس الاعتماديات إلا عندما
+  تستهدف الكتابة بيان اعتماديات أو ملف قفل، ولا يتكلّم حارس التقييم الديناميكي إلا
+  عندما يحتوي المحتوى أو الأمر على بدائية تقييم أو إلغاء تسلسل غير آمن. وينطلق تنبيه
+  الضغط مرتين على الأكثر لكل جلسة.
+- **يستخدم القنوات التي يُسلِّمها إطار العمل.** تنتقل توجيهات <bdi>PreToolUse</bdi> في
+  <bdi>`hookSpecificOutput`</bdi>؛ ويُعيد حارس <bdi>AskUserQuestion</bdi> القيمة
+  <bdi>`additionalContext`</bdi>، أو <bdi>`permissionDecision: deny`</bdi> في ظل
+  الاشتراك الاختياري الصارم. يُهمِل <bdi>Claude Code</bdi> مُخرَجات <bdi>PreCompact</bdi>
+  و<bdi>PostCompact</bdi>، لذا يصل سياق الاستعادة بعد الضغط على <bdi>Claude Code</bdi>
+  مع حدث <bdi>SessionStart</bdi> الذي يكون مصدره <bdi>`compact`</bdi>.
+- **لا يُشغِّل شيفرة المشروع أبدًا.** يَحُلّ برنامج التمهيد شجرته المُثبَّتة الخاصة به
+  ولا يأخذ أبدًا برنامجًا نصّيًا من المشروع المفتوح. وتُقرأ توجيهات بدء الجلسة من
+  الشجرة المُثبَّتة؛ ولا يُقرأ دليل المشروع إلا لملخّصات الخطط والذاكرة.
+- **يُخفِق بصورة مفتوحة.** ملف الرسالة المفقود، أو المُفسِّر المفقود، أو الحالة
+  التالفة يُنتِج الخروج بالرمز 0 وغلافًا صالحًا.
+
+| المتغيّر | الافتراضي | الأثر |
+| --- | --- | --- |
+| <bdi>`APOTHEM_HOOKS_DISABLE`</bdi> | غير مضبوط | القيم <bdi>`1`</bdi> أو <bdi>`true`</bdi> أو <bdi>`yes`</bdi> أو <bdi>`on`</bdi> تُسكِت كل خطّاف يمرّ عبر المُوزِّع، وخطّاف بوابة المطابقة في تثبيت المحرّك |
+| <bdi>`APOTHEM_SESSION_END_ENABLED`</bdi> | مُعطَّل | القيم <bdi>`1`</bdi> أو <bdi>`true`</bdi> أو <bdi>`yes`</bdi> أو <bdi>`on`</bdi> تُفعِّل بروتوكول نهاية الجلسة عند <bdi>Stop</bdi>. وخطّاف <bdi>Stop</bdi> الذي يُعيد سياقًا يجعل المساعد يتابع، لذا يُكلِّف البروتوكول دورًا إضافيًا واحدًا لكل جلسة؛ ولا ينطلق أبدًا عند توقّف يلي أصلًا متابعةً دفعها خطّاف |
+| <bdi>`APOTHEM_SESSION_END_MIN_STOPS`</bdi> | <bdi>`3`</bdi> | عدد نهايات الأدوار قبل أن يجوز انطلاق بروتوكول نهاية الجلسة |
+| <bdi>`APOTHEM_PROACTIVE_COMPACTION_ENABLED`</bdi> | مُفعَّل | القيم <bdi>`0`</bdi> أو <bdi>`false`</bdi> أو <bdi>`no`</bdi> أو <bdi>`off`</bdi> تُسكِت تنبيه الضغط |
+| <bdi>`APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD`</bdi> | <bdi>`18`</bdi> | استدعاءات الأدوات لكل نافذة تنبيه |
+| <bdi>`APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD`</bdi> | <bdi>`20000`</bdi> | بايتات مُخرَجات الأدوات لكل نافذة تنبيه |
+| <bdi>`APOTHEM_HOOK_STATE_DIR`</bdi> | انظر أدناه | دليل حالة الخطّافات لكل جلسة |
+
+تعيش حالة الخطّافات لكل جلسة في دليل خاص بكل مستخدم يُنشأ بالوضع <bdi>`0700`</bdi>:
+<bdi>`APOTHEM_HOOK_STATE_DIR`</bdi> عند ضبطه، وإلا <bdi>`${CLAUDE_PLUGIN_DATA}/state`</bdi>
+لإضافة <bdi>Claude Code</bdi>، وإلا <bdi>`$XDG_STATE_HOME/apothem`</bdi>، وإلا
+<bdi>`~/.local/state/apothem`</bdi> (<bdi>`%LOCALAPPDATA%\apothem\state`</bdi> على
+<bdi>Windows</bdi>).
 
 ## جرد رسائل الخطّافات المُولَّد
 

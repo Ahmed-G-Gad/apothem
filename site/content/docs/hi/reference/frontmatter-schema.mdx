@@ -1,24 +1,24 @@
 ---
 title: "Frontmatter स्कीमा"
-description: "YAML frontmatter ब्लॉक संरचना, प्रति-क्लास आवश्यक कुंजियों, और सभी आर्टिफ़ैक्ट क्लासों में वैलिडेटर प्रवर्तन नियमों के लिए संदर्भ मार्गदर्शिका।"
+description: "YAML frontmatter ब्लॉक संरचना, प्रति-वर्ग आवश्यक कुंजियों, और सभी आर्टिफ़ैक्ट वर्गों में वैलिडेटर प्रवर्तन नियमों के लिए संदर्भ मार्गदर्शिका।"
 machineTranslated: true
-sourceHash: "9c6a607ba1dd7651"
+sourceHash: "79d900f52578b1b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **हर आर्टिफ़ैक्ट क्लास पर YAML frontmatter के लिए कैननिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) परिपाटियों में दिया सारांश इनलाइन घोषणा है; [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) के अंतर्गत प्रति-क्लास JSON Schema मशीन-पठनीय अनुबंध हैं; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे डाउनस्ट्रीम योगदानकर्ता उद्धृत करते हैं।
+> **हर आर्टिफ़ैक्ट वर्ग पर YAML frontmatter के लिए कैनोनिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) के Conventions अनुभाग में दिया सारांश इनलाइन घोषणा है; [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) पर प्रति-वर्ग JSON स्कीमा (`additionalProperties` अज्ञात कुंजियों को अस्वीकार करता है) मशीन-पठनीय अनुबंध हैं और किसी भी असहमति में वही मान्य होते हैं। यह पृष्ठ आवश्यक-कुंजी अनुक्रमणिका है, और [`artifact-schema.mdx`](/docs/reference/artifact-schema) प्रति-वर्ग टेम्पलेट और हल किए गए उदाहरण वहन करता है — दोनों उन स्कीमा के मानव-पठनीय प्रक्षेपण हैं।
 
 ---
 
-## 1. Frontmatter ब्लॉक संरचना
+## 1. frontmatter ब्लॉक का आकार
 
-प्रत्येक आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैननिकल लेखकत्व-हेडर बैनर Markdown-परिवार की फ़ाइलों में frontmatter के ऊपर बैठता है; frontmatter ठीक उसके बाद आता है।
+हर आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैनोनिकल लेखकत्व-हेडर बैनर Markdown-परिवार की फ़ाइलों पर frontmatter के ऊपर रहता है; frontmatter उसके ठीक बाद आता है।
 
-कुंजियाँ `kebab-case` का उपयोग करती हैं। अदिश मान या तो खुले होते हैं या दोहरे-उद्धरण में; कोलन, हैश चिह्न या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण में रखे जाते हैं।
+कुंजियाँ `kebab-case` का उपयोग करती हैं। अदिश मान या तो बिना उद्धरण चिह्नों के होते हैं या दोहरे उद्धरण चिह्नों में; कोलन, हैश चिह्न, या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण चिह्नों में रखे जाते हैं।
 
-## 2. प्रति-क्लास आवश्यक फ़ील्ड
+## 2. प्रति-वर्ग आवश्यक फ़ील्ड
 
-आवश्यक कुंजियों का समुच्चय आर्टिफ़ैक्ट क्लास के अनुसार बदलता है। आधिकारिक संरचना `scripts/dev/validate_ecosystem.py` और `schemas/` निर्देशिका के अंतर्गत प्रति-क्लास JSON Schema (प्रति आर्टिफ़ैक्ट क्लास एक स्कीमा फ़ाइल) द्वारा प्रवर्तित होती है।
+आवश्यक-कुंजी समुच्चय आर्टिफ़ैक्ट वर्ग के अनुसार बदलता है। आधिकारिक आकार `scripts/dev/validate_ecosystem.py` और `schemas/` डायरेक्टरी के अंतर्गत प्रति-वर्ग JSON स्कीमा (प्रति आर्टिफ़ैक्ट वर्ग एक स्कीमा फ़ाइल) द्वारा लागू किया जाता है।
 
 ```text
 schemas/agent.schema.json
@@ -28,16 +28,17 @@ schemas/output-style.schema.json
 schemas/plan.schema.json
 ```
 
-| क्लास | आवश्यक कुंजियाँ |
+| वर्ग | आवश्यक कुंजियाँ |
 |-------|---------------|
 | `CLAUDE.md` (रूट कॉन्फ़िग) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | नियम (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
-| कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
-| सहायक (नीचे दिखाई गई कैननिकल निर्देशिका) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+| कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
+| प्रत्यायोजित वर्कर (कैनोनिकल डायरेक्टरी नीचे दिखाई गई है) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा दोनों वर्तनियों में से ठीक एक को स्वीकार करता है |
+| आउटपुट स्टाइल (`src/apothem/output-styles/*.md`) | `name`, `description`; हर शिप की गई स्टाइल `keep-coding-instructions: true` भी सेट करती है ताकि Claude Code अपने सॉफ़्टवेयर इंजीनियरिंग निर्देश बनाए रखे |
 
-[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) के प्रति-क्लास स्कीमा टाइप, फ़ॉर्मेट, enum और पैटर्न प्रतिबंधों सहित पूर्ण बाधा समुच्चय रखते हैं।
+[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) पर प्रति-वर्ग स्कीमा पूरा बाधा समुच्चय वहन करते हैं, जिसमें प्रकार, प्रारूप, enum, और पैटर्न प्रतिबंध, तथा लंबाई सीमाएँ शामिल हैं: किसी स्किल या कमांड का `description` अधिकतम 1,024 वर्णों का होता है, जो [Agent Skills](https://agentskills.io/specification) की सीमा है।
 
 ## 3. वैलिडेटर
 
-`scripts/dev/validate_ecosystem.py` आर्टिफ़ैक्ट ट्री में चलता है, ऊपर दिए आवश्यक कुंजी समुच्चयों को लागू करता है, और किसी भी ऐसे आर्टिफ़ैक्ट पर `[FAIL]` रिपोर्ट करता है जिसमें कोई आवश्यक फ़ील्ड अनुपस्थित हो। `src/apothem/conformity/frontmatter_grep.py` का प्रति-लेखन `frontmatter-grep` PreToolUse Write/Edit हुक सीमाओं पर वही संरचना प्रवर्तित करता है।
+`scripts/dev/validate_ecosystem.py` आर्टिफ़ैक्ट वृक्ष पर चलता है, ऊपर दिए आवश्यक-कुंजी समुच्चय लागू करता है, और किसी आवश्यक फ़ील्ड से रहित हर आर्टिफ़ैक्ट पर `[FAIL]` रिपोर्ट करता है। `src/apothem/conformity/frontmatter_grep.py` पर स्थित प्रति-लेखन `frontmatter-grep` PreToolUse Write/Edit हुक सीमाओं पर वही आकार लागू करता है।

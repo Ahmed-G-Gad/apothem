@@ -1,23 +1,22 @@
 ---
-title: "Delegierte Worker"
-description: "Persistente delegierte Worker für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
+title: "Helfer"
+description: "Persistente Helfer-Agents für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "9aeb014bc69c5163"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Persistente delegierte Worker leben als flache Dateien im kanonischen
-Verzeichnis für delegierte Worker mit dem Suffix `<name>.md`. Der kanonische Pfad
-ist:
+Persistente Helfer liegen als flache Dateien mit dem Suffix `<name>.md` im
+kanonischen Helfer-Verzeichnis. Der kanonische Pfad ist:
 
 ```text
 src/apothem/agents/
 ```
 
-Jeder delegierte Worker ist eine Rolle für Recherche, Audit, Qualität oder
-Orchestrierung mit eigenen Werkzeugbeschränkungen und eigenem System-Prompt.
+Jeder Helfer ist eine Rolle für Recherche, Audit, Qualität oder Orchestrierung
+mit eigenen Werkzeugbeschränkungen und eigenem System-Prompt.
 
-| Delegierter Worker | Datei | Muster | Modellrichtlinie |
+| Helfer | Datei | Muster | Modellrichtlinie |
 |-------|------|---------|--------------|
 | Codebase Explorer | siehe Manifest-Pfad unten | Recherche | vom Host gewählt |
 | Convention Auditor | siehe Manifest-Pfad unten | Audit | vom Host gewählt |
@@ -47,19 +46,38 @@ maxTurns: <integer>
 ---
 ```
 
+## Konvertierung je Harness
+
+Ein Helfer, dessen `tools`-Freigabe nach Abzug von `disallowedTools` weder
+`Write` noch `Edit` enthält, ist schreibgeschützt. Jeder Harness, der Helfer
+konvertiert, setzt diese Beschränkung entweder nativ durch oder lässt die
+Kennzeichnung als schreibgeschützt weg:
+
+| Harness | Werkzeuglimit | Turn-Limit | Modell und Aufwand |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` wie geschrieben | `maxTurns` | geerbt (nicht gesetzt) |
+| Codex | `sandbox_mode = "read-only"` für schreibgeschützte Helfer | nicht verfügbar | geerbt (nicht gesetzt) |
+| Gemini CLI | `tools`-Erlaubnisliste mit Gemini-Werkzeugnamen | `max_turns` | geerbt (nicht gesetzt) |
+| Qwen Code | `tools` / `disallowedTools` in Qwen-Werkzeugnamen | nicht abgebildet | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` je Werkzeug) | nicht abgebildet | geerbt (nicht gesetzt) |
+| Antigravity | keines ausgegeben; die Beschreibung lässt „read-only“ weg | nicht verfügbar | geerbt (nicht gesetzt) |
+
+Hermes, Open-Claw und Kimi Code erhalten die Helferdateien als
+Unterstützungsmaterial, nicht als native Helfer.
+
 ## Orchestrierung
 
-Die Bereitstellung delegierter Worker, das Protokoll für den parallelen Start, die
-Durchsetzung des Rückgabevertrags und die Isolationsdisziplin leben in der
-Orchestrierungsregel. Der Versandbaum pro Worker lebt in der Regel der
-Orchestrierungsmuster, §Decision Tree. Kanonische Pfade:
+Die Bereitstellung von Helfern, das Protokoll für den parallelen Start, die
+Durchsetzung des Rückgabevertrags und die Isolationsdisziplin sind in der
+Orchestrierungsregel festgelegt. Der Dispatch-Baum je Worker steht in der Regel
+zu den Orchestrierungsmustern, §Decision Tree. Kanonische Pfade:
 
 ```text
 src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## Generiertes Inventar delegierter Worker
+## Generiertes Agent-Inventar
 
 {/* apothem:generated-reference:start */}
 

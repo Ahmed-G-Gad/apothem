@@ -1,8 +1,8 @@
 ---
 title: "OpenCode"
-description: "Apothem-Werkzeugadapter für OpenCode (Beta)."
+description: "Apothem-Harness-Adapter für OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "1d807fc5d00e08ca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,9 @@ apothem install --harness opencode
 ```
 
 Der Adapter schreibt die JSON-Konfiguration von OpenCode, installiert
-Apothem-Fähigkeiten in die Fähigkeitenoberfläche von OpenCode, konvertiert
-Befehls-Prompts in OpenCode-Markdown-Befehlsdateien und normalisiert
-Apothem-Helferdefinitionen als OpenCode-Unterhelfer.
+Apothem-Skills in die Skill-Oberfläche von OpenCode, konvertiert Command-Prompts
+in Markdown-Command-Dateien von OpenCode und normalisiert Apothems
+Helfer-Definitionen als OpenCode-Sub-Helfer.
 
 **Geschriebene Dateien:**
 
@@ -34,17 +34,38 @@ Apothem-Helferdefinitionen als OpenCode-Unterhelfer.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
-Der Adapter rendert `opencode.json` mit einer `instructions`-Dateiliste, die auf
-die installierten Apothem-Regeln verweist, und propagiert dann jede gemeinsame
-Apothem-Kohorte entweder in eine native OpenCode-Oberfläche oder in einen
-Apothem-eigenen Unterstützungs-Teilbaum. Bereits passende, von Apothem verwaltete
-untergeordnete Elemente werden vor dem Ersetzen gesichert.
+Der Adapter rendert `opencode.json` mit einer `instructions`-Dateiliste, die Ihr
+Profildokument und Apothems stets aktive Regeln nennt, und propagiert dann jede
+gemeinsame Apothem-Kohorte entweder in eine native OpenCode-Oberfläche oder in
+einen Apothem-eigenen Unterstützungs-Teilbaum. Bestehende übereinstimmende, von
+Apothem verwaltete Kindeinträge werden vor dem Ersetzen gesichert.
 
 ## Kompatibilitätshinweise
 
-Regeln werden über die native `instructions`-Liste referenziert. Vorlagen und
-Hook-Prompts sind Referenzmaterial unter `~/.config/opencode/.apothem/support/`; Befehle,
-Fähigkeiten und Helferdefinitionen verwenden native Erkennungsorte.
+OpenCode fasst jede Datei, die die `instructions`-Liste nennt, in jeder Sitzung
+zusammen ([OpenCode-Regeln](https://opencode.ai/docs/rules/)). Die Liste nennt
+daher zuerst Ihr Profildokument und danach nur die Regeln, deren `alwaysApply`
+den Wert `true` hat, jeweils mit einem expliziten Pfad
+`~/.config/opencode/.apothem/support/rules/<name>.md`; OpenCode
+löst das führende `~/` gegen Ihr Home-Verzeichnis auf. Die pfadgefilterten
+Regeln, Templates und Hook-Prompts bleiben als Referenzmaterial unter
+`~/.config/opencode/.apothem/support/` installiert, wo eine Regel, ein Skill oder
+ein Command, die bzw. der eines davon zitiert, es bei Bedarf liest. Commands,
+Skills und Helfer-Definitionen nutzen native Discovery-Speicherorte.
+
+Das Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil und endet
+mit einem Abschnitt zu den Apothem-Unterstützungsdateien, der das absolute
+Verzeichnis unter `~/.config/opencode/.apothem/support/` nennt, gegen das jedes
+Zitat im Repository-Stil (`rules/<name>.md`, `templates/...`, `hooks/...`)
+aufgelöst wird. Es ist der erste `instructions`-Eintrag, daher lädt OpenCode es
+in jeder Sitzung.
+
+Eine von einem früheren Release geschriebene `opencode.json` listet den
+einzelnen Glob `~/.config/opencode/.apothem/support/rules/*.md`, der jede Regel
+lädt. `apothem install` und `apothem update` ersetzen ihn durch die Liste der
+stets aktiven Regeln, und `apothem uninstall` entfernt beide Formen. Ihre
+eigenen `instructions`-Einträge bleiben in jedem Fall erhalten.
 
 ## Verifizierung
 
@@ -64,8 +85,8 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness opencode
 ```
 
-Aktualisiert `opencode.json`, die nativen Befehle, die Fähigkeiten, die
-Helferdefinitionen und den Apothem-Unterstützungsbaum.
+Aktualisiert `opencode.json`, native Commands, Skills, Helfer-Definitionen und
+den Apothem-Unterstützungsbaum.
 
 ## Deinstallation
 
@@ -74,9 +95,9 @@ apothem uninstall --harness opencode
 ```
 
 Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -86,12 +107,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness opencode` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness opencode` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness opencode` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness opencode` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness opencode` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness opencode` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
 | `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

@@ -2,39 +2,53 @@
 title: "verify"
 description: "مرجع واجهة سطر الأوامر لأمر apothem verify."
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يتحقّق من تثبيت محوّل مساعد برمجي.
+يتحقّق من تثبيت محوّل إطار عمل.
 
 ## الموجز
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-يستدعي تنفيذ <bdi>`verify()`</bdi> لكل محوّل مُحدَّد. لا يخرج بالرمز <bdi>0</bdi> إلّا حين تُبلِّغ جميع المحوّلات المُحدَّدة بأنّ أهدافها المُدارة موجودة وصالحة.
+يستدعي تنفيذ <bdi>`verify()`</bdi> لكل محوّل مختار. ولا يخرج بالرمز 0 إلا عندما تُبلغ
+كل المحوّلات المختارة أن أهدافها المُدارة موجودة وصالحة. دون <bdi>`--profile`</bdi>
+يكون الفحص **بنيويًا** — يجب أن يكون كل هدف مُدار موجودًا وصالحًا. ومع
+<bdi>`--profile`</bdi> يشترط الفحص إضافةً إلى ذلك **الأمانة للملف التعريفي**، فيُخفق
+التحقّق من تثبيتٍ موجود لكنه منحرف، مجيبًا عن السؤال «هل هذا الملف التعريفي بعينه
+مثبّت بأمانة؟» لا عن مجرّد «هل هو موجود؟».
+
+يحترم المسح بـ <bdi>`--harness all`</bdi> قائمة <bdi>`exclude_harnesses`</bdi> في
+الملف التعريفي — وهي الاستثناءات نفسها التي طبّقتها دفعة
+<bdi>`install`/`update`</bdi> — لذا لا يُبلغ التحقّق أبدًا عن إطار عمل مُستثنى عمدًا
+بوصفه مفقودًا. تأتي الاستثناءات من <bdi>`--profile`</bdi> عند تمريره، وإلا فمن الملف
+التعريفي الافتراضي؛ وإذا كان الملف الافتراضي غير قابل للقراءة أو غائبًا، يتراجع
+السلوك إلى السجلّ الكامل.
 
 ## الخيارات
 
 | الخيار | الوصف |
 |---|---|
-| <bdi>`--harness NAME`</bdi> | محوّل المساعد البرمجي المراد التحقّق منه، أو <bdi>`all`</bdi> للمجموعة الكاملة من السجلّ (إلزامي). |
-| <bdi>`--project PATH`</bdi> | جذر المشروع للمساعدات البرمجية على نطاق المشروع. |
-| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يكتم المخرجات المعلوماتية؛ ولا تصدر سوى الأخطاء. |
-| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يصدر مخرجات تشخيصية إضافية. |
-| <bdi>`--format plain\|json`</bdi> | تنسيق المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
-| <bdi>`--json`</bdi> | اختصار لـ<bdi>`--format json`</bdi>. |
+| <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد التحقّق منه، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). |
+| <bdi>`--profile PATH`</bdi> | ملف <bdi>YAML</bdi> للملف التعريفي المشترك الذي تُفحَص الأمانة له. ودونه يكون الفحص بنيويًا بحتًا. |
+| <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. |
+| <bdi>`--quiet`, `-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
+| <bdi>`--verbose`, `-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
+| <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
 | <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
-| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
+| <bdi>`-h`, `--help`</bdi> | يعرض المساعدة ويخرج. |
 
-## مخرجات JSON
+## مخرجات <bdi>JSON</bdi>
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +73,9 @@ apothem verify --harness NAME|all [--project PATH]
 }
 ```
 
-عندما يكون أيُّ مساعد برمجي مُحدَّد مفقودًا أو غير صالح، تكون قيمة <bdi>`status`</bdi> هي <bdi>`error`</bdi>، ويحمل صفّ النتيجة الفاشل <bdi>`verified: false`</bdi>، وتخرج العملية بالرمز <bdi>1</bdi>.
+عندما يكون أي إطار عمل مختار مفقودًا أو غير صالح، تكون قيمة <bdi>`status`</bdi> هي
+<bdi>`error`</bdi>، ويحمل صفّ النتيجة المُخفِق <bdi>`verified: false`</bdi>، وتخرج
+العملية بالرمز 1.
 
 ## أمثلة
 
@@ -73,11 +89,14 @@ apothem verify --harness all --project .
 
 | الرمز | المعنى |
 |---|---|
-| 0 | المساعد البرمجي مثبَّت |
-| 1 | المساعد البرمجي غير مثبَّت |
+| 0 | تُحقِّق من إطار العمل — كل الأهداف المُدارة موجودة وصالحة |
+| 1 | لم يُتحقَّق من إطار العمل — أهداف مُدارة مفقودة أو غير صالحة |
+| 64 | خطأ استخدام: خيار أو أمر غير معروف، أو قيمة خيار مفقودة أو غير صالحة. ومع <bdi>`--json`</bdi> يكون الخطأ غلاف <bdi>JSON</bdi> يحمل الرمز <bdi>`cli.usage`</bdi>. |
 
 ## انظر أيضًا
 
-- [apothem install](/docs/cli-reference/install) — تثبيت إعداد مساعد برمجي
-- [apothem update](/docs/cli-reference/update) — إعادة تطبيق الملف الشخصي الحالي على مساعد برمجي
-- [apothem doctor](/docs/install/concepts) — تشخيص التثبيت على مستوى النظام
+- [<bdi>apothem install</bdi>](/docs/cli-reference/install) — تثبيت إعداد إطار عمل
+- [<bdi>apothem update</bdi>](/docs/cli-reference/update) — إعادة تطبيق الملف
+  التعريفي الحالي على إطار عمل
+- [<bdi>apothem doctor</bdi>](/docs/cli-reference/doctor) — تشخيصات التثبيت على
+  مستوى النظام كله

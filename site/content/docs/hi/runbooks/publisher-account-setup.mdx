@@ -2,16 +2,16 @@
 title: "प्रकाशक खाता सेटअप"
 description: "@ahmed-g-gad/apothem के लिए npmjs.com विश्वसनीय प्रकाशक और GitHub-पक्ष की रिलीज़ पूर्वापेक्षाएँ कॉन्फ़िगर करें।"
 machineTranslated: true
-sourceHash: "7261839cafc59c09"
+sourceHash: "c0ff17cce209d1d0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-यह रनबुक रिलीज़ सतह के प्रकाशक पक्ष को कॉन्फ़िगर करता है। वितरण कथा में एक ही
-रजिस्ट्री है: npmjs.com पर स्कोप्ड npm पैकेज `@ahmed-g-gad/apothem`, जिसे
-GitHub Release, Pages, CI, conformity, और harness वर्कफ़्लो के हरे हो जाने के बाद
-मैन्युअल रूप से डिस्पैच किए गए `publish-npm.yml` वर्कफ़्लो द्वारा प्रकाशित किया
-जाता है। हर अन्य आर्टिफ़ैक्ट GitHub Release पृष्ठ पर ही भेजा जाता है और इसे किसी
-बाहरी प्रकाशक खाते की आवश्यकता नहीं होती।
+यह रनबुक रिलीज़ सतह के प्रकाशक पक्ष को कॉन्फ़िगर करता है। वितरण व्यवस्था में एक
+ही रजिस्ट्री है: npmjs.com पर स्कोप्ड npm पैकेज `@ahmed-g-gad/apothem`, जिसे
+GitHub Release, Pages, CI, अनुरूपता और हार्नेस वर्कफ़्लो के हरे होने के बाद
+मैन्युअल रूप से डिस्पैच किया गया `publish-npm.yml` वर्कफ़्लो प्रकाशित करता है। हर
+अन्य आर्टिफ़ैक्ट स्वयं GitHub Release पृष्ठ पर शिप होता है और उसे किसी बाहरी
+प्रकाशक खाते की आवश्यकता नहीं होती।
 
 ## पहचान मानचित्र
 
@@ -20,11 +20,11 @@ GitHub Release, Pages, CI, conformity, और harness वर्कफ़्ल�
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-GitHub स्वामी को भविष्य में बदलने की अनुमति है। वर्कफ़्लो और इंस्टॉलर लॉजिक उन जगहों
-पर `github.repository`, `github.repository_owner`, या
-`APOTHEM_GITHUB_REPOSITORY` पढ़ता है जहाँ कोई प्लेटफ़ॉर्म गतिशील समाधान की अनुमति
-देता है। रजिस्ट्री पैकेज पहचानकर्ता स्थिर रहता है क्योंकि उपयोगकर्ता अनुरक्षक के
-खाता नाम के बजाय पैकेज का नाम इंस्टॉल करते हैं।
+GitHub स्वामी को भविष्य में बदलने की अनुमति है। जहाँ कोई प्लेटफ़ॉर्म गतिशील
+रेज़ोल्यूशन की अनुमति देता है, वहाँ वर्कफ़्लो और इंस्टॉलर लॉजिक
+`github.repository`, `github.repository_owner`, या `APOTHEM_GITHUB_REPOSITORY`
+पढ़ता है। रजिस्ट्री पैकेज पहचानकर्ता स्थिर रहता है क्योंकि उपयोगकर्ता पैकेज का
+नाम इंस्टॉल करते हैं, अनुरक्षक के खाते का नाम नहीं।
 
 ## npm (npmjs.com)
 
@@ -37,20 +37,21 @@ GitHub स्वामी को भविष्य में बदलने �
    ```
 
    `404` का अर्थ है कि स्कोप्ड पैकेज अभी तक प्रकाशित नहीं हुआ है। प्रकाशन से पहले
-   किसी भी अन्य पैकेज प्रतिक्रिया का इस रिपॉज़िटरी और खाते से मेल खाना आवश्यक है।
-4. यदि UI को पहले पैकेज रिकॉर्ड की आवश्यकता हो तो npm पर पैकेज बनाएँ। नाम को स्कोप्ड
+   किसी भी अन्य पैकेज प्रतिक्रिया का इस रिपॉज़िटरी और खाते से मेल खाना अनिवार्य है।
+4. यदि UI को पहले पैकेज रिकॉर्ड की आवश्यकता हो तो npm पर पैकेज बनाएँ। नाम स्कोप्ड
    रखें: `@ahmed-g-gad/apothem`।
-5. GitHub Actions से `@ahmed-g-gad/apothem` के लिए विश्वसनीय प्रकाशन (Trusted
-   Publishing) कॉन्फ़िगर करें:
+5. GitHub Actions से `@ahmed-g-gad/apothem` के लिए Trusted Publishing कॉन्फ़िगर
+   करें:
    - GitHub स्वामी: `ahmed-g-gad`
    - रिपॉज़िटरी: `apothem`
    - वर्कफ़्लो फ़ाइल नाम: `publish-npm.yml`
-   - परिवेश: `npmjs`
+   - एनवायरनमेंट: `release` (`publish-npm.yml` में publish जॉब का
+     `environment:`; दोनों का मेल खाना अनिवार्य है)
    - अनुमत क्रिया: `npm publish`।
-6. GitHub में सत्यापित करें कि `npmjs` परिवेश `ahmed-g-gad/apothem` पर मौजूद है और
-   परिनियोजन के लिए मैन्युअल अनुमोदन की आवश्यकता रखता है।
-7. npm सतह को एक सार्वजनिक रजिस्ट्री पैकेज तक सीमित रखें: npmjs.com पर
-   `@ahmed-g-gad/apothem`।
+6. GitHub में सत्यापित करें कि `release` एनवायरनमेंट `ahmed-g-gad/apothem` पर
+   मौजूद है और डिप्लॉयमेंट के लिए मैन्युअल अनुमोदन आवश्यक करता है।
+7. npm सतह को एक सार्वजनिक रजिस्ट्री पैकेज तक सीमित रखें:
+   npmjs.com पर `@ahmed-g-gad/apothem`।
 8. रिलीज़ तत्परता की पुष्टि करें:
 
    ```bash title="Release readiness"
@@ -58,7 +59,8 @@ GitHub स्वामी को भविष्य में बदलने �
    ```
 
 9. GitHub Actions टैब से `tag=<release-tag>` के साथ `Publish — npm`
-   (`publish-npm.yml`) चलाएँ और `npmjs` परिवेश परिनियोजन को अनुमोदित करें।
+   (`publish-npm.yml`) चलाएँ और `release` एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित
+   करें।
 10. लाइव पैकेज सत्यापित करें:
 
     ```bash title="npm verification"
@@ -66,46 +68,51 @@ GitHub स्वामी को भविष्य में बदलने �
     npx @ahmed-g-gad/apothem@<version> --version
     ```
 
-किसी `NPM_TOKEN`, उपयोगकर्ता नाम, या पासवर्ड सीक्रेट की आवश्यकता नहीं है। वर्कफ़्लो
-`.github/workflows/publish-npm.yml` के भीतर पिन किए गए Node संस्करण और npm CLI के
+किसी `NPM_TOKEN`, उपयोगकर्ता नाम या पासवर्ड सीक्रेट की आवश्यकता नहीं है। वर्कफ़्लो
+`.github/workflows/publish-npm.yml` के भीतर पिन किए गए Node संस्करण और npm CLI
 OIDC फ़्लोर के साथ npm Trusted Publishing (OIDC) के माध्यम से प्रकाशित करता है।
-यह npmjs.com के विरुद्ध `npm publish --access public` चलाता है; npm एक सार्वजनिक
-GitHub Actions वर्कफ़्लो से प्रकाशित सार्वजनिक पैकेजों के लिए स्वचालित रूप से उद्गम
-(provenance) उत्सर्जित करता है। `PUT` के दौरान रजिस्ट्री `404` का अर्थ है कि npm
-पक्ष का विश्वसनीय प्रकाशक, पैकेज स्कोप, या खाता प्राधिकरण अभी संरेखित नहीं है;
-वर्कफ़्लो को पुनः प्रयास करने से पहले npm पैकेज सेटिंग्स ठीक करें।
+यह npmjs.com के विरुद्ध `npm publish --access public` चलाता है; किसी सार्वजनिक
+GitHub Actions वर्कफ़्लो से प्रकाशित सार्वजनिक पैकेजों के लिए npm स्वचालित रूप से
+प्रोवेनेंस उत्सर्जित करता है। `PUT` के दौरान रजिस्ट्री का `404` यह दर्शाता है कि
+npm-पक्ष का विश्वसनीय प्रकाशक, पैकेज स्कोप, या खाता प्राधिकरण अभी संरेखित नहीं
+है; वर्कफ़्लो को फिर से प्रयास करने से पहले npm पैकेज सेटिंग्स ठीक करें।
 
-संदर्भ: [npm विश्वसनीय प्रकाशक](https://docs.npmjs.com/trusted-publishers/), [npm उद्गम](https://docs.npmjs.com/generating-provenance-statements/), और [npm स्कोप](https://docs.npmjs.com/about-scopes/)।
+एक बार कोई विश्वसनीय प्रकाशन सफल हो जाने पर, टोकन पथ को स्थायी रूप से बंद कर
+दें: npmjs.com पर पैकेज की **Settings → Publishing access** में **Require
+two-factor authentication and disallow tokens** चुनें, और रिपॉज़िटरी में बचा हुआ
+कोई भी npm टोकन सीक्रेट हटा दें। वर्कफ़्लो अब कोई टोकन नहीं पढ़ता।
+
+संदर्भ: [npm विश्वसनीय प्रकाशक](https://docs.npmjs.com/trusted-publishers/), [npm प्रोवेनेंस](https://docs.npmjs.com/generating-provenance-statements/), और [npm स्कोप](https://docs.npmjs.com/about-scopes/)।
 
 ## GitHub-पक्ष की रिलीज़ पूर्वापेक्षाएँ
 
-शेष रिलीज़ सतहें GitHub-नेटिव हैं और रिपॉज़िटरी-स्कोप्ड `GITHUB_TOKEN` के साथ
-प्रमाणीकृत होती हैं; इसमें कोई बाहरी खाता शामिल नहीं होता।
+शेष रिलीज़ सतहें GitHub-नेटिव हैं और रिपॉज़िटरी-स्कोप्ड `GITHUB_TOKEN` से
+प्रमाणीकृत होती हैं; इसमें कोई बाहरी खाता शामिल नहीं है।
 
 1. **GitHub Release।** `.github/workflows/release.yml` संस्करण टैग पर चलता है और
-   केवल अपनी जॉब-लोकल `contents: write` अनुमति की आवश्यकता रखता है। टैग करने से पहले
-   पुष्टि करें कि वर्कफ़्लो फ़ाइल `main` पर मौजूद है।
-2. **Pages कस्टम डोमेन।** दस्तावेज़ीकरण साइट `publish-static-site.yml` के माध्यम से
-   कस्टम डोमेन `apothem.ahmedgad.com` पर परिनियोजित होती है। डोमेन, DNS, और HTTPS
-   प्रवर्तन [Pages-सक्षमीकरण रनबुक](/docs/runbooks/pages-enablement) द्वारा स्थापित
-   किए जाते हैं; सत्यापित करें:
+   उसे केवल अपनी जॉब-स्थानीय `contents: write` अनुमति की आवश्यकता होती है। टैग
+   करने से पहले पुष्टि करें कि वर्कफ़्लो फ़ाइल `main` पर मौजूद है।
+2. **Pages कस्टम डोमेन।** दस्तावेज़ साइट `publish-static-site.yml` के माध्यम से
+   कस्टम डोमेन `apothem.ahmedgad.com` पर डिप्लॉय होती है। डोमेन, DNS और HTTPS
+   प्रवर्तन [Pages-सक्षमीकरण रनबुक](/docs/runbooks/pages-enablement) द्वारा
+   स्थापित किए जाते हैं; सत्यापित करें:
 
    ```bash title="Pages verification"
    gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
    curl -sSI https://apothem.ahmedgad.com/ | head -n 1
    ```
 
-3. **स्क्रिप्ट इंस्टॉलर।** `install.sh` और `install.ps1` Pages साइट से परोसे जाते हैं
-   (`https://apothem.ahmedgad.com/install.sh` और
-   `https://apothem.ahmedgad.com/install.ps1`)। इन्हें उसी Pages परिनियोजन द्वारा
-   प्रकाशित किया जाता है; किसी अलग खाते या टोकन की आवश्यकता नहीं होती।
+3. **स्क्रिप्ट इंस्टॉलर।** `install.sh` और `install.ps1` Pages साइट से परोसे जाते
+   हैं (`https://apothem.ahmedgad.com/install.sh` और
+   `https://apothem.ahmedgad.com/install.ps1`)। वे उसी Pages डिप्लॉयमेंट द्वारा
+   प्रकाशित होते हैं; किसी अलग खाते या टोकन की आवश्यकता नहीं होती।
 
 ## सत्यापन मैट्रिक्स
 
-सेटअप के बाद, प्रत्येक प्रकाशक सतह अपनी विहित जाँच का उत्तर देती है:
+सेटअप के बाद, प्रत्येक प्रकाशक सतह अपनी कैनोनिकल जाँच का उत्तर देती है:
 
 | सतह | जाँच |
 |---|---|
-| npmjs.com | `npm view @ahmed-g-gad/apothem version` जारी किया गया संस्करण लौटाता है |
-| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` sdist, wheel, SBOM, cosign बंडल, उद्गम, और प्लेटफ़ॉर्म आर्काइव सूचीबद्ध करता है |
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` रिलीज़ किया गया संस्करण लौटाता है |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` sdist, wheel, SBOM, cosign बंडल, प्रोवेनेंस और प्लेटफ़ॉर्म आर्काइव सूचीबद्ध करता है |
 | Pages | `curl -sSI https://apothem.ahmedgad.com/` कस्टम डोमेन पर `200` लौटाता है |

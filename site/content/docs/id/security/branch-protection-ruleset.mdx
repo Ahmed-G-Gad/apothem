@@ -1,55 +1,130 @@
 ---
 title: "Proteksi branch"
-description: "Proteksi branch Apothem pada main — gerbang tinjauan, gating melalui pemeriksaan status, dan pembatasan push."
+description: "Proteksi branch Apothem pada main: aturan proteksi yang aktif, pemeriksaan status wajibnya, dan pemeriksaan yang menunggu untuk ditambahkan."
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Branch `main` Apothem dilindungi oleh proteksi branch GitHub setelah commit rilis baru tunggal dipublikasikan. Proteksi ini menegakkan disiplin set-perubahan yang dideklarasikan di `rules/production-ready-prs.md` dan memasok pemeriksaan **Branch-Protection** serta **Code-Review** OpenSSF Scorecard untuk pekerjaan mendatang.
+Branch `main` Apothem dilindungi oleh aturan proteksi branch GitHub klasik. Repositori tidak memiliki ruleset. Proteksi ini menegakkan disiplin set-perubahan yang dideklarasikan di `rules/production-ready-prs.md` dan memasok pemeriksaan **Branch-Protection** dan **Code-Review** OpenSSF Scorecard.
 
-## Deklarasi set aturan
+Halaman ini mencatat pengaturan yang aktif secara persis, sebagaimana terakhir dibaca dari API GitHub pada 2026-10-07. Pengaturan yang dimaksudkan pemelihara tetapi belum diterapkan hanya muncul di bawah [Perubahan pemelihara yang tertunda](#perubahan-pemelihara-yang-tertunda).
 
-| Pengaturan | Nilai | Alasan |
+## Pengaturan proteksi
+
+| Pengaturan | Field API | Nilai aktif | Efek |
+|---|---|---|---|
+| **Wajibkan pull request sebelum merge** | `required_pull_request_reviews` (ada) | ✅ | Perubahan mencapai `main` melalui pull request. |
+| **Tinjauan persetujuan yang diwajibkan** | `required_approving_review_count` | **0** | Pull request di-merge tanpa tinjauan yang menyetujui. Lihat [Model pemelihara tunggal](#model-pemelihara-tunggal). |
+| **Buang persetujuan usang pada commit baru** | `dismiss_stale_reviews` | ✅ | Persetujuan yang diberikan sebelum push baru tidak lagi dihitung. |
+| **Wajibkan tinjauan dari Code Owners** | `require_code_owner_reviews` | ❌ | Mengaktifkan ini sebelum pemelihara kedua bergabung membuat pull request pemelihara tunggal menemui jalan buntu. |
+| **Wajibkan persetujuan atas push terbaru yang dapat ditinjau** | `require_last_push_approval` | ❌ | GitHub mewajibkan persetujuan itu datang dari orang selain pelaku push, yang tidak dapat disediakan oleh pemelihara tunggal. |
+| **Wajibkan pemeriksaan status lulus** | `required_status_checks` | ✅ | 12 konteks yang tercantum di bawah [Pemeriksaan status wajib](#pemeriksaan-status-wajib) harus lulus. |
+| **Wajibkan branch dalam keadaan terkini sebelum merge** | `required_status_checks.strict` | ❌ | Pull request dapat di-merge ketika pemeriksaan wajibnya lulus terhadap `main` yang lebih lama. Alur kerja yang berjalan pada push ke `main` kemudian menguji hasil merge tersebut. |
+| **Wajibkan resolusi percakapan sebelum merge** | `required_conversation_resolution` | ✅ | Thread tinjauan yang terbuka memblokir merge. |
+| **Wajibkan commit yang ditandatangani** | `required_signatures` | ❌ | Commit rilis ditandatangani secara lokal. Penegakan menunggu hingga dokumentasi onboarding kontributor menjelaskan penyiapan penandatanganan SSH atau GPG. |
+| **Wajibkan riwayat linear** | `required_linear_history` | ✅ | Menjaga riwayat publik `main` tetap satu garis. |
+| **Kunci branch** | `lock_branch` | ❌ | `main` menerima merge. |
+| **Jangan izinkan melewati pengaturan di atas** | `enforce_admins` | ❌ | Pengaturan di atas tidak mengikat admin repositori. Admin dapat melakukan merge tanpa pemeriksaan wajib atau push langsung ke `main`. |
+| **Izinkan force push** | `allow_force_pushes` | ❌ | Force push ke `main` diblokir untuk semua orang, termasuk admin. |
+| **Izinkan penghapusan** | `allow_deletions` | ❌ | Tidak ada yang dapat menghapus `main`, termasuk admin. |
+
+## Model pemelihara tunggal
+
+Repositori memiliki satu pemelihara. GitHub menyatakan: "Penulis pull request tidak dapat menyetujui pull request mereka sendiri." Karena itu, jumlah persetujuan wajib di atas 0 akan memblokir setiap pull request pemelihara. Aturan aktif mewajibkan pull request dengan 0 persetujuan dan membiarkan `enforce_admins` nonaktif.
+
+Bagi siapa pun tanpa izin admin, merge tetap memerlukan pemeriksaan status wajib yang hijau, percakapan tinjauan yang terselesaikan, dan riwayat linear. Force push dan penghapusan `main` tetap diblokir untuk setiap akun.
+
+Ketika pemelihara kedua bergabung, pengaturan yang lebih kuat adalah setidaknya satu persetujuan wajib, persetujuan push terbaru, tinjauan CODEOWNERS, dan `enforce_admins` aktif. [Seremoni merge pemelihara tunggal](/docs/runbooks/solo-maintainer-merge) hanya berlaku untuk proteksi yang mensyaratkan persetujuan dan memberlakukannya bagi admin.
+
+## Pemeriksaan status wajib
+
+Masing-masing dari 12 konteks ini diwajibkan, dengan GitHub Actions (app ID `15368`) sebagai sumbernya:
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| Konteks | Alur kerja dan job | Cara konteks melapor pada setiap pull request |
 |---|---|---|
-| **Target** | `main` | Melindungi branch default publik. |
-| **Status penegakan** | `active` | Bukan mode uji-coba. |
-| **Wajibkan pull request sebelum merge** | ✅ | Push langsung ke `main` diblokir. |
-| **Tinjauan persetujuan yang diperlukan** | **1** | Gerbang tinjauan manusia minimum untuk proyek pemelihara-tunggal baru. |
-| **Buang persetujuan usang pada commit baru** | ✅ | Force-push setelah persetujuan memicu ulang tinjauan. |
-| **Wajibkan tinjauan dari Code Owners** | Ditunda | Mengaktifkan ini sebelum pemelihara kedua bergabung dapat membuat PR pemelihara-tunggal menemui jalan buntu. |
-| **Wajibkan persetujuan atas push yang dapat ditinjau paling baru** | ✅ | Commit yang di-push paling baru harus membawa persetujuan. |
-| **Resolusi percakapan yang diperlukan** | ✅ | Thread tinjauan yang terbuka memblokir merge. |
-| **Wajibkan pemeriksaan status lulus** | ✅ | Workflow CI + Scorecard + CodeQL + pip-audit. |
-| **Pemeriksaan status yang diperlukan** | Pemeriksaan inti saat ini | Daftar yang diperlukan disegarkan dari commit rilis hijau terbaru. |
-| **Wajibkan branch dalam keadaan terkini** | ✅ | Mencegah regresi merge usang. |
-| **Wajibkan commit yang ditandatangani** | Direkomendasikan | Commit rilis lokal ditandatangani; penegakan penuh menunggu hingga dokumentasi onboarding kontributor menjelaskan penyiapan SSH/GPG. |
-| **Wajibkan riwayat linear** | ✅ | Menjaga riwayat publik garis-tunggal tetap dapat dipahami. |
-| **Blokir force-push** | ✅ | Penulisan ulang riwayat pada `main` diblokir. |
-| **Izinkan penghapusan** | ❌ | Branch `main` tidak dapat dihapus. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` berjalan ketika pull request menyentuh jalur kode atau konfigurasi. `ci-docs-stub.yml` melaporkan konteks yang sama pada pull request yang hanya berisi dokumentasi. |
+| `coverage` | `ci.yml`, job `coverage` | Sama seperti `quality`. |
+| `Require Signed-off-by` | `dco.yml`, job `dco` | Pemicu pull request-nya tidak memiliki filter `paths`, sehingga berjalan pada setiap pull request ke `main`. |
 
-## Batasan pemelihara-tunggal
+Sel prarilis `quality / ubuntu-latest / py3.15` berjalan di `ci.yml` dengan `continue-on-error` dan tidak diwajibkan. Alur kerja lain mana pun, termasuk CodeQL, Scorecard, dan pip-audit, boleh melaporkan status, tetapi hasilnya tidak menggerbang merge kecuali konteksnya ditambahkan ke daftar ini.
 
-GitHub tidak mengizinkan berkas repositori membuat riwayat tinjauan manusia. Oleh karena itu repositori menerapkan proteksi branch terkuat yang tidak menemui jalan buntu untuk model pemeliharanya saat ini: satu tinjauan persetujuan, pembuangan tinjauan usang, persetujuan push terbaru, resolusi percakapan, pemeriksaan status, riwayat linear, serta tanpa penghapusan branch atau force-push. Ketika pemelihara kedua bergabung, tinjauan CODEOWNERS dan minimum dua peninjau akan menjadi pengaturan yang lebih kuat.
+## Perubahan pemelihara yang tertunda
 
-## Persyaratan pemeriksaan status
+Pemelihara bermaksud menambahkan 25 konteks ini ke daftar wajib. Header setiap alur kerja mendeklarasikan job tersebut sebagai pemeriksaan wajib, dan pemicu pull request-nya tidak memiliki filter `paths`, sehingga berjalan pada setiap pull request ke `main`. Sampai sebuah konteks ditambahkan, kegagalan di dalamnya tidak memblokir merge.
 
-Empat pemeriksaan status gating-keras yang dideklarasikan di atas:
+`clean-install-gate.yml`, 7 konteks:
 
-- **`ci`** — matriks pengujian lengkap + ruff + mypy + bandit + Trivy + pip-audit pada pohon dependensi yang teresolusi
-- **`Scorecard`** — eksekusi OpenSSF Scorecard tanpa regresi per-pemeriksaan
-- **`CodeQL`** — paket kueri `security-extended` untuk `python` + `actions`
-- **`pip-audit`** — pemindaian kerentanan mingguan + per-PR terhadap pohon dependensi yang teresolusi
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-Workflow lain mana pun boleh melaporkan status, tetapi hasilnya tidak melakukan gating terhadap merge kecuali dipromosikan ke dalam daftar pemeriksaan yang diperlukan.
+`harness-matrix.yml`, 17 konteks, satu `matrix (<adapter>)` per adapter dalam matriks job:
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`, 1 konteks:
+
+```text
+installer-lint
+```
+
+Setelah konteks `harness-matrix.yml` diwajibkan, mendaftarkan adapter baru menambahkan konteks `matrix (<adapter>)`, dan daftar wajib menerimanya dalam perubahan yang sama. "Wajibkan branch dalam keadaan terkini sebelum merge" tetap nonaktif. Ketika perubahan yang tertunda diterapkan, pindahkan perubahan itu ke bagian aktif di atas dalam perubahan yang sama.
 
 ## Irama audit
 
-Berkas ini ditinjau pada setiap audit keamanan dan pada setiap checkpoint rekayasa rilis. Penyimpangan antara berkas ini dan konfigurasi proteksi branch yang sebenarnya merupakan temuan dengan keparahan tinggi.
+Berkas ini ditinjau pada setiap audit keamanan dan pada setiap checkpoint rekayasa rilis. Penyimpangan antara berkas ini dan konfigurasi proteksi branch yang sebenarnya merupakan temuan dengan keparahan tinggi. Baca konfigurasi aktif dengan:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## Referensi
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [OpenSSF Scorecard — pemeriksaan Branch-Protection](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — Tentang branch yang dilindungi](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — Mengelola aturan proteksi branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — Menyetujui pull request dengan tinjauan wajib](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
 - [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — kepemilikan tinjauan dengan cakupan per-jalur
-- `rules/production-ready-prs.md` §1 — disiplin set-perubahan-yang-sama yang ditegakkan oleh set aturan ini
+- [Alur kerja CI Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — alur kerja yang menjadi asal setiap konteks wajib
+- `rules/production-ready-prs.md` §1 — disiplin set-perubahan-yang-sama yang ditegakkan oleh proteksi ini

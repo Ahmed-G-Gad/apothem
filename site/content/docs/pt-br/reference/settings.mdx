@@ -1,32 +1,58 @@
 ---
 title: "Configurações"
-description: "Configuração do harness do Claude Code em settings.json, cobrindo permissões de ferramentas, cabeamento de hooks, variáveis de ambiente e modelos de linha de status."
+description: "Configuração do harness Claude Code em settings.json, cobrindo permissões de ferramentas, conexão de hooks, variáveis de ambiente e templates da linha de status."
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-O `settings.json` carrega a configuração do harness do Claude Code: cabeamento de
-hooks, permissões de ferramentas, variáveis de ambiente e ajustes da linha de
+O `settings.json` carrega a configuração do harness Claude Code: conexão de
+hooks, permissões de ferramentas, variáveis de ambiente e definições da linha de
 status.
 
-A referência canônica completa vive em
-[settings-reference.md](/docs/reference/settings-reference). Esta página resume o contrato
-e aponta para a referência mais aprofundada.
+A referência canônica completa fica em
+[settings-reference.md](/docs/reference/settings-reference). Esta página resume o
+contrato e aponta para a referência mais detalhada.
 
 ## Seções
 
 | Seção | Propósito |
 |---------|---------|
-| `permissions` | Listas brancas e negras de ferramentas por matcher |
-| `hooks` | Tabela de comandos de hook indexada por evento (o cabeamento canônico) |
+| `permissions` | Listas de permissão e de bloqueio de ferramentas por matcher |
+| `hooks` | Tabela de comandos de hook indexada por evento (a conexão canônica) |
 | `env` | Variáveis de ambiente por sessão |
-| `statusLine` | Modelo de linha de status que o host renderiza |
+| `statusLine` | Template da linha de status que o host renderiza |
 
-## Invariante de modelo único
+## Invariante de template único
 
-O adaptador do Claude Code envia um único modelo `settings.json`. Os comandos de
-hook usam a forma exec (`command` mais `args`) em vez de strings de comando
-específicas do shell, de modo que o comportamento entre sistemas operacionais é
-revisado dentro de um único arquivo. Novas entradas de permissões e eventos de
-hook aterrissam nesse arquivo de forma atômica.
+O adaptador do Claude Code distribui um único template de `settings.json`. Os
+comandos de hook usam a forma exec (`command` mais `args`) em vez de strings de
+comando específicas de um shell, de modo que o comportamento entre sistemas
+operacionais é revisado dentro de um único arquivo. Novas entradas de permissão
+e novos eventos de hook entram nesse arquivo de forma atômica.
+
+## Mesclagem no seu próprio arquivo de configurações
+
+O `settings.json` também é o seu arquivo. A instalação mescla o template nele em
+vez de substituí-lo e registra no livro-razão de instalação
+(`~/.apothem/state/<harness>/ledger.jsonl`) exatamente quais chaves e entradas de
+lista ela adicionou:
+
+- `permissions.allow` e `permissions.deny` são mesclados como uma união: as suas
+  regras ficam primeiro e as do Apothem são acrescentadas depois. Uma regra de
+  negação que você escreveu sempre permanece, e o Claude Code aplica as regras
+  de negação antes das regras de permissão.
+- Os seus próprios handlers de hook permanecem no lugar. Um handler só conta
+  como do Apothem quando executa um script que o Apothem instalou sob a raiz do
+  harness; assim, um handler que chama algum outro `hooks/dispatch.py` é seu.
+- Reinstalar substitui somente o que o Apothem adicionou da última vez; assim,
+  uma entrada que o template deixa de incluir é removida, e uma entrada que você
+  adicionou é mantida.
+- A desinstalação remove somente as entradas que o livro-razão registra como do
+  Apothem. Uma regra que por acaso seja igual a uma das do Apothem (por exemplo,
+  `Read` na sua própria lista `allow` antes da primeira instalação) permanece. O
+  arquivo só é excluído quando o Apothem o criou e nada seu resta nele.
+
+As mesmas regras se aplicam aos outros arquivos de configurações nos quais o
+Apothem faz mesclagem, como os mapas de servidores MCP no `settings.json` do
+Qwen Code e no `opencode.json` do OpenCode.

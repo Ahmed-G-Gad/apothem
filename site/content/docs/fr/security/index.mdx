@@ -1,58 +1,57 @@
 ---
 title: "Sécurité"
-description: "Posture de sécurité d'Apothem : objectif OpenSSF Scorecard, signalement de vulnérabilités, surfaces de durcissement."
+description: "Posture de sécurité d'Apothem : objectif OpenSSF Scorecard, signalement des vulnérabilités, surfaces de durcissement."
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-La posture de sécurité d'Apothem repose sur cinq piliers : durcissement de la chaîne d'approvisionnement, réponse aux vulnérabilités, protection des branches, signature des versions et analyse de sécurité continue. Cette section documente chaque surface.
+La posture de sécurité d'Apothem repose sur cinq piliers : durcissement de la chaîne d'approvisionnement, réponse aux vulnérabilités, protection des branches, signature des publications et analyse de sécurité continue. Cette section documente chaque surface.
 
 ## Modèle de menace
 
 Apothem est un matérialisateur de configuration. Il lit un profil partagé et
 écrit des fichiers de configuration natifs de l'environnement dans les
-répertoires que lit chaque environnement d'assistant. Cette
-unique fonction délimite ce à quoi il fait confiance et ce à quoi il ne fait
-pas confiance.
+répertoires que lit chaque environnement. Cette unique fonction délimite ce à
+quoi il fait confiance et ce à quoi il ne fait pas confiance.
 
 - **Ce à quoi Apothem fait confiance.** Le profil partagé que vous rédigez et
-  l'arborescence de code fournie placée par l'installateur. Le profil est votre
+  l'arborescence source fournie, placée par l'installateur. Le profil est votre
   intention déclarée ; le moteur le traite comme une entrée faisant autorité
   après validation par rapport au schéma.
 - **Ce à quoi Apothem ne fait pas confiance.** Le contenu du profil n'atteint
   le système de fichiers qu'après validation : les échecs de schéma, les
-  identifiants d'environnement inconnus, les chemins de projet non sécurisés,
-  les sources de manifeste manquantes, le parcours de cible et les traversées
-  de lien symbolique s'arrêtent tous avant toute écriture et renvoient des
+  identifiants d'environnement inconnus, les chemins de projet non sûrs, les
+  sources de manifeste manquantes, la traversée de cible et les franchissements
+  de liens symboliques s'arrêtent tous avant toute écriture et renvoient des
   diagnostics structurés avec `files_written: []`.
 - **Ce que la sortie matérialisée ne transporte jamais.** Aucun secret. Les
-  diagnostics du profil expurgent les clés ressemblant à des secrets et les
+  diagnostics du profil masquent les clés qui ressemblent à des secrets et les
   valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte
   brut, le JSON, les journaux, les extraits de documentation ou les tests, et
   les exemples publics utilisent des identités et des domaines fictifs servant
   d'espaces réservés. La configuration matérialisée est destinée à être
-  validée et partagée ; elle ne transporte aucun identifiant.
+  commitée et partagée ; elle ne transporte aucun identifiant.
 - **Le socle de refus universel.** Les règles qu'Apothem matérialise portent
-  un socle de refus non négociable quelle que soit toute liste d'autorisation
+  un socle de refus non négociable, quelle que soit la liste d'autorisation
   propre à un environnement : chemins de secrets (`.env*`, `~/.ssh/**`, magasins
-  d'identifiants), opérations shell destructrices (`rm -rf`, `sudo`, poussées
-  forcées vers des branches protégées) et exécution d'entrées non fiables.
-  Aucune liste d'autorisation n'élargit silencieusement ce socle.
-- **Rayon d'impact.** Les écritures sont limitées aux répertoires de
-  l'environnement et aux sous-arborescences de support détenues par Apothem.
+  d'identifiants), opérations shell destructrices (`rm -rf`, `sudo`, force-pushes
+  vers des branches protégées) et exécution d'entrées non fiables. Aucune liste
+  d'autorisation n'élargit silencieusement ce socle.
+- **Rayon d'impact.** Les écritures sont limitées aux répertoires des
+  environnements et aux sous-arborescences de support détenues par Apothem.
   Les cibles gérées existantes sont sauvegardées avant remplacement et les
   répertoires de découverte partagés sont fusionnés enfant par enfant, de sorte
   que les fichiers sans rapport rédigés par l'opérateur restent en place.
 
 ## Posture de sécurité à l'exécution
 
-Les commandes de cycle de vie de l'environnement et d'écriture de profil
+Les commandes de cycle de vie des environnements et d'écriture de profil
 valident avant d'écrire. Les échecs de schéma de profil, les identifiants
-d'environnement inconnus, les chemins de projet non sécurisés, les sources de
-manifeste manquantes, le parcours de cible et les traversées de lien symbolique
-s'arrêtent avant les écritures sur le système de fichiers et renvoient des
-diagnostics structurés avec `files_written: []`.
+d'environnement inconnus, les chemins de projet non sûrs, les sources de
+manifeste manquantes, la traversée de cible et les franchissements de liens
+symboliques s'arrêtent avant les écritures sur le système de fichiers et
+renvoient des diagnostics structurés avec `files_written: []`.
 
 Les opérations d'installation et de mise à jour préservent les cibles gérées
 existantes en les sauvegardant avant remplacement. Les répertoires de
@@ -61,7 +60,7 @@ sans rapport rédigés par l'opérateur restent en place. `--dry-run` effectue l
 même validation et signale les résultats prévus sans créer de répertoires ni de
 fichiers.
 
-Les diagnostics du profil expurgent les clés ressemblant à des secrets et les
+Les diagnostics du profil masquent les clés qui ressemblent à des secrets et les
 valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte brut,
 la sortie JSON, les journaux, les extraits de documentation ou les tests. Les
 exemples publics utilisent des identités et des domaines fictifs servant
@@ -69,25 +68,94 @@ d'espaces réservés.
 
 ## Liens rapides
 
-- [**Posture OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — preuve par contrôle et limites connues de la plateforme
-- [**Audit des webhooks**](/docs/security/webhooks-audit) — preuve d'hygiène du secret de webhook
-- [**Protection des branches**](/docs/security/branch-protection-ruleset) — contrôle de revue, vérifications de statut et restrictions de poussée
-- [**Balayage des artefacts binaires**](/docs/security/binary-artifacts-sweep) — preuve de version sans binaire dans le code source
-- [Politique de sécurité](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — signalement de vulnérabilités et versions prises en charge
+- [**Posture OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — preuve par vérification et limites connues de la plateforme
+- [**Audit des webhooks**](/docs/security/webhooks-audit) — preuve d'hygiène des secrets de webhook
+- [**Protection de branche**](/docs/security/branch-protection-ruleset) — exigence de pull request, vérifications de statut requises, et blocage des force-pushes et des suppressions
+- [**Balayage des artefacts binaires**](/docs/security/binary-artifacts-sweep) — preuve de publication sans binaire dans le code source
+- [Politique de sécurité](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — signalement des vulnérabilités et versions prises en charge
 - [Badge OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — score en direct
 
 ## Signaler une vulnérabilité
 
-Utilisez le [Signalement Privé de Vulnérabilités](https://github.com/ahmed-g-gad/apothem/security) dans l'onglet Security du dépôt. La politique complète, la matrice des versions prises en charge et les délais de réponse se trouvent dans [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Utilisez le [signalement privé des vulnérabilités](https://github.com/ahmed-g-gad/apothem/security) dans l'onglet Security du dépôt. La politique complète, la matrice des versions prises en charge et les délais de réponse se trouvent dans [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Preuves de version de la chaîne d'approvisionnement
+## Preuves de publication de la chaîne d'approvisionnement
 
-Chaque artefact de version est livré avec :
+Chaque artefact de publication est livré avec :
 
 - **Provenance de build SLSA-3** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Signatures Sigstore** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **SBOM CycloneDX** via [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
-- **Déclarations de provenance npm** via OIDC de Trusted Publishing sur `@ahmed-g-gad/apothem`
+- **SBOM CycloneDX** du wheel et du sdist livrés, écrit par `scripts/release/generate_sbom.py` : le paquet apothem, chaque paquet vendorisé sous `apothem/_vendor` avec sa licence, les exigences d'exécution déclarées et le SHA-256 de chaque distribution. Le SBOM est signé et couvert par la provenance de build, comme les distributions
+- **Déclarations de provenance npm** via l'OIDC de Trusted Publishing sur `@ahmed-g-gad/apothem`
 - **Étiquettes git signées avec GPG** (clé EDDSA `70396FED9C634163`)
 
-Les recettes de vérification sont documentées en ligne dans [Cycle de version](/docs/runbooks/release-cycle) et [Récupération de version](/docs/runbooks/release-recovery) ; un runbook dédié de vérification d'une version est à venir.
+## Vérifier une publication
+
+Téléchargez toutes les ressources d'une publication dans un répertoire vide,
+puis vérifiez les signatures et la provenance de build. Remplacez `vX.Y.Z` et
+`X.Y.Z` par la publication que vous avez téléchargée.
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` affiche `Verified OK` et `slsa-verifier` affiche `PASSED: SLSA
+verification passed`. Répétez la commande `cosign` pour toute autre ressource
+avec son `<asset>.cosign.bundle` (les publications antérieures nomment les
+paquets de l'archive de plateforme et de `SHA256SUMS` `<asset>.sig`). Les
+archives darwin et linux sont les mêmes octets sous deux noms ; `SHA256SUMS`
+liste donc deux fois le même condensé. Depuis un clone,
+`bash scripts/release/verify-provenance.sh <download-dir>` exécute les trois
+vérifications, manifeste `SHA256SUMS` compris, en une seule passe.
+
+Deux détails déterminent si la vérification a un sens :
+
+- **Casse du propriétaire.** Les vérifications d'identité sont sensibles à la
+  casse, et les certificats portent le propriétaire tel que GitHub le rapporte :
+  `Ahmed-G-Gad`. Un propriétaire en minuscules fait échouer les deux outils.
+- **Identité exacte.** Préférez `--certificate-identity` avec le sujet complet
+  ci-dessus. Pour accepter n'importe quelle étiquette de publication, ancrez le
+  motif à ses deux extrémités :
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  Un motif non ancré tel que `github.com/Ahmed-G-Gad/apothem` correspond aussi
+  à un sujet falsifié qui se contente de contenir ce texte, par exemple un
+  workflow dans un autre dépôt sur une branche nommée d'après celui-ci.
+
+Le [runbook du cycle de publication](/docs/runbooks/release-cycle) consigne les
+mêmes commandes comme vérification post-publication du mainteneur.
+
+### Recompiler une publication et comparer
+
+Le wheel et le sdist sont reproductibles : recompiler l'étiquette avec la chaîne
+d'outils de publication donne les condensés SHA-256 publiés. Utilisez Python
+3.12 sous Linux, comme le fait la publication :
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+Comparez les condensés avec le wheel et le sdist publiés. La compilation utilise
+le setuptools verrouillé par hash que `pyproject.toml` épingle, et
+`normalize_sdist.py` retire du sdist l'heure de compilation, les propriétaires
+de fichiers et les horodatages du checkout.

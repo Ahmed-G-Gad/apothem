@@ -2,16 +2,17 @@
 title: "Deinstallieren"
 description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
 machineTranslated: true
-sourceHash: "e96d67dfc6af5311"
+sourceHash: "11d7a265fc5e60b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Zuerst die Harness-Konfigurationen entfernen
 
-Bevor Sie Apothem deinstallieren, entfernen Sie jede Harness-Adapter-Konfiguration, um
-Ihre Werkzeuge in einem sauberen Zustand zu hinterlassen. Führen Sie `apothem harnesses list` aus, um zu sehen,
-welche Adapter derzeit installiert sind, und entfernen Sie sie dann einzeln oder verwenden Sie
-den registry-weiten Selektor:
+Bevor Sie Apothem deinstallieren, entfernen Sie jede
+Harness-Adapter-Konfiguration, um Ihre Harnesses in einem sauberen Zustand zu
+hinterlassen. Führen Sie `apothem harnesses list` aus, um zu sehen, welche
+Adapter derzeit installiert sind, und entfernen Sie sie dann einzeln oder
+verwenden Sie den registry-weiten Selektor:
 
 ```bash
 apothem uninstall --harness claude-code
@@ -19,31 +20,62 @@ apothem uninstall --harness cursor --project /path/to/project
 apothem uninstall --harness all --project /path/to/project --yes
 ```
 
-Verwenden Sie `--yes`, um die Bestätigungsabfrage pro Harness zu überspringen.
+Übergeben Sie `--yes`, um die Bestätigungsabfrage pro Harness zu überspringen.
 
 ## Die Engine entfernen
 
-Die Entfernung richtet sich nach dem von Ihnen verwendeten Installationskanal:
+Die Entfernung richtet sich nach dem Installationskanal, den Sie verwendet
+haben:
 
 - **Claude Code-Plugin** — entfernen Sie das Plugin innerhalb von Claude Code:
-  `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag kann mit
-  `/plugin marketplace remove ahmed-g-gad/apothem` entfernt werden).
-- **npx** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren Sie ihn mit
-  `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie loswerden möchten.
-- **Einmal-Installer** — führen Sie das passende Deinstallationsskript aus dem
-  Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
-  `scripts/installer/uninstall.ps1` (PowerShell). Beide bestätigen vor dem
-  Entfernen und verweigern unsichere Ziele.
-- **Backups und Zustand** — Installations-Backups liegen unter `~/.apothem/backups/`;
-  löschen Sie `~/.apothem/`, sobald Sie sie nicht mehr benötigen.
+  `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag lässt sich mit
+  `/plugin marketplace remove ahmed-g-gad/apothem` entfernen).
+- **npx** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren Sie ihn
+  mit `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie
+  entfernen möchten.
+- **Ein-Schritt-Installer** — führen Sie das passende Deinstallationsskript aus
+  dem Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
+  `scripts/installer/uninstall.ps1` (PowerShell). Beide fragen vor dem
+  Entfernen nach einer Bestätigung und verweigern unsichere Ziele.
+- **Backups und Zustand** — Installations-Backups liegen unter
+  `~/.apothem/backups/` und das Installations-Ledger unter `~/.apothem/state/`.
+  Beide bleiben begrenzt: Nach jeder Installation, jeder Deinstallation und
+  jedem Rollback behält Apothem die neuesten 10 Installationsdatensätze pro
+  Installationswurzel und die neuesten 10 Backup-Sätze pro Harness und löscht
+  niemals ein Backup, das ein behaltener Datensatz noch benötigt, sodass sich
+  die letzten 10 Installationen weiterhin zurückrollen lassen. Um weniger zu
+  behalten, führen Sie
+  [`apothem backups prune --keep N`](/docs/cli-reference/backups) aus (fügen
+  Sie `--dry-run` hinzu, um zuerst zu sehen, was entfernt würde); es entfernt
+  niemals das Backup, aus dem das Rollback der neuesten Installation eines
+  Harness wiederherstellt. Sobald die Engine entfernt ist und Sie nichts mehr
+  aus dem Verlauf benötigen, löschen Sie `~/.apothem/`.
 
 ## Was NICHT entfernt wird
 
 - Das gemeinsame Profil-YAML unter `~/.config/apothem/profile.yaml` oder
-  `--profile PATH` wird durch `apothem uninstall` niemals entfernt.
-- Nicht zugehörige, vom Operator erstellte Dateien in Harness-Verzeichnissen bleiben erhalten.
+  `--profile PATH` wird von `apothem uninstall` niemals entfernt.
+- Nicht zugehörige, vom Operator verfasste Dateien in Harness-Verzeichnissen
+  bleiben erhalten.
+- Einträge, die Sie einer gemeinsam genutzten Einstellungsdatei hinzugefügt
+  haben, bleiben erhalten: Ihre eigenen Berechtigungsregeln, MCP-Server und
+  Hook-Handler bleiben bestehen. Die Deinstallation entfernt nur die Schlüssel
+  und Listeneinträge, die das Installations-Ledger als Apothems eigene erfasst
+  (siehe
+  [Einstellungen](/docs/reference/settings#zusammenführen-mit-ihrer-eigenen-settings-datei)).
 - Plan-Suiten unter `<project>/.apothem/plans/` (und dem veralteten `<project>/.plans/`) sind nicht betroffen.
 
-Um einen Harness-Stamm vollständig zu bereinigen, entfernen Sie den harness-nativen Pfad, der auf den
-[Harness-Referenzseiten](/docs/harnesses) dokumentiert ist, nachdem Sie sich vergewissert haben, dass Sie
-alle benutzerdefinierten Regeln, Helfer oder Profildateien gesichert haben, die Sie behalten möchten.
+## Verzeichnisse
+
+Die Deinstallation entfernt außerdem die Verzeichnisse, die die Installation
+erstellt hat (zum Beispiel ein `~/.claude/`, das vor der ersten Installation
+nicht existierte), sobald sie leer sind. Ein Verzeichnis, das noch eine Datei
+von Ihnen enthält oder Daten, die ein anderer installierter Harness verwendet,
+bleibt bestehen. Verzeichnisse, die vor der Installation existierten, werden
+niemals entfernt.
+
+Um eine Harness-Wurzel vollständig zu bereinigen, entfernen Sie den
+harness-nativen Pfad, der auf den [Harness-Referenzseiten](/docs/harnesses)
+dokumentiert ist, nachdem Sie sich vergewissert haben, dass Sie alle
+benutzerdefinierten Regeln, Helfer oder Profildateien gesichert haben, die Sie
+behalten möchten.

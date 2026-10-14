@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptador de entorno de Apothem para Open-Claw (Vista previa)."
 machineTranslated: true
-sourceHash: "84ea02c4a5281c11"
+sourceHash: "435a8075d4d83b4f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,27 +18,45 @@ apothem install --harness open-claw
 ```
 
 El adaptador traduce el perfil compartido al archivo de configuración global de
-usuario de OpenClaw e instala los conjuntos de soporte de Apothem bajo la raíz del
-entorno. La configuración nativa de OpenClaw es JSON; el materializer renderiza JSON
-para coincidir.
+usuario de OpenClaw e instala las cohortes de soporte de Apothem bajo la raíz
+del entorno. La configuración nativa de OpenClaw es JSON; el materializador
+renderiza JSON para que coincida.
 
-**Archivos escritos:** `~/.openclaw/openclaw.json` y archivos de soporte bajo
+**Archivos escritos:** `~/.openclaw/openclaw.json`, el documento de perfil
+`~/.openclaw/apothem/rules/00-apothem-profile.md` y archivos de soporte bajo
 `~/.openclaw/.apothem/support/`
 
-## Mapeo de perfil a configuración nativa
+El documento de perfil termina con una sección de archivos de soporte de
+Apothem que nombra el directorio absoluto bajo `~/.openclaw/.apothem/support/`
+contra el que se resuelve cada cita con estilo de repositorio
+(`rules/<name>.md`, `templates/...`, `hooks/...`).
 
-El adaptador lee el perfil compartido de Apothem. El campo nativo de skills de
-OpenClaw es una lista de nombres permitidos (no un cargador de directorios) y MCP es
-una superficie de CLI, por lo que Apothem no redacta ninguna clave de configuración.
-Los comandos, las skills, las reglas, las plantillas y los prompts de hooks
-compartidos se instalan como material de soporte bajo `~/.openclaw/.apothem/support/`.
+## Asignación del perfil a la configuración nativa
+
+El adaptador lee el perfil compartido de Apothem, pero no redacta ninguna clave
+de configuración: `openclaw.json` se escribe como un objeto vacío. La identidad,
+las preferencias y las reglas del perfil van al documento de perfil. Los
+comandos, las skills, las reglas, las plantillas y los prompts de hooks
+compartidos se instalan como material de soporte bajo
+`~/.openclaw/.apothem/support/`.
 
 ## Notas de compatibilidad
 
-Adaptador de vista previa. La configuración nativa JSON es la superficie activa de
-Open-Claw; Apothem usa el hook documentado de directorio de skills adicional para las
-skills y mantiene los demás conjuntos como material de referencia para la orientación
-instalada.
+Adaptador en vista previa. OpenClaw no carga por sí solo el árbol de soporte ni
+el documento de perfil: ninguna de sus ubicaciones de skills, ninguno de sus
+archivos de instrucciones del espacio de trabajo y nada de su configuración
+apunta allí, así que después de la instalación OpenClaw se ejecuta sin las
+reglas, las skills ni los servidores MCP de Apothem. OpenClaw lee las skills
+desde las carpetas `skills/` y `.agents/skills/` de su espacio de trabajo,
+`~/.agents/skills`, su directorio de estado y cualquier carpeta listada en
+`skills.load.extraDirs`; para usar las skills de Apothem, agrega tú mismo
+`~/.openclaw/.apothem/support/skills` a esa lista; `apothem update` conserva las
+claves que agregues a `openclaw.json`. Los servidores MCP residen en el bloque
+`mcp.servers` de la configuración de OpenClaw, que gestionas con
+`openclaw mcp add` y los subcomandos relacionados; el adaptador no escribe
+ninguna entrada allí. (Comportamiento de OpenClaw según su documentación de
+[skills](https://docs.openclaw.ai/tools/skills) y de
+[la CLI de MCP](https://docs.openclaw.ai/cli/mcp), consultada el 2026-10-02.)
 
 ## Verificación
 
@@ -68,8 +86,8 @@ actualizar el paquete de Apothem instalado.
 apothem uninstall --harness open-claw
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador. El YAML del
-perfil compartido y el motor de Apothem no se ven afectados.
+Elimina los archivos de configuración nativa escritos por el adaptador.
+El YAML del perfil compartido y el motor de Apothem no se ven afectados.
 
 ## Puerta de conformidad
 
@@ -77,16 +95,22 @@ perfil compartido y el motor de Apothem no se ven afectados.
 python -m apothem.conformity.gate --all .
 ```
 
-## Resolución de problemas
+## Solución de problemas
 
 | Síntoma | Solución |
 |---------|-----|
 | No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness open-claw` |
-| La verificación falló | Ejecuta `apothem update --harness open-claw` y vuelve a verificar |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, y vuelve a ejecutar `apothem update --harness open-claw` |
+| La verificación falló | Ejecuta `apothem update --harness open-claw` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness open-claw` |
 
-## Parámetros de configuración
+## Opciones de configuración
 
-| Flag | Predeterminado | Descripción |
+| Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI

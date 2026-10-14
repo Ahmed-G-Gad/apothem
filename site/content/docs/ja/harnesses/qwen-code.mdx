@@ -1,15 +1,15 @@
 ---
 title: "Qwen Code"
-description: "Qwen Code（ベータ）向けの Apothem ツールアダプター。"
+description: "Qwen Code（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "0ba705985aed7ff1"
+sourceHash: "437b67b49cf5a7ee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** Alibaba Cloud
 **インストール名：** `qwen-code`
-**ステータス：** ベータ
-**ネイティブ構成：** `~/.qwen/`
+**ステータス：** ベータ版
+**ネイティブ設定：** `~/.qwen/`
 
 ## インストール
 
@@ -17,10 +17,10 @@ sourceHash: "0ba705985aed7ff1"
 apothem install --harness qwen-code
 ```
 
-アダプターは、Qwen Code の設定を書き込み、`QWEN.md` コンテキストアンカーを
-インストールし、Apothem のフックディスパッチャーを登録し、Apothem コマンドを
-Qwen の Markdown コマンドファイルに変換し、スキルを SKILL.md ディレクトリとして
-インストールし、ヘルパー定義を Qwen のサブエージェントとして適応させます。
+アダプターは Qwen Code の設定を書き込み、`QWEN.md` コンテキストアンカーをインストールし、
+Apothem のフックディスパッチャーを登録し、Apothem のコマンドを Qwen の Markdown
+コマンドファイルに変換し、スキルを SKILL.md ディレクトリとしてインストールし、ヘルパー定義を
+Qwen のサブエージェントとして適合させます。
 
 **書き込まれるファイル：**
 
@@ -33,17 +33,20 @@ Qwen の Markdown コマンドファイルに変換し、スキルを SKILL.md �
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
-## プロファイルからネイティブ構成へのマッピング
+## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、コンテキストとフック向けに文書化された `settings.json` キーを
-レンダリングし、`QWEN.md` を書き込み、Apothem のコマンド、スキル、ヘルパー定義を
-Qwen Code のネイティブな探索ディレクトリに織り込みます。ルール、テンプレート、
-およびフックのソース素材は、`~/.qwen/.apothem/support/` 配下のサポート素材として残ります。
+アダプターは、コンテキストとフック向けに文書化された `settings.json` のキーをレンダリングし、
+`QWEN.md` を書き込み、Apothem のコマンド、スキル、ヘルパー定義を Qwen Code のネイティブな
+検出ディレクトリに組み込みます。ルール、テンプレート、フックのソース素材は、
+`~/.qwen/.apothem/support/` 配下のサポート素材として残ります。
 
 ## 互換性に関する注意
 
-`~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドによって参照される
-サポート素材です。これはベンダー所有の探索名前空間ではありません。
+`~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドから参照されるサポート素材で
+あり、ベンダー所有の検出名前空間ではありません。
+`QWEN.md` 内の Apothem ブロックは Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が
+解決される先の、`~/.qwen/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## 検証
 
@@ -53,7 +56,7 @@ apothem verify --harness qwen-code
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定パスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -63,8 +66,8 @@ verify コマンドは次のことを確認します。
 apothem update --harness qwen-code
 ```
 
-`settings.json`、`QWEN.md`、ネイティブコマンド、スキル、サブエージェント、および
-Apothem サポートツリーを更新します。
+`settings.json`、`QWEN.md`、ネイティブコマンド、スキル、サブエージェント、Apothem
+サポートツリーを更新します。
 
 ## アンインストール
 
@@ -72,10 +75,10 @@ Apothem サポートツリーを更新します。
 apothem uninstall --harness qwen-code
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,14 +86,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness qwen-code` を再実行する |
-| 検証が失敗した | `apothem update --harness qwen-code` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness qwen-code` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness qwen-code` を再実行する |
+| 検証が失敗した | `apothem update --harness qwen-code` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness qwen-code` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

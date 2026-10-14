@@ -1,35 +1,35 @@
 ---
 title: "Konvensi Harness Multi-Permukaan"
-description: "Referensi normatif kanonik untuk konfigurasi dan koherensi asisten pengkodean multi-permukaan di seluruh runtime chat, autolengkap IDE, dan tinjauan PR."
+description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "9cd23fc0c03aadb4"
+sourceHash: "027929e7268f780c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Konvensi Harness Multi-Permukaan dari spesifikasi proyek (Spec §0.6 + §2.8 + §4.7); ini adalah referensi mandiri yang dikirim bersama repo yang dipublikasikan. Dasar pemikiran arsitektural dicatat di [ADR-0003](/docs/architecture).
+> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Konvensi Harness Multi-Permukaan dari spesifikasi proyek (Spec §0.6 + §2.8 + §4.7); dokumen ini adalah referensi mandiri yang dikirimkan bersama repo yang dipublikasikan. Dasar pemikiran arsitekturalnya dicatat di [ADR-0003](/docs/architecture).
 
 ---
 
 ## 1. Mengapa Jamak
 
-Sebuah permukaan rekayasa modern disentuh oleh banyak runtime asisten-pengkodean — konsol chat, mesin autolengkap dalam-IDE, pendamping pemrograman berpasangan, dan peninjau pull request. Masing-masing membaca file konfigurasi kanoniknya sendiri. Jika proyek hanya mengirim satu file semacam itu, runtime lainnya secara diam-diam berimprovisasi terhadap konvensi yang tak dinyatakan; memori dalam-repo yang hilang langsung bocor.
+Permukaan rekayasa modern disentuh oleh beberapa harness — konsol chat, mesin pelengkapan di dalam IDE, pendamping pemrograman berpasangan, dan peninjau pull request. Masing-masing membaca berkas konfigurasi kanoniknya sendiri. Jika proyek hanya mengirimkan satu berkas semacam itu, runtime lainnya diam-diam berimprovisasi terhadap konvensi yang tidak dinyatakan; memori dalam repo yang tidak ada itu langsung bocor.
 
-Biaya dari permukaan yang hilang adalah **drift senyap pada kode yang dihasilkan mesin** — jenis cacat terburuk karena terakumulasi tanpa terlihat. Setiap artefak yang dihasilkan mesin memperparah perbedaan; pada saat peninjau manusia melihat kontradiksi, basis kode sudah membawa berminggu-minggu konvensi yang tak konsisten.
+Biaya dari permukaan yang tidak ada adalah **penyimpangan senyap dalam kode yang dihasilkan mesin** — kelas cacat terburuk karena menumpuk tanpa terlihat. Setiap artefak yang dihasilkan mesin memperparah divergensi tersebut; pada saat peninjau manusia menemukan kontradiksinya, basis kode sudah membawa konvensi yang tidak konsisten selama berminggu-minggu.
 
-Konfigurasi runtime pengkodean bersifat jamak menurut realitas deployment. Ekosistem yang dipublikasikan HARUS mengirim file memori-perilaku untuk runtime konsol-chat DAN file instruksi bercakupan-repo untuk runtime autolengkap dalam-IDE. Kedua permukaan itu HARUS saling koheren — tanpa kontradiksi, tanpa drift — dan HARUS bersama-sama mengkodekan disiplin yang sama.
+Konfigurasi runtime harness bersifat jamak karena realitas deployment. Ekosistem yang dipublikasikan HARUS mengirimkan berkas memori perilaku untuk runtime konsol chat DAN berkas instruksi bercakupan repo untuk runtime pelengkapan di dalam IDE. Kedua permukaan tersebut HARUS saling koheren — tanpa kontradiksi, tanpa penyimpangan — dan HARUS bersama-sama mengodekan disiplin yang sama.
 
 ---
 
 ## 2. Kontrak Koherensi
 
-Setiap permukaan konvensi dalam cakupan (§3) adalah sebuah *kanal* yang mengekspresikan spesifikasi konvensi tunggal proyek. Spesifikasi diuraikan menjadi:
+Setiap permukaan konvensi dalam cakupan (§3) adalah sebuah *kanal* yang mengekspresikan satu spesifikasi konvensi proyek. Spesifikasi tersebut diuraikan menjadi:
 
-- **Bagian bersama** — Disiplin Plans, kueri terstruktur (atau setara-permukaan), Header Kepengarangan, Penamaan, Anti-Pola, Hierarki Modal. Bagian-bagian ini HARUS muncul di setiap permukaan wajib dan HARUS setara secara semantik di seluruh permukaan.
-- **Bagian khusus-permukaan** — pembingkaian kapabilitas, pola pemanggilan tool, perbedaan codegen-vs-chat. Bagian-bagian ini BOLEH berbeda di seluruh permukaan tetapi TIDAK BOLEH bertentangan dengan bagian bersama.
+- **Bagian bersama** — Disiplin Plan, kueri terstruktur (atau padanannya di permukaan tersebut), Header Kepengarangan, Penamaan, Anti-Pola, Hierarki Modal. Bagian-bagian ini HARUS muncul di setiap permukaan yang diwajibkan dan HARUS setara secara semantik di semua permukaan.
+- **Bagian khusus permukaan** — pembingkaian kapabilitas, pola pemanggilan tool, perbedaan codegen vs. chat. Bagian-bagian ini BOLEH berbeda antarpermukaan tetapi TIDAK BOLEH bertentangan dengan bagian bersama.
 
-Validator `multi-surface-coherence` (§7) berjalan pada setiap jalannya CI dan pada pre-commit, menegaskan kontrak tersebut.
+Validator `multi-surface-coherence` (§7) berjalan pada setiap eksekusi CI dan pada pre-commit, untuk menegaskan kontrak tersebut.
 
-Kedua (atau lebih) permukaan itu adalah *kanal* berbeda yang mengekspresikan satu *spesifikasi*. Bagian bersama HARUS cocok — secara semantik dan, di mana mungkin, secara leksikal — di seluruh permukaan. Bagian khusus-permukaan TIDAK BOLEH bertentangan dengan bagian bersama.
+Kedua (atau lebih) permukaan tersebut adalah *kanal* berbeda yang mengekspresikan satu *spesifikasi*. Bagian bersama HARUS cocok — secara semantik dan, jika memungkinkan, secara leksikal — di semua permukaan. Bagian khusus permukaan TIDAK BOLEH bertentangan dengan bagian bersama.
 
 ---
 
@@ -37,42 +37,42 @@ Kedua (atau lebih) permukaan itu adalah *kanal* berbeda yang mengekspresikan sat
 
 | Permukaan | Jalur | Wajib? | Audiens |
 |---|---|---|---|
-| `AGENTS.md` | akar repo (dan/atau `.codex/AGENTS.md`) | **MUST** | runtime agen-pengkodean yang sadar-AGENTS |
-| `CLAUDE.md` | akar repo (dan/atau `.claude/CLAUDE.md`) | **MUST** | Claude Code |
-| File instruksi berakar `.github/` | file instruksi berakar `.github/` | **MUST** | runtime autolengkap dalam-IDE |
-| Manifes helper berakar `site/content/docs/architecture/` | akar repo | **MAY** (opt-in via kanal kueri terstruktur) | platform orkestrasi multi-helper |
-| `.cursorrules` | akar repo | **MAY** (opt-in) | runtime editor dalam-IDE |
-| `.windsurfrules` | akar repo | **MAY** (opt-in) | runtime pendamping dalam-IDE |
+| `AGENTS.md` | root repo (dan/atau `.codex/AGENTS.md`) | **HARUS** | harness yang mengenali AGENTS |
+| `CLAUDE.md` | root repo (dan/atau `.claude/CLAUDE.md`) | **HARUS** | Claude Code |
+| Berkas instruksi yang berakar di `.github/` | Berkas instruksi yang berakar di `.github/` | **HARUS** | runtime pelengkapan di dalam IDE |
+| Manifest pembantu yang berakar di `site/content/docs/architecture/` | root repo | **BOLEH** (opt-in melalui kanal kueri terstruktur) | platform orkestrasi multi-pembantu |
+| `.cursorrules` | root repo | **BOLEH** (opt-in) | runtime editor di dalam IDE |
+| `.windsurfrules` | root repo | **BOLEH** (opt-in) | runtime pendamping di dalam IDE |
 
-Untuk keterlibatan ini operator opt-in ke permukaan asisten opsional yang dicatat oleh fixture. Konfigurasi akar khusus-vendor yang tak terpakai sengaja absen; file konfigurasi khusus-tool ditambahkan hanya ketika tool tersebut menjadi permukaan penyuntingan aktif untuk repositori ini.
+Untuk keterlibatan ini, operator memilih ikut (opt-in) pada permukaan asisten opsional yang dicatat oleh fixture. Konfigurasi root khusus vendor yang tidak digunakan sengaja tidak disertakan; berkas konfigurasi khusus tool ditambahkan hanya ketika tool tersebut menjadi permukaan penyuntingan aktif untuk repositori ini.
 
 ---
 
-## 4. Daftar Bagian untuk File Instruksi Dalam-IDE
+## 4. Daftar Bagian untuk Berkas Instruksi di Dalam IDE
 
-File instruksi bercakupan-repo di bawah `.github/` HARUS memuat, dalam urutan ini, bagian-bagian berikut (masing-masing dengan teks judul persis di bawah; isi bagian ditulis sendiri, bukan distempel-template, tetapi masing-masing HARUS mencakup klaim yang terdaftar):
+Berkas instruksi bercakupan repo di bawah `.github/` HARUS memuat, dalam urutan ini, bagian-bagian berikut (masing-masing dengan teks heading persis seperti di bawah; isi bagian ditulis, bukan dicap dari templat, tetapi masing-masing HARUS mencakup klaim yang tercantum):
 
-1. **Project Context** — satu paragraf: apa repositori ini, siapa yang memakainya, bentuk tingkat-atasnya. Konkret; tanpa pemasaran.
-2. **Coding Conventions** — penamaan, hierarki modal, frontmatter, gaya markdown, poin gaya khusus-bahasa di mana berbeda dari default.
+1. **Project Context** — satu paragraf: apa repositori ini, siapa yang menggunakannya, bentuk tingkat atasnya. Konkret; tanpa bahasa pemasaran.
+2. **Coding Conventions** — penamaan, hierarki modal, frontmatter, gaya markdown, poin gaya khusus bahasa yang berbeda dari default.
 {/* REUSE-IgnoreStart */}
-3. **File Headers** — setiap file yang dihasilkan runtime HARUS dimulai dengan baris tunggal kanonik `SPDX-License-Identifier: MIT` per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), dalam varian komentar yang cocok dengan tipe file. Penunjuk ke `scripts/inject-header.*` dan `site/content/docs/reference/authorship-header.mdx`.
+3. **File Headers** — setiap berkas yang dihasilkan runtime HARUS diawali dengan satu baris kanonik `SPDX-License-Identifier: MIT` sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), dalam varian komentar yang cocok dengan tipe berkas. Penunjuk ke `scripts/inject-header.*` dan `site/content/docs/reference/authorship-header.mdx`.
 {/* REUSE-IgnoreEnd */}
-4. **Plans Discipline** — runtime TIDAK BOLEH menghasilkan kode atau skrip yang menulis ke direktori konfigurasi harness (misalnya `~/.claude/plans/` atau `~/.codex/.plans/`) atau lokasi plans global lainnya. Artefak perencanaan masuk ke `<project-root>/.apothem/plans/` (pohon `<project-root>/.plans/` lama dimutakhirkan via `apothem migrate-workspace`) per [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
-5. **Structured Inquiry Behavior** — ketika runtime tidak pasti, ia TIDAK BOLEH secara diam-diam mengarang. Sebagai gantinya ia menyisipkan blok klarifikasi yang ditandai jelas (mis., komentar `# TODO(clarify): <question>`) dan memunculkan pertanyaan di chat di mana permukaan mengizinkan. Tanpa API yang dikarang, tanpa nama model yang dikarang, tanpa jalur file yang dikarang.
-6. **Forbidden Patterns** — larangan eksplisit: tanpa kata sifat pemasaran, tanpa pengisi yang mengelak, tanpa sampah debug `console.log`, tanpa jalur absolut hard-coded ke home pengguna, tanpa commit rahasia, tanpa commit file di bawah `.apothem/plans/` (atau `.plans/` lama), tanpa bertentangan dengan file instruksi proyek kanonik.
-7. **Output Format** — kode/prosa yang dihasilkan sesuai dengan konvensi keluaran percakapan terpadu: ketegasan, pembagian-bagian seragam, kepadatan, disiplin ringkasan, sitasi. Untuk kode: permukaan publik terdokumentasi, bertipe di mana bahasa mendukung tipe, teruji di mana scaffolding pengujian ada.
-8. **Review Checklist** — apa yang HARUS diverifikasi peninjau (manusia atau runtime dalam mode tinjauan-PR) sebelum menyetujui: header ada, penamaan patuh, tanpa tulisan ke `.apothem/plans/`, tanpa kontradiksi dengan file instruksi proyek kanonik, validator hijau secara lokal.
+4. **Plans Discipline** — runtime TIDAK BOLEH menghasilkan kode atau skrip yang menulis ke direktori konfigurasi harness (misalnya `~/.claude/plans/` atau `~/.codex/.plans/`) atau lokasi plans global lainnya. Artefak perencanaan ditempatkan di `<project-root>/.apothem/plans/` (pohon `<project-root>/.plans/` warisan ditingkatkan melalui `apothem migrate-workspace`) sesuai [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
+5. **Structured Inquiry Behavior** — ketika runtime tidak yakin, runtime TIDAK BOLEH diam-diam mengarang. Sebagai gantinya, runtime menyisipkan blok klarifikasi yang ditandai dengan jelas (mis., komentar `# TODO(clarify): <question>`) dan memunculkan pertanyaan tersebut di chat jika permukaan memungkinkan. Tidak ada API yang dikarang, tidak ada nama model yang dikarang, tidak ada jalur berkas yang dikarang.
+6. **Forbidden Patterns** — larangan eksplisit: tanpa kata sifat pemasaran, tanpa pengisi yang mengelak, tanpa sisa debug console.log, tanpa jalur absolut yang di-hardcode ke direktori home pengguna, tanpa meng-commit rahasia, tanpa meng-commit berkas di bawah `.apothem/plans/` (atau `.plans/` warisan), tanpa bertentangan dengan berkas instruksi proyek kanonik.
+7. **Output Format** — kode/prosa yang dihasilkan mematuhi konvensi keluaran percakapan terpadu: ketegasan, pembagian bagian yang seragam, kepadatan, disiplin ringkasan, sitasi. Untuk kode: permukaan publik terdokumentasi, bertipe jika bahasanya mendukung tipe, teruji jika tersedia perancah pengujian.
+8. **Review Checklist** — apa yang HARUS diverifikasi peninjau (manusia atau runtime dalam mode tinjauan PR) sebelum menyetujui: header ada, penamaan patuh, tidak ada penulisan ke `.apothem/plans/`, tidak ada kontradiksi dengan berkas instruksi proyek kanonik, validator hijau secara lokal.
 9. **Pointers** — tautan ke `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, dokumen konvensi ini, `schemas/`, dan `CONTRIBUTING.md`.
 
-File dimulai dengan baris SPDX header-kepengarangan kanonik (varian Markdown) per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — terlihat-atau-tak-terlihat sesuai kebijakan visibilitas-header yang dipilih proyek.
+Berkas ini diawali dengan baris SPDX header kepengarangan kanonik (varian Markdown) sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — terlihat atau tidak terlihat sesuai kebijakan visibilitas header yang dipilih proyek.
 
-File instruksi dalam-IDE **bukan** salinan verbatim dari `AGENTS.md` atau `CLAUDE.md`. `AGENTS.md` adalah permukaan instruksi proyek kanonik, `CLAUDE.md` mencerminkannya untuk Claude Code, dan file instruksi dalam-IDE disuarakan untuk runtime autolengkap-kode dalam-editor yang memancarkan saran yang diterima atau ditolak pengembang. *Informasi*-nya (disiplin, konvensi, anti-pola) identik; *pembingkaian*-nya berbeda.
+Berkas instruksi di dalam IDE **bukan** salinan verbatim dari `AGENTS.md` atau `CLAUDE.md`. `AGENTS.md` adalah permukaan instruksi proyek kanonik, `CLAUDE.md` mencerminkannya untuk Claude Code, dan berkas instruksi di dalam IDE ditulis dengan suara yang ditujukan bagi runtime pelengkapan kode di dalam editor yang memancarkan saran untuk diterima atau ditolak pengembang. *Informasi*-nya (disiplin, konvensi, anti-pola) identik; *pembingkaian*-nya berbeda.
 
 ---
 
 ## 5. Referensi Daftar Klaim
 
-Fixture di [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) menyebutkan setiap klaim bersama. Contoh entri:
+Fixture di [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) mencantumkan setiap klaim bersama. Contoh entri:
 
 ```yaml
 - id: plans.location
@@ -88,19 +88,19 @@ Fixture di [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed
 # ... (one entry per shared claim)
 ```
 
-Validator mengurai setiap permukaan, mencoba menemukan keberadaan-permukaan setiap klaim (via hierarki judul + ekstraksi kata kunci isi), dan gagal pada setiap kelewatan atau kontradiksi.
+Validator mengurai setiap permukaan, mencoba menemukan keberadaan setiap klaim di permukaan tersebut (melalui hierarki heading + ekstraksi kata kunci dari isi), dan gagal pada setiap klaim yang tidak ditemukan atau setiap kontradiksi.
 
 ---
 
 ## 6. Aturan Rekonsiliasi
 
-Ketika dua permukaan terdeteksi bertentangan pada klaim bersama, rekonsiliasi default adalah:
+Ketika dua permukaan terdeteksi saling bertentangan pada sebuah klaim bersama, rekonsiliasi default-nya adalah:
 
-> `AGENTS.md` adalah suara proyek kanonik. Permukaan apa pun yang bertentangan ditulis ulang untuk mencerminkan semantik `AGENTS.md` dalam pembingkaian yang sesuai-permukaan.
+> `AGENTS.md` adalah suara proyek kanonik. Setiap permukaan yang bertentangan ditulis ulang untuk mencerminkan semantik `AGENTS.md` dalam pembingkaian yang sesuai dengan permukaannya.
 
-Penimpaan khusus-permukaan diizinkan hanya dengan penanda dalam-file eksplisit `<!-- coherence-override: <claim-id> -->` yang menunjuk ke ADR yang menjelaskan perbedaan yang disengaja. Penanda penimpaan itu sendiri tercantum dalam daftar-izin validator dan muncul dalam laporan CI.
+Penimpaan khusus permukaan hanya diizinkan dengan penanda `<!-- coherence-override: <claim-id> -->` yang eksplisit di dalam berkas dan menunjuk ke ADR yang menjelaskan divergensi yang disengaja itu. Penanda penimpaan itu sendiri tercantum dalam daftar izin validator dan muncul dalam laporan CI.
 
-Untuk repositori ini strategi rekonsiliasi yang diratifikasi adalah **`agents-md-wins`**: `AGENTS.md` kanonik, dan setiap cermin harness aktif tetap setara secara semantik.
+Untuk repositori ini, strategi rekonsiliasi yang diratifikasi adalah **`agents-md-wins`**: `AGENTS.md` bersifat kanonik, dan setiap cermin harness yang aktif tetap setara secara semantik.
 
 ---
 
@@ -114,17 +114,17 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- Yang pertama menegaskan file instruksi dalam-IDE ada, terurai, memuat setiap bagian kanonik yang disebut dalam §4, dan dimulai dengan banner kepengarangan kanonik.
-- Yang kedua mengurai bagian-bagian kanonik tiap permukaan; menegaskan bagian bersama saling konsisten di bawah komparator yang dinormalisasi (tak peka-huruf, toleran-spasi, mengizinkan parafrase leksikal tetapi mensyaratkan kesetaraan semantik pada daftar klaim yang didefinisikan-fixture).
-- Yang ketiga menegaskan baris hak cipta LICENSE dan baris "Copyright (c)" banner kanonik menyebut penulis yang sama.
+- Validator pertama menegaskan bahwa berkas instruksi di dalam IDE ada, dapat diurai, memuat setiap bagian kanonik yang dicantumkan di §4, dan diawali dengan banner kepengarangan kanonik.
+- Validator kedua mengurai bagian-bagian kanonik setiap permukaan; validator ini menegaskan bahwa bagian bersama saling konsisten menurut komparator yang dinormalisasi (tidak peka huruf besar-kecil, toleran terhadap spasi, mengizinkan parafrase leksikal tetapi mensyaratkan kesetaraan semantik pada daftar klaim yang didefinisikan fixture).
+- Validator ketiga menegaskan bahwa baris hak cipta di LICENSE dan baris "Copyright (c)" pada banner kanonik menyebut penulis yang sama.
 
 ---
 
-## 8. Daur Hidup Permukaan
+## 8. Siklus Hidup Permukaan
 
-- **Tambah permukaan.** Operator opt-in via kanal kueri terstruktur atau via `make surfaces-add <name>` berikutnya. Generator menulis permukaan terhadap daftar klaim, menjalankan validator, mengajukan ADR jika diperlukan penimpaan khusus-permukaan.
-- **Hapus permukaan.** Kueri terstruktur mengonfirmasi penghapusan, ADR mencatat dasar pemikiran, daftar required-in validator diubah.
-- **Deteksi drift.** Setiap commit yang menyimpang dari daftar klaim ditolak oleh pre-commit / CI; penulis commit menulis ulang permukaan untuk memulihkan koherensi.
+- **Menambahkan permukaan.** Operator memilih ikut melalui kanal kueri terstruktur atau melalui `make surfaces-add <name>` setelahnya. Generator menulis permukaan tersebut berdasarkan daftar klaim, menjalankan validator, dan mengajukan ADR jika diperlukan penimpaan khusus permukaan.
+- **Menghapus permukaan.** Kueri terstruktur mengonfirmasi penghapusan, ADR mencatat dasar pemikirannya, dan daftar required-in milik validator diubah.
+- **Deteksi penyimpangan.** Setiap commit yang menyimpang dari daftar klaim ditolak oleh pre-commit / CI; penulis commit tersebut menulis ulang permukaannya untuk memulihkan koherensi.
 
 ---
 
@@ -133,7 +133,7 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 - [ADR-0003](/docs/architecture) — dasar pemikiran arsitektural, alternatif yang dipertimbangkan.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — fixture daftar klaim kanonik.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — suara proyek kanonik.
-- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — cermin Claude Code.
-- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — referensi kanonik klaim bersama Disiplin Plans.
-- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — referensi kanonik klaim bersama Header Kepengarangan.
-- Spesifikasi proyek §0.6 + §2.8 + §4.7 — teks kanonik penuh yang dicerminkan di sini.
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — cermin untuk Claude Code.
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — referensi kanonik untuk klaim bersama Disiplin Plan.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — referensi kanonik untuk klaim bersama Header Kepengarangan.
+- Spesifikasi proyek §0.6 + §2.8 + §4.7 — teks kanonik lengkap yang dicerminkan di sini.

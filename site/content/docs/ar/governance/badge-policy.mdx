@@ -1,124 +1,137 @@
 ---
 title: "سياسة الشارات"
-description: "تحديد مصادر الشارات الديناميكية والثابتة لملف README، شاملةً حالة سير العمل الأصلية لـ GitHub، وJSON نقطة نهاية shields.io، وأشكال الشارات الثابتة."
+description: "تحديد مصادر الشارات الديناميكية والثابتة لملف README، بما يشمل حالة سير العمل الأصلية في GitHub، وملفات JSON لنقاط نهاية shields.io، وأشكال الشارات الثابتة."
 machineTranslated: true
-sourceHash: "0d5dc98b969aecd5"
+sourceHash: "e3ae990f58d3dd8e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-هذه الوثيقة هي المرجع الكانوني لشريط الشارات في <bdi>README</bdi> والبنية
-التحتية التي تنشر مصادر بياناته الديناميكية. كل شارة في <bdi>README</bdi>
-الخاص بالمشروع تُحلّ عبر أحد الأشكال الثلاثة المحددة هنا؛ والشارات الجديدة
-المضافة مستقبلًا تتبع الأشكال ذاتها أو تُرفض عند المراجعة.
+هذه الوثيقة هي المرجع المعتمد لشريط الشارات في <bdi>README</bdi> وللبنية التحتية التي
+تنشر مصادر بياناته الديناميكية. كل شارة في <bdi>README</bdi> المشروع تُحَلّ عبر أحد
+الأشكال الثلاثة المحدّدة هنا؛ والشارات الجديدة التي تُضاف مستقبلًا تتبع الأشكال نفسها
+وإلا رُفِضت في المراجعة.
 
 ## 1. الخلفية
 
-عناوين <bdi>`https://img.shields.io/badge/X-Y-Z`</bdi> الثابتة لا تتغير من تلقاء
-نفسها أبدًا، فتنحرف عن الحالة الحقيقية للمشروع — تظل شارة
-<bdi>`release-vN-blue`</bdi> تعرض <bdi>`vN`</bdi> بعد طرح <bdi>`vN+1`</bdi>
-بوقت طويل. لذلك تتطلب السياسة أشكالًا ديناميكية لكل قيمة تتحرك، وتحجز الشارات
-الثابتة للمجموعة الصغيرة من القيم (الرخصة، إصدار <bdi>Python</bdi> المستهدف)
-التي نادرًا ما تتغير، حيث يكون الشكل الثابت صادقًا.
+عناوين <bdi>`https://img.shields.io/badge/X-Y-Z`</bdi> الثابتة لا تتغيّر من تلقاء
+نفسها أبدًا، فتبتعد عن الحالة الحقيقية للمشروع — إذ تظلّ شارة
+<bdi>`release-vN-blue`</bdi> تعرض <bdi>`vN`</bdi> لوقت طويل بعد شحن <bdi>`vN+1`</bdi>.
+لذلك تشترط السياسة أشكالًا ديناميكية لكل قيمة متغيّرة، وتقصر الشارات الثابتة على
+المجموعة الصغيرة من القيم (الرخصة، ونسخة <bdi>Python</bdi> المستهدفة) التي نادرًا ما
+تتغيّر، حيث يكون الشكل الثابت صادقًا.
 
-## 2. العمارة
+## 2. المعمارية
 
-ثلاثة أشكال تغطّي كل شارة في المشروع:
+أربعة أشكال تغطّي كل شارة في المشروع:
 
-1. **شارات حالة سير العمل الأصلية لـ <bdi>GitHub</bdi>.** عنوان شارة سير العمل
-   يأخذ الشكل
-   <bdi>`https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`</bdi>
-   ويعكس آخر تشغيل على الفرع الافتراضي. تقدّم <bdi>GitHub</bdi> الشارة من
-   البيانات الوصفية العامة للمستودع.
-2. **شارات نقطة نهاية <bdi>shields.io</bdi>.** تحلّ شارة نقطة نهاية
-   <bdi>shields.io</bdi> عنوان
-   <bdi>`https://img.shields.io/endpoint?url=<published-json>`</bdi> حيث يتوافق
-   الـ <bdi>JSON</bdi> مع مخطط نقطة نهاية <bdi>shields.io</bdi>
-   (<bdi>`schemaVersion`</bdi>، <bdi>`label`</bdi>، <bdi>`message`</bdi>،
-   <bdi>`color`</bdi>). يقع الـ <bdi>JSON</bdi> المنشور في
-   <bdi>`apothem.ahmedgad.com/badges/*.json`</bdi>؛ ويُولَّد محتواه بواسطة سير
-   عمل <bdi>CI</bdi> في كل تشغيل <bdi>CI</bdi> ناجح. تُبقي شارات نقطة النهاية
-   المقاييس تحت نشر يتحكّم فيه المشروع بدلًا من مخزن قابل للتغيير تابع لطرف ثالث.
-3. **الشارات الثابتة لـ <bdi>shields.io</bdi>.** تأخذ الشارة الثابتة الشكل
-   <bdi>`https://img.shields.io/badge/<label>-<message>-<color>`</bdi> دون مصدر
-   بيانات تفاعلي. محجوزة للقيم التي نادرًا ما تتغير فعلًا (مُعرّف الرخصة، إصدار
-   <bdi>Python</bdi> المستهدف).
+1. **شارات حالة سير العمل الأصلية في <bdi>GitHub</bdi>.** يأخذ عنوان شارة سير العمل
+   الشكل <bdi>`https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`</bdi>
+   ويعكس آخر تشغيل على الفرع الافتراضي. ويقدّم <bdi>GitHub</bdi> الشارة من البيانات
+   الوصفية العامة للمستودع.
+2. **شارات نقاط نهاية <bdi>shields.io</bdi>.** تَحُلّ شارة نقطة نهاية
+   <bdi>shields.io</bdi> عنوانًا من الشكل
+   <bdi>`https://img.shields.io/endpoint?url=<published-json>`</bdi> حيث يتوافق ملف
+   <bdi>JSON</bdi> مع مخطط نقطة نهاية <bdi>shields.io</bdi> (<bdi>`schemaVersion`</bdi>،
+   و<bdi>`label`</bdi>، و<bdi>`message`</bdi>، و<bdi>`color`</bdi>). ويقع ملف
+   <bdi>JSON</bdi> المنشور في <bdi>`apothem.ahmedgad.com/badges/*.json`</bdi>؛ ويُولِّد
+   محتواه سيرُ عمل <bdi>CI</bdi> في كل تشغيل <bdi>CI</bdi> ناجح. وتُبقي شارات نقاط
+   النهاية المقاييسَ تحت نشر يتحكّم فيه المشروع بدلًا من مخزن قابل للتعديل لدى طرف ثالث.
+3. **الشارات الثابتة من <bdi>shields.io</bdi>.** تأخذ الشارة الثابتة الشكل
+   <bdi>`https://img.shields.io/badge/<label>-<message>-<color>`</bdi> دون مصدر بيانات
+   تفاعلي. وهي مقصورة على القيم التي نادرًا ما تتغيّر فعلًا (مُعرِّف الرخصة، ونسخة
+   <bdi>Python</bdi> المستهدفة).
+4. **شارات السجلّ وبطاقة التقييم.** شارة يحسب قيمتها طرف ثالث من بيانات عامة يملكها
+   أصلًا: سجلّ <bdi>npm</bdi> (النسخة والتنزيلات، ويعرضها <bdi>shields.io</bdi>) وواجهة
+   برمجة <bdi>OpenSSF Scorecard</bdi>. لا ينشر المشروع أي شيء لهذه الشارات؛ فالطرف الثالث
+   هو المصدر.
 
-نشر مقاييس المشروع عبر <bdi>Gist</bdi> العامة مُستبعَد عن قصد. نقاط نهاية
-<bdi>shields.io</bdi> فوق النطاق الذي يتحكّم فيه المشروع هي البديل الكانوني.
+نشر مقاييس المشروع عبر <bdi>Gist</bdi> عامة مُستبعَد بحكم التصميم. ونقاط نهاية
+<bdi>shields.io</bdi> على النطاق الذي يتحكّم فيه المشروع هي البديل المعتمد.
 
 ## 3. المواصفات لكل شارة
 
-| الشارة | الشكل | المصدر | شكل العنوان |
-|---|---|---|---|
-| حالة <bdi>CI</bdi> | أصلي لـ <bdi>GitHub</bdi> | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
-| آخر إيداع | أصلي لـ <bdi>GitHub</bdi> | البيانات الوصفية للمستودع | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
-| الرخصة | ثابت <bdi>shields.io</bdi> | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
-| آخر إصدار | نقطة نهاية <bdi>shields.io</bdi> | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
-| التغطية | نقطة نهاية <bdi>shields.io</bdi> | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
-| الأمان | نقطة نهاية <bdi>shields.io</bdi> | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
-| سلسلة التوريد | نقطة نهاية <bdi>shields.io</bdi> | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
-| التوثيق | نقطة نهاية <bdi>shields.io</bdi> | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
-| إصدار <bdi>Python</bdi> | ثابت <bdi>shields.io</bdi> | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+يسرد الجدول شريط الشارات في <bdi>README</bdi> بالترتيب. ويُعلِّم العمود الأخير الشارات
+التي لا تظهر صورتها إلا ما دام المستودع عامًا: فـ <bdi>GitHub</bdi> لا يقدّم شارة سير
+العمل لمستودع خاص إلا للأعضاء الذين سجّلوا الدخول، و<bdi>Scorecard</bdi> لا يفحص إلا
+المستودعات العامة.
 
-يعمل <bdi>CodeQL</bdi> كسير عمل مخصّص في <bdi>`.github/workflows/codeql.yml`</bdi>
-يحلّل سطحَي <bdi>Python</bdi> و<bdi>Actions</bdi>؛ ومهمة <bdi>security-scan</bdi>
-في <bdi>`ci.yml`</bdi> تشغّل <bdi>bandit</bdi> فقط، تاركةً نشر نتائج
-<bdi>CodeQL</bdi> لـ <bdi>`codeql.yml`</bdi>. تستهلك شارة الأمان الـ
-<bdi>JSON</bdi> الخاص بنقطة النهاية المنشور من سير عمل <bdi>badges</bdi> بدلًا
-من شارة سير عمل أصلية لـ <bdi>GitHub</bdi>، ممّا يبقي الشارة ثابتة عبر طوبولوجيا
-الماسح الأساسية.
+| الشارة | الشكل | المصدر | شكل العنوان | تتطلّب مستودعًا عامًا |
+|---|---|---|---|---|
+| أحدث إصدار | نقطة نهاية <bdi>shields.io</bdi> | <bdi>`badges/release.json`</bdi> | <bdi>`https://img.shields.io/endpoint?url=https%3A%2F%2Fapothem.ahmedgad.com%2Fbadges%2Frelease.json`</bdi> | لا |
+| حالة <bdi>CI</bdi> | أصلي في <bdi>GitHub</bdi> | <bdi>`.github/workflows/ci.yml`</bdi> | <bdi>`https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main`</bdi> | نعم |
+| الرخصة | ثابت من <bdi>shields.io</bdi> | <bdi>`LICENSE`</bdi> (<bdi>MIT</bdi>) | <bdi>`https://img.shields.io/badge/license-MIT-0F172A`</bdi> | لا |
+| نسخة <bdi>npm</bdi> | سجلّ | سجلّ <bdi>npm</bdi> | <bdi>`https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm`</bdi> | لا |
+| بوابة التغطية | ثابت من <bdi>shields.io</bdi> | <bdi>`pyproject.toml` `fail_under = 80`</bdi> | <bdi>`https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB`</bdi> | لا |
+| <bdi>OpenSSF Scorecard</bdi> | بطاقة تقييم | نتائج <bdi>`.github/workflows/scorecard.yml`</bdi> | <bdi>`https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge`</bdi> | نعم |
+| الملاحظات | ثابت من <bdi>shields.io</bdi> | <bdi>GitHub Issues</bdi> | <bdi>`https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED`</bdi> | لا |
+| الوثائق | ثابت من <bdi>shields.io</bdi> | موقع الوثائق | <bdi>`https://img.shields.io/badge/docs-Fumadocs-0F172A`</bdi> | لا |
+| تنزيلات <bdi>npm</bdi> | سجلّ | سجلّ <bdi>npm</bdi> | <bdi>`https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads`</bdi> | لا |
 
-## 4. آلية نشر الـ JSON
+لا يُفتَح هدف الرابط لأي شارة على <bdi>`github.com`</bdi> (الإصدارات، وسير العمل، وملف
+الرخصة، والمسائل) إلا ما دام المستودع عامًا.
 
-تُنتَج ملفات <bdi>JSON</bdi> الخاصة بنقاط النهاية بواسطة
-<bdi>`.github/workflows/badges.yml`</bdi>. سير العمل:
+ينشر سير عمل الشارات أيضًا ملفات نقاط النهاية <bdi>`coverage.json`</bdi>
+و<bdi>`security.json`</bdi> و<bdi>`supply-chain.json`</bdi> و<bdi>`docs.json`</bdi>
+لشارات مستقبلية؛ ولا يعرضها <bdi>README</bdi> اليوم.
 
-- يُشغَّل عند <bdi>`workflow_run`</bdi> بعد اكتمال سير عمل <bdi>`ci`</bdi> (وعند
+يعمل <bdi>CodeQL</bdi> بوصفه سير عمل مخصّصًا هو <bdi>`.github/workflows/codeql.yml`</bdi>
+يحلّل سطحَي <bdi>Python</bdi> و<bdi>Actions</bdi>؛ أمّا مهمة <bdi>`security-scan`</bdi> في
+<bdi>`ci.yml`</bdi> فلا تُشغِّل إلا <bdi>bandit</bdi>، تاركةً نشر <bdi>CodeQL SARIF</bdi>
+لـ <bdi>`codeql.yml`</bdi>. وتستهلك شارة الأمان ملف <bdi>JSON</bdi> لنقطة النهاية الذي
+ينشره سير عمل الشارات بدلًا من شارة سير عمل أصلية في <bdi>GitHub</bdi>، فتبقى الشارة
+مستقرّة مهما تغيّرت بنية الماسحات الكامنة.
+
+## 4. آلية نشر <bdi>JSON</bdi>
+
+يُنتِج <bdi>`.github/workflows/badges.yml`</bdi> ملفات <bdi>JSON</bdi> لنقاط النهاية.
+وسير العمل هذا:
+
+- يُطلَق عند <bdi>`workflow_run`</bdi> بعد اكتمال سير العمل <bdi>`ci`</bdi> (وعند
   <bdi>`workflow_dispatch`</bdi> اليدوي لإعادة النشر دون تشغيل <bdi>CI</bdi>).
-- يحلّ أحدث وسم من <bdi>`git describe --tags --abbrev=0`</bdi> واستنتاج
-  <bdi>CI</bdi> الأب من حدث <bdi>`workflow_run`</bdi>.
-- يولّد كل <bdi>JSON</bdi> عبر <bdi>`jq -n`</bdi> بحيث يطابق الخرج بدقة مخطط
+- يحدّد أحدث وسم إصدار عبر
+  <bdi>`git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*'`</bdi> على نسخة
+  مسحوبة بالسجلّ الكامل (<bdi>`fetch-depth: 0`</bdi>؛ ففي نسخة مسحوبة بعمق 1 لا يمكن
+  الوصول إلى أي كوميت موسوم وتعرض الشارة <bdi>`unreleased`</bdi>)، ونتيجة <bdi>CI</bdi>
+  الأب من حدث <bdi>`workflow_run`</bdi>.
+- يُولِّد كل ملف <bdi>JSON</bdi> عبر <bdi>`jq -n`</bdi> بحيث يطابق الخرج بصرامة مخطط
   نقطة نهاية <bdi>shields.io</bdi> (<bdi>`schemaVersion: 1`</bdi>، إضافةً إلى
   <bdi>`label`</bdi> و<bdi>`message`</bdi> و<bdi>`color`</bdi>).
-- يتحقق من كل <bdi>JSON</bdi> مُخرَج باستخدام <bdi>`jq -e`</bdi> قبل الرفع.
-- يرفع الدليل كأثر سير عمل باسم <bdi>`badges`</bdi>.
+- يتحقّق من كل ملف <bdi>JSON</bdi> مُصدَر بـ <bdi>`jq -e`</bdi> قبل الرفع.
+- يرفع الدليل بوصفه مُنتَج سير عمل باسم <bdi>`badges`</bdi>.
 
-يُتولّى نشر الآثار إلى <bdi>`apothem.ahmedgad.com/badges/`</bdi> بواسطة
-<bdi>`.github/workflows/publish-static-site.yml`</bdi>. أثناء بناء الموقع،
-يُنزّل ذلك السير أحدث أثر <bdi>`badges`</bdi> ناجح ويهيّئه تحت
-<bdi>`site/dist/badges/`</bdi>. إذا كان الأثر غائبًا أو منتهي الصلاحية، فإن
-الموقع يُنشر مع ذلك ويسجّل أثر الشارة المفقود في سجلات سير العمل بدلًا من نشر
-<bdi>JSON</bdi> معطوب.
+يتولّى <bdi>`.github/workflows/publish-static-site.yml`</bdi> نشر المُنتَجات إلى
+<bdi>`apothem.ahmedgad.com/badges/`</bdi>. فأثناء بناء الموقع، يُنزِّل سير العمل ذاك
+أحدث مُنتَج <bdi>`badges`</bdi> ناجح ويُجهِّزه تحت <bdi>`site/dist/badges/`</bdi>. وإذا
+كان المُنتَج غائبًا أو منتهي الصلاحية، يُنشَر الموقع رغم ذلك ويُسجِّل غياب مُنتَج الشارات
+في سجلات سير العمل بدلًا من نشر <bdi>JSON</bdi> معطوب.
 
 ## 5. بروتوكول الصيانة
 
-أضف شارة جديدة بتحديد الشكل أولًا:
+أضِف شارة جديدة بتحديد شكلها أولًا:
 
-- إذا كانت الشارة تعكس حالة تشغيل سير عمل <bdi>CI</bdi>، فضّل الشكل الأصلي لـ
-  <bdi>GitHub</bdi>. عنوان الشارة مثبّت بملف سير العمل؛ ولا حاجة إلى بنية تحتية
-  للنشر.
-- إذا كانت الشارة تعكس مقياسًا (عددًا، أو نسبة مئوية، أو سلسلة إصدار، أو تسمية
-  مُدرّجة) يتحدّث مع الوقت، فاستخدم شكل نقطة نهاية <bdi>shields.io</bdi>. أضف
-  خطوة توليد <bdi>JSON</bdi> إلى <bdi>`.github/workflows/badges.yml`</bdi> إلى
-  جانب الخمس الموجودة، وأضف عنوان المستهلك
-  <bdi>`apothem.ahmedgad.com/badges/<name>.json`</bdi> إلى شريط الشارات في
-  <bdi>README</bdi>.
-- إذا كانت الشارة تعكس قيمة نادرًا ما تتغير فعلًا (الرخصة، أو هدف اللغة، أو وضع
-  الحوكمة)، فاستخدم الشكل الثابت لـ <bdi>shields.io</bdi>. وثّق وتيرة التغيير في
-  جدول الشارات في هذا الملف عند إضافة الشارة.
+- إذا كانت الشارة تعكس حالة تشغيل سير عمل <bdi>CI</bdi>، ففضِّل الشكل الأصلي في
+  <bdi>GitHub</bdi>. فعنوان الشارة يحدّده ملف سير العمل؛ ولا تلزم أي بنية تحتية للنشر.
+- إذا كانت الشارة تعكس مقياسًا (عددًا، أو نسبة مئوية، أو سلسلة نسخة، أو تسمية متدرّجة)
+  يتحدّث مع الوقت، فاستخدم شكل نقطة نهاية <bdi>shields.io</bdi>. أضِف خطوة توليد
+  <bdi>JSON</bdi> إلى <bdi>`.github/workflows/badges.yml`</bdi> إلى جانب الخطوات الخمس
+  الموجودة، وأضِف عنوان المستهلِك <bdi>`apothem.ahmedgad.com/badges/<name>.json`</bdi>
+  إلى شريط الشارات في <bdi>README</bdi>.
+- إذا كانت الشارة تعكس قيمة نادرًا ما تتغيّر فعلًا (الرخصة، أو اللغة المستهدفة، أو وضع
+  الحوكمة)، فاستخدم الشكل الثابت من <bdi>shields.io</bdi>. ووثِّق وتيرة التغيير في جدول
+  المواصفات لكل شارة في هذا الملف عند إضافة الشارة.
 
-تقاعد شارة بإزالتها من <bdi>README</bdi> أولًا، ثم إزالة خطوة توليد
-<bdi>JSON</bdi> الخاصة بها من سير عمل <bdi>badges</bdi>، ثم إزالة صفّها من جدول
-الشارات أعلاه. أبقِ الحذف ذرّيًا حتى لا يشير <bdi>README</bdi> أبدًا إلى أثر
-<bdi>JSON</bdi> لا ينتجه سير العمل.
+أوقِف شارة بإزالتها من <bdi>README</bdi> أولًا، ثم إزالة خطوة توليد <bdi>JSON</bdi>
+الخاصة بها من سير عمل الشارات، ثم إزالة صفّها من جدول المواصفات لكل شارة أعلاه. واجعل
+الحذف ذرّيًا كي لا يشير <bdi>README</bdi> أبدًا إلى مُنتَج <bdi>JSON</bdi> لا يُنتِجه
+سير العمل.
 
 ## 6. المراجع المتقاطعة
 
-- سير عمل <bdi>CI</bdi> الذي تعكس شارة <bdi>CI</bdi> الأصلية لـ <bdi>GitHub</bdi>
-  حالة تشغيله: <bdi>`.github/workflows/ci.yml`</bdi>.
-- سير عمل <bdi>badges</bdi> الذي ينشر ملفات <bdi>JSON</bdi> الخاصة بنقاط النهاية:
+- سير عمل <bdi>CI</bdi> الذي تعكس شارة <bdi>CI</bdi> الأصلية في <bdi>GitHub</bdi> حالة
+  تشغيله: <bdi>`.github/workflows/ci.yml`</bdi>.
+- سير عمل الشارات الذي ينشر ملفات <bdi>JSON</bdi> لنقاط النهاية:
   <bdi>`.github/workflows/badges.yml`</bdi>.
 - نطاق الموقع الثابت الذي يقدّم ملفات <bdi>JSON</bdi>:
   <bdi>`apothem.ahmedgad.com`</bdi>.
 - مرجع مخطط نقطة نهاية <bdi>shields.io</bdi>:
-  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).
+  [<bdi>https://shields.io/badges/endpoint-badge</bdi>](https://shields.io/badges/endpoint-badge).

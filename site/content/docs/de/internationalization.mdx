@@ -1,124 +1,135 @@
 ---
 title: "Internationalisierung (i18n)"
-description: "Wie die Apothem-Dokumentationsseite ihre Sprachkohorte deklariert, hreflang-Links für alternative Sprachen ausgibt, die Rechts-nach-links-Darstellung handhabt und die Übersetzungslücke ehrlich aufzeigt."
+description: "Wie die Apothem-Dokumentationsseite ihre Sprachkohorte deklariert, hreflang-Links für alternative Sprachen ausgibt und in zwölf Sprachen von rechts nach links rendert."
 machineTranslated: true
-sourceHash: "69e3445d33601f7f"
+sourceHash: "b3eb706603e79d8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Diese Seite dokumentiert, wie die Apothem-Dokumentationsseite mehrere Sprachen
 handhabt: die Sprachkohorte, die sie deklariert, den `hreflang`-Mechanismus, den
-sie ausgibt, ihre Rechts-nach-links-Bereitschaft und den ehrlichen Stand der
-Übersetzung je Sprache.
+sie ausgibt, ihre Rechts-nach-links-Darstellung und wie die Seiten jeder
+Sprache in das Routing eingebunden sind.
 
-## Entscheidungszusammenfassung
+## Zusammenfassung der Entscheidungen
 
-- **Plattform: Next.js App Router + Fumadocs.** Die Seite wird aus `site/`
+- **Plattform: Next.js App Router + Fumadocs.** Die Website wird aus `site/`
   gebaut. Die Sprachkohorte ist in `site/lib/i18n.ts` deklariert, und der
-  Mechanismus für alternative Sprachlinks liegt in `site/lib/hreflang.ts`.
-- **Sprachkohorte: deklariert.** Die Modern Dev Cohort aus zwölf Sprachen ist als
-  kanonische Quelle der Wahrheit deklariert, mit Englisch als Quellsprache.
-- **Routing je Sprache: noch nicht aktiviert.** Spracheprefixierte Routen über
-  die gesamte Kohorte zu aktivieren, während nur englischer Inhalt existiert,
-  würde elf inhaltslose Routen schaffen, die stillschweigend auf die englische
-  Quelle zurückfallen. Genau diese Art stilles Englisch-nur-Abdriften verbietet
-  die i18n-Disziplin, daher bleibt das Routing einsprachig, bis geprüfter
-  übersetzter Inhalt vorliegt.
+  Mechanismus für Links auf alternative Sprachen liegt in `site/lib/hreflang.ts`.
+- **Sprachkohorte: zwölf Sprachen.** Die Modern Dev Cohort aus zwölf Sprachen
+  ist die kanonische Quelle der Wahrheit, mit Englisch als Quellsprache; jede
+  der elf Zielsprachen ist maschinell aus dem englischen Seitenbestand
+  vorbefüllt. Die menschliche Prüfung je Sprache ist im Gange, und
+  `fallbackLanguage: 'en'` deckt jede Seite ab, die eine Sprache noch nicht
+  verfasst hat.
+- **Routing je Sprache: in der gesamten Kohorte aktiviert.** Jede Sprache ist in
+  das Routing eingebunden und unter ihrem eigenen URL-Präfix erreichbar
+  (`/es/`, `/zh-cn/`, …); Englisch wird im Stamm der Website ausgeliefert.
 - **`hreflang`-Mechanismus: aktiv.** Jede Seite gibt einen Satz
-  `<link rel="alternate">` aus, der jede Sprache mit verfasstem Inhalt abdeckt,
-  plus ein `x-default`-Fallback. Sprachen, die noch auf Übersetzung warten, werden
-  weggelassen — niemals auf das englische Fallback verwiesen — sodass
-  Suchmaschinen korrekt mitgeteilt wird, dass keine Übersetzung existiert.
-- **Rechts-nach-links-Bereitschaft: vorhanden.** Die gemeinsamen Stylesheets
+  `<link rel="alternate">` aus, der jede Sprache plus einen `x-default`-Fallback
+  abdeckt, sodass Suchmaschinen den vollständigen Verbund alternativer Sprachen
+  sehen. Die Links werden je Datei aus dem Dateisystem aufgelöst, sodass eine
+  Seite in einer Sprache nur dann angekündigt wird, wenn diese Sprache sie hat.
+- **Rechts-nach-links-Darstellung: aktiv.** Die gemeinsamen Stylesheets
   verwenden durchgängig logische CSS-Eigenschaften, sodass arabische Seiten unter
-  `dir="rtl"` korrekt gerendert werden, sobald arabischer Inhalt vorliegt.
-- **Richtlinie zur maschinellen Übersetzung: nichts wird ungeprüft
-  ausgeliefert.** Keine maschinell übersetzte Seitenprosa wird veröffentlicht. Die
-  Übersetzung wird maschinell vorbereitet und vor dem Markieren einer Sprache als
-  übersetzt durch menschliche Prüfung freigegeben.
+  `dir="rtl"` korrekt gerendert werden.
+- **Aktualität der Übersetzung: je Seite verfolgt.** Jede übersetzte Seite
+  erfasst den englischen Text, aus dem sie übersetzt wurde. Wenn sich die
+  englische Seite später ändert, zeigt die übersetzte Seite einen einzeiligen
+  Hinweis mit einem Link auf die englische Seite, die maßgeblich bleibt.
 
 ## Die Sprachkohorte
 
-Die Modern Dev Cohort deklariert zwölf Sprachen. Englisch wird im Seitenstamm
-ausgeliefert; die elf Ziele sind deklariert, damit der Stack
-internationalisierungsbereit ist und die Übersetzungslücke explizit statt still
-ist.
+Die Modern Dev Cohort deklariert zwölf Sprachen. Englisch wird im Stamm der
+Website ausgeliefert; die elf Zielsprachen sind jeweils maschinell aus dem
+englischen Seitenbestand vorbefüllt und liegen unter ihrem eigenen URL-Präfix,
+wobei `fallbackLanguage: 'en'` jede noch nicht verfasste Seite abdeckt.
 
-| Code | Pfad | Sprache | Richtung | Inhalt |
-|------|------|----------|-----------|---------|
-| `en` | `/` | Englisch | LTR | Übersetzt (Quelle) |
-| `zh-CN` | `/zh-cn/` | Chinesisch (vereinfacht) | LTR | Ausstehend |
-| `es` | `/es/` | Spanisch | LTR | Ausstehend |
-| `pt-BR` | `/pt-br/` | Brasilianisches Portugiesisch | LTR | Ausstehend |
-| `fr` | `/fr/` | Französisch | LTR | Ausstehend |
-| `de` | `/de/` | Deutsch | LTR | Ausstehend |
-| `ja` | `/ja/` | Japanisch | LTR | Ausstehend |
-| `ko` | `/ko/` | Koreanisch | LTR | Ausstehend |
-| `ru` | `/ru/` | Russisch | LTR | Ausstehend |
-| `id` | `/id/` | Indonesisch | LTR | Ausstehend |
-| `ar` | `/ar/` | Arabisch | RTL | Ausstehend |
-| `hi` | `/hi/` | Hindi | LTR | Ausstehend |
+| Code | Pfad | Sprache | Richtung |
+|------|------|----------|-----------|
+| `en` | `/` | Englisch | LTR |
+| `zh-CN` | `/zh-cn/` | Chinesisch (vereinfacht) | LTR |
+| `es` | `/es/` | Spanisch | LTR |
+| `pt-BR` | `/pt-br/` | Brasilianisches Portugiesisch | LTR |
+| `fr` | `/fr/` | Französisch | LTR |
+| `de` | `/de/` | Deutsch | LTR |
+| `ja` | `/ja/` | Japanisch | LTR |
+| `ko` | `/ko/` | Koreanisch | LTR |
+| `ru` | `/ru/` | Russisch | LTR |
+| `id` | `/id/` | Indonesisch | LTR |
+| `ar` | `/ar/` | Arabisch | RTL |
+| `hi` | `/hi/` | Hindi | LTR |
 
 Die Kohorte ist die einzige Quelle der Wahrheit; Änderungen an ihr laufen über
-eine bewusste Entscheidung, nie über eine stille Bearbeitung.
+eine bewusste Entscheidung, niemals über eine stille Bearbeitung.
 
 ## Wie `hreflang` funktioniert
 
-`site/lib/hreflang.ts` baut die `alternates.languages`-Karte, die Next.js in den
-`<head>` jeder Seite rendert. Ihre Konstruktion befolgt eine Regel: Der
-alternative Sprachlink einer Sprache wird **nur** dann ausgegeben, wenn diese
-Sprache verfassten Inhalt hat. Da Englisch heute die einzige übersetzte Sprache
-ist, gibt jede Seite genau zwei Links aus:
+`site/lib/hreflang.ts` baut die Zuordnung `alternates.languages`, die Next.js in
+den `<head>` jeder Seite rendert. Ihre Konstruktion befolgt eine Regel: Der Link
+einer Sprache auf die alternative Sprachversion wird **nur** dann ausgegeben,
+wenn diese Sprache die betreffende Seite verfasst hat, aufgelöst je Datei aus
+dem Dateisystem (`site/lib/translated-pages.ts`). Eine vollständig übersetzte
+Seite gibt daher den kompletten Verbund aus:
 
 ```html
 <link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="es" href="https://apothem.ahmedgad.com/es/..." />
+<link rel="alternate" hreflang="ar" href="https://apothem.ahmedgad.com/ar/..." dir="rtl" />
+<!-- … one per cohort locale … -->
 <link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
 ```
 
 Der `canonical`-Link der Seite ist stets ihre eigene URL — er verweist niemals
-über Sprachen hinweg. Sobald der Inhalt einer Sprache vorliegt und ihr Status in
-`site/lib/i18n.ts` auf übersetzt umgestellt wird, beginnt der `hreflang`-Link
-dieser Sprache automatisch ausgegeben zu werden, und das Routing je Sprache wird
-im selben Change-Set aktiviert.
+über Sprachen hinweg.
 
 ## Rechts-nach-links-Darstellung
 
-Arabisch ist die Rechts-nach-links-Sprache der Kohorte. Die Seite ist dafür
-bereit:
+Arabisch ist die Rechts-nach-links-Sprache der Kohorte, und die Website rendert
+sie korrekt:
 
-- **Nur logische CSS-Eigenschaften.** Die gemeinsamen Stylesheets und Komponenten
-  verwenden logische Eigenschaften (`margin-inline-start`, `padding-inline-end`,
-  `text-align: start`, `inset-inline-start`) statt physischer (`margin-left`,
-  `text-align: left`). Logische Eigenschaften kehren sich unter `dir="rtl"`
-  automatisch um, sodass dasselbe Stylesheet beide Richtungen korrekt bedient.
+- **Nur logische CSS-Eigenschaften.** Die gemeinsamen Stylesheets und
+  Komponenten verwenden logische Eigenschaften (`margin-inline-start`,
+  `padding-inline-end`, `text-align: start`, `inset-inline-start`) statt
+  physischer (`margin-left`, `text-align: left`). Logische Eigenschaften kehren
+  sich unter `dir="rtl"` automatisch um, sodass dasselbe Stylesheet beide
+  Richtungen korrekt bedient.
 - **Richtungsattribut.** Arabische Seiten setzen `dir="rtl"` auf dem
-  `<html>`-Element neben `lang="ar"`, sobald arabischer Inhalt vorliegt.
-- **Bidirektionaler Inhalt.** Strings mit gemischter Richtung — zum Beispiel ein
-  englischer Befehl innerhalb eines arabischen Absatzes — werden in `<bdi>`
-  eingehüllt, sodass der eingebettete Links-nach-rechts-Lauf innerhalb des
-  Rechts-nach-links-Flusses korrekt gerendert wird.
+  `<html>`-Element neben `lang="ar"`.
+- **Bidirektionaler Inhalt.** Zeichenketten mit gemischter Richtung — zum
+  Beispiel ein englischer Befehl innerhalb eines arabischen Absatzes — werden in
+  `<bdi>` eingeschlossen, sodass der eingebettete Links-nach-rechts-Abschnitt
+  innerhalb des Rechts-nach-links-Flusses korrekt gerendert wird.
 
-## Eine Übersetzung hinzufügen
+## Eine Sprache hinzufügen oder aktualisieren
 
-Um die Seite in eine Kohortensprache zu übersetzen:
+Die Kohorte und das Routing werden von `site/lib/i18n.ts` gesteuert:
 
-1. Verfasse die geprüften übersetzten Seiten für diese Sprache.
-2. Stelle den Inhaltsstatus der Sprache in `site/lib/i18n.ts` auf übersetzt um.
-3. Ihr `hreflang`-Link beginnt ausgegeben zu werden, und ihre Routen werden
-   erreichbar.
+1. Verfassen Sie die Seite unter `content/docs/<locale>/` als Spiegel der
+   englischen Quelle.
+2. Erfassen Sie den englischen Text, den sie übersetzt: Führen Sie aus `site/`
+   heraus `node scripts/translation-sources.mjs --stamp <locale>/<path>.mdx`
+   aus; das schreibt den Hash der englischen Seite in das Frontmatter-Feld
+   `sourceHash` der übersetzten Seite.
+3. Bestätigen Sie, dass die Sprache in `ROUTED_LOCALES` aufgeführt ist (alle
+   zwölf Sprachen der Kohorte werden heute geroutet).
+4. Ihr `hreflang`-Link und ihre Routen werden automatisch aus dem Dateisystem
+   aufgelöst.
 
-Behalte die englische Seite als Quelle der Wahrheit bei, bis die Übersetzung
-einer Sprache verfasst und geprüft ist. Kein maschinell übersetzter Inhalt wird
-ungeprüft ausgeliefert.
+## Veraltete Übersetzungen
 
-## Aktueller Stand und der Weg zu einem übersetzten Korpus
+Der `sourceHash` einer übersetzten Seite ist der Hash der englischen Seite, aus
+der sie übersetzt wurde; er umfasst das englische Frontmatter und die Prosa,
+nicht aber die generierten Tabellen, die der Referenzgenerator in allen Sprachen
+gleichzeitig neu schreibt. Zur Build-Zeit hasht die Website die aktuelle
+englische Seite; wenn sich die beiden unterscheiden, zeigt die übersetzte Seite
+einen Hinweis, dass sich die englische Seite seit der Übersetzung geändert hat,
+mit einem Link darauf. Führen Sie `node scripts/translation-sources.mjs` aus
+`site/` heraus aus, um die veralteten Seiten je Sprache aufzulisten, und
+aktualisieren Sie dann jede Übersetzung und stempeln Sie sie wie in Schritt 2
+oben. Eine Seite, die eine Sprache überhaupt nicht übersetzt hat, wird aus der
+englischen Quelle ausgeliefert und als englischer Text gekennzeichnet.
 
-Heute ist die Seite internationalisierungsbereit, aber inhaltlich nur englisch.
-Die Infrastruktur — Kohortendeklaration, der `hreflang`-Mechanismus,
-logisch-CSS-basierte Rechts-nach-links-Bereitschaft — ist vorhanden; der
-übersetzte Korpus je Sprache ist es nicht. Ein vollständig übersetzter Korpus ist
-Arbeit auf Feature-Stufe: Die Seiten jeder Sprache werden maschinell vorbereitet
-und dann von Menschen geprüft, und ein Release ist
-internationalisierungs-produktionsreif erst, sobald jede Sprache ihre
-Prüfschwelle erreicht. Bis dahin ist die Kohorte deklariert, die Lücke ist
-sichtbar, und keine ungeprüfte Übersetzung wird ausgeliefert.
+Englisch bleibt die Quelle der Wahrheit; jede übersetzte Seite spiegelt die
+Struktur, die Links und die Codebeispiele ihres englischen Gegenstücks
+wortgetreu.

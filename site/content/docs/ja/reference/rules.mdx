@@ -1,40 +1,40 @@
 ---
 title: "ルール"
-description: "問題解決・コード手法・クリーンアーキテクチャ・計画・品質を行動ルールセット全体にわたって統制する、Always-on およびパスフィルター型の行動ルール。"
+description: "行動ルールセット全体にわたって、問題解決、コードの技法、クリーンアーキテクチャ、計画、品質を統制する、常時オンおよびパスフィルター型の行動ルール。"
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-行動ルールは `src/apothem/rules/` 配下に `*.md` サフィックスのフラットファイルとして
-存在します。各ルールは自己完結しており——Purpose、Obligations、Seriousness Scaling、
-Anti-Patterns、Enforcement、Bindings——Always-on またはパスフィルター型のいずれかです。
+行動ルールは、`src/apothem/rules/` 配下に `*.md` サフィックスを持つフラットファイルとして
+置かれます。各ルールは自己完結しており — Purpose、Obligations、Seriousness Scaling、
+Anti-Patterns、Enforcement、Bindings — 常時オンかパスフィルター型のいずれかです。
 
 ## アクティブなルール
 
-正規のレジストリはルールコホートです。同じセットをフラット形式で示します。
+正規のレジストリはルールコホートです。同じセットをフラットな形式で示します:
 
-| ルール | 適用範囲 | 実装 |
+| ルール | スコープ | 実装するもの |
 |------|-------|------------|
-| Auto Memory | Always-on | CM-26 |
-| Clean-Room Generation | Always-on | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Always-on | CM-21 |
-| Context Management | Always-on | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
+| Auto Memory | 常時オン | CM-26 |
+| Clean-Room Generation | 常時オン | CM-5 / CM-7 / CM-21 |
+| Cognitive Identity | 常時オン | CM-21 |
+| Context Management | 常時オン | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
 | Context Management Scratch | パスフィルター型 | CM-12 / CM-24（コンパニオン） |
-| Conventions Vigilance | Always-on | CM-22 |
-| Interactive Questions | Always-on | CM-2 拡張 |
-| Interactive Questions Sweep Matchers | パスフィルター型 | CM-2 拡張（コンパニオン） |
-| Operational Mandates | Always-on | CM-1–10 |
-| Worker Orchestration | Always-on | CM-17 / CM-25 |
+| Conventions Vigilance | 常時オン | CM-22 |
+| Interactive Questions | 常時オン | CM-2 の拡張 |
+| Interactive Questions Sweep Matchers | パスフィルター型 | CM-2 の拡張（コンパニオン） |
+| Operational Mandates | 常時オン | CM-1–10 |
+| Worker Orchestration | 常時オン | CM-17 / CM-25 |
 | Clean Architecture | パスフィルター型 | CM-27 |
 | Large File Generation | パスフィルター型 | CM-23 |
-| Performance Discipline | パスフィルター型 | Performance 軸 |
+| Performance Discipline | パスフィルター型 | パフォーマンス軸 |
 | Planning Techniques | パスフィルター型 | CM-20 / CM-21 |
 | Python Senior Architect | パスフィルター型 | CM-28 |
 
 ## Frontmatter 契約
 
-各ルールファイルは次を持ちます。
+すべてのルールファイルは次を持ちます:
 
 ```yaml
 ---
@@ -45,17 +45,39 @@ alwaysApply: <true | false>
 ---
 ```
 
-`pathFilter` フィールドは Always-on ルールでは省略され、パスフィルター型ルールでは
-存在します。バリデーターの `frontmatter-cohort` チェックが、すべてのルールファイルで
-この契約を検証します。
+常時オンのルールでは、`pathFilter` は空文字列（`""`）で、`alwaysApply` は `true` です。
+パスフィルター型のルールでは、`pathFilter` が glob のリストを持ち、`alwaysApply` は `false` です。
+機械可読の契約は
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+（`{name, description, pathFilter, alwaysApply}`）であり、バリデーターの
+`frontmatter-cohort` チェックが、すべてのルールファイルでこれを検証します。
+
+`pathFilter` と `alwaysApply` はハーネスに中立です。各アダプターは、そのハーネスにネイティブな
+スコープ指定フィールドがある場合に、それらを変換します。Claude Code はルールから `paths:` だけを
+読み取り、それを持たないすべてのルールを起動時に読み込みます。そのため、エンジンインストール
+（`apothem install --harness claude-code`）は、パスフィルター型の各ルールを、その `pathFilter`
+から構築した `paths:` リストとともに `~/.claude/rules/` に書き込み、常時オンのルールは変更せずに
+コピーします。28 個の常時オンのルールはすべてのセッションで読み込まれ、63 個のパスフィルター型の
+コンパニオンは、アシスタントが一致するファイルを読み取ったときに読み込まれます。
+
+OpenCode にはルールごとのスコープ指定フィールドがありません。OpenCode は、
+`opencode.json` の `instructions` リストが挙げるすべてのファイルを、すべてのセッションに
+結合します。そのため、OpenCode のインストール（`apothem install --harness opencode`）は、
+あなたのプロファイルドキュメントと、`alwaysApply` が `true` であるルールだけを、ファイルごとに
+1 つの明示的な `~/.config/opencode/...` パスとして列挙します。対象となるルールは、設定が
+書き込まれる時点でルールファイルを読んで判定されます。それでも、パスフィルター型のものを含むすべてのルールは
+`~/.config/opencode/.apothem/support/rules/` 配下にインストールされ、そこで、それを引用する
+ルール、スキル、コマンドがオンデマンドで読み取ります。
 
 ## オーサリング規律
 
-- **自己完結。** 各ルールは独自の Purpose、Obligations、Anti-Patterns、Enforcement
-  セクションを持ちます。
-- **Bindings ブロック。** 各ルールは規約上の五方向 Bindings ブロックで終わります
-  （Drives → / Satisfies → / Established by ↑ / Gated by ← / Cross-bound with ↔）。
-- **ドメイン言語のみ。** プラン内部への参照は禁止——`CLAUDE.md` CM-7 を参照。
+- **自己完結。** 各ルールは、独自の Purpose、Obligations、Anti-Patterns、
+  Enforcement の各セクションを持ちます。
+- **Bindings ブロック。** すべてのルールは、正規の 5 方向の Bindings ブロック
+  （Drives → / Satisfies → / Established by ↑ / Gated by ← /
+  Cross-bound with ↔）で終わります。
+- **ドメイン言語のみ。** プラン内部の参照は含めません — `CLAUDE.md` CM-7 を
+  参照してください。
 
 ## 生成されたルールインベントリ
 

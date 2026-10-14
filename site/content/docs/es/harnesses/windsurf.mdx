@@ -1,15 +1,19 @@
 ---
 title: "Windsurf"
-description: "Adaptador de herramienta de Apothem para Windsurf (GA)."
+description: "Adaptador de entorno de Apothem para Windsurf (GA)."
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "0146944b97b5e33f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Proveedor:** Codeium
+**Proveedor:** Devin Desktop (antes Codeium Windsurf)
 **Nombre de instalación:** `windsurf`
 **Estado:** GA
 **Configuración nativa:** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf ahora es Devin Desktop, y `.devin/rules/` es la ubicación preferida
+para las reglas del espacio de trabajo (tiene prioridad sobre
+`.windsurf/rules/`).
 
 ## Instalación
 
@@ -18,24 +22,31 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 El adaptador escribe un archivo de reglas de Windsurf con alcance de proyecto a
-partir de las reglas compartidas y la superficie de gobernanza de Apothem.
+partir de la superficie compartida de reglas y gobernanza de Apothem.
 
 **Archivos escritos:** `<project>/.devin/rules/apothem-rules.md`
 
 ## Asignación del perfil a la configuración nativa
 
-El adaptador lee el perfil compartido de Apothem y renderiza el archivo de reglas
-del proyecto en cada ejecución de `apothem install` o `apothem update`. El perfil
-compartido es la fuente de verdad; las ediciones locales del proyecto al archivo
-generado se respaldan antes de que la siguiente sincronización reemplace el
-contenido gestionado por Apothem.
+El adaptador lee el perfil compartido de Apothem y renderiza el archivo de
+reglas del proyecto en cada ejecución de `apothem install` o `apothem update`.
+El perfil compartido es la fuente de verdad; las ediciones locales del proyecto
+sobre el archivo generado se respaldan antes de que la siguiente sincronización
+reemplace el contenido gestionado por Apothem.
+
+El archivo comienza con su frontmatter `trigger: always_on`, que establece el
+modo de activación de la regla. El bloque gestionado por Apothem va a
+continuación; el texto que agregues después del bloque se conserva en cada
+sincronización.
 
 ## Notas de compatibilidad
 
 La superficie de reglas actual de Windsurf tiene alcance de proyecto bajo
-`.devin/rules/`. Los flujos de trabajo y las memorias locales de la máquina son
-propiedad del operador; Apothem no las escribe. La forma de archivo único
-`.windsurfrules` no se escribe de manera intencional.
+`.devin/rules/` (la ubicación preferida, que tiene prioridad sobre la
+alternativa de compatibilidad con versiones anteriores `.windsurf/rules/`). Los
+flujos de trabajo y las memorias locales de la máquina son propiedad del
+operador; Apothem no los escribe. La forma de archivo único `.windsurfrules` no
+se escribe de manera intencionada.
 
 ## Verificación
 
@@ -55,8 +66,8 @@ El comando verify confirma que:
 apothem update --harness windsurf --project /path/to/project
 ```
 
-Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual del
-perfil compartido.
+Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual
+del perfil compartido.
 
 ## Desinstalación
 
@@ -79,10 +90,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness windsurf --project /path/to/project` |
 | La verificación falló | Ejecuta `apothem update --harness windsurf --project /path/to/project` y luego verifica de nuevo |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, luego vuelve a ejecutar `apothem update --harness windsurf --project /path/to/project` |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness windsurf --project /path/to/project` |
 
 ## Opciones de configuración
 
 | Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI

@@ -1,35 +1,54 @@
 ---
 title: "أنماط الإخراج"
-description: "ملفّات نبرة المُشغِّل (مهندس أوّل، مهندس مُقتضَب، مُدقِّق جنائي) تُفعَّل لكل جلسة عبر أمر <bdi>/output-style</bdi>."
+description: "ملفات تعريفية لنبرة المُشغِّل (المهندس المعماري الأول، والمهندس المُوجَز، والمدقّق الجنائي) تُفعَّل لكل جلسة عبر الأمر /output-style."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تعيش ملفّات نمط-الإخراج تحت <bdi>`src/apothem/output-styles/`</bdi> وتحمل إرشاد
-نبرة المُشغِّل لكل نمط. ويُفعِّل وقتُ تشغيل مساعِد الترميز المُضيف نمطًا على أساس
-كل جلسة عبر <bdi>`/output-style <name>`</bdi>.
+تقع الملفات التعريفية لأنماط الإخراج تحت <bdi>`src/apothem/output-styles/`</bdi> وتحمل
+إرشادات نبرة المُشغِّل الخاصة بكل نمط. ويُفعِّل إطار العمل المضيف نمطًا لكل جلسة
+على حدة عبر <bdi>`/output-style <name>`</bdi>.
 
-## الملفّات الكنسية
+## الملفات التعريفية المرجعية
 
-| الملف | الملف | النبرة |
+| الملف التعريفي | الملف | النبرة |
 |---------|------|------|
-| المهندس الافتراضي | <bdi>`src/apothem/output-styles/default-architect.md`</bdi> | نبرة مهندس برمجيات أوّل (الافتراضي) |
-| المهندس المُقتضَب | <bdi>`src/apothem/output-styles/concise-engineer.md`</bdi> | نبرة هندسية قصيرة |
-| المُدقِّق الجنائي | <bdi>`src/apothem/output-styles/forensic-auditor.md`</bdi> | نبرة تدقيق نتيجةً-بنتيجة |
+| الافتراضي | <bdi>`src/apothem/output-styles/default.md`</bdi> | النبرة الأساسية التي يُكمِّلها كل نمط آخر |
+| المهندس المعماري الافتراضي | <bdi>`src/apothem/output-styles/default-architect.md`</bdi> | نبرة مهندس برمجيات معماري أول |
+| المهندس المُوجَز | <bdi>`src/apothem/output-styles/concise-engineer.md`</bdi> | نبرة هندسية مختصرة |
+| المدقّق الجنائي | <bdi>`src/apothem/output-styles/forensic-auditor.md`</bdi> | نبرة تدقيق نتيجةً بنتيجة |
 
-## عقد frontmatter
+## أين تُثبَّت الأنماط
+
+ينسخ <bdi>`apothem install --harness claude-code`</bdi> الأنماط إلى
+<bdi>`~/.claude/output-styles/`</bdi>. وتشحن إضافة <bdi>Claude Code</bdi> الملفات نفسها في
+مجلد <bdi>`output-styles/`</bdi> الخاص بها، الذي يمسحه <bdi>Claude Code</bdi> بحثًا عن أنماط
+إخراج الإضافات ([مرجع الإضافات](https://code.claude.com/docs/en/plugins-reference))، لذا
+يمكن اختيار الأنماط بتثبيت الإضافة وحدها. ولا يملك أي إطار عمل آخر سطحًا لأنماط
+الإخراج، لذا لا يشحنها أي تثبيت آخر.
+
+## عقد البيانات الأمامية
 
 ```yaml
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
-## تأليف ملفّ جديد
+<bdi>`name`</bdi> و<bdi>`description`</bdi> مطلوبان. ويضبط كل نمط مشحون أيضًا
+<bdi>`keep-coding-instructions: true`</bdi>. يُسقِط <bdi>Claude Code</bdi> تعليماته المُدمَجة
+الخاصة بهندسة البرمجيات (كيفية تحديد نطاق التغييرات، وكتابة التعليقات، والتحقّق من
+العمل) من أي نمط إخراج مخصّص ما لم تكن قيمة هذا المفتاح <bdi>`true`</bdi>؛ وقيمته
+الافتراضية <bdi>`false`</bdi>. تُغيِّر أنماط <bdi>Apothem</bdi> طريقة عرض العمل، لا طريقة
+إنجازه، لذا تحتفظ بتلك التعليمات. راجع
+[مرجع أنماط الإخراج في <bdi>Claude Code</bdi>](https://code.claude.com/docs/en/output-styles).
 
-أنشِئ ملفًّا جديدًا <bdi>`<name>.md`</bdi> تحت <bdi>`src/apothem/output-styles/`</bdi>
-مع <bdi>frontmatter</bdi> كنسي، وأعلِن النبرة في المتن، وصادِق عليه باستدعاء
+## تأليف ملف تعريفي جديد
+
+أنشئ ملفًا جديدًا <bdi>`<name>.md`</bdi> تحت <bdi>`src/apothem/output-styles/`</bdi> بالبيانات
+الأمامية المرجعية، بما فيها <bdi>`keep-coding-instructions: true`</bdi> ما لم يكن النمط غير
+مُعَدّ للعمل الهندسي، وأعلِن النبرة في المتن، وصادِق عليه باستدعاء
 <bdi>`/output-style <name>`</bdi> في بداية جلستك التالية.

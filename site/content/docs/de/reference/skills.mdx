@@ -2,21 +2,23 @@
 title: "Skills"
 description: "Wiederverwendbare erkennbare Techniken in SKILL.md-Dateien mit Erkennungssignalen, Verfahren und Durchsetzungs-Hooks für Plan-Suiten und Ökosystem-Audits."
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Skills existieren als Ordner unter `src/apothem/skills/`, jeder mit einem
+Skills liegen als Ordner unter `src/apothem/skills/`, jeder mit einem
 `SKILL.md`-Einstiegspunkt. Skills erfassen wiederverwendbare erkennbare
 Techniken — sie haben ein Erkennungssignal, ein Verfahren und einen
 Durchsetzungs-Hook.
 
-Das vollständige Skill-Verzeichnis wird weiter unten im Abschnitt „Generiertes
-Skill-Inventar“ am Fuß dieser Seite generiert.
+Der vollständige Skill-Katalog wird unten im Abschnitt [Generiertes
+Skill-Inventar](#generiertes-skill-inventar) generiert.
 
 ## Frontmatter-Vertrag
 
-`SKILL.md` trägt:
+`SKILL.md` trägt das kanonische Frontmatter mit acht Schlüsseln. Der
+maschinenlesbare Vertrag ist [`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)
+(`additionalProperties: false`); dieser Block spiegelt ihn wider:
 
 ```yaml
 ---
@@ -31,14 +33,32 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## Ausgabe je Harness
+
+Quell-Skills verwenden die obigen Schlüssel. Manche Harnesses lesen andere
+Schlüssel, daher übersetzt die Installation sie nur für den jeweiligen Harness:
+
+| Harness | Was die Installation ändert |
+| --- | --- |
+| Claude Code (Installation und Plugin) | Benennt `userInvocable` in `user-invocable` um, den Schlüssel, den Claude Code liest. Claude Code ignoriert den camelCase-Schlüssel, sodass ein mit `userInvocable: false` markierter Skill ohne die Umbenennung weiterhin im `/`-Menü erscheinen würde. |
+| Codex | Lässt `SKILL.md` unverändert und schreibt `agents/openai.yaml` mit `policy.allow_implicit_invocation: false` neben jeden Skill, dessen Quelle `disable-model-invocation: true` setzt, weil Codex diesen Schlüssel ignoriert. |
+| Andere Harnesses | Keine Änderung. |
+
+`skill.schema.json` akzeptiert beide Schreibweisen des Flags für die
+Aufrufbarkeit durch den Benutzer und verlangt genau eine davon.
+
 ## Autorendisziplin
 
 - **Ein Ordner pro Skill.** Jeder Skill ist sein eigener Ordner mit dem
   Einstiegspunkt `SKILL.md`.
-- **Erkennungssignal.** Skill-Körper beginnen mit dem Erkennungssignal, das die
+- **Erkennungssignal.** Skill-Bodys beginnen mit dem Erkennungssignal, das die
   Technik auslöst.
 - **Verfahren + Durchsetzung.** Skills tragen sowohl das anzuwendende Verfahren
   als auch das Durchsetzungssignal, das die Schleife schließt.
+- **Länge der Beschreibung.** `description` umfasst höchstens 1.024 Zeichen, das
+  Limit von [Agent Skills](https://agentskills.io/specification). Strengere
+  Tools lehnen eine längere Beschreibung ab oder schneiden sie ab, und das Schema
+  erzwingt das Limit.
 
 ## Generiertes Skill-Inventar
 

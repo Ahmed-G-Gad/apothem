@@ -1,22 +1,33 @@
 ---
 title: "Gaya keluaran"
-description: "Profil nada operator (Senior Architect, Concise Engineer, Forensic Auditor) yang diaktifkan per-sesi melalui perintah /output-style."
+description: "Profil nada operator (Senior Architect, Concise Engineer, Forensic Auditor) yang diaktifkan per sesi melalui perintah /output-style."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Profil gaya-keluaran berada di bawah `src/apothem/output-styles/` dan membawa
-panduan nada operator per-gaya. Harness host mengaktifkan sebuah
-gaya secara per-sesi melalui `/output-style <name>`.
+Profil output-style berada di bawah `src/apothem/output-styles/` dan membawa
+panduan nada operator per gaya. Harness host mengaktifkan sebuah gaya per sesi
+melalui `/output-style <name>`.
 
-## Profil kanonis
+## Profil kanonik
 
 | Profil | Berkas | Nada |
 |---------|------|------|
-| Arsitek default | `src/apothem/output-styles/default-architect.md` | Nada Senior Software Architect (default) |
-| Insinyur ringkas | `src/apothem/output-styles/concise-engineer.md` | Nada engineering format-pendek |
-| Auditor forensik | `src/apothem/output-styles/forensic-auditor.md` | Nada audit temuan-demi-temuan |
+| Default | `src/apothem/output-styles/default.md` | Nada dasar yang dilengkapi oleh setiap gaya lainnya |
+| Arsitek default | `src/apothem/output-styles/default-architect.md` | Nada Senior Software Architect |
+| Insinyur ringkas | `src/apothem/output-styles/concise-engineer.md` | Nada rekayasa berformat singkat |
+| Auditor forensik | `src/apothem/output-styles/forensic-auditor.md` | Nada audit temuan demi temuan |
+
+## Tempat gaya dipasang
+
+`apothem install --harness claude-code` menyalin gaya-gaya tersebut ke
+`~/.claude/output-styles/`. Plugin Claude Code mengirimkan berkas yang sama di
+folder `output-styles/`-nya, yang dipindai Claude Code untuk mencari gaya
+keluaran plugin ([referensi plugin](https://code.claude.com/docs/en/plugins-reference)),
+sehingga gaya-gaya tersebut dapat dipilih meskipun hanya plugin yang terpasang.
+Tidak ada harness lain yang memiliki permukaan output-style, sehingga tidak ada
+pemasangan lain yang mengirimkannya.
 
 ## Kontrak frontmatter
 
@@ -24,12 +35,23 @@ gaya secara per-sesi melalui `/output-style <name>`.
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
+
+`name` dan `description` wajib ada. Setiap gaya yang dikirimkan juga menetapkan
+`keep-coding-instructions: true`. Claude Code tidak menyertakan instruksi
+rekayasa perangkat lunak bawaannya (cara membatasi cakupan perubahan, menulis
+komentar, dan memverifikasi pekerjaan) dalam gaya keluaran kustom apa pun
+kecuali kunci ini bernilai `true`; nilai default-nya adalah `false`. Gaya
+Apothem mengubah cara pekerjaan disajikan, bukan cara pekerjaan dilakukan,
+sehingga gaya-gaya tersebut mempertahankan instruksi itu. Lihat
+[referensi gaya keluaran Claude Code](https://code.claude.com/docs/en/output-styles).
 
 ## Menulis profil baru
 
 Buat berkas `<name>.md` baru di bawah `src/apothem/output-styles/` dengan
-frontmatter kanonis, deklarasikan nada di badan, dan ratifikasi dengan memanggil
-`/output-style <name>` di awal sesi Anda berikutnya.
+frontmatter kanonik, termasuk `keep-coding-instructions: true` kecuali gaya
+tersebut tidak dimaksudkan untuk pekerjaan rekayasa, deklarasikan nadanya di
+bagian isi, dan ratifikasi dengan memanggil `/output-style <name>` di awal sesi
+Anda berikutnya.

@@ -1,15 +1,17 @@
 ---
 title: "Windsurf"
-description: "适用于 Windsurf（正式版）的 Apothem 工具适配器。"
+description: "适用于 Windsurf（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "0146944b97b5e33f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**厂商：** Codeium
+**厂商：** Devin Desktop（原 Codeium Windsurf）
 **安装名称：** `windsurf`
-**状态：** 正式版
-**平台原生配置：** `<project>/.devin/rules/apothem-rules.md`
+**状态：** GA
+**原生配置：** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf 现已成为 Devin Desktop，`.devin/rules/` 是首选的工作区规则位置（它优先于 `.windsurf/rules/`）。
 
 ## 安装
 
@@ -17,21 +19,19 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-该适配器从共享的 Apothem 规则与治理面，写入一个项目级的 Windsurf 规则文件。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Windsurf 规则文件。
 
 **写入的文件：** `<project>/.devin/rules/apothem-rules.md`
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-在每次 `apothem install` 或 `apothem update` 运行时，适配器都会读取 Apothem
-的共享配置档案并渲染项目规则文件。共享配置档案是事实来源；在下一次同步替换
-Apothem 所管理的内容之前，对生成文件的项目本地编辑会先被备份。
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目规则文件。共享配置档案是事实来源；在下一次同步替换 Apothem 管理的内容之前，对生成文件所做的项目本地编辑会被备份。
+
+该文件以其 `trigger: always_on` 前置元数据开头，它设置该规则的激活模式。Apothem 管理的块紧随其后；你在该块之后添加的文本在每次同步时都会被保留。
 
 ## 兼容性说明
 
-Windsurf 当前的规则面是项目级的，位于 `.devin/rules/` 之下。
-工作流和机器本地的记忆由操作者所有；Apothem 不会写入它们。
-单文件形式的 `.windsurfrules` 出于设计考虑不会被写入。
+Windsurf 当前的规则表面位于 `.devin/rules/` 下，作用范围为项目级（这是首选位置，优先于用于向后兼容的回退位置 `.windsurf/rules/`）。工作流和机器本地的记忆归操作者所有；Apothem 不写入它们。单文件形式的 `.windsurfrules` 被有意不写入。
 
 ## 验证
 
@@ -41,9 +41,9 @@ apothem verify --harness windsurf --project /path/to/project
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必需字段均存在。
-3. 适配器专属的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
 
 ## 更新
 
@@ -51,7 +51,7 @@ verify 命令确认：
 apothem update --harness windsurf --project /path/to/project
 ```
 
-从当前的共享配置档案状态重新派生项目规则文件。
+根据当前的共享配置档案状态，重新派生项目规则文件。
 
 ## 卸载
 
@@ -59,10 +59,9 @@ apothem update --harness windsurf --project /path/to/project
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -81,3 +80,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

@@ -1,14 +1,14 @@
 ---
 title: "Gemini CLI"
-description: "محوّل أداة Apothem لـ Gemini CLI (إصدار عام)."
+description: "محوّل إطار عمل Apothem لـ Gemini CLI (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "eed143307202f636"
+sourceHash: "84593cdc3207e035"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Google</bdi>
 **اسم التثبيت:** <bdi>`gemini-cli`</bdi>
-**الحالة:** إصدار عام
+**الحالة:** إتاحة عامة
 **الإعداد الأصلي:** <bdi>`GEMINI.md`</bdi> و<bdi>`.gemini/`</bdi> المحلّيان للمشروع
 
 ## التثبيت
@@ -17,10 +17,13 @@ sourceHash: "eed143307202f636"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-نطاق المحوّل هو المشروع. يثبّت ملفّ <bdi>`GEMINI.md`</bdi> الخاص بالمشروع، ويحوّل
-أوامر <bdi>Apothem</bdi> إلى أوامر شرطة مائلة بصيغة <bdi>TOML</bdi> خاصّة
-بـ<bdi>Gemini</bdi>، ويطبّع تعريفات المساعِدات المحلّية، ويضع مجموعات الدعم غير
-الأصلية تحت <bdi>`.gemini/.apothem/support/`</bdi>.
+المحوّل مقصور على نطاق المشروع. يثبّت ملف <bdi>`GEMINI.md`</bdi> الخاص بالمشروع،
+ويحوّل أوامر <bdi>Apothem</bdi> إلى أوامر شرطة مائلة بصيغة <bdi>TOML</bdi> خاصة بـ
+<bdi>Gemini</bdi>، ويُوحِّد تعريفات المساعِدات المحلّية، ويضع حزم الدعم غير الأصلية
+تحت <bdi>`.gemini/.apothem/support/`</bdi>.
+تقرأ أدوات برمجة أخرى أيضًا ملف <bdi>`GEMINI.md`</bdi> الخاص بالمشروع، لذا تُكتَب كتلة
+<bdi>Apothem</bdi> فيه بوصفها إرشادات على مستوى المشروع لا تُسمّي أداة واحدة بعينها
+قارئًا لها.
 
 **الملفات المكتوبة:**
 
@@ -34,15 +37,34 @@ GEMINI.md
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل مجموعات <bdi>Apothem</bdi> المشتركة ويوجّه كلّ واحدة منها عبر سطح
-متوافق مع <bdi>Gemini</bdi>. تبقى قواعد <bdi>Markdown</bdi> والقوالب ومادّة الخطافات
-تحت <bdi>`.gemini/.apothem/support/`</bdi> لأنّها مادّة دعم، وليست دليل قواعد أصلي
-لـ<bdi>Gemini</bdi>.
+يقرأ المحوّل حزم <bdi>Apothem</bdi> المشتركة ويوجّه كل واحدة منها عبر سطح متوافق مع
+<bdi>Gemini</bdi>. تبقى قواعد <bdi>Markdown</bdi> والقوالب ومادّة الخطّافات تحت
+<bdi>`.gemini/.apothem/support/`</bdi> لأنها مادّة دعم، لا دليل قواعد أصلي لـ
+<bdi>Gemini</bdi>.
+تنتهي كتلة <bdi>Apothem</bdi> في <bdi>`GEMINI.md`</bdi> بقسم ملفات دعم
+<bdi>Apothem</bdi> الذي يُسمّي، نسبةً إلى جذر المشروع، الدليل الواقع تحت
+<bdi>`.gemini/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب المستودع
+(<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>، و<bdi>`hooks/...`</bdi>).
+المسارات نسبية بحيث لا يحمل ملف <bdi>`GEMINI.md`</bdi> المُودَع في المستودع أي مسار
+خاص بجهاز بعينه.
+
+يحمل كل أمر مُحوَّل في <bdi>`.gemini/commands/`</bdi> الحقلين <bdi>`description`</bdi>
+و<bdi>`prompt`</bdi>. لا تحوي المطالبة سوى تعليمات الأمر؛ وتُستبعَد بيانات
+<bdi>Apothem</bdi> الوصفية في أعلى ملف المصدر (النسخة، وقائمة الأدوات، والحقول
+المشابهة)، بحيث لا يقرؤها النموذج أبدًا بوصفها تعليمات. لا يُشغِّل <bdi>Gemini</bdi>
+أمرًا مخصّصًا إلا حين تكتبه.
+
+تحتفظ تعريفات المساعِدات في <bdi>`.gemini/agents/`</bdi> بحدود أدواتها وحدّ أدوارها:
+تصبح منحة <bdi>`tools`</bdi> في المصدر، مطروحًا منها <bdi>`disallowedTools`</bdi>،
+قائمة سماح <bdi>`tools`</bdi> في <bdi>Gemini</bdi> مؤلّفة من أسماء أدوات
+<bdi>Gemini</bdi>، ويصبح <bdi>`maxTurns`</bdi> هو <bdi>`max_turns`</bdi>. لذا لا يحصل
+المساعِد المقصور على القراءة على أداة <bdi>`write_file`</bdi> أو <bdi>`replace`</bdi>.
+لا يُضبَط أي نموذج، لذا يرث كل مساعِد نموذج الجلسة.
 
 ## ملاحظات التوافق
 
-يبقى <bdi>`~/.gemini/`</bdi> منطقةً على نطاق المستخدم للأدوات التي تستخدم ملفًا
-تعريفيًا عامًّا لـ<bdi>Gemini</bdi>. لا يكتب محوّل <bdi>Gemini CLI</bdi> إلا في
+يبقى <bdi>`~/.gemini/`</bdi> منطقة على نطاق المستخدم للأدوات التي تستخدم ملفًا
+تعريفيًا عامًّا لـ <bdi>Gemini</bdi>. لا يكتب محوّل <bdi>Gemini CLI</bdi> إلا في
 المشروع المُمرَّر عبر <bdi>`--project`</bdi>.
 
 ## التحقّق
@@ -53,9 +75,9 @@ apothem verify --harness gemini-cli --project /path/to/project
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل بالنجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. جميع الحقول الإلزامية من الملف التعريفي المشترك موجودة.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -63,8 +85,8 @@ apothem verify --harness gemini-cli --project /path/to/project
 apothem update --harness gemini-cli --project /path/to/project
 ```
 
-يحدّث <bdi>`GEMINI.md`</bdi>، والأوامر المُحوَّلة، وتعريفات المساعِدات المحلّية،
-والمهارات المثبّتة، وشجرة الدعم <bdi>`.gemini/.apothem/support/`</bdi>.
+يُحدِّث <bdi>`GEMINI.md`</bdi>، والأوامر المُحوَّلة، وتعريفات المساعِدات المحلّية،
+والمهارات المُثبَّتة، وشجرة الدعم <bdi>`.gemini/.apothem/support/`</bdi>.
 
 ## إلغاء التثبيت
 
@@ -72,10 +94,10 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,10 +109,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness gemini-cli --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness gemini-cli --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness gemini-cli --project /path/to/project`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness gemini-cli --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

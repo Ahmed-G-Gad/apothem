@@ -1,32 +1,60 @@
 ---
-title: "Configuración"
-description: "Configuración del harness de Claude Code en settings.json, que cubre permisos de herramientas, cableado de hooks, variables de entorno y plantillas de línea de estado."
+title: "Ajustes"
+description: "Configuración del entorno Claude Code en settings.json: permisos de herramientas, cableado de hooks, variables de entorno y plantillas de la línea de estado."
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` lleva la configuración del harness de Claude Code: cableado de
-hooks, permisos de herramientas, variables de entorno y ajustes de la línea de
-estado.
+`settings.json` lleva la configuración del entorno Claude Code: el cableado de
+hooks, los permisos de herramientas, las variables de entorno y los ajustes de
+la línea de estado.
 
-La referencia canónica completa vive en
+La referencia canónica completa está en
 [settings-reference.md](/docs/reference/settings-reference). Esta página resume el contrato
-y apunta a la referencia más profunda.
+y remite a la referencia más detallada.
 
 ## Secciones
 
 | Sección | Propósito |
 |---------|---------|
-| `permissions` | Listas blancas y negras de herramientas por matcher |
+| `permissions` | Listas de herramientas permitidas y prohibidas por matcher |
 | `hooks` | Tabla de comandos de hook indexada por evento (el cableado canónico) |
 | `env` | Variables de entorno por sesión |
-| `statusLine` | Plantilla de línea de estado que renderiza el host |
+| `statusLine` | Plantilla de la línea de estado que renderiza el host |
 
 ## Invariante de plantilla única
 
-El adaptador de Claude Code envía una sola plantilla `settings.json`. Los comandos
-de hook usan la forma exec (`command` más `args`) en lugar de cadenas de comando
-específicas del shell, de modo que el comportamiento entre sistemas operativos se
-revisa dentro de un único archivo. Las nuevas entradas de permisos y los eventos
-de hook aterrizan en ese archivo de forma atómica.
+El adaptador de Claude Code distribuye una sola plantilla `settings.json`. Los
+comandos de hook usan la forma exec (`command` más `args`) en lugar de cadenas de
+comando específicas de una shell, de modo que el comportamiento entre sistemas
+operativos se revisa dentro de un único archivo. Las nuevas entradas de permisos
+y los nuevos eventos de hook llegan a ese archivo de forma atómica.
+
+## Fusión con tu propio archivo de ajustes
+
+`settings.json` también es tu archivo. La instalación fusiona la plantilla con
+él en lugar de reemplazarlo, y anota en el registro de instalación
+(`~/.apothem/state/<harness>/ledger.jsonl`) exactamente qué claves y entradas de
+lista agregó:
+
+- `permissions.allow` y `permissions.deny` se fusionan como una unión: tus
+  reglas quedan primero y las de Apothem se agregan a continuación. Una regla de
+  denegación que hayas escrito siempre se conserva, y Claude Code aplica las
+  reglas de denegación antes que las reglas de permiso.
+- Tus propios manejadores de hook permanecen en su lugar. Un manejador cuenta
+  como de Apothem solo cuando ejecuta un script que Apothem instaló bajo la raíz
+  del entorno, de modo que un manejador que llama a algún otro
+  `hooks/dispatch.py` es tuyo.
+- Reinstalar reemplaza solo lo que Apothem agregó la vez anterior, de modo que
+  una entrada que la plantilla deja de incluir se elimina y una entrada que
+  agregaste tú se conserva.
+- La desinstalación elimina solo las entradas que el registro de instalación
+  identifica como de Apothem. Una regla que resulte ser igual a una de las de
+  Apothem (por ejemplo, `Read` en tu propia lista `allow` antes de la primera
+  instalación) se queda. El archivo se elimina solo cuando Apothem lo creó y no
+  queda nada tuyo.
+
+Las mismas reglas se aplican a los demás archivos de ajustes en los que Apothem
+fusiona contenido, como los mapas de servidores MCP del `settings.json` de Qwen
+Code y del `opencode.json` de OpenCode.

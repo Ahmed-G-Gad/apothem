@@ -1,8 +1,8 @@
 ---
 title: "Kiro"
-description: "Apothem-Werkzeugadapter für Kiro (GA)."
+description: "Apothem-Harness-Adapter für Kiro (GA)."
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "bfe95271c18cd23e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,27 +17,32 @@ sourceHash: "409a9949239d4b5f"
 apothem install --harness kiro --project /path/to/project
 ```
 
-Der Adapter schreibt aus den gemeinsamen Apothem-Regeln und der
-Governance-Oberfläche eine projektgebundene Kiro-Steering-Datei.
+Der Adapter schreibt aus der gemeinsamen Regel- und Governance-Oberfläche von
+Apothem eine Kiro-Steering-Datei mit Projektgeltungsbereich.
 
 **Geschriebene Dateien:** `<project>/.kiro/steering/apothem-rules.md`
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter liest Apothems gemeinsames Profil und rendert die Steering-Datei des
-Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das gemeinsame
-Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der generierten
-Datei werden gesichert, bevor die nächste Synchronisierung den von Apothem
-verwalteten Inhalt ersetzt.
+Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das
+gemeinsame Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der
+generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
+Apothem verwalteten Inhalt ersetzt.
+
+Die Datei beginnt mit ihrem Frontmatter `inclusion: always`, weil Kiro verlangt,
+dass die Inclusion-Konfiguration der erste Inhalt der Datei ist. Der von Apothem
+verwaltete Block folgt darauf; Text, den Sie nach dem Block hinzufügen, bleibt
+bei jeder Synchronisierung erhalten.
 
 ## Kompatibilitätshinweise
 
-Kiros Steering-Oberfläche ist projektgebunden unter `.kiro/steering/`. Der Adapter
-schreibt eine eigene Steering-Datei `apothem-rules.md` mit dem Front Matter
-`inclusion: always` und überschreibt niemals die vom Operator verfassten
-Grundlagendateien von Kiro (`product.md`, `tech.md`, `structure.md`).
-Kiro-Spezifikationen (`.kiro/specs/`) und Assistenten-Hooks gehören dem Operator;
-Apothem schreibt sie nicht.
+Kiros Steering-Oberfläche hat Projektgeltungsbereich unter `.kiro/steering/`.
+Der Adapter schreibt eine eigene Steering-Datei `apothem-rules.md` mit dem
+Frontmatter `inclusion: always` und überschreibt niemals Kiros vom Operator
+verfasste Grundlagendateien (`product.md`, `tech.md`, `structure.md`).
+Kiro-Specs (`.kiro/specs/`) und Agent-Hooks gehören dem Operator; Apothem
+schreibt sie nicht.
 
 ## Verifizierung
 
@@ -67,9 +72,9 @@ apothem uninstall --harness kiro --project /path/to/project
 ```
 
 Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -79,12 +84,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness kiro --project /path/to/project` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness kiro --project /path/to/project` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness kiro --project /path/to/project` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness kiro --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness kiro --project /path/to/project` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness kiro --project /path/to/project` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
 | `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

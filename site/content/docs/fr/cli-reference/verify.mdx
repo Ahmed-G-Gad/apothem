@@ -2,32 +2,47 @@
 title: "verify"
 description: "Référence de la CLI pour la commande apothem verify."
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Vérifie l'installation d'un adaptateur de harness.
+Vérifie l'installation d'un adaptateur d'environnement.
 
 ## Synopsis
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-Appelle l'implémentation `verify()` de chaque adaptateur sélectionné. Quitte avec 0 uniquement lorsque tous les adaptateurs sélectionnés signalent que leurs cibles gérées sont présentes et valides.
+Appelle l'implémentation `verify()` de chaque adaptateur sélectionné. Se
+termine avec le code 0 uniquement lorsque tous les adaptateurs sélectionnés
+signalent que leurs cibles gérées sont présentes et valides. Sans
+`--profile`, la vérification est **structurelle** — chaque cible gérée doit
+être présente et valide. Avec `--profile`, la vérification exige en plus la
+**fidélité au profil** : une installation présente mais qui a dérivé échoue
+donc à la vérification, ce qui répond à la question « CE profil est-il
+fidèlement installé ? » plutôt qu'à la simple question « existe-t-il ? ».
+
+Un balayage `--harness all` respecte le champ `exclude_harnesses` du profil —
+les mêmes exclusions que celles appliquées par le lot `install`/`update` —, de
+sorte que verify ne signale jamais comme manquant un environnement
+délibérément exclu. Les exclusions proviennent de `--profile` lorsqu'il est
+fourni, sinon du profil par défaut ; un profil par défaut illisible ou absent
+se replie sur le registre complet.
 
 ## Options
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Adaptateur de harness à vérifier, ou `all` pour l'ensemble de tout le registre (obligatoire). |
-| `--project PATH` | Racine du projet pour les harness à portée projet. |
+| `--harness NAME` | Adaptateur d'environnement à vérifier, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
+| `--profile PATH` | YAML du profil partagé par rapport auquel vérifier la fidélité. Sans cette option, la vérification est purement structurelle. |
+| `--project PATH` | Racine du projet pour les environnements à portée de projet. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
 | `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
-| `--json` | Raccourci pour `--format json`. |
+| `--json` | Raccourci de `--format json`. |
 | `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
@@ -35,6 +50,7 @@ Appelle l'implémentation `verify()` de chaque adaptateur sélectionné. Quitte 
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +75,9 @@ Appelle l'implémentation `verify()` de chaque adaptateur sélectionné. Quitte 
 }
 ```
 
-Lorsqu'un harness sélectionné est manquant ou invalide, `status` vaut `error`, la ligne de résultat en échec porte `verified: false` et le processus quitte avec le code 1.
+Lorsqu'un environnement sélectionné est manquant ou invalide, `status` vaut
+`error`, la ligne de résultat en échec porte `verified: false` et le processus
+se termine avec le code 1.
 
 ## Exemples
 
@@ -73,11 +91,12 @@ apothem verify --harness all --project .
 
 | Code | Signification |
 |---|---|
-| 0 | Le harness est installé |
-| 1 | Le harness n'est pas installé |
+| 0 | Environnement vérifié — toutes les cibles gérées sont présentes et valides |
+| 1 | Environnement non vérifié — des cibles gérées sont manquantes ou invalides |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi
 
-- [apothem install](/docs/cli-reference/install) — installe une configuration de harness
-- [apothem update](/docs/cli-reference/update) — réapplique le profil actuel à un harness
-- [apothem doctor](/docs/install/concepts) — diagnostic d'installation à l'échelle du système
+- [apothem install](/docs/cli-reference/install) — installe la configuration d'un environnement
+- [apothem update](/docs/cli-reference/update) — réapplique le profil actuel à un environnement
+- [apothem doctor](/docs/cli-reference/doctor) — diagnostic de l'installation à l'échelle du système

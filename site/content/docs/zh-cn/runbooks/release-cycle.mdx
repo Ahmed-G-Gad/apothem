@@ -1,75 +1,82 @@
 ---
 title: "发布周期操作手册"
-description: "从本地门禁、经签名的 GitHub Release，到可选的 npm 发布调度的完整发布工作流。"
+description: "从本地闸门、经签名的 GitHub Release，到可选的 npm 发布调度的完整发布工作流。"
 machineTranslated: true
-sourceHash: "aee761a8994b9503"
+sourceHash: "2373679e2d500c4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-本操作手册将 `apothem` 的 `vX.Y.Z` 发布从干净的工作树驱动到经验证的分发面。
-该流程是为挥动 `gh`、`git` 和 release-tier shell 的维护者编写的；它以一个经验证的
-Release 页面、一份归档的 CHANGELOG，以及一次确认每个面向用户的表面都能响应规范安装
-命令的安装路径冒烟测试作为终点。
+本操作手册将 `apothem` 的一次 `vX.Y.Z` 发布从干净的工作树推进到经过验证的分发表面。该流程是为使用 `gh`、`git` 和发布级 shell 的维护者编写的；它以一个经过验证的 Release 页面、一份已归档的 CHANGELOG，以及一次确认每个面向用户的表面都能响应规范安装命令的安装路径冒烟测试作为结束。
 
-发布形态为**单标签、两阶段**。`main` 上的一个经签名的发布标签触发
-`.github/workflows/release.yml`，它构建、签名、证明并发布 GitHub Release 及其完整的
-产物集——sdist、wheel、CycloneDX SBOM、Sigstore cosign 包、SLSA-3 出处溯源，以及平台
-运行时归档。可选的第二阶段是手动调度 `publish-npm.yml`，它在
-`scripts/release/check-release-ready.sh` 通过后将 `@ahmed-g-gad/apothem` 发布到
-npmjs.com。带版本号的 CHANGELOG 部分与标签提交一同编写；操作员在两个阶段都落地后
-运行安装路径冒烟测试。
+发布模型是**追加式**的。每次发布在 `main` 上添加一个提交和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。项目有三个发布，每个发布都有其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
+
+标签推送会启动两个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在两个工作流都完成后运行安装路径冒烟测试。
 
 ## 1. 前置条件
 
 维护者在打标签前确认以下各项：
 
-- **工作树。** 干净（`git status` 显示无任何待处理项）。该发布的所有功能工作都在
-  `main` 上。
-- **CI 绿色。** 最新的 `main` 的 `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` 返回 `success`。
-- **工具链。** `gh`（GitHub CLI）2.40 或更高版本，已针对 `ahmed-g-gad` 完成认证；
-  `git` 2.40 或更高版本，已加载 GPG 签名子密钥；`@ahmed-g-gad/apothem` 的 npm
-  受信任发布者绑定已生效（按
-  [发布者账户设置操作手册](/docs/runbooks/publisher-account-setup) 验证）。
-- **版本锚点已对齐。** 在 `pyproject.toml` 处声明的版本字符串与计划的标签去掉 `v`
-  前缀后相匹配。验证：
+- **工作树。** 干净（`git status` 显示无任何待处理项）。该发布的所有功能工作都已在 `main` 上。
+- **CI 为绿色。** 针对最新的 `main`，`gh run list --branch=main --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success`。
+- **工具链。** `gh`（GitHub CLI）2.40 或更高版本，已针对 `ahmed-g-gad` 完成认证；`git` 2.40 或更高版本，已加载 GPG 签名子密钥；`@ahmed-g-gad/apothem` 的 npm 受信任发布者绑定已生效（按照[发布者账户设置操作手册](/docs/runbooks/publisher-account-setup)验证）。
+- **版本锚点已对齐。** `pyproject.toml` 中声明的版本字符串与计划的标签去掉 `v` 前缀后一致（由 §2.1 连同其他所有锚点一起设置）。验证：
 
   ```bash
   grep '^version' pyproject.toml
   ```
 
-  预期输出（对于 `vX.Y.Z` 发布；占位符代表正在进行中的发布标签）：
+  预期输出（针对一次 `vX.Y.Z` 发布；占位符代表正在进行的发布标签）：
 
   ```text
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG 部分已暂存。** `CHANGELOG.md` 在 Keep-a-Changelog 标题下携带一个带
-  版本号的部分。维护者在落地标签的同一提交中更新日期和发布要点。
+- **CHANGELOG 条目已暂存。** 发布要点位于 Keep-a-Changelog 标题体系中的 `## [Unreleased]` 下；§2.1 会在落地该标签的提交中将它们转为带日期的版本部分。
 
 ## 2. 打标签并触发
 
 ### 2.1 编写发布提交
 
-发布提交落地两处更改：
-
-- `CHANGELOG.md` 版本部分，标注该发布的实际 UTC 日期。
-- `pyproject.toml` 版本号提升到新版本（仅当 `main` 上的前一个提交已携带上一版本的
-  固定值且需要一次新的提升时；该提交也可能在标签时间前数天的版本提升周期内落地）。
-
-示例提交：
+版本号分布在超过一打的文件中，因此不要手工编辑它们。一条命令即可更新全部文件：
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# 通过 Edit 工具编写 CHANGELOG 和 pyproject.toml 的编辑，然后：
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+`bump_version.py` 会一并更新每个版本锚点：
+
+- 每个打包、扩展、插件和市场清单，以及引用文件（版本号和发布日期）。完整列表：
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- `CHANGELOG.md`：`[Unreleased]` 条目变为带日期的 `## [X.Y.Z]` 部分，`[Unreleased]` 改为从 `vX.Y.Z` 开始比较，并添加一个 `[X.Y.Z]` 链接。
+- `SECURITY.md`：新的次版本会获得一个受支持的 `X.Y.x` 行。较旧的次版本是否继续列出由你决定；脚本会打印一条提醒。
+
+随后它会重新生成派生树：Claude Code 插件包、行为差异黄金基准，以及文档参考页和变更日志页。传入 `--dry-run` 可先列出更改，传入 `--date YYYY-MM-DD` 可设置发布日期（默认：UTC 时区的今天），传入 `--no-regen` 可跳过重新生成。该脚本会拒绝格式错误的版本号或降级，而用当前版本号重新运行它只会重新对齐零散的锚点。
+
+审查差异，然后提交：
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```
 
-`-S` 标志使用 GPG 密钥对提交进行签名。该推送触发标准 CI 矩阵（lint、test、build）；
-在打标签前等待其变绿。
+`-S` 标志使用 GPG 密钥对提交进行签名。该推送会触发标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
 
 ### 2.2 签名并推送标签
 
@@ -78,8 +85,7 @@ git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-`-a -s` 组合产生一个带注释、经 GPG 签名的标签。该推送触发
-`.github/workflows/release.yml`，它构建、签名、证明并发布。
+`-a -s` 组合会生成一个经 GPG 签名的附注标签。该推送会触发 `.github/workflows/release.yml`，由它构建、签名、证明并发布。
 
 ### 2.3 确认发布工作流已完成
 
@@ -87,57 +93,48 @@ git push origin vX.Y.Z
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-该工作流运行构建（sdist + wheel）、SBOM 生成（CycloneDX）、无密钥
-cosign 签名、SLSA-3 出处溯源生成与验证、平台归档构建（darwin / linux / windows）、
-带聚合 `SHA256SUMS` 清单的归档签名，以及最终的 GitHub Release 发布。维护者扫描
-`publish GitHub Release` 作业日志以查看产物上传确认。
+该工作流运行构建（sdist + wheel，然后为这些分发包生成一份 CycloneDX SBOM，写在它们旁边）、无密钥 cosign 签名、SLSA-3 出处溯源的生成与验证、平台归档构建（darwin / linux / windows）、带有聚合 `SHA256SUMS` 清单的归档签名，以及最终的 GitHub Release 发布。维护者检查 `publish GitHub Release` 作业日志中的产物上传确认信息。
 
-### 2.4 调度 npm 发布（可选阶段）
+### 2.4 确认 npm 发布
 
-在 GitHub Release 和就绪门禁都变绿之后：
+标签推送也会运行 `publish-npm.yml`。出现提示时，批准 `release` 环境部署。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。然后确认就绪状态：
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-当出现提示时批准 `npmjs` 环境部署。该工作流通过 npm Trusted Publishing（OIDC）将
-`@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。
+若要在一次失败的运行之后再次发布，为同一标签调度该工作流（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。当该版本已在注册表上时，它会跳过发布，因为 npm 版本不可变。
 
-## 3. 分发面
+## 3. 分发表面
 
 每个表面都有一条回答“发布是否落地于此？”的验证命令：
 
 | # | 表面 | 产物 | 验证 |
 |---|---|---|---|
-| 1 | GitHub Release（Python 分发版） | `apothem-X.Y.Z.tar.gz`（sdist）+ `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` 包含两个文件名 |
-| 2 | GitHub Release（SBOM） | `sbom.cdx.json` | 同第 1 行；产物列表包含 CycloneDX SBOM |
-| 3 | GitHub Release（签名） | 每个分发产物对应一个 `*.cosign.bundle`；每个归档对应一个 `*.sig`；`SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` 退出码为 0（带工作流身份标志） |
-| 4 | GitHub Release（出处溯源） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` 退出码为 0 |
-| 5 | GitHub Release（平台归档） | `apothem-vX.Y.Z-darwin.tar.gz`、`apothem-vX.Y.Z-linux.tar.gz`、`apothem-vX.Y.Z-windows.zip` | 产物列表包含每个归档以及 `SHA256SUMS` |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` 返回 `X.Y.Z`；`npx @ahmed-g-gad/apothem@X.Y.Z --version` 打印 `apothem X.Y.Z` |
-| 7 | Pages（脚本安装器） | 文档站点上的 `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` 返回脚本头部 |
+| 1 | GitHub Release（Python 分发包） | `apothem-X.Y.Z.tar.gz`（sdist）+ `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` 包含这两个文件名 |
+| 2 | GitHub Release（SBOM） | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | 产物列表包含两者；SBOM 的 `metadata.component.purl` 为 `pkg:pypi/apothem@X.Y.Z`，且其组件包含 `src/apothem/_vendor/vendor.txt` 中的每个包 |
+| 3 | GitHub Release（签名） | sdist、wheel、SBOM、VS Code 扩展、每个平台归档和 `SHA256SUMS` 各对应一个 `<asset>.cosign.bundle`（较早的发布将归档和 `SHA256SUMS` 的签名包命名为 `<asset>.sig`） | 使用 §5.5 中的确切身份运行 `cosign verify-blob`，退出码为 0 |
+| 4 | GitHub Release（出处溯源） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` 退出码为 0（§5.5） |
+| 5 | GitHub Release（平台归档） | `apothem-vX.Y.Z-darwin.tar.gz`、`apothem-vX.Y.Z-linux.tar.gz`、`apothem-vX.Y.Z-windows.zip` | 产物列表包含每个归档以及 `SHA256SUMS`。darwin 和 linux 归档是同一份字节、两个名称（运行时与平台无关；`--platform` 只决定使用 tar.gz 还是 zip），因此它们的 `SHA256SUMS` 行会两次显示同一个摘要 |
+| 6 | GitHub Release（VS Code 扩展） | `apothem.vsix` + `apothem.vsix.cosign.bundle` | 产物列表包含两者；`code --install-extension apothem.vsix` 可安装它。在发布工作流开始打包该扩展之前的发布两者都不包含 |
+| 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` 返回 `X.Y.Z`；`npx @ahmed-g-gad/apothem@X.Y.Z --version` 打印 `Apothem, version X.Y.Z` |
+| 8 | Pages（脚本安装器） | 文档站点上的 `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` 返回脚本头部 |
 
-GitHub Release 是规范的产物表面；npm 包和脚本安装器是叠加于其上的安装路径。npm
-发布被刻意安排为最后一个阶段。
+GitHub Release 是规范的产物表面；npm 包和脚本安装器是叠加在其之上的安装路径。npm 发布在同一次标签推送上与发布工作流并行运行。
 
 ## 4. CHANGELOG 纪律
 
-`CHANGELOG.md` 在 Keep-a-Changelog 约定下，每个发布携带一个部分。发布提交的
-CHANGELOG 编辑：
+`CHANGELOG.md` 按照 Keep-a-Changelog 约定，每个发布对应一个部分。发布提交对 CHANGELOG 的编辑：
 
-- 确认版本部分使用 `## [X.Y.Z] — YYYY-MM-DD` 标题。
-- 确认在适用之处使用标准标题——Added、Changed、Deprecated、Removed、Fixed、
-  Security。空标题从渲染后的文件中删去。
-- 捕捉的是**能力**，而非实现。仅使用领域语言；无计划内部引用；无提交哈希；无计划或
-  阶段标识符。
+- 确认版本部分使用 `## [X.Y.Z] - YYYY-MM-DD` 标题（连字符；由 `bump_version.py` 写入，而 `extract_release_notes.py` 匹配 `## [X.Y.Z]` 前缀）。
+- 确认在适用之处使用标准标题——Added、Changed、Deprecated、Removed、Fixed、Security。空标题会从渲染后的文件中删去。
+- 记录的是**能力**，而非实现。仅使用领域语言；不包含计划内部引用；不包含提交哈希；不包含计划或阶段标识符。
 
-一个经过维护者审查而存活下来的 CHANGELOG 部分，可作为公告叙事的发布说明锚点来阅读。
+经过维护者审查而保留下来的 CHANGELOG 部分，即可作为公告叙述的发布说明锚点。
 
 ## 5. 安装路径冒烟测试
 
-在两个阶段都完成之后，维护者运行冒烟测试。该冒烟测试是对面向用户的安装命令能否响应的
-规范验证。
+两个阶段都完成后，维护者运行冒烟测试。该冒烟测试是对面向用户的安装命令能够响应的规范验证。
 
 ### 5.1 Claude Code 插件
 
@@ -146,7 +143,7 @@ CHANGELOG 编辑：
 /plugin install apothem@apothem
 ```
 
-预期：插件完成安装，且 `apothem` 命令在 Claude Code 内可用。
+预期：插件完成安装，且 `apothem` 命令在 Claude Code 中可用。
 
 ### 5.2 Node.js（npx）
 
@@ -154,67 +151,68 @@ CHANGELOG 编辑：
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-预期输出：`apothem X.Y.Z`。
+预期输出：`Apothem, version X.Y.Z`。
 
-### 5.3 一次性脚本安装器（POSIX）
+### 5.3 一键脚本安装器（POSIX）
 
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-预期输出：`apothem X.Y.Z`。
+预期输出：`Apothem, version X.Y.Z`。
 
-### 5.4 一次性脚本安装器（Windows）
+### 5.4 一键脚本安装器（Windows）
 
 ```powershell
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-预期输出：`apothem X.Y.Z`。
+预期输出：`Apothem, version X.Y.Z`。
 
 ### 5.5 产物验证（供应链证据）
 
+将每个产物下载到一个空目录中，然后进行验证。证书身份是位于这个确切标签处的发布工作流。身份检查区分大小写，而证书按照 GitHub 报告的形式携带所有者，即 `Ahmed-G-Gad`，因此小写的所有者会验证失败。
+
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-预期：两项验证的退出码均为 0。
+预期：`Verified OK`、`PASSED: SLSA verification passed` 以及 `verify-provenance: chain OK (3 of 3 layers verified)`。该脚本在一次运行中检查 `SHA256SUMS`、每个签名包和出处溯源；它从 wheel 文件名推导出标签（`--tag vX.Y.Z` 可覆盖该值）。
 
-冒烟测试为每个表面产出一行 PASS / FAIL 记录；将这些记录录入维护者的发布日志。
+冒烟测试为每个表面产出一行 PASS / FAIL 记录；将这些记录写入维护者的发布日志。
 
 ## 6. 故障恢复
 
-发布工作流为发布引擎和 npm 发布者记录了文档化的故障模式：
+发布工作流针对发布引擎和 npm 发布者有已记录在案的故障模式：
 
 | 故障 | 诊断 | 恢复 |
 |---|---|---|
-| 标签推送被拒（签名失败） | `git push origin vX.Y.Z` 返回 `error: failed to push some refs` 并带有 GPG 相关消息 | 验证 GPG 子密钥已加载（`gpg --list-secret-keys --keyid-format=long`）；修复密钥环后在本地用 `-s` 重新打标签；重新推送 |
-| `release.yml` 作业在单个阶段失败 | `gh run view <run-id> --log` 指出失败的作业（build / sbom / sign / provenance / archive / publish） | 通过 `gh run rerun <run-id> --failed` 单独重跑失败的作业；若故障重现，在重新打标签前从源头修复该作业的输入 |
-| SLSA 出处溯源验证失败 | `verify SLSA provenance artifact` 作业退出码非零 | 检查出处溯源产物是否存在主体摘要不匹配；从同一标签重新构建——出处溯源绑定到确切的产物摘要，因此任何产物重新生成都需要一次完整的工作流重跑 |
-| npmjs.com 发布被拒 | npm 作业在 `npm publish` 期间退出码非零；`PUT` 期间的注册表 `404` 是授权 / 受信任发布者不匹配，而非包代码缺失的证据 | 验证 `@ahmed-g-gad/apothem` 的 npm Trusted Publishing 指定所有者 `ahmed-g-gad`、仓库 `apothem`、工作流 `publish-npm.yml`，以及允许的动作 `npm publish`；确认该作业以工作流中固定的 Node 版本和 npm CLI OIDC 底线运行 |
-| 标签可见但产物缺失 | `gh release view vX.Y.Z` 返回一个存根发布 | 重跑发布工作流的 publish 作业；若存根持续存在，删除发布页面（`gh release delete vX.Y.Z --cleanup-tag`）并从同一 SHA 重新打标签 |
+| 标签推送被拒绝（签名失败） | `git push origin vX.Y.Z` 返回 `error: failed to push some refs` 并带有 GPG 相关消息 | 验证 GPG 子密钥已加载（`gpg --list-secret-keys --keyid-format=long`）；修复密钥环后在本地用 `-s` 重新打标签；重新推送 |
+| 发布构建停在 `Check the plugin version changed with the plugin` | 构建作业日志会指出该插件和上一个标签；没有任何产物被构建或发布 | 插件包自上一次发布以来有变化，但其版本号没有变化。删除该标签（`git push --delete origin vX.Y.Z`、`git tag -d vX.Y.Z`），运行 `python scripts/release/bump_version.py X.Y.Z`，提交，然后再次签名并推送标签（§2.2）。同一检查会在每个拉取请求上以警告注解的形式运行，因此该问题通常会在打标签之前暴露出来 |
+| `release.yml` 作业在单个阶段失败 | `gh run view <run-id> --log` 会指出失败的作业（build（它也会写入 SBOM）/ sign / provenance / archive / publish） | 通过 `gh run rerun <run-id> --failed` 单独重新运行失败的作业；如果故障再次出现，在重新打标签之前从源头修复该作业的输入 |
+| SLSA 出处溯源验证失败 | `verify SLSA provenance artifact` 作业以非零状态退出 | 检查出处溯源产物是否存在主体摘要不匹配；从同一标签重新构建——出处溯源绑定到确切的产物摘要，因此任何产物的重新生成都需要完整地重新运行工作流 |
+| npmjs.com 发布被拒绝 | npm 作业在 `npm publish` 期间以非零状态退出；`PUT` 期间的注册表 `404` 表示授权 / 受信任发布者不匹配，并不能证明包代码缺失 | 验证 `@ahmed-g-gad/apothem` 的 npm 受信任发布指定了所有者 `ahmed-g-gad`、仓库 `apothem`、工作流 `publish-npm.yml` 以及允许的操作 `npm publish`；确认该作业以工作流中固定的 Node 版本和 npm CLI OIDC 下限运行 |
+| 标签可见但产物缺失 | `gh release view vX.Y.Z` 返回一个空壳发布 | 重新运行发布工作流的 publish 作业；它会编辑现有的发布并重新上传每个产物。只有当该标签的任何内容都未到达用户（没有产物，没有 npm 版本）时，才删除并重新打标签；否则用下一个补丁发布向前修复（[发布恢复操作手册](/docs/runbooks/release-recovery) §2） |
 
-若一个恢复周期未能在一次诊断流程内使某个表面落地，则将该表面作为已知故障记入发布
-说明，并附上指向开放议题的链接；将下游用户引导至可用的表面，同时在补丁发布中修复
-损坏的那个。
+如果一个恢复周期未能在一轮诊断内使某个表面落地，则将该表面作为已知故障记入发布说明，并附上指向未关闭问题的链接；在补丁发布中修复损坏的表面期间，将下游用户引导至可用的表面。
 
 ## 7. 交叉引用
 
-- **发布者设置。**
-  [发布者账户设置操作手册](/docs/runbooks/publisher-account-setup)
-  建立了 npm 受信任发布者绑定以及本操作手册所假定的 GitHub 侧前置条件。
-- **恢复流程。** 发布恢复操作手册（`site/content/docs/runbooks/release-recovery.mdx`）管辖发布切换期间的跨阶段故障路径，而非
-  §6 中所述的逐表面发布故障。
-- **Pages 启用。** `publish-static-site.yml` 工作流验证并将项目网站部署到自定义域名；
-  Pages 启用操作手册（`site/content/docs/runbooks/pages-enablement.mdx`）是首先确立
-  该自定义域名的上游流程。
-- **版本控制策略。** `site/content/docs/governance/release-engineering-policy.mdx`
-  携带本操作手册所遵循的 SemVer + 签名 + 弃用策略。
+- **发布者设置。** [发布者账户设置操作手册](/docs/runbooks/publisher-account-setup)建立了 npm 受信任发布者绑定，以及本操作手册所假定的 GitHub 侧前置条件。
+- **恢复流程。** [发布恢复操作手册](/docs/runbooks/release-recovery)遵循相同的追加式模型：它逐阶段恢复失败的标签或发布者，并通过将修复作为新的补丁版本发布来回滚，绝不通过删除或重新指向已发布的标签、发布或 npm 版本来回滚。
+- **Pages 启用。** `publish-static-site.yml` 工作流验证项目网站并将其部署到自定义域名；Pages 启用操作手册（`site/content/docs/runbooks/pages-enablement.mdx`）是最初确立该自定义域名的上游流程。
+- **版本策略。** `site/content/docs/governance/release-engineering-policy.mdx` 载明了本操作手册所遵循的 SemVer + 签名 + 弃用策略。

@@ -1,45 +1,47 @@
 ---
 title: "Comandos"
-description: "Definições de comandos de barra que implementam o pipeline da suíte de planos, além de auditorias de código, arquitetura, segurança, dependências e revisão de documentação."
+description: "Definições de comandos de barra que implementam o pipeline da suíte de planejamento, além de auditorias de código, arquitetura, segurança, dependências e revisão de documentação."
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-As definições de comandos de barra vivem como arquivos planos `.md` sob
-`src/apothem/commands/`. O conjunto canônico é encabeçado pelo pipeline da suíte de
-planos consciente da arquitetura, que é distribuído como sete comandos de primeira
-classe — um por estágio, cada um invocável diretamente como `/plan-<stage>`. Não há
-despachante monolítico; cada estágio é seu próprio arquivo de comando registrado em
+As definições de comandos de barra residem como arquivos `.md` planos sob
+`src/apothem/commands/`. O conjunto canônico é encabeçado pelo pipeline da suíte de planejamento ciente da
+arquitetura, que é distribuído como sete comandos de primeira classe — um por
+estágio, cada um invocável diretamente como `/plan-<stage>`. Não há despachante
+monolítico; cada estágio é seu próprio arquivo de comando registrado em
 `src/apothem/commands/plan-<stage>.md`.
 
 | Invocação | Arquivo de comando | Descrição |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina conteúdo não estruturado em prosa de qualidade de especificação |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Materializa uma suíte de planos a partir de prosa / requisitos |
-| `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoria forense com placares |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina conteúdo não estruturado em prosa com qualidade de especificação |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Materializa uma suíte de planejamento a partir de prosa / requisitos |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoria forense com scorecards |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Emite `_inputs/design.md` para suítes que carregam arquitetura |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | Executa uma fase com portões de qualidade |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Relatório de progresso somente leitura |
-| `/plan-amend` | `src/apothem/commands/plan-amend.md` | Emenda, estende, refina ou reverte uma suíte existente sem perder decisões resolvidas |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Empacotamento de ciclo fechado de spec → generate → review com remediação ativa (ortogonal, pré-execução) |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | Emenda, estende, refina ou reverte uma suíte existente sem perder as decisões resolvidas |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Encapsulamento de ciclo fechado de spec → generate → review com remediação ativa (ortogonal, pré-execução) |
 
-Além do pipeline de planos, comandos de ferramenta de projeto inteiro são
-distribuídos ao lado dele: `/freshify`, `/github-deploy-fresh`,
-`/github-deploy-next` e `/elevate` para renovação e publicação; `/audit`,
+Além do pipeline de planejamento, comandos de harness de projeto inteiro são
+distribuídos ao lado dele — `/freshify`, `/github-deploy-fresh`,
+`/github-deploy-next` e `/elevate` para renovação e lançamento; `/audit`,
 `/fortress` e `/workflow` para revisão e orquestração multiagente; `/projectify`
-para a elevação de Projetos de aplicativos de chat — além das onze passagens de
-auditoria/revisão e do pipeline `/research`:
+para a elevação a Projetos de aplicativos de chat —, além das onze passagens de
+auditoria/revisão (code-review, code-audit, architecture-review, docs-review,
+security-audit, dependency-audit, supply-chain-audit, threat-model-audit,
+perf-audit, a11y-audit, ux-review) e do pipeline `/research`:
 
 | Invocação | Arquivo de comando | Descrição |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | Torna um projeto fresco, livre de rastros e pronto para produção; cada passo destrutivo é gatilhado por confirmação |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Especialização do `/freshify` para GitHub que produz uma única versão inaugural fresca |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Executa um ciclo completo de próxima versão na superfície de release do GitHub |
-| `/elevate` | `src/apothem/commands/elevate.md` | Eleva cada superfície do projeto ao SOTA atual via trabalhadores delegados de crítica independente, depois repassa para o `/freshify` |
+| `/freshify` | `src/apothem/commands/freshify.md` | Torna um projeto novo, livre de rastros e pronto para produção; cada passo destrutivo é condicionado a confirmação |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Especialização do `/freshify` para o GitHub que produz um único lançamento novo de primeira versão |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Executa um ciclo completo de próximo lançamento na superfície de lançamentos do GitHub |
+| `/elevate` | `src/apothem/commands/elevate.md` | Eleva cada superfície do projeto ao SOTA atual por meio de agentes de crítica independentes e depois repassa para o `/freshify` |
 
-O conjunto completo de comandos como fonte de verdade — incluindo a sequência de
-auditoria e revisão — é o inventário gerado ao pé desta página.
+O conjunto completo de comandos que é a fonte de verdade — incluindo cada
+passagem de auditoria e revisão — é o inventário gerado ao pé desta página.
 
 ## Contrato de frontmatter
 
@@ -60,17 +62,25 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-A verificação `frontmatter-cohort` do validador (ramo Command) confere o contrato em
-cada arquivo de comando.
+A verificação `frontmatter-cohort` do validador (ramo Command) confere o
+contrato em cada arquivo de comando. `allowed-tools` lista as ferramentas que um
+harness pode executar sem perguntar enquanto o comando está ativo, por isso ele
+permanece somente leitura por padrão: uma ferramenta com efeitos colaterais
+(Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch) aparece somente como uma
+regra com escopo, como `Bash(git log *)`, e o curinga isolado
+`"*"` é rejeitado pelo schema. Os comandos com efeitos colaterais irreversíveis
+(`freshify`, `github-deploy-fresh`, `github-deploy-next`) definem
+`disable-model-invocation: true`, de modo que somente o operador os inicia.
 
 ## Disciplina de autoria
 
 - **Fluxo de trabalho autocontido.** O corpo de cada comando lista o fluxo de
-  trabalho como passos numerados, para que o assistente possa executar a partir de um
-  arranque a frio.
-- **Bloco de Bindings.** Cada comando termina com o bloco de Bindings canônico de
+  trabalho como passos numerados, para que o assistente possa executá-lo a
+  partir de um início a frio.
+- **Bloco Bindings.** Cada comando termina com o bloco Bindings canônico de
   cinco direções.
-- **Apenas linguagem de domínio.** Sem referências internas a planos nos corpos.
+- **Somente linguagem de domínio.** Nenhuma referência interna a planos nos
+  corpos.
 
 ## Inventário de comandos gerado
 

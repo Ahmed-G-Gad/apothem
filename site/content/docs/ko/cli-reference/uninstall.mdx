@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "702473c5586ee896"
+sourceHash: "2928176181100844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,39 +16,51 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-어댑터가 관리하는 하니스 대상을 제거합니다. `--yes`가 제공되지 않는 한 확인을 요청합니다. 선택한 하니스가 설치되어 있지 않으면, 명령은 성공하며(종료 코드 0) "nothing to remove" 알림을 표시합니다.
+어댑터가 관리하는 하니스 대상을 제거한 다음, 설치가 만든 디렉터리가 비게 되면
+그 디렉터리를 제거합니다(여러분의 것이 하나라도 들어 있는 디렉터리는 남습니다).
+`--yes`를 지정하지 않으면 확인을 요청합니다. 프롬프트를 띄울 수 없는 경우 —
+`--format json`(프롬프트 텍스트가 단일 JSON 문서를 손상시킴) 또는 비대화형
+셸(TTY 없음) — `--yes`를 지정하지 않으면 명령은 처음부터 구조화된
+`uninstall.confirmation_required` 오류(종료 코드 1)와 함께 거부합니다.
+선택한 하니스가 설치되어 있지 않으면, 명령은 "nothing to remove" 알림과 함께
+성공합니다(종료 코드 0).
 
-연속형 별칭 `apothem uninstalling`은 동일한 핸들러로 해석됩니다.
+`--harness all` 제거는 의도적으로 빠짐없이 수행됩니다. 이 제거는 프로필의
+`exclude_harnesses`가 설치 중에 건너뛰는 하니스를 포함하여 등록된 모든 하니스를
+다룹니다. 정리 작업은 이전의 더 넓은 범위의 설치가 남겼을 수 있는 상태까지
+닿습니다. 한 번도 설치되지 않은 하니스는 "nothing to remove"를 보고합니다.
+
+연속형 별칭 `apothem uninstalling`은 같은 핸들러로 해석됩니다.
 
 ## 옵션
 
 | 옵션 | 설명 |
 |---|---|
-| `--harness NAME` | 제거할 하니스 어댑터, 또는 레지스트리 전역 집합을 나타내는 `all`(필수). |
+| `--harness NAME` | 제거할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). |
 | `--yes` | 확인 프롬프트를 건너뜁니다. |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. |
-| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 발생시킵니다. |
-| `--verbose`, `-v` | 추가 진단 출력을 발생시킵니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
-| `--json` | `--format json`의 약식. |
+| `--json` | `--format json`의 축약형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
 | `-h`, `--help` | 도움말을 표시하고 종료합니다. |
 
 ## JSON 출력
 
-어댑터가 설치되어 있고 성공적으로 제거된 경우:
+어댑터가 설치되어 있었고 성공적으로 제거된 경우:
 
 ```json
-{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
-어댑터가 설치되어 있지 않은 경우:
+어댑터가 설치되어 있지 않았던 경우:
 
 ```json
-{"status": "not_installed", "harness": "claude-code"}
+{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
 ```
 
-## 예시
+## 예제
 
 ```bash
 apothem uninstall --harness claude-code
@@ -62,11 +74,13 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 
 | 코드 | 의미 |
 |---|---|
-| 0 | 어댑터가 제거됨, 또는 설치되어 있지 않았음 |
-| 1 | 하니스를 찾을 수 없음, 또는 사용자가 확인 프롬프트를 중단함 |
+| 0 | 어댑터가 제거되었거나, 설치되어 있지 않았음 |
+| 1 | 하니스를 찾을 수 없음, 확인이 거부되었거나 불가능함(`--yes` 없는 비대화형 또는 JSON 모드), 또는 모든 제거가 실패함 |
+| 2 | 부분 제거 — 실패 전에 적어도 하나의 하니스가 제거됨 |
+| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 이 오류가 코드 `cli.usage`를 담은 JSON 봉투로 출력됩니다. |
 
 ## 함께 보기
 
-- `apothem uninstalling` — 이 명령의 연속형 별칭(여기에 문서화됨; CLI는 두 형식을 모두 허용함)
-- [apothem install](/docs/cli-reference/install) — 하니스 구성을 설치합니다
-- [apothem verify](/docs/cli-reference/verify) — 설치 상태를 확인합니다
+- `apothem uninstalling` — 이 명령의 연속형 별칭(여기에 문서화됨. CLI는 두 형식을 모두 받음)
+- [apothem install](/docs/cli-reference/install) — 하니스 구성을 설치
+- [apothem verify](/docs/cli-reference/verify) — 설치 상태를 확인

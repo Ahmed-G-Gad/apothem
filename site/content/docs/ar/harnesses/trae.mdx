@@ -1,14 +1,14 @@
 ---
 title: "Trae"
-description: "محوّل إطار عمل Apothem لـ Trae (GA)."
+description: "محوّل إطار عمل Apothem لـ Trae (إصدار عام)."
 machineTranslated: true
-sourceHash: "229e541ddce9cc3e"
+sourceHash: "f55f43bb42d94d1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>ByteDance</bdi>
 **اسم التثبيت:** <bdi>`trae`</bdi>
-**الحالة:** <bdi>GA</bdi>
+**الحالة:** إصدار عام
 **الإعداد الأصلي:** <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi>
 
 ## التثبيت
@@ -17,25 +17,31 @@ sourceHash: "229e541ddce9cc3e"
 apothem install --harness trae --project /path/to/project
 ```
 
-يكتب المحوّل ملفّ قواعد <bdi>Trae</bdi> واحدًا بنطاق المشروع من سطح القواعد والحوكمة
-المشترك لـ<bdi>Apothem</bdi>.
+يكتب المحوّل ملف قواعد واحدًا لـ <bdi>Trae</bdi> على نطاق المشروع انطلاقًا من القواعد
+المشتركة لـ <bdi>Apothem</bdi> وسطح الحوكمة.
 
 **الملفات المكتوبة:** <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi>
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر ملفّ قواعد المشروع في كل
-عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف التعريفي
-المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة احتياطية من التعديلات المحلية للمشروع على الملف
-المُولَّد قبل أن تستبدل المزامنة التالية المحتوى المُدار بواسطة <bdi>Apothem</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد ملف قواعد المشروع
+في كل تشغيل لـ <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف
+التعريفي المشترك هو مصدر الحقيقة؛ وتُنسَخ التعديلات المحلّية للمشروع على الملف
+المُولَّد احتياطيًا قبل أن تستبدل المزامنة التالية المحتوى الذي يديره
+<bdi>Apothem</bdi>.
+
+يبدأ الملف ببيانات أمامية بصيغة <bdi>YAML</bdi> تضبط <bdi>`alwaysApply: true`</bdi>
+وحقلًا <bdi>`description`</bdi>، وهو وضع <bdi>Always Apply</bdi> في <bdi>Trae</bdi>
+وفق [وثائق قواعد <bdi>Trae</bdi>](https://docs.trae.ai/ide/rules). وتليها الكتلة التي
+يديرها <bdi>Apothem</bdi>؛ ويُحتفَظ بالنص الذي تضيفه بعد الكتلة في كل مزامنة.
 
 ## ملاحظات التوافق
 
-سطح قواعد <bdi>Trae</bdi> الحالي بنطاق المشروع تحت <bdi>`.trae/rules/`</bdi>. يكتب
-المحوّل ملفًّا مخصّصًا باسم <bdi>`apothem-rules.md`</bdi> يتعايش مع المرسيين
-<bdi>`project_rules.md`</bdi> و<bdi>`user_rules.md`</bdi> اللذين يملكهما المشغّل ولا
-يطمسهما أبدًا. سطح خوادم الأدوات <bdi>`.trae/mcp.json`</bdi> وسطح المهارات
-<bdi>`.trae/skills/`</bdi> يملكهما المشغّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
+سطح القواعد الحالي في <bdi>Trae</bdi> على نطاق المشروع تحت <bdi>`.trae/rules/`</bdi>؛
+وتقع القواعد العامة تحت <bdi>`~/.trae/user_rules`</bdi>. يكتب المحوّل ملفًا مخصّصًا
+<bdi>`apothem-rules.md`</bdi> ولا يطمس أبدًا ملفات القواعد الأخرى في ذلك الدليل ولا
+قواعدك العامة. سطح خوادم الأدوات <bdi>`.trae/mcp.json`</bdi> وسطح المهارات
+<bdi>`.trae/skills/`</bdi> يملكهما المُشغِّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
 
 ## التحقّق
 
@@ -45,9 +51,9 @@ apothem verify --harness trae --project /path/to/project
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. جميع الحقول الإلزامية من الملف التعريفي المشترك موجودة.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -55,7 +61,7 @@ apothem verify --harness trae --project /path/to/project
 apothem update --harness trae --project /path/to/project
 ```
 
-يعيد اشتقاق ملفّ قواعد المشروع من حالة الملف التعريفي المشترك الحالية.
+يُعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
 
 ## إلغاء التثبيت
 
@@ -63,10 +69,10 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
-لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -78,10 +84,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness trae --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness trae --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness trae --project /path/to/project`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness trae --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

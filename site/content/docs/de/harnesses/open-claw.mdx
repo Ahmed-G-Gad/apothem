@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Apothem-Harness-Adapter für Open-Claw (Vorschau)."
 machineTranslated: true
-sourceHash: "84ea02c4a5281c11"
+sourceHash: "435a8075d4d83b4f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,28 +17,44 @@ sourceHash: "84ea02c4a5281c11"
 apothem install --harness open-claw
 ```
 
-Der Adapter übersetzt das gemeinsame Profil in die benutzerglobale Konfigurationsdatei
-von OpenClaw und installiert die Apothem-Support-Kohorten unter der Harness-Wurzel. Die
-native Konfiguration von OpenClaw ist JSON; der Materializer rendert JSON, um dazu zu
-passen.
+Der Adapter übersetzt das gemeinsame Profil in die benutzerglobale
+Konfigurationsdatei von OpenClaw und installiert Apothem-Unterstützungs-Kohorten
+unter dem Stammverzeichnis des Harness. Die native Konfiguration von OpenClaw ist
+JSON; der Materializer rendert passend dazu JSON.
 
-**Geschriebene Dateien:** `~/.openclaw/openclaw.json` und Support-Dateien unter
+**Geschriebene Dateien:** `~/.openclaw/openclaw.json`, das Profildokument
+`~/.openclaw/apothem/rules/00-apothem-profile.md` und Unterstützungsdateien unter
 `~/.openclaw/.apothem/support/`
+
+Das Profildokument endet mit einem Abschnitt zu den Apothem-Unterstützungsdateien,
+der das absolute Verzeichnis unter `~/.openclaw/.apothem/support/` nennt, gegen
+das jedes Zitat im Repository-Stil (`rules/<name>.md`, `templates/...`,
+`hooks/...`) aufgelöst wird.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
-Der Adapter liest das gemeinsame Profil von Apothem. Das native skills-Feld von OpenClaw
-ist eine Namens-Zulassungsliste (kein Verzeichnislader) und MCP ist eine CLI-Oberfläche,
-daher verfasst Apothem keine Konfigurationsschlüssel. Gemeinsame Befehle, Skills, Regeln,
-Vorlagen und Hook-Prompts werden als Support-Material unter `~/.openclaw/.apothem/support/`
-installiert.
+Der Adapter liest Apothems gemeinsames Profil, verfasst aber keine
+Konfigurationsschlüssel: `openclaw.json` wird als leeres Objekt geschrieben.
+Identität, Präferenzen und Regeln des Profils gehen in das Profildokument.
+Gemeinsame Commands, Skills, Regeln, Templates und Hook-Prompts werden als
+Unterstützungsmaterial unter `~/.openclaw/.apothem/support/` installiert.
 
 ## Kompatibilitätshinweise
 
-Vorschau-Adapter. Die native JSON-Konfiguration ist die aktive Open-Claw-Oberfläche;
-Apothem nutzt den dokumentierten Hook für ein zusätzliches Skill-Verzeichnis für die
-Skills und behält die übrigen Kohorten als Referenzmaterial für die installierte
-Anleitung.
+Vorschau-Adapter. OpenClaw lädt den Unterstützungsbaum und das Profildokument
+nicht von sich aus: Weder seine Skill-Speicherorte noch seine
+Workspace-Anweisungsdateien noch seine Konfiguration verweisen dorthin, sodass
+OpenClaw nach der Installation ohne Apothems Regeln, Skills oder MCP-Server
+läuft. OpenClaw liest Skills aus den Ordnern `skills/` und `.agents/skills/`
+seines Workspace, aus `~/.agents/skills`, aus seinem Zustandsverzeichnis und aus
+jedem in `skills.load.extraDirs` aufgeführten Ordner; um die Apothem-Skills zu
+verwenden, fügen Sie `~/.openclaw/.apothem/support/skills` selbst zu dieser
+Liste hinzu; `apothem update` behält Schlüssel bei, die Sie zu `openclaw.json`
+hinzufügen. MCP-Server liegen im Block `mcp.servers` der OpenClaw-Konfiguration,
+den Sie mit `openclaw mcp add` und den zugehörigen Unterbefehlen verwalten; der
+Adapter schreibt dort keine Einträge. (Verhalten von OpenClaw gemäß seiner
+Dokumentation zu [Skills](https://docs.openclaw.ai/tools/skills) und zur
+[MCP-CLI](https://docs.openclaw.ai/cli/mcp), gelesen am 2026-10-02.)
 
 ## Verifizierung
 
@@ -46,7 +62,7 @@ Anleitung.
 apothem verify --harness open-claw
 ```
 
-Der Befehl verify bestätigt, dass:
+Der verify-Befehl bestätigt, dass:
 
 1. Die native Konfiguration am erwarteten Pfad existiert.
 2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
@@ -58,9 +74,9 @@ Der Befehl verify bestätigt, dass:
 apothem update --harness open-claw
 ```
 
-Leitet die native Konfiguration aus dem aktuellen Zustand des gemeinsamen Profils neu
-ab. Führen Sie sie aus, nachdem Sie `~/.config/apothem/profile.yaml` bearbeitet oder das
-installierte Apothem-Paket aktualisiert haben.
+Leitet die native Konfiguration aus dem aktuellen Zustand des gemeinsamen Profils
+neu ab. Führen Sie dies aus, nachdem Sie `~/.config/apothem/profile.yaml`
+bearbeitet oder das installierte Apothem-Paket aktualisiert haben.
 
 ## Deinstallation
 
@@ -68,8 +84,8 @@ installierte Apothem-Paket aktualisiert haben.
 apothem uninstall --harness open-claw
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien. Das YAML des
-gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 
@@ -82,11 +98,17 @@ python -m apothem.conformity.gate --all .
 | Symptom | Behebung |
 |---------|-----|
 | Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness open-claw` erneut aus |
-| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness open-claw` aus und verifizieren Sie erneut |
-| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie `apothem update --harness open-claw` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness open-claw` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness open-claw` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation vorschauen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

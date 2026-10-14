@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3e22dcf3597b4cc3"
+sourceHash: "8dec50c1d13fe4aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,39 +17,78 @@ sourceHash: "3e22dcf3597b4cc3"
 apothem install --harness claude-code
 ```
 
-`claude-code` アダプターは、共有された Apothem コーパスを Claude
-Code のネイティブな検出ツリーにインストールします。Markdown エージェント、ルール、
-スキル、出力スタイル、ステータスラインヘルパー、設定は、それぞれのネイティブな場所に
-インストールされます。コマンドプロンプトはさらにスキルとしてラップされ、再利用可能な
-ワークフローが現在の Claude Code のスキル面を通じて引き続き見えるようになります。
+`claude-code` アダプターは、共有の Apothem コーパスを Claude Code のネイティブな検出ツリーに
+インストールします。Markdown のエージェント、ルール、スキル、出力スタイル、設定は、それぞれの
+ネイティブな場所にインストールされます。コマンドプロンプトはスキルに変換されるため、再利用可能な
+ワークフローは現在の Claude Code のスキル面を通じて見える状態に保たれます。ステータスライン
+レンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code は
+ステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
+有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の
+`statusLine` エントリを `settings.json` に追加してください。
 
-**書き込まれるファイル：** `~/.claude/` 配下の `settings.json`、`agents/`、`rules/`、
-`skills/`、`statuslines/`、`output-styles/`、および `apothem/` サポートサブツリー
-（`apothem/hooks/`、`apothem/conformity/`、`apothem/schemas/`、
-`apothem/templates/`）。コマンドファイルは子スキルディレクトリに変換されます。フック
-ディスパッチャーと適合ゲートは、それらのマテリアライズされたコピーから実行されます。
-`settings.json` のフックエントリは `~/.claude/.apothem/support/hooks/dispatch.py` と
+**書き込まれるファイル：** `~/.claude/` 配下の `settings.json`、`CLAUDE.md` 内の Apothem ブロック、
+`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`、および `.apothem/support/`
+サポートサブツリー（`.apothem/support/hooks/`、`.apothem/support/conformity/`、
+`.apothem/support/schemas/`、`.apothem/support/templates/`）。
+コマンドファイルは子スキルディレクトリに変換されます。フックディスパッチャーとコンフォーミティ
+ゲートは、それぞれのマテリアライズされたコピーから実行されます。`settings.json` のフックエントリは
+`~/.claude/.apothem/support/hooks/dispatch.py` と
 `~/.claude/.apothem/support/conformity/gate.py` を絶対パスで呼び出すため、ホスト上にインポート
-可能な `apothem` パッケージは不要です。
+可能な `apothem` パッケージは必要ありません。
 
-このアダプターは `CLAUDE.md` を**管理しません**。そのファイルはオペレーターの所有領域
-です。Apothem のガバナンス面は、マテリアライズされた `CLAUDE.md` ではなく、伝播された
-`rules/` ツリーと SessionStart フックを通じて Claude Code に到達します。
+`~/.claude/CLAUDE.md` は引き続きオペレーターの所有です。アダプターはそこに、センチネルで区切られた
+Apothem ブロックを 1 つ書き込み、センチネルの外側のすべての行を一字一句そのまま保持します。この
+ブロックには、プロファイルの投影（アイデンティティ、プリファレンス、ルール、シリアスネス、
+オプトインした振る舞い）と Apothem サポートファイルのセクションが含まれます。サポートファイルの
+セクションは、インストールされたルール、スキル、エージェント内にあるリポジトリ形式の各参照が
+解決される先の絶対ディレクトリを示します。`rules/<name>.md` は `~/.claude/rules/` 配下に、
+`templates/...`、`schemas/...`、`hooks/...`、`conformity/...` は
+`~/.claude/.apothem/support/` 配下に解決されます。Apothem のガバナンス面の残りは、伝播された
+`rules/` ツリーと SessionStart フックを通じて Claude Code に届きます。OpenCode も、
+`~/.config/opencode/AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込むため、
+このブロックは単一のツールを読み手として名指ししません。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-`apothem install` または `apothem update` のたびに、アダプターは伝播マニフェストに
-従って共有 `apothem` コーパスを `~/.claude/` に伝播します。アダプターは可能な場合は
-ネイティブディレクトリを直接使用し、コマンドプロンプトをスキルフォルダーに変換します。
-既存の、Apothem 管理下の一致する子は、置き換える前にバックアップされます。無関係な、
-オペレーターが作成したエントリは保持されます。`settings.json` はマージされ、オペレーター
-が作成したキーが引き続き復元可能になります。
+`apothem install` または `apothem update` のたびに、アダプターは伝播マニフェストに従って
+共有の `apothem` コーパスを `~/.claude/` に伝播します。アダプターは可能な場合はネイティブ
+ディレクトリを直接使用し、コマンドプロンプトをスキルフォルダーに変換します。Apothem が管理する
+既存の一致する子要素は、置き換えの前にバックアップされます。無関係なオペレーター作成のエントリは
+保持されます。`settings.json` はマージされるため、オペレーターが作成したキーは復元可能なままです。
+
+インストールされたスキルと、Claude Code プラグインに同梱されたスキルは、ソースコーパスの
+`userInvocable` の代わりに `user-invocable` を持ちます。Claude Code はハイフン付きのキーしか
+読み取らないためです。2 つのテンプレートコンテナー（`plan-suite`、`research-suite`）はこれを
+`false` に設定しているため、`/` メニューには表示されません。すべての出力スタイルは
+`keep-coding-instructions: true` を設定しているため、いずれかを選択しても Claude Code の
+組み込みのソフトウェアエンジニアリング指示は維持されます。
 
 ## 互換性に関する注意
 
-変換は一切発生しません。インストールでは、プロファイルが整形式であり、settings.json 内のすべてのフックバインディングが解決可能であることを検証します。
+コマンドプロンプトはスキルディレクトリに変換されます。エージェント、ルール、スキル、出力スタイルは
+そのままコピーされます。インストールでは、プロファイルが整形式であること、および settings.json 内の
+すべてのフックバインディングが解決可能であることを検証します。アダプターは MCP サーバーの
+エントリを一切作成しません。サーバーは `claude mcp add` で登録してください
+（[MCP サーバー](/docs/reference/mcp)を参照）。
 
-Claude Code は、すべてのセッション開始時に settings.json 内のすべてのフックバインディングを適用します。各アダプターは、自身のネイティブなハーネスに対して検証されます。特権的な「参照」ハーネスは存在しません。
+Claude Code は、すべてのセッション開始時に settings.json 内のすべてのフックバインディングを適用します。各アダプターは、それぞれのネイティブなハーネスに対して検証されます。特権的な「参照」ハーネスは存在しません。
+
+### 権限ルールの制限
+
+設定テンプレートは、`.env*` や `~/.ssh/**` などのシークレットとキャッシュのパスに対する
+`Read(...)` を拒否します。Claude Code は `Read` の拒否を、自身のファイルツール、Bash 内で認識する
+ファイルコマンド（`cat`、`head`、`tail`、`sed`、`tee`）、およびリダイレクト先に適用します。
+ファイル名を指定せずにファイルを読み取る検索（`grep -r pattern .` など）や、自分でファイルを
+開くスクリプトには、この拒否を適用しません
+（[権限リファレンス](https://code.claude.com/docs/en/permissions)）。macOS、Linux、WSL では、
+Claude Code は `Glob` ツールと `Grep` ツールをデフォルトのツールセットから外し、代わりに Bash を
+通じて検索します。そのため、テンプレートの `Glob` と `Grep` の許可エントリは、これらのツールが
+存在する環境でのみ有効になります。あらゆるプロセスによるパスの読み取りをブロックするには、
+Claude Code のサンドボックスを有効にしてください。
+
+`TodoWrite` を名指しするスキルとヘルパー定義は、`TaskCreate`、`TaskGet`、`TaskList`、
+`TaskUpdate` も名指しします。Claude Code は、これらのツールを優先して `TodoWrite` をデフォルトで
+無効にしているためです。
 
 ## 検証
 
@@ -57,10 +96,10 @@ Claude Code は、すべてのセッション開始時に settings.json 内の�
 apothem verify --harness claude-code
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
-2. 共有プロファイルからのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -69,10 +108,10 @@ verify コマンドは、次のことを確認します。
 apothem update --harness claude-code
 ```
 
-現在の共有プロファイルからネイティブ設定を再導出します。インストール済みの
-`apothem` パッケージを更新した後に実行して、伝播された規約面（エージェント、ルール、
-スキル、ステータスライン、出力スタイル）が新しいバージョンを反映するようにします。
-`CLAUDE.md` はオペレーターの所有物であり、アダプターによって決して触れられません。
+現在の共有プロファイルからネイティブ設定を再導出します。インストール済みの `apothem` パッケージが
+更新された後に実行し、伝播された規約面（エージェント、ルール、スキル、ステータスライン、
+出力スタイル）が新しいバージョンを反映するようにしてください。`CLAUDE.md` では、update は
+センチネルの間にある Apothem ブロックのみを書き換えます。
 
 ## アンインストール
 
@@ -80,10 +119,11 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除します。
-インストール済みの `apothem` パッケージとソースリポジトリは影響を受けません。
+アダプターが書き込んだネイティブ設定ファイルを削除し、`CLAUDE.md` から Apothem ブロックを
+取り除いて、あなた自身の文章はそのまま残します。
+インストール済みの `apothem` パッケージとソースリポジトリには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -94,11 +134,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness claude-code` を再実行する |
-| 検証に失敗した | `apothem update --harness claude-code` を実行してから、再度検証する |
-| 予期しない設定内容 | `apothem update` を再実行する。真実の源は共有 `apothem` プロファイルであり、`~/.claude/` ではない |
+| 検証が失敗した | `apothem update --harness claude-code` を実行してから、再度検証する |
+| 想定外の設定内容 | `apothem update` を再実行する。信頼できる情報源は共有の `apothem` プロファイルであり、`~/.claude/` ではない |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

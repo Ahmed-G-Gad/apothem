@@ -1,21 +1,24 @@
 ---
 title: "أدلّة التشغيل"
-description: "أدلّة تشغيل Apothem — إجراءات تشغيلية خطوة بخطوة للإصدارات، وإعداد الناشر، وتفعيل Pages، والاستعادة، وتأليف المحوِّلات."
+description: "أدلّة تشغيل Apothem — إجراءات تشغيلية خطوة بخطوة للإصدارات، وإعداد الناشر، وتفعيل Pages، والاسترداد، وتأليف المحوّلات."
 machineTranslated: true
-sourceHash: "63bed63ad7506d0b"
+sourceHash: "cd67c6a222612ca3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-إجراءات تشغيلية للمشرفين. كل دليل تشغيل هو إجراء متسلسل ومستقل عن السياق:
-يقود حالة بداية معروفة إلى حالة نهاية مُتحقَّق منها، ومكتوب بحيث يستطيع
-مساهم كفء اتّباعه دون سياق مسبق.
+إجراءات تشغيلية للمشرفين. كل دليل تشغيل إجراءٌ متسلسل ومستقل عن السياق: يقود حالة
+بداية معروفة إلى حالة نهاية مُتحقَّق منها، وهو مكتوب بحيث يستطيع مساهم كفء اتّباعه
+دون سياق مسبق.
 
 ## الصفحات
 
 | الصفحة | الوصف |
 |------|-------------|
-| [تفعيل Pages](/docs/runbooks/pages-enablement) | يقود <bdi>`apothem.ahmedgad.com`</bdi> من تهيئة <bdi>GitHub Pages</bdi> جديدة إلى صفحة هبوط <bdi>HTTPS</bdi> تُرجع <bdi>`200 OK`</bdi>. |
-| [دورة الإصدار](/docs/runbooks/release-cycle) | يقود إصدار <bdi>`vX.Y.Z`</bdi> من شجرة عمل نظيفة إلى أسطح <bdi>GitHub Release</bdi> و<bdi>npm</bdi> المُتحقَّق منها. |
-| [إعداد حساب الناشر](/docs/runbooks/publisher-account-setup) | يهيّئ الناشر الموثوق على <bdi>npmjs.com</bdi> لـ <bdi>`@ahmed-g-gad/apothem`</bdi> ومتطلّبات الإصدار المسبقة على جانب <bdi>GitHub</bdi>. |
-| [استعادة الإصدار](/docs/runbooks/release-recovery) | يستعيد <bdi>`ahmed-g-gad/apothem`</bdi> إلى حالة عاملة حين يفشل تسلسل تبديل الإصدار في منتصف الطريق. |
-| [تأليف محوِّل بيئة جديد](/docs/runbooks/new-harness-adapter-authoring) | ألِّف وانشُر محوِّل بيئة جديدًا لإدراجه ضمن الطرف الأول. |
+| [تفعيل <bdi>Pages</bdi>](/docs/runbooks/pages-enablement) | قيادة <bdi>`apothem.ahmedgad.com`</bdi> من تهيئة <bdi>GitHub Pages</bdi> جديدة إلى صفحة هبوط عبر <bdi>HTTPS</bdi> تُرجِع <bdi>`200 OK`</bdi>. |
+| [دورة الإصدار](/docs/runbooks/release-cycle) | قيادة إصدار <bdi>`vX.Y.Z`</bdi> من شجرة عمل نظيفة إلى أسطح إصدار <bdi>GitHub</bdi> و<bdi>npm</bdi> المُتحقَّق منها. |
+| [إعداد حساب الناشر](/docs/runbooks/publisher-account-setup) | تهيئة الناشر الموثوق على <bdi>npmjs.com</bdi> للحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> والمتطلّبات المسبقة للإصدار على جانب <bdi>GitHub</bdi>. |
+| [استرداد الإصدار](/docs/runbooks/release-recovery) | استعادة <bdi>`ahmed-g-gad/apothem`</bdi> إلى حالة عاملة عندما يفشل تسلسل التبديل إلى الإصدار أثناء تنفيذه. |
+| [تأليف محوّل إطار عمل جديد](/docs/runbooks/new-harness-adapter-authoring) | تأليف محوّل إطار عمل جديد ونشره لإدراجه ضمن محوّلات الطرف الأول. |
+| [قائمة تحقّق النشر](/docs/runbooks/deployment-checklist) | تشغيل قائمة تحقّق ما قبل الانطلاق قبل نشر منظومة <bdi>Apothem</bdi> أو مشاركتها. |
+| [مراسم دمج المشرف المنفرد](/docs/runbooks/solo-maintainer-merge) | متى يستطيع المشرف دمج طلب السحب الخاص به مباشرةً، ومراسم الدمج الذاتي لحماية تشترط موافقةً وتفرضها على المسؤولين. |
+| [قائمة تحقّق المزامنة بين الأجهزة](/docs/runbooks/cross-machine-sync-checklist) | التحقّق من أن محوّل <bdi>Claude Code</bdi> يُثبَّت ويُتحقَّق منه ويُزال تثبيته بشكل صحيح على مضيف جديد، مع فحوص كاملة لقابلية النقل. |

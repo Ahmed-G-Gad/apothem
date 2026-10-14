@@ -1,14 +1,14 @@
 ---
 title: "Open-Claw"
-description: "Adaptateur d'environnement Apothem pour Open-Claw (Aperçu)."
+description: "Adaptateur d'environnement Apothem pour Open-Claw (préversion)."
 machineTranslated: true
-sourceHash: "84ea02c4a5281c11"
+sourceHash: "435a8075d4d83b4f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Éditeur :** Open-Claw
 **Nom d'installation :** `open-claw`
-**Statut :** Aperçu
+**Statut :** Préversion
 **Configuration native :** `~/.openclaw/openclaw.json`
 
 ## Installation
@@ -17,28 +17,45 @@ sourceHash: "84ea02c4a5281c11"
 apothem install --harness open-claw
 ```
 
-L'adaptateur traduit le profil partagé vers le fichier de configuration global de
-l'utilisateur d'OpenClaw et installe les cohortes de support d'Apothem sous la racine
-de l'environnement. La configuration native d'OpenClaw est en JSON ; le materializer
-génère du JSON pour correspondre.
+L'adaptateur traduit le profil partagé vers le fichier de configuration global
+à l'utilisateur d'OpenClaw et installe les cohortes de support Apothem sous la
+racine de l'environnement. La configuration native d'OpenClaw est en JSON ; le
+materializer rend donc du JSON pour s'y conformer.
 
-**Fichiers écrits :** `~/.openclaw/openclaw.json` et fichiers de support sous
-`~/.openclaw/.apothem/support/`
+**Fichiers écrits :** `~/.openclaw/openclaw.json`, le document de profil
+`~/.openclaw/apothem/rules/00-apothem-profile.md` et des fichiers de support
+sous `~/.openclaw/.apothem/support/`
 
-## Mappage du profil vers la configuration native
+Le document de profil se termine par une section consacrée aux fichiers de
+support Apothem, qui nomme le répertoire absolu sous
+`~/.openclaw/.apothem/support/` par rapport auquel se résout chaque citation de
+style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
 
-L'adaptateur lit le profil partagé d'Apothem. Le champ skills natif d'OpenClaw est une
-liste d'autorisation de noms (et non un chargeur de répertoire) et MCP est une surface
-en CLI, de sorte qu'Apothem ne rédige aucune clé de configuration. Les commandes, les
-skills, les règles, les modèles et les prompts de hooks partagés sont installés comme
-matériel de support sous `~/.openclaw/.apothem/support/`.
+## Correspondance entre le profil et la configuration native
+
+L'adaptateur lit le profil partagé d'Apothem mais ne rédige aucune clé de
+configuration : `openclaw.json` est écrit sous la forme d'un objet vide.
+L'identité, les préférences et les règles du profil vont dans le document de
+profil. Les commandes, skills, règles, templates et prompts de hook partagés
+sont installés comme matériel de support sous `~/.openclaw/.apothem/support/`.
 
 ## Notes de compatibilité
 
-Adaptateur en aperçu. La configuration native JSON est la surface active d'Open-Claw ;
-Apothem utilise le hook documenté de répertoire de skills supplémentaire pour les skills
-et conserve les autres cohortes comme matériel de référence pour les indications
-installées.
+Adaptateur en préversion. OpenClaw ne charge pas de lui-même l'arborescence de
+support ni le document de profil : aucun de ses emplacements de skills, aucun de
+ses fichiers d'instructions d'espace de travail ni sa configuration n'y
+pointent ; après l'installation, OpenClaw s'exécute donc sans les règles, les
+skills ni les serveurs MCP d'Apothem. OpenClaw lit les skills depuis les
+dossiers `skills/` et `.agents/skills/` de son espace de travail,
+`~/.agents/skills`, son répertoire d'état et tout dossier listé dans
+`skills.load.extraDirs` ; pour utiliser les skills Apothem, ajoutez vous-même
+`~/.openclaw/.apothem/support/skills` à cette liste ; `apothem update` conserve
+les clés que vous ajoutez à `openclaw.json`. Les serveurs MCP se trouvent dans
+le bloc `mcp.servers` de la configuration OpenClaw, que vous gérez avec
+`openclaw mcp add` et les sous-commandes associées ; l'adaptateur n'y écrit
+aucune entrée. (Comportement d'OpenClaw selon sa documentation sur les
+[skills](https://docs.openclaw.ai/tools/skills) et sur la
+[CLI MCP](https://docs.openclaw.ai/cli/mcp), consultée le 2026-10-02.)
 
 ## Vérification
 
@@ -50,7 +67,7 @@ La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
 2. Tous les champs obligatoires du profil partagé sont présents.
-3. La routine de vérification spécifique à l'adaptateur signale un succès.
+3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -58,9 +75,9 @@ La commande verify confirme que :
 apothem update --harness open-claw
 ```
 
-Re-dérive la configuration native à partir de l'état actuel du profil partagé.
-Exécutez-la après avoir modifié `~/.config/apothem/profile.yaml` ou mis à niveau le
-paquet Apothem installé.
+Redérive la configuration native à partir de l'état actuel du profil partagé.
+Exécutez cette commande après avoir modifié `~/.config/apothem/profile.yaml` ou
+mis à niveau le paquet Apothem installé.
 
 ## Désinstallation
 
@@ -68,10 +85,10 @@ paquet Apothem installé.
 apothem uninstall --harness open-claw
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur. Le YAML du
-profil partagé et le moteur d'Apothem ne sont pas affectés.
+Supprime les fichiers de configuration native écrits par l'adaptateur.
+Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
-## Porte de conformité
+## Portail de conformité
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -81,12 +98,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptôme | Correctif |
 |---------|-----|
-| Fichier de configuration introuvable | Réexécutez `apothem install --harness open-claw` |
-| La vérification a échoué | Exécutez `apothem update --harness open-claw`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness open-claw` |
+| Fichier de configuration introuvable | Relancez `apothem install --harness open-claw` |
+| Échec de la vérification | Exécutez `apothem update --harness open-claw`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness open-claw` |
 
 ## Paramètres de configuration
 
-| Flag | Par défaut | Description |
+| Option | Par défaut | Description |
 |------|---------|-------------|
 | `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |
+
+## Voir aussi
+
+- [Tous les environnements](/docs/harnesses) — le catalogue complet des outils pris en charge
+- [Guide d'installation](/docs/install) — installer Apothem dans cet environnement
+- [Référence de `apothem harnesses`](/docs/cli-reference/harnesses) — lister et inspecter les adaptateurs depuis la CLI

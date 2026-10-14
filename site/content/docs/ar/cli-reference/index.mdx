@@ -1,31 +1,84 @@
 ---
 title: "مرجع واجهة سطر الأوامر"
-description: "مرجع واجهة سطر الأوامر لـ Apothem — موجز لكل أمر، والخيارات، ورموز الخروج لواجهة سطر الأوامر apothem."
+description: "مرجع واجهة سطر الأوامر لـ Apothem — موجز كل أمر، وخياراته، ورموز خروجه لواجهة سطر الأوامر apothem."
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تدير واجهة سطر الأوامر <bdi>`apothem`</bdi> تهيئات مُحَوِّلات المساعد البرمجي من الملف الشخصي المشترك. تُوثِّق كل صفحة أدناه أمرًا فرعيًّا واحدًا: موجزه، وخياراته، وسلوكه، ورموز خروجه.
+تدير واجهة سطر الأوامر <bdi>`apothem`</bdi> إعدادات محوّلات أُطُر العمل انطلاقًا من
+الملف التعريفي المشترك. توثّق كل صفحة أدناه أمرًا فرعيًا واحدًا: موجزه، وخياراته،
+وسلوكه، ورموز خروجه.
 
-يقبل كلٌّ من <bdi>`install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> أيضًا اسمًا بديلًا بالصيغة المستمرّة (<bdi>`installing`</bdi>، <bdi>`updating`</bdi>، <bdi>`uninstalling`</bdi>) مطابقًا في الخيارات والسلوك للأمر الأساسي. أمّا التحديث وإلغاء التثبيت عبر قنوات التثبيت — مُلحَق <bdi>Claude Code</bdi>، و<bdi>`npx`</bdi>، وبرامج المُثبِّت ذات الخطوة الواحدة — فمُوثَّقان في دليلَي التثبيت [التحديث](/docs/install/updating) و[إلغاء التثبيت](/docs/install/uninstalling)، لا عبر الأسماء البديلة نفسها.
+يقبل كلٌّ من <bdi>`install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> أيضًا
+اسمًا مستعارًا بصيغة الاستمرار (<bdi>`installing`</bdi>، <bdi>`updating`</bdi>،
+<bdi>`uninstalling`</bdi>) مطابقًا للأمر الأساسي في الرايات والسلوك. أمّا التحديث
+وإلغاء التثبيت عبر قنوات التثبيت — إضافة <bdi>Claude Code</bdi>، و<bdi>`npx`</bdi>،
+وسكربتات المُثبِّت ذات الخطوة الواحدة — فموثّقان في دليلَي التثبيت
+[التحديث](/docs/install/updating) و[إلغاء التثبيت](/docs/install/uninstalling)، لا
+عبر الأسماء المستعارة نفسها.
 
 ## الأوامر
 
 | الأمر | الوصف |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | تشغيل أول موجَّه: يضمن وجود ملف شخصي، ويعاين عمليات الكتابة، ثم يثبّت. |
-| [install](/docs/cli-reference/install) | يثبّت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك (الاسم البديل: `installing`). |
-| [update](/docs/cli-reference/update) | يعيد تثبيت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك الحالي (الاسم البديل: `updating`). |
-| [uninstall](/docs/cli-reference/uninstall) | يزيل تهيئة مُحَوِّل مساعد برمجي (الاسم البديل: `uninstalling`). |
-| [rollback](/docs/cli-reference/rollback) | يستعيد مساعدًا برمجيًا إلى الحالة التي كان عليها قبل تثبيته المُسجَّل. |
-| [verify](/docs/cli-reference/verify) | يتحقّق من تثبيت مُحَوِّل مساعد برمجي. |
-| [status](/docs/cli-reference/status) | يبلّغ عن حالة التثبيت والتحقّق والانحراف لكل مساعد برمجي مُسجَّل. |
-| [diff](/docs/cli-reference/diff) | يعاين تغييرات التهيئة المعلَّقة لمساعد برمجي واحد. |
-| [harnesses](/docs/cli-reference/harnesses) | يسرد مُحَوِّلات المساعد البرمجي المُسجَّلة ويفحصها. |
-| [profile](/docs/cli-reference/profile) | يدير الملف الشخصي المشترك لـ Apothem. |
-| [doctor](/docs/cli-reference/doctor) | يشغّل تشخيصات النظام لتثبيت Apothem. |
-| [completion](/docs/cli-reference/completion) | يُخرِج برنامج إكمال صدفة قابلًا للتحميل عبر source (bash، zsh، fish، powershell). |
+| [<bdi>quickstart</bdi>](/docs/cli-reference/quickstart) | تشغيل أوّل موجَّه: يضمن وجود ملف تعريفي، ويعاين عمليات الكتابة، ثم يثبّت. |
+| [<bdi>install</bdi>](/docs/cli-reference/install) | يثبّت إعداد محوّل إطار عمل من الملف التعريفي المشترك (الاسم المستعار: <bdi>`installing`</bdi>). |
+| [<bdi>update</bdi>](/docs/cli-reference/update) | يعيد تثبيت إعداد محوّل إطار عمل من الملف التعريفي المشترك الحالي (الاسم المستعار: <bdi>`updating`</bdi>). |
+| [<bdi>uninstall</bdi>](/docs/cli-reference/uninstall) | يزيل إعداد محوّل إطار عمل (الاسم المستعار: <bdi>`uninstalling`</bdi>). |
+| [<bdi>rollback</bdi>](/docs/cli-reference/rollback) | يستعيد إطار عمل إلى الحالة التي سبقت تثبيته المُسجَّل. |
+| [<bdi>backups</bdi>](/docs/cli-reference/backups) | يقلّم النسخ الاحتياطية للتثبيت وسجلّ الدفتر اللذين يحتفظ بهما <bdi>Apothem</bdi> (<bdi>`backups prune`</bdi>). |
+| [<bdi>verify</bdi>](/docs/cli-reference/verify) | يتحقّق من تثبيت محوّل إطار عمل. |
+| [<bdi>status</bdi>](/docs/cli-reference/status) | يُبلغ عن حالة التثبيت والتحقّق والانحراف لكل إطار عمل مُسجَّل. |
+| [<bdi>diff</bdi>](/docs/cli-reference/diff) | يعاين تغييرات الإعداد المعلّقة لإطار عمل واحد. |
+| [<bdi>harnesses</bdi>](/docs/cli-reference/harnesses) | يسرد محوّلات أُطُر العمل المُسجَّلة ويفحصها. |
+| [<bdi>profile</bdi>](/docs/cli-reference/profile) | يدير الملف التعريفي المشترك لـ <bdi>Apothem</bdi>. |
+| [<bdi>migrate-workspace</bdi>](/docs/cli-reference/migrate-workspace) | يرحّل مساحة عمل قديمة خاصة بكل إطار عمل إلى تخطيط <bdi>`.apothem`</bdi> المشترك. |
+| [<bdi>doctor</bdi>](/docs/cli-reference/doctor) | يشغّل تشخيصات النظام لتثبيت <bdi>Apothem</bdi>. |
+| [<bdi>completion</bdi>](/docs/cli-reference/completion) | يُصدِر سكربت إكمال للصدفة قابلًا للتحميل بالأمر <bdi>source</bdi> (<bdi>bash</bdi>، <bdi>zsh</bdi>، <bdi>fish</bdi>، <bdi>powershell</bdi>). |
 
-للحصول على الأوامر المائلة (slash) ونظرة عامة على واجهة سطر الأوامر بمستوى أعلى، راجع صفحتَي المرجع
-[نظرة عامة على واجهة سطر الأوامر](/docs/reference/cli) و[الأوامر المائلة](/docs/reference/commands).
+## عقد مخرجات <bdi>JSON</bdi>
+
+يقبل كل أمر <bdi>`--json`</bdi> (اختصارًا لـ <bdi>`--format json`</bdi>) ويكتب حينئذٍ
+مستند <bdi>JSON</bdi> واحدًا بالضبط إلى <bdi>stdout</bdi>. يبدأ كل مستند بمفتاح
+<bdi>`schema_version`</bdi> في المستوى الأعلى، وهو عدد صحيح قيمته اليوم
+<bdi>`1`</bdi>:
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **الثبات.** ضمن قيمة <bdi>`schema_version`</bdi> واحدة، تكون التغييرات إضافية فقط:
+  يمكن أن يظهر مفتاح جديد، لكن لا يُعاد تسمية أي مفتاح ولا يُزال، ولا يتغيّر نوع أي
+  قيمة. وأي تغيير آخر يرفع <bdi>`schema_version`</bdi>.
+- **المُنتَجات المُرقَّمة بالنسخ.** يُصدِر <bdi>`profile show --json`</bdi> الملف
+  التعريفي نفسه، لذا فإن <bdi>`schema_version`</bdi> فيه هو نسخة مخطط الملف التعريفي
+  (وهي <bdi>`1`</bdi> اليوم أيضًا).
+- **استثناء واحد.** يُصدِر <bdi>`harnesses list --json`</bdi> مصفوفة <bdi>JSON</bdi>
+  (كائنًا واحدًا لكل إطار عمل)، كما فعل دائمًا، لذا لا يملك مفتاحًا في المستوى
+  الأعلى يحمل النسخة. وتغليفه في كائن سيكسر المحلّلات الموجودة؛ وإلى أن يفعل ذلك رفعٌ
+  للنسخة، تعامَل مع شكله بوصفه <bdi>`schema_version` `1`</bdi>.
+- **الأخطاء.** تستخدم الإخفاقات المتوقّعة شكل المستند نفسه مع
+  <bdi>`"status": "error"`</bdi> وكائن <bdi>`error`</bdi> يحمل <bdi>`code`</bdi>
+  و<bdi>`field`</bdi> و<bdi>`reason`</bdi> و<bdi>`fix`</bdi>.
+
+## رموز الخروج
+
+تستخدم الأوامر كلها المجموعة الصغيرة نفسها من رموز الخروج؛ وتسرد كل صفحة الرموز التي
+يمكن أن يُرجعها أمرها.
+
+| الرمز | المعنى |
+|---|---|
+| 0 | نجاح |
+| 1 | إخفاق متوقّع: خطأ في التحقّق، أو الملف التعريفي، أو إطار العمل، أو المشروع، أو المحوّل |
+| 2 | نتيجة جزئية: كتبت دفعةٌ شيئًا أو أزالته قبل وقوع إخفاق (فقط الأوامر التي تسرده صفحاتها) |
+| 64 | خطأ استخدام: خيار أو أمر غير معروف، أو خيار مطلوب مفقود، أو قيمة خيار غير صالحة |
+
+لا يمسّ خطأ الاستخدام نظام الملفات أبدًا. ومع <bdi>`--json`</bdi> (أو
+<bdi>`--format json`</bdi>) يطبع مستند خطأ واحدًا يحمل
+<bdi>`"code": "cli.usage"`</bdi> بدلًا من نص الاستخدام العادي، كي تميّز الأتمتة بين
+راية مكتوبة خطأً وكتابة جزئية.
+
+للاطلاع على أوامر الشرطة المائلة والنظرة العامة الأعلى مستوى على واجهة سطر الأوامر،
+راجع صفحتَي المرجع [نظرة عامة على واجهة سطر الأوامر](/docs/reference/cli)
+و[أوامر الشرطة المائلة](/docs/reference/commands).

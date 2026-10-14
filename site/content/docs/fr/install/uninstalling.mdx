@@ -2,16 +2,17 @@
 title: "Désinstallation"
 description: "Supprimer Apothem et nettoyer les configurations d'environnement."
 machineTranslated: true
-sourceHash: "e96d67dfc6af5311"
+sourceHash: "11d7a265fc5e60b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Supprimer d'abord les configurations d'environnement
 
-Avant de désinstaller Apothem, supprimez la configuration de chaque adaptateur d'environnement pour laisser
-vos outils dans un état propre. Exécutez `apothem harnesses list` pour voir
-quels adaptateurs sont actuellement installés, puis supprimez-les un par un ou utilisez
-le sélecteur couvrant tout le registre :
+Avant de désinstaller Apothem, supprimez la configuration de chaque adaptateur
+d'environnement afin de laisser vos environnements dans un état propre.
+Exécutez `apothem harnesses list` pour voir quels adaptateurs sont actuellement
+installés, puis supprimez-les un par un ou utilisez le sélecteur couvrant tout
+le registre :
 
 ```bash
 apothem uninstall --harness claude-code
@@ -23,27 +24,58 @@ Passez `--yes` pour ignorer l'invite de confirmation par environnement.
 
 ## Supprimer le moteur
 
-La suppression correspond au canal d'installation que vous avez utilisé :
+La suppression dépend du canal d'installation que vous avez utilisé :
 
-- **Plugin Claude Code** — supprimez le plugin depuis l'intérieur de Claude Code :
-  `/plugin uninstall apothem@apothem` (l'entrée du marketplace peut être supprimée
-  avec `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **Plugin Claude Code** — supprimez le plugin depuis Claude Code :
+  `/plugin uninstall apothem@apothem` (l'entrée de marketplace peut être
+  supprimée avec `/plugin marketplace remove ahmed-g-gad/apothem`).
 - **npx** — rien à supprimer ; `npx` s'exécute depuis son cache. Videz-le avec
-  `npm cache clean --force` si vous voulez supprimer la copie en cache.
-- **Installeur en une commande** — exécutez le script de désinstallation correspondant depuis le
-  dépôt extrait : `scripts/installer/uninstall.sh` (POSIX) ou
-  `scripts/installer/uninstall.ps1` (PowerShell). Les deux demandent confirmation avant
-  de supprimer et refusent les cibles dangereuses.
-- **Sauvegardes et état** — les sauvegardes d'installation se trouvent sous `~/.apothem/backups/` ;
-  supprimez `~/.apothem/` lorsque vous n'en avez plus besoin.
+  `npm cache clean --force` si vous voulez faire disparaître la copie en cache.
+- **Installateur en une seule étape** — exécutez le script de désinstallation
+  correspondant depuis le checkout : `scripts/installer/uninstall.sh` (POSIX) ou
+  `scripts/installer/uninstall.ps1` (PowerShell). Les deux demandent
+  confirmation avant de supprimer et refusent les cibles non sûres.
+- **Sauvegardes et état** — les sauvegardes d'installation se trouvent sous
+  `~/.apothem/backups/` et le journal d'installation sous `~/.apothem/state/`.
+  Les deux restent bornés : après chaque installation, désinstallation et
+  retour arrière, Apothem conserve les 10 enregistrements d'installation les
+  plus récents par racine d'installation et les 10 ensembles de sauvegardes les
+  plus récents par environnement, et ne supprime jamais une sauvegarde dont un
+  enregistrement conservé a encore besoin, de sorte que les 10 dernières
+  installations peuvent toujours faire l'objet d'un retour arrière. Pour en
+  conserver moins, exécutez
+  [`apothem backups prune --keep N`](/docs/cli-reference/backups) (ajoutez
+  `--dry-run` pour voir d'abord ce que la commande supprimerait) ; elle ne supprime
+  jamais la sauvegarde à partir de laquelle le retour arrière de la dernière
+  installation d'un environnement effectue sa restauration. Une fois le moteur
+  supprimé, et lorsque vous n'avez plus besoin d'aucune partie de l'historique,
+  supprimez `~/.apothem/`.
 
 ## Ce qui n'est PAS supprimé
 
-- Le profil partagé YAML à `~/.config/apothem/profile.yaml` ou
+- Le fichier YAML du profil partagé à `~/.config/apothem/profile.yaml` ou
   `--profile PATH` n'est jamais supprimé par `apothem uninstall`.
-- Les fichiers sans rapport écrits par l'opérateur dans les répertoires d'environnement sont préservés.
+- Les fichiers sans rapport rédigés par l'opérateur dans les répertoires
+  d'environnement sont préservés.
+- Les entrées que vous avez ajoutées à un fichier de paramètres partagé sont
+  préservées : vos propres règles de permission, serveurs MCP et gestionnaires
+  de hooks restent en place. La désinstallation ne supprime que les clés et les
+  entrées de liste que le journal d'installation consigne comme appartenant à
+  Apothem (voir
+  [Paramètres](/docs/reference/settings#fusion-dans-votre-propre-fichier-de-settings)).
 - Les suites de planification sous `<project>/.apothem/plans/` (et l'ancien `<project>/.plans/`) ne sont pas affectées.
 
-Pour nettoyer entièrement la racine d'un environnement, supprimez le chemin natif de l'environnement documenté sur les
-[pages de référence des environnements](/docs/harnesses) après avoir confirmé que vous avez sauvegardé
-toutes les règles, utilitaires ou fichiers de profil personnalisés que vous souhaitez conserver.
+## Répertoires
+
+La désinstallation supprime aussi les répertoires que l'installation a créés
+(par exemple un `~/.claude/` qui n'existait pas avant la première installation),
+une fois qu'ils sont vides. Un répertoire qui contient encore l'un de vos
+fichiers, ou des données qu'utilise un autre environnement installé, est
+conservé. Les répertoires qui existaient avant l'installation ne sont jamais
+supprimés.
+
+Pour nettoyer entièrement la racine d'un environnement, supprimez le chemin
+natif de l'environnement documenté sur les
+[pages de référence des environnements](/docs/harnesses) après avoir vérifié que
+vous avez sauvegardé toutes les règles, tous les utilitaires ou fichiers de
+profil personnalisés que vous souhaitez conserver.

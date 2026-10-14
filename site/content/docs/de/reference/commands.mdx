@@ -1,43 +1,45 @@
 ---
 title: "Befehle"
-description: "Slash-Befehlsdefinitionen, die die Plansuite-Pipeline implementieren, plus Audits für Code, Architektur, Sicherheit, Abhängigkeiten und Dokumentationsprüfung."
+description: "Slash-Befehlsdefinitionen, die die Plan-Suite-Pipeline implementieren, plus Audits für Code, Architektur, Sicherheit, Abhängigkeiten und Dokumentationsprüfung."
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Slash-Befehlsdefinitionen liegen als flache `.md`-Dateien unter `src/apothem/commands/`. Der
-kanonische Satz wird von der architekturbewussten Plansuite-Pipeline angeführt, die
-als sieben erstklassige Befehle ausgeliefert wird — einer pro Stufe, jeder direkt aufrufbar als
-`/plan-<stage>`. Es gibt keinen monolithischen Dispatcher; jede Stufe ist ihre eigene
+kanonische Satz wird von der architekturbewussten Plan-Suite-Pipeline angeführt, die
+als sieben erstklassige Befehle ausgeliefert wird — einer pro Stufe, jeder direkt als
+`/plan-<stage>` aufrufbar. Es gibt keinen monolithischen Dispatcher; jede Stufe ist ihre eigene
 registrierte Befehlsdatei unter `src/apothem/commands/plan-<stage>.md`.
 
 | Aufruf | Befehlsdatei | Beschreibung |
 |------------|--------------|-------------|
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Unstrukturierten Inhalt zu spezifikationsreifer Prosa verfeinern |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Eine Plansuite aus Prosa / Anforderungen materialisieren |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Eine Plan-Suite aus Prosa / Anforderungen materialisieren |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Forensisches Audit mit Scorecards |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | `_inputs/design.md` für architekturtragende Suiten ausgeben |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Eine Phase mit Qualitätsschranken ausführen |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Eine Phase mit Qualitäts-Gates ausführen |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Schreibgeschützter Fortschrittsbericht |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | Eine bestehende Suite ergänzen, erweitern, verfeinern oder zurücksetzen, ohne aufgelöste Entscheidungen zu verlieren |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Geschlossene Schleife von spec → generate → review mit aktiver Behebung (orthogonal, vor execute) |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Geschlossene Schleife um spec → generate → review mit aktiver Behebung (orthogonal, vor execute) |
 
 Neben der Plan-Pipeline werden projektweite Harness-Befehle mitgeliefert —
 `/freshify`, `/github-deploy-fresh`, `/github-deploy-next` und `/elevate` zum
 Auffrischen und Veröffentlichen; `/audit`, `/fortress` und `/workflow` für
-Mehragenten-Review und -Orchestrierung; `/projectify` zur Veredelung von
-Chat-App-Projekten — sowie die elf Audit-/Review-Durchläufe und die
-`/research`-Pipeline:
+Multi-Agent-Review und -Orchestrierung; `/projectify` für die Erhebung zu einem
+Project in einer Chat-App — sowie die elf Audit-/Review-Durchläufe (code-review,
+code-audit, architecture-review, docs-review, security-audit, dependency-audit,
+supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review) und
+die `/research`-Pipeline:
 
 | Aufruf | Befehlsdatei | Beschreibung |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | Ein Projekt frisch, spurenfrei und produktionsreif machen; jeder destruktive Schritt bestätigungsgesteuert |
+| `/freshify` | `src/apothem/commands/freshify.md` | Ein Projekt frisch, spurenfrei und produktionsreif machen; jeder destruktive Schritt ist durch eine Bestätigung abgesichert |
 | `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | GitHub-Spezialisierung von `/freshify`, die ein einzelnes frisches Erstversions-Release erzeugt |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Einen vollständigen Folge-Release-Zyklus auf der GitHub-Release-Oberfläche ausführen |
-| `/elevate` | `src/apothem/commands/elevate.md` | Jede Projektoberfläche über unabhängige Kritik-Worker auf den aktuellen SOTA-Stand heben, dann an `/freshify` übergeben |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Einen vollständigen Zyklus für das nächste Release auf der GitHub-Release-Oberfläche ausführen |
+| `/elevate` | `src/apothem/commands/elevate.md` | Jede Projektoberfläche über unabhängige Kritik-Agents auf den aktuellen SOTA-Stand heben, dann an `/freshify` übergeben |
 
-Der vollständige, maßgebliche Befehlssatz — einschließlich der Audit-Review-Sequenz —
+Der vollständige, maßgebliche Befehlssatz — einschließlich jedes Audit-Review-Durchlaufs —
 ist das generierte Inventar am Fuß dieser Seite.
 
 ## Frontmatter-Vertrag
@@ -60,7 +62,14 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ```
 
 Die `frontmatter-cohort`-Prüfung des Validators (Command-Zweig) verifiziert den
-Vertrag bei jeder Befehlsdatei.
+Vertrag bei jeder Befehlsdatei. `allowed-tools` listet die Werkzeuge auf, die ein
+Harness ohne Rückfrage ausführen darf, solange der Befehl aktiv ist, und bleibt
+daher standardmäßig schreibgeschützt: Ein Werkzeug mit Seiteneffekten (Bash,
+PowerShell, Write, Edit, NotebookEdit, WebFetch) erscheint nur als eingegrenzte
+Regel wie `Bash(git log *)`, und der bloße Platzhalter `"*"` wird vom Schema
+abgelehnt. Befehle mit irreversiblen Seiteneffekten (`freshify`,
+`github-deploy-fresh`, `github-deploy-next`) setzen
+`disable-model-invocation: true`, sodass nur der Operator sie startet.
 
 ## Autorendisziplin
 

@@ -2,11 +2,15 @@
 title: "completion"
 description: "Référence de la CLI pour la commande apothem completion."
 machineTranslated: true
-sourceHash: "eba23204384a65f8"
+sourceHash: "660a40ccf40c550b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Imprime sur la sortie standard un script de complétion pour le shell demandé. Activer la complétion est **optionnel** : cette commande ne fait qu'imprimer le script — elle ne modifie jamais vos fichiers de démarrage de shell. C'est à vous d'ajouter la sortie au fichier de complétion du shell.
+Affiche sur stdout un script de complétion shell pour le shell demandé.
+L'activation de la complétion est **à votre initiative** : cette commande ne
+fait qu'afficher le script — elle ne modifie jamais vos fichiers de démarrage
+du shell. C'est vous qui ajoutez la sortie au fichier de complétion du
+shell.
 
 ## Synopsis
 
@@ -14,61 +18,74 @@ Imprime sur la sortie standard un script de complétion pour le shell demandé. 
 apothem completion bash|zsh|fish|powershell
 ```
 
-Le script émis active la complétion par `<TAB>` des sous-commandes et options d'`apothem` et — pour l'option `--harness` — des ids de harness enregistrés ainsi que `all`.
+Le script émis active la complétion par `<TAB>` des sous-commandes et des
+options d'`apothem` et — pour l'option `--harness` — des identifiants
+d'environnement enregistrés, plus `all`.
 
 ## Shells pris en charge
 
-| Shell | Comment le script est produit |
+| Shell | Mode de production du script |
 |---|---|
 | `bash` | Le script de complétion bash natif de Click. |
 | `zsh` | Le script de complétion zsh natif de Click. |
 | `fish` | Le script de complétion fish natif de Click. |
-| `powershell` | Un extrait `Register-ArgumentCompleter` qui fait le pont avec le protocole de complétion de Click (Click ne livre aucun script PowerShell natif, donc cet extrait raccorde le même protocole à PowerShell). |
+| `powershell` | Un script `Register-ArgumentCompleter` généré par la classe de complétion PowerShell qu'Apothem enregistre auprès de Click (Click n'en fournit aucune nativement), et qui pilote le même protocole de complétion que les autres shells. |
 
-Demander tout autre shell se termine par `64` accompagné de la liste des shells pris en charge.
+Demander tout autre shell termine la commande avec le code `64` et la liste
+des shells pris en charge.
 
-## Activer la complétion par shell
+## Activer la complétion pour chaque shell
 
-D'abord, la commande `apothem` doit être dans votre `PATH` (les installeurs en une étape l'y placent). Activez ensuite la complétion en ajoutant le script au fichier de complétion du shell et en redémarrant le shell :
+La commande `apothem` doit d'abord se trouver dans votre `PATH` (les
+installateurs en une seule étape l'y placent). Activez ensuite la complétion en
+ajoutant le script au fichier de complétion du shell, puis redémarrez le
+shell :
 
 ```bash
-# bash — ajouter à votre bashrc
+# bash — append to your bashrc
 apothem completion bash >> ~/.bashrc
 
-# zsh — ajouter à votre zshrc
+# zsh — append to your zshrc
 apothem completion zsh >> ~/.zshrc
 
-# fish — écrire dans le répertoire des complétions de fish
+# fish — write to the fish completions directory
 apothem completion fish > ~/.config/fish/completions/apothem.fish
 ```
 
 ```powershell
-# PowerShell — ajouter l'enregistrement du complétion à votre profil
+# PowerShell — append the completer registration to your profile
 apothem completion powershell >> $PROFILE
 ```
 
-Pour essayer la complétion uniquement pour la session courante sans modifier aucun fichier, faites un source du script directement (bash/zsh) : `source <(apothem completion bash)`.
+Pour essayer la complétion uniquement dans la session courante, sans modifier
+aucun fichier, chargez directement le script avec source (bash/zsh) :
+`source <(apothem completion bash)`.
 
-## Pourquoi c'est optionnel
+## Pourquoi l'activation est à votre initiative
 
-Apothem ne modifie jamais en silence les fichiers de démarrage de shell d'un opérateur. Les installeurs impriment un indice d'une ligne pointant vers cette commande ; l'opérateur décide d'activer ou non la complétion et à quel fichier l'ajouter. Cela garde l'empreinte d'installation prévisible et réversible — supprimer le bloc ajouté désactive la complétion.
+Apothem ne modifie jamais silencieusement les fichiers de démarrage du shell
+d'un opérateur. Les installateurs affichent une indication d'une ligne
+renvoyant vers cette commande ; l'opérateur décide d'activer ou non la
+complétion et du fichier auquel ajouter le script. L'empreinte de l'installation
+reste ainsi prévisible et réversible — supprimer le bloc ajouté désactive la
+complétion.
 
 ## Options
 
 | Option | Description |
 |---|---|
 | `SHELL` | L'un de `bash`, `zsh`, `fish`, `powershell` (argument positionnel obligatoire). |
-| `-h`, `--help` | Afficher l'aide et quitter. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
 
 ## Codes de sortie
 
 | Code | Signification |
 |---|---|
 | 0 | Script de complétion émis |
-| 2 | Shell non pris en charge demandé |
+| 64 | Shell non pris en charge demandé, ou autre erreur d'utilisation (sous `--json`, une enveloppe d'erreur `cli.usage`) |
 
 ## Voir aussi
 
-- [apothem install](/docs/cli-reference/install) — installe une configuration de harness
-- [apothem harnesses](/docs/cli-reference/harnesses) — les ids de harness que propose la complétion de `--harness`
+- [apothem install](/docs/cli-reference/install) — installe la configuration d'un environnement
+- [apothem harnesses](/docs/cli-reference/harnesses) — les identifiants d'environnement que propose la complétion de `--harness`
 - [Référence de la CLI](/docs/cli-reference) — toutes les sous-commandes

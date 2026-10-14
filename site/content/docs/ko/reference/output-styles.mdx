@@ -1,35 +1,55 @@
 ---
 title: "출력 스타일"
-description: "operator 톤 프로파일(Senior Architect, Concise Engineer, Forensic Auditor)을 /output-style 명령으로 세션마다 활성화합니다."
+description: "/output-style 명령으로 세션마다 활성화하는 운영자 어조 프로필(시니어 아키텍트, 간결한 엔지니어, 포렌식 감사자)입니다."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-출력-스타일 프로파일은 `src/apothem/output-styles/` 아래에 존재하며 스타일별
-operator 톤 지침을 담습니다. 호스트 하니스 런타임은
-`/output-style <name>` 을 통해 세션 단위로 스타일을 활성화합니다.
+출력 스타일 프로필은 `src/apothem/output-styles/` 아래에 있으며 스타일별
+운영자 어조 지침을 담습니다. 호스트 하니스는 `/output-style <name>`을 통해
+세션 단위로 스타일을 활성화합니다.
 
-## 정규 프로파일
+## 정식 프로필
 
-| 프로파일 | 파일 | 톤 |
+| 프로필 | 파일 | 어조 |
 |---------|------|------|
-| 기본 아키텍트 | `src/apothem/output-styles/default-architect.md` | 시니어 소프트웨어 아키텍트 톤(기본값) |
-| 간결한 엔지니어 | `src/apothem/output-styles/concise-engineer.md` | 짧은 형식의 엔지니어링 톤 |
-| 포렌식 감사자 | `src/apothem/output-styles/forensic-auditor.md` | 발견-별 감사 톤 |
+| 기본 | `src/apothem/output-styles/default.md` | 다른 모든 스타일이 보완하는 기준 어조 |
+| 기본 아키텍트 | `src/apothem/output-styles/default-architect.md` | 시니어 소프트웨어 아키텍트 어조 |
+| 간결한 엔지니어 | `src/apothem/output-styles/concise-engineer.md` | 짧은 형식의 엔지니어링 어조 |
+| 포렌식 감사자 | `src/apothem/output-styles/forensic-auditor.md` | 발견 사항별 감사 어조 |
 
-## Frontmatter 계약
+## 스타일이 설치되는 위치
+
+`apothem install --harness claude-code`는 스타일을 `~/.claude/output-styles/`에
+복사합니다. Claude Code 플러그인은 같은 파일을 자체 `output-styles/` 폴더에 담아
+배포하며, Claude Code는 이 폴더에서 플러그인 출력 스타일을 찾으므로
+([플러그인 레퍼런스](https://code.claude.com/docs/en/plugins-reference)),
+플러그인만 설치해도 스타일을 선택할 수 있습니다. 다른 어떤 하니스에도 출력
+스타일 표면이 없으므로, 다른 어떤 설치도 이 스타일들을 배포하지 않습니다.
+
+## 프런트매터 계약
 
 ```yaml
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
-## 새 프로파일 작성하기
+`name`과 `description`은 필수입니다. 배포되는 모든 스타일은
+`keep-coding-instructions: true`도 설정합니다. Claude Code는 이 키가 `true`가
+아니면 모든 사용자 지정 출력 스타일에서 내장 소프트웨어 엔지니어링 지침(변경
+범위를 정하는 방법, 주석을 작성하는 방법, 작업을 검증하는 방법)을 빼며, 이 키의
+기본값은 `false`입니다. Apothem 스타일은 작업이 수행되는 방식이 아니라 제시되는
+방식을 바꾸므로 이 지침을 유지합니다.
+[Claude Code 출력 스타일 레퍼런스](https://code.claude.com/docs/en/output-styles)를
+참조하세요.
 
-`src/apothem/output-styles/` 아래에 정규 frontmatter 를 갖춘 새 `<name>.md`
-파일을 생성하고, 본문에 톤을 선언한 뒤, 다음 세션의 시작에서
-`/output-style <name>` 을 호출하여 비준합니다.
+## 새 프로필 작성
+
+`src/apothem/output-styles/` 아래에 정식 프런트매터를 갖춘 새 `<name>.md` 파일을
+만들고(엔지니어링 작업용이 아닌 스타일이 아니라면 `keep-coding-instructions: true`를
+포함), 본문에 어조를 선언한 다음, 다음 세션을 시작할 때 `/output-style <name>`을
+호출하여 확정하세요.

@@ -1,15 +1,15 @@
 ---
 title: "Antigravity"
-description: "Antigravity（プレビュー）向けの Apothem ツールアダプター。"
+description: "Antigravity（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "b5740666d67c3796"
+sourceHash: "43dc91cbb7358f2c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** Antigravity
 **インストール名：** `antigravity`
 **ステータス：** プレビュー
-**ネイティブ構成：** `~/.gemini/GEMINI.md` および
+**ネイティブ設定：** `~/.gemini/GEMINI.md` および
 `~/.gemini/antigravity-cli/plugins/apothem/`
 
 ## インストール
@@ -19,34 +19,58 @@ apothem install --harness antigravity
 ```
 
 アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、
-Apothem のサポート套組を Antigravity CLI プラグインとしてインストールします。
+Apothem のサポートコホートを Antigravity CLI プラグインとしてインストールします。
 
 **書き込まれるファイル：** `~/.gemini/GEMINI.md`、
 `~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
 `~/.gemini/antigravity-cli/plugins/apothem/skills/`、
 `~/.gemini/antigravity-cli/plugins/apothem/rules/`、
-プラグイン内に変換されたローカルヘルパー定義、
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`、および
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`。
+プラグイン内の変換済みローカルヘルパー定義、
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`、および
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`。
 
-**共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は Gemini ファミリーのツールの
-ユーザースコープのアンカーでもあります。Antigravity アダプターは、追加の Apothem
-素材を `~/.gemini/antigravity-cli/plugins/` 下の `apothem` プラグイン内に
-保持するため、汎用的な Gemini CLI のプロジェクトディレクトリを占有しません。
+`~/.gemini/GEMINI.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで
+終わります。このセクションは、リポジトリ形式の各参照が解決される先の絶対ディレクトリを
+示します。`rules/<name>.md` はプラグインの `rules/` 配下に、`templates/...` と `hooks/...` は
+プラグインの `.apothem/support/` 配下に解決されます。
 
-## プロファイルからネイティブ構成へのマッピング
+**プラグインのルール。** Antigravity は、プラグインの `rules/` ディレクトリ内のファイルのうち、
+有効な `trigger` で始まらないものをすべて破棄します
+（[Antigravity のルールに関するドキュメント](https://antigravity.google/docs/rules)）。そのため、
+Apothem の各ルールはインストール時に変換されます。常に適用されるルールには `trigger: always_on` が、
+パスにスコープされたルールには同じパターンを `globs` に持つ `trigger: glob` が、それ以外のルールには
+`trigger: model_decision` が付与されます。すべてのルールは自身の `description` を保持します。
+Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きい
+ルールをオンデマンドのポインターに変えます。
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の各実行時に、指示アンカーとサポート套組をレンダリングします。
+**プラグインマニフェスト。** `plugin.json` は、Antigravity のプラグインスキーマが認める 2 つの
+キーである `name` と `description` のみを持ちます。
+
+**プラグインのヘルパー。** プラグインの `agents/` ディレクトリ内のヘルパー定義は `name` と
+`description` を持ちます。Antigravity の `tools` リストは独自のツール名を使用し、ドキュメントは
+未知の名前がサブエージェントをハングさせる可能性があると警告しています。そのため、ツールリストは
+出力されず、ヘルパーは親のツールを継承します。Antigravity には読み取り専用の制限を強制する仕組みが
+何もないため、それらのヘルパーの説明からは「読み取り専用」というラベルが外されます。
+
+**共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は、Gemini ファミリーのツールにおけるユーザー
+スコープのアンカーでもあります。Antigravity アダプターは追加の Apothem 素材を
+`~/.gemini/antigravity-cli/plugins/` 配下の `apothem` プラグイン内に保持するため、汎用的な
+Gemini CLI のプロジェクトディレクトリを占有しません。`~/.gemini/GEMINI.md` を読み込むツールは
+1 つではないため、そこにある Apothem ブロックは、単一のツールを読み手として名指ししない
+グローバルなガイダンスとして書かれます。
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
+実行するたびに、命令アンカーとサポートコホートをレンダリングします。
 
 ## 互換性に関する注意
 
-プレビュー版アダプター。`GEMINI.md` アンカーはアクティブな指示コンテンツです。
-Antigravity プラグインは、変換されたコマンドスキル、再利用可能なスキル、ローカル
-ヘルパー定義、ルール、テンプレート、およびフックのサポート素材を、明確な
-Apothem 所有の名前空間に保持します。
-フックファイルは、アダプターが Antigravity の `hooks.json` 向けのスキーマ変換
-レイヤーを持つまで、アクティブな Antigravity フックイベントとして登録されません。
+プレビュー版のアダプターです。`GEMINI.md` アンカーはアクティブな命令コンテンツです。
+Antigravity プラグインは、変換されたコマンドスキル、再利用可能なスキル、ローカルヘルパー定義、
+ルール、テンプレート、フックのサポート素材を、明確な Apothem 所有の名前空間に保持します。
+フックファイルは、アダプターが Antigravity の `hooks.json` 向けのスキーマ変換レイヤーを持つまで、
+アクティブな Antigravity フックイベントとして登録されません。
 
 ## 検証
 
@@ -56,9 +80,9 @@ apothem verify --harness antigravity
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブコンテキストファイルが想定パスに存在すること。
-2. Apothem Antigravity CLI プラグインのメタデータが存在し、`apothem`
-   プラグイン名を宣言していること。
+1. ネイティブのコンテキストファイルが想定されたパスに存在すること。
+2. Apothem の Antigravity CLI プラグインのメタデータが存在し、
+   `apothem` というプラグイン名を宣言していること。
 
 ## 更新
 
@@ -66,7 +90,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness antigravity
 ```
 
-現在の共有プロファイルの状態からネイティブ構成を再導出します。
+現在の共有プロファイルの状態からネイティブ設定を再導出します。
 `~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
 パッケージをアップグレードした後に実行してください。
 
@@ -76,10 +100,10 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,14 +111,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness antigravity` を再実行する |
-| 検証が失敗した | `apothem update --harness antigravity` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness antigravity` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness antigravity` を再実行する |
+| 検証が失敗した | `apothem update --harness antigravity` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness antigravity` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

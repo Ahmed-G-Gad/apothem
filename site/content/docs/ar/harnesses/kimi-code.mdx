@@ -1,110 +1,127 @@
 ---
 title: "Kimi Code"
-description: "Apothem harness adapter for Kimi Code (GA)."
+description: "محوّل إطار عمل Apothem لـ Kimi Code (إصدار عام)."
 machineTranslated: true
-sourceHash: "f8cfda1978e7aeae"
+sourceHash: "4bcd687aeabc46b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Moonshot
-**Install name:** `kimi-code`
-**Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**المورّد:** <bdi>Moonshot</bdi>
+**اسم التثبيت:** <bdi>`kimi-code`</bdi>
+**الحالة:** إصدار عام
+**الإعداد الأصلي:** <bdi>`<project>/AGENTS.md`</bdi> إضافةً إلى <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>
 
-## Installation
+## التثبيت
 
 ```bash
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-The adapter writes the shared Apothem governance surface into the project-root
-`AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+يكتب المحوّل سطح الحوكمة المشترك لـ <bdi>Apothem</bdi> في ملف <bdi>`AGENTS.md`</bdi>
+في جذر المشروع بوصفه كتلة مُدارة محدَّدة بعلامات حارسة (يُحفَظ نثر المُشغِّل الواقع
+خارج العلامات الحارسة)، ويُبقي حزم <bdi>Markdown</bdi> غير الأصلية تحت شجرة الدعم
+التي يملكها <bdi>Apothem</bdi> في <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
+يقرأ ملفَّ <bdi>`AGENTS.md`</bdi> الخاص بالمشروع كثيرٌ من أدوات البرمجة إلى جانب
+<bdi>Kimi Code</bdi>، لذا تُكتَب الكتلة بوصفها إرشادات على نطاق المشروع لا تُسمّي
+أداة واحدة بعينها قارئًا لها.
 
-Kimi Code reads the project-root `AGENTS.md` instruction file following the
-universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+يقرأ <bdi>Kimi Code</bdi> ملف التعليمات <bdi>`AGENTS.md`</bdi> في جذر المشروع وفق
+الاصطلاح العام لـ <bdi>AGENTS.md</bdi>، ويقع إعداد المشروع تحت
+<bdi>`<project>/.kimi-code/`</bdi>. السطح <bdi>`<project>/.kimi-code/mcp.json`</bdi>
+يملكه المُشغِّل؛ يُسمّيه <bdi>Apothem</bdi> لكنه لا يؤلّف فيه أي مُدخَلات.
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
-`<project>/.kimi-code/.apothem/support/`.
+**الملفات المكتوبة:** <bdi>`<project>/AGENTS.md`</bdi> (كتلة مُدارة) وحزم الأوامر،
+والمهارات، والخطّافات، والعوامل، والقواعد، والقوالب تحت
+<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
 
-## Profile-to-native-config mapping
+## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-The adapter reads Apothem's shared profile and renders the project-root
-`AGENTS.md` instruction surface on every `apothem install` or `apothem update`
-run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد سطح التعليمات
+<bdi>`AGENTS.md`</bdi> في جذر المشروع في كل تشغيل لـ <bdi>`apothem install`</bdi> أو
+<bdi>`apothem update`</bdi>. تستقرّ القواعد السلوكية ومتن الحوكمة في الكتلة المُدارة
+من <bdi>`AGENTS.md`</bdi>؛ وتوضَع حزم الأوامر، والمهارات، والخطّافات، والعوامل،
+والقواعد، والقوالب تحت <bdi>`.kimi-code/.apothem/support/`</bdi> ويُشار إليها من سطح
+التعليمات. هذا هو التخطيط الذي اختاره المحوّل، وليس نقصًا في <bdi>Kimi Code</bdi>:
+يُحمِّل <bdi>Kimi Code</bdi> المهارات من <bdi>`.kimi-code/skills/`</bdi>
+و<bdi>`.agents/skills/`</bdi>، والعوامل المخصّصة من <bdi>`.kimi-code/agents/`</bdi>
+و<bdi>`.agents/agents/`</bdi>، والخطّافات من المصفوفة <bdi>`[[hooks]]`</bdi> في
+<bdi>`~/.kimi-code/config.toml`</bdi>، لكنه لا يُحمِّلها من شجرة الدعم، لذا فإن نسخ
+<bdi>Apothem</bdi> هناك مادة مرجعية تشير إليها كتلة <bdi>`AGENTS.md`</bdi>. تنتهي
+الكتلة بقسم ملفات دعم <bdi>Apothem</bdi> الذي يُسمّي، نسبةً إلى جذر المشروع،
+الدليلَ تحت <bdi>`.kimi-code/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل
+إحالة بأسلوب المستودع (<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>،
+و<bdi>`hooks/...`</bdi>)، بحيث لا يحمل ملف <bdi>`AGENTS.md`</bdi> المُودَع أي مسار
+خاص بجهاز بعينه. (سلوك <bdi>Kimi Code</bdi> وفق صفحات التخصيص الخاصة به عن
+[المهارات](https://moonshotai.github.io/kimi-code/en/customization/skills)،
+و[العوامل الفرعية](https://moonshotai.github.io/kimi-code/en/customization/agents)،
+و[الخطّافات](https://moonshotai.github.io/kimi-code/en/customization/hooks)، كما
+قُرئت في 2026-10-02.)
 
-## Compatibility notes
+## ملاحظات التوافق
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+يقرأ <bdi>Kimi Code</bdi> تعليمات المشروع من <bdi>`AGENTS.md`</bdi> أو
+<bdi>`.kimi-code/AGENTS.md`</bdi> ويتعرّف على <bdi>`.kimi-code/mcp.json`</bdi> بوصفه
+سطح <bdi>MCP</bdi> الذي يملكه المُشغِّل؛ يُسمّي <bdi>Apothem</bdi> ذلك السطح لكنه لا
+يؤلّف فيه أي مُدخَلات. يقود سطح التعليمات المُجسَّد المشروعَ مباشرةً. لا يكشف
+<bdi>Kimi Code</bdi> عن سطح ملفات لشريط الحالة أو لأنماط الإخراج، لذا لا تُجسَّد
+تلك الحزم.
 
-Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
-for the current model and configuration surface.
+يعمل <bdi>Kimi Code</bdi> على عائلة نماذج <bdi>Kimi</bdi> من <bdi>Moonshot</bdi>؛ راجع
+[مرجع إعداد المورّد](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+لمعرفة النموذج الحالي وسطح الإعداد.
 
-## Verification
+## التحقّق
 
 ```bash
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-The verify command confirms that:
+يؤكّد أمر التحقّق ما يلي:
 
-1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
-3. The adapter-specific verification routine reports success.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. جميع الحقول الإلزامية من الملف التعريفي المشترك موجودة.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
-## Updating
+## التحديث
 
 ```bash
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+يُعيد اشتقاق الكتلة المُدارة في <bdi>`AGENTS.md`</bdi> في جذر المشروع وحزم الدعم من
+الحالة الراهنة للملف التعريفي المشترك.
 
-## Uninstalling
+## إلغاء التثبيت
 
 ```bash
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## Conformity gate
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-| Symptom | Fix |
+| العَرَض | الإصلاح |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
-| Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness kimi-code --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness kimi-code --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness kimi-code --project /path/to/project`</bdi> |
 
-## Configuration knobs
+## مفاتيح الضبط
 
-| Flag | Default | Description |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
 
-## See also
+## انظر أيضًا
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

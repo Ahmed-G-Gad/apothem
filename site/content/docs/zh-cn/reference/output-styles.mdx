@@ -1,21 +1,25 @@
 ---
-title: "输出风格"
-description: "操作者语气配置（资深架构师、简洁工程师、取证审计员），通过 /output-style 命令按会话激活。"
+title: "输出样式"
+description: "操作者语气档案（资深架构师、简洁工程师、取证审计员），通过 /output-style 命令按会话激活。"
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-输出风格配置存放于 `src/apothem/output-styles/` 下，承载每种风格的操作者语气
-指引。宿主harness运行时通过 `/output-style <name>` 按会话激活某个风格。
+输出样式档案位于 `src/apothem/output-styles/` 下，承载各样式的操作者语气指引。宿主工具通过 `/output-style <name>` 按会话激活某个样式。
 
-## 规范配置
+## 规范档案
 
-| 配置 | 文件 | 语气 |
+| 档案 | 文件 | 语气 |
 |---------|------|------|
-| 默认架构师 | `src/apothem/output-styles/default-architect.md` | 资深软件架构师语气（默认） |
-| 简洁工程师 | `src/apothem/output-styles/concise-engineer.md` | 简短工程语气 |
+| 默认 | `src/apothem/output-styles/default.md` | 其他每个样式都在其基础上补充的基线语气 |
+| 默认架构师 | `src/apothem/output-styles/default-architect.md` | 资深软件架构师语气 |
+| 简洁工程师 | `src/apothem/output-styles/concise-engineer.md` | 简短形式的工程语气 |
 | 取证审计员 | `src/apothem/output-styles/forensic-auditor.md` | 逐条发现的审计语气 |
+
+## 样式的安装位置
+
+`apothem install --harness claude-code` 会将这些样式复制到 `~/.claude/output-styles/`。Claude Code 插件在其 `output-styles/` 文件夹中随附相同的文件，Claude Code 会扫描该文件夹以查找插件输出样式（[插件参考](https://code.claude.com/docs/en/plugins-reference)），因此只安装插件即可选择这些样式。没有其他工具具有输出样式表面，因此没有其他安装会随附它们。
 
 ## Frontmatter 契约
 
@@ -23,11 +27,12 @@ sourceHash: "91c2cdeeb74ee50b"
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
-## 编写新配置
+`name` 和 `description` 是必需的。每个随附样式还会设置 `keep-coding-instructions: true`。除非该键为 `true`，否则 Claude Code 会将其内置的软件工程指令（如何限定变更范围、编写注释以及验证工作）排除在任何自定义输出样式之外；该键的默认值为 `false`。Apothem 样式改变的是工作的呈现方式，而不是工作的完成方式，因此它们保留这些指令。参见 [Claude Code 输出样式参考](https://code.claude.com/docs/en/output-styles)。
 
-在 `src/apothem/output-styles/` 下创建一个带规范 frontmatter 的新 `<name>.md`
-文件，在正文中声明语气，并在下次会话开始时通过 `/output-style <name>` 加以批准。
+## 编写新档案
+
+在 `src/apothem/output-styles/` 下创建一个新的 `<name>.md` 文件，带上规范 frontmatter（除非该样式并非用于工程工作，否则其中包括 `keep-coding-instructions: true`），在正文中声明语气，并在你的下一次会话开始时调用 `/output-style <name>` 加以确认。

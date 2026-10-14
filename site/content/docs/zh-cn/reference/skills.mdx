@@ -1,20 +1,18 @@
 ---
 title: "技能"
-description: "存放于 SKILL.md 文件中的可复用、可检测技术，带有检测信号、流程，以及面向规划套件与生态系统审计的强制执行钩子。"
+description: "存放在 SKILL.md 文件中的可复用、可检测的技术，带有检测信号、流程，以及面向计划套件与生态系统审计的强制执行钩子。"
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-技能以文件夹形式存放于 `src/apothem/skills/` 下，每个文件夹带一个 `SKILL.md`
-入口点。技能捕捉可复用的可检测技术——它们拥有一个
-检测信号、一段流程，以及一个强制执行钩子。
+技能以文件夹的形式存放在 `src/apothem/skills/` 下，每个文件夹都有一个 `SKILL.md` 入口点。技能记录可复用、可检测的技术——它们具有一个检测信号、一套流程和一个强制执行钩子。
 
-完整的技能清单在本页底部的「生成的技能清单」一节中生成。
+完整的技能目录在下方的[生成的技能清单](#生成的技能清单)中生成。
 
 ## Frontmatter 契约
 
-`SKILL.md` 携带：
+`SKILL.md` 携带规范的八键 frontmatter。机器可读的契约是 [`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)（`additionalProperties: false`）；以下代码块与其保持一致：
 
 ```yaml
 ---
@@ -29,13 +27,24 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-## 编写规范
+## 按工具输出
 
-- **每个技能一个文件夹。** 每个技能都是自己的文件夹，入口点在
-  `SKILL.md`。
+源技能使用上述键。某些工具读取不同的键，因此安装只针对该工具转换这些键：
+
+| 工具 | 安装会更改什么 |
+| --- | --- |
+| Claude Code（安装与插件） | 将 `userInvocable` 重命名为 `user-invocable`，即 Claude Code 读取的键。Claude Code 会忽略驼峰式的键，因此如果不重命名，标记为 `userInvocable: false` 的技能仍会显示在 `/` 菜单中。 |
+| Codex | 保持 `SKILL.md` 不变，并在源文件设置了 `disable-model-invocation: true` 的每个技能旁边写入带有 `policy.allow_implicit_invocation: false` 的 `agents/openai.yaml`，因为 Codex 会忽略该键。 |
+| 其他工具 | 不作更改。 |
+
+`skill.schema.json` 接受用户可调用性标志的任一种拼写，并要求恰好使用其中一种。
+
+## 编写纪律
+
+- **每个技能一个文件夹。** 每个技能都是其自己的文件夹，入口点位于 `SKILL.md`。
 - **检测信号。** 技能正文以触发该技术的检测信号开头。
-- **流程 + 强制执行。** 技能同时携带要应用的流程
-  以及闭合循环的强制执行信号。
+- **流程 + 强制执行。** 技能同时携带要应用的流程，以及闭合循环的强制执行信号。
+- **描述长度。** `description` 最多 1,024 个字符，这是 [Agent Skills](https://agentskills.io/specification) 的限制。更严格的工具会拒绝或截断更长的描述，而 schema 会强制执行该限制。
 
 ## 生成的技能清单
 

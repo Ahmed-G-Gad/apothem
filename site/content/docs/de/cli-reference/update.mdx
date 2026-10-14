@@ -2,11 +2,12 @@
 title: "update"
 description: "CLI-Referenz für den Befehl apothem update."
 machineTranslated: true
-sourceHash: "fc03f27749f2a77a"
+sourceHash: "e6bb232cf7e7fd02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Installiert eine Harness-Adapterkonfiguration aus dem aktuellen geteilten Profil neu.
+Installiert eine Harness-Adapterkonfiguration aus dem aktuellen gemeinsamen
+Profil neu.
 
 ## Übersicht
 
@@ -17,29 +18,34 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` materialisiert die Harness-Ausgabe aus dem aktuellen geteilten Profil neu. Es verwendet dieselbe Profilvalidierung, `--harness all`-Auswahl, Projektgeltungsbereich-Prüfung, Dry-Run-Verhalten und JSON-Hülle wie `install`.
+`update` materialisiert die Harness-Ausgabe aus dem aktuellen gemeinsamen Profil
+neu. Der Befehl verwendet dieselbe Profilvalidierung, dieselbe Auswahl mit
+`--harness all`, dieselbe Prüfung des Projekt-Geltungsbereichs, dasselbe
+Dry-Run-Verhalten und denselben JSON-Umschlag wie `install`.
 
-Der Alias in Verlaufsform `apothem updating` wird auf denselben Handler aufgelöst.
+Der Alias in Verlaufsform `apothem updating` wird auf denselben Handler
+aufgelöst.
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zu aktualisierender Harness-Adapter oder `all` für das registry-weite Set (erforderlich). |
-| `--profile PATH` | Pfad zum geteilten Profil-YAML. Standard: `~/.config/apothem/profile.yaml`. |
+| `--harness NAME` | Zu aktualisierender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
+| `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Vorschau der Aktualisierung, ohne Dateien zu schreiben. |
-| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Erforderlich, wenn das ausgewählte Harness-Set Adapter mit Projektgeltungsbereich enthält. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. Erforderlich, wenn die ausgewählte Harness-Menge Adapter mit Projekt-Geltungsbereich enthält. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
-| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgabe aus. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "update",
   "action": "updated",
@@ -71,11 +77,12 @@ apothem updating --harness claude-code   # lowercase variant
 | Code | Bedeutung |
 |---|---|
 | 0 | Adapter erfolgreich aktualisiert oder Dry-Run sauber geplant |
-| 1 | Erwarteter Fehler bei Validierung, Profil, Harness, Projekt oder Adapter |
-| 2 | Teilweise Batch-Materialisierung nach mindestens einer Schreiboperation |
+| 1 | Erwarteter Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
+| 2 | Teilweise Batch-Materialisierung nach mindestens einem Schreibvorgang |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
 - `apothem updating` — Alias in Verlaufsform für diesen Befehl (hier dokumentiert; die CLI akzeptiert beide Formen)
 - [apothem install](/docs/cli-reference/install) — Erstinstallation
-- [Aktualisierungsleitfaden](/docs/install/updating) — Aktualisierungspfade pro Installer
+- [Aktualisierungsleitfaden](/docs/install/updating) — Aktualisierungspfade je Installer

@@ -2,11 +2,12 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "95a26e667a1ea20a"
+sourceHash: "3a5ce4dc40c52bfe"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Stellt einen Harness in den Zustand vor seiner aufgezeichneten Installation zurück.
+Setzt einen Harness auf den Zustand vor seiner aufgezeichneten Installation
+zurück.
 
 ## Übersicht
 
@@ -17,30 +18,80 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-`rollback` rekonstruiert für jeden ausgewählten Harness die Bytes von vor der Installation aus der Apothem-Backup-Wurzel. Es löst den aufgezeichneten Installationsdurchlauf auf — standardmäßig den neuesten oder den durch `--install-id` benannten —, stellt jedes von dieser Installation erfasste Backup wieder her und hängt anschließend einen `rollback`-Eintrag an das Harness-Ledger an.
+`rollback` versetzt jeden ausgewählten Harness in den Zustand zurück, in dem er
+sich vor dem aufgezeichneten Installationsdurchlauf befand — standardmäßig dem
+neuesten oder dem durch `--install-id` benannten. Dabei arbeitet es den
+Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
 
-Pro Harness wird nach Bestätigung gefragt, sofern `--yes` nicht angegeben ist. `--install-id` und `--last` wählen den Installationsdurchlauf aus und schließen sich gegenseitig aus.
+- stellt jede Datei und jedes Verzeichnis, die die Installation überschrieben
+  hat, aus der von der Installation erfassten Sicherung an ihrem aufgezeichneten
+  Pfad wieder her (ein Verzeichnis, das die Installation ersetzt hat, wird exakt
+  wiederhergestellt, ohne die Dateien, die die Installation ihm hinzugefügt
+  hat);
+- entfernt jede Datei und jedes Verzeichnis, die die Installation angelegt hat,
+  und stellt jeden Pfad des veralteten Layouts wieder her, den die Installation
+  beseitigt hat;
+- entfernt die gemeinsamen Datenspeicher (`memory`, `contexts`, `learning`),
+  die die Installation angelegt hat, sofern nicht ein anderer installierter
+  Harness sie noch verwendet;
+- entfernt die Verzeichnisse, die die Installation angelegt hat, sobald sie
+  leer sind.
+
+Alles, was rollback entfernt oder ersetzt, wird zuerst in die
+Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein
+Rollback seinerseits von Hand rückgängig machen lässt. Anschließend hängt es
+einen `rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer
+älteren Installation macht auch jede spätere Installation an derselben Wurzel
+rückgängig.
+
+Das Ledger behält die neuesten 10 Installationseinträge pro Installationswurzel
+(mit den Sicherungen, auf die sie verweisen); eine ältere Installation lässt
+sich nicht mehr per ID zurücksetzen und meldet `rollback.no_record`.
+[`apothem backups prune`](/docs/cli-reference/backups) senkt diese Grenze bei
+Bedarf und entfernt niemals die Sicherung, aus der die Wiederherstellung für die
+neueste Installation erfolgt.
+
+Einträge, die ein Apothem-Release geschrieben hat, bevor dieses Verhalten
+hinzugefügt wurde, führen nicht auf, welche Dateien die Installation angelegt
+hat; das Zurücksetzen eines solchen Eintrags stellt nur die überschriebenen
+Dateien wieder her.
+
+Pro Harness wird eine Bestätigung abgefragt, sofern nicht `--yes` angegeben
+ist. Wenn keine Abfrage möglich ist — bei `--format json` (der Abfragetext würde
+das einzelne JSON-Dokument beschädigen) oder in einer nicht interaktiven Shell
+(kein TTY) —, verweigert der Befehl den Vorgang von vornherein mit einem
+strukturierten `rollback.confirmation_required`-Fehler (Exit-Code 1), sofern
+nicht `--yes` angegeben ist. `--install-id` und `--last` wählen den
+Installationsdurchlauf aus und schließen sich gegenseitig aus.
+
+Ein Rollback mit `--harness all` ist bewusst erschöpfend: Er umfasst jeden
+registrierten Harness, einschließlich derer, die `exclude_harnesses` des Profils
+bei der Installation überspringt — das Wiederherstellen des Zustands vor der
+Installation ist ein Aufräumvorgang, daher erreicht er Einträge, die eine zuvor
+breiter angelegte Installation hinterlassen haben kann. Harnesses ohne
+aufgezeichnete Installation melden pro Harness „nichts zurückzusetzen“.
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zurückzusetzender Harness-Adapter oder `all` für das registry-weite Set (erforderlich). |
+| `--harness NAME` | Zurückzusetzender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
 | `--install-id ULID` | Setzt den benannten Installationsdurchlauf zurück. Standardmäßig die neueste aufgezeichnete Installation. |
 | `--last` | Setzt die neueste aufgezeichnete Installation zurück (der Standard; die explizite Form). Schließt sich mit `--install-id` gegenseitig aus. |
 | `--yes` | Überspringt die Bestätigungsabfrage pro Harness. |
-| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Erforderlich, wenn das ausgewählte Set Adapter mit Projektgeltungsbereich enthält. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Erforderlich, wenn die ausgewählte Menge Adapter mit Projektgeltungsbereich enthält. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
 | `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "rollback",
   "action": "rolled_back",
@@ -55,7 +106,14 @@ Pro Harness wird nach Bestätigung gefragt, sofern `--yes` nicht angegeben ist. 
 }
 ```
 
-Jedes wiederhergestellte Ziel erscheint in `results` mit `"operation": "rollback"` und einem `outcome` von `created` oder `updated` (und in `files_written`). Ein Ziel, das die Installation neu angelegt hat — ohne vorherige Bytes zum Wiederherstellen —, wird mit `"outcome": "skipped"` gemeldet; eine fehlgeschlagene Wiederherstellung ist `"outcome": "error"`. Wenn kein passender Installationseintrag existiert, meldet der Befehl einen `rollback.no_record`-Fehler mit `"status": "error"`.
+Jedes wiederhergestellte oder entfernte Ziel erscheint in `results` mit
+`"operation": "rollback"` und einem `outcome` von `created` oder `updated` (und
+in `files_written`); die `message` gibt an, ob der Pfad wiederhergestellt oder
+entfernt wurde. Eine fehlgeschlagene Wiederherstellung (zum Beispiel bei einer
+gelöschten Sicherung) ist `"outcome": "error"`. Eine Installation, die keine
+Änderungen aufgezeichnet hat, wird mit `"outcome": "skipped"` gemeldet. Wenn
+kein passender Installationseintrag existiert, meldet der Befehl einen
+`rollback.no_record`-Fehler mit `"status": "error"`.
 
 ## Beispiele
 
@@ -69,13 +127,14 @@ apothem rollback --harness cursor --project . --last --json
 
 | Code | Bedeutung |
 |---|---|
-| 0 | Erfolgreich zurückgesetzt oder nichts wiederherzustellen (die Installation hat keine Backups erfasst) |
-| 1 | Erwarteter Fehler — kein Installationseintrag, widersprüchliche Selektoren, unbekannter Harness, fehlende Projektwurzel oder abgebrochene Bestätigung |
+| 0 | Erfolgreich zurückgesetzt oder nichts zurückzusetzen (die Installation hat keine Änderungen aufgezeichnet) |
+| 1 | Erwarteter Fehler — kein Installationseintrag, widersprüchliche Selektoren, unbekannter Harness, fehlende Projektwurzel oder abgelehnte bzw. nicht verfügbare Bestätigung (nicht interaktiver oder JSON-Modus ohne `--yes`) |
 | 2 | Teilweise Wiederherstellung, nachdem mindestens ein Ziel zurückgesetzt wurde |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
 - [apothem install](/docs/cli-reference/install) — installiert eine Harness-Konfiguration
-- [apothem update](/docs/cli-reference/update) — Neuinstallation aus dem aktuellen geteilten Profil
+- [apothem update](/docs/cli-reference/update) — installiert erneut aus dem aktuellen gemeinsamen Profil
 - [apothem uninstall](/docs/cli-reference/uninstall) — entfernt eine Harness-Konfiguration
-- [apothem status](/docs/cli-reference/status) — meldet Installations-, Verifizierungs- und Drift-Status
+- [apothem status](/docs/cli-reference/status) — meldet Installations-, Verifizierungs- und Drift-Zustand

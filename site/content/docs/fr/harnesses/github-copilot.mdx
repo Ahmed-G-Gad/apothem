@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptateur d'environnement Apothem pour GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "65affe4b2cf2a340"
+sourceHash: "4482a306f9f119b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,31 +17,40 @@ sourceHash: "65affe4b2cf2a340"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-L'adaptateur dérive le fichier d'instructions du projet à partir des règles
-partagées d'Apothem et de la surface de gouvernance.
+L'adaptateur dérive le fichier d'instructions du projet à partir de la surface
+partagée de règles et de gouvernance d'Apothem.
 
 **Fichiers écrits :** `<project>/.github/copilot-instructions.md`
 
-## Mappage du profil vers la configuration native
+## Correspondance entre le profil et la configuration native
 
-L'adaptateur lit le profil partagé d'Apothem et génère le fichier d'instructions
-Copilot à l'échelle du dépôt à chaque exécution de `apothem install` ou `apothem
-update`. Le profil partagé est la source de vérité ; les modifications locales du
-projet apportées au fichier généré sont sauvegardées avant que la synchronisation
-suivante ne remplace le contenu géré par Apothem.
+L'adaptateur lit le profil partagé d'Apothem et rend le fichier d'instructions
+Copilot valable pour tout le dépôt à chaque exécution de `apothem install` ou
+de `apothem update`. Le profil partagé est la source de vérité ; les
+modifications locales au projet apportées au fichier généré sont sauvegardées
+avant que la synchronisation suivante ne remplace le contenu géré par Apothem.
+
+À l'intérieur du bloc Apothem, la section rendue à partir de votre profil
+(opérateur, préférences, règles personnalisées, comportements activés
+explicitement, noms des serveurs MCP) vient en premier, avant le texte de
+gouvernance partagé. GitHub indique que les fichiers d'instructions plus courts
+ont plus de chances d'être traités en entier par la revue de code
+([Personnaliser la revue de code](https://docs.github.com/en/copilot/tutorials/customize-code-review)) ;
+la partie qui vous est propre ouvre donc le fichier.
 
 ## Notes de compatibilité
 
-GitHub Copilot n'expose pas de chemin d'instructions globales utilisateur basé sur un
-fichier que cet adaptateur pourrait gérer. Apothem cible le fichier d'instructions à
-portée projet documenté et laisse les paramètres utilisateur au niveau de l'IDE sous
-la propriété de l'opérateur.
+GitHub Copilot n'expose aucun chemin d'instructions globales utilisateur sous
+forme de fichier que cet adaptateur pourrait gérer. Apothem cible le fichier
+d'instructions de portée projet documenté et laisse les paramètres utilisateur
+au niveau de l'IDE sous la propriété de l'opérateur.
 
 Apothem traite `copilot-instructions.md` comme une voix parmi les surfaces
-d'instructions d'assistant du projet : la vérification de cohérence multisurface de la
-porte de conformité confirme que ses affirmations partagées restent sémantiquement
-alignées avec les autres fichiers d'instructions du projet, de sorte que Copilot ne
-reçoive jamais de directives contredisant ce que lit le reste de la chaîne d'outils.
+d'instructions d'assistant du projet : le contrôle de cohérence multisurface du
+portail de conformité vérifie que ses affirmations partagées restent
+sémantiquement alignées avec les autres fichiers d'instructions du projet, de
+sorte que Copilot ne reçoit jamais de consignes qui contredisent ce que lit le
+reste de la chaîne d'outils.
 
 ## Vérification
 
@@ -53,7 +62,7 @@ La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
 2. Tous les champs obligatoires du profil partagé sont présents.
-3. La routine de vérification spécifique à l'adaptateur signale un succès.
+3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -61,8 +70,8 @@ La commande verify confirme que :
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-Re-dérive le fichier d'instructions du projet à partir de l'état actuel du profil
-partagé.
+Redérive le fichier d'instructions du projet à partir de l'état actuel du
+profil partagé.
 
 ## Désinstallation
 
@@ -71,9 +80,9 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
 Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur d'Apothem ne sont pas affectés.
+Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
-## Porte de conformité
+## Portail de conformité
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,12 +92,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptôme | Correctif |
 |---------|-----|
-| Fichier de configuration introuvable | Réexécutez `apothem install --harness github-copilot --project /path/to/project` |
-| La vérification a échoué | Exécutez `apothem update --harness github-copilot --project /path/to/project`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness github-copilot --project /path/to/project` |
+| Fichier de configuration introuvable | Relancez `apothem install --harness github-copilot --project /path/to/project` |
+| Échec de la vérification | Exécutez `apothem update --harness github-copilot --project /path/to/project`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness github-copilot --project /path/to/project` |
 
 ## Paramètres de configuration
 
-| Flag | Par défaut | Description |
+| Option | Par défaut | Description |
 |------|---------|-------------|
 | `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |
+
+## Voir aussi
+
+- [Tous les environnements](/docs/harnesses) — le catalogue complet des outils pris en charge
+- [Guide d'installation](/docs/install) — installer Apothem dans cet environnement
+- [Référence de `apothem harnesses`](/docs/cli-reference/harnesses) — lister et inspecter les adaptateurs depuis la CLI

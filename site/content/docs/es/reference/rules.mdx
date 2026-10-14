@@ -1,15 +1,15 @@
 ---
 title: "Reglas"
-description: "Reglas de comportamiento siempre activas y filtradas por ruta que gobiernan la resolución de problemas, el oficio del código, la arquitectura limpia, la planificación y la calidad en todo el conjunto de reglas de comportamiento."
+description: "Reglas de comportamiento siempre activas y filtradas por ruta que rigen la resolución de problemas, el oficio del código, la arquitectura limpia, la planificación y la calidad en todo el conjunto de reglas de comportamiento."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Las reglas de comportamiento viven como archivos planos bajo
+Las reglas de comportamiento residen como archivos planos bajo
 `src/apothem/rules/` con el sufijo `*.md`. Cada regla es autocontenida —
 Purpose, Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
-Bindings — y es siempre activa o filtrada por ruta.
+Bindings — y es o bien siempre activa, o bien filtrada por ruta.
 
 ## Reglas activas
 
@@ -21,15 +21,15 @@ El registro canónico es la cohorte de reglas. El mismo conjunto en forma plana:
 | Clean-Room Generation | Siempre activa | CM-5 / CM-7 / CM-21 |
 | Cognitive Identity | Siempre activa | CM-21 |
 | Context Management | Siempre activa | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Filtrada por ruta | CM-12 / CM-24 (companion) |
+| Context Management Scratch | Filtrada por ruta | CM-12 / CM-24 (compañera) |
 | Conventions Vigilance | Siempre activa | CM-22 |
-| Interactive Questions | Siempre activa | CM-2 extension |
-| Interactive Questions Sweep Matchers | Filtrada por ruta | CM-2 extension (companion) |
+| Interactive Questions | Siempre activa | Extensión de CM-2 |
+| Interactive Questions Sweep Matchers | Filtrada por ruta | Extensión de CM-2 (compañera) |
 | Operational Mandates | Siempre activa | CM-1–10 |
 | Worker Orchestration | Siempre activa | CM-17 / CM-25 |
 | Clean Architecture | Filtrada por ruta | CM-27 |
 | Large File Generation | Filtrada por ruta | CM-23 |
-| Performance Discipline | Filtrada por ruta | Performance axis |
+| Performance Discipline | Filtrada por ruta | Eje de rendimiento |
 | Planning Techniques | Filtrada por ruta | CM-20 / CM-21 |
 | Python Senior Architect | Filtrada por ruta | CM-28 |
 
@@ -46,18 +46,40 @@ alwaysApply: <true | false>
 ---
 ```
 
-El campo `pathFilter` se omite en las reglas siempre activas y está presente en
-las filtradas por ruta. La comprobación `frontmatter-cohort` del validador
-verifica el contrato en cada archivo de regla.
+En una regla siempre activa, `pathFilter` es la cadena vacía (`""`) y
+`alwaysApply` es `true`; en una regla filtrada por ruta, `pathFilter` lleva la
+lista de globs y `alwaysApply` es `false`. El contrato legible por máquina es
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`); la comprobación
+`frontmatter-cohort` del validador lo verifica en cada archivo de regla.
+
+`pathFilter` y `alwaysApply` son neutrales respecto al entorno. Cada adaptador
+los traduce allí donde su entorno tiene un campo de alcance nativo. Claude Code
+solo lee `paths:` de una regla y carga al inicio cada regla que no lo tiene, así
+que la instalación del motor (`apothem install --harness claude-code`) escribe
+cada regla filtrada por ruta en `~/.claude/rules/` con una lista `paths:`
+construida a partir de su `pathFilter`, y copia sin cambios las reglas siempre
+activas. Las 28 reglas siempre activas se cargan en cada sesión; las 63
+compañeras filtradas por ruta se cargan cuando el asistente lee un archivo
+coincidente.
+
+OpenCode no tiene ningún campo de alcance por regla: combina en cada sesión
+cada archivo que nombra la lista `instructions` de su `opencode.json`. Por eso,
+la instalación de OpenCode (`apothem install --harness opencode`) lista tu
+documento de perfil y solo las reglas cuyo `alwaysApply` es `true`, con una ruta
+`~/.config/opencode/...` explícita por archivo, leída de los archivos de regla
+cuando se escribe la configuración. Cada regla, incluidas las filtradas por
+ruta, se sigue instalando bajo `~/.config/opencode/.apothem/support/rules/`,
+donde una regla, una skill o un comando que la cita la lee bajo demanda.
 
 ## Disciplina de autoría
 
 - **Autocontenida.** Cada regla tiene sus propias secciones Purpose,
   Obligations, Anti-Patterns y Enforcement.
 - **Bloque Bindings.** Cada regla termina con el bloque Bindings canónico de
-  cinco direcciones (Drives → / Driven by ← / Satisfies → / Established by ↑ /
+  cinco direcciones (Drives → / Satisfies → / Established by ↑ / Gated by ← /
   Cross-bound with ↔).
-- **Solo lenguaje de dominio.** Sin referencias internas al plan — véase
+- **Solo lenguaje del dominio.** Sin referencias internas del plan — consulta
   `CLAUDE.md` CM-7.
 
 ## Inventario de reglas generado

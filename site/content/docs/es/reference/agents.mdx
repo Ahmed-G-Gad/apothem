@@ -1,13 +1,13 @@
 ---
 title: "Trabajadores delegados"
-description: "Trabajadores delegados persistentes para investigación, auditoría, calidad y orquestación, con contratos de frontmatter y protocolos de aislamiento de despliegue."
+description: "Trabajadores delegados persistentes para investigación, auditoría, calidad y orquestación, con contratos de frontmatter y protocolos de aislamiento del despliegue."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "9aeb014bc69c5163"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Los trabajadores delegados persistentes viven como archivos planos dentro del
-directorio canónico de trabajadores delegados con el sufijo `<name>.md`. La ruta
+Los trabajadores delegados persistentes residen como archivos planos dentro del
+directorio canónico de trabajadores delegados, con el sufijo `<name>.md`. La ruta
 canónica es:
 
 ```text
@@ -20,10 +20,10 @@ sistema.
 
 | Trabajador delegado | Archivo | Patrón | Política de modelo |
 |-------|------|---------|--------------|
-| Codebase Explorer | véase la ruta del manifiesto más abajo | Investigación | seleccionado por el host |
-| Convention Auditor | véase la ruta del manifiesto más abajo | Auditoría | seleccionado por el host |
-| Quality Gate | véase la ruta del manifiesto más abajo | Calidad | seleccionado por el host |
-| Memory Auditor | véase la ruta del manifiesto más abajo | Auditoría | seleccionado por el host |
+| Codebase Explorer | consulta la ruta del manifiesto más abajo | Investigación | seleccionado por el host |
+| Convention Auditor | consulta la ruta del manifiesto más abajo | Auditoría | seleccionado por el host |
+| Quality Gate | consulta la ruta del manifiesto más abajo | Calidad | seleccionado por el host |
+| Memory Auditor | consulta la ruta del manifiesto más abajo | Auditoría | seleccionado por el host |
 
 Rutas canónicas del manifiesto:
 
@@ -48,19 +48,38 @@ maxTurns: <integer>
 ---
 ```
 
+## Conversión por entorno
+
+Un trabajador delegado cuya concesión `tools`, después de aplicar
+`disallowedTools`, no incluye `Write` ni `Edit` es de solo lectura. Cada entorno
+que convierte trabajadores delegados aplica ese límite de forma nativa o elimina
+la etiqueta de solo lectura:
+
+| Entorno | Límite de herramientas | Límite de turnos | Modelo y esfuerzo |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` tal como están escritos | `maxTurns` | heredado (no se establece) |
+| Codex | `sandbox_mode = "read-only"` para los trabajadores delegados de solo lectura | no disponible | heredado (no se establece) |
+| Gemini CLI | lista de permitidos `tools` con nombres de herramientas de Gemini | `max_turns` | heredado (no se establece) |
+| Qwen Code | `tools` / `disallowedTools` con nombres de herramientas de Qwen | no se asigna | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` por herramienta) | no se asigna | heredado (no se establece) |
+| Antigravity | no se emite ninguno; la descripción omite «read-only» | no disponible | heredado (no se establece) |
+
+Hermes, Open-Claw y Kimi Code reciben los archivos de los trabajadores delegados
+como material de soporte, no como trabajadores delegados nativos.
+
 ## Orquestación
 
-El despliegue de trabajadores delegados, el protocolo de lanzamiento en paralelo,
-la aplicación del contrato de retorno y la disciplina de aislamiento viven en la
-regla de orquestación. El árbol de despacho por trabajador vive en la regla de
-patrones de orquestación, §Decision Tree. Rutas canónicas:
+El despliegue de trabajadores delegados, el protocolo de lanzamiento en
+paralelo, la aplicación del contrato de retorno y la disciplina de aislamiento
+residen en la regla de orquestación. El árbol de despacho por trabajador reside
+en la regla de patrones de orquestación, §Decision Tree. Rutas canónicas:
 
 ```text
 src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## Inventario de trabajadores delegados generado
+## Inventario de agentes generado
 
 {/* apothem:generated-reference:start */}
 

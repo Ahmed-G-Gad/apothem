@@ -1,14 +1,14 @@
 ---
 title: "Hermes"
-description: "محوّل إطار عمل Apothem لـ Hermes (إصدار معاينة)."
+description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "7d64ffd668c14134"
+sourceHash: "f077a9851e126be5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Hermes</bdi>
 **اسم التثبيت:** <bdi>`hermes`</bdi>
-**الحالة:** إصدار معاينة
+**الحالة:** معاينة
 **الإعداد الأصلي:** <bdi>`~/.hermes/config.yaml`</bdi>
 
 ## التثبيت
@@ -17,28 +17,47 @@ sourceHash: "7d64ffd668c14134"
 apothem install --harness hermes
 ```
 
-يترجم المحوّل الملف التعريفي المشترك إلى ملفّ إعداد المستخدم العامّ لـ<bdi>Hermes
-Agent</bdi> ويثبّت مجموعات دعم <bdi>Apothem</bdi> تحت جذر إطار العمل.
+يترجم المحوّل الملف التعريفي المشترك إلى ملف الإعداد العامّ على مستوى المستخدم لـ
+<bdi>Hermes Agent</bdi>، ويثبّت حزم دعم <bdi>Apothem</bdi> تحت جذر إطار العمل.
 
-**الملفات المكتوبة:** <bdi>`~/.hermes/config.yaml`</bdi> وملفات الدعم تحت
+**الملفات المكتوبة:** <bdi>`~/.hermes/config.yaml`</bdi>، ووثيقة الملف التعريفي
+<bdi>`~/.hermes/apothem/rules/00-apothem-profile.md`</bdi>، وملفات الدعم تحت
 <bdi>`~/.hermes/.apothem/support/`</bdi>
+
+تنتهي وثيقة الملف التعريفي بقسم ملفات دعم <bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق
+الواقع تحت <bdi>`~/.hermes/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل إحالة
+بأسلوب المستودع (<bdi>`rules/<name>.md`</bdi>، و<bdi>`templates/...`</bdi>،
+و<bdi>`hooks/...`</bdi>).
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر إعداد
-<bdi>YAML</bdi> الأصلي. سطح المهارات الخاص بـ<bdi>Hermes</bdi> هو
-<bdi>`skills.config`</bdi> — حِزَم سِجِلّ قابلة للتثبيت يكشفها <bdi>Hermes</bdi>
-تلقائيًّا بوصفها أوامر مائلة ديناميكية — وهو ما لا يكتبه <bdi>Apothem</bdi>. بل
-يسلّم <bdi>Apothem</bdi> محتوى الأوامر والمهارات المشترك بوصفه مادّة دعم تحت
-<bdi>`~/.hermes/.apothem/support/`</bdi>، مُشارًا إليها من مرساة التعليمات الأصلية.
-وتبقى تعريفات المساعدة والقواعد والقوالب وموجّهات الخطافات كذلك مادّة دعم تحت
-<bdi>`~/.hermes/.apothem/support/`</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد إعداد
+<bdi>YAML</bdi> الأصلي، بما في ذلك جرد <bdi>MCP</bdi> الوارد في الملف التعريفي. تذهب
+هوية الملف التعريفي وتفضيلاته وقواعده إلى وثيقة الملف التعريفي. وتستقرّ الأوامر
+والمهارات وتعريفات المساعِدات والقواعد والقوالب ومطالبات الخطّافات المشتركة بوصفها
+مادّة دعم تحت <bdi>`~/.hermes/.apothem/support/`</bdi>.
 
 ## ملاحظات التوافق
 
-محوّل في إصدار معاينة. إعداد <bdi>YAML</bdi> الأصلي هو سطح <bdi>Hermes</bdi>
-النشِط؛ ويستخدم <bdi>Apothem</bdi> خطّاف دليل المهارات الخارجيّ المُوثَّق
-للمهارات، ويُبقي المجموعات الأخرى مادّةً مرجعية للإرشاد المُثبَّت.
+محوّل في مرحلة المعاينة. لا يُحمِّل <bdi>Hermes</bdi> شجرة الدعم ولا وثيقة الملف
+التعريفي من تلقاء نفسه: لا شيء في <bdi>`config.yaml`</bdi> ولا أيّ من ملفات السياق
+التي يقرؤها <bdi>Hermes</bdi> يُشير إليهما، لذا يعمل <bdi>Hermes</bdi> بعد التثبيت دون
+قواعد <bdi>Apothem</bdi> أو مهاراته أو خطّافاته. يقرأ <bdi>Hermes</bdi> المهارات من
+<bdi>`~/.hermes/skills/`</bdi> ومن كل مجلد مُدرَج تحت <bdi>`skills.external_dirs`</bdi>
+في <bdi>`config.yaml`</bdi>؛ لاستخدام مهارات <bdi>Apothem</bdi>، أضف
+<bdi>`~/.hermes/.apothem/support/skills`</bdi> إلى تلك القائمة بنفسك؛ ويحتفظ
+<bdi>`apothem update`</bdi> بالمفاتيح التي تضيفها إلى <bdi>`config.yaml`</bdi>. يكتب
+المحوّل جرد <bdi>MCP</bdi> الوارد في الملف التعريفي تحت المفتاح
+<bdi>`mcp_servers`</bdi> في المستوى الأعلى، حيث يقرأ <bdi>Hermes</bdi> خوادم
+<bdi>MCP</bdi>. كانت إصدارات <bdi>Apothem</bdi> السابقة تكتبه تحت
+<bdi>`auxiliary.mcp`</bdi>، الذي يقرؤه <bdi>Hermes</bdi> بوصفه النموذج المساعد لتوزيع
+أدوات <bdi>MCP</bdi>؛ ويُزيل كلٌّ من <bdi>`apothem update`</bdi>
+و<bdi>`apothem uninstall`</bdi> تلك الكتلة ما دامت تحمل بالضبط ما كتبه مثل ذلك
+الإصدار (راجع [إلغاء التثبيت](#إلغاء-التثبيت)). (سلوك <bdi>Hermes</bdi> وفق صفحات
+دليل المستخدم الخاص به عن
+[المهارات](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+و[<bdi>MCP</bdi>](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)،
+المقروءة في 2026-10-02.)
 
 ## التحقّق
 
@@ -48,9 +67,9 @@ apothem verify --harness hermes
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود كل الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. جميع الحقول الإلزامية من الملف التعريفي المشترك موجودة.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -58,8 +77,8 @@ apothem verify --harness hermes
 apothem update --harness hermes
 ```
 
-يعيد اشتقاق الإعداد الأصلي من حالة الملف التعريفي المشترك الحالية.
-شغّله بعد تعديل <bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة
+يُعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك.
+شغّله بعد تحرير <bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة
 <bdi>Apothem</bdi> المُثبَّتة.
 
 ## إلغاء التثبيت
@@ -68,10 +87,22 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
-لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل ما أضافه المحوّل: مدخلات <bdi>`mcp_servers`</bdi> التي سجّلها تثبيته في
+<bdi>`config.yaml`</bdi> (تبقى مفاتيحك الخاصة، ولا يُحذَف الملف إلا حين يكون
+<bdi>Apothem</bdi> قد أنشأه ولم يتبقَّ فيه شيء يخصّك)، ووثيقة الملف التعريفي، وشجرة
+الدعم. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+التثبيت الذي أجراه إصدار سابق، وكان يكتب خوادم الملف التعريفي تحت
+<bdi>`auxiliary.mcp`</bdi>، تُزال منه تلك الكتلة أيضًا حين تظل تحمل بالضبط ما كتبه ذلك
+الإصدار، كما يُجسَّد من الملف التعريفي المشترك في
+<bdi>`~/.config/apothem/profile.yaml`</bdi>. هذه هي القاعدة نفسها التي يطبّقها
+<bdi>`apothem update`</bdi>، لذا لا يُخلِّف إلغاء التثبيت دون تحديث مسبق أي كتلة
+متقادمة. أما الكتلة التي عدّلتها، أو التي لا يوجد ملف تعريفي مشترك قابل للقراءة
+لمقارنتها به، فتبقى في مكانها، وتبقى بقية إعدادات <bdi>`auxiliary`</bdi> الخاصة بك
+دائمًا.
+
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,10 +114,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness hermes`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness hermes`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness hermes`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness hermes`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

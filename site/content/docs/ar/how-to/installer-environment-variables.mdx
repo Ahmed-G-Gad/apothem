@@ -1,74 +1,90 @@
 ---
-title: "متغيّرات بيئة المثبّت"
-description: "تحكّم في مثبّت النصوص (الوجهة، المصدر، البيئة، الملف التعريفي، التحقق) عبر متغيّرات البيئة."
+title: "متغيّرات بيئة المُثبِّت"
+description: "تحكّم في مُثبِّت السكربت (الوجهة، والمصدر، وإطار العمل، والملف التعريفي، والتحقّق) بمتغيّرات البيئة."
 machineTranslated: true
-sourceHash: "d68d326f61c80d62"
+sourceHash: "4a6a53ca733a16ef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-الهدف: شغّل `install.sh` / `install.ps1` دون تحرير النص عبر تعيين متغيّرات
-البيئة قبل تشغيله.
+الهدف: قيادة <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> دون تحرير السكربت،
+بضبط متغيّرات البيئة قبل تشغيله.
 
 ## المتطلّبات المسبقة
 
-- صدفة POSIX (`bash`) أو PowerShell 5.1+.
-- تُقرأ المتغيّرات مرة واحدة في أعلى المثبّت، لذا عيّنها في الأمر
-  ذاته (أو صدّرها أولًا)، ثم شغّل المثبّت.
+- صدفة <bdi>POSIX</bdi> (<bdi>`bash`</bdi>) أو <bdi>PowerShell 5.1+</bdi>.
+- تُقرأ المتغيّرات مرة واحدة في بداية المُثبِّت، لذا اضبطها في الأمر نفسه (أو
+  صدِّرها أولًا)، ثم شغِّل المُثبِّت.
 
-## متغيّرات المثبّت
+## متغيّرات المُثبِّت
 
-| المتغيّر | يتحكّم في | الافتراضي |
+| المتغيّر | يتحكّم في | القيمة الافتراضية |
 | --- | --- | --- |
-| `APOTHEM_HOME` | وجهة تثبيت شجرة المصدر المستنسخة | `$HOME/.apothem` |
-| `APOTHEM_REPO` | المستودع البعيد لاستنساخه | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | مرجع Git لسحبه؛ عدم التعيين يحلّ أحدث وسم موقّع `vMAJOR.MINOR.PATCH`، وقيمة وسم تثبّته، و`main` يختار الفرع المتحرّك | غير مُعيَّن (أحدث وسم موقّع) |
-| `APOTHEM_ALLOW_UNVERIFIED` | يخفّض فشل التحقق من توقيع الوسم من إجهاض قاتل إلى تحذير عند تعيينه إلى `1` | `0` (تحقق، فشل-مُغلق) |
-| `APOTHEM_SOURCE` | شجرة مصدر محلية صريحة لاستخدامها بدلًا من الاستنساخ | غير مُعيَّن (استنساخ) |
-| `APOTHEM_HARNESS` | البيئة المراد تثبيتها | `claude-code` |
-| `APOTHEM_PROFILE` | مسار ملف YAML التعريفي المشترك | `$HOME/.config/apothem/profile.yaml` |
-| `APOTHEM_SKIP_VERIFY` | تخطّي خطوة التحقق بعد التثبيت عند تعيينه إلى `1` | `0` (يُشغَّل التحقق) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | يثبّت تلقائيًّا المتطلّبين الناقصين `click` / `rich` دون سؤال عند ضبطه على `1` | `0` (يسأل، أو يرفض في أنبوب غير تفاعلي) |
-| `APOTHEM_BIN_DIR` | دليل وضع اختصار أمر `apothem` | `$HOME/.local/bin` (POSIX)؛ `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| <bdi>`APOTHEM_HOME`</bdi> | وجهة التثبيت لشجرة المصدر المُستنسَخة | <bdi>`$HOME/.apothem`</bdi> |
+| <bdi>`APOTHEM_REPO`</bdi> | مستودع <bdi>Git</bdi> البعيد المراد استنساخه | <bdi>`https://github.com/ahmed-g-gad/apothem`</bdi> |
+| <bdi>`APOTHEM_REF`</bdi> | مرجع <bdi>Git</bdi> المراد سحبه؛ تركه غير مضبوط يَحُلّ أحدث وسم <bdi>`vMAJOR.MINOR.PATCH`</bdi> موقَّع، وقيمة وسم تُقيِّده بذلك الوسم، و<bdi>`main`</bdi> يختار الفرع المتحرّك | غير مضبوط (أحدث وسم موقَّع) |
+| <bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi> | يُخفِّض فشل التحقّق من توقيع الوسم من إيقاف قاتل إلى تحذير عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يتحقّق، ويُغلِق عند الفشل) |
+| <bdi>`APOTHEM_VERIFY`</bdi> | <bdi>`signature`</bdi> يتحقّق من توقيع <bdi>GPG</bdi> لوسم الإصدار؛ و<bdi>`checksum`</bdi> يُثبِّت أرشيف المنصّة الخاص بالإصدار بعد فحص بصمة <bdi>SHA-256</bdi> الخاصة به مقابل ملف <bdi>`SHA256SUMS`</bdi> الخاص بالإصدار (سلامة، لا إثبات لهوية من نشره) | <bdi>`signature`</bdi> |
+| <bdi>`APOTHEM_RELEASE_BASE`</bdi> | قاعدة التنزيل لوضع التحقّق بالمجموع الاختباري | <bdi>`<APOTHEM_REPO>/releases/download`</bdi> |
+| <bdi>`APOTHEM_SOURCE`</bdi> | شجرة مصدر محلية صريحة تُستخدَم بدلًا من الاستنساخ | غير مضبوط (استنساخ) |
+| <bdi>`APOTHEM_HARNESS`</bdi> | إطار العمل المراد تثبيته | <bdi>`claude-code`</bdi> |
+| <bdi>`APOTHEM_PROFILE`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك | <bdi>`$HOME/.config/apothem/profile.yaml`</bdi> |
+| <bdi>`APOTHEM_SKIP_VERIFY`</bdi> | يتخطّى خطوة التحقّق اللاحقة للتثبيت عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يعمل التحقّق) |
+| <bdi>`APOTHEM_AUTO_INSTALL_DEPS`</bdi> | يُثبِّت المتطلّبات المسبقة المفقودة <bdi>`click`</bdi> / <bdi>`rich`</bdi> تلقائيًا، دون مطالبة، عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يطالب، أو يرفض في أنبوب غير تفاعلي) |
+| <bdi>`APOTHEM_BIN_DIR`</bdi> | دليل غلاف الأمر <bdi>`apothem`</bdi> الذي يضعه المُثبِّت | <bdi>`$HOME/.local/bin`</bdi> (<bdi>POSIX</bdi>)؛ <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (<bdi>Windows</bdi>) |
+| <bdi>`NO_COLOR`</bdi> | يُطفئ الخرج الملوَّن عند ضبطه على أي قيمة ([<bdi>no-color.org</bdi>](https://no-color.org/))؛ ويكون التلوين مُطفأً أيضًا كلما لم يكن الخرج طرفية (أنبوب، أو ملف، أو سجلّ <bdi>CI</bdi>) | غير مضبوط (التلوين على طرفية تفاعلية فقط) |
 
-يأخذ `APOTHEM_SOURCE` الأسبقية على الاستنساخ: عند تعيينه إلى سحب يحتوي
-على `src/apothem`، يستخدمه المثبّت مباشرة، ولا يمسّ
-`APOTHEM_REPO` / `APOTHEM_REF`، ويتخطّى حلّ الوسم والتحقق من
-التوقيع (لا شيء يُجلَب للتحقق منه).
+يتقدّم <bdi>`APOTHEM_SOURCE`</bdi> على الاستنساخ: عند ضبطه على نسخة مسحوبة تحتوي
+على <bdi>`src/apothem`</bdi>، يستخدمها المُثبِّت مباشرةً، ولا يمسّ
+<bdi>`APOTHEM_REPO`</bdi> / <bdi>`APOTHEM_REF`</bdi> أبدًا، ويتخطّى حلّ الوسم
+والتحقّق من التوقيع (لا يُجلَب شيء للتحقّق منه).
+
+عندما يشير <bdi>`APOTHEM_HOME`</bdi> إلى دليل موجود ليس نسخة <bdi>git</bdi>
+مُستنسَخة، يرفض المُثبِّت حذفه: انقله جانبًا، أو وجِّه <bdi>`APOTHEM_HOME`</bdi>
+إلى مكان آخر، أو مرِّر <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> على
+<bdi>Windows</bdi>) للتصريح بالاستبدال. أما الدليل الفارغ المتقادم فيُستبدَل دون
+الراية.
 
 ## نموذج الثقة
 
-مع عدم تعيين `APOTHEM_REF`، يحلّ المثبّت أحدث وسم إصدار موقّع
-ويتحقّق من توقيعه عبر `git verify-tag` قبل تجسيد أيّ
-تهيئة؛ ويُجهَض التثبيت عند وسم غير موقّع أو مُتلاعَب به. ثبّت إصدارًا معروفًا
-عبر `APOTHEM_REF=<tag>` (يُتحقَّق منه أيضًا؛ وسم من
-[صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases))، أو اختر
-الفرع المتحرّك عبر `APOTHEM_REF=main` (غير مُتحقَّق منه)، أو عيّن
-`APOTHEM_ALLOW_UNVERIFIED=1` للمضيّ قدمًا بعد فشل التحقق مع
-تحذير (للاستخدام المعزول عن الشبكة، أو المحلي، أو قبل توقيع الإصدار).
+حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يَحُلّ المُثبِّت أحدث وسم إصدار
+موقَّع ويتحقّق من توقيعه بالأمر <bdi>`git verify-tag`</bdi> قبل تجسيد أي إعداد؛
+والوسم غير الموقَّع أو المُتلاعَب به يُوقِف التثبيت. أما الوسم الموقَّع الذي يغيب
+المفتاح العام لمشرفه عن حلقة المفاتيح المحلية فيُوقِف التثبيت بدلًا من ذلك مع
+إرشادات لاستيراد المفتاح — استورد المفتاح وافحص بصمته مقابل القيمة المنشورة في
+[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+قيِّد التثبيت بإصدار معروف عبر <bdi>`APOTHEM_REF=<tag>`</bdi> (يُتحقَّق منه أيضًا؛
+وسم من [صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases))، أو اختر
+الفرع المتحرّك عبر <bdi>`APOTHEM_REF=main`</bdi> (دون تحقّق)، أو اضبط
+<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> للمضيّ بعد فشل التحقّق مع تحذير (للاستخدام
+المعزول عن الشبكة، أو المحلي، أو مع إصدار سابق لاعتماد التوقيع).
 
-```bash title="تثبيت مثبَّت ومُتحقَّق منه"
+```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="المضيّ دون تحقق (مؤقت / معزول عن الشبكة)"
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
+```
+
+```bash title="Proceed without verification (interim / air-gapped)"
 APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
-## الخطوات (POSIX bash)
+## الخطوات (<bdi>POSIX bash</bdi>)
 
-1. ثبّت بيئة غير افتراضية:
+1. ثبِّت إطار عمل غير افتراضي:
 
    ```bash
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. ثبّت مرجع المصدر ووجهة التثبيت:
+2. قيِّد مرجع المصدر ووجهة التثبيت:
 
    ```bash
    APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
-3. استخدم سحبًا محليًا وملفًا تعريفيًا مخصّصًا، مع تخطّي التحقق:
+3. استخدم نسخة مسحوبة محلية وملفًا تعريفيًا مخصّصًا، مع تخطّي التحقّق:
 
    ```bash
    APOTHEM_SOURCE=/work/apothem \
@@ -77,9 +93,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    bash install.sh
    ```
 
-## الخطوات (PowerShell)
+## الخطوات (<bdi>PowerShell</bdi>)
 
-عيّن كل متغيّر على `$env:` قبل تشغيل المثبّت:
+اضبط كل متغيّر على <bdi>`$env:`</bdi> قبل تشغيل المُثبِّت:
 
 ```powershell
 $env:APOTHEM_HARNESS = 'cursor'
@@ -99,20 +115,25 @@ $env:APOTHEM_SKIP_VERIFY = '1'
 pwsh -NoProfile -File install.ps1
 ```
 
-## التحقق
+## التحقّق
 
-يطبع المثبّت `✓ Harness <name> installed`، ثم (ما لم يُعيَّن
-`APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. أكّد بشكل مستقل:
+يطبع المُثبِّت <bdi>`✓ Harness <name> installed`</bdi>، ثم (ما لم يكن
+<bdi>`APOTHEM_SKIP_VERIFY=1`</bdi>) <bdi>`✓ verify passed`</bdi>. أكِّد ذلك بشكل
+مستقل:
 
 ```bash
 apothem verify --harness cursor
 ```
 
-عندما لا يكون الملف التعريفي موجودًا بعد، ينشئ المثبّت واحدًا من المثال
-ويخرج مبكرًا — حرّر `$APOTHEM_PROFILE`، ثم أعد التشغيل.
+عندما لا يكون الملف التعريفي موجودًا بعد، يُنشئ المُثبِّت ملفًا من المثال ويتابع
+إلى التثبيت والتحقّق في التشغيل نفسه. حقول الهوية في المثال عناصر نائبة، لذا
+يطبع التثبيت ملاحظة؛ حرِّر <bdi>`$APOTHEM_PROFILE`</bdi>، ثم شغِّل
+<bdi>`apothem update --harness <name>`</bdi> لتطبيق هويتك. وتشغيل
+<bdi>`--dry-run`</bdi> دون ملف تعريفي يُعايِن باستخدام المثال في مكانه ولا يكتب
+شيئًا.
 
 ## ذات صلة
 
-- يغطّي [التثبيت](/docs/install) التثبيت الشبكي بأمر واحد.
-- يغطّي [أضف بيئة](/docs/how-to/adding-a-harness) إضافة البيئات عبر واجهة سطر
-  الأوامر بعد التثبيت الأول.
+- يغطّي [التثبيت](/docs/install) التثبيت الشبكي بخطوة واحدة.
+- يغطّي [إضافة إطار عمل](/docs/how-to/adding-a-harness) إضافة أُطُر العمل عبر
+  <bdi>CLI</bdi> بعد التثبيت الأول.

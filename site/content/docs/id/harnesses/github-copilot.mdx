@@ -1,13 +1,13 @@
 ---
 title: "GitHub Copilot"
-description: "Adaptor harness Apothem untuk GitHub Copilot (GA)."
+description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "65affe4b2cf2a340"
+sourceHash: "4482a306f9f119b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** GitHub / Microsoft
-**Nama instal:** `github-copilot`
+**Nama instalasi:** `github-copilot`
 **Status:** GA
 **Konfigurasi native:** `<project>/.github/copilot-instructions.md`
 
@@ -17,30 +17,40 @@ sourceHash: "65affe4b2cf2a340"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-Adaptor menurunkan berkas instruksi proyek dari aturan Apothem bersama dan permukaan
-tata kelola.
+Adapter menurunkan berkas instruksi proyek dari permukaan aturan dan tata
+kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.github/copilot-instructions.md`
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil Apothem bersama dan merender berkas instruksi Copilot
-seluruh repositori pada setiap jalannya `apothem install` atau `apothem update`.
-Profil bersama adalah sumber kebenaran; suntingan lokal proyek pada berkas yang
-dihasilkan dicadangkan sebelum sinkronisasi berikutnya menggantikan konten yang
-dikelola Apothem.
+Adapter membaca profil bersama Apothem dan merender berkas instruksi Copilot
+untuk seluruh repositori pada setiap eksekusi `apothem install` atau
+`apothem update`. Profil bersama adalah sumber kebenaran; suntingan
+lokal-proyek pada berkas yang dihasilkan dicadangkan sebelum sinkronisasi
+berikutnya mengganti konten yang dikelola Apothem.
+
+Di dalam blok Apothem, bagian yang dirender dari profil Anda (operator,
+preferensi, aturan kustom, perilaku yang dipilih untuk diaktifkan, nama server
+MCP) muncul lebih dulu, mendahului teks tata kelola bersama. GitHub mencatat
+bahwa berkas instruksi yang lebih pendek lebih mungkin diproses secara utuh
+oleh tinjauan kode
+([Menyesuaikan tinjauan kode](https://docs.github.com/en/copilot/tutorials/customize-code-review)),
+sehingga bagian yang khusus untuk Anda berada di awal berkas.
 
 ## Catatan kompatibilitas
 
-GitHub Copilot tidak mengekspos jalur instruksi global pengguna berbasis berkas yang
-dapat dikelola adaptor ini. Apothem menargetkan berkas instruksi cakupan proyek yang
-terdokumentasi dan membiarkan pengaturan pengguna tingkat IDE tetap dimiliki operator.
+GitHub Copilot tidak mengekspos jalur instruksi global-pengguna berbasis berkas
+untuk dikelola oleh adapter ini. Apothem menargetkan berkas instruksi
+berlingkup proyek yang terdokumentasi dan membiarkan pengaturan pengguna
+tingkat IDE tetap menjadi milik operator.
 
-Apothem memperlakukan `copilot-instructions.md` sebagai satu suara di antara permukaan
-instruksi asisten proyek: pemeriksaan koherensi multi-permukaan pada gerbang
-konformitas memverifikasi bahwa klaim bersamanya tetap selaras secara semantik dengan
-berkas instruksi proyek lainnya, sehingga Copilot tidak pernah menerima panduan yang
-bertentangan dengan apa yang dibaca oleh bagian lain rantai alat.
+Apothem memperlakukan `copilot-instructions.md` sebagai satu suara di antara
+permukaan instruksi asisten milik proyek: pemeriksaan koherensi multi-permukaan
+pada gerbang konformitas memverifikasi bahwa klaim bersamanya tetap selaras
+secara semantik dengan berkas instruksi proyek lainnya, sehingga Copilot tidak
+pernah menerima panduan yang bertentangan dengan apa yang dibaca oleh bagian
+lain dari rantai alat.
 
 ## Verifikasi
 
@@ -48,19 +58,19 @@ bertentangan dengan apa yang dibaca oleh bagian lain rantai alat.
 apothem verify --harness github-copilot --project /path/to/project
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Semua bidang wajib dari profil bersama ada.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-Menurunkan-ulang berkas instruksi proyek dari keadaan profil bersama saat ini.
+Menurunkan ulang berkas instruksi proyek dari status profil bersama saat ini.
 
 ## Pencopotan
 
@@ -68,7 +78,7 @@ Menurunkan-ulang berkas instruksi proyek dari keadaan profil bersama saat ini.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+Menghapus berkas konfigurasi native yang ditulis oleh adapter.
 YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
@@ -83,10 +93,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness github-copilot --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness github-copilot --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness github-copilot --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness github-copilot --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

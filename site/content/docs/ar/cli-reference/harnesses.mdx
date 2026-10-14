@@ -2,11 +2,11 @@
 title: "harnesses"
 description: "مرجع واجهة سطر الأوامر لمجموعة أوامر apothem harnesses."
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "ce8d5647426c475c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يسرد مُحَوِّلات أُطُر العمل المُسجَّلة ويفحصها.
+سرد محوّلات أُطُر العمل المُسجَّلة وفحصها.
 
 <bdi>`harnesses`</bdi> مجموعة أوامر ذات أمرين فرعيين: <bdi>`list`</bdi> و<bdi>`show`</bdi>.
 
@@ -22,33 +22,34 @@ apothem harnesses show NAME
 
 ## الأوامر الفرعية
 
-### `harnesses list`
+### <bdi>`harnesses list`</bdi>
 
-يسرد جميع مُحَوِّلات أُطُر العمل المُسجَّلة.
-
-| الخيار | الوصف |
-|---|---|
-| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
-| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
-| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
-| `--json` | اختصار لـ `--format json`. |
-| `--no-color` | يُعطِّل رموز ألوان ANSI في المخرجات. |
-| `-h`, `--help` | يعرض المساعدة ويخرج. |
-
-### `harnesses show NAME`
-
-يعرض تفاصيل مُحَوِّل إطار عمل مُحدَّد. <bdi>`NAME`</bdi> هو مُعرِّف إطار العمل
-بصيغة <bdi>kebab-case</bdi>؛ شغّل <bdi>`apothem harnesses list`</bdi> لرؤية المُعرِّفات المتاحة.
+يسرد كل محوّلات أُطُر العمل المُسجَّلة.
 
 | الخيار | الوصف |
 |---|---|
-| `NAME` | مُحَوِّل إطار العمل المراد فحصه (وسيط موضعي مطلوب). |
-| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
-| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
-| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
-| `--json` | اختصار لـ `--format json`. |
-| `--no-color` | يُعطِّل رموز ألوان ANSI في المخرجات. |
-| `-h`, `--help` | يعرض المساعدة ويخرج. |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
+| <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
+| <bdi>`--no-color`</bdi> | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
+
+### <bdi>`harnesses show NAME`</bdi>
+
+يعرض تفاصيل محوّل إطار عمل محدّد. <bdi>`NAME`</bdi> هو مُعرِّف إطار العمل بصيغة
+<bdi>kebab-case</bdi>؛ شغِّل <bdi>`apothem harnesses list`</bdi> لرؤية المُعرِّفات
+المتاحة.
+
+| الخيار | الوصف |
+|---|---|
+| <bdi>`NAME`</bdi> | محوّل إطار العمل المراد فحصه (وسيط موضعي مطلوب). |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
+| <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
+| <bdi>`--no-color`</bdi> | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
 
 ## أمثلة
 
@@ -86,9 +87,11 @@ zed
 | الرمز | المعنى |
 |---|---|
 | 0 | نجاح |
-| 1 | لم يُعثَر على إطار العمل (`harnesses show` باسم `NAME` غير معروف) |
+| 1 | لم يُعثَر على إطار العمل (<bdi>`harnesses show`</bdi> مع <bdi>`NAME`</bdi> غير معروف)، أو أخفق كل محوّل في التحميل أو الإبلاغ (<bdi>`harnesses list`</bdi>) |
+| 2 | أُدرِج محوّل واحد على الأقل، لكن محوّلًا واحدًا على الأقل أخفق في الإبلاغ (<bdi>`harnesses list`</bdi>) |
+| 64 | خطأ في الاستخدام: خيار أو أمر غير معروف، أو قيمة خيار مفقودة أو غير صالحة. مع <bdi>`--json`</bdi> يكون الخطأ غلاف <bdi>JSON</bdi> بالرمز <bdi>`cli.usage`</bdi>. |
 
 ## انظر أيضًا
 
-- [apothem doctor](/docs/cli-reference/doctor) — يشغّل تشخيصات التثبيت على مستوى النظام
-- [apothem verify](/docs/cli-reference/verify) — يفحص تثبيت إطار عمل مُحدَّد
+- [<bdi>apothem doctor</bdi>](/docs/cli-reference/doctor) — يُشغِّل تشخيصات التثبيت على مستوى النظام
+- [<bdi>apothem verify</bdi>](/docs/cli-reference/verify) — يفحص تثبيت إطار عمل محدّد

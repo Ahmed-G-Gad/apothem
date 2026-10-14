@@ -1,8 +1,8 @@
 ---
 title: "Gemini CLI"
-description: "Apothem-Werkzeugadapter für Gemini CLI (GA)."
+description: "Apothem-Harness-Adapter für Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "eed143307202f636"
+sourceHash: "84593cdc3207e035"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,13 @@ sourceHash: "eed143307202f636"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-Der Adapter ist projektgebunden. Er installiert die `GEMINI.md` des Projekts,
-konvertiert Apothem-Befehle in Gemini-TOML-Schrägstrichbefehle, normalisiert die
-lokalen Helferdefinitionen und legt nicht native Unterstützungskohorten unter
-`.gemini/.apothem/support/` ab.
+Der Adapter arbeitet auf Projektebene. Er installiert die `GEMINI.md` des
+Projekts, konvertiert Apothem-Commands in Gemini-TOML-Slash-Commands,
+normalisiert lokale Helferdefinitionen und legt nicht native
+Unterstützungskohorten unter `.gemini/.apothem/support/` ab.
+Auch andere Coding-Werkzeuge lesen eine `GEMINI.md` im Projekt, daher ist der
+Apothem-Block darin als projektweite Anleitung geschrieben, die kein einzelnes
+Werkzeug als Leser nennt.
 
 **Geschriebene Dateien:**
 
@@ -34,15 +37,35 @@ GEMINI.md
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
-Der Adapter liest Apothems gemeinsame Kohorten und leitet jede über eine
-Gemini-kompatible Oberfläche. Markdown-Regeln, Vorlagen und Hook-Material
-verbleiben unter `.gemini/.apothem/support/`, weil sie Unterstützungsmaterial sind und kein
-Gemini-natives Regelverzeichnis.
+Der Adapter liest die gemeinsamen Kohorten von Apothem und leitet jede über
+eine Gemini-kompatible Oberfläche. Markdown-Regeln, Templates und
+Hook-Material verbleiben unter `.gemini/.apothem/support/`, weil sie
+Unterstützungsmaterial sind und kein Gemini-natives Regelverzeichnis.
+Der Apothem-Block in `GEMINI.md` endet mit einem Abschnitt zu den
+Apothem-Unterstützungsdateien, der relativ zum Projektstammverzeichnis das
+Verzeichnis unter `.gemini/.apothem/support/` nennt, gegen das jeder Verweis im
+Repository-Stil (`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst
+wird. Die Pfade sind relativ, damit eine committete `GEMINI.md` keinen
+maschinenspezifischen Pfad enthält.
+
+Jeder konvertierte Command in `.gemini/commands/` enthält eine `description`
+und einen `prompt`. Der Prompt besteht nur aus den Anweisungen des Commands;
+die Apothem-Metadaten am Anfang der Quelldatei (Version, Werkzeugliste und
+ähnliche Felder) werden weggelassen, sodass das Modell sie niemals als
+Anweisungen liest. Gemini führt einen benutzerdefinierten Command nur aus, wenn
+Sie ihn eingeben.
+
+Helferdefinitionen in `.gemini/agents/` behalten ihre Werkzeugbeschränkungen
+und ihr Turn-Limit: Die `tools`-Freigabe der Quelle, abzüglich
+`disallowedTools`, wird zu einer Gemini-`tools`-Erlaubnisliste aus
+Gemini-Werkzeugnamen, und `maxTurns` wird zu `max_turns`. Ein Nur-Lese-Helfer
+erhält daher kein Werkzeug `write_file` oder `replace`. Es wird kein Modell
+gesetzt, sodass jeder Helfer das Modell der Sitzung erbt.
 
 ## Kompatibilitätshinweise
 
-`~/.gemini/` bleibt benutzergebundenes Gebiet für Werkzeuge, die ein globales
-Gemini-Profil verwenden. Der Gemini-CLI-Adapter schreibt nur in das über
+`~/.gemini/` bleibt Gebiet auf Benutzerebene für Werkzeuge, die ein globales
+Gemini-Profil verwenden. Der Gemini CLI-Adapter schreibt nur in das über
 `--project` übergebene Projekt.
 
 ## Verifizierung
@@ -51,11 +74,11 @@ Gemini-Profil verwenden. Der Gemini-CLI-Adapter schreibt nur in das über
 apothem verify --harness gemini-cli --project /path/to/project
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt, dass:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. die native Konfiguration am erwarteten Pfad existiert.
+2. alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
+3. die adapterspezifische Verifizierungsroutine Erfolg meldet.
 
 ## Aktualisierung
 
@@ -63,8 +86,9 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness gemini-cli --project /path/to/project
 ```
 
-Aktualisiert `GEMINI.md`, die konvertierten Befehle, die lokalen Helferdefinitionen,
-die installierten Fähigkeiten und den Unterstützungsbaum `.gemini/.apothem/support/`.
+Aktualisiert `GEMINI.md`, die konvertierten Commands, die lokalen
+Helferdefinitionen, die installierten Skills und den Unterstützungsbaum
+`.gemini/.apothem/support/`.
 
 ## Deinstallation
 
@@ -73,9 +97,9 @@ apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
 Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -85,12 +109,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness gemini-cli --project /path/to/project` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness gemini-cli --project /path/to/project` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness gemini-cli --project /path/to/project` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness gemini-cli --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness gemini-cli --project /path/to/project` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness gemini-cli --project /path/to/project` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

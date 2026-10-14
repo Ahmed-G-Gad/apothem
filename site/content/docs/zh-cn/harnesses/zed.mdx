@@ -2,14 +2,14 @@
 title: "Zed"
 description: "适用于 Zed（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "490d423446686f01"
+sourceHash: "03b431e47b5d9acd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Zed Industries
 **安装名称：** `zed`
 **状态：** GA
-**平台原生配置：** `<project>/.rules`
+**原生配置：** `<project>/.rules`
 
 ## 安装
 
@@ -17,25 +17,33 @@ sourceHash: "490d423446686f01"
 apothem install --harness zed --project /path/to/project
 ```
 
-适配器从共享的 Apothem 规则和治理界面写出一个项目范围的 Zed 指令文件。Zed
-将项目根目录下的单个扁平 `.rules` 文件（与 `AGENTS.md` / `CLAUDE.md` 家族并列）
-读取为指令；它没有按工具划分的规则目录，因此整个 Apothem 界面都落在这一个
-文件中。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Zed 指令文件。Zed 读取一个项目指令文件，即此列表中第一个匹配的文件：
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+不存在按工具划分的规则目录，因此整个 Apothem 表面都落在该列表顶部的扁平 `.rules` 文件中。
 
 **写入的文件：** `<project>/.rules`
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update`
-运行时渲染项目 `.rules` 文件。共享配置档案才是真实来源；在下一次同步替换由
-Apothem 管理的内容之前，任何已存在的 `.rules`（或对生成文件的项目本地编辑）
-都会先被备份。
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目 `.rules` 文件。共享配置档案是事实来源；在下一次同步替换 Apothem 管理的内容之前，任何已存在的 `.rules`（或对生成文件所做的项目本地编辑）都会被备份。
 
 ## 兼容性说明
 
-Zed 当前的指令界面是项目根目录下的扁平 `.rules` 文件。全局
-`~/.config/zed/AGENTS.md` 指令文件和 MCP 上下文服务器块
-（`.zed/settings.json` 的 `context_servers`）由操作者自有；Apothem 不会写入它们。
+Zed 将 `AGENTS.md` 称为其主要指令文件，并保留项目 `.rules` 作为受支持的兼容性文件（[Zed 指令](https://zed.dev/docs/ai/instructions)）。由于 Zed 只读取第一个匹配项，新的 `.rules` 会遮蔽项目已依赖的 `AGENTS.md`、`CLAUDE.md` 或列表中位置更靠后的任何其他文件。安装绝不会编辑这些文件。当 `.rules` 只包含 Apothem 块，而某个优先级更低的文件包含你的文本时，安装和更新会打印一条指明被遮蔽文件的警告；若要在 Zed 中保留你需要的指令，请将它们复制到 `.rules` 中 Apothem 块之外的位置。
+
+全局 `~/.config/zed/AGENTS.md` 指令文件和 MCP 上下文服务器块（`.zed/settings.json` 中的 `context_servers`）归操作者所有；Apothem 不写入它们。
 
 ## 验证
 
@@ -45,9 +53,9 @@ apothem verify --harness zed --project /path/to/project
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必填字段都存在。
-3. 适配器专属的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
 
 ## 更新
 
@@ -55,7 +63,7 @@ verify 命令确认：
 apothem update --harness zed --project /path/to/project
 ```
 
-从当前的共享配置档案状态重新派生项目 `.rules` 文件。
+根据当前的共享配置档案状态，重新派生项目 `.rules` 文件。
 
 ## 卸载
 
@@ -63,10 +71,9 @@ apothem update --harness zed --project /path/to/project
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-移除适配器写入的平台原生配置文件，先将其重命名为带时间戳的备份。共享配置档案
-YAML 和 Apothem 引擎不受影响。
+移除适配器写入的原生配置文件，并先将其重命名为一个带时间戳的备份。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -85,3 +92,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

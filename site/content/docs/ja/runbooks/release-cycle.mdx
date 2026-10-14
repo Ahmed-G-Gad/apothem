@@ -2,81 +2,103 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、任意の npm 公開ディスパッチに至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "aee761a8994b9503"
+sourceHash: "2373679e2d500c4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-このランブックは `apothem` の `vX.Y.Z` リリースを、クリーンな作業ツリーから
-検証済みの配布面まで駆動します。手順は `gh`、`git`、そして release-tier の
-シェルを操るメンテナー向けに書かれており、検証済みの Release ページ、提出済みの
-CHANGELOG、そして各ユーザー向け面が正規のインストールコマンドに応答することを
-確認するインストールパスのスモークテストで終わります。
+このランブックは、`apothem` の `vX.Y.Z` リリースを、クリーンな作業ツリーから検証済みの配布面まで進めます。
+手順は `gh`、`git`、そしてリリース階層のシェルを扱うメンテナー向けに書かれています。
+手順の終わりには、検証済みの Release ページ、記入済みの CHANGELOG、そして各ユーザー向けの面が正規のインストールコマンドに応答することを確認するインストールパスのスモークテストが揃います。
 
-リリースの形態は**単一タグ、二段階**です。`main` 上の 1 つの署名済みリリース
-タグが `.github/workflows/release.yml` をトリガーし、それが GitHub Release を
-完全な成果物セット——sdist、wheel、CycloneDX SBOM、Sigstore cosign バンドル、
-SLSA-3 来歴、そしてプラットフォームランタイムアーカイブ——とともにビルド、署名、
-証明、公開します。任意の第二段階は `publish-npm.yml` の手動ディスパッチで、
-`scripts/release/check-release-ready.sh` がグリーンになった後に
-`@ahmed-g-gad/apothem` を npmjs.com へ公開します。バージョン付きの CHANGELOG
-セクションはタグコミットと並べて執筆され、オペレーターは両段階が着地した後に
-インストールパスのスモークテストを実行します。
+リリースモデルは**追加型**です。
+各リリースは `main` に 1 つのコミットと、署名付きの注釈付き `vX.Y.Z` タグを 1 つ追加します。何も強制プッシュされず、以前のタグ、GitHub Release、npm バージョンが削除されることもありません。
+プロジェクトには 3 つのリリースがあり、それぞれにタグ、GitHub Release、npm バージョンがあり、すべて公開されたままです。npm のバージョンは不変であり（公開済みの `name@version` は決して置き換えられません）、ピン留めされたインストールはタグに依存しています。
+
+タグのプッシュは 2 つのワークフローを開始します。
+`.github/workflows/release.yml` は、GitHub Release を完全な成果物セット（sdist、wheel、CycloneDX SBOM、Sigstore cosign バンドル、SLSA-3 来歴、プラットフォームランタイムアーカイブ）とともにビルド、署名、構成証明、公開します。
+`publish-npm.yml` は、npm Trusted Publishing を通じて `@ahmed-g-gad/apothem` を npmjs.com へ公開します。
+バージョン付きの CHANGELOG セクションはリリースコミットに含まれます。オペレーターは、両方のワークフローが完了した後にインストールパスのスモークテストを実行します。
 
 ## 1. 前提条件
 
-メンテナーはタグ付け前に以下を確認します。
+メンテナーはタグ付けの前に以下を確認します。
 
-- **作業ツリー。** クリーン（`git status` が保留中のものを何も表示しない）。
-  リリースのすべての機能作業は `main` 上にある。
-- **CI グリーン。** 最新の `main` の `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` が `success` を返す。
-- **ツール。** `gh`（GitHub CLI）バージョン 2.40 以降が `ahmed-g-gad` に対して
-  認証済み；`git` 2.40 以降が GPG 署名サブキーをロード済み；
-  `@ahmed-g-gad/apothem` の npm 信頼済みパブリッシャーバインディングが有効
-  （[パブリッシャーアカウントセットアップランブック](/docs/runbooks/publisher-account-setup)
-  に従って検証済み）。
+- **作業ツリー。** クリーンであること（`git status` に保留中のものが何も表示されない）。
+  リリースのすべての機能作業が `main` 上にあること。
+- **CI グリーン。** 最新の `main` で `gh run list --branch=main --limit=1
+  --json conclusion --jq '.[0].conclusion'` が `success` を返すこと。
+- **ツール。** `gh`（GitHub CLI）バージョン 2.40 以降が `ahmed-g-gad` として認証済みであること。
+  `git` 2.40 以降に GPG 署名サブキーがロードされていること。
+  `@ahmed-g-gad/apothem` の npm 信頼済みパブリッシャーバインディングが有効であること
+  （[パブリッシャーアカウントセットアップランブック](/docs/runbooks/publisher-account-setup)に従って検証済み）。
 - **バージョンアンカーの整合。** `pyproject.toml` で宣言されたバージョン文字列が、
-  `v` プレフィックスを除いて計画されたタグと一致する。検証：
+  `v` 接頭辞を除いて計画したタグと一致すること（§2.1 で、他のすべてのアンカーとともに設定します）。検証:
 
   ```bash
   grep '^version' pyproject.toml
   ```
 
-  期待される出力（`vX.Y.Z` リリースの場合；プレースホルダーは進行中のリリース
-  タグを表す）：
+  期待される出力（`vX.Y.Z` リリースの場合。プレースホルダーは進行中のリリースタグを表します）:
 
   ```text
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG セクションのステージング済み。** `CHANGELOG.md` が Keep-a-Changelog
-  の見出しの下にバージョン付きセクションを携える。メンテナーはタグを着地させる
-  のと同じコミットで日付とリリース箇条書きを更新する。
+- **CHANGELOG エントリのステージング。** リリースの箇条書きが、Keep-a-Changelog の見出しで
+  `## [Unreleased]` の下にあること。§2.1 で、タグを着地させるコミットにおいて、それらが日付付きのバージョンセクションに変わります。
 
 ## 2. タグ付けとトリガー
 
-### 2.1 リリースコミットを執筆する
+### 2.1 リリースコミットを作成する
 
-リリースコミットは 2 つの変更を着地させます。
-
-- `CHANGELOG.md` のバージョンセクションに、リリースの実際の UTC 日付を付ける。
-- `pyproject.toml` のバージョンを新バージョンへ引き上げる（`main` の前のコミット
-  がすでに前バージョンのピンを携えており、新たな引き上げが必要な場合のみ；
-  コミットはタグ時刻の数日前のバージョン引き上げサイクル中に着地することもある）。
-
-コミット例：
+バージョンは 12 を超えるファイルに記載されているため、手作業で編集しないでください。
+1 つのコマンドですべてを更新します。
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# Edit ツールで CHANGELOG と pyproject.toml の編集を執筆し、その後：
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+`bump_version.py` は、すべてのバージョンアンカーをまとめて更新します。
+
+- すべてのパッケージング、拡張機能、プラグイン、マーケットプレイスのマニフェストと、
+  引用ファイル（バージョンとリリース日）。完全なリスト:
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- `CHANGELOG.md`: `[Unreleased]` のエントリが日付付きの `## [X.Y.Z]` セクションになり、
+  `[Unreleased]` は `vX.Y.Z` からの比較になり、`[X.Y.Z]` リンクが追加されます。
+- `SECURITY.md`: 新しいマイナーには、サポート対象の `X.Y.x` 行が追加されます。
+  古いマイナーを掲載し続けるかどうかはあなたが決めます。スクリプトはリマインダーを出力します。
+
+その後、派生ツリー（Claude Code プラグインパッケージ、振る舞い差分ゴールデン、ドキュメントのリファレンスページと変更履歴ページ）を再生成します。
+変更を先に一覧表示するには `--dry-run` を、リリース日を設定するには `--date
+YYYY-MM-DD`（デフォルト: UTC での今日）を、再生成をスキップするには `--no-regen` を渡します。
+スクリプトは不正な形式のバージョンやダウングレードを拒否します。現在のバージョンで再実行した場合は、ずれたアンカーを揃え直すだけです。
+
+差分をレビューしてから、コミットします。
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```
 
-`-S` フラグは GPG キーでコミットに署名します。プッシュは標準 CI マトリクス
-（lint、test、build）をトリガーします。タグ付け前にグリーンを待ってください。
+`-S` フラグは GPG キーでコミットに署名します。
+プッシュは標準の CI マトリクス（lint、test、build）をトリガーします。タグ付けの前に、グリーンになるのを待ってください。
 
 ### 2.2 タグに署名してプッシュする
 
@@ -85,73 +107,69 @@ git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-`-a -s` の組み合わせは注釈付きで GPG 署名されたタグを生成します。プッシュは
-`.github/workflows/release.yml` をトリガーし、それがビルド、署名、証明、公開を
-行います。
+`-a -s` の組み合わせは、注釈付きで GPG 署名されたタグを生成します。
+プッシュは `.github/workflows/release.yml` をトリガーし、このワークフローがビルド、署名、構成証明、公開を行います。
 
-### 2.3 リリースワークフローが完了したことを確認する
+### 2.3 リリースワークフローの完了を確認する
 
 ```bash
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-ワークフローはビルド（sdist + wheel）、SBOM 生成（CycloneDX）、
-キーレス cosign 署名、SLSA-3 来歴の生成と検証、プラットフォームアーカイブの
-ビルド（darwin / linux / windows）、集約された `SHA256SUMS` マニフェストによる
-アーカイブ署名、そして最終的な GitHub Release の公開を実行します。メンテナーは
-`publish GitHub Release` ジョブのログをスキャンしてアセットアップロードの確認を
-探します。
+ワークフローは、ビルド（sdist + wheel、続いてそれらのディストリビューションの CycloneDX SBOM をその隣に書き出す）、キーレス cosign 署名、SLSA-3 来歴の生成と検証、プラットフォームアーカイブのビルド（darwin / linux / windows）、集約された `SHA256SUMS` マニフェストによるアーカイブ署名、そして最終的な GitHub Release の公開を実行します。
+メンテナーは `publish GitHub Release` ジョブのログを確認し、アセットアップロードの確認メッセージを探します。
 
-### 2.4 npm 公開をディスパッチする（任意の段階）
+### 2.4 npm 公開を確認する
 
-GitHub Release とレディネスゲートの両方がグリーンになった後：
+タグのプッシュは `publish-npm.yml` も実行します。
+プロンプトが表示されたら、`release` 環境のデプロイを承認します。
+ワークフローは npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。
+その後、準備状態を確認します。
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-プロンプトが出たら `npmjs` 環境デプロイメントを承認します。ワークフローは
-npm Trusted Publishing（OIDC）を介して `@ahmed-g-gad/apothem@X.Y.Z` を
-npmjs.com へ公開します。リポジトリにはレジストリトークンは保存されません。
+実行が失敗した後に再度公開するには、同じタグに対してワークフローをディスパッチします
+（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。
+npm のバージョンは不変であるため、バージョンがすでにレジストリにある場合、ワークフローは公開をスキップします。
 
 ## 3. 配布面
 
-各面には「リリースはここに着地したか？」に答える検証コマンドがあります。
+各面には、「リリースはここに着地したか？」に答える検証コマンドがあります。
 
 | # | 面 | 成果物 | 検証 |
 |---|---|---|---|
-| 1 | GitHub Release（Python ディストリビューション） | `apothem-X.Y.Z.tar.gz`（sdist）+ `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` が両方のファイル名を含む |
-| 2 | GitHub Release（SBOM） | `sbom.cdx.json` | 行 1 と同様；アセットリストが CycloneDX SBOM を含む |
-| 3 | GitHub Release（署名） | ディストリビューション成果物ごとに `*.cosign.bundle`；アーカイブごとに `*.sig`；`SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` が 0 で終了する（ワークフロー ID フラグ付き） |
-| 4 | GitHub Release（来歴） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` が 0 で終了する |
-| 5 | GitHub Release（プラットフォームアーカイブ） | `apothem-vX.Y.Z-darwin.tar.gz`、`apothem-vX.Y.Z-linux.tar.gz`、`apothem-vX.Y.Z-windows.zip` | アセットリストが各アーカイブと `SHA256SUMS` を含む |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` が `X.Y.Z` を返す；`npx @ahmed-g-gad/apothem@X.Y.Z --version` が `apothem X.Y.Z` を出力する |
-| 7 | Pages（スクリプトインストーラー） | ドキュメントサイト上の `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` がスクリプトヘッダーを返す |
+| 1 | GitHub Release（Python ディストリビューション） | `apothem-X.Y.Z.tar.gz`（sdist）+ `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` に両方のファイル名が含まれる |
+| 2 | GitHub Release（SBOM） | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | アセットリストに両方が含まれる。SBOM の `metadata.component.purl` が `pkg:pypi/apothem@X.Y.Z` であり、そのコンポーネントに `src/apothem/_vendor/vendor.txt` のすべてのパッケージが含まれる |
+| 3 | GitHub Release（署名） | sdist、wheel、SBOM、VS Code 拡張機能、プラットフォームアーカイブ、`SHA256SUMS` のそれぞれにつき 1 つの `<asset>.cosign.bundle`（以前のリリースでは、アーカイブと `SHA256SUMS` のバンドルの名前は `<asset>.sig`） | §5.5 の正確なアイデンティティを指定した `cosign verify-blob` が 0 で終了する |
+| 4 | GitHub Release（来歴） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` が 0 で終了する（§5.5） |
+| 5 | GitHub Release（プラットフォームアーカイブ） | `apothem-vX.Y.Z-darwin.tar.gz`、`apothem-vX.Y.Z-linux.tar.gz`、`apothem-vX.Y.Z-windows.zip` | アセットリストにすべてのアーカイブと `SHA256SUMS` が含まれる。darwin と linux のアーカイブは 2 つの名前を持つ同一のバイト列である（ランタイムはプラットフォーム非依存で、`--platform` は tar.gz か zip かを選ぶだけ）ため、それらの `SHA256SUMS` 行には 1 つのダイジェストが 2 回現れる |
+| 6 | GitHub Release（VS Code 拡張機能） | `apothem.vsix` + `apothem.vsix.cosign.bundle` | アセットリストに両方が含まれる。`code --install-extension apothem.vsix` でインストールできる。リリースワークフローが拡張機能をパッケージ化するようになる前のリリースには、どちらも含まれない |
+| 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` が `X.Y.Z` を返す。`npx @ahmed-g-gad/apothem@X.Y.Z --version` が `Apothem, version X.Y.Z` を出力する |
+| 8 | Pages（スクリプトインストーラー） | ドキュメントサイト上の `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` がスクリプトヘッダーを返す |
 
-GitHub Release は正規の成果物面であり、npm パッケージとスクリプトインストーラーは
-その上に重ねられたインストールパスです。npm 公開は意図的に最後の段階です。
+GitHub Release は正規の成果物面であり、npm パッケージとスクリプトインストーラーは、その上に重ねられたインストールパスです。
+npm の公開は、同じタグのプッシュでリリースワークフローと並行して実行されます。
 
 ## 4. CHANGELOG の規律
 
-`CHANGELOG.md` は Keep-a-Changelog 規約の下、リリースごとに 1 つのセクションを
-携えます。リリースコミットの CHANGELOG 編集：
+`CHANGELOG.md` は、Keep-a-Changelog の規約に従い、リリースごとに 1 つのセクションを持ちます。
+リリースコミットにおける CHANGELOG の編集では、次のことを行います。
 
-- バージョンセクションが `## [X.Y.Z] — YYYY-MM-DD` の見出しを使用することを確認
-  する。
-- 該当する箇所で標準の見出し——Added、Changed、Deprecated、Removed、Fixed、
-  Security——が使用されることを確認する。空の見出しはレンダリングされたファイルから
-  落とされる。
-- 実装ではなく**能力**を捉える。ドメイン言語のみ；プラン内部の参照なし；コミット
-  ハッシュなし；プランやフェーズの識別子なし。
+- バージョンセクションが `## [X.Y.Z] - YYYY-MM-DD` の見出しを使用していることを確認します
+  （ハイフンです。`bump_version.py` がこれを書き込み、`extract_release_notes.py` は `## [X.Y.Z]` 接頭辞に一致させます）。
+- 標準の見出し（Added、Changed、Deprecated、Removed、Fixed、Security）が、該当する箇所で使用されていることを確認します。
+  空の見出しは、レンダリングされたファイルから除かれます。
+- 実装ではなく**能力**を記述します。ドメインの言葉のみを使い、
+  プラン内部の参照、コミットハッシュ、プランやフェーズの識別子は含めません。
 
-メンテナーのレビューを生き延びた CHANGELOG セクションは、アナウンスの語りのための
-リリースノートのアンカーとして読めます。
+メンテナーのレビューを通過した CHANGELOG セクションは、アナウンスの文章のためのリリースノートのアンカーとして読めます。
 
 ## 5. インストールパスのスモークテスト
 
-両段階が完了した後、メンテナーはスモークテストを実行します。スモークテストは、
-ユーザー向けのインストールコマンドが応答することの正規の検証です。
+両方の段階が完了した後、メンテナーはスモークテストを実行します。
+スモークテストは、ユーザー向けのインストールコマンドが応答することを確かめる正規の検証です。
 
 ### 5.1 Claude Code プラグイン
 
@@ -160,8 +178,7 @@ GitHub Release は正規の成果物面であり、npm パッケージとスク�
 /plugin install apothem@apothem
 ```
 
-期待：プラグインがインストールされ、`apothem` コマンドが Claude Code 内で利用
-可能になる。
+期待される結果: プラグインがインストールされ、Claude Code 内で `apothem` コマンドが利用可能になります。
 
 ### 5.2 Node.js（npx）
 
@@ -169,7 +186,7 @@ GitHub Release は正規の成果物面であり、npm パッケージとスク�
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-期待される出力：`apothem X.Y.Z`。
+期待される出力: `Apothem, version X.Y.Z`。
 
 ### 5.3 ワンショットスクリプトインストーラー（POSIX）
 
@@ -178,7 +195,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-期待される出力：`apothem X.Y.Z`。
+期待される出力: `Apothem, version X.Y.Z`。
 
 ### 5.4 ワンショットスクリプトインストーラー（Windows）
 
@@ -187,53 +204,64 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-期待される出力：`apothem X.Y.Z`。
+期待される出力: `Apothem, version X.Y.Z`。
 
 ### 5.5 成果物の検証（サプライチェーンの証拠）
 
+すべてのアセットを空のディレクトリにダウンロードしてから、検証します。
+証明書のアイデンティティは、まさにこのタグにおけるリリースワークフローです。
+アイデンティティのチェックは大文字と小文字を区別し、証明書には GitHub が報告するとおりのオーナー `Ahmed-G-Gad` が記載されているため、小文字のオーナーでは失敗します。
+
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-期待：両方の検証が 0 で終了する。
+期待される結果: `Verified OK`、`PASSED: SLSA verification passed`、そして
+`verify-provenance: chain OK (3 of 3 layers verified)`。
+スクリプトは `SHA256SUMS`、すべての署名バンドル、来歴を 1 回の実行でチェックします。タグは wheel の名前から導出します（`--tag vX.Y.Z` で上書きできます）。
 
-スモークテストは面ごとに 1 行の PASS / FAIL を生成します。それらの行を
-メンテナーのリリースログに記録してください。
+スモークテストは面ごとに 1 行の PASS / FAIL を生成します。それらの行をメンテナーのリリースログに記録してください。
 
-## 6. 障害からの回復
+## 6. 障害からの復旧
 
-リリースワークフローには、リリースエンジンと npm パブリッシャーに対する文書化
-された障害モードがあります。
+リリースワークフローには、リリースエンジンと npm パブリッシャーについて文書化された障害モードがあります。
 
-| 障害 | 診断 | 回復 |
+| 障害 | 診断 | 復旧 |
 |---|---|---|
-| タグプッシュが拒否される（署名失敗） | `git push origin vX.Y.Z` が GPG 関連のメッセージとともに `error: failed to push some refs` を返す | GPG サブキーがロードされていることを検証する（`gpg --list-secret-keys --keyid-format=long`）；キーリングを修正した後にローカルで `-s` を付けて再タグ付けする；再プッシュする |
-| `release.yml` ジョブが単一の段階で失敗する | `gh run view <run-id> --log` が失敗したジョブ（build / sbom / sign / provenance / archive / publish）を名指す | `gh run rerun <run-id> --failed` で失敗したジョブのみを再実行する；障害が繰り返される場合は、再タグ付けの前にジョブの入力をその発生源で修正する |
-| SLSA 来歴の検証が失敗する | `verify SLSA provenance artifact` ジョブが非ゼロで終了する | 来歴成果物にサブジェクトダイジェストの不一致がないか調べる；同じタグから再ビルドする——来歴は正確な成果物ダイジェストにバインドされるため、成果物の再生成にはワークフローの完全な再実行が必要 |
-| npmjs.com 公開が拒否される | npm ジョブが `npm publish` 中に非ゼロで終了する；`PUT` 中のレジストリ `404` は認可 / 信頼済みパブリッシャーの不一致であり、パッケージコードが欠落している証拠ではない | `@ahmed-g-gad/apothem` の npm Trusted Publishing がオーナー `ahmed-g-gad`、リポジトリ `apothem`、ワークフロー `publish-npm.yml`、許可されたアクション `npm publish` を名指していることを検証する；ジョブがワークフローでピン留めされた Node バージョンと npm CLI OIDC の下限で実行されることを確認する |
-| タグは見えるが成果物が欠落している | `gh release view vX.Y.Z` がスタブのリリースを返す | リリースワークフローの publish ジョブを再実行する；スタブが残る場合は、リリースページを削除し（`gh release delete vX.Y.Z --cleanup-tag`）、同じ SHA から再タグ付けする |
+| タグのプッシュが拒否される（署名の失敗） | `git push origin vX.Y.Z` が GPG 関連のメッセージとともに `error: failed to push some refs` を返す | GPG サブキーがロードされていることを検証する（`gpg --list-secret-keys --keyid-format=long`）。キーリングを修正した後、ローカルで `-s` を付けて再度タグを付け、再プッシュする |
+| リリースビルドが `Check the plugin version changed with the plugin` で停止する | ビルドジョブのログにプラグインと前のタグが示される。アセットはビルドも公開もされていない | 前回のリリース以降にプラグインパッケージが変更されたが、そのバージョンは変更されていない。タグを削除し（`git push --delete origin vX.Y.Z`、`git tag -d vX.Y.Z`）、`python scripts/release/bump_version.py X.Y.Z` を実行してコミットし、その後タグに署名して再度プッシュする（§2.2）。同じチェックがすべてのプルリクエストで警告アノテーションとして実行されるため、通常はタグ付けの前に表面化する |
+| `release.yml` のジョブが単一の段階で失敗する | `gh run view <run-id> --log` が失敗したジョブ（SBOM も書き出す build / sign / provenance / archive / publish）を示す | `gh run rerun <run-id> --failed` で失敗したジョブだけを再実行する。障害が繰り返される場合は、再度タグを付ける前に、ジョブの入力をその発生源で修正する |
+| SLSA 来歴の検証が失敗する | `verify SLSA provenance artifact` ジョブが非ゼロで終了する | 来歴成果物にサブジェクトダイジェストの不一致がないか調べる。同じタグから再ビルドする。来歴は正確な成果物ダイジェストに結び付けられているため、成果物を再生成するにはワークフロー全体の再実行が必要 |
+| npmjs.com への公開が拒否される | npm ジョブが `npm publish` 中に非ゼロで終了する。`PUT` 中のレジストリ `404` は認可 / 信頼済みパブリッシャーの不一致であり、パッケージコードが欠落している証拠ではない | `@ahmed-g-gad/apothem` の npm Trusted Publishing が、オーナー `ahmed-g-gad`、リポジトリ `apothem`、ワークフロー `publish-npm.yml`、許可されたアクション `npm publish` を指定していることを検証する。ジョブが、ワークフローでピン留めされた Node バージョンと npm CLI の OIDC 下限で実行されることを確認する |
+| タグは見えるがアセットが欠落している | `gh release view vX.Y.Z` がスタブのリリースを返す | リリースワークフローの publish ジョブを再実行する。このジョブは既存のリリースを編集し、すべてのアセットを再アップロードする。タグから何もユーザーに届いていない場合（アセットなし、npm バージョンなし）に限り、削除して再度タグを付ける。それ以外の場合は、次のパッチリリースで前方修正する（[リリース復旧ランブック](/docs/runbooks/release-recovery) §2） |
 
-回復サイクルが 1 回の診断パス内で面を着地させられない場合、その面は既知の障害
-としてリリースノートにオープンな課題へのリンクとともに記録され、下流のユーザーは
-壊れた面がパッチリリースで修正される間、動作する面へと案内されます。
+復旧サイクルが 1 回の診断パスで面を着地させられない場合、その面はオープンなイシューへのリンクとともに、既知の障害としてリリースノートに記録されます。
+壊れた面がパッチリリースで修正されるまでの間、下流のユーザーは動作している面へ案内されます。
 
 ## 7. 相互参照
 
-- **パブリッシャーセットアップ。**
-  [パブリッシャーアカウントセットアップランブック](/docs/runbooks/publisher-account-setup)
-  は、npm 信頼済みパブリッシャーバインディングと、このランブックが前提とする
-  GitHub 側の前提条件を確立します。
-- **回復フロー。** リリース回復ランブック（`site/content/docs/runbooks/release-recovery.mdx`）は、リリースカットオーバー中の段階横断の障害パスを管轄し、§6 で
-  名指された面ごとのリリース障害は管轄しません。
-- **Pages 有効化。** `publish-static-site.yml` ワークフローはプロジェクトの
-  ウェブサイトを検証してカスタムドメインへデプロイします；Pages 有効化ランブック
-  （`site/content/docs/runbooks/pages-enablement.mdx`）は、そもそもカスタム
-  ドメインを確立した上流の手順です。
-- **バージョニングポリシー。** `site/content/docs/governance/release-engineering-policy.mdx`
-  は、このランブックが守る SemVer + 署名 + 非推奨化のポリシーを携えています。
+- **パブリッシャーのセットアップ。**
+  [パブリッシャーアカウントセットアップランブック](/docs/runbooks/publisher-account-setup)は、
+  npm の信頼済みパブリッシャーバインディングと、このランブックが前提とする GitHub 側の前提条件を確立します。
+- **復旧フロー。** [リリース復旧ランブック](/docs/runbooks/release-recovery)は、
+  同じ追加型モデルに従います。失敗したタグやパブリッシャーをステージごとに復旧し、
+  修正を新しいパッチバージョンとしてリリースすることでロールバックします。
+  公開済みのタグ、リリース、npm バージョンを削除したり付け替えたりすることでロールバックすることは決してありません。
+- **Pages の有効化。** `publish-static-site.yml` ワークフローは、
+  プロジェクトのウェブサイトを検証してカスタムドメインへデプロイします。
+  Pages 有効化ランブック（`site/content/docs/runbooks/pages-enablement.mdx`）は、
+  そもそもカスタムドメインを確立した上流の手順です。
+- **バージョニングポリシー。** `site/content/docs/governance/release-engineering-policy.mdx` は、
+  このランブックが従う SemVer + 署名 + 非推奨化のポリシーを定めています。

@@ -1,49 +1,106 @@
 ---
-title: "Konformitätsgate"
-description: "Führe das Apothem-Konformitätsgate aus, um die Gesundheit des Ökosystems zu prüfen."
+title: "Konformitäts-Gate"
+description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "9e8082c92412b0a9"
+sourceHash: "ea155671db71b76d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Das Konformitätsgate unter `src/apothem/conformity/gate.py` führt fünfzehn
-mechanische Prüfungen gegen jedes Artefakt aus, das der Operator verfasst.
+Das Konformitäts-Gate unter `src/apothem/conformity/gate.py` führt den
+mechanischen Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) gegen jedes
+Artefakt aus, das der Operator verfasst.
 
 ## Das Gate ausführen
 
+Das Gate ist **standardmäßig beratend**: Es meldet Befunde und endet mit `0`,
+sodass ein lokaler Lauf Sie niemals blockiert. Fügen Sie `--strict` hinzu (oder
+setzen Sie `APOTHEM_CONFORMITY_STRICT=1`), damit es bei einem blockierenden
+Befund mit einem Wert ungleich null endet — der Modus, den CI und pre-commit
+verwenden, um eine Änderung mit Verstößen scheitern zu lassen.
+
 ```bash
-python -m apothem.conformity.gate
+# Advisory: report every validator's findings across the repo, exit 0
+python -m apothem.conformity.gate --all .
+
+# Strict: exit non-zero (code 2) when a blocking finding is present
+python -m apothem.conformity.gate --all --strict .
 ```
 
-## Gate-Balken
+Exit-Codes: `0` sauber (oder beratend), `2` eine Blockierung durch Befunde im
+strikten Modus, `3` ein Nutzungsfehler: ein unbekanntes Flag oder ein
+unbekannter Validator-Name, eine Datei, die nicht existiert, oder ein
+Stammverzeichnis, das nicht existiert. `--help` gibt die vollständige Nutzung aus
+und endet mit `0`. Jeder eigenständige Validator akzeptiert dasselbe `--help` und
+endet bei einem unbekannten Flag oder einem fehlenden Stammverzeichnis mit `3`.
 
-| Balken | Prüfung | Art |
+Ein relatives Stammverzeichnis wie `.` wird in einen absoluten Pfad aufgelöst,
+bevor irgendein Validator läuft, sodass `--all .` und `--all "$PWD"` denselben
+Baum untersuchen. Jeder Validator meldet `inspected` — wie viele Ziele er
+untersucht hat —, und `--all` kopiert diese Zahl in jeden Ergebniseintrag. Ein
+Validator, der nichts untersucht hat, meldet `passed: false`, sodass ein falsches
+Arbeitsverzeichnis nicht still bestehen kann. Die beiden Plan-Suite-Validatoren
+sind die Ausnahme: Plan-Suites liegen im per gitignore ausgeschlossenen Baum
+`.apothem/plans/`, daher melden sie bei einem sauberen Checkout
+`empty_scope_expected: true` und bestehen dennoch. Die Workflow-Validatoren tun
+dasselbe, wenn das Projekt noch kein Verzeichnis `.github/workflows/` hat, und der
+Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
+
+## Gate-Stufen
+
+| Stufe | Prüfung | Art |
 |-----|-------|------|
-| M1 | Bereichsabgleich | Begründet |
-| M2 | Plan-interne Isolation (CM-7) | Mechanisch |
-| M3 | Standardkonformität | Begründet |
-| M4 | Frontmatter-Gültigkeit | Mechanisch |
-| M5 | Keine verbotenen Formulierungen | Mechanisch |
-| M6 | Redaktionelle Offenlegung | Begründet |
-| M7 | Keine Planverweise in Artefakten | Mechanisch |
-| M8 | Urheberschafts-Header vorhanden | Mechanisch |
-| M9 | Ehrliche Bewertung | Begründet |
-| M10 | Benennungsdisziplin | Mechanisch |
-| M11 | Sprint-Apparat | Begründet |
-| M12 | Kanonisches Layout | Mechanisch |
-| M13 | Code-Handwerk | Begründet |
-| M14 | Systemische Teilnahme | Begründet |
-| M15 | Menschliche Urheberschaft | Mechanisch |
+| M1 | Host-Projekt-Agnostizismus | Abwägungsbasiert |
+| M2 | Redaktionelle Offenlegung | Mechanisch |
+| M3 | Zehn Qualitätsdimensionen | Abwägungsbasiert |
+| M4 | Selbstanwendung | Mechanisch |
+| M5 | Autorität (keine erfundene Identität / kein erfundener Endpunkt / kein erfundenes Geheimnis) | Mechanisch |
+| M6 | Einbindung von Expertise | Abwägungsbasiert |
+| M7 | Optionsannotation | Mechanisch |
+| M8 | Bestimmtheit | Mechanisch |
+| M9 | Visuelle Hebelwirkung | Abwägungsbasiert |
+| M10 | Bidirektionale Bindung | Mechanisch |
+| M11 | Agile Sprints | Abwägungsbasiert |
+| M12 | Phasenberichte und kanonisches Layout | Mechanisch |
+| M13 | Code-Handwerk | Mechanisch |
+| M14 | Systemizität | Abwägungsbasiert |
+| M15 | Produktionsreife | Mechanisch |
 
 ## Gezielte Prüfungen
 
 ```bash
-# Eine einzelne Prüfung ausführen
+# List every registered validator
+python -m apothem.conformity.gate --list
+
+# Run a single named validator
 python -m apothem.conformity.gate --check multi-surface-coherence
 
-# Gegen eine bestimmte Datei ausführen
+# Run every validator against one file
 python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Der `--hook`-Modus (`python -m apothem.conformity.gate --hook`) ist der vom
+Harness aufgerufene Einstiegspunkt: Er liest eine JSON-Nutzlast mit der
+Tool-Eingabe von stdin und führt die Matcher-Kette pro Schreibvorgang gegen den
+ausstehenden Schreibvorgang aus. Dies ist die Form, die der bereitgestellte
+`PreToolUse`-Hook aufruft; Sie rufen sie selten von Hand auf.
+
+Der Hook-Modus ist **auf eine Menge von Verzeichnissen beschränkt**. Er führt die
+Matcher-Kette nur bei Schreibvorgängen aus, deren Ziel unter eines davon fällt;
+ein Schreibvorgang außerhalb aller Geltungsbereiche wird sofort als stilles
+Bestehen abgeschlossen. Die Standardwerte sind die Hook-fähigen
+Harness-Stammverzeichnisse mit Benutzergeltungsbereich, in die Apothem
+installiert — die Seite jedes Harness unter Harnesses nennt dessen eigenes
+Stammverzeichnis. Setzen Sie `APOTHEM_CONFORMITY_SCOPE` auf ein Verzeichnis, um
+sie zu ersetzen:
+
+```bash
+# Run the per-write matcher chain against one project tree instead
+export APOTHEM_CONFORMITY_SCOPE=/path/to/project
+```
+
+Ein Hook, der scheinbar nichts tut, ist meist eher ein Treffer außerhalb des
+Geltungsbereichs als ein Fehler — prüfen Sie zuerst das Ziel des
+Schreibvorgangs gegen die oben genannten Geltungsbereiche.
 
 ## CI-Integration
 

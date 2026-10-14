@@ -2,11 +2,12 @@
 title: "quickstart"
 description: "Referencia de la CLI para el comando guiado de primera ejecución apothem quickstart."
 machineTranslated: true
-sourceHash: "2de815559e9e2e4e"
+sourceHash: "f564c70124345bea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Primera ejecución guiada: asegura que exista un perfil, previsualiza las escrituras y luego instala.
+Primera ejecución guiada: asegura que exista un perfil, previsualiza las
+escrituras y luego instala.
 
 ## Sinopsis
 
@@ -16,28 +17,54 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-`quickstart` es el único punto de entrada guiado para un operador nuevo. En un flujo lineal: (1) asegura que exista un perfil compartido — creando un perfil inicial con un aviso para personalizarlo si no se encuentra ninguno; (2) previsualiza los archivos concretos que escribirán los harness seleccionados, agrupados por raíz del proyecto frente a tu directorio de inicio; (3) pide confirmación; (4) instala con la salida de notas de capacidades agrupada y sin ruido; y (5) imprime los comandos siguientes recomendados.
+`quickstart` es el único punto de entrada guiado para un operador nuevo. En un
+solo flujo lineal: (1) asegura que exista un perfil compartido — y crea un
+perfil inicial con una invitación a personalizarlo si no encuentra ninguno;
+(2) previsualiza los archivos concretos que escribirán los entornos
+seleccionados, agrupados en raíz del proyecto frente a tu directorio personal;
+(3) pide confirmación; (4) instala con la salida de notas de capacidades
+agrupada y sin ruido; y (5) imprime los comandos siguientes recomendados.
 
-Compone los mismos bloques de construcción que usa el comando `install` — no los reimplementa. `--harness` tiene por defecto `all` y `--project` el directorio actual.
+Compone los mismos bloques de construcción que usa el comando `install`; no los
+reimplementa. `--project` tiene como valor predeterminado el directorio actual.
+`--harness` no tiene valor predeterminado: cuando se omite, `quickstart`
+pregunta qué entorno instalar, de modo que una primera ejecución escribe la
+configuración de un solo entorno. `--harness all` instala todos los entornos
+admitidos y es siempre una elección explícita.
 
 ## Comportamiento
 
-- **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart` ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en un shell no interactivo o con `--format json`) y nombra los campos de identidad de marcador de posición a personalizar.
-- **Previsualizar + confirmar** — antes de cualquier escritura, los destinos se listan bajo dos encabezados (raíz del proyecto frente a tu directorio de inicio); una ejecución interactiva confirma antes de escribir fuera del proyecto. `--yes`, un shell no interactivo y `--format json` continúan sin preguntar. Rechazar aborta antes de cualquier escritura.
-- **Instalar** — las capacidades que un harness no admite de forma nativa se resumen como una nota agrupada por harness (pasa `--verbose` para el detalle por capacidad); el conjunto completo siempre está en el arreglo warnings de `--format json`.
-- **Paso siguiente** — la salida del terminal nombra los comandos posteriores (`apothem verify …`, `apothem doctor`).
+- **Entorno** — sin `--harness`, una ejecución interactiva lista los nombres
+  admitidos (además de `all`) y pide uno antes de escribir nada. Una ejecución
+  que no puede preguntar — `--yes`, `--format json` o sin terminal — se detiene
+  con un error de uso que nombra la opción `--harness`, y no escribe nada.
+- **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart`
+  ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en una
+  shell no interactiva o con `--format json`) y nombra los campos de identidad
+  de marcador de posición que hay que personalizar.
+- **Vista previa + confirmación** — antes de cualquier escritura, los destinos
+  se listan bajo dos encabezados (raíz del proyecto frente a tu directorio
+  personal); una ejecución interactiva pide confirmación antes de escribir fuera
+  del proyecto. `--yes`, una shell no interactiva y `--format json` continúan
+  sin preguntar. Rechazar aborta antes de cualquier escritura.
+- **Instalación** — las capacidades que un entorno no admite de forma nativa se
+  resumen como una nota agrupada por entorno (pasa `--verbose` para ver el
+  detalle por capacidad); el conjunto completo está siempre en el arreglo
+  warnings de `--format json`.
+- **Paso siguiente** — la salida de la terminal nombra los comandos posteriores (`apothem
+  verify …`, `apothem doctor`).
 
 ## Opciones
 
 | Opción | Descripción |
 |---|---|
-| `--harness NAME` | Adaptador de harness a instalar, o `all` para el conjunto de todo el registro (por defecto: `all`). |
-| `--profile PATH` | Ruta al YAML del perfil compartido. Por defecto es `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. Por defecto es el directorio actual. |
-| `--yes` | Ejecuta la secuencia guiada completa de forma no interactiva (omite cada indicación). |
+| `--harness NAME` | Adaptador de entorno que se instala, o `all` para el conjunto de todo el registro. Sin valor predeterminado: una ejecución interactiva lo pregunta; una ejecución no interactiva debe pasarlo. |
+| `--profile PATH` | Ruta al YAML del perfil compartido. Valor predeterminado: `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Raíz del proyecto para los entornos de alcance de proyecto. Valor predeterminado: el directorio actual. |
+| `--yes` | Ejecuta la secuencia guiada completa de forma no interactiva (omite todas las solicitudes). |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Imprime la justificación de cada capacidad no proyectada en lugar de la nota agrupada. |
-| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--format plain\|json` | Formato de salida (predeterminado: `plain`). |
 | `--json` | Abreviatura de `--format json`. |
 | `--no-color` | Desactiva los códigos de color ANSI en la salida. |
 | `-h`, `--help` | Muestra la ayuda y sale. |
@@ -48,6 +75,7 @@ Compone los mismos bloques de construcción que usa el comando `install` — no 
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "quickstart",
   "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
@@ -63,10 +91,10 @@ Compone los mismos bloques de construcción que usa el comando `install` — no 
 ## Ejemplos
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## Códigos de salida
@@ -74,12 +102,13 @@ apothem quickstart --json
 | Código | Significado |
 |---|---|
 | 0 | Ejecución guiada completada |
-| 1 | Error esperado de validación, perfil, harness, proyecto o adaptador |
-| 2 | Materialización parcial del lote tras al menos una escritura |
+| 1 | Error previsto de validación, de perfil, de entorno, de proyecto o de adaptador |
+| 2 | Materialización parcial del lote después de al menos una escritura |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
-- [apothem install](/docs/cli-reference/install) — materializa un harness a partir del perfil compartido
+- [apothem install](/docs/cli-reference/install) — materializa un entorno a partir del perfil compartido
 - [apothem verify](/docs/cli-reference/verify) — confirma que una instalación está activa
-- [apothem doctor](/docs/cli-reference/doctor) — salud del entorno y de la instalación
+- [apothem doctor](/docs/cli-reference/doctor) — salud del entorno del sistema y de la instalación
 - [Primeros pasos](/docs/install) — guía de instalación completa

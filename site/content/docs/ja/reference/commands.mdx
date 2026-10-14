@@ -1,49 +1,51 @@
 ---
 title: "コマンド"
-description: "プランスイートパイプラインを実装するスラッシュコマンド定義に加え、コード・アーキテクチャ・セキュリティ・依存関係・ドキュメントレビューの監査。"
+description: "プランスイートパイプラインを実装するスラッシュコマンド定義に加え、コード、アーキテクチャ、セキュリティ、依存関係、ドキュメントレビューのための監査。"
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-スラッシュコマンド定義は、`src/apothem/commands/` 配下のフラットな `.md` ファイルとして
-存在します。正規のセットは、アーキテクチャを意識したプランスイートパイプラインを筆頭とし、
-7 つの第一級コマンド——各ステージにつき 1 つ、それぞれ `/plan-<stage>` として直接呼び出し
-可能——として出荷されます。モノリシックなディスパッチャーは存在せず、すべてのステージは
-`src/apothem/commands/plan-<stage>.md` にあるそれぞれ独立した登録済みコマンドファイルです。
+スラッシュコマンド定義は、`src/apothem/commands/` 配下のフラットな `.md` ファイルとして置かれます。
+正規のセットの筆頭はアーキテクチャを意識したプランスイートパイプラインであり、これは 7 つの
+第一級コマンドとして出荷されます — ステージごとに 1 つで、それぞれ `/plan-<stage>` として
+直接呼び出せます。モノリシックなディスパッチャーは存在しません。すべてのステージは、
+`src/apothem/commands/plan-<stage>.md` にある、それぞれ独自の登録済みコマンドファイルです。
 
 | 呼び出し | コマンドファイル | 説明 |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 非構造化コンテンツをスペックグレードの散文に洗練する |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 散文／要件からプランスイートを物質化する |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 非構造化コンテンツを仕様グレードの散文に洗練する |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 散文 / 要件からプランスイートをマテリアライズする |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | スコアカードを伴うフォレンジック監査 |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | アーキテクチャを担うスイートのために `_inputs/design.md` を出力する |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | アーキテクチャを伴うスイート向けに `_inputs/design.md` を出力する |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | 品質ゲートとともにフェーズを実行する |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | 読み取り専用の進捗レポート |
-| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 解決済みの決定を失うことなく既存スイートを修正・拡張・洗練・差し戻しする |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | spec → generate → review を能動的な是正とともに閉ループでまとめる（直交、実行前） |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 解決済みの決定を失うことなく、既存のスイートを修正、拡張、洗練、または差し戻す |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | spec → generate → review を能動的な是正とともに包む閉ループ（直交、実行前） |
 
-プランパイプラインに加えて、プロジェクト全体向けハーネスコマンドが併せて出荷されます——
-更新とリリース向けの `/freshify`・`/github-deploy-fresh`・`/github-deploy-next`・`/elevate`、
-マルチエージェントのレビューとオーケストレーション向けの `/audit`・`/fortress`・`/workflow`、
-チャットアプリのプロジェクト引き上げ向けの `/projectify`、さらに 11 の監査／レビューパス (code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review) と
-`/research` パイプライン:
+プランパイプラインのほかに、プロジェクト全体を対象とするハーネスコマンドが併せて出荷されます —
+鮮度の刷新とリリース向けの `/freshify`、`/github-deploy-fresh`、`/github-deploy-next`、`/elevate`、
+マルチエージェントのレビューとオーケストレーション向けの `/audit`、`/fortress`、`/workflow`、
+チャットアプリの Project への引き上げ向けの `/projectify` — さらに、11 の監査/レビューパス
+（code-review、code-audit、architecture-review、docs-review、security-audit、dependency-audit、
+supply-chain-audit、threat-model-audit、perf-audit、a11y-audit、ux-review）と `/research`
+パイプラインがあります。
 
 | 呼び出し | コマンドファイル | 説明 |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | プロジェクトを新鮮・痕跡なし・本番対応の状態にレンダリングする。すべての破壊的ステップは確認ゲート付き |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | 単一の新鮮な初版リリースを生成する `/freshify` の GitHub 特化版 |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | GitHub のリリースサーフェスで完全な次回リリースサイクルを 1 回実行する |
-| `/elevate` | `src/apothem/commands/elevate.md` | 独立した批評ワーカーによってすべてのプロジェクトサーフェスを現行 SOTA まで引き上げ、その後 `/freshify` に引き継ぐ |
+| `/freshify` | `src/apothem/commands/freshify.md` | プロジェクトを、新鮮で痕跡がなく本番対応の状態にレンダリングする。破壊的なステップはすべて確認ゲート付き |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | 単一の新鮮な初版リリースを生成する、`/freshify` の GitHub 特化版 |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | GitHub のリリース面で、次のリリースの完全なサイクルを 1 回実行する |
+| `/elevate` | `src/apothem/commands/elevate.md` | 独立した批評エージェントを通じてプロジェクトのすべての面を現在の SOTA まで引き上げ、その後 `/freshify` に引き継ぐ |
 
-すべての監査レビューパスを含む、完全な信頼できる情報源となるコマンドセットは、
+完全で信頼できる情報源となるコマンドセット — すべての監査レビューパスを含む — は、
 このページの末尾にある生成されたインベントリです。
 
 ## Frontmatter 契約
 
-すべてのコマンドファイルは、正規の 8 キー frontmatter を担います。機械可読の契約は
+すべてのコマンドファイルは、正規の 8 キーの frontmatter を持ちます。機械可読の契約は
 [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
-（`additionalProperties: false`）であり、このブロックはそれを反映します:
+（`additionalProperties: false`）であり、このブロックはそれを反映しています:
 
 ```yaml
 ---
@@ -58,16 +60,20 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-バリデーターの `frontmatter-cohort` チェック（Command ブランチ）が、すべての
-コマンドファイルでこの契約を検証します。
+バリデーターの `frontmatter-cohort` チェック（Command ブランチ）が、すべてのコマンドファイルで
+この契約を検証します。`allowed-tools` は、コマンドがアクティブな間にハーネスが確認なしで実行して
+よいツールを列挙するため、デフォルトでは読み取り専用に保たれます。副作用のあるツール（Bash、
+PowerShell、Write、Edit、NotebookEdit、WebFetch）は `Bash(git log *)` のようなスコープ付きの
+ルールとしてのみ現れ、裸の `"*"` ワイルドカードはスキーマによって拒否されます。不可逆な副作用を
+持つコマンド（`freshify`、`github-deploy-fresh`、`github-deploy-next`）は
+`disable-model-invocation: true` を設定するため、それらを開始するのはオペレーターだけです。
 
 ## オーサリング規律
 
-- **自己完結型ワークフロー。** すべてのコマンドの本体は、アシスタントがコールド
-  スタートから実行できるよう、ワークフローを番号付きステップとして列挙します。
-- **Bindings ブロック。** すべてのコマンドは、正規の五方向 Bindings ブロックで
-  終わります。
-- **ドメイン言語のみ。** 本体にプラン内部参照は含めません。
+- **自己完結型のワークフロー。** すべてのコマンドの本体は、アシスタントがコールドスタートから
+  実行できるよう、ワークフローを番号付きのステップとして列挙します。
+- **Bindings ブロック。** すべてのコマンドは、正規の 5 方向の Bindings ブロックで終わります。
+- **ドメイン言語のみ。** 本体にプラン内部の参照を含めません。
 
 ## 生成されたコマンドインベントリ
 

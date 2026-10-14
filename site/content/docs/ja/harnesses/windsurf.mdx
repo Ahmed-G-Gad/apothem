@@ -1,15 +1,18 @@
 ---
 title: "Windsurf"
-description: "Windsurf（GA）向けの Apothem ツールアダプター。"
+description: "Windsurf（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "0146944b97b5e33f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**ベンダー：** Codeium
+**ベンダー：** Devin Desktop（旧 Codeium Windsurf）
 **インストール名：** `windsurf`
 **ステータス：** GA
-**ネイティブ構成：** `<project>/.devin/rules/apothem-rules.md`
+**ネイティブ設定：** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf は現在 Devin Desktop となっており、`.devin/rules/` が推奨されるワークスペース
+ルールの場所です（`.windsurf/rules/` より優先されます）。
 
 ## インストール
 
@@ -17,22 +20,27 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-アダプターは、共有された Apothem のルールおよびガバナンス面から、1 つの
-プロジェクトスコープの Windsurf ルールファイルを書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Windsurf
+ルールファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.devin/rules/apothem-rules.md`
 
-## プロファイルからネイティブ構成へのマッピング
+## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の各実行時にプロジェクトルールファイルをレンダリングします。共有
-プロファイルが事実の源です。生成されたファイルへのプロジェクトローカルな編集は、
-次回の同期で Apothem が管理するコンテンツを置き換える前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
+実行するたびに、プロジェクトのルールファイルをレンダリングします。共有プロファイルが
+信頼できる情報源です。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が
+Apothem 管理のコンテンツを置き換える前にバックアップされます。
+
+このファイルは `trigger: always_on` フロントマターで始まり、これがルールの
+アクティベーションモードを設定します。Apothem 管理のブロックはその後に続きます。
+ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクトスコープです。
-ワークフローとマシンローカルなメモリは操作者が所有します。Apothem はそれらを
+Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクトスコープです（推奨される
+場所であり、後方互換のフォールバックである `.windsurf/rules/` より優先されます）。
+ワークフローとマシンローカルなメモリはオペレーターの所有であり、Apothem はそれらを
 書き込みません。単一ファイル形式の `.windsurfrules` は意図的に書き込まれません。
 
 ## 検証
@@ -43,7 +51,7 @@ apothem verify --harness windsurf --project /path/to/project
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定パスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -53,7 +61,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness windsurf --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクトルールファイルを再導出します。
+現在の共有プロファイルの状態から、プロジェクトのルールファイルを再導出します。
 
 ## アンインストール
 
@@ -61,10 +69,10 @@ apothem update --harness windsurf --project /path/to/project
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -72,14 +80,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness windsurf --project /path/to/project` を再実行する |
-| 検証が失敗した | `apothem update --harness windsurf --project /path/to/project` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness windsurf --project /path/to/project` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness windsurf --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness windsurf --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness windsurf --project /path/to/project` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

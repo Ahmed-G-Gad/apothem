@@ -1,13 +1,13 @@
 ---
 title: "헬퍼"
-description: "frontmatter 계약 및 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 작업자."
+description: "frontmatter 계약과 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 에이전트입니다."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "9aeb014bc69c5163"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 영속적 헬퍼는 정규 헬퍼 디렉터리 아래에 `<name>.md` 접미사를 가진 플랫
-파일로 존재합니다. 정규 경로는 다음과 같습니다:
+파일로 있습니다. 정규 경로는 다음과 같습니다.
 
 ```text
 src/apothem/agents/
@@ -46,11 +46,29 @@ maxTurns: <integer>
 ---
 ```
 
+## 하니스별 변환
+
+`disallowedTools`를 적용한 뒤의 `tools` 부여에 `Write`나
+`Edit`가 포함되지 않은 헬퍼는 읽기 전용입니다. 헬퍼를 변환하는 각 하니스는
+그 제한을 네이티브로 강제하거나 읽기 전용 레이블을 제거합니다.
+
+| 하니스 | 도구 제한 | 턴 제한 | 모델과 노력 수준 |
+| --- | --- | --- | --- |
+| Claude Code | 작성된 그대로의 `tools` / `disallowedTools` | `maxTurns` | 상속(설정하지 않음) |
+| Codex | 읽기 전용 헬퍼에 대한 `sandbox_mode = "read-only"` | 사용할 수 없음 | 상속(설정하지 않음) |
+| Gemini CLI | Gemini 도구 이름으로 된 `tools` 허용 목록 | `max_turns` | 상속(설정하지 않음) |
+| Qwen Code | Qwen 도구 이름으로 된 `tools` / `disallowedTools` | 매핑되지 않음 | `model: inherit` |
+| OpenCode | `permission`(도구별 `allow` / `deny`) | 매핑되지 않음 | 상속(설정하지 않음) |
+| Antigravity | 아무것도 방출하지 않음. 설명에서 "read-only"가 빠짐 | 사용할 수 없음 | 상속(설정하지 않음) |
+
+Hermes, Open-Claw, Kimi Code는 헬퍼 파일을 네이티브 헬퍼가 아니라 지원
+자료로 받습니다.
+
 ## 오케스트레이션
 
-헬퍼 배포, 병렬-실행 프로토콜, 반환-계약 강제, 그리고 격리 규율은
-오케스트레이션 규칙에 존재합니다. 작업자별 디스패치 트리는 오케스트레이션
-패턴 규칙의 §Decision Tree 에 존재합니다. 정규 경로:
+헬퍼 배포, 병렬 실행 프로토콜, 반환 계약 강제, 격리 규율은
+오케스트레이션 규칙에 있습니다. 작업자별 디스패치 트리는 오케스트레이션
+패턴 규칙의 §Decision Tree에 있습니다. 정규 경로:
 
 ```text
 src/apothem/rules/agent-orchestration.md

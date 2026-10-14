@@ -1,24 +1,24 @@
 ---
-title: "Schéma du Frontmatter"
-description: "Guide de référence pour la structure du bloc de frontmatter YAML, les clés requises par classe et les règles d'application du validateur à travers les classes d'artefact."
+title: "Schéma du frontmatter"
+description: "Guide de référence sur la structure du bloc de frontmatter YAML, les clés requises par classe et les règles d'application des validateurs pour l'ensemble des classes d'artefacts."
 machineTranslated: true
-sourceHash: "9c6a607ba1dd7651"
+sourceHash: "79d900f52578b1b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence canonique du frontmatter YAML sur chaque classe d'artefact.** Le résumé dans [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions est la déclaration en ligne ; les JSON Schemas par classe dans [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) sont le contrat lisible par machine ; cette page est la référence autonome que citent les contributeurs en aval.
+> **Référence canonique du frontmatter YAML de chaque classe d'artefact.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; les JSON Schemas par classe sous [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` rejette les clés inconnues) constituent le contrat lisible par machine et l'emportent en cas de désaccord. Cette page est l'index des clés requises, et [`artifact-schema.mdx`](/docs/reference/artifact-schema) porte les modèles et exemples détaillés par classe ; toutes deux sont des projections lisibles par un humain de ces schémas.
 
 ---
 
-## 1. Structure du bloc de frontmatter
+## 1. Forme du bloc de frontmatter
 
-Chaque artefact porte un frontmatter YAML en tête, délimité par des lignes `---`. La bannière canonique d'en-tête de paternité selon [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) se place au-dessus du frontmatter sur les fichiers de la famille Markdown ; le frontmatter suit immédiatement.
+Chaque artefact porte un frontmatter YAML en tête, délimité par des lignes `---`. La bannière canonique d'en-tête de paternité définie dans [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) se place au-dessus du frontmatter dans les fichiers de la famille Markdown ; le frontmatter suit immédiatement.
 
-Les clés utilisent le `kebab-case`. Les valeurs scalaires sont soit nues, soit entre guillemets doubles ; les valeurs de chaîne contenant des deux-points, des dièses ou d'autres caractères significatifs pour YAML sont entre guillemets.
+Les clés utilisent le `kebab-case`. Les valeurs scalaires sont soit nues, soit entre guillemets doubles ; les valeurs de chaîne contenant des deux-points, des dièses ou d'autres caractères significatifs en YAML sont mises entre guillemets.
 
 ## 2. Champs requis par classe
 
-L'ensemble des clés requises varie selon la classe d'artefact. La structure faisant autorité est appliquée par `scripts/dev/validate_ecosystem.py` et les JSON Schemas par classe sous le répertoire `schemas/` (un fichier de schéma par classe d'artefact).
+L'ensemble des clés requises varie selon la classe d'artefact. La forme qui fait autorité est appliquée par `scripts/dev/validate_ecosystem.py` et par les JSON Schemas par classe situés dans le répertoire `schemas/` (un fichier de schéma par classe d'artefact).
 
 ```text
 schemas/agent.schema.json
@@ -32,12 +32,13 @@ schemas/plan.schema.json
 |-------|---------------|
 | `CLAUDE.md` (configuration racine) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Règles (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
-| Commandes (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
-| Assistants (répertoire canonique présenté ci-dessous) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Compétences (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+| Commandes (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
+| Travailleurs délégués (répertoire canonique indiqué ci-dessous) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools` ; l'installation Claude Code et le plugin renomment `userInvocable` en `user-invocable`, et le schéma accepte exactement une des deux graphies |
+| Output-styles (`src/apothem/output-styles/*.md`) | `name`, `description` ; chaque style livré définit aussi `keep-coding-instructions: true` afin que Claude Code conserve ses instructions d'ingénierie logicielle |
 
-Les schémas par classe dans [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) portent l'ensemble complet des contraintes, y compris les restrictions de type, de format, d'énumération et de motif.
+Les schémas par classe sous [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) portent l'ensemble complet des contraintes, y compris les restrictions de type, de format, d'énumération et de motif, ainsi que les limites de longueur : la `description` d'une skill ou d'une commande compte au plus 1 024 caractères, la limite fixée par [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Validateurs
 
-`scripts/dev/validate_ecosystem.py` parcourt l'arbre des artefacts, applique les ensembles de clés requises ci-dessus et signale `[FAIL]` sur tout artefact auquel manque un champ requis. Le `frontmatter-grep` par écriture dans `src/apothem/conformity/frontmatter_grep.py` applique la même structure aux limites du hook PreToolUse Write/Edit.
+`scripts/dev/validate_ecosystem.py` parcourt l'arbre des artefacts, applique les ensembles de clés requises ci-dessus et signale `[FAIL]` pour tout artefact auquel manque un champ requis. Le `frontmatter-grep` appliqué à chaque écriture, situé dans `src/apothem/conformity/frontmatter_grep.py`, impose la même forme aux points d'interception du hook PreToolUse Write/Edit.

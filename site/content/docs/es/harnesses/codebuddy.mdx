@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptador de entorno de Apothem para Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "b2ad522fd661cc14"
+sourceHash: "12cdb066aabd7caf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,31 +22,36 @@ superficie compartida de reglas y gobernanza de Apothem.
 
 **Archivos escritos:** `<project>/.codebuddy/rules/apothem-rules.md`
 
-## Mapeo de perfil a configuración nativa
+## Asignación del perfil a la configuración nativa
 
-El adaptador lee el perfil compartido de Apothem y renderiza el archivo de reglas
-del proyecto en cada ejecución de `apothem install` o `apothem update`. CodeBuddy
-lee cada archivo `*.md` bajo `.codebuddy/rules/` como Markdown con frontmatter YAML
-opcional (`alwaysApply`, `paths`, `enabled`) según la
+El adaptador lee el perfil compartido de Apothem y renderiza el archivo de
+reglas del proyecto en cada ejecución de `apothem install` o `apothem update`.
+CodeBuddy lee cada archivo `*.md` bajo `.codebuddy/rules/` como Markdown con
+frontmatter YAML opcional (`alwaysApply`, `paths`, `enabled`) según la
 [documentación de CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules); el
-archivo de Apothem lleva `alwaysApply: true`, por lo que la superficie de gobernanza
-se aplica en cada interacción. El perfil compartido es la fuente de verdad; las
-ediciones locales del proyecto sobre el archivo generado se respaldan antes de que la
-siguiente sincronización reemplace el contenido gestionado por Apothem.
+archivo de Apothem lleva `alwaysApply: true`, de modo que la superficie de
+gobernanza se aplica en cada interacción. El frontmatter es el primer contenido
+del archivo y el bloque gestionado por Apothem va a continuación; el texto que
+agregues después del bloque se conserva en cada sincronización. El perfil
+compartido es la fuente de verdad; las ediciones locales del proyecto sobre el
+archivo generado se respaldan antes de que la siguiente sincronización
+reemplace el contenido gestionado por Apothem.
 
 ## Notas de compatibilidad
 
 La superficie de reglas de CodeBuddy tiene alcance de proyecto bajo
-`.codebuddy/rules/`. El adaptador escribe un archivo `apothem-rules.md` dedicado que
-coexiste con cualquier archivo de reglas que el operador redacte en el mismo
-directorio. El archivo de memoria de proyecto `CODEBUDDY.md` y
-`.codebuddy/settings.json` (permisos, MCP) son propiedad del operador; Apothem no los
-escribe. Las skills, los comandos, los agentes y los hooks se referencian como
-disciplina dentro del archivo de reglas: CodeBuddy no expone ninguna superficie de
-archivos propiedad del adaptador para ellos. Las convenciones de la superficie del
-proveedor en las que se apoya el adaptador están fijadas en
-`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, capturadas frente a la
-documentación en vivo de CodeBuddy.
+`.codebuddy/rules/`. El adaptador escribe un archivo `apothem-rules.md`
+dedicado que coexiste con cualquier archivo de reglas que el operador redacte
+en el mismo directorio. El archivo de memoria de proyecto `CODEBUDDY.md`,
+`.codebuddy/settings.json` y el `.mcp.json` del proyecto (servidores MCP) son
+propiedad del operador; Apothem no los escribe. CodeBuddy también documenta
+skills, comandos, subagentes y hooks; el adaptador no escribe ninguno de ellos
+y, en su lugar, referencia las disciplinas dentro del archivo de reglas. Cuando
+un proyecto no tiene `CODEBUDDY.md`, CodeBuddy Code lee `AGENTS.md` como
+memoria del proyecto, así que un `AGENTS.md` que escribe otro adaptador también llega a CodeBuddy. Las convenciones de la superficie del proveedor en las que se apoya el
+adaptador están fijadas en
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, capturadas en una
+instantánea frente a la documentación en vivo de CodeBuddy.
 
 ## Verificación
 
@@ -57,7 +62,7 @@ apothem verify --harness codebuddy --project /path/to/project
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. El archivo de reglas gestionado está presente y no vacío.
+2. El archivo de reglas gestionado está presente y no está vacío.
 3. La rutina de verificación específica del adaptador informa éxito.
 
 ## Actualización
@@ -66,9 +71,10 @@ El comando verify confirma que:
 apothem update --harness codebuddy --project /path/to/project
 ```
 
-Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual del
-perfil compartido. `install` y `update` son idempotentes: volver a ejecutarlos
-sobrescribe el archivo gestionado con el contenido renderizado más reciente.
+Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual
+del perfil compartido. `install` y `update` son idempotentes: volver a
+ejecutarlos sobrescribe el archivo gestionado con el contenido renderizado más
+reciente.
 
 ## Desinstalación
 
@@ -76,9 +82,9 @@ sobrescribe el archivo gestionado con el contenido renderizado más reciente.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador, renombrando el
-archivo de reglas gestionado a un respaldo con marca de tiempo. El YAML del perfil
-compartido y el motor de Apothem no se ven afectados.
+Elimina los archivos de configuración nativa escritos por el adaptador y
+renombra el archivo de reglas gestionado como un respaldo con marca de tiempo.
+El YAML del perfil compartido y el motor de Apothem no se ven afectados.
 
 ## Puerta de conformidad
 
@@ -86,16 +92,22 @@ compartido y el motor de Apothem no se ven afectados.
 python -m apothem.conformity.gate --all .
 ```
 
-## Resolución de problemas
+## Solución de problemas
 
 | Síntoma | Solución |
 |---------|-----|
 | No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness codebuddy --project /path/to/project` |
-| La verificación falló | Ejecuta `apothem update --harness codebuddy --project /path/to/project` y vuelve a verificar |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, y vuelve a ejecutar `apothem update --harness codebuddy --project /path/to/project` |
+| La verificación falló | Ejecuta `apothem update --harness codebuddy --project /path/to/project` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness codebuddy --project /path/to/project` |
 
-## Parámetros de configuración
+## Opciones de configuración
 
-| Flag | Predeterminado | Descripción |
+| Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI
