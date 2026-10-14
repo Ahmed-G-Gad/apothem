@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi Hermes mentah"
 description: "Memelihara konfigurasi Hermes secara manual dibandingkan mengelolanya melalui profil bersama Apothem."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,9 +30,10 @@ materi pendukung Apothem.
 ## Apa yang dikelola Apothem
 
 Adapter Hermes menulis `config.yaml`, membungkus slash command Apothem sebagai
-skill, menyalin skill Apothem ke direktori pendukung yang dirujuk, dan
-menyimpan aturan, templat, agen, serta materi hook di bawah support subtree
-Apothem.
+skill, menyalin skill Apothem ke direktori pendukung, dan menyimpan aturan,
+templat, agen, serta materi hook di bawah support subtree Apothem. Hermes
+memuat skill tersebut hanya setelah Anda menambahkan
+`~/.hermes/.apothem/support/skills` ke `skills.external_dirs` di `config.yaml`.
 
 ## Jalur migrasi
 

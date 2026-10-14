@@ -2,12 +2,12 @@
 title: "Pembantu"
 description: "Agen pembantu persisten untuk riset, audit, kualitas, dan orkestrasi dengan kontrak frontmatter dan protokol isolasi penyebaran."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Pembantu persisten berada sebagai berkas datar di bawah direktori pembantu
-kanonis dengan akhiran `<name>.md`. Jalur kanonisnya adalah:
+kanonik dengan akhiran `<name>.md`. Jalur kanoniknya adalah:
 
 ```text
 src/apothem/agents/
@@ -23,7 +23,7 @@ pembatasan tool dan system prompt-nya sendiri.
 | Quality Gate | lihat jalur manifes di bawah | Kualitas | dipilih host |
 | Memory Auditor | lihat jalur manifes di bawah | Audit | dipilih host |
 
-Jalur manifes kanonis:
+Jalur manifes kanonik:
 
 ```text
 src/apothem/agents/codebase-explorer.md
@@ -49,9 +49,9 @@ maxTurns: <integer>
 ## Konversi per harness
 
 Pembantu yang pemberian `tools`-nya, setelah `disallowedTools` diterapkan, tidak
-menyertakan `Write` maupun `Edit` bersifat hanya-baca. Setiap harness yang
-mengonversi pembantu menegakkan batas itu secara native atau menghapus label
-hanya-baca:
+menyertakan satu pun tool penyunting berkas (`Write`, `Edit`, `MultiEdit`, atau
+`NotebookEdit`) bersifat hanya-baca. Setiap harness yang mengonversi pembantu
+menegakkan batas itu secara native atau menghapus label hanya-baca:
 
 | Harness | Batas tool | Batas giliran | Model dan tingkat upaya |
 | --- | --- | --- | --- |
@@ -60,16 +60,16 @@ hanya-baca:
 | Gemini CLI | daftar-izin `tools` berisi nama tool Gemini | `max_turns` | diwarisi (tidak diatur) |
 | Qwen Code | `tools` / `disallowedTools` dalam nama tool Qwen | tidak dipetakan | `model: inherit` |
 | OpenCode | `permission` (`allow` / `deny` per tool) | tidak dipetakan | diwarisi (tidak diatur) |
-| Antigravity | tidak ada yang dipancarkan; deskripsi kehilangan kata "read-only" | tidak tersedia | diwarisi (tidak diatur) |
+| Antigravity | tidak ada yang dipancarkan; deskripsi menghilangkan kata "read-only" | tidak tersedia | diwarisi (tidak diatur) |
 
 Hermes, Open-Claw, dan Kimi Code menerima berkas pembantu sebagai materi
 pendukung, bukan sebagai pembantu native.
 
 ## Orkestrasi
 
-Penyebaran pembantu, protokol peluncuran paralel, penegakan kontrak kembalian,
-dan disiplin isolasi berada di aturan orkestrasi. Pohon dispatch per pekerja
-berada di aturan pola orkestrasi, §Decision Tree. Jalur kanonis:
+Penyebaran pembantu, protokol peluncuran paralel, penegakan kontrak
+pengembalian, dan disiplin isolasi berada di aturan orkestrasi. Pohon dispatch
+per pekerja berada di aturan pola orkestrasi, §Decision Tree. Jalur kanonik:
 
 ```text
 src/apothem/rules/agent-orchestration.md

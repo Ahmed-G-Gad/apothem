@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adapter harness Apothem untuk GLM (Z.ai) sebagai backend model yang dapat dikonfigurasi."
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,8 @@ yang Anda ganti dengan kunci Z.ai Anda sendiri — Apothem tidak pernah menulis
 rahasia sungguhan. ID model mudah berubah antarversi, sehingga Apothem tidak
 mematok satu pun; berkas tersebut membawa placeholder `<GLM_MODEL_ID>` yang
 Anda isi dari [dokumentasi Z.ai](https://docs.z.ai/devpack/tool/claude) yang
-terkini.
+terkini. Tidak ada apa pun dari profil bersama yang masuk ke berkas ini; berkas
+ini adalah templat tetap.
 
 ## Catatan kompatibilitas
 
@@ -108,8 +109,8 @@ python -m apothem.conformity.gate --all .
 | Gejala | Perbaikan |
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness glm --project /path/to/project` |
-| Verifikasi gagal | Jalankan `apothem update --harness glm --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness glm --project /path/to/project` |
+| Verifikasi gagal | Berkas penyedia hilang atau kosong. Jika berkas hilang, jalankan `apothem update --harness glm --project /path/to/project`. Jika berkas kosong, pindahkan `.apothem/providers/glm.toml` ke tempat lain terlebih dahulu, lalu jalankan `update` dan verifikasi lagi |
+| Konten konfigurasi tidak terduga | Sunting `.apothem/providers/glm.toml` secara langsung; Apothem tidak pernah menulis ulang berkas yang sudah ada, dan profil bersama tidak menambahkan apa pun ke dalamnya. Untuk templat yang baru, pindahkan berkas ke tempat lain lalu jalankan `apothem update --harness glm --project /path/to/project` |
 
 ## Tombol konfigurasi
 
