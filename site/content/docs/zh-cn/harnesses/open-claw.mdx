@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "a5897223a356aaf3"
+sourceHash: "3325613cf689ffc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,15 +17,15 @@ sourceHash: "a5897223a356aaf3"
 apothem install --harness open-claw
 ```
 
-适配器将共享配置档案转换为 OpenClaw 的用户全局配置文件，并在工具根目录下安装 Apothem 支持集合。OpenClaw 的原生配置是 JSON；物化器相应地渲染 JSON。
+适配器写入 OpenClaw 的用户全局配置文件，将共享配置档案投射为一份配置档案文档，并在工具根目录下安装 Apothem 支持集合。OpenClaw 的原生配置是 JSON；物化器渲染一个空 JSON 对象，而已存在的文件会保留其键。
 
 **写入的文件：** `~/.openclaw/openclaw.json`、配置档案文档 `~/.openclaw/apothem/rules/00-apothem-profile.md`，以及 `~/.openclaw/.apothem/support/` 下的支持文件
 
-配置档案文档以一个 Apothem 支持文件部分结尾，该部分指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `~/.openclaw/.apothem/support/` 下的绝对目录。
+配置档案文档以一个 Apothem 支持文件小节结尾，该小节写明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.openclaw/.apothem/support/` 下的绝对目录。
 
 ## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，但不编写任何配置键：`openclaw.json` 被写为一个空对象。配置档案中的身份、偏好和规则进入配置档案文档。共享的命令、技能、规则、模板和钩子提示词作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
+适配器读取 Apothem 的共享配置档案，但不编写任何配置键：新建的或空的 `openclaw.json` 被写为一个空对象，而已存在的文件会保留其键。配置档案中的身份、偏好和规则进入配置档案文档。共享的命令、技能、规则、模板和钩子提示词作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
 
 ## 兼容性说明
 
@@ -49,7 +49,8 @@ verify 命令确认：
 apothem update --harness open-claw
 ```
 
-根据当前的共享配置档案状态重新派生原生配置。在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
+根据当前的共享配置档案状态重新派生配置档案文档，并刷新支持文件；`openclaw.json` 保留其已有的键。
+在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
 
@@ -57,7 +58,8 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器写入的原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

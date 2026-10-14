@@ -2,7 +2,7 @@
 title: "合规闸门"
 description: "Apothem 合规闸门——每个发布的工件都必须通过的十五道预发布闸门关卡（M1-M15）中的机械部分。"
 machineTranslated: true
-sourceHash: "0c45cd7185de5190"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "0c45cd7185de5190"
 | 关卡 | ID | 强制规定 | 检查类别 | 失败 → 行动 |
 |---|---|---|---|---|
 | 1 | M1 | 宿主项目无关性 | 推理判断 | 修订以匹配宿主约定 |
-| 2 | M2 | 编辑纪律（披露账本） | 机械 | 添加披露标记 |
-| 3 | M3 | 十项质量维度 | 推理判断 | 针对未通过的维度进行修订 |
+| 2 | M2 | 编辑纪律（披露账本） | 推理判断 | 添加披露标记 |
+| 3 | M3 | 十项质量维度 | 机械 + 推理判断 | 针对未通过的维度进行修订 |
 | 4 | M4 | 自我适用（存在闸门签署记录） | 机械 | 记录签署记录块 |
 | 5 | M5 | 权威原则（不编造身份 / 端点 / 机密） | 机械 | 转交询问 |
 | 6 | M6 | 专业知识融入（揭示的缺口） | 推理判断 | 揭示缺口；引用改进之处 |
@@ -21,10 +21,10 @@ sourceHash: "0c45cd7185de5190"
 | 9 | M9 | 视觉杠杆（结构性主题配有图示） | 推理判断 | 编写 / 刷新图示 |
 | 10 | M10 | 双向绑定（互逆的反向指针已闭合） | 机械 | 闭合半边 |
 | 11 | M11 | 敏捷冲刺（目标 / 待办列表 / DoR / DoD / 评审 / 回顾） | 推理判断 | 重构为冲刺 |
-| 12 | M12 | 阶段报告与规范布局 | 机械 | 编写汇总；迁移到规范布局 |
+| 12 | M12 | 阶段报告与规范布局 | 机械 + 推理判断 | 编写汇总；迁移到规范布局 |
 | 13 | M13 | 代码工艺（lint / 格式化 / 类型检查；魔法数字；裸 except） | 机械 | 应用各语言的代码工艺规则 |
 | 14 | M14 | 系统性（声明上游 / 下游 / 同级 / 执行者） | 推理判断 | 声明；在登记册中编入索引 |
-| 15 | M15 | 生产就绪（测试 + 文档 + CHANGELOG + 合规提交 + CI 绿色 + semver 稳定性） | 机械 | 补齐缺失的表面 |
+| 15 | M15 | 生产就绪（测试 + 文档 + CHANGELOG + 合规提交 + CI 绿色 + semver 稳定性） | 机械 + 推理判断 | 补齐缺失的表面 |
 
 ## 严重级别阶梯
 
@@ -32,11 +32,11 @@ sourceHash: "0c45cd7185de5190"
 
 ## 校验器
 
-机械部分位于 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)，由 [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) 编排。闸门以下列三种方式之一运行每个校验器：
+机械部分位于 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)，由 [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) 编排。每个校验器以下列三种方式之一运行：
 
 - **per-write**：在每次待处理的写入时运行（`--hook`），或用 `--all-perwrite` 对每个已跟踪的文件运行。
 - **standalone**：用 `--all` 在整个仓库范围内运行，或用 `--check <name>` 逐个运行。
-- **change-set**：针对已暂存的差异运行，位于闸门的扫查之外。
+- **change-set**：针对已暂存的差异，直接以 `python -m apothem.conformity.semver_stability_grep --staged` 运行，不经由闸门。
 
 下表由校验器模块生成。
 

@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "适用于 GitHub Copilot（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ apothem install --harness github-copilot --project /path/to/project
 
 GitHub Copilot 没有暴露可供此适配器管理的、基于文件的用户全局指令路径。Apothem 以有文档记载的项目级指令文件为目标，并将 IDE 级的用户设置留给操作者所有。
 
-Apothem 将 `copilot-instructions.md` 视为项目各助手指令表面中的一个声音：合规闸门的多表面一致性检查会验证其共享主张与项目的其他指令文件在语义上保持一致，因此 Copilot 绝不会收到与工具链其余部分所读取内容相矛盾的指引。
+在 Apothem 仓库内，`.github/copilot-instructions.md` 是项目各助手指令表面中的一个声音。在 Apothem 检出中，合规闸门的多表面一致性检查会比较 `AGENTS.md`、`CLAUDE.md` 和 `.github/copilot-instructions.md` 中的共享主张，并报告其中某一个文件遗漏或与其相矛盾的主张。该检查不会读取 Apothem 写入你项目中的指令文件。该闸门默认是建议性的：它报告发现项并以 `0` 退出。
 
 ## 验证
 
