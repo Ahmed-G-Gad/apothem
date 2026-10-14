@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "구성 가능한 모델 백엔드인 GLM (Z.ai)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,8 @@ Z.ai 키로 교체하는 플레이스홀더입니다 — Apothem은 실제 시�
 않습니다. 모델 ID는 버전에 따라 바뀌기 쉬우므로 Apothem은 어떤 모델 ID도
 고정하지 않습니다. 파일에는 현재
 [Z.ai 문서](https://docs.z.ai/devpack/tool/claude)를 참고하여 채우는
-`<GLM_MODEL_ID>` 플레이스홀더가 들어 있습니다.
+`<GLM_MODEL_ID>` 플레이스홀더가 들어 있습니다. 공유 프로필의 어떤 내용도 이
+파일에 들어가지 않으며, 이 파일은 고정된 템플릿입니다.
 
 ## 호환성 참고 사항
 
@@ -104,8 +105,8 @@ python -m apothem.conformity.gate --all .
 | 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness glm --project /path/to/project`를 다시 실행 |
-| 검증 실패 | `apothem update --harness glm --project /path/to/project`를 실행한 후 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness glm --project /path/to/project`를 다시 실행 |
+| 검증 실패 | 프로바이더 파일이 없거나 비어 있습니다. 없는 경우 `apothem update --harness glm --project /path/to/project`를 실행합니다. 비어 있는 경우 먼저 `.apothem/providers/glm.toml`을 다른 곳으로 옮긴 다음 `update`를 실행하고 다시 검증합니다 |
+| 예기치 않은 구성 내용 | `.apothem/providers/glm.toml`을 직접 편집합니다. Apothem은 기존 파일을 절대 다시 쓰지 않으며, 공유 프로필은 이 파일에 아무것도 추가하지 않습니다. 새 템플릿이 필요하면 파일을 다른 곳으로 옮기고 `apothem update --harness glm --project /path/to/project`를 실행합니다 |
 
 ## 구성 노브
 

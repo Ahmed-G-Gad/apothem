@@ -2,11 +2,11 @@
 title: "횡단 맨데이트 레지스트리 (CM-1–CM-28)"
 description: "모든 상호작용과 파이프라인 작업을 규율하는 생태계 내부 횡단 맨데이트(CM-1–CM-28)의 전체 레지스트리와 정의입니다."
 machineTranslated: true
-sourceHash: "9a7b4e8966abd05f"
+sourceHash: "4e3a5448c3273d05"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **횡단 맨데이트의 표준 레지스트리.** 이 문서는 CM-N 레지스트리의 본문 전체를 담습니다. 실질적인 열거는 여기에 있으며, `src/apothem/rules/` 아래의 규칙 파일이 이를 운영합니다. 자세한 CM-N 본문이 필요한 모든 세션은 필요할 때 이 문서를 로드합니다.
+> **횡단 맨데이트의 표준 레지스트리.** 이 문서는 CM-N 레지스트리의 본문 전체를 담습니다. 실질적인 열거는 여기에 있으며, `src/apothem/rules/` 아래의 규칙 파일이 이를 실행 가능한 형태로 구체화합니다. 자세한 CM-N 본문이 필요한 모든 세션은 필요할 때 이 문서를 로드합니다.
 
 ## 레지스트리 자기 참조 예외
 
@@ -18,7 +18,7 @@ sourceHash: "9a7b4e8966abd05f"
 
 ## 활성화
 
-CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-11, CM-13, CM-15, CM-16, CM-20은 `/plan` 파이프라인 안에서만 적용됩니다. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26은 보편적으로 적용됩니다(항상 활성). CM-23, CM-27, CM-28은 각자 선언된 경로 필터 범위 안에서 보편적으로 적용됩니다. 임시 작업의 기본 심각도 등급: PERSONAL_USE.
+CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-11, CM-13(하위 규칙 A부터 C), CM-15, CM-16, CM-20은 `/plan` 파이프라인 안에서만 적용됩니다. CM-13 하위 규칙 D는 모든 git 쓰기에, 하위 규칙 E는 `git mv` / `git rm` 대상과 커밋 본문 경로에 적용되며, 이 파이프라인 안에서든 밖에서든 적용됩니다. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26은 보편적으로 적용됩니다(항상 활성). CM-23, CM-27, CM-28은 각자 선언된 경로 필터 범위 안에서 보편적으로 적용됩니다. 임시 작업의 기본 심각도 등급: PERSONAL_USE.
 
 ## CM-1–10 (운영)
 
@@ -32,21 +32,21 @@ CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-1
 
 ## CM-11 (플랜 무결성)
 
-**A — 산문 충실도:** 모든 요구 사항은 산문↔플랜 사이에서 추적할 수 있어야 합니다. 스코어카드: PASS ≥90% STRONG/0 ABSENT.
+**A — 산문 충실도:** 모든 요구 사항이 산문↔플랜 사이에서 추적 가능합니다. 스코어카드: PASS ≥90% STRONG/0 ABSENT.
 **B — 내부 일관성:** 플랜 스위트 안의 문서 간 일관성입니다. 스코어카드: PASS 100%.
-**C — 게이트:** FAIL은 SHARED+에서 실행을 차단합니다(SHARED에서는 근거를 기록하면 Product Owner의 재정의 허용, PUBLIC_LAUNCH에서는 강제 차단). PERSONAL_USE에서는 권고입니다.
+**C — 게이트:** FAIL은 SHARED+에서 실행을 차단합니다(SHARED에서는 근거를 기록한 경우 Product Owner의 재정의가 허용되고, PUBLIC_LAUNCH에서는 강제 차단됩니다). PERSONAL_USE에서는 권고 사항입니다.
 
 ## CM-12 (컨텍스트 관리)
 
-항상 간결하게 컨텍스트를 관리합니다. CM-24 규칙을 참조하세요. 네 개의 하위 계층은 아래 하위 참조 규약 섹션에 열거되어 있습니다. 압축 규율(CM-19)은 실행 행위를 규율하고, CM-12는 평상시 규율을 규율합니다.
+항상 간결한 컨텍스트 관리를 유지합니다. CM-24 규칙을 참조하세요. 네 개의 하위 계층은 아래 하위 참조 규약 섹션에 열거되어 있습니다. 압축 규율(CM-19)은 압축이라는 행위를 관장하고, CM-12는 평상시에 유지되는 규율을 관장합니다.
 
 ## CM-13 (커밋)
 
-- **A — 작업 단위 주기:** SHARED+에서는 작업마다 커밋합니다. PERSONAL_USE에서는 단계마다 커밋합니다. EXPLORING에서는 선택 사항입니다.
+- **A — 작업 단위 주기:** SHARED+에서는 작업 단위로 커밋합니다. PERSONAL_USE에서는 단계 단위로 커밋합니다. EXPLORING에서는 선택 사항입니다.
 - **B — 품질/교정 커밋:** 품질 게이트 수정과 교정 변경은 기능 작업과 분리하여 즉시 커밋합니다.
 - **C — 단계 종료 게이트:** 커밋되지 않은 변경은 단계 경계를 넘지 않습니다. CM-7 격리는 모든 git 아티팩트에 적용됩니다. PUBLIC_LAUNCH에서는 GPG 서명 커밋(`git commit -S`)이 필수입니다.
 - **D — 사람 전용 작성자 표기:** 모든 git 아티팩트의 모든 작성자 표기 표면(커밋 제목, 커밋 본문, `Author:`, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)에는 **사람 기여자만** 표기합니다. 어시스턴트는 이 표면 어디에도 자신, 기반 언어 모델, 런타임 / 하니스 / IDE / 확장 / 공급업체, 그 밖의 어떤 자동화 도구도 작성자로 절대 표기하지 않습니다. 금지 패턴은 `src/apothem/rules/production-ready-prs.md` §6(Commit-Message Discipline → Human-only authorship)에 열거되어 기계적으로 강제되며, 매처는 `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3에 있어 git에 쓰는 모든 Bash 호출에서 작동합니다.
-- **E — git-mv / git-rm 대상의 숫자 접두사 규율:** 파일 시스템 경로의 숫자 접두사(`NN-`)는 순서를 나타내며, 순서가 본질적인 곳에만 적용됩니다. 단계 폴더 시퀀스, 하위 단계 시퀀스, 호스트가 발견한 서수 명명 체계가 여기에 해당합니다. 형제 시퀀스가 없는 루트 수준의 단일 항목에는 숫자 접두사를 붙이지 않습니다. 접두사를 붙이는 것은 존재하지 않는 순서 관계를 잘못 암시하는 무의미한 장식입니다. 전체 사양은 `src/apothem/rules/canonical-layout.md` §2.1에 있습니다. `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2가 `git mv` / `git rm`과 커밋 본문의 경로 참조에 대해 기계적으로 강제합니다.
+- **E — git-mv / git-rm 대상의 숫자 접두사 규율:** 파일 시스템 경로의 숫자 접두사(`NN-`)는 순서를 나타내며, 순서가 본질적인 곳에만 적용됩니다. 단계 폴더 시퀀스, 하위 단계 시퀀스, 호스트가 발견하는 서수 명명 체계가 여기에 해당합니다. 형제 시퀀스가 없는 루트 수준의 단일 항목에는 숫자 접두사를 붙이지 않습니다. 접두사를 붙이는 것은 존재하지 않는 순서 관계를 잘못 암시하는 무의미한 장식입니다. 전체 사양은 `src/apothem/rules/canonical-layout.md` §2.1에 있습니다. `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2가 `git mv` / `git rm`과 커밋 본문의 경로 참조에 대해 기계적으로 강제합니다.
 
 ## CM-14 (세션 프로토콜)
 
@@ -68,7 +68,7 @@ CM-15와 CM-16은 여기에서 인라인으로 정의됩니다(별도 규칙 없
 
 규칙에 위임된 맨데이트의 한 줄 앵커입니다(전체 사양은 인용된 파일에 있음).
 
-- **CM-22 규약 경계** — 생태계 규약과 선제적 아티팩트 진화. `src/apothem/rules/persistent-conventions-vigilance.md`를 참조하세요.
+- **CM-22 규약 상시 감시** — 생태계 규약과 선제적 아티팩트 진화. `src/apothem/rules/persistent-conventions-vigilance.md`를 참조하세요.
 - **CM-23 대용량 파일 생성** — 단일 쓰기 임계값을 넘는 파일을 위한 증분 추가 프로토콜. `src/apothem/rules/large-file-generation.md`를 참조하세요.
 - **CM-24 컨텍스트 관리 프로토콜** — 외부화, 압축, 블라인드 부트스트랩, 예산 규율. `src/apothem/rules/context-management.md`를 참조하세요.
 - **CM-25 작업자 오케스트레이션** — 배치 패턴, 반환 계약, 컨텍스트 격리. 전체 사양은 [작업자 오케스트레이션 규칙](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/agent-orchestration.md)에 있습니다.
