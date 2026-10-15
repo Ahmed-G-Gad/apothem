@@ -15,13 +15,15 @@
 #   HTML-comment block above the format header rather than being
 #   interleaved into the format body.
 #
-# An override at file scope is permitted with an inline marker
+# An override at file scope is intended as an inline marker
 # `<!-- header-visibility: visible -->` immediately after the banner;
-# the inline marker takes precedence over the per-class default.
+# the inline marker would take precedence over the per-class default.
 #
-# Authored at the fixture-and-injector sub-phase per the locked
-# banner-ratification policy; consumed by the injector
-# (`scripts/inject-header.{sh,py}`) when rendering Markdown variants.
+# This file is documentary policy. No tool reads it. The injector
+# (`scripts/inject-header.{sh,py}`) always writes the invisible form for
+# Markdown and MDX, and it does not parse the class overrides or the inline
+# marker. The visible and special-rendered classes describe intended behavior
+# that is not implemented. See reference/authorship-header.mdx, section 6.
 
 default-visibility: invisible
 
