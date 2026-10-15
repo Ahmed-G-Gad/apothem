@@ -53,6 +53,7 @@ _RENDERABLE_VARIANTS = (
     fhg.VARIANT_HASH,
     fhg.VARIANT_DOUBLE_SLASH,
     fhg.VARIANT_HTML,
+    fhg.VARIANT_MDX,
     fhg.VARIANT_C_BLOCK,
     fhg.VARIANT_SEMICOLON,
     fhg.VARIANT_DOUBLE_DASH,
@@ -65,6 +66,7 @@ def test_variant_constant_names_match() -> None:
         "VARIANT_HASH",
         "VARIANT_DOUBLE_SLASH",
         "VARIANT_HTML",
+        "VARIANT_MDX",
         "VARIANT_C_BLOCK",
         "VARIANT_SEMICOLON",
         "VARIANT_DOUBLE_DASH",
@@ -148,6 +150,7 @@ def test_fnmatch_globstar_matches_injector(path: str, pattern: str) -> None:
         "queries/q.sql",
         "config/app.ini",
         "docs/page.md",
+        "site/content/docs/reference/page.mdx",
         "Makefile",
         ".gitignore",
         "unknown.bin",
@@ -166,3 +169,46 @@ def test_variant_family_for_matches_injector_on_shared_keys(relative: str) -> No
     injector_variant = injector.variant_family_for(Path(relative))
     if grep_variant != fhg.VARIANT_EXEMPT:
         assert grep_variant == injector_variant, relative
+
+
+@pytest.mark.parametrize("variant", [fhg.VARIANT_HTML, fhg.VARIANT_MDX])
+@pytest.mark.parametrize(
+    "lines",
+    [
+        pytest.param(["# Title", "body"], id="no-frontmatter"),
+        pytest.param(["---", "title: x", "---", "body"], id="frontmatter-no-blank"),
+        pytest.param(
+            ["---", "title: x", "---", "", "body"], id="frontmatter-with-blank"
+        ),
+        pytest.param(["---", "title: x", "body"], id="frontmatter-unterminated"),
+        pytest.param(["#!/bin/sh", "x"], id="shebang"),
+        pytest.param(
+            ["#!/bin/sh", "---", "a: b", "---", "x"], id="shebang-then-frontmatter"
+        ),
+        pytest.param(["---", "a: b", "---"], id="frontmatter-at-end"),
+        pytest.param([], id="empty"),
+    ],
+)
+def test_insertion_index_matches_injector_for_markup_variants(
+    variant: str, lines: list[str]
+) -> None:
+    """The validator and the injector place the canonical block at one index."""
+    assert fhg._determine_insertion_index(lines, variant) == (
+        injector.determine_insertion_index(lines, variant)
+    )
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        pytest.param(["---", "a: b", "---", "x = 1"], id="frontmatter-shaped-py"),
+        pytest.param(["#!/usr/bin/env python3", "x = 1"], id="shebang-py"),
+    ],
+)
+def test_insertion_index_ignores_frontmatter_for_line_comment_variants(
+    lines: list[str],
+) -> None:
+    """Only the html and mdx variants skip frontmatter; hash files do not."""
+    assert fhg._determine_insertion_index(lines, fhg.VARIANT_HASH) == (
+        injector.determine_insertion_index(lines, fhg.VARIANT_HASH)
+    )

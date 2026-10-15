@@ -12,7 +12,7 @@ rendering rules stay readable on their own.
 Scope. Loads the single-line SPDX fixture at ``src/apothem/schemas/`` once at
 import, then renders it into any comment-variant family: marker substitution
 for the line-comment families (hash / double-slash / semicolon / double-dash)
-and wrapper composition for the block families (html / c-block).
+and wrapper composition for the block families (html / mdx / c-block).
 
 Detection strategy note. The fixture is resolved at import rather than per
 call, because every caller renders against the same fixture and a per-call read
@@ -33,6 +33,7 @@ from apothem.audit.header_vocabulary import (
     VARIANT_DOUBLE_SLASH,
     VARIANT_HASH,
     VARIANT_HTML,
+    VARIANT_MDX,
     VARIANT_SEMICOLON,
 )
 
@@ -69,6 +70,8 @@ def _render_variant(hash_form_line: str, spdx_text: str, variant: str) -> list[s
         return [_replace_marker(hash_form_line, "#", "--")]
     if variant == VARIANT_HTML:
         return [f"<!-- {spdx_text} -->"]
+    if variant == VARIANT_MDX:
+        return [f"{{/* {spdx_text} */}}"]
     if variant == VARIANT_C_BLOCK:
         return [f"/* {spdx_text} */"]
     raise ValueError(f"variant not renderable: {variant!r}")

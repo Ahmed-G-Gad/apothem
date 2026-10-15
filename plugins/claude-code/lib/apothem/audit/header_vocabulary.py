@@ -43,6 +43,7 @@ ALL_HEADER_STATUSES: Final[tuple[str, ...]] = (
 VARIANT_HASH: Final[str] = "hash"
 VARIANT_DOUBLE_SLASH: Final[str] = "double-slash"
 VARIANT_HTML: Final[str] = "html"
+VARIANT_MDX: Final[str] = "mdx"
 VARIANT_C_BLOCK: Final[str] = "c-block"
 VARIANT_SEMICOLON: Final[str] = "semicolon"
 VARIANT_DOUBLE_DASH: Final[str] = "double-dash"
@@ -52,6 +53,7 @@ ALL_VARIANTS: Final[tuple[str, ...]] = (
     VARIANT_HASH,
     VARIANT_DOUBLE_SLASH,
     VARIANT_HTML,
+    VARIANT_MDX,
     VARIANT_C_BLOCK,
     VARIANT_SEMICOLON,
     VARIANT_DOUBLE_DASH,
@@ -134,6 +136,7 @@ SUFFIX_VARIANT: Final[dict[str, str]] = {
     ".md": VARIANT_HTML,
     ".markdown": VARIANT_HTML,
     ".mdc": VARIANT_HTML,
+    ".mdx": VARIANT_MDX,
     ".xml": VARIANT_HTML,
     ".vue": VARIANT_HTML,
     ".php": VARIANT_HTML,
