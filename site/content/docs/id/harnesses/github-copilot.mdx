@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,12 +45,14 @@ untuk dikelola oleh adapter ini. Apothem menargetkan berkas instruksi
 berlingkup proyek yang terdokumentasi dan membiarkan pengaturan pengguna
 tingkat IDE tetap menjadi milik operator.
 
-Apothem memperlakukan `copilot-instructions.md` sebagai satu suara di antara
-permukaan instruksi asisten milik proyek: pemeriksaan koherensi multi-permukaan
-pada gerbang konformitas memverifikasi bahwa klaim bersamanya tetap selaras
-secara semantik dengan berkas instruksi proyek lainnya, sehingga Copilot tidak
-pernah menerima panduan yang bertentangan dengan apa yang dibaca oleh bagian
-lain dari rantai alat.
+Di dalam repositori Apothem, `.github/copilot-instructions.md` adalah satu suara
+di antara permukaan instruksi asisten milik proyek. Dalam checkout Apothem,
+pemeriksaan koherensi multi-permukaan pada gerbang konformitas membandingkan
+klaim bersama dalam `AGENTS.md`, `CLAUDE.md`, dan
+`.github/copilot-instructions.md`, lalu melaporkan klaim yang dihilangkan atau
+dipertentangkan oleh salah satunya. Pemeriksaan ini tidak membaca berkas
+instruksi yang ditulis Apothem ke dalam proyek Anda. Gerbang ini bersifat
+advisori secara default: gerbang melaporkan temuan dan keluar dengan kode `0`.
 
 ## Verifikasi
 
@@ -61,7 +63,9 @@ apothem verify --harness github-copilot --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan

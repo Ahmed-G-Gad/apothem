@@ -1,8 +1,8 @@
 ---
 title: "Markenpalette"
-description: "Apothem-Kernmarkenfarben und die siebzehn Harness-Markenfarben. Die einzige Quelle der Wahrheit sind die kanonischen Design-Tokens in assets/design-tokens.css; die Website spiegelt diese Werte."
+description: "Apothem-Kernmarkenfarben und die siebzehn Harness-Markenfarben. Die einzige Quelle der Wahrheit für die Kernfarben sind die kanonischen Design-Tokens in assets/design-tokens.css; die Website spiegelt diese Werte."
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,10 @@ Wert unten lässt sich auf einen kanonischen Rampenschritt zurückführen.
 
 Die Harness-Farben befinden sich unter [Harness-Farben](/docs/brand/harness-colors). Die
 geometrische Abbildung auf das Sechseck der Apothem-Bildmarke — ihren Mittelknoten und
-ihren Endknoten — ist in den Markenabschnitt eingebettet. Die CSS-Quelle der Wahrheit in
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-verdrahtet jedes Token mit seiner CSS-Variablen.
+ihren Endknoten — ist in den Markenabschnitt eingebettet. Die Harness-Farben sind auf
+dieser Seite definiert, nicht in den Design-Tokens und nicht in
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css),
+die nur die Kernpalette enthalten.
 
 ## Verwendung in der Dokumentation
 
@@ -42,6 +43,5 @@ Zustand der `.dark`-Klasse des Themes.
 
 Die Palette wird nur aktualisiert, wenn sich eine Kernfarbe ändert (slate / emerald) oder
 ein Harness eine Markenfarbenänderung stromaufwärts ratifiziert. Änderungen je Harness
-propagieren atomar über `site/app/global.css`,
-[Harness-Farben](/docs/brand/harness-colors) und jeden betroffenen SVG-Master unter
-`assets/src/`.
+propagieren atomar über [Harness-Farben](/docs/brand/harness-colors) und jeden
+betroffenen SVG-Master unter `assets/src/`.

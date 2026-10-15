@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "設定可能なモデルバックエンドとしての GLM (Z.ai) 向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,8 @@ GLM へルーティングされます。同じ env テーブルには `ANTHROPIC
 Z.ai キーに置き換えるプレースホルダーです。Apothem が本物のシークレットを書き込むことは決して
 ありません。モデル ID はバージョンによって変わりやすいため、Apothem はどれもピン留めしません。
 ファイルには `<GLM_MODEL_ID>` プレースホルダーが含まれており、最新の
-[Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して埋めます。
+[Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して埋めます。共有プロファイルの
+内容がこのファイルに入ることはありません。これは固定のテンプレートです。
 
 ## 互換性に関する注意
 
@@ -100,8 +101,8 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness glm --project /path/to/project` を再実行する |
-| 検証が失敗した | `apothem update --harness glm --project /path/to/project` を実行してから、再度検証する |
-| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness glm --project /path/to/project` を再実行する |
+| 検証が失敗した | プロバイダーファイルが存在しないか、空である。存在しない場合は、`apothem update --harness glm --project /path/to/project` を実行する。空の場合は、先に `.apothem/providers/glm.toml` を別の場所へ移動してから、`update` を実行し、再度検証する |
+| 想定外の設定内容 | `.apothem/providers/glm.toml` を直接編集する。Apothem が既存のファイルを書き換えることはなく、共有プロファイルがそこに何かを加えることもない。新しいテンプレートが必要な場合は、ファイルを別の場所へ移動してから `apothem update --harness glm --project /path/to/project` を実行する |
 
 ## 設定ノブ
 

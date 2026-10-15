@@ -2,7 +2,7 @@
 title: "Démarrage rapide"
 description: "Installez Apothem, rédigez un profil, matérialisez votre premier environnement et vérifiez-le — une visite à copier-coller avec la sortie attendue."
 machineTranslated: true
-sourceHash: "cabe19810d3aad3a"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,14 +24,14 @@ commande qui répercute une modification du profil vers chaque outil.
   importance. Cette page est la visite concise, centrée sur la sortie.
 </Callout>
 
-Vous utiliserez **Claude Code** comme environnement d'exemple : c'est celui par
+Vous utiliserez **Claude Code** comme environnement d'exemple — c'est celui par
 défaut de l'installateur. Remplacez le nom de l'adaptateur à n'importe quelle
 étape pour cibler un autre outil ; la [liste des environnements](/docs/harnesses)
 contient tous les noms pris en charge.
 
 ## 1. Installer Apothem
 
-Apothem est distribué comme un runtime autonome : le moteur s'exécute
+Apothem est distribué comme un runtime autonome — le moteur s'exécute
 directement depuis son arborescence source avec des dépendances vendorisées.
 Une seule commande récupère le code source, place le moteur et matérialise
 votre premier environnement :
@@ -40,7 +40,7 @@ votre premier environnement :
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -144,19 +144,26 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Installez d'un coup l'ensemble complet adossé au registre avec `--harness all`. Comme cette sélection écrit à la fois des fichiers à portée projet et à portée utilisateur, la commande affiche les cibles concrètes regroupées par emplacement. Dans un terminal interactif, elle demande confirmation avant d'écrire en dehors de la racine du projet. Une exécution sans terminal, une exécution avec `--yes` ou une exécution avec `--format json` écrit sans demander ; `--dry-run` n'écrit rien. Exécutez l'ensemble complet avec :
+Installez d'un coup l'ensemble complet adossé au registre avec `--harness all`.
+Comme cette sélection écrit à la fois des fichiers à portée projet et à portée
+utilisateur, la commande affiche les cibles concrètes regroupées par
+emplacement. Dans un terminal interactif, elle demande confirmation avant
+d'écrire en dehors de la racine du projet. Une exécution sans terminal, une
+exécution avec `--yes` ou une exécution avec `--format json` écrit sans
+demander ; `--dry-run` n'écrit rien. Exécutez l'ensemble complet avec :
 
 ```bash
 apothem install --harness all --project .
 ```
 
 Consultez la [liste complète des environnements](/docs/harnesses) pour tous les
-noms pris en charge, et la [référence de install](/docs/cli-reference/install)
+noms pris en charge, et la [référence d'installation](/docs/cli-reference/install)
 pour l'ensemble complet des options.
 
 ## 4. Vérifier
 
-Matérialiser n'est que la moitié du travail : `verify` confirme que les fichiers de configuration attendus de l'environnement sont bien en place et valides :
+Matérialiser n'est que la moitié du travail — `verify` confirme que les fichiers
+de configuration attendus de l'environnement sont bien en place et valides :
 
 ```bash
 apothem verify --harness claude-code
@@ -166,7 +173,14 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` se termine avec un code non nul si une cible gérée est absente, si un fichier géré est vide, ou si une configuration JSON ou YAML ne s'analyse pas. Ajoutez `--profile PATH` pour que la commande échoue aussi lorsqu'un fichier installé diffère de ce profil ; `verify` devient alors un contrôle de dérive. Sans cette option, une configuration périmée passe quand même la vérification. Cela lui permet de servir de portail dans un script de configuration. Pour un contrôle de santé de toute la machine sur chaque adaptateur enregistré, exécutez :
+`verify` se termine avec un code non nul si une cible gérée est absente, si un
+fichier géré est vide, ou si une configuration JSON ou YAML ne s'analyse pas.
+Ajoutez `--profile PATH` pour que la commande échoue aussi lorsqu'un fichier
+installé diffère de ce profil, ce qui fait de `verify` un contrôle de dérive ;
+sans cette option, une configuration périmée passe quand même la vérification.
+Cela lui permet de servir de portail dans un script de configuration. Pour un
+contrôle de santé de toute la machine sur chaque adaptateur enregistré,
+exécutez :
 
 ```bash
 apothem doctor
@@ -175,8 +189,8 @@ apothem doctor
 `doctor` vérifie chaque environnement installé : celui-ci doit passer la
 vérification, et chaque commande de hook que son installation a enregistrée
 doit démarrer. Un environnement que vous n'avez pas installé est listé mais ne
-constitue pas un échec ; `doctor` se termine donc avec le code 0 avec un seul
-environnement sain.
+constitue pas un échec ; un seul environnement sain suffit donc pour que
+`doctor` se termine avec le code 0.
 
 ## 5. Votre première exécution
 

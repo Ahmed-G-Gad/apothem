@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "محوّل إطار عمل Apothem لـ Kimi Code (إصدار عام)."
 machineTranslated: true
-sourceHash: "ea49d4cc0938d230"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -97,8 +97,13 @@ apothem update --harness kimi-code --project /path/to/project
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`AGENTS.md`</bdi> في جذر المشروع، ويُبقي أي نص
+واقع خارج العلامات الحارسة. لا يُحذَف الملف إلا حين لا يتبقّى فيه شيء آخر. ويُزيل
+كذلك ملفات الدعم التي وضعها <bdi>Apothem</bdi> تحت
+<bdi>`<project>/.kimi-code/.apothem/support/`</bdi>. قبل التغيير، تُحفَظ نسخة بطابع
+زمني من كل ملف تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترك أي ملف نسخ احتياطي في
+المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

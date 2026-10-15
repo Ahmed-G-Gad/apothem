@@ -2,7 +2,7 @@
 title: "Comparação"
 description: "Como avaliar o Apothem frente à configuração de harness mantida à mão e a outras abordagens de configuração, com uma matriz de recursos e páginas por harness."
 machineTranslated: true
-sourceHash: "bb767de9bd99533a"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ fortaleza de auditoria e um ciclo de vida reversível e verificado.
 | Capacidade | Apothem | Gerenciadores de configuração de arquivos (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Uma fonte para os schemas nativos de muitas ferramentas | Sim — dezessete adaptadores de harness | Não — cópia, link simbólico ou template, sem tradução | Sim — 60 ferramentas mais os padrões AGENTS.md e Agent Skills | Em parte — regras concatenadas no arquivo de instruções de cada ferramenta; MCP, skills e subagentes gravados em forma nativa |
-| Unidade sincronizada | regras, skills, hooks, comandos de barra, MCP | arquivos arbitrários | regras, ignore, MCP, comandos, subagentes, skills, hooks, permissões, checks (instruções de verificação para revisão de código) | regras, MCP, skills, subagentes |
+| Unidade sincronizada | regras, skills, subagentes, hooks, comandos de barra, output-styles, configurações, MCP | arquivos arbitrários | regras, ignore, MCP, comandos, subagentes, skills, hooks, permissões, checks (instruções de verificação para revisão de código) | regras, MCP, skills, subagentes |
 | Corpus de governança (regras comportamentais mais um conformity gate mecânico) | Sim — `python -m apothem.conformity.gate` | Não | Não — seu recurso `checks` sincroniza verificações de revisão de código para as ferramentas; nenhum conformity gate sobre as regras | Não |
 | Pipelines deterministas de planejamento e de pesquisa | Sim — de `/plan-spec` a `/plan-execute`, `/research` de treze etapas | Não | Não | Não |
 | Fortaleza de auditoria que detecta e remedia | Sim — varredura de onze comandos, laço de reauditoria `/fortress` | Não | Não | Não |

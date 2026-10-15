@@ -2,30 +2,30 @@
 title: "Skema Frontmatter"
 description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
 machineTranslated: true
-sourceHash: "f89ff828715e6fe4"
+sourceHash: "482f970f0b254769"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi kanonik untuk frontmatter YAML pada setiap kelas artefak.** Ringkasan Konvensi di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) adalah deklarasi inline; JSON Schema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` menolak kunci yang tidak dikenal) adalah kontrak yang terbaca mesin dan yang berlaku jika ada ketidaksesuaian. Halaman ini adalah indeks kunci wajib, dan [`artifact-schema.mdx`](/docs/reference/artifact-schema) memuat templat dan contoh lengkap per kelas — keduanya adalah proyeksi yang dapat dibaca manusia dari skema-skema tersebut.
+> **Referensi kanonik untuk frontmatter YAML pada setiap kelas artefak.** Ringkasan Konvensi di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) adalah deklarasi inline; JSON Schema per kelas di [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` menolak kunci yang tidak dikenal) adalah kontrak yang terbaca mesin dan yang berlaku jika ada ketidaksesuaian. Halaman ini adalah indeks kunci wajib, dan [`artifact-schema.mdx`](/docs/reference/artifact-schema) memuat templat dan contoh lengkap per kelas — keduanya adalah proyeksi yang dapat dibaca manusia dari skema-skema tersebut.
 
 ---
 
 ## 1. Bentuk Blok Frontmatter
 
-Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) berada di atas frontmatter pada berkas keluarga Markdown; frontmatter mengikuti tepat setelahnya.
+Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Pada berkas keluarga Markdown, frontmatter adalah konten pertama berkas, dan banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) mengikuti `---` penutup.
 
 Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber (instalasi Claude Code mengganti namanya menjadi `user-invocable`). Kunci aturan dan pekerja terdelegasi menggunakan camelCase, sebagaimana tercantum dalam tabel kunci wajib di bagian 2. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter YAML penting lainnya diberi tanda kutip.
 
 ## 2. Field Wajib per Kelas
 
-Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `schemas/` (satu berkas skema per kelas artefak).
+Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `src/apothem/schemas/` (satu berkas skema per kelas artefak).
 
 ```text
-schemas/agent.schema.json
-schemas/skill.schema.json
-schemas/command.schema.json
-schemas/output-style.schema.json
-schemas/plan.schema.json
+src/apothem/schemas/agent.schema.json
+src/apothem/schemas/skill.schema.json
+src/apothem/schemas/command.schema.json
+src/apothem/schemas/output-style.schema.json
+src/apothem/schemas/plan.schema.json
 ```
 
 | Kelas | Kunci wajib |
@@ -37,7 +37,7 @@ schemas/plan.schema.json
 | Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema menerima tepat salah satu dari kedua ejaan tersebut |
 | Gaya keluaran (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 
-Skema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).
+Skema per kelas di [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Validator
 

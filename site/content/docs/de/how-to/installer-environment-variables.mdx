@@ -2,7 +2,7 @@
 title: "Umgebungsvariablen des Installers"
 description: "Den Skript-Installer (Ziel, Quelle, Harness, Profil, Verifizierung) über Umgebungsvariablen steuern."
 machineTranslated: true
-sourceHash: "b69fe1c566ac13fb"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,10 @@ Sie Umgebungsvariablen setzen, bevor Sie es ausführen.
 
 ## Voraussetzungen
 
-- Eine POSIX-Shell (`bash`) oder PowerShell 5.1+.
+- Eine POSIX-Shell (`bash`) oder PowerShell 5.1+. Die PowerShell-Beispiele unten
+  rufen `pwsh` (PowerShell 7+) auf. Führen Sie unter Windows PowerShell 5.1
+  stattdessen `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`
+  aus.
 - Die Variablen werden einmalig am Anfang des Installers gelesen; setzen Sie sie
   daher im selben Befehl (oder exportieren Sie sie zuerst) und führen Sie dann
   den Installer aus.
@@ -57,7 +60,7 @@ seinen Fingerabdruck gegen den Wert, der in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 veröffentlicht ist. Pinnen Sie ein bekanntes
 Release mit `APOTHEM_REF=<tag>` (ebenfalls verifiziert; ein Tag von der
-[Releases-Seite](https://github.com/ahmed-g-gad/apothem/releases)), wählen Sie
+[Release-Seite](https://github.com/ahmed-g-gad/apothem/releases)), wählen Sie
 den beweglichen Branch mit `APOTHEM_REF=main` (unverifiziert), oder setzen Sie
 `APOTHEM_ALLOW_UNVERIFIED=1`, um nach einem Verifizierungsfehlschlag mit einer
 Warnung fortzufahren (Air-Gapped-Betrieb, lokale Nutzung oder Nutzung vor
@@ -83,7 +86,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Fixieren Sie das Installationsziel und wählen Sie den beweglichen Branch `main`. Ein Branch ist kein signiertes Tag, daher braucht der Installer zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1`:
+2. Legen Sie das Installationsziel fest und wählen Sie den beweglichen Branch
+   `main`. Ein Branch ist kein signiertes Tag, daher braucht der Installer
+   zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
    APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh

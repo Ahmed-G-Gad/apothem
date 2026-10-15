@@ -1,46 +1,35 @@
 ---
 title: "ブランドパレット"
-description: "Apothem のコアブランドカラーと、17 種類の工具ブランドカラー。単一の事実の源は assets/design-tokens.css にある正規のデザイントークンです。サイトはそれらの値をミラーします。"
+description: "Apothem のコアブランドカラーと、17 のハーネスのブランドカラー。コアカラーの信頼できる唯一の情報源は、assets/design-tokens.css にある正規のデザイントークンで、サイトはそれらの値をミラーします。"
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## コアパレット
 
-正規のパレット——スレートのニュートラルランプ、エメラルドのアクセントランプ、および
-セマンティックな色相——は、
+正規のパレット — スレートのニュートラルランプ、エメラルドのアクセントランプ、セマンティックな色相 — は、
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
-（およびそのミラーである `assets/design-tokens.json`）のデザイントークンが所有します。
+（およびそのミラーである `assets/design-tokens.json`）にあるデザイントークンが所有します。
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-のサイトテーマは、これらのトークン値を Fumadocs テーマが消費する CSS 変数にミラー
-します。以下の各値は、正規のランプステップにトレースされます。
+にあるサイトテーマは、これらのトークン値を、Fumadocs テーマが使用する CSS 変数へミラーします。以下のすべての値は、正規のランプのステップにたどれます。
 
 | 役割 | トークン（CSS） | ライトモード | ダークモード | 用途 |
 |---|---|---|---|---|
-| プライマリ | `--apothem-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 見出し、ナビゲーションのテキスト、主要な読み取り面。 |
+| プライマリ | `--apothem-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 見出し、ナビゲーションのテキスト、主要な閲覧面。 |
 | アクセント | `--apothem-accent-text` | emerald-700 `#047857` | emerald-400 `#34d399` | アクティブなリンク、フォーカスリング、選択中のナビゲーション。 |
-| 本文テキスト | `--apothem-text-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | 既定の本文テキスト。 |
-| 本文の地色 | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | 既定の背景。 |
+| 本文テキスト | `--apothem-text-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | デフォルトの本文テキスト。 |
+| 本文の地色 | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | デフォルトの背景。 |
 | ナビゲーションの地色 | `--apothem-surface-sunken` | slate-100 `#eef2f7` | slate-950 `#080c15` | ヘッダーとナビゲーションの帯。 |
 
-## 工具パレット
+## ハーネスパレット
 
-工具のカラーは[工具カラー](/docs/brand/harness-colors)にあります。Apothem マークの
-六角形——その中心ノードと終端ノード——へのジオメトリックマッピングは、ブランド
-セクションに折り込まれています。
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-の CSS 事実の源が、各トークンをその CSS 変数に配線します。
+ハーネスの色は[ハーネスの色](/docs/brand/harness-colors)にあります。Apothem マークの六角形 — その中心ノードと終端ノード — へのジオメトリックなマッピングは、ブランドセクションに折り込まれています。ハーネスの色はそのページで定義されており、デザイントークンや [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) では定義されません。これらはコアパレットのみを保持します。
 
 ## ドキュメントでの使用
 
-パレットはグローバルスタイルシート `site/app/global.css` を通じて配線され、ルート
-レイアウトによってインポートされます。ライトモードとダークモードのバリアントは、
-テーマの `.dark` クラスの状態に応じて切り替わります。
+パレットは、ルートレイアウトによってインポートされるグローバルスタイルシート `site/app/global.css` を通じて配線されています。ライトモードとダークモードのバリアントは、テーマの `.dark` クラスの状態に応じて切り替わります。
 
 ## 更新
 
-パレットは、コアカラー（slate / emerald）が変化したとき、または工具が上流でブランド
-カラーの変更を承認したときにのみ更新されます。工具ごとの変更は、
-`site/app/global.css`、[工具カラー](/docs/brand/harness-colors)、および
-`assets/src/` 配下の影響を受けるすべての SVG マスターにわたって原子的に伝播します。
+パレットが更新されるのは、コアカラー（slate / emerald）が変化したとき、またはハーネスが上流でブランドカラーの変更を正式に決定したときだけです。ハーネスごとの変更は、[ハーネスの色](/docs/brand/harness-colors)と、`assets/src/` 配下の影響を受けるすべての SVG マスターにわたって、アトミックに伝播します。

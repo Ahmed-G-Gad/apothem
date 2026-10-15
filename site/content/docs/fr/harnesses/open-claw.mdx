@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptateur d'environnement Apothem pour Open-Claw (préversion)."
 machineTranslated: true
-sourceHash: "a5897223a356aaf3"
+sourceHash: "3325613cf689ffc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ sourceHash: "a5897223a356aaf3"
 apothem install --harness open-claw
 ```
 
-L'adaptateur traduit le profil partagé vers le fichier de configuration global
-à l'utilisateur d'OpenClaw et installe les cohortes de support Apothem sous la
-racine de l'environnement. La configuration native d'OpenClaw est en JSON ; le
-materializer rend donc du JSON pour s'y conformer.
+L'adaptateur écrit le fichier de configuration globale utilisateur d'OpenClaw,
+projette le profil partagé dans un document de profil et installe les cohortes
+de support Apothem sous la racine de l'environnement. La configuration native
+d'OpenClaw est en JSON ; le materializer rend un objet JSON vide, et un fichier
+existant conserve ses clés.
 
 **Fichiers écrits :** `~/.openclaw/openclaw.json`, le document de profil
 `~/.openclaw/apothem/rules/00-apothem-profile.md` et des fichiers de support
@@ -34,10 +35,11 @@ style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
 ## Correspondance entre le profil et la configuration native
 
 L'adaptateur lit le profil partagé d'Apothem mais ne rédige aucune clé de
-configuration : `openclaw.json` est écrit sous la forme d'un objet vide.
-L'identité, les préférences et les règles du profil vont dans le document de
-profil. Les commandes, skills, règles, templates et prompts de hook partagés
-sont installés comme matériel de support sous `~/.openclaw/.apothem/support/`.
+configuration : un `openclaw.json` nouveau ou vide est écrit sous la forme d'un
+objet vide, et un fichier existant conserve ses clés. L'identité, les
+préférences et les règles du profil vont dans le document de profil. Les
+commandes, skills, règles, templates et prompts de hook partagés sont installés
+comme matériel de support sous `~/.openclaw/.apothem/support/`.
 
 ## Notes de compatibilité
 
@@ -66,7 +68,10 @@ apothem verify --harness open-claw
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -75,7 +80,9 @@ La commande verify confirme que :
 apothem update --harness open-claw
 ```
 
-Redérive la configuration native à partir de l'état actuel du profil partagé.
+Redérive le document de profil à partir de l'état actuel du profil partagé et
+actualise les fichiers de support ; `openclaw.json` conserve les clés qu'il
+possède déjà.
 Exécutez cette commande après avoir modifié `~/.config/apothem/profile.yaml` ou
 mis à niveau le paquet Apothem installé.
 

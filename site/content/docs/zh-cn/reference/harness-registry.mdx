@@ -2,11 +2,11 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "6cbb079a39c14ed9"
+sourceHash: "377ff92b24e0f52c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-工具注册表是 CLI、文档、固件测试和约定锁定校验所使用的、作为事实来源的适配器清单。运行时来源是 `src/apothem/lib/harness_registry.py`；下面的每一行都可追溯到该注册表、各适配器的 `capabilities.yml` 以及每个适配器的 `STANDARD-CONVENTION-PIN.md`。
+工具注册表是作为事实来源的适配器清单，供 CLI、文档、夹具测试和约定锁定校验使用。运行时来源是 `src/apothem/lib/harness_registry.py`；下面的每一行都可追溯到该注册表、每个适配器各自的 `capabilities.yml`，以及每个适配器的 `STANDARD-CONVENTION-PIN.md`。
 
 ## 注册表矩阵
 
@@ -34,12 +34,12 @@ sourceHash: "6cbb079a39c14ed9"
 
 状态值为 `native`、`converted`、`support-tree`、`profile-projected`、`unsupported`、`not-applicable` 和 `discovery-pending`。
 
-`converted` 集合会被改写为工具自身的格式，而某些源字段在其中没有对应的位置。对于每个已转换的命令、智能体或规则集合，适配器的 `capabilities.yml` 都携带一个 `conversion_losses` 映射，说明每个源 frontmatter 字段的去向：
+`converted` 集合会被改写为工具自身的格式，而其中有些源字段没有可放置的位置。对于每个已转换的命令、智能体或规则集合，适配器的 `capabilities.yml` 都带有一个 `conversion_losses` 映射，说明每个源前置元数据字段会如何处理：
 
 | 值 | 含义 |
 | --- | --- |
 | `native:<field>` | 工具在该字段下读取它。 |
-| `sidecar:<path>` | 它被写入转换后文件旁边的一个单独文件，例如 Codex 的 `agents/openai.yaml`。 |
+| `sidecar:<path>` | 它被写入紧邻转换后文件的一个单独文件，例如 Codex 的 `agents/openai.yaml`。 |
 | `filename` | 由文件名或文件夹名承载它。 |
 | `inlined` | 它被移入提示词或正文文本。 |
 | `ignored` | 它保留在文件中，但工具不读取它。 |
@@ -65,11 +65,11 @@ sourceHash: "6cbb079a39c14ed9"
 | Qwen Code | 已转换的命令和智能体；原生技能、钩子、MCP、子智能体调度、系统提示词模板、记忆；按配置档案投射的工具限制 | 规则、模板 | 状态栏、输出样式 |
 | Trae | 原生规则、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
 | Windsurf | 原生规则和系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
-| Zed | 原生规则、MCP、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆 |
+| Zed | 原生规则、系统提示词模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、智能体、状态栏、输出样式、子智能体调度、记忆；MCP 发现待定 |
 
 ## 共享根目录
 
-某些安装目标会被写入它们的工具以外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，并附带一个所有者（唯一写入该路径的适配器），以及其厂商文档表明默认会加载该路径的读取者，并以厂商页面作为证据。安装所有者会把 Apothem 内容呈现给每个读取者，卸载所有者则会将其从每个读取者处移除。
+有些安装目标会被写入它们的那个工具之外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个所有者（唯一写入该路径的适配器）和若干读取者——这些读取者的厂商文档默认会加载该路径，并以厂商页面作为证据。安装所有者会把 Apothem 内容呈现在每个读取者面前，卸载所有者则会将其从每个读取者处移除。
 
 | 路径 | 所有者 | 读取者 |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ sourceHash: "6cbb079a39c14ed9"
 | `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
 
-所有者写入共享指令文件的 Apothem 区块不把任何单一工具指定为其读者。当某个注册表目标由两个适配器写入，或者其命名类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者时，`tests/unit/test_shared_roots.py` 会失败。
+所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当某个注册表目标由两个适配器写入，或者被命名为类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）的名称，而没有声明所有者时，`tests/unit/test_shared_roots.py` 会失败。
 
 ## 校验钩子
 
@@ -89,10 +89,10 @@ sourceHash: "6cbb079a39c14ed9"
 
 | 检查 | 用途 |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份不超过 90 天的约定锁定，该锁定至少引用一个厂商 URL，且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
-| `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在页面已迁移或已失效时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，不会导致它失败。每周的约定监视任务会运行它。 |
-| `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规性检查。 |
-| `python -m pytest` | 执行注册表固件测试与适配器契约测试。 |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份不满 90 天的约定锁定，该锁定至少引用一个厂商 URL，且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
+| `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在遇到已迁移或已失效的页面时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，并且不会导致它失败。每周的约定监视器会运行它。 |
+| `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规检查。 |
+| `python -m pytest` | 执行注册表夹具测试与适配器契约测试。 |
 
 ## 生成的工具适配器参考
 

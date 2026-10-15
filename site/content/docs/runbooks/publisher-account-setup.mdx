@@ -6,8 +6,9 @@ description: "Configure the npmjs.com trusted publisher for @ahmed-g-gad/apothem
 
 This runbook configures the publisher side of the release surface. The
 distribution story has one registry: the scoped npm package
-`@ahmed-g-gad/apothem` on npmjs.com, published by the manually-dispatched
-`publish-npm.yml` workflow after the GitHub Release, Pages, CI, conformity,
+`@ahmed-g-gad/apothem` on npmjs.com, published by the `publish-npm.yml`
+workflow (it runs on the `v*.*.*` tag push; a manual dispatch with a `tag`
+input is the fallback) after the GitHub Release, Pages, CI, conformity,
 and harness workflows are green. Every other artifact ships on the GitHub
 Release page itself and needs no external publisher account.
 
@@ -55,8 +56,9 @@ package name, not the maintainer account name.
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. Run `Publish — npm` (`publish-npm.yml`) from the GitHub Actions tab with
-   `tag=<release-tag>` and approve the `release` environment deployment.
+9. Approve the `release` environment deployment for the `Publish npm`
+   (`publish-npm.yml`) run that the tag push starts. If that run did not start,
+   dispatch the workflow from the GitHub Actions tab with `tag=<release-tag>`.
 10. Verify the live package:
 
     ```bash title="npm verification"

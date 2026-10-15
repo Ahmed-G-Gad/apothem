@@ -2,11 +2,11 @@
 title: "多表面工具约定"
 description: "关于多表面工具配置及其在聊天、IDE 补全和 PR 评审运行时之间一致性的规范性权威参考。"
 machineTranslated: true
-sourceHash: "a28eacc8acd8ae94"
+sourceHash: "d17a5f2f79af7cc9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的多表面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随已发布仓库一同提供的独立参考。架构理由记录在 [ADR-0003](/docs/architecture)。
+> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的多表面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随已发布仓库一同提供的独立参考。架构理由记录于 [ADR-0003](/docs/architecture)。
 
 ---
 
@@ -16,7 +16,7 @@ sourceHash: "a28eacc8acd8ae94"
 
 缺失某个表面的代价是**机器生成代码中的无声漂移**——这是最糟糕的一类缺陷，因为它在无形中累积。每个机器生成的制品都会加剧分歧；等到人类评审者发现矛盾时，代码库已经承载了数周不一致的约定。
 
-就部署现实而言，工具运行时配置是复数的。发布的生态系统必须（MUST）既为聊天控制台运行时提供一份行为记忆文件，又为 IDE 内补全运行时提供一份仓库范围的指令文件。这两个表面必须（MUST）相互一致——没有矛盾，没有漂移——并且必须（MUST）共同编码相同的纪律。
+就部署现实而言，工具运行时配置是复数的。已发布的生态系统必须（MUST）为聊天控制台运行时提供一份行为记忆文件，并且为 IDE 内补全运行时提供一份仓库范围的指令文件。这两个表面必须（MUST）相互一致——没有矛盾，没有漂移——并且必须（MUST）共同编码相同的纪律。
 
 ---
 
@@ -40,7 +40,7 @@ sourceHash: "a28eacc8acd8ae94"
 | `AGENTS.md` | 仓库根目录（和/或 `.codex/AGENTS.md`） | **MUST** | 支持 AGENTS 的工具 |
 | `CLAUDE.md` | 仓库根目录（和/或 `.claude/CLAUDE.md`） | **MUST** | Claude Code |
 | 以 `.github/` 为根的指令文件 | 以 `.github/` 为根的指令文件 | **MUST** | IDE 内补全运行时 |
-| 以 `site/content/docs/architecture/` 为根的辅助器清单 | 仓库根目录 | **MAY**（经由结构化询问通道选择启用） | 多辅助器编排平台 |
+| 以 `site/content/docs/architecture/` 为根的辅助器清单 | `site/content/docs/architecture/agents.mdx` | **MAY**（经由结构化询问通道选择启用） | 多辅助器编排平台 |
 | `.cursorrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内编辑器运行时 |
 | `.windsurfrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内伴侣运行时 |
 
@@ -55,16 +55,16 @@ sourceHash: "a28eacc8acd8ae94"
 1. **Project Context**——一段话：本仓库是什么、谁在使用它、它的顶层形态。具体；不做营销。
 2. **Coding Conventions**——命名、情态层级、frontmatter、Markdown 风格，以及在偏离默认值之处的语言专属风格要点。
 {/* REUSE-IgnoreStart */}
-3. **File Headers**——运行时生成的每个文件都必须（MUST）按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header)，以规范的单行 `SPDX-License-Identifier: MIT` 开头，并使用与文件类型匹配的注释变体。指向 `scripts/inject-header.*` 和 `site/content/docs/reference/authorship-header.mdx`。
+3. **File Headers**——运行时生成的每个文件都必须（MUST）按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header)，以规范的单行 `SPDX-License-Identifier: MIT` 开头，并采用与文件类型匹配的注释变体。指向 `scripts/inject-header.*` 和 `site/content/docs/reference/authorship-header.mdx` 的指引。
 {/* REUSE-IgnoreEnd */}
 4. **Plans Discipline**——运行时不得（MUST NOT）生成会写入工具配置目录（例如 `~/.claude/plans/` 或 `~/.codex/.plans/`）或任何其他全局计划位置的代码或脚本。规划制品按照 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) 进入 `<project-root>/.apothem/plans/`（旧有的 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 升级）。
-5. **Structured Inquiry Behavior**——当运行时不确定时，它不得（MUST NOT）悄然捏造。它应改为插入一个清晰标记的澄清块（例如一条 `# TODO(clarify): <question>` 注释），并在表面允许的地方于聊天中提出该问题。不发明 API，不发明模型名称，不发明文件路径。
+5. **Structured Inquiry Behavior**——当运行时不确定时，它不得（MUST NOT）悄然捏造。它转而插入一个清晰标记的澄清块（例如一条 `# TODO(clarify): <question>` 注释），并在表面允许的地方于聊天中提出该问题。不发明 API，不发明模型名称，不发明文件路径。
 6. **Forbidden Patterns**——明确的禁止事项：不用营销形容词，不用含糊的填充词，不留 console.log 调试残渣，不硬编码指向用户主目录的绝对路径，不提交机密，不提交 `.apothem/plans/`（或旧有的 `.plans/`）下的文件，不与规范的项目指令文件相矛盾。
 7. **Output Format**——生成的代码/文字符合统一的对话式输出约定：确定性、统一分节、密度、摘要纪律、引用。对于代码：公共表面有文档，在语言支持类型之处带类型，在存在测试脚手架之处经过测试。
 8. **Review Checklist**——评审者（人类，或处于 PR 评审模式的运行时）在批准之前必须（MUST）核实的内容：头部存在、命名合规、没有 `.apothem/plans/` 写入、与规范的项目指令文件没有矛盾、校验器在本地为绿色。
 9. **Pointers**——指向 `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、本约定文档、`schemas/` 和 `CONTRIBUTING.md` 的链接。
 
-该文件按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2，以规范的作者署名头 SPDX 行（Markdown 变体）开头——按照项目所选的头部可见性策略，可见或不可见。
+该文件以规范的作者署名头 SPDX 行（Markdown 变体）开头，依据 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2——可见还是不可见，取决于项目所选的头部可见性策略。
 
 IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGENTS.md` 是规范的项目指令表面，`CLAUDE.md` 为 Claude Code 镜像它，而 IDE 内指令文件则以编辑器内代码补全运行时的口吻撰写，该运行时发出由开发者接受或拒绝的建议。*信息*（纪律、约定、反模式）是相同的；*框定*则不同。
 
@@ -80,7 +80,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -96,7 +96,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 当检测到两个表面在某个共享声明上相互矛盾时，默认的调和方式是：
 
-> `AGENTS.md` 是规范的项目之声。任何与之矛盾的表面都会被重写，以适合该表面的框定镜像 `AGENTS.md` 的语义。
+> `AGENTS.md` 是规范的项目之声。任何与之矛盾的表面都会被重写，以适合该表面的框定方式镜像 `AGENTS.md` 的语义。
 
 只有带有一个明确的文件内 `<!-- coherence-override: <claim-id> -->` 标记、且该标记指向一份解释这一刻意分歧的 ADR 时，才允许表面专属的覆盖。覆盖标记本身被列举在校验器的允许列表中，并出现在 CI 报告中。
 
@@ -114,9 +114,9 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- 第一个断言 IDE 内指令文件存在、可解析、包含 §4 中列举的每个规范章节，并以规范的作者署名横幅开头。
+- 第一个断言 IDE 内指令文件存在、可解析、包含 §4 中列举的每个规范章节，并以规范的 `SPDX-License-Identifier: MIT` 行（Markdown 变体）开头。
 - 第二个解析每个表面的规范章节；断言共享章节在一个规范化比较器下相互一致（不区分大小写、容忍空白差异、允许词面改写，但要求在夹具定义的声明清单上语义等价）。
-- 第三个断言 LICENSE 的版权行与规范横幅的“Copyright (c)”行指名同一位作者。
+- 第三个断言根目录的 LICENSE 带有一行可解析的 `Copyright (c) <name>`；逐文件头部不带作者名。
 
 ---
 
@@ -124,7 +124,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 - **添加表面。** 操作者通过结构化询问通道选择启用。生成器依据声明清单撰写该表面并运行校验器；如需表面专属覆盖，则提交一份 ADR。
 - **移除表面。** 结构化询问确认移除，ADR 记录理由，校验器的 required-in 列表随之修订。
-- **漂移检测。** 任何偏离声明清单的提交都会被 pre-commit / CI 拒绝；该提交的作者需重写该表面以恢复一致性。
+- **漂移检测。** 任何偏离声明清单的提交都会被 pre-commit / CI 拒绝；该提交的作者会重写该表面，以恢复一致性。
 
 ---
 

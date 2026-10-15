@@ -95,8 +95,12 @@ from the current shared profile state.
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block from the project-root `AGENTS.md` and keeps any text
+outside the sentinels. The file is deleted only when nothing else remains in it.
+Also removes the support files Apothem placed under
+`<project>/.kimi-code/.apothem/support/`. Before the change, a timestamped copy
+of each file is saved under `~/.apothem/backups/`; no backup file is left in the
+project. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 

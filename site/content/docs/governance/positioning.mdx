@@ -90,7 +90,7 @@ The fifteen-mandate registry is the canonical outward-axis governance surface. E
 
 ### M4 — Self-Application — Pre-Emission Gate
 
-**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Reasoned bars (M1, M3, M6, M9, M11, M12, M14) are evaluated by the operating assistant and recorded in the verification block. A single bar failure blocks emission; iteration continues until every bar passes.
+**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Bars M3, M12 and M15 are part mechanical: executable matchers cover one part of each bar and the operating assistant evaluates the rest. Reasoned bars (M1, M2, M6, M9, M11, M14) are evaluated by the operating assistant and recorded in the verification block. A single bar failure blocks emission; iteration continues until every bar passes.
 
 **Canonical specification.** `src/apothem/rules/pre-emission-gate.md` (with full bar table at `src/apothem/rules/pre-emission-gate-bars.md`).
 

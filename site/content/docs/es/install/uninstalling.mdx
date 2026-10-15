@@ -2,7 +2,7 @@
 title: "Desinstalación"
 description: "Elimina Apothem y limpia las configuraciones de entorno."
 machineTranslated: true
-sourceHash: "11d7a265fc5e60b9"
+sourceHash: "39bf18da03eaad73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,26 @@ La eliminación depende del canal de instalación que usaste:
   correspondiente desde el checkout: `scripts/installer/uninstall.sh` (POSIX) o
   `scripts/installer/uninstall.ps1` (PowerShell). Ambos piden confirmación antes
   de eliminar y rechazan destinos inseguros.
+- **Extensión de la familia VS Code** — ejecuta primero **Apothem: Uninstall**
+  desde la paleta de comandos para eliminar las configuraciones de entorno y,
+  después, elimina la extensión desde la vista de Extensiones o con
+  `code --uninstall-extension ahmed-g-gad.apothem`. De forma predeterminada, la
+  extensión ejecuta el motor mediante `npx`, así que la entrada **npx** de arriba
+  cubre la caché.
+- **Arranques de línea de comandos (canales 5–7)** — elimina la extensión o el
+  plugin con la herramienta anfitriona correspondiente una vez que las
+  configuraciones de entorno ya no estén. El arranque solo añade contexto de
+  asistente (un archivo de contexto, un comando o una skill) que llama al motor
+  mediante `npx`, así que no queda nada más. Los hosts de extensión de los
+  canales 5 y 6 admiten un comando de desinstalación; para el host de plugin del
+  canal 7, desinstala `apothem` en su explorador de plugins.
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **Motor directo** — no hay nada que desinstalar; elimina el clon una vez que
+  las configuraciones de entorno ya no estén.
 - **Copias de seguridad y estado** — las copias de seguridad de instalación
   residen bajo `~/.apothem/backups/` y el historial de instalaciones bajo
   `~/.apothem/state/`. Ambos tienen un tamaño acotado: después de cada

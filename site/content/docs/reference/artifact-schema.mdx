@@ -355,7 +355,7 @@ Every hook command routes through the same Python dispatcher:
 
 **Path:** `CLAUDE.md` (root)
 
-**Purpose:** Global ecosystem configuration index.
+**Purpose:** Project-scoped Claude Code instructions.
 
 ### Mandatory YAML Frontmatter
 
@@ -364,27 +364,15 @@ Every hook command routes through the same Python dispatcher:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Required Sections (in order)
+### Sections
 
-1. **§1 Plan Suite** — Reference to template location
-2. **§2 Cognitive Identity** — Creative architecture mandate
-3. **§3 Artifact Directories** — Table of paths and purposes
-4. **§4 Seriousness-Scaled Governance** — Four levels definition
-5. **§5 Operational Directives** — Problem-solving, communication principles
-6. **§6 Cross-Cutting Mandates** — CM-1–28 overview
-7. **§7 Registries** — Tables of artifacts:
-   - 7.1 Commands
-   - 7.2 Rules
-   - 7.3 Helpers
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Artifact Evolution
+`CLAUDE.md` is authored in prose sections, described at [`CLAUDE.md`](/docs/reference/claude-md). No validator requires a fixed section list: `scripts/dev/validate_ecosystem.py` checks the frontmatter keys above.
 
 ---
 
@@ -406,7 +394,7 @@ Every artifact must satisfy these checks:
 
 ### Content Validation
 
-- [ ] Content begins immediately after closing `---` on new line
+- [ ] Content begins on a new line after the closing `---`; on Markdown-family files the authorship-header banner is the first content after it
 - [ ] No plan-internal references (CM-7 compliance)
 - [ ] Cross-references resolve (if listing other artifacts)
 - [ ] Links use relative paths with forward slashes

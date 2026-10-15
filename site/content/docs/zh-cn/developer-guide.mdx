@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "782e178598975d52"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,11 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 | **命令** | `src/apothem/commands/*.md` | 用于复杂工作流的斜杠命令（`/command-name`） | 新的多步骤用户工作流 |
 | **辅助器** | `src/apothem/agents/*.md` | 用于并行任务的持久化委派工作者定义 | 新的反复出现的专项任务（审计、探索、质量检查） |
 | **技能** | `src/apothem/skills/{name}/SKILL.md` | 带有检测信号的可复用技法 | 新的可检测、可复用技法模式 |
-| **钩子** | `src/apothem/hooks/` + `settings.json` | 由事件触发的验证或状态管理 | 新的生命周期事件或验证需求 |
+| **钩子** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | 由事件触发的验证或状态管理 | 新的生命周期事件或验证需求 |
 
 ## 工具适配器契约
 
-工具的身份与能力事实位于
-`src/apothem/lib/harness_registry.py`。只有当以下各个表面彼此一致时，一项工具
-变更才算完成：
+工具的身份与能力事实位于 `src/apothem/lib/harness_registry.py`。只有当以下各个表面彼此一致时，一项工具变更才算完成：
 
 | 表面 | 所需更新 |
 | --- | --- |
@@ -36,46 +34,31 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 | 测试 | 注册表对等性、适配器夹具测试、黄金安装计划行、试运行/不写入行为、幂等性以及 package-data 覆盖。 |
 | 文档 | 工具参考页、对比页、能力/MCP 说明，以及使用虚构占位符的示例。 |
 
-项目作用域的适配器必须设置 `requires_project = True`，在生命周期方法上接受
-`project: Path | None`，并在写入之前拒绝缺失或不安全的项目根目录。用户作用域的
-适配器必须将路径保持在该工具文档所述的用户配置根目录之下。
+项目作用域的适配器必须设置 `requires_project = True`，在生命周期方法上接受 `project: Path | None`，并在写入之前拒绝缺失或不安全的项目根目录。用户作用域的适配器必须将路径保持在该工具文档所述的用户配置根目录之下。
 
 ## 黄金夹具策略
 
-`tests/fixtures/harness-golden-plans.json` 记录注册表中全部十七个工具的公开
-安装计划形态：公开 ID、物化模式、源集合/模板路径，以及 `<ROOT>` 下规范化后的
-目标路径。当注册表、清单或模板的目标行为被有意更改时，请在与源变更相同的提交中
-更新黄金夹具，使差异能显示出行为的变化量。
+`tests/fixtures/harness-golden-plans.json` 记录注册表中全部十七个工具的公开安装计划形态：公开 ID、物化模式、源集合/模板路径，以及 `<ROOT>` 下规范化后的目标路径。当注册表、清单或模板的目标行为被有意更改时，请在与源变更相同的提交中更新黄金夹具，使差异能显示出行为的变化量。
 
 ## 写入前验证
 
-共享安装驱动在第一次写入之前验证每个源与目标。它会拒绝缺失的清单源、目标路径
-遍历、位于所选根目录之外的目标路径，以及符号链接穿越。试运行执行相同的验证，并在
-不创建文件的情况下返回结构化的 `skipped` 或 `unchanged` 结果。
+共享安装驱动在第一次写入之前验证每个源与目标。它会拒绝缺失的清单源、目标路径遍历、位于所选根目录之外的目标路径，以及符号链接穿越。试运行执行相同的验证，并在不创建文件的情况下返回结构化的 `skipped` 或 `unchanged` 结果。
 
 ## 脱敏与示例数据
 
-配置档案诊断会对形如 token、secret、password、credential、API key、private key、
-authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例和 JSON 片段使用
-`example.invalid`、`Example User`、`example-user` 以及显而易见的占位符，而不是
-看起来像真实机密或个人账户的内容。
+配置档案诊断会对形如 token、secret、password、credential、API key、private key、authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例和 JSON 片段使用 `example.invalid`、`Example User`、`example-user` 以及显而易见的占位符，而不是看起来像真实机密或个人账户的内容。
 
 ## 动笔之前：规范 schema
 
-**机器可读、由闸门强制执行的契约，是 `src/apothem/schemas/*.schema.json` 下按类别
-划分的 JSON Schema——`additionalProperties` 会拒绝未知键，因此合规闸门拥有最终
-决定权。** 有两份供人阅读的投影跟随这些 schema：`site/content/docs/reference/frontmatter-schema.mdx`
-（必填键索引）和 `site/content/docs/reference/artifact-schema.mdx`
-（按类别的模板与完整示例）。当某个页面与 JSON Schema 不一致时，以 schema 为准。
+**机器可读、由闸门强制执行的契约，是 `src/apothem/schemas/*.schema.json` 下按类别划分的 JSON Schema——`additionalProperties` 会拒绝未知键，因此合规闸门拥有最终决定权。** 有两份供人阅读的投影跟随这些 schema：`site/content/docs/reference/frontmatter-schema.mdx`（必填键索引）和 `site/content/docs/reference/artifact-schema.mdx`（按类别的模板与完整示例）。当某个页面与 JSON Schema 不一致时，以 schema 为准。
 
 - 阅读 `src/apothem/schemas/` 下对应你的制品类型的 JSON Schema
-- 阅读 `site/content/docs/reference/artifact-schema.mdx` §“Schema”，获取模板和一个
-  完整示例
+- 阅读 `site/content/docs/reference/artifact-schema.mdx` §“Schema”，获取模板和一个完整示例
 - 复制必填字段，填入必需的值，并按需添加可选字段
 
 ## frontmatter 快速检查
 
-每个制品的 frontmatter 都必须通过以下检查：
+每个制品的 frontmatter 都必须通过以下检查。`version`、`updated` 和 `portability` 这三项检查只适用于带有对应键的类别：规则一个都不带，技能不带 `portability`。
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -107,7 +90,7 @@ authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例
 - **命令：** `{name}.md`
 - **辅助器：** `{name}.md`
 - **技能：** 位于文件夹 `src/apothem/skills/{name}/SKILL.md` 中（大小写须精确：`SKILL.md`）
-- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。每条 `settings.json` 钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。Claude Code 模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
+- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。Claude Code `settings.json` 模板中的每条钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。该模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。Claude Code 插件则改为在 `src/apothem/hooks/hooks.json` 中注册钩子，这些钩子是通过 `bash` 运行 `hooks/lib/bootstrap.sh` 的 shell 命令。在 `hooks.json` 和 Claude Code `settings.json` 模板中注册新钩子。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
 
 ### 交叉引用
 
@@ -122,7 +105,7 @@ authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例
 
 ## 可移植性：Windows 与 Unix
 
-每个制品都必须显式声明其可移植性状态。
+每个命令都必须在 `portability` 字段中显式声明其可移植性状态，辅助器则可以声明。技能、规则和输出样式不带 `portability` 字段。
 
 ### 通用（默认）
 
@@ -158,7 +141,7 @@ portability: "universal-with-windows-caveats"
 portability: "unix-only"
 ```
 
-在规则的第一节中记录原因。
+在制品的第一节中记录原因。
 
 ## 作用域：始终生效与路径过滤
 
@@ -167,7 +150,8 @@ portability: "unix-only"
 规则在所有位置都适用。
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### 路径过滤
@@ -175,44 +159,40 @@ scope: "always-on"
 规则根据文件路径有条件地适用。
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
-`pathFilter` 使用 glob 模式（与 `.gitignore` 格式相同）。当某个文件匹配该过滤器时，
-规则即被激活。
+`pathFilter` 使用 glob 模式（与 `.gitignore` 格式相同）。当某个文件匹配该过滤器时，规则即被激活。
 
 ## 版本语义
 
-每个制品都带有其自身的语义化版本（`MAJOR.MINOR.PATCH`）：
+每个带版本的制品都带有其自身的语义化版本（`MAJOR.MINOR.PATCH`）。命令和技能要求带有它，辅助器和输出样式可以带有它，规则则不带：
 
 - **PATCH**——拼写修正、格式调整、链接刷新、仅限注释的编辑。行为不变。
-- **MINOR**——新增式的非破坏性变更：新的可选章节、额外的反模式、新的可选 frontmatter 字段、新的示例。现有使用方无需任何改动即可继续工作。
+- **MINOR**——新增式的非破坏性变更：新的可选章节、新的可选 frontmatter 字段、新的示例。现有使用方无需任何改动即可继续工作。
 - **MAJOR**——破坏性的 schema 或契约变更：移除章节、重命名字段、改变现有指令的行为，以及要求下游制品作出适配的变更。
 
 示例：
 
 - `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH：拼写修正）
-- `vX.Y.Z` → `vX.(Y+1).0`（MINOR：新增一条反模式条目）
+- `vX.Y.Z` → `vX.(Y+1).0`（MINOR：新增一个可选章节）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR：宣布契约稳定）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR：移除必填 frontmatter 字段）
 
-在每次改变行为的编辑中，一并提升 `version` 和 `updated`。对于捆绑了制品变更的发布，
-在生态级的 `CHANGELOG.md` 中追加一条相应的行。
+对于带有 `version` 和 `updated` 的制品，在每次改变行为的编辑中，一并提升这两个字段。对于捆绑了制品变更的发布，在生态级的 `CHANGELOG.md` 中追加一条相应的行。
 
 ## 何时编辑制品
 
 ### 规则
 
-- 将“必需/可选”结构视为承重结构——重构它会波及每个依赖它的制品
-  （需要 MAJOR 递增）。
-- 随着理解加深，精炼反模式、严肃度分级示例和引用（MINOR 递增）。
+- 将“必需/可选”结构视为承重结构——重构它会波及每个依赖它的制品。
+- 随着理解加深，精炼反模式、严肃度分级示例和引用。
 - 在相关的记忆主题文件中记录任何结构性变更的理由。
 
 ### 命令
 
-- 参数形态是公开契约的一部分——只有在明确有意时才打破它，并将该变更传播到每个
-  调用方（MAJOR 递增）。
+- 参数形态是公开契约的一部分——只有在明确有意时才打破它，并将该变更传播到每个调用方（MAJOR 递增）。
 - 保持工作流步骤和返回契约精简且最新。
 - 以内联方式记录不明显的步骤顺序。
 
@@ -226,8 +206,7 @@ pathFilter: "**/*.py, **/*.toml"
 
 - 保持流程步骤和示例与实际情况同步。
 - 检测信号必须反映当前使用中用户的实际措辞。
-- 技能一旦超过约 150 行就将其拆分（参见
-  `auto-memory.md` § Topic File Management）。
+- 技能一旦超过约 150 行就将其拆分（参见 `auto-memory.md` § Topic File Management）。
 
 ## 分步指南：添加新规则
 
@@ -235,8 +214,7 @@ pathFilter: "**/*.py, **/*.toml"
 
 这条规则是否与现有规则重叠？在 `src/apothem/rules/` 中搜索相关内容。
 
-如果重叠超过 50%，请考虑改为扩展一条现有规则。参见
-`persistent-conventions-vigilance.md` § Artifact Evolution。
+如果重叠超过 50%，请考虑改为扩展一条现有规则。参见 `persistent-conventions-vigilance.md` § Artifact Evolution。
 
 ### 2. 撰写内容
 
@@ -271,15 +249,15 @@ alwaysApply: true
 ---
 ```
 
-### 4. 更新 CLAUDE.md
+### 4. 更新规则 README
 
-在 `§7.2 Rules` 注册表表格中添加条目：
+在 `src/apothem/rules/README.md` 的“Rule families”一节中，向该规则所属系列的表格添加一行：
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-在表格内保持字母顺序。
+选择其关注点与该规则相符的那张系列表格。
 
 ### 5. 追加到 CHANGELOG.md
 
@@ -328,14 +306,7 @@ allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-`disable-model-invocation: true` 使命令只能由操作者调用；设为
-`false` 时，当某个请求与其描述相匹配，模型可以运行它。大多数命令使用 `true`，
-但大多数规划与研究流水线阶段使用 `false`。`src/apothem/commands/README.md` 中的
-调用表列出了每个命令的设置；新增命令时要为其添加一行。让
-`allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。
-有副作用的工具只能以限定作用域的规则形式授予，例如
-`Bash(git log *)`；schema 会拒绝 `"*"` 以及不带限定的 `Bash`、`PowerShell`、
-`Write`、`Edit`、`NotebookEdit` 和 `WebFetch`。
+`disable-model-invocation: true` 使命令只能由操作者调用；设为 `false` 时，当某个请求与其描述相匹配，模型可以运行它。大多数命令使用 `true`，但大多数规划与研究流水线阶段使用 `false`。`src/apothem/commands/README.md` 中的调用表列出了每个命令的设置；新增命令时要为其添加一行。让 `allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。有副作用的工具只能以限定作用域的规则形式授予，例如 `Bash(git log *)`；schema 会拒绝 `"*"` 以及不带限定的 `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit` 和 `WebFetch`。
 
 ### 3. 撰写内容
 
@@ -347,9 +318,9 @@ allowed-tools: "Read, Glob, Grep"
 - 带步骤的工作流章节
 - 返回契约 / 输出格式
 
-### 4. 更新 CLAUDE.md 与 CHANGELOG.md
+### 4. 更新 README 与 CHANGELOG.md
 
-在 `§7.1 Commands` 中添加注册表行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+向 `src/apothem/commands/README.md` 中对应的命令表添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 验证
 
@@ -397,9 +368,7 @@ portability: "universal"
 ---
 ```
 
-省略 `model`、`effort` 和 `permissionMode`，使辅助器继承会话的选择（与宿主无关的
-姿态）；并且除非辅助器需要持久记忆作用域（`user`、`project` 或 `local`），否则
-省略 `memory`。
+省略 `model`、`effort` 和 `permissionMode`，使辅助器继承会话的选择（与宿主无关的姿态）；并且除非辅助器需要持久记忆作用域（`user`、`project` 或 `local`），否则省略 `memory`。
 
 ### 3. 撰写内容
 
@@ -409,9 +378,9 @@ portability: "universal"
 - 工作流（编号步骤）
 - 返回契约（最大 token 数、结构、必填字段）
 
-### 4. 更新 CLAUDE.md 与 CHANGELOG.md
+### 4. 更新 README 与 CHANGELOG.md
 
-在 `§7.3 Helpers` 中添加注册表行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+向 `src/apothem/agents/README.md` 中的“Index”表添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 测试
 
@@ -439,8 +408,8 @@ portability: "universal"
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -475,9 +444,9 @@ argument-hint: "[args]"               # optional; if userInvocable
 - 常见错误
 - 示例
 
-### 4. 更新 CLAUDE.md 与 CHANGELOG.md
+### 4. 更新 README 与 CHANGELOG.md
 
-在 `§7.5 Skills` 中添加注册表行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+向 `src/apothem/skills/README.md` 中的“Index”表和“Folder contents”表各添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 验证
 
@@ -492,13 +461,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] frontmatter 通过 YAML 语法检查
 - [ ] schema 要求的所有必填字段均已齐备
 - [ ] `name` 字段使用 kebab-case
-- [ ] `version` 为语义化版本（`MAJOR.MINOR.PATCH`），并且在行为变更时已递增
-- [ ] 对于你改动过的任何制品，`updated` 与今天的日期一致
-- [ ] `portability` 字段已设置且有效
+- [ ] `version`（仅限带版本的类别；规则不带）为语义化版本（`MAJOR.MINOR.PATCH`），并且在行为变更时已递增
+- [ ] 对于你改动过的任何带有该字段的制品，`updated` 与今天的日期一致
+- [ ] `portability` 字段已设置且有效（仅限命令和辅助器）
 - [ ] CHANGELOG.md 在下一个发布的部分下、以合适的类别记录了该变更
 - [ ] 没有计划内部引用（符合 CM-7）
 - [ ] 交叉引用与其他制品保持一致
-- [ ] 新制品已在 CLAUDE.md 注册表中登记
+- [ ] 新制品已登记在其文件夹的 README 索引中
 - [ ] 制品已经过测试（如适用）
 - [ ] `ecosystem-audit` 技能运行无错误
 - [ ] 内容遵循结构约定（标题格式、章节等）
@@ -538,8 +507,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### 引用 CLAUDE.md 章节
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## 代码检查与格式
@@ -552,8 +521,7 @@ Or: Section 4 (Seriousness-Scaled Governance).
 - **编码：** UTF-8
 - **行宽：** 内容在 100 个字符处软换行（不使用硬换行）
 
-对 Python 文件使用 `Ruff` 格式化器 / 代码检查器。对 Markdown，使用
-`prettier` 或同等工具。
+对 Python 文件使用 `Ruff` 格式化器 / 代码检查器。对 Markdown，使用 `prettier` 或同等工具。
 
 ## 测试与度量
 
@@ -564,9 +532,7 @@ python -m pytest                      # unit, integration, property, conformity,
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
 ```
 
-该套件是封闭的：即使检出位于 `$TMPDIR` 之下，并且 `PATH` 上的
-`python` 缺少 CLI 的前置依赖，它也能通过，因为集成测试运行的是正在运行 pytest
-的那个解释器，并按最长优先的顺序对嵌套的临时路径和源路径进行标记化。
+该套件是封闭的：即使检出位于 `$TMPDIR` 之下，并且 `PATH` 上的 `python` 缺少 CLI 的前置依赖，它也能通过，因为集成测试运行的是正在运行 pytest 的那个解释器，并按最长优先的顺序对嵌套的临时路径和源路径进行标记化。
 
 ### 按包统计的覆盖率
 
@@ -578,10 +544,7 @@ CI 度量三个包，并让每个包遵守各自的下限。它们之中没有�
 | conformity | `src/apothem/conformity` | 81 | `[tool.coverage.package-floors]` |
 | audit | `src/apothem/audit` | 70 | `[tool.coverage.package-floors]` |
 
-该数值是行覆盖率加分支覆盖率，即 coverage.py 在 `branch = true` 时报告的同一百分比；
-指标产物还会在 `coverage_lines` 下记录仅语句覆盖的数值。每个包的下限是实测的
-行加分支覆盖值向下取整的结果。覆盖率上升时提高下限；绝不要为了让某项变更通过而
-降低下限。在本地检查：
+该数值是行覆盖率加分支覆盖率，即 coverage.py 在 `branch = true` 时报告的同一百分比；指标产物还会在 `coverage_lines` 下记录仅语句覆盖的数值。每个包的下限是实测的行加分支覆盖值向下取整的结果。覆盖率上升时提高下限；绝不要为了让某项变更通过而降低下限。在本地检查：
 
 ```bash
 python -m pytest --cov=src/apothem --cov-report=json:coverage.json
@@ -591,9 +554,7 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 
 ### 指标产物
 
-CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/collect_metrics.py`，
-并上传 `metrics.json`（`schema_version: 1`）。每个为 `null` 的值都在
-`nulls` 下附有其原因。
+CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/collect_metrics.py`，并上传 `metrics.json`（`schema_version: 1`）。每个为 `null` 的值都在 `nulls` 下附有其原因。
 
 | 键 | 度量内容 |
 | --- | --- |
@@ -602,9 +563,7 @@ CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/coll
 | `cli_coldstart_ms` | `python -m apothem --version` 的中位数（`--help` 的结果位于 `cli_coldstart_detail_ms` 下）。 |
 | `hook_e2e_ms[event]`、`hook_injected_chars[event]` | 按每个已注册的事件和匹配器（`PreToolUse:Write`、`Stop`……）：钩子链在真实负载上的中位总耗时，以及它注入的上下文字符数。 |
 
-哪些文件算作在启动时加载，是按工具分别制定的规则，取自各厂商文档所述的指令表面。
-仅携带描述的列表项（技能、命令、子代理）不计入。该规则文本也会写入产物的
-`rules.always_on_bytes` 下：
+哪些文件算作在启动时加载，是按工具分别制定的规则，取自各厂商文档所述的指令表面。仅携带描述的列表项（技能、命令、子代理）不计入。该规则文本也会写入产物的 `rules.always_on_bytes` 下：
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
@@ -641,30 +600,16 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### 行为评估
 
-`evals/` 下的套件度量的是行为而非形式：64 个触发用例（每个可由模型调用的命令和
-子代理都会在其领域内的请求上触发，并在似是而非的请求上保持静默）、32 个结果用例
-（每个规划阶段、研究阶段和审计维度各一个），以及 6 个规则效果对（某条始终生效
-规则的文本开启与关闭）。这些用例是纯数据，由
-`python -m pytest tests/unit/test_eval_suite.py` 免费校验；运行它们则需付费，
-且须手动进行。关于 `Evals` 工作流、本地运行以及如何添加用例，参见[运行行为评估](/docs/how-to/evals)。
-编辑一条带有对应规则效果对的始终生效规则之后，运行 `python scripts/dev/sync_eval_rule_cases.py`。
+`evals/` 下的套件度量的是行为而非形式：64 个触发用例（每个可由模型调用的命令和子代理都会在其领域内的请求上触发，并在似是而非的请求上保持静默）、32 个结果用例（每个规划阶段、研究阶段和审计维度各一个），以及 6 个规则效果对（某条始终生效规则的文本开启与关闭）。这些用例是纯数据，由 `python -m pytest tests/unit/test_eval_suite.py` 免费校验；运行它们则需付费，且须手动进行。关于 `Evals` 工作流、本地运行以及如何添加用例，参见[运行行为评估](/docs/how-to/evals)。编辑一条带有对应规则效果对的始终生效规则之后，运行 `python scripts/dev/sync_eval_rule_cases.py`。
 
 ### 基准测试
 
-`make benchmarks` 运行 `src/apothem/benchmarks/` 下按类别划分的驱动程序。
-每个驱动程序的退出码为：`0` 通过，`1` 超出预算，`2` 错误（被测运行未执行），
-或 `3` 未测量。
+`make benchmarks` 运行 `src/apothem/benchmarks/` 下按类别划分的驱动程序。每个驱动程序的退出码为：`0` 通过，`1` 超出预算，`2` 错误（被测运行未执行），或 `3` 未测量。
 
-- `bench_hooks.py` 按每个事件和匹配器，在真实负载上按原样运行 `hooks/hooks.json`
-  注册的每条 `shell: bash` 命令，并报告中位总耗时、最慢的命令（对照该事件的预算
-  进行检查）以及注入的字符数。无法按注册方式运行的命令（脚本缺少可执行位时退出码
-  为 126）算作错误，而不是通过。
-- `bench_agents.py` 报告 `NOT MEASURED`（退出码 3）：生成子代理需要一个宿主工具和
-  一次模型调用。`make benchmarks` 不会运行它。
+- `bench_hooks.py` 按每个事件和匹配器，在真实负载上按原样运行 `hooks/hooks.json` 注册的每条 `shell: bash` 命令，并报告中位总耗时、最慢的命令（对照该事件的预算进行检查）以及注入的字符数。无法按注册方式运行的命令（脚本缺少可执行位时退出码为 126）算作错误，而不是通过。
+- `bench_agents.py` 报告 `NOT MEASURED`（退出码 3）：生成子代理需要一个宿主工具和一次模型调用。`make benchmarks` 不会运行它。
 
-始终生效预算检查（`always-on-budget-grep`）统计以空白分隔的单词数，并排除 Bindings
-部分和配套指针行。其 JSON 报告还带有 `always-on-loaded`：某个工具加载的、去除
-frontmatter 后的正文的字节数、字符数和单词数，按所有始终生效规则求和。
+始终生效预算检查（`always-on-budget-grep`）统计以空白分隔的单词数，并排除 Bindings 部分和配套指针行。其 JSON 报告还带有 `always-on-loaded`：某个工具加载的、去除 frontmatter 后的正文的字节数、字符数和单词数，按所有始终生效规则求和。
 
 ## 生态审计：运行验证
 

@@ -56,8 +56,10 @@ pass and are mutually exclusive.
 A `--harness all` rollback is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips
 during install — restoring pre-install state is a cleanup operation, so it
-reaches records a previously broader install may have left. Harnesses with
-no recorded install report a per-harness "nothing to roll back".
+reaches records a previously broader install may have left. A harness with no
+recorded install fails with `rollback.no_record` (an `"outcome": "error"` row in
+`results`), and the run continues with the remaining harnesses. The command
+then exits 1, or 2 when another harness was rolled back.
 
 ## Options
 

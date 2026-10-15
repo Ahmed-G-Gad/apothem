@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptador de harness do Apothem para o GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,12 +45,14 @@ em arquivos para que este adaptador gerencie. O Apothem mira o arquivo de
 instruções com escopo de projeto documentado e deixa as configurações de usuário
 no nível da IDE sob a propriedade do operador.
 
-O Apothem trata `copilot-instructions.md` como uma voz entre as superfícies de
-instruções de assistente do projeto: a verificação de coerência multissuperfície
-do conformity gate confirma que as afirmações compartilhadas desse arquivo
-permanecem semanticamente alinhadas com os outros arquivos de instruções do
-projeto, de modo que o Copilot nunca recebe orientações que contradigam o que o
-restante da cadeia de ferramentas lê.
+Dentro do repositório do Apothem, `.github/copilot-instructions.md` é uma voz
+entre as superfícies de instruções de assistente do projeto. Em um checkout do
+Apothem, a verificação de coerência multissuperfície do conformity gate compara
+as afirmações compartilhadas em `AGENTS.md`, `CLAUDE.md` e
+`.github/copilot-instructions.md`, e relata uma afirmação que um desses arquivos
+omite ou contradiz. A verificação não lê o arquivo de instruções que o Apothem
+grava no seu projeto. O gate é consultivo por padrão: ele relata os achados e
+encerra com `0`.
 
 ## Verificação
 
@@ -61,7 +63,9 @@ apothem verify --harness github-copilot --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -70,7 +74,8 @@ O comando verify confirma que:
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-Deriva novamente o arquivo de instruções do projeto a partir do estado atual do perfil compartilhado.
+Deriva novamente o arquivo de instruções do projeto a partir do estado atual do
+perfil compartilhado.
 
 ## Desinstalação
 

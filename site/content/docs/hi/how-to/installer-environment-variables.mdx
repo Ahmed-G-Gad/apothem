@@ -2,7 +2,7 @@
 title: "इंस्टॉलर पर्यावरण चर"
 description: "पर्यावरण चरों से स्क्रिप्ट इंस्टॉलर (गंतव्य, स्रोत, हार्नेस, प्रोफ़ाइल, सत्यापन) को नियंत्रित करें।"
 machineTranslated: true
-sourceHash: "b69fe1c566ac13fb"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,9 @@ sourceHash: "b69fe1c566ac13fb"
 
 ## पूर्वापेक्षाएँ
 
-- एक POSIX शेल (`bash`) या PowerShell 5.1+।
+- एक POSIX शेल (`bash`) या PowerShell 5.1+। नीचे के PowerShell उदाहरण `pwsh`
+  (PowerShell 7+) चलाते हैं। Windows PowerShell 5.1 के अंतर्गत, इसके बजाय
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` चलाएँ।
 - चर इंस्टॉलर के शीर्ष पर एक बार पढ़े जाते हैं, इसलिए उन्हें उसी कमांड में सेट
   करें (या पहले उन्हें एक्सपोर्ट करें), फिर इंस्टॉलर चलाएँ।
 
@@ -41,7 +43,7 @@ sourceHash: "b69fe1c566ac13fb"
 जब `APOTHEM_HOME` किसी ऐसी मौजूदा डायरेक्टरी की ओर इंगित करता है जो git क्लोन नहीं
 है, तो इंस्टॉलर उसे हटाने से इनकार करता है: उसे किसी दूसरी जगह स्थानांतरित करें,
 `APOTHEM_HOME` को कहीं और इंगित करें, या प्रतिस्थापन को अधिकृत करने के लिए
-`--yes` (Windows पर `-Yes`) पास करें। एक बासी खाली डायरेक्टरी फ़्लैग के बिना
+`--yes` (Windows पर `-Yes`) पास करें। एक पुरानी खाली डायरेक्टरी फ़्लैग के बिना
 प्रतिस्थापित कर दी जाती है।
 
 ## विश्वास मॉडल
@@ -57,7 +59,7 @@ sourceHash: "b69fe1c566ac13fb"
 सत्यापित होता है; [रिलीज़ पृष्ठ](https://github.com/ahmed-g-gad/apothem/releases)
 से कोई टैग), `APOTHEM_REF=main` से चलती ब्रांच चुनें (असत्यापित), या चेतावनी के
 साथ किसी सत्यापन विफलता से आगे बढ़ने के लिए `APOTHEM_ALLOW_UNVERIFIED=1` सेट करें
-(एयर-गैप्ड, स्थानीय, या हस्ताक्षरण से पहले की रिलीज़ के लिए उपयोग)।
+(एयर-गैप्ड, स्थानीय, या हस्ताक्षरित रिलीज़ से पहले के उपयोग के लिए)।
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
@@ -79,7 +81,8 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. इंस्टॉल गंतव्य पिन करें और चलती हुई `main` ब्रांच चुनें। ब्रांच हस्ताक्षरित टैग नहीं होती, इसलिए इंस्टॉलर को `APOTHEM_ALLOW_UNVERIFIED=1` भी चाहिए:
+2. इंस्टॉल गंतव्य पिन करें और चलती हुई `main` ब्रांच चुनें। ब्रांच हस्ताक्षरित टैग
+   नहीं होती, इसलिए इंस्टॉलर को `APOTHEM_ALLOW_UNVERIFIED=1` भी चाहिए:
 
    ```bash
    APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh

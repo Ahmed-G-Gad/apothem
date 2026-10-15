@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "a6cddf09b4a1ec27"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,10 +53,34 @@ Alias bentuk-kontinu `apothem uninstalling` di-resolve ke handler yang sama.
 Ketika adapter terpasang dan berhasil dihapus:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Ketika adapter belum terpasang, perintah keluar dengan `0`. Dalam keluaran JSON, amplop memiliki `"status": "success"` dan `"action": "uninstalled"`, dan baris results memiliki `"outcome": "skipped"` dengan pesan `"not installed; no files removed"`. Bidang `status` tidak pernah bernilai `"not_installed"`.
+Ketika adapter belum terpasang, perintah keluar dengan `0`. Dalam keluaran JSON,
+amplop memiliki `"status": "success"` dan `"action": "uninstalled"`, dan baris
+results memiliki `"outcome": "skipped"` dengan pesan `"not installed; no files
+removed"`. Bidang `status` tidak pernah bernilai `"not_installed"`.
 
 ## Contoh
 
@@ -72,7 +96,7 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 
 | Kode | Arti |
 |---|---|
-| 0 | Adapter dicopot, atau memang tidak terpasang |
+| 0 | Adapter dihapus, atau memang tidak terpasang |
 | 1 | Harness tidak ditemukan, konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`), atau setiap penghapusan gagal |
 | 2 | Penghapusan parsial — setidaknya satu harness telah dihapus sebelum terjadi kegagalan |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de harness do Apothem para o Codex (Beta)."
 machineTranslated: true
-sourceHash: "99a652853bf9a864"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,12 +51,16 @@ superfície correta do Codex: instruções em `AGENTS.md`, hooks em `hooks.json`
 Markdown não nativos em `~/.config/apothem/` como material de suporte.
 
 Cada auxiliar convertido define `name`, `description` e
-`developer_instructions`. Um auxiliar cuja concessão de ferramentas não permite
-gravar arquivos também define `sandbox_mode = "read-only"`, a restrição de
-gravação própria do Codex. Nenhum modelo ou esforço de raciocínio é definido, de
-modo que cada auxiliar herda as escolhas da sessão. O Codex não tem lista de
-ferramentas nem limite de turnos por auxiliar, então os `tools` e o `maxTurns`
-de um auxiliar não são transferidos.
+`developer_instructions`. Um auxiliar cuja concessão de ferramentas, depois de
+aplicada a sua lista de negação, não inclui nenhuma ferramenta de edição de
+arquivos (`Write`, `Edit`, `MultiEdit` ou `NotebookEdit`) também define
+`sandbox_mode = "read-only"`, a restrição de gravação própria do Codex. `Bash`
+não conta como ferramenta de edição de arquivos, de modo que um auxiliar que
+recebe `Bash` e nenhuma dessas ferramentas continua em modo somente leitura.
+Nenhum modelo ou esforço de raciocínio é definido, de modo que cada auxiliar
+herda as escolhas da sessão. O Codex não tem lista de ferramentas nem limite de
+turnos por auxiliar, então os `tools` e o `maxTurns` de um auxiliar não são
+transferidos.
 
 ## Notas de compatibilidade
 
@@ -81,7 +85,9 @@ apothem verify --harness codex
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização

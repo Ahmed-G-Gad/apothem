@@ -2,7 +2,7 @@
 title: "المساهمة في Apothem — دليل المطوّر"
 description: "صُن منظومة Apothem ووسّعها بتأليف القواعد والأوامر والمساعِدات والمهارات والخطّافات وفق المخططات المرجعية ومتطلّبات البيانات الأمامية وإجراءات التحقّق."
 machineTranslated: true
-sourceHash: "782e178598975d52"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "782e178598975d52"
 | **أمر** | <bdi>`src/apothem/commands/*.md`</bdi> | أمر بشرطة مائلة (<bdi>`/command-name`</bdi>) لسيرورات العمل المعقّدة | سير عمل جديد متعدّد الخطوات للمستخدم |
 | **مساعِد** | <bdi>`src/apothem/agents/*.md`</bdi> | تعريف دائم لعامل مُفوَّض للمهام المتوازية | مهمة متخصّصة متكرّرة جديدة (تدقيق، استكشاف، فحص جودة) |
 | **مهارة** | <bdi>`src/apothem/skills/{name}/SKILL.md`</bdi> | تقنية قابلة لإعادة الاستخدام ذات إشارة كشف | نمط تقنية جديد قابل للكشف وإعادة الاستخدام |
-| **خطّاف** | <bdi>`src/apothem/hooks/`</bdi> + <bdi>`settings.json`</bdi> | تحقّق أو إدارة حالة يُطلقهما حدث | حدث جديد في دورة الحياة أو حاجة جديدة إلى التحقّق |
+| **خطّاف** | <bdi>`src/apothem/hooks/`</bdi> + <bdi>`hooks.json`</bdi> + <bdi>`settings.json`</bdi> | تحقّق أو إدارة حالة يُطلقهما حدث | حدث جديد في دورة الحياة أو حاجة جديدة إلى التحقّق |
 
 ## عقد محوّل إطار العمل
 
@@ -46,10 +46,10 @@ sourceHash: "782e178598975d52"
 ## سياسة التجهيزة الذهبية
 
 يسجّل <bdi>`tests/fixtures/harness-golden-plans.json`</bdi> الشكل العام لخطة التثبيت
-لأُطُر العمل السبعة عشر المُسجَّلة جميعها: المُعرِّف العام، ونمط التجسيد، ومسار
-الحزمة/القالب المصدر، والمسار الهدف المُطبَّع تحت <bdi>`<ROOT>`</bdi>. وعندما يتغيّر
-سلوك السجلّ أو البيان أو أهداف القوالب عمدًا، حدّث التجهيزة الذهبية في الكوميت نفسه
-الذي يحمل تغيير المصدر، كي يُظهر الفرق التغيّر في السلوك.
+لأُطُر العمل السبعة عشر المُسجَّلة في السجلّ جميعها: المُعرِّف العام، ونمط التجسيد،
+ومسار الحزمة/القالب المصدر، والمسار الهدف المُطبَّع تحت <bdi>`<ROOT>`</bdi>. وعندما
+يتغيّر سلوك السجلّ أو البيان أو أهداف القوالب عمدًا، حدّث التجهيزة الذهبية في الكوميت
+نفسه الذي يحمل تغيير المصدر، كي يُظهر الفرق التغيّر في السلوك.
 
 ## التحقّق قبل الكتابة
 
@@ -83,7 +83,9 @@ sourceHash: "782e178598975d52"
 
 ## فحص سريع للبيانات الأمامية
 
-يجب أن تجتاز البيانات الأمامية لكل مُنتَج هذه الفحوص:
+يجب أن تجتاز البيانات الأمامية لكل مُنتَج هذه الفحوص. طبّق فحوص <bdi>`version`</bdi>
+و<bdi>`updated`</bdi> و<bdi>`portability`</bdi> على الصنف الذي يحمل المفتاح فقط: فالقواعد
+لا تحمل أيًّا منها، والمهارات لا تحمل <bdi>`portability`</bdi>.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -115,7 +117,7 @@ sourceHash: "782e178598975d52"
 - **الأوامر:** <bdi>`{name}.md`</bdi>
 - **المساعِدات:** <bdi>`{name}.md`</bdi>
 - **المهارات:** داخل المجلّد <bdi>`src/apothem/skills/{name}/SKILL.md`</bdi> (بحالة الأحرف نفسها تمامًا: <bdi>`SKILL.md`</bdi>)
-- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في <bdi>`settings.json`</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل مسار النص البرمجي ووسائطه. ويشغّل قالب <bdi>Claude Code</bdi> الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
+- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل مسار النص البرمجي ووسائطه. ويشغّل ذلك القالب الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. أمّا إضافة <bdi>Claude Code</bdi> فتسجّل الخطّافات بدلًا من ذلك في <bdi>`src/apothem/hooks/hooks.json`</bdi>، بوصفها أوامر صدفة تشغّل <bdi>`hooks/lib/bootstrap.sh`</bdi> عبر <bdi>`bash`</bdi>. سجّل أي خطّاف جديد في <bdi>`hooks.json`</bdi> وفي قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
 
 ### الإحالات المتبادلة
 
@@ -130,7 +132,9 @@ sourceHash: "782e178598975d52"
 
 ## قابلية النقل: <bdi>Windows</bdi> مقابل <bdi>Unix</bdi>
 
-يجب على كل مُنتَج أن يُعلن صراحةً حالة قابليته للنقل.
+يجب على كل أمر أن يُعلن صراحةً حالة قابليته للنقل في الحقل <bdi>`portability`</bdi>،
+ويجوز ذلك للمساعِد. ولا تحمل المهارات والقواعد وأنماط الإخراج حقل
+<bdi>`portability`</bdi>.
 
 ### عامّ (الافتراضي)
 
@@ -166,7 +170,7 @@ portability: "universal-with-windows-caveats"
 portability: "unix-only"
 ```
 
-وثّق السبب في القسم الأول من القاعدة.
+وثّق السبب في القسم الأول من المُنتَج.
 
 ## النطاق: فعّال دائمًا مقابل مُرشَّح بالمسار
 
@@ -175,7 +179,8 @@ portability: "unix-only"
 تنطبق القاعدة في كل مكان.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### مُرشَّح بالمسار
@@ -183,8 +188,8 @@ scope: "always-on"
 تنطبق القاعدة شرطيًا بحسب مسار الملف.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 يستخدم <bdi>`pathFilter`</bdi> أنماط <bdi>glob</bdi> (بالصيغة نفسها المستخدمة في <bdi>`.gitignore`</bdi>).
@@ -192,31 +197,32 @@ pathFilter: "**/*.py, **/*.toml"
 
 ## دلالات النسخ
 
-يحمل كل مُنتَج نسخته الدلالية الخاصة (<bdi>`MAJOR.MINOR.PATCH`</bdi>):
+يحمل كل مُنتَج ذي نسخة نسخته الدلالية الخاصة (<bdi>`MAJOR.MINOR.PATCH`</bdi>).
+تتطلّبها الأوامر والمهارات، ويجوز أن تحملها المساعِدات وأنماط الإخراج، ولا تحمل
+القواعد أيَّ نسخة:
 
 - **<bdi>PATCH</bdi>** — إصلاحات الأخطاء المطبعية، والتنسيق، وتحديث الروابط، والتعديلات المقتصرة على التعليقات. السلوك دون تغيير.
-- **<bdi>MINOR</bdi>** — تغييرات إضافية غير كاسرة: أقسام اختيارية جديدة، وأنماط مضادة إضافية، وحقول اختيارية جديدة في البيانات الأمامية، وأمثلة جديدة. ويواصل المستهلكون الحاليون العمل دون أيّ تغيير.
+- **<bdi>MINOR</bdi>** — تغييرات إضافية غير كاسرة: أقسام اختيارية جديدة، وحقول اختيارية جديدة في البيانات الأمامية، وأمثلة جديدة. ويواصل المستهلكون الحاليون العمل دون أيّ تغيير.
 - **<bdi>MAJOR</bdi>** — تغييرات كاسرة في المخطط أو العقد: أقسام محذوفة، وحقول مُعاد تسميتها، وسلوك مُعدَّل لتوجيه قائم، وتغييرات تتطلّب أن تتكيّف المُنتَجات التابعة.
 
 أمثلة:
 
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`vX.Y.(Z+1)`</bdi> (<bdi>PATCH</bdi>: إصلاح خطأ مطبعي)
-- <bdi>`vX.Y.Z`</bdi> → <bdi>`vX.(Y+1).0`</bdi> (<bdi>MINOR</bdi>: إضافة مدخل جديد إلى الأنماط المضادة)
+- <bdi>`vX.Y.Z`</bdi> → <bdi>`vX.(Y+1).0`</bdi> (<bdi>MINOR</bdi>: إضافة قسم اختياري جديد)
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`v(X+1).0.0`</bdi> (<bdi>MAJOR</bdi>: إعلان استقرار العقد)
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`v(X+1).0.0`</bdi> (<bdi>MAJOR</bdi>: حذف حقل إلزامي من البيانات الأمامية)
 
-ارفع <bdi>`version`</bdi> و<bdi>`updated`</bdi> معًا في كل تعديل يغيّر السلوك. وألحِق صفًّا
-مطابقًا بملف <bdi>`CHANGELOG.md`</bdi> على مستوى المنظومة للإصدارات التي تجمع تغييرات في
-المُنتَجات.
+ارفع <bdi>`version`</bdi> و<bdi>`updated`</bdi> معًا في كل تعديل يغيّر السلوك في مُنتَج
+يحمل هذين الحقلين. وألحِق صفًّا مطابقًا بملف <bdi>`CHANGELOG.md`</bdi> على مستوى
+المنظومة للإصدارات التي تجمع تغييرات في المُنتَجات.
 
 ## متى تُعدِّل مُنتَجًا
 
 ### القواعد
 
 - عامِل بنية الإلزامي/الاختياري على أنها حاملة للحِمل — فإعادة هيكلتها تمتدّ آثارها
-  إلى كل مُنتَج تابع (يلزم رفع <bdi>MAJOR</bdi>).
-- نقّح الأنماط المضادة وأمثلة تدرّج الجدّية والاستشهادات كلّما تعمّق الفهم
-  (رفع <bdi>MINOR</bdi>).
+  إلى كل مُنتَج تابع.
+- نقّح الأنماط المضادة وأمثلة تدرّج الجدّية والاستشهادات كلّما تعمّق الفهم.
 - دوّن مبرّر أيّ تغيير بنيوي في ملف موضوع الذاكرة ذي الصلة.
 
 ### الأوامر
@@ -256,7 +262,7 @@ pathFilter: "**/*.py, **/*.toml"
 
 - العنوان: <bdi>`# Rule: {Title}`</bdi>
 - قسم الغرض
-- الالتزامات / التوجيهات الأساسية (مرقّمة ومربوطة)
+- الالتزامات / التوجيهات الأساسية (مرقّمة ومزوّدة بروابط)
 - جدول تدرّج الجدّية (مطلوب دائمًا)
 - قسم الأنماط المضادة
 - قسم الإنفاذ
@@ -283,15 +289,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. حدّث <bdi>CLAUDE.md</bdi>
+### 4. حدّث ملف <bdi>README</bdi> الخاص بالقواعد
 
-أضف مدخلًا إلى جدول السجلّ <bdi>`§7.2 Rules`</bdi>:
+أضف صفًّا إلى جدول عائلة القاعدة في قسم «<bdi>Rule families</bdi>» من
+<bdi>`src/apothem/rules/README.md`</bdi>:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-حافظ على الترتيب الأبجدي داخل الجدول.
+اختر جدول العائلة الذي يطابق مجالُ اهتمامه القاعدةَ.
 
 ### 5. ألحِق بملف <bdi>CHANGELOG.md</bdi>
 
@@ -345,7 +352,7 @@ allowed-tools: "Read, Glob, Grep"
 ومع <bdi>`false`</bdi> يجوز للنموذج تشغيله عندما يطابق طلبٌ وصفَه. تستخدم معظم
 الأوامر <bdi>`true`</bdi>، لكن معظم مراحل خطّي أنابيب التخطيط والبحث تستخدم <bdi>`false`</bdi>.
 ويسرد جدول الاستدعاء في <bdi>`src/apothem/commands/README.md`</bdi> إعداد كل
-أمر؛ أضف صفًّا لكل أمر جديد. وأبقِ
+أمر؛ أضف صفًّا للأمر الجديد. وأبقِ
 <bdi>`allowed-tools`</bdi> للقراءة فقط: فإطار العمل الذي يلتزم به يُشغِّل تلك الأدوات دون
 أن يسأل. لا تمنح أداةً ذات آثار جانبية إلا بوصفها قاعدة محدودة النطاق، مثل
 <bdi>`Bash(git log *)`</bdi>؛ إذ يرفض المخطط <bdi>`"*"`</bdi> والأدوات المجرّدة <bdi>`Bash`</bdi> و<bdi>`PowerShell`</bdi>
@@ -361,9 +368,9 @@ allowed-tools: "Read, Glob, Grep"
 - قسم سير العمل مع الخطوات
 - عقد الإرجاع / صيغة المُخرَج
 
-### 4. حدّث <bdi>CLAUDE.md</bdi> و<bdi>CHANGELOG.md</bdi>
+### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
-صفّ في السجلّ ضمن <bdi>`§7.1 Commands`</bdi>؛ وصفّ في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
+أضف صفًّا إلى جدول الأوامر المطابق في <bdi>`src/apothem/commands/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
 
 ### 5. تحقّق
 
@@ -423,9 +430,9 @@ portability: "universal"
 - سير العمل (خطوات مرقّمة)
 - عقد الإرجاع (الحدّ الأقصى للرموز، والبنية، والحقول المطلوبة)
 
-### 4. حدّث <bdi>CLAUDE.md</bdi> و<bdi>CHANGELOG.md</bdi>
+### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
-صفّ في السجلّ ضمن <bdi>`§7.3 Helpers`</bdi>؛ وصفّ في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
+أضف صفًّا إلى جدول الفهرس في <bdi>`src/apothem/agents/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
 
 ### 5. اختبر
 
@@ -453,8 +460,8 @@ portability: "universal"
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -489,9 +496,9 @@ argument-hint: "[args]"               # optional; if userInvocable
 - الأخطاء الشائعة
 - الأمثلة
 
-### 4. حدّث <bdi>CLAUDE.md</bdi> و<bdi>CHANGELOG.md</bdi>
+### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
-صفّ في السجلّ ضمن <bdi>`§7.5 Skills`</bdi>؛ وصفّ في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
+أضف صفًّا إلى جدولَي الفهرس ومحتويات المجلّد في <bdi>`src/apothem/skills/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
 
 ### 5. تحقّق
 
@@ -506,13 +513,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] تجتاز البيانات الأمامية فحص صيغة <bdi>YAML</bdi>
 - [ ] جميع الحقول الإلزامية موجودة وفق المخطط
 - [ ] يستخدم الحقل <bdi>`name`</bdi> صيغة <bdi>kebab-case</bdi>
-- [ ] <bdi>`version`</bdi> دلالي (<bdi>`MAJOR.MINOR.PATCH`</bdi>) ورُفِع إن تغيّر السلوك
-- [ ] <bdi>`updated`</bdi> يطابق تاريخ اليوم لأيّ مُنتَج عدّلته
-- [ ] الحقل <bdi>`portability`</bdi> مضبوط وصالح
+- [ ] <bdi>`version`</bdi> (للأصناف ذات النسخ فقط؛ فالقواعد لا تحمل نسخة) دلالي (<bdi>`MAJOR.MINOR.PATCH`</bdi>) ورُفِع إن تغيّر السلوك
+- [ ] <bdi>`updated`</bdi> يطابق تاريخ اليوم لأيّ مُنتَج عدّلته يحمل هذا الحقل
+- [ ] الحقل <bdi>`portability`</bdi> مضبوط وصالح (للأوامر والمساعِدات فقط)
 - [ ] يحمل <bdi>CHANGELOG.md</bdi> التغيير في الفئة المناسبة تحت قسم الإصدار التالي
 - [ ] لا إحالات داخلية خاصة بالخطط (امتثالًا لـ <bdi>CM-7</bdi>)
 - [ ] الإحالات المتبادلة متّسقة مع المُنتَجات الأخرى
-- [ ] المُنتَج الجديد مُسجَّل في سجلّ <bdi>CLAUDE.md</bdi>
+- [ ] المُنتَج الجديد مُسجَّل في فهرس <bdi>README</bdi> الخاص بمجلّده
 - [ ] المُنتَج مُختبَر (إن انطبق ذلك)
 - [ ] تعمل مهارة <bdi>`ecosystem-audit`</bdi> دون أخطاء
 - [ ] يتّبع المحتوى الاصطلاحات البنيوية (صيغة العنوان، والأقسام، وما إلى ذلك)
@@ -552,8 +559,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### الإحالة إلى أقسام <bdi>CLAUDE.md</bdi>
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## الفحص الساكن والتنسيق
@@ -608,7 +615,7 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 
 ### مُنتَج المقاييس
 
-تُشغِّل مهمة <bdi>`metrics`</bdi> في <bdi>CI</bdi> السكربت <bdi>`scripts/dev/collect_metrics.py`</bdi> عند كل دفع
+تُشغِّل مهمة <bdi>`metrics`</bdi> في <bdi>CI</bdi> النص البرمجي <bdi>`scripts/dev/collect_metrics.py`</bdi> عند كل دفع
 وكل طلب سحب، وترفع <bdi>`metrics.json`</bdi> (<bdi>`schema_version: 1`</bdi>). وكل قيمة
 تساوي <bdi>`null`</bdi> تحمل سببها تحت <bdi>`nulls`</bdi>.
 
@@ -678,7 +685,7 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 - يُشغِّل <bdi>`bench_hooks.py`</bdi> كل أمر <bdi>`shell: bash`</bdi> يسجّله <bdi>`hooks/hooks.json`</bdi>،
   كما هو مكتوب، على حمولة حقيقية لكل حدث ومُطابِق، ويُبلغ عن الزمن الإجمالي
   الوسيط، وأبطأ أمر (مُقارَنًا بميزانية الحدث)، وعدد الأحرف المحقونة. والأمر الذي
-  لا يمكن تشغيله كما سُجِّل (رمز الخروج 126 عندما يفتقر سكربت إلى بتّ التنفيذ)
+  لا يمكن تشغيله كما سُجِّل (رمز الخروج 126 عندما يفتقر نص برمجي إلى بتّ التنفيذ)
   يُعدّ خطأً، لا نجاحًا.
 - يُبلغ <bdi>`bench_agents.py`</bdi> عن <bdi>`NOT MEASURED`</bdi> (رمز الخروج 3): فإطلاق
   عامل فرعي يحتاج إلى إطار عمل مضيف واستدعاء للنموذج. ولا يُشغِّله <bdi>`make benchmarks`</bdi>.

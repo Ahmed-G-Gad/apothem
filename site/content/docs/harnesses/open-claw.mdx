@@ -15,9 +15,10 @@ description: "Apothem harness adapter for Open-Claw (Preview)."
 apothem install --harness open-claw
 ```
 
-The adapter translates the shared profile to OpenClaw's user-global config file
-and installs Apothem support cohorts under the harness root. OpenClaw's native
-config is JSON; the materializer renders JSON to match.
+The adapter writes OpenClaw's user-global config file, projects the shared
+profile into a profile document, and installs Apothem support cohorts under the
+harness root. OpenClaw's native config is JSON; the materializer renders an
+empty JSON object, and an existing file keeps its keys.
 
 **Files written:** `~/.openclaw/openclaw.json`, the profile document
 `~/.openclaw/apothem/rules/00-apothem-profile.md`, and support files under
@@ -31,7 +32,8 @@ resolves against.
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile but authors no config keys:
-`openclaw.json` is written as an empty object. The profile's identity,
+a new or empty `openclaw.json` is written as an empty object, and an existing
+file keeps its keys. The profile's identity,
 preferences, and rules go into the profile document. Shared commands, skills, rules,
 templates, and hook prompts are installed as support material under
 `~/.openclaw/.apothem/support/`.
@@ -71,7 +73,8 @@ The verify command confirms that:
 apothem update --harness open-claw
 ```
 
-Re-derives the native config from the current shared profile state.
+Re-derives the profile document from the current shared profile state and
+refreshes the support files; `openclaw.json` keeps the keys it already has.
 Run after editing `~/.config/apothem/profile.yaml` or upgrading the installed
 Apothem package.
 

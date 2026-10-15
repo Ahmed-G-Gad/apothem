@@ -2,7 +2,7 @@
 title: "Registro de mandatos transversales (CM-1–CM-28)"
 description: "Registro completo y definiciones de los mandatos transversales internos del ecosistema (CM-1–CM-28) que rigen todas las interacciones y las operaciones de la canalización."
 machineTranslated: true
-sourceHash: "9a7b4e8966abd05f"
+sourceHash: "4e3a5448c3273d05"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Este documento ES el registro canónico de CM-N: es la fuente donde se *definen*
 
 ## Activación
 
-CM-1–10 + la identidad cognitiva rigen todas las interacciones. CM-11, CM-13, CM-15, CM-16 y CM-20 se aplican solo dentro de la canalización `/plan`. CM-12, CM-14, CM-17–19, CM-21–22 y CM-24–26 se aplican universalmente (siempre activos). CM-23, CM-27 y CM-28 se aplican universalmente dentro del ámbito de filtro de rutas que declaran. Nivel de seriedad predeterminado ad hoc: PERSONAL_USE.
+CM-1–10 + la identidad cognitiva rigen todas las interacciones. CM-11, CM-13 (subreglas A a C), CM-15, CM-16 y CM-20 se aplican solo dentro de la canalización `/plan`. La subregla D de CM-13 se aplica a toda escritura en git, y la subregla E a los destinos de `git mv` / `git rm` y a las rutas del cuerpo del commit, dentro o fuera de esa canalización. CM-12, CM-14, CM-17–19, CM-21–22 y CM-24–26 se aplican universalmente (siempre activos). CM-23, CM-27 y CM-28 se aplican universalmente dentro del ámbito de filtro de rutas que declaran. Nivel de seriedad predeterminado ad hoc: PERSONAL_USE.
 
 ## CM-1–10 (Operativos)
 
@@ -45,7 +45,7 @@ Gestión austera del contexto en todo momento; consulta la regla de CM-24. Cuatr
 - **A — Cadencia por tarea:** Por tarea en SHARED+. Por fase en PERSONAL_USE. Opcional en EXPLORING.
 - **B — Commits de calidad/remediación:** Las correcciones de las puertas de calidad y los cambios de remediación se confirman de inmediato, separados del trabajo de funcionalidades.
 - **C — Puerta de fin de fase:** Ningún cambio sin confirmar cruza los límites de fase. El aislamiento de CM-7 se aplica a todos los artefactos de git. En PUBLIC_LAUNCH: se requieren commits firmados con GPG (`git commit -S`).
-- **D — Autoría exclusivamente humana:** Cada superficie de autoría de cada artefacto de git (asunto del commit, cuerpo del commit, `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nombre de rama, nombre de etiqueta, anotación de etiqueta, nombre de stash, cuerpo de git-notes, título del PR, descripción del PR) nombra **únicamente a contribuidores humanos**. El asistente nunca se atribuye la autoría a sí mismo, ni se la atribuye al modelo de lenguaje subyacente, al tiempo de ejecución / entorno / IDE / extensión / proveedor ni a ninguna otra herramienta automatizada, en ninguna de esas superficies. Los patrones prohibidos se enumeran y se aplican mecánicamente en `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), con el comparador de `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3, que se activa en cada invocación de Bash que escribe en git.
+- **D — Autoría exclusivamente humana:** Cada superficie de autoría de cada artefacto de git (asunto del commit, cuerpo del commit, `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nombre de rama, nombre de etiqueta, anotación de etiqueta, nombre de stash, cuerpo de git-notes, título del PR, descripción del PR) nombra **únicamente a contribuidores humanos**. El asistente nunca se atribuye la autoría a sí mismo, ni se la atribuye al modelo de lenguaje subyacente, al tiempo de ejecución / entorno / IDE / extensión / proveedor ni a ninguna otra herramienta automatizada, en ninguna de esas superficies. Los patrones prohibidos se enumeran y se aplican mecánicamente en `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), con el matcher de `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3, que se activa en cada invocación de Bash que escribe en git.
 - **E — Disciplina de prefijos numéricos en los destinos de git-mv / git-rm:** Los prefijos numéricos (`NN-`) en las rutas del sistema de archivos expresan un orden y solo se aplican donde el orden es intrínseco: secuencias de carpetas de fase, secuencias de subfases, esquemas de nombres ordinales descubiertos por el host. Los elementos únicos de nivel raíz que no tienen una secuencia hermana no llevan prefijo numérico; agregar uno es una decoración sin sentido que señala erróneamente una relación de orden que no existe. Especificación completa en `src/apothem/rules/canonical-layout.md` §2.1. Se aplica mecánicamente en `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 sobre `git mv` / `git rm` y sobre las referencias a rutas en el cuerpo del commit.
 
 ## CM-14 (Protocolos de sesión)

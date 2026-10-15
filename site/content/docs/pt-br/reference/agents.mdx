@@ -2,11 +2,11 @@
 title: "Auxiliares"
 description: "Agentes auxiliares persistentes para pesquisa, auditoria, qualidade e orquestração, com contratos de frontmatter e protocolos de isolamento de implantação."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Os auxiliares persistentes residem como arquivos planos no diretório canônico de
+Os auxiliares persistentes ficam como arquivos planos no diretório canônico de
 auxiliares, com o sufixo `<name>.md`. O caminho canônico é:
 
 ```text
@@ -49,8 +49,9 @@ maxTurns: <integer>
 ## Conversão por harness
 
 Um auxiliar cuja concessão `tools`, depois de aplicado `disallowedTools`, não
-inclui `Write` nem `Edit` é somente leitura. Cada harness que converte
-auxiliares aplica esse limite nativamente ou remove o rótulo de somente leitura:
+inclui nenhuma ferramenta de edição de arquivos (`Write`, `Edit`, `MultiEdit` ou
+`NotebookEdit`) é somente leitura. Cada harness que converte auxiliares aplica
+esse limite nativamente ou remove o rótulo de somente leitura:
 
 | Harness | Limite de ferramentas | Limite de turnos | Modelo e esforço |
 | --- | --- | --- | --- |
@@ -59,7 +60,7 @@ auxiliares aplica esse limite nativamente ou remove o rótulo de somente leitura
 | Gemini CLI | lista de permissões `tools` com nomes de ferramentas do Gemini | `max_turns` | herdado (não definido) |
 | Qwen Code | `tools` / `disallowedTools` com nomes de ferramentas do Qwen | não mapeado | `model: inherit` |
 | OpenCode | `permission` (`allow` / `deny` por ferramenta) | não mapeado | herdado (não definido) |
-| Antigravity | nenhum emitido; a descrição omite "somente leitura" | não disponível | herdado (não definido) |
+| Antigravity | nenhum emitido; a descrição remove "somente leitura" | não disponível | herdado (não definido) |
 
 Hermes, Open-Claw e Kimi Code recebem os arquivos de auxiliares como material de
 suporte, não como auxiliares nativos.
@@ -67,8 +68,8 @@ suporte, não como auxiliares nativos.
 ## Orquestração
 
 A implantação de auxiliares, o protocolo de disparo em paralelo, a aplicação do
-contrato de retorno e a disciplina de isolamento residem na regra de
-orquestração. A árvore de despacho por trabalhador reside na regra de padrões de
+contrato de retorno e a disciplina de isolamento ficam na regra de
+orquestração. A árvore de despacho por trabalhador fica na regra de padrões de
 orquestração, §Decision Tree. Caminhos canônicos:
 
 ```text

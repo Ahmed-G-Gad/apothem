@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "71abe825552bafc8"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,9 +52,9 @@ apothem install --harness hermes
 <bdi>MCP</bdi>. كانت إصدارات <bdi>Apothem</bdi> السابقة تكتبه تحت
 <bdi>`auxiliary.mcp`</bdi>، الذي يقرؤه <bdi>Hermes</bdi> بوصفه النموذج المساعد لتوزيع
 أدوات <bdi>MCP</bdi>؛ ويُزيل كلٌّ من <bdi>`apothem update`</bdi>
-و<bdi>`apothem uninstall`</bdi> تلك الكتلة ما دامت تحمل بالضبط ما كتبه مثل ذلك
-الإصدار (راجع [إلغاء التثبيت](#إلغاء-التثبيت)). (سلوك <bdi>Hermes</bdi> وفق صفحات
-دليل المستخدم الخاص به عن
+و<bdi>`apothem uninstall`</bdi> تلك الكتلة ما دامت لا تزال تطابق ما كان سيكتبه مثل ذلك
+الإصدار من ملفك التعريفي المشترك (راجع [إلغاء التثبيت](#إلغاء-التثبيت)). (سلوك
+<bdi>Hermes</bdi> وفق صفحات دليل المستخدم الخاص به عن
 [المهارات](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 و[<bdi>MCP</bdi>](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)،
 المقروءة في 2026-10-02.)
@@ -94,13 +94,14 @@ apothem uninstall --harness hermes
 <bdi>Apothem</bdi>.
 
 التثبيت الذي أجراه إصدار سابق، وكان يكتب خوادم الملف التعريفي تحت
-<bdi>`auxiliary.mcp`</bdi>، تُزال منه تلك الكتلة أيضًا حين تظل تحمل بالضبط ما كتبه ذلك
-الإصدار، كما يُجسَّد من الملف التعريفي المشترك في
+<bdi>`auxiliary.mcp`</bdi>، تُزال منه تلك الكتلة أيضًا حين لا تزال تطابق ما كان ذلك
+الإصدار سيكتبه من ملفك التعريفي المشترك الراهن في
 <bdi>`~/.config/apothem/profile.yaml`</bdi>. هذه هي القاعدة نفسها التي يطبّقها
 <bdi>`apothem update`</bdi>، لذا لا يُخلِّف إلغاء التثبيت دون تحديث مسبق أي كتلة
-متقادمة. أما الكتلة التي عدّلتها، أو التي لا يوجد ملف تعريفي مشترك قابل للقراءة
-لمقارنتها به، فتبقى في مكانها، وتبقى بقية إعدادات <bdi>`auxiliary`</bdi> الخاصة بك
-دائمًا.
+متقادمة ما دامت خوادم <bdi>MCP</bdi> الواردة في الملف التعريفي لم تتغيّر. أما الكتلة
+التي عدّلتها، أو التي لم تعد تطابق خوادم <bdi>MCP</bdi> في ملفك التعريفي الراهن، أو
+التي لا يوجد ملف تعريفي مشترك قابل للقراءة لمقارنتها به، فتبقى في مكانها، وتبقى بقية
+إعدادات <bdi>`auxiliary`</bdi> الخاصة بك دائمًا.
 
 ## بوابة المطابقة
 

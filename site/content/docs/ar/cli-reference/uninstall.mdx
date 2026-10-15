@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "مرجع واجهة سطر الأوامر لأمر apothem uninstall."
 machineTranslated: true
-sourceHash: "a6cddf09b4a1ec27"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,19 +40,40 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 | <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد إزالته، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). |
 | <bdi>`--yes`</bdi> | يتخطّى مطالبة التأكيد. |
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. |
-| <bdi>`--quiet`, `-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
-| <bdi>`--verbose`, `-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
 | <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
 | <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
 | <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
-| <bdi>`-h`, `--help`</bdi> | يعرض المساعدة ويخرج. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
 
 ## مخرجات <bdi>JSON</bdi>
 
 عندما يكون المحوّل مثبّتًا وتنجح إزالته:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
 عندما لا يكون المحوّل مثبّتًا، يخرج الأمر برمز <bdi>`0`</bdi>. وفي مخرجات <bdi>JSON</bdi> يحمل الغلاف <bdi>`"status": "success"`</bdi> و<bdi>`"action": "uninstalled"`</bdi>، ويحمل صف النتائج <bdi>`"outcome": "skipped"`</bdi> مع الرسالة <bdi>`"not installed; no files removed"`</bdi>. ولا يكون حقل <bdi>`status`</bdi> أبدًا <bdi>`"not_installed"`</bdi>.

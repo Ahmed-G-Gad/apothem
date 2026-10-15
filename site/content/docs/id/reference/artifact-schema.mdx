@@ -2,7 +2,7 @@
 title: "Spesifikasi Skema Artefak"
 description: "Skema frontmatter YAML kanonik dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan templat per-kelas dan aturan validasi."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -359,7 +359,7 @@ Setiap perintah hook dirutekan melalui dispatcher Python yang sama:
 
 **Jalur:** `CLAUDE.md` (root)
 
-**Tujuan:** Indeks konfigurasi ekosistem global.
+**Tujuan:** Instruksi Claude Code yang berlingkup proyek.
 
 ### Frontmatter YAML Wajib
 
@@ -368,27 +368,15 @@ Setiap perintah hook dirutekan melalui dispatcher Python yang sama:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Bagian Wajib (berurutan)
+### Bagian
 
-1. **§1 Suite Rencana** — Rujukan ke lokasi templat
-2. **§2 Identitas Kognitif** — Mandat arsitektur kreatif
-3. **§3 Direktori Artefak** — Tabel jalur dan tujuannya
-4. **§4 Tata Kelola Berskala Keseriusan** — Definisi empat tingkat
-5. **§5 Direktif Operasional** — Prinsip pemecahan masalah dan komunikasi
-6. **§6 Mandat Lintas Bidang** — Ikhtisar CM-1–28
-7. **§7 Registri** — Tabel artefak:
-   - 7.1 Command
-   - 7.2 Aturan
-   - 7.3 Pembantu
-   - 7.4 Hook
-   - 7.5 Skill
-   - 7.6 Evolusi Artefak
+`CLAUDE.md` ditulis dalam bagian-bagian prosa, yang dijelaskan di [`CLAUDE.md`](/docs/reference/claude-md). Tidak ada validator yang mewajibkan daftar bagian yang tetap: `scripts/dev/validate_ecosystem.py` memeriksa kunci frontmatter di atas.
 
 ---
 
@@ -410,7 +398,7 @@ Setiap artefak harus memenuhi pemeriksaan berikut:
 
 ### Validasi Konten
 
-- [ ] Konten dimulai segera setelah `---` penutup, pada baris baru
+- [ ] Konten dimulai pada baris baru setelah `---` penutup; pada berkas keluarga Markdown, banner header kepengarangan adalah konten pertama setelahnya
 - [ ] Tidak ada rujukan internal rencana (kepatuhan CM-7)
 - [ ] Rujukan silang dapat di-resolve (jika mencantumkan artefak lain)
 - [ ] Tautan menggunakan jalur relatif dengan garis miring maju

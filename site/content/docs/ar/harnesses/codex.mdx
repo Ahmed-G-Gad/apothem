@@ -2,7 +2,7 @@
 title: "Codex"
 description: "محوّل إطار عمل Apothem لـ Codex (تجريبي)."
 machineTranslated: true
-sourceHash: "99a652853bf9a864"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,11 +52,15 @@ apothem install --harness codex
 <bdi>`~/.config/apothem/`</bdi> بوصفها مادّة دعم.
 
 يضبط كل مساعِد مُحوَّل <bdi>`name`</bdi>، و<bdi>`description`</bdi>،
-و<bdi>`developer_instructions`</bdi>. والمساعِد الذي لا تتيح له الأدوات الممنوحة له
-كتابة الملفات يضبط أيضًا <bdi>`sandbox_mode = "read-only"`</bdi>، وهو قيد الكتابة
-الخاص بـ <bdi>Codex</bdi> نفسه. لا يُضبَط أي نموذج أو جهد استدلال، لذا يرث كل مساعِد
-اختيارات الجلسة. لا يملك <bdi>Codex</bdi> قائمة أدوات أو حدًّا للأدوار لكل مساعِد،
-لذا لا يُنقَل <bdi>`tools`</bdi> و<bdi>`maxTurns`</bdi> الخاصان بالمساعِد.
+و<bdi>`developer_instructions`</bdi>. والمساعِد الذي لا تتضمّن الأدوات الممنوحة له،
+بعد تطبيق قائمة المنع الخاصة به، أيّ أداة لتحرير الملفات (<bdi>`Write`</bdi>،
+أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>، أو <bdi>`NotebookEdit`</bdi>) يضبط
+أيضًا <bdi>`sandbox_mode = "read-only"`</bdi>، وهو قيد الكتابة الخاص بـ <bdi>Codex</bdi>
+نفسه. لا تُعَدّ <bdi>`Bash`</bdi> أداةً لتحرير الملفات، لذا يبقى المساعِد الذي مُنح
+<bdi>`Bash`</bdi> ولم يُمنح أيًّا من تلك الأدوات للقراءة فقط. لا يُضبَط أي نموذج أو
+جهد استدلال، لذا يرث كل مساعِد اختيارات الجلسة. لا يملك <bdi>Codex</bdi> قائمة أدوات
+أو حدًّا للأدوار لكل مساعِد، لذا لا يُنقَل <bdi>`tools`</bdi> و<bdi>`maxTurns`</bdi>
+الخاصان بالمساعِد.
 
 ## ملاحظات التوافق
 

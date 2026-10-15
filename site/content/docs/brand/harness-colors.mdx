@@ -99,8 +99,21 @@ graph LR
 
 ## Accessibility
 
-Every light-mode token meets WCAG 2.2 AA contrast against white text (≥4.5 : 1) where the contrast permits without distorting the brand color. Where a harness's native brand color falls below the AA threshold against white text on its own (notably the amber / orange family and the sky-blue / teal family of tokens enumerated above), diagrams that need WCAG AA text-on-color contrast use the **dark-mode variant** (the lifted hue) as the diagram fill so the white text reads cleanly. The dark-mode column is calibrated for this purpose: every dark-mode token clears AA against white text.
+Each light-mode token keeps its brand color undistorted, so eight of them fall below WCAG 2.2 AA contrast against white text (≥4.5 : 1). The other light-mode tokens meet it. The eight, with their contrast against white:
+
+```text
+shared-profile   2.54 : 1
+claude-code      3.28 : 1
+codex            3.20 : 1
+gemini-cli       3.56 : 1
+opencode         2.15 : 1
+qwen-code        2.87 : 1
+trae             3.86 : 1
+windsurf         2.77 : 1
+```
+
+The dark-mode column is for dark backgrounds, and none of its tokens reaches 4.5 : 1 against white text. A diagram that needs WCAG AA text-on-color contrast on one of those eight fills MUST use dark text (`#0F172A`, which measures 4.63 : 1 to 8.31 : 1 on them) instead of white.
 
 ## Updates
 
-The palette updates only when a harness ratifies a brand change upstream. Per-harness brand changes propagate atomically across `site/app/global.css`, this page, and every affected SVG master under `assets/src/`.
+The palette updates only when a harness ratifies a brand change upstream. The harness colors are defined on this page, not in `assets/design-tokens.css` or `site/app/global.css`. Per-harness brand changes propagate atomically across this page and every affected SVG master under `assets/src/`.

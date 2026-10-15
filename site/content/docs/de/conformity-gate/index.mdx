@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Apothems Konformitäts-Gate — der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15), den jedes ausgegebene Artefakt bestehen muss."
 machineTranslated: true
-sourceHash: "0c45cd7185de5190"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "0c45cd7185de5190"
 | Stufe | ID | Mandat | Prüfklasse | Fehlschlag → Maßnahme |
 |---|---|---|---|---|
 | 1 | M1 | Host-Projekt-Agnostizismus | Abwägungsbasiert | Überarbeiten, bis es den Host-Konventionen entspricht |
-| 2 | M2 | Redaktionelle Disziplin (Offenlegungsregister) | Mechanisch | Offenlegungsmarkierungen hinzufügen |
-| 3 | M3 | Zehn Qualitätsdimensionen | Abwägungsbasiert | In den nicht bestandenen Dimensionen überarbeiten |
+| 2 | M2 | Redaktionelle Disziplin (Offenlegungsregister) | Abwägungsbasiert | Offenlegungsmarkierungen hinzufügen |
+| 3 | M3 | Zehn Qualitätsdimensionen | Mechanisch + abwägungsbasiert | In den nicht bestandenen Dimensionen überarbeiten |
 | 4 | M4 | Selbstanwendung (signierter Gate-Eintrag vorhanden) | Mechanisch | Block des signierten Eintrags erfassen |
 | 5 | M5 | Autoritätsprinzip (keine erfundene Identität / kein erfundener Endpunkt / kein erfundenes Geheimnis) | Mechanisch | An eine Rückfrage weiterleiten |
 | 6 | M6 | Einbindung von Fachwissen (offengelegte Lücken) | Abwägungsbasiert | Lücken offenlegen; Verfeinerungen zitieren |
@@ -21,10 +21,10 @@ sourceHash: "0c45cd7185de5190"
 | 9 | M9 | Visuelle Hebelwirkung (strukturelle Themen tragen Diagramme) | Abwägungsbasiert | Diagramm erstellen / auffrischen |
 | 10 | M10 | Bidirektionale Bindung (wechselseitige Rückverweise geschlossen) | Mechanisch | Halbkanten schließen |
 | 11 | M11 | Agile Sprints (Ziel / Backlog / DoR / DoD / Review / Retrospektive) | Abwägungsbasiert | Als Sprints umstrukturieren |
-| 12 | M12 | Phasenberichte & kanonisches Layout | Mechanisch | Zusammenfassung erstellen; ins kanonische Layout verlagern |
+| 12 | M12 | Phasenberichte & kanonisches Layout | Mechanisch + abwägungsbasiert | Zusammenfassung erstellen; ins kanonische Layout verlagern |
 | 13 | M13 | Code-Handwerk (Lint / Formatierung / Typprüfung; magische Zahl; bare-except) | Mechanisch | Sprachspezifische Code-Handwerk-Regeln anwenden |
 | 14 | M14 | Systemizität (deklariert Upstream / Downstream / Gleichrangige / Durchsetzer) | Abwägungsbasiert | Deklarieren; in Registries indexieren |
-| 15 | M15 | Produktionsreife (Tests + Doku + CHANGELOG + konformer Commit + grüne CI + Semver-Stabilität) | Mechanisch | Fehlende Oberflächen ergänzen |
+| 15 | M15 | Produktionsreife (Tests + Doku + CHANGELOG + konformer Commit + grüne CI + Semver-Stabilität) | Mechanisch + abwägungsbasiert | Fehlende Oberflächen ergänzen |
 
 ## Schweregradleiter
 
@@ -33,17 +33,17 @@ Das Gate kennt keine Stufenleiter aus Kritisch, Wichtig und Beratend und keinen 
 ## Validatoren
 
 Der mechanische Anteil liegt unter [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity) und wird von [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) orchestriert.
-Das Gate führt jeden Validator auf eine von drei Arten aus:
+Jeder Validator läuft auf eine von drei Arten:
 
 - **per-write**: bei jedem anstehenden Schreibvorgang (`--hook`) oder mit `--all-perwrite` für jede versionierte Datei.
 - **standalone**: mit `--all` über das gesamte Repository oder mit `--check <name>` einzeln.
-- **change-set**: gegen einen gestagten Diff, außerhalb der Durchläufe des Gates.
+- **change-set**: gegen einen gestagten Diff, direkt ausgeführt als `python -m apothem.conformity.semver_stability_grep --staged`, nicht über das Gate.
 
 Die folgende Tabelle wird aus den Validator-Modulen generiert.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |

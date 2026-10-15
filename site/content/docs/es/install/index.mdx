@@ -2,15 +2,15 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "439520c91c9a9ee0"
+sourceHash: "58c69738b25d5cf1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem se instala en menos de dos minutos y funciona junto a la configuración
-de entorno que ya tienes. Cada vía ejecuta el mismo motor autónomo — el árbol de
-código fuente lleva sus dependencias incorporadas y se ejecuta desde un checkout
-sobre el Python 3.10 o posterior del sistema (consulta
-[el tiempo de ejecución autónomo](/docs/architecture/self-contained-runtime)).
+Apothem se instala en menos de dos minutos y funciona junto con la
+configuración de entorno que ya tienes. Cada vía ejecuta el mismo motor
+autónomo — el árbol de código fuente lleva sus dependencias incorporadas y se
+ejecuta desde un checkout sobre el Python 3.10 o posterior del sistema
+(consulta [el tiempo de ejecución autónomo](/docs/architecture/self-contained-runtime)).
 
 **Todas las vías comparten dos requisitos previos:** **Python 3.10 o posterior**
 del sistema en el `PATH`, con los paquetes `click` y `rich` importables bajo él.
@@ -43,8 +43,10 @@ Hay ocho canales de instalación disponibles. Elige según cómo trabajas ya.
   Las tres extensiones de línea de comandos (5–7) instalan un pequeño
   **arranque** que delega en el motor (`npx @ahmed-g-gad/apothem install`) para
   materializar el entorno completo — son el punto de entrada, no la entrega
-  completa por sí mismas. El plugin de Claude Code (1) y la extensión de la
-  familia VS Code (4) llevan el motor y lo ejecutan directamente.
+  completa por sí mismas. El plugin de Claude Code (1) lleva el motor y lo
+  ejecuta directamente. La extensión de la familia VS Code (4) no lleva un motor
+  propio: sus comandos ejecutan el motor a través del shim de npm de forma
+  predeterminada.
 </Callout>
 
 Cada vía es idempotente: volver a ejecutarla es seguro y converge al mismo estado.
@@ -79,11 +81,11 @@ sigue ejecutando el integrado). Dos nombres, `projectify` y `workflow`, se
 distribuyen a la vez como comando y como skill; Claude Code ejecuta la skill
 cuando existen ambos, así que el plugin ejecuta la skill y la instalación del
 motor escribe la skill en ese lugar. Consulta
-[Comandos de barra](/docs/reference/commands) para el catálogo completo de
+[Comandos de barra](/docs/reference/commands) para ver el catálogo completo de
 comandos.
 
 **Verifica:** ejecuta `/plugin` dentro de Claude Code y confirma que **apothem**
-aparece como instalado, o comprueba el informe de desviación desde una terminal:
+aparece como instalado, o comprueba el informe de deriva desde una terminal:
 
 ```bash title="Verify"
 npx @ahmed-g-gad/apothem verify --harness claude-code
@@ -95,9 +97,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 el `PATH`. El shim localiza el intérprete y reenvía cada comando de la CLI al
 motor incluido — no se coloca nada de forma permanente en tu sistema. Prueba
 `python3`, `python` y después `py -3`, en ese orden; define **`APOTHEM_PYTHON`**
-con la ruta de un intérprete para omitir la búsqueda, que es lo que necesitas
-cuando Python está instalado pero no en el `PATH`, o cuando hay varias versiones
-instaladas y quieres una concreta.
+con la ruta de un intérprete para probarlo primero, que es lo que necesitas
+cuando Python está instalado pero no está en el `PATH`, o cuando hay varias
+versiones instaladas y quieres una concreta. El intérprete que indiques sigue
+teniendo que superar la comprobación de Python 3.10+; cuando no la supera, el
+shim recurre a `python3`, `python` y después `py -3`.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -172,7 +176,7 @@ etiqueta obtenida se verifica con `git verify-tag`; una etiqueta sin firmar,
 manipulada o no verificable aborta la instalación antes de escribir nada. Una
 etiqueta firmada cuya clave pública del mantenedor aún no está en el llavero
 local aborta, en cambio, con indicaciones para importar la clave: importa la
-clave, comprueba su huella digital contra el valor publicado en
+clave, comprueba su huella digital con el valor publicado en
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) y
 vuelve a ejecutar. Fija un lanzamiento concreto con `APOTHEM_REF`:
 
@@ -189,12 +193,20 @@ La sección de firma de lanzamientos de
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 lista cada etiqueta y cómo verificarla.
 
-Las anulaciones explícitas relajan el comportamiento predeterminado. `APOTHEM_ALLOW_UNVERIFIED=1` degrada un fallo de verificación a una advertencia y continúa, para uso en sistemas aislados de la red, uso local o uso con lanzamientos anteriores a la firma. `APOTHEM_REF=main` hace checkout de la rama móvil sin verificación solo junto con `APOTHEM_ALLOW_UNVERIFIED=1`. Con `APOTHEM_REF=main` por sí solo, el instalador descarga `main` en `APOTHEM_HOME` y después aborta antes de materializar ninguna configuración, porque una rama no es una etiqueta de lanzamiento firmada. Un checkout local mediante `APOTHEM_SOURCE` no descarga nada y omite la verificación.
+Las anulaciones explícitas relajan el comportamiento predeterminado.
+`APOTHEM_ALLOW_UNVERIFIED=1` degrada un fallo de verificación a una advertencia
+y continúa, para uso en sistemas aislados de la red, uso local o uso con
+lanzamientos anteriores a la firma. `APOTHEM_REF=main` hace checkout de la rama
+móvil sin verificación solo junto con `APOTHEM_ALLOW_UNVERIFIED=1`. Con
+`APOTHEM_REF=main` por sí solo, el instalador descarga `main` en `APOTHEM_HOME`
+y después aborta antes de materializar ninguna configuración, porque una rama no
+es una etiqueta de lanzamiento firmada. Un checkout local mediante
+`APOTHEM_SOURCE` no descarga nada y omite la verificación.
 
 `APOTHEM_VERIFY=checksum` es la vía intermedia para un host que aún no tiene la
 clave pública del mantenedor: en lugar de clonar, el instalador descarga el
 archivo comprimido por plataforma del lanzamiento y su `SHA256SUMS`, aborta ante
-un desajuste del digest antes de extraer nada y advierte de que un digest
+una discrepancia del digest antes de extraer nada y advierte de que un digest
 coincidente prueba que el archivo comprimido es el que lista el lanzamiento, no
 quién lo publicó.
 
@@ -212,7 +224,7 @@ Ambos scripts leen las mismas variables de entorno de configuración
 `APOTHEM_VERIFY`, `APOTHEM_RELEASE_BASE`, `APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
 `APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`, `APOTHEM_BIN_DIR`); consulta
 [Variables de entorno del instalador](/docs/how-to/installer-environment-variables)
-para la tabla completa y
+para ver la tabla completa y
 [Tiempo de ejecución autónomo](/docs/architecture/self-contained-runtime) para
 ver cómo funciona el modelo de invocación `python -m`.
 

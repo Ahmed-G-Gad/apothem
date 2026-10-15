@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "71abe825552bafc8"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,39 +17,29 @@ sourceHash: "71abe825552bafc8"
 apothem install --harness hermes
 ```
 
-アダプターは共有プロファイルを Hermes Agent のユーザーグローバル設定ファイルへ変換し、Apothem の
-サポートコホートをハーネスルート配下にインストールします。
+アダプターは共有プロファイルを Hermes Agent のユーザーグローバル設定ファイルへ変換し、Apothem のサポートコホートをハーネスルート配下にインストールします。
 
 **書き込まれるファイル：** `~/.hermes/config.yaml`、プロファイルドキュメント
 `~/.hermes/apothem/rules/00-apothem-profile.md`、および
 `~/.hermes/.apothem/support/` 配下のサポートファイル
 
-プロファイルドキュメントは、Apothem サポートファイルのセクションで終わります。このセクションは、
-リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、
-`~/.hermes/.apothem/support/` 配下の絶対ディレクトリを示します。
+プロファイルドキュメントは、Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.hermes/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、プロファイルの MCP インベントリを含むネイティブの
-YAML 設定をレンダリングします。プロファイルのアイデンティティ、プリファレンス、ルールは
-プロファイルドキュメントに入ります。共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、
-フックプロンプトは、サポート素材として `~/.hermes/.apothem/support/` 配下に配置されます。
+アダプターは Apothem の共有プロファイルを読み取り、プロファイルの MCP インベントリを含むネイティブの YAML 設定をレンダリングします。
+プロファイルのアイデンティティ、プリファレンス、ルールはプロファイルドキュメントに入ります。
+共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、フックプロンプトは、サポート素材として `~/.hermes/.apothem/support/` 配下に配置されます。
 
 ## 互換性に関する注意
 
-プレビュー版のアダプターです。Hermes は、サポートツリーもプロファイルドキュメントも自ら読み込み
-ません。`config.yaml` 内のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指して
-いないため、インストール後の Hermes は Apothem のルール、スキル、フックなしで動作します。Hermes は
-`~/.hermes/skills/` と、`config.yaml` の `skills.external_dirs` 配下に列挙されたすべての
-フォルダーからスキルを読み取ります。Apothem のスキルを使うには、
-`~/.hermes/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、
-あなたが `config.yaml` に追加したキーを保持します。アダプターはプロファイルの MCP インベントリを、
-Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
-以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを
-MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と
-`apothem uninstall` はどちらも、そのブロックがそうしたリリースの書き込んだ内容を正確にそのまま
-保持している間は、そのブロックを削除します（[アンインストール](#アンインストール)を参照）。
-（Hermes の振る舞いは、同ユーザーガイドの
+プレビュー版のアダプターです。
+Hermes は、サポートツリーもプロファイルドキュメントも自ら読み込みません。`config.yaml` 内のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルール、スキル、フックなしで動作します。
+Hermes は `~/.hermes/skills/` と、`config.yaml` の `skills.external_dirs` 配下に列挙されたすべてのフォルダーからスキルを読み取ります。Apothem のスキルを使うには、`~/.hermes/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
+アダプターはプロファイルの MCP インベントリを、Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
+以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と `apothem uninstall` はどちらも、そのブロックが、そうしたリリースがあなたの共有プロファイルから書き込むであろう内容と一致している間は、そのブロックを削除します（[アンインストール](#アンインストール)を参照）。
+（Hermes の振る舞いは、Hermes のユーザーガイドの
 [スキル](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)
 に関するページに基づき、2026-10-02 に参照したものです。）
@@ -73,8 +63,7 @@ apothem update --harness hermes
 ```
 
 現在の共有プロファイルの状態からネイティブ設定を再導出します。
-`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
-パッケージをアップグレードした後に実行してください。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
 
@@ -82,17 +71,12 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-アダプターが追加したものを削除します。対象は、インストールが `config.yaml` に記録した
-`mcp_servers` のエントリ（あなた自身のキーは残り、ファイルが削除されるのは Apothem がそれを作成し、
-かつあなたのものが何も残っていない場合のみです）、プロファイルドキュメント、およびサポートツリー
-です。共有プロファイルの YAML と Apothem エンジンには影響しません。
+アダプターが追加したものを削除します。対象は、インストールが `config.yaml` に記録した `mcp_servers` のエントリ（あなた自身のキーは残り、ファイルが削除されるのは Apothem がそれを作成し、かつあなたのものが何も残っていない場合のみです）、プロファイルドキュメント、およびサポートツリーです。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-以前のリリースによるインストールは、プロファイルのサーバーを `auxiliary.mcp` の下に書き込んで
-いました。そのブロックが、`~/.config/apothem/profile.yaml` にある共有プロファイルからレンダリング
-される、そのリリースが書き込んだ内容を正確にそのまま保持している場合は、そのブロックも削除されます。
-これは `apothem update` が適用するのと同じルールであるため、先に更新せずにアンインストールしても、
-古いブロックは残りません。あなたが編集したブロックや、比較対象となる読み取り可能な共有プロファイルが
-ないブロックはそのまま残り、`auxiliary` のそれ以外の設定は常に残ります。
+以前のリリースが作成したインストール（プロファイルのサーバーを `auxiliary.mcp` の下に書き込んでいたもの）でも、そのブロックは、`~/.config/apothem/profile.yaml` にあるあなたの現在の共有プロファイルから、そのリリースが書き込むであろう内容と一致している場合に削除されます。
+これは `apothem update` が適用するのと同じルールであるため、先に更新せずにアンインストールしても、プロファイルの MCP サーバーが変わっていない間は、古いブロックは残りません。
+あなたが編集したブロック、あなたの現在のプロファイルの MCP サーバーとはもはや一致しないブロック、または比較対象となる読み取り可能な共有プロファイルがないブロックはそのまま残り、`auxiliary` のそれ以外の設定は常に残ります。
 
 ## コンフォーミティゲート
 

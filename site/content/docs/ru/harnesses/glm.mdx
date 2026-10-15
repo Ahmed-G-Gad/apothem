@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Адаптер окружения Apothem для GLM (Z.ai) как настраиваемого бэкенда моделей."
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,7 +45,8 @@ URL `https://api.z.ai/api/coding/paas/v4`. Токен аутентификаци
 записывает настоящий секрет. Идентификаторы моделей меняются от версии к
 версии, поэтому Apothem не фиксирует ни один из них; файл содержит заполнители
 `<GLM_MODEL_ID>`, которые вы заполняете по актуальной
-[документации Z.ai](https://docs.z.ai/devpack/tool/claude).
+[документации Z.ai](https://docs.z.ai/devpack/tool/claude). Ничего из общего
+профиля в этот файл не попадает; это фиксированный шаблон.
 
 ## Заметки о совместимости
 
@@ -109,8 +110,8 @@ python -m apothem.conformity.gate --all .
 | Симптом | Исправление |
 |---------|-----|
 | Файл конфигурации не найден | Повторно запустите `apothem install --harness glm --project /path/to/project` |
-| Проверка не пройдена | Запустите `apothem update --harness glm --project /path/to/project`, затем проверьте снова |
-| Неожиданное содержимое конфигурации | Проверьте `~/.config/apothem/profile.yaml` или `--profile PATH`, затем повторно запустите `apothem update --harness glm --project /path/to/project` |
+| Проверка не пройдена | Файл провайдера отсутствует или пуст. Если он отсутствует, запустите `apothem update --harness glm --project /path/to/project`. Если он пуст, сначала переместите `.apothem/providers/glm.toml` в сторону, затем запустите `update` и проверьте снова |
+| Неожиданное содержимое конфигурации | Отредактируйте `.apothem/providers/glm.toml` напрямую; Apothem никогда не перезаписывает существующий файл, а общий профиль ничего в него не добавляет. Чтобы получить свежий шаблон, переместите файл в сторону и запустите `apothem update --harness glm --project /path/to/project` |
 
 ## Параметры конфигурации
 

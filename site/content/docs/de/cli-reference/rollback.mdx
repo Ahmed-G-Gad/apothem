@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "6c0c49f541075b0c"
+sourceHash: "96531a4a5fa4a15e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,14 @@ Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
 - entfernt die Verzeichnisse, die die Installation angelegt hat, sobald sie
   leer sind.
 
-Alles, was rollback entfernt oder ersetzt, wird zuerst in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein Rollback selbst von Hand rückgängig machen lässt. Anschließend hängt es einen `rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer älteren Installation stellt nur die Ziele, die diese ältere Installation erfasst hat, wieder her oder entfernt sie, und nimmt jede spätere Installation an derselben Wurzel aus dem aktiven Datensatz heraus. Dateien, die eine spätere Installation außerhalb dieser Ziele hinzugefügt hat, bleiben an ihrem Ort.
+Alles, was rollback entfernt oder ersetzt, wird zuerst in die
+Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein
+Rollback selbst von Hand rückgängig machen lässt. Anschließend hängt es einen
+`rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer älteren
+Installation stellt nur die Ziele, die diese ältere Installation erfasst hat,
+wieder her oder entfernt sie, und nimmt jede spätere Installation an derselben
+Wurzel aus dem aktiven Datensatz heraus. Dateien, die eine spätere Installation
+außerhalb dieser Ziele hinzugefügt hat, bleiben an ihrem Ort.
 
 Das Ledger behält die neuesten 10 Installationseinträge pro Installationswurzel
 (mit den Sicherungen, auf die sie verweisen); eine ältere Installation lässt
@@ -63,8 +70,11 @@ Ein Rollback mit `--harness all` ist bewusst erschöpfend: Er umfasst jeden
 registrierten Harness, einschließlich derer, die `exclude_harnesses` des Profils
 bei der Installation überspringt — das Wiederherstellen des Zustands vor der
 Installation ist ein Aufräumvorgang, daher erreicht er Einträge, die eine zuvor
-breiter angelegte Installation hinterlassen haben kann. Harnesses ohne
-aufgezeichnete Installation melden pro Harness „nichts zurückzusetzen“.
+breiter angelegte Installation hinterlassen haben kann. Ein Harness ohne
+aufgezeichnete Installation schlägt mit `rollback.no_record` fehl (eine Zeile
+mit `"outcome": "error"` in `results`), und der Durchlauf wird mit den übrigen
+Harnesses fortgesetzt. Der Befehl endet anschließend mit Exit-Code 1, oder mit 2,
+wenn ein anderer Harness zurückgesetzt wurde.
 
 ## Optionen
 

@@ -2,7 +2,7 @@
 title: "Spécification du schéma d'artefacts"
 description: "Schéma canonique de frontmatter YAML et champs requis pour tous les types d'artefacts de l'arbre des sources d'Apothem, avec modèles par classe et règles de validation."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -302,7 +302,7 @@ blocs de matcher :
 }
 ```
 
-La forme `-m apothem.hooks.dispatch` ne sert qu'au développement depuis un checkout des sources avec `PYTHONPATH=src`.
+La forme `-m apothem.hooks.dispatch` est destinée au développement depuis un checkout des sources avec `PYTHONPATH=src`.
 
 | Champ | Type | Objectif | Exemple |
 | ----- | ---- | ------- | ------- |
@@ -360,7 +360,7 @@ Chaque commande de hook passe par le même répartiteur Python :
 
 **Chemin :** `CLAUDE.md` (racine)
 
-**Objectif :** Index global de configuration de l'écosystème.
+**Objectif :** Instructions Claude Code à portée de projet.
 
 ### Frontmatter YAML obligatoire
 
@@ -369,27 +369,15 @@ Chaque commande de hook passe par le même répartiteur Python :
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Sections requises (dans l'ordre)
+### Sections
 
-1. **§1 Suite de plan** — Référence à l'emplacement du modèle
-2. **§2 Identité cognitive** — Mandat d'architecture créative
-3. **§3 Répertoires d'artefacts** — Tableau des chemins et de leurs objectifs
-4. **§4 Gouvernance modulée par le niveau de sérieux** — Définition des quatre niveaux
-5. **§5 Directives opérationnelles** — Résolution de problèmes, principes de communication
-6. **§6 Mandats transversaux** — Aperçu de CM-1–28
-7. **§7 Registres** — Tableaux d'artefacts :
-   - 7.1 Commandes
-   - 7.2 Règles
-   - 7.3 Assistants
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Évolution des artefacts
+`CLAUDE.md` est rédigé en sections de prose, décrites dans [`CLAUDE.md`](/docs/reference/claude-md). Aucun validateur n'exige une liste fixe de sections : `scripts/dev/validate_ecosystem.py` vérifie les clés de frontmatter ci-dessus.
 
 ---
 
@@ -411,7 +399,7 @@ Chaque artefact doit satisfaire les vérifications suivantes :
 
 ### Validation du contenu
 
-- [ ] Le contenu commence immédiatement après le `---` de fermeture, sur une nouvelle ligne
+- [ ] Le contenu commence sur une nouvelle ligne après le `---` de fermeture ; dans les fichiers de la famille Markdown, la bannière d'en-tête de paternité est le premier contenu après celui-ci
 - [ ] Aucune référence interne au plan (conformité CM-7)
 - [ ] Les références croisées se résolvent (si d'autres artefacts sont listés)
 - [ ] Les liens utilisent des chemins relatifs avec des barres obliques

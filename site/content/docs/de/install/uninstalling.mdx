@@ -2,17 +2,17 @@
 title: "Deinstallieren"
 description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
 machineTranslated: true
-sourceHash: "11d7a265fc5e60b9"
+sourceHash: "39bf18da03eaad73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Zuerst die Harness-Konfigurationen entfernen
 
-Bevor Sie Apothem deinstallieren, entfernen Sie jede
-Harness-Adapter-Konfiguration, um Ihre Harnesses in einem sauberen Zustand zu
-hinterlassen. Führen Sie `apothem harnesses list` aus, um zu sehen, welche
-Adapter derzeit installiert sind, und entfernen Sie sie dann einzeln oder
-verwenden Sie den registry-weiten Selektor:
+Bevor Sie Apothem deinstallieren, entfernen Sie die Konfiguration jedes
+Harness-Adapters, um Ihre Harnesses in einem sauberen Zustand zu hinterlassen.
+Führen Sie `apothem harnesses list` aus, um zu sehen, welche Adapter derzeit
+installiert sind, und entfernen Sie sie dann einzeln oder verwenden Sie den
+Selektor für die gesamte Registry:
 
 ```bash
 apothem uninstall --harness claude-code
@@ -37,6 +37,27 @@ haben:
   dem Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
   `scripts/installer/uninstall.ps1` (PowerShell). Beide fragen vor dem
   Entfernen nach einer Bestätigung und verweigern unsichere Ziele.
+- **Erweiterung für die VS Code-Familie** — führen Sie zuerst
+  **Apothem: Uninstall** über die Befehlspalette aus, um die
+  Harness-Konfigurationen zu entfernen, und entfernen Sie dann die Erweiterung
+  in der Erweiterungsansicht oder mit
+  `code --uninstall-extension ahmed-g-gad.apothem`. Standardmäßig führt die
+  Erweiterung die Engine über `npx` aus, sodass der Eintrag **npx** oben den
+  Cache abdeckt.
+- **Kommandozeilen-Bootstraps (Kanäle 5–7)** — entfernen Sie die Erweiterung
+  oder das Plugin mit dem zugehörigen Host-Tool, nachdem die
+  Harness-Konfigurationen entfernt sind. Der Bootstrap fügt nur
+  Assistenten-Kontext hinzu (eine Kontextdatei, einen Command oder einen Skill),
+  der die Engine über `npx` aufruft, sodass sonst nichts zurückbleibt. Die
+  Erweiterungs-Hosts der Kanäle 5 und 6 bieten einen Deinstallationsbefehl; beim
+  Plugin-Host von Kanal 7 deinstallieren Sie `apothem` in dessen Plugin-Browser.
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **Direkte Engine** — nichts zu deinstallieren; löschen Sie den Klon, sobald
+  die Harness-Konfigurationen entfernt sind.
 - **Backups und Zustand** — Installations-Backups liegen unter
   `~/.apothem/backups/` und das Installations-Ledger unter `~/.apothem/state/`.
   Beide bleiben begrenzt: Nach jeder Installation, jeder Deinstallation und

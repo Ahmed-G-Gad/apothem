@@ -2,30 +2,30 @@
 title: "Schéma du frontmatter"
 description: "Guide de référence sur la structure du bloc de frontmatter YAML, les clés requises par classe et les règles d'application des validateurs pour l'ensemble des classes d'artefacts."
 machineTranslated: true
-sourceHash: "f89ff828715e6fe4"
+sourceHash: "482f970f0b254769"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence canonique du frontmatter YAML de chaque classe d'artefact.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; les JSON Schemas par classe sous [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` rejette les clés inconnues) constituent le contrat lisible par machine et l'emportent en cas de désaccord. Cette page est l'index des clés requises, et [`artifact-schema.mdx`](/docs/reference/artifact-schema) porte les modèles et exemples détaillés par classe ; toutes deux sont des projections lisibles par un humain de ces schémas.
+> **Référence canonique du frontmatter YAML de chaque classe d'artefact.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; les JSON Schemas par classe sous [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` rejette les clés inconnues) constituent le contrat lisible par machine et l'emportent en cas de désaccord. Cette page est l'index des clés requises, et [`artifact-schema.mdx`](/docs/reference/artifact-schema) porte les modèles et exemples détaillés par classe ; toutes deux sont des projections lisibles par un humain de ces schémas.
 
 ---
 
 ## 1. Forme du bloc de frontmatter
 
-Chaque artefact porte un frontmatter YAML en tête, délimité par des lignes `---`. La bannière canonique d'en-tête de paternité définie dans [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) se place au-dessus du frontmatter dans les fichiers de la famille Markdown ; le frontmatter suit immédiatement.
+Chaque artefact porte un frontmatter YAML en tête, délimité par des lignes `---`. Dans les fichiers de la famille Markdown, le frontmatter est le premier contenu du fichier, et la bannière canonique d'en-tête de paternité définie dans [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) suit le `---` de fermeture.
 
 Les clés de commande utilisent `kebab-case`. Les clés de skill utilisent `kebab-case`, à l'exception de `userInvocable`, orthographe camelCase employée par le corpus source (l'installation Claude Code la renomme en `user-invocable`). Les clés des règles et des travailleurs délégués sont en camelCase, comme l'indique le tableau des clés obligatoires de la section 2. Les valeurs scalaires sont soit nues, soit entre guillemets doubles ; les valeurs de chaîne contenant des deux-points, des dièses ou d'autres caractères significatifs en YAML sont mises entre guillemets.
 
 ## 2. Champs requis par classe
 
-L'ensemble des clés requises varie selon la classe d'artefact. La forme qui fait autorité est appliquée par `scripts/dev/validate_ecosystem.py` et par les JSON Schemas par classe situés dans le répertoire `schemas/` (un fichier de schéma par classe d'artefact).
+L'ensemble des clés requises varie selon la classe d'artefact. La forme qui fait autorité est appliquée par `scripts/dev/validate_ecosystem.py` et par les JSON Schemas par classe situés dans le répertoire `src/apothem/schemas/` (un fichier de schéma par classe d'artefact).
 
 ```text
-schemas/agent.schema.json
-schemas/skill.schema.json
-schemas/command.schema.json
-schemas/output-style.schema.json
-schemas/plan.schema.json
+src/apothem/schemas/agent.schema.json
+src/apothem/schemas/skill.schema.json
+src/apothem/schemas/command.schema.json
+src/apothem/schemas/output-style.schema.json
+src/apothem/schemas/plan.schema.json
 ```
 
 | Classe | Clés requises |
@@ -37,7 +37,7 @@ schemas/plan.schema.json
 | Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools` ; l'installation Claude Code et le plugin renomment `userInvocable` en `user-invocable`, et le schéma accepte exactement une des deux graphies |
 | Output-styles (`src/apothem/output-styles/*.md`) | `name`, `description` ; chaque style livré définit aussi `keep-coding-instructions: true` afin que Claude Code conserve ses instructions d'ingénierie logicielle |
 
-Les schémas par classe sous [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) portent l'ensemble complet des contraintes, y compris les restrictions de type, de format, d'énumération et de motif, ainsi que les limites de longueur : la `description` d'une skill ou d'une commande compte au plus 1 024 caractères, la limite fixée par [Agent Skills](https://agentskills.io/specification).
+Les schémas par classe sous [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) portent l'ensemble complet des contraintes, y compris les restrictions de type, de format, d'énumération et de motif, ainsi que les limites de longueur : la `description` d'une skill ou d'une commande compte au plus 1 024 caractères, la limite fixée par [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Validateurs
 

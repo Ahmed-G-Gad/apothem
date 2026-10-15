@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration Hermes brute"
 description: "Maintenir à la main la configuration de Hermes plutôt que la gérer via le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,10 @@ skills restent du matériel de support Apothem.
 
 L'adaptateur Hermes écrit `config.yaml`, enveloppe les commandes slash
 d'Apothem sous forme de skills, copie les skills d'Apothem dans le répertoire de
-support référencé, et conserve les règles, les templates, les agents et le
-matériel de hooks sous la sous-arborescence de support d'Apothem.
+support, et conserve les règles, les templates, les agents et le matériel de
+hooks sous la sous-arborescence de support d'Apothem. Hermes ne charge ces
+skills qu'après que vous avez ajouté `~/.hermes/.apothem/support/skills` à
+`skills.external_dirs` dans `config.yaml`.
 
 ## Chemin de migration
 

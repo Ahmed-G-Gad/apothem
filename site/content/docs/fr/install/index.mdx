@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "439520c91c9a9ee0"
+sourceHash: "58c69738b25d5cf1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,9 @@ travailler actuelle.
   installent un petit **amorçage** qui délègue au moteur via le shell
   (`npx @ahmed-g-gad/apothem install`) pour matérialiser l'environnement
   complet — elles sont le point d'entrée, pas la livraison complète à elles
-  seules. Le plugin Claude Code (1) et l'extension de la famille VS Code (4)
-  embarquent le moteur et l'exécutent directement.
+  seules. Le plugin Claude Code (1) embarque le moteur et l'exécute
+  directement. L'extension de la famille VS Code (4) n'embarque aucun moteur
+  propre : ses commandes exécutent le moteur via le shim npm par défaut.
 </Callout>
 
 Chaque voie est idempotente : la relancer est sans danger et converge vers le
@@ -97,9 +98,12 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 `PATH`. Le shim localise l'interpréteur et transmet chaque commande de la CLI au
 moteur inclus — rien n'est placé de façon permanente sur votre système. Il
 essaie `python3`, `python`, puis `py -3`, dans cet ordre ; définissez
-**`APOTHEM_PYTHON`** sur le chemin d'un interpréteur pour sauter cette
-détection, ce dont vous avez besoin lorsque Python est installé mais absent du
-`PATH`, ou lorsque plusieurs versions le sont et que vous en voulez une précise.
+**`APOTHEM_PYTHON`** sur le chemin d'un interpréteur pour l'essayer en premier,
+ce dont vous avez besoin lorsque Python est installé mais absent du `PATH`, ou
+lorsque plusieurs versions le sont et que vous en voulez une précise.
+L'interpréteur que vous nommez doit tout de même passer la vérification
+Python 3.10+ ; lorsqu'il ne la passe pas, le shim se rabat sur `python3`,
+`python`, puis `py -3`.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -193,7 +197,15 @@ ultérieure est annotée et signée. La section de
 consacrée à la signature des publications liste chaque étiquette et la manière
 de la vérifier.
 
-Des dérogations explicites assouplissent le comportement par défaut. `APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en avertissement et poursuit l'opération, pour un usage isolé du réseau, local, ou avec une publication antérieure à la signature. `APOTHEM_REF=main` extrait la branche mouvante sans vérification, et seulement avec `APOTHEM_ALLOW_UNVERIFIED=1`. Avec `APOTHEM_REF=main` seul, l'installateur récupère `main` dans `APOTHEM_HOME`, puis s'interrompt avant que la configuration ne soit matérialisée, car une branche n'est pas une étiquette de publication signée. Un checkout local via `APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
+Des dérogations explicites assouplissent le comportement par défaut.
+`APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en
+avertissement et poursuit l'opération, pour un usage isolé du réseau, local, ou
+antérieur aux publications signées. `APOTHEM_REF=main` n'extrait la branche
+mouvante sans vérification qu'avec `APOTHEM_ALLOW_UNVERIFIED=1`. Avec
+`APOTHEM_REF=main` seul, l'installateur récupère `main` dans `APOTHEM_HOME`, puis
+s'interrompt avant que la configuration ne soit matérialisée, car une branche
+n'est pas une étiquette de publication signée. Un checkout local via
+`APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
 
 `APOTHEM_VERIFY=checksum` est la voie intermédiaire pour un hôte qui ne détient
 pas encore la clé publique du mainteneur : au lieu de cloner, l'installateur
@@ -250,19 +262,19 @@ est dépourvue, construisez le paquet depuis un checkout avec la version de vsce
 verrouillée dans `.github/vsce/`, qui requiert Node.js 22 ou ultérieur :
 exécutez `npm ci --prefix .github/vsce --ignore-scripts`, puis
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Aucune fiche n'est encore publiée sur le
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/). Une seule
-extension couvre VS Code et sa surface d'assistant compagnon intégrée à
-l'éditeur. Ses commandes de palette (`Apothem: Install`, `Verify`, `Update`,
-`Uninstall`, `Doctor`) exécutent le même moteur via le lanceur configuré
-(`npx @ahmed-g-gad/apothem@<extension version>` par défaut, si bien que
-l'extension exécute la version du moteur avec laquelle elle a été livrée ;
-pointez le paramètre utilisateur `apothem.runner` vers un checkout local pour
-exécuter depuis les sources). Install, Verify, Update et Uninstall demandent sur
-quel environnement agir, en proposant d'abord celui de l'éditeur ; `all` est un
-choix possible, jamais la valeur par défaut. Le paramètre `apothem.runner` a une
-portée machine, si bien qu'un espace de travail ne peut pas le modifier, et
-l'extension ne s'exécute que dans un espace de travail approuvé.
+Une fiche sur le [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+n'est pas encore publiée. Une seule extension couvre VS Code et sa surface
+d'assistant compagnon intégrée à l'éditeur. Ses commandes de palette
+(`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) exécutent le même
+moteur via le lanceur configuré (`npx @ahmed-g-gad/apothem@<extension version>`
+par défaut, si bien que l'extension exécute la version du moteur avec laquelle
+elle a été livrée ; pointez le paramètre utilisateur `apothem.runner` vers un
+checkout local pour exécuter depuis les sources). Install, Verify, Update et
+Uninstall demandent sur quel environnement agir, en proposant d'abord celui de
+l'éditeur ; `all` est un choix possible, jamais la valeur par défaut. Le
+paramètre `apothem.runner` a une portée machine, si bien qu'un espace de travail
+ne peut pas le modifier, et l'extension ne s'exécute que dans un espace de
+travail approuvé.
 
 **Vérifiez :** exécutez la commande **Apothem: Verify** depuis la palette de
 commandes de l'éditeur, ou depuis un terminal :

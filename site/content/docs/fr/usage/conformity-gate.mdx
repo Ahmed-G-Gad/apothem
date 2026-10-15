@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "bbf19e4d148c511e"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ Le portail de conformité, à `src/apothem/conformity/gate.py`, exécute la
 fraction mécanique du portail de pré-émission à quinze barres (M1-M15) sur
 chaque artefact que rédige l'opérateur.
 
-Les commandes de cette page supposent un checkout d'Apothem : faites précéder chacune d'elles de `PYTHONPATH=src`. Après une installation par script, utilisez `PYTHONPATH="$HOME/.apothem/src"` à la place de `src`.
+Les commandes de cette page supposent un checkout d'Apothem : faites précéder
+chacune d'elles de `PYTHONPATH=src`. Après une installation par script, utilisez
+`PYTHONPATH="$HOME/.apothem/src"` à la place de `src`.
 
 ## Exécuter le portail
 
@@ -55,20 +57,20 @@ historique de commits.
 | Barre | Vérification | Type |
 |-----|-------|------|
 | M1 | Agnosticisme vis-à-vis du projet hôte | Raisonnée |
-| M2 | Divulgation éditoriale | Mécanique |
-| M3 | Dix dimensions de qualité | Raisonnée |
+| M2 | Divulgation éditoriale | Raisonnée |
+| M3 | Dix dimensions de qualité | Mécanique + raisonnée |
 | M4 | Auto-application | Mécanique |
-| M5 | Autorité (aucune identité / aucun point de terminaison / aucun secret fabriqués) | Mécanique |
-| M6 | Incorporation d'expertise | Raisonnée |
+| M5 | Autorité (aucune identité / aucun endpoint / aucun secret fabriqué) | Mécanique |
+| M6 | Incorporation de l'expertise | Raisonnée |
 | M7 | Annotation des options | Mécanique |
 | M8 | Caractère définitif | Mécanique |
 | M9 | Levier visuel | Raisonnée |
 | M10 | Liaison bidirectionnelle | Mécanique |
 | M11 | Sprints agiles | Raisonnée |
-| M12 | Rapports de phase et agencement canonique | Mécanique |
-| M13 | Métier du code | Mécanique |
+| M12 | Rapports de phase et disposition canonique | Mécanique + raisonnée |
+| M13 | Artisanat du code | Mécanique |
 | M14 | Systémicité | Raisonnée |
-| M15 | Prêt pour la production | Mécanique |
+| M15 | Prêt pour la production | Mécanique + raisonnée |
 
 ## Vérifications ciblées
 
@@ -109,4 +111,8 @@ ci-dessus.
 
 ## Intégration CI
 
-Le job de qualité de `.github/workflows/ci.yml` exécute le portail en mode strict (`python -m apothem.conformity.gate --all . --strict`) sur les pushes vers `main` et sur les pull requests vers `main` qui touchent les chemins que ce job surveille. Le workflow distinct `.github/workflows/conformity.yml` exécute le balayage des fixtures (`tests/conformity-scenarios/verify.py --strict`).
+Le job de qualité de `.github/workflows/ci.yml` exécute le portail en mode strict
+(`python -m apothem.conformity.gate --all . --strict`) sur les pushes vers `main`
+et sur les pull requests vers `main` qui touchent les chemins que ce job
+surveille. Le flux de travail distinct `.github/workflows/conformity.yml`
+exécute le balayage des fixtures (`tests/conformity-scenarios/verify.py --strict`).

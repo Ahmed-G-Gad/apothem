@@ -2,7 +2,7 @@
 title: "アーティファクトスキーマ仕様"
 description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールを含みます。"
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -293,7 +293,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | string | ツール名のパターン（ツールに依存しないイベントでは `"*"`） | `"Write"` |
 | `hooks[].type` | リテラル `"command"` | 現時点でサポートされる唯一のフックハンドラーの種類 | `"command"` |
 | `hooks[].command` | string | 実行可能なコマンド。Apothem は `${PYTHON_BIN}` プレースホルダーを使い、インストール時に解決されます | `"${PYTHON_BIN}"` |
-| `hooks[].args` | 文字列の配列 | exec 形式の引数：`${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパスに、その引数が続きます | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | 文字列の配列 | exec 形式の引数: `${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパスに、その引数が続きます | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | 整数（秒） | ホストがフックを強制終了するまでの最大実行時間 | `30` |
 | `hooks[].statusMessage` | string | ホストの UI に表示される短いラベル | `"Session start"` |
 
@@ -341,7 +341,7 @@ Claude Code テンプレートは SessionStart、PreToolUse、PostToolUse、Stop
 
 **パス:** `CLAUDE.md`（ルート）
 
-**目的:** グローバルなエコシステム設定の索引。
+**目的:** プロジェクトスコープの Claude Code 向け指示。
 
 ### 必須の YAML フロントマター
 
@@ -350,27 +350,15 @@ Claude Code テンプレートは SessionStart、PreToolUse、PostToolUse、Stop
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### 必須セクション（順序どおり）
+### セクション
 
-1. **§1 プランスイート** — テンプレートの場所への参照
-2. **§2 認知アイデンティティ** — 創造的アーキテクチャのマンデート
-3. **§3 アーティファクトディレクトリ** — パスと目的の表
-4. **§4 シリアスネスに応じたガバナンス** — 4 つのレベルの定義
-5. **§5 運用指令** — 問題解決とコミュニケーションの原則
-6. **§6 横断的マンデート** — CM-1–28 の概要
-7. **§7 レジストリ** — アーティファクトの表:
-   - 7.1 コマンド
-   - 7.2 ルール
-   - 7.3 ヘルパー
-   - 7.4 フック
-   - 7.5 スキル
-   - 7.6 アーティファクトの進化
+`CLAUDE.md` は散文のセクションで書かれており、その内容は [`CLAUDE.md`](/docs/reference/claude-md) で説明されています。固定のセクション一覧を要求するバリデーターはありません。`scripts/dev/validate_ecosystem.py` は、上記のフロントマターのキーを確認します。
 
 ---
 
@@ -392,7 +380,7 @@ portability: "universal"
 
 ### コンテンツの検証
 
-- [ ] コンテンツが、閉じる `---` の直後の新しい行から始まる
+- [ ] コンテンツが、閉じる `---` の後の新しい行から始まる。Markdown 系のファイルでは、その直後の最初のコンテンツが著作者ヘッダーのバナーである
 - [ ] プラン内部への参照がない（CM-7 準拠）
 - [ ] 相互参照が解決する（他のアーティファクトを列挙する場合）
 - [ ] リンクがスラッシュ区切りの相対パスを使用している

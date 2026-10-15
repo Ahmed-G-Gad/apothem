@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "bbf19e4d148c511e"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ Das Konformitäts-Gate unter `src/apothem/conformity/gate.py` führt den
 mechanischen Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) gegen jedes
 Artefakt aus, das der Operator verfasst.
 
-Die Befehle auf dieser Seite setzen einen Apothem-Checkout voraus; stellen Sie daher jedem Befehl `PYTHONPATH=src` voran. Nach einer Skript-Installation verwenden Sie `PYTHONPATH="$HOME/.apothem/src"` anstelle von `src`.
+Die Befehle auf dieser Seite setzen einen Apothem-Checkout voraus; stellen Sie
+daher jedem Befehl `PYTHONPATH=src` voran. Nach einer Skript-Installation
+verwenden Sie `PYTHONPATH="$HOME/.apothem/src"` anstelle von `src`.
 
 ## Das Gate ausführen
 
@@ -52,8 +54,8 @@ Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
 | Stufe | Prüfung | Art |
 |-----|-------|------|
 | M1 | Host-Projekt-Agnostizismus | Abwägungsbasiert |
-| M2 | Redaktionelle Offenlegung | Mechanisch |
-| M3 | Zehn Qualitätsdimensionen | Abwägungsbasiert |
+| M2 | Redaktionelle Offenlegung | Abwägungsbasiert |
+| M3 | Zehn Qualitätsdimensionen | Mechanisch + abwägungsbasiert |
 | M4 | Selbstanwendung | Mechanisch |
 | M5 | Autorität (keine erfundene Identität / kein erfundener Endpunkt / kein erfundenes Geheimnis) | Mechanisch |
 | M6 | Einbindung von Expertise | Abwägungsbasiert |
@@ -62,10 +64,10 @@ Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
 | M9 | Visuelle Hebelwirkung | Abwägungsbasiert |
 | M10 | Bidirektionale Bindung | Mechanisch |
 | M11 | Agile Sprints | Abwägungsbasiert |
-| M12 | Phasenberichte und kanonisches Layout | Mechanisch |
+| M12 | Phasenberichte und kanonisches Layout | Mechanisch + abwägungsbasiert |
 | M13 | Code-Handwerk | Mechanisch |
 | M14 | Systemizität | Abwägungsbasiert |
-| M15 | Produktionsreife | Mechanisch |
+| M15 | Produktionsreife | Mechanisch + abwägungsbasiert |
 
 ## Gezielte Prüfungen
 
@@ -106,4 +108,8 @@ Schreibvorgangs gegen die oben genannten Geltungsbereiche.
 
 ## CI-Integration
 
-Der Qualitätsjob in `.github/workflows/ci.yml` führt das Gate im Strict-Modus (`python -m apothem.conformity.gate --all . --strict`) bei Pushes auf `main` und bei Pull Requests auf `main` aus, die die Pfade berühren, die dieser Job überwacht. Der separate Workflow `.github/workflows/conformity.yml` führt den Fixture-Durchlauf aus (`tests/conformity-scenarios/verify.py --strict`).
+Der Qualitätsjob in `.github/workflows/ci.yml` führt das Gate im Strict-Modus
+(`python -m apothem.conformity.gate --all . --strict`) bei Pushes auf `main` und
+bei Pull Requests auf `main` aus, die die Pfade berühren, die dieser Job
+überwacht. Der separate Workflow `.github/workflows/conformity.yml` führt den
+Fixture-Durchlauf aus (`tests/conformity-scenarios/verify.py --strict`).

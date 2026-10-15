@@ -2,7 +2,7 @@
 title: "Apothem 대 수동 Hermes 구성"
 description: "Hermes 구성을 손으로 유지하는 것과 Apothem의 공유 프로필을 통해 관리하는 것의 비교."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,9 +16,9 @@ Hermes는 `~/.hermes/config.yaml`을 읽습니다. Apothem은 네이티브 YAML 
 **프리뷰.** Hermes 어댑터는 현재 문서화된 구성 파일과 스킬 디스커버리 표면을
 대상으로 합니다. 스킬이 아닌 코호트는 Apothem 지원 자료로 남습니다.
 
-## 작업량 비교
+## 노력 비교
 
-| 작업 | 수동 직접 구성 | Apothem 관리 |
+| 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
 | 재사용 가능한 스킬 작성 | 구성과 스킬 디렉터리를 손으로 편집 | 공유 코퍼스에 한 번 작성 |
 | 코호트를 다른 하니스와 맞춰 유지 | 도구별 수동 | `apothem update` 시 자동 |
@@ -28,8 +28,10 @@ Hermes는 `~/.hermes/config.yaml`을 읽습니다. Apothem은 네이티브 YAML 
 ## Apothem이 관리하는 것
 
 Hermes 어댑터는 `config.yaml`을 작성하고, Apothem 슬래시 명령을 스킬로 감싸고,
-Apothem 스킬을 참조되는 지원 디렉터리로 복사하며, 규칙, 템플릿, 에이전트, 훅
-자료를 Apothem 지원 하위 트리 아래에 둡니다.
+Apothem 스킬을 지원 디렉터리로 복사하며, 규칙, 템플릿, 에이전트, 훅 자료를
+Apothem 지원 하위 트리 아래에 둡니다. Hermes는
+`~/.hermes/.apothem/support/skills`를 `config.yaml`의 `skills.external_dirs`에
+추가한 후에만 해당 스킬을 로드합니다.
 
 ## 마이그레이션 경로
 
@@ -40,7 +42,7 @@ Apothem 스킬을 참조되는 지원 디렉터리로 복사하며, 규칙, 템�
    디렉터리를 렌더링합니다.
 4. `apothem verify --harness hermes`를 실행해 구성이 안착했는지 확인합니다.
 
-## 다음 읽을거리
+## 다음으로 읽기
 
 - [Hermes 어댑터 레퍼런스](/docs/harnesses/hermes)
 - [비교 개요](/docs/comparison)

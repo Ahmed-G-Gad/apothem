@@ -1,298 +1,298 @@
 ---
 title: "Positioning"
-description: "Pahami Apothem sebagai tata kelola ratifikasi-artefak dengan lima belas mandat, disiplin masukan saluran-kanonis, dan arsitektur kreatif identitas-kognitif untuk pengembangan yang digerakkan oleh asisten."
+description: "Pahami Apothem sebagai tata kelola ratifikasi artefak dengan lima belas mandat, disiplin masukan saluran kanonik, dan arsitektur kreatif identitas kognitif untuk pekerjaan yang digerakkan oleh asisten."
 machineTranslated: true
-sourceHash: "3f4cbccbc20546ef"
+sourceHash: "6d3d5fa705635db8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 > **Audiens:** evaluator yang memutuskan apakah akan mengadopsi `apothem` untuk pekerjaan produksi yang digerakkan oleh asisten.
-> **Panjang:** ~12 menit untuk dibaca dari ujung ke ujung. Dapat dipindai bagian demi bagian.
-> **Tujuan:** membingkai apa `apothem` sebenarnya, apa yang BUKAN, dan mengapa jawaban atas "apa yang didistribusikan proyek ini?" secara struktural berbeda dari jawaban yang diberikan kebanyakan proyek perkakas asisten.
+> **Panjang:** ~12 menit untuk dibaca dari awal sampai akhir. Dapat dipindai bagian demi bagian.
+> **Tujuan:** membingkai apa sebenarnya `apothem` ITU, apa yang BUKAN, dan mengapa jawaban atas "apa yang didistribusikan proyek ini?" secara struktural berbeda dari jawaban yang diberikan kebanyakan proyek perkakas tata kelola.
 
 ---
 
 ## §1. Tesis
 
-`apothem` adalah **tata kelola ratifikasi-artefak**, dikemas sebagai biner.
+`apothem` adalah **tata kelola ratifikasi artefak**, dikemas sebagai biner.
 
-Pembingkaian konvensional perkakas asisten adalah **penyetelan-prompt**: sebuah prompt sistem, pemilihan model, strategi jendela-konteks, sebuah pustaka kecil slash-command, dan setumpuk folklor rekayasa-prompt. Di bawah pembingkaian itu, titik ungkit operator adalah prosa yang mereka serahkan kepada model. Ketika model berperilaku salah, pemulihannya adalah menyunting prosanya. Artefak yang didistribusikan proyek adalah kumpulan prompt.
+Pembingkaian konvensional untuk perkakas asisten adalah **penyetelan prompt**: sebuah prompt sistem, pemilihan model, strategi jendela konteks, sebuah pustaka kecil slash-command, dan setumpuk folklor prompt engineering. Di bawah pembingkaian itu, titik ungkit operator adalah prosa yang mereka serahkan kepada model. Ketika model berperilaku keliru, pemulihannya adalah menyunting prosa tersebut. Artefak yang didistribusikan proyek adalah kumpulan prompt.
 
 `apothem` menolak pembingkaian itu.
 
-Titik ungkit sebuah asisten yang beroperasi terhadap basis kode nyata bukanlah prosa yang diserahkan operator kepada model — melainkan **artefak yang akan dipancarkan model**. Artefak itu akan mendarat di repositori, di-commit, di-review, di-merge, di-deploy, dikutip oleh artefak hilir, diwariskan oleh kontributor masa depan. Kualitasnya adalah properti yang tak-dapat-dibalik di hilir yang tak dapat diperbaiki prompt secara surut. Menyunting prompt setelah commit yang cacat mendarat adalah pajak bagi operator, bukan pemulihan artefak.
+Titik ungkit sebuah asisten yang beroperasi pada proyek nyata bukanlah prosa yang diserahkan operator kepada model — melainkan **artefak yang akan dipancarkan model**. Artefak itu akan mendarat di ruang kerja, di-commit, ditinjau, di-merge, di-deploy, dikutip oleh artefak hilir, dan diwarisi oleh kontributor masa depan. Kualitasnya adalah properti yang tidak dapat dibalikkan di hilir, yang tidak dapat diperbaiki prompt secara retroaktif. Menyunting prompt setelah commit yang salah bentuk mendarat adalah beban bagi operator, bukan pemulihan artefak.
 
-Disiplin yang dikodekan proyek ini adalah **inversi**: setiap pancaran melewati gerbang yang terstruktur, disepakati, dan diperiksa secara mekanis **sebelum** ia meninggalkan tangan asisten. Gerbang itu menegakkan lima belas mandat yang mencakup penemuan-host, pengungkapan, sepuluh dimensi kualitas, higiene otoritas, inkorporasi keahlian, anotasi-opsi, kedefinitifan, daya-ungkit visual, pengikatan dua-arah, peranti sprint agile, tata letak kanonis, kerajinan kode, partisipasi sistemik, dan kesiapan-produksi. Setiap mandat adalah sebuah **rule** dengan cakupan path-filter dan isi yang mengoperasionalkan kelas kegagalan spesifik. Setiap kegagalan gerbang adalah temuan struktural yang dimunculkan asisten — tidak pernah degradasi diam-diam.
+Disiplin yang dikodekan proyek ini adalah **inversi**: setiap emisi melewati gerbang yang terstruktur, disepakati, dan diperiksa secara mekanis **sebelum** emisi itu meninggalkan tangan asisten. Gerbang tersebut menegakkan lima belas mandat yang mencakup penemuan host, pengungkapan, sepuluh dimensi kualitas, higiene otoritas, inkorporasi keahlian, anotasi opsi, kedefinitifan, daya ungkit visual, pengikatan dua arah, perangkat sprint agile, tata letak kanonik, kerajinan kode, partisipasi sistemik, dan kesiapan produksi. Setiap mandat adalah sebuah **aturan** dengan cakupan path-filter dan isi yang mengoperasionalkan satu kelas kegagalan tertentu. Setiap kegagalan gerbang adalah temuan struktural yang dimunculkan asisten — tidak pernah degradasi yang diam-diam.
 
-Korpus rule ITULAH produknya. Biner `apothem` adalah **pengemasannya** — permukaan distribusi yang membawa korpus ke akar user-config setiap operator dan mendaftarkannya sebagai postur operasi asisten. Pengemasan dapat diganti; korpus adalah aset ekor-panjang.
+Korpus aturan ITULAH produknya. Biner `apothem` adalah **pengemasannya** — permukaan distribusi yang membawa korpus ke root user-config setiap operator dan mendaftarkannya sebagai postur operasi asisten. Pengemasan dapat diganti; korpus adalah aset jangka panjang.
 
-Sebuah proyek yang mengadopsi `apothem` tidak mengadopsi sebuah prompt. Ia mengadopsi sebuah **rezim tata kelola**. Setiap artefak yang dipancarkan asisten di repositori host — kode, test, konfigurasi, schema, dokumentasi, runbook, pesan commit, nama cabang — memenuhi lantai lima-belas-baris yang sama. Titik ungkit operator bergeser dari "apa yang harus saya katakan kepada asisten?" menjadi "mandat mana yang membatasi pancaran ini, dan bukti apa yang dituntut gerbang?". Pergeseran ini bersifat struktural, bukan gaya.
+Proyek yang mengadopsi `apothem` tidak mengadopsi sebuah prompt. Proyek itu mengadopsi sebuah **rezim tata kelola**. Setiap artefak yang dipancarkan asisten di repositori host — kode, pengujian, konfigurasi, skema, dokumentasi, runbook, pesan commit, nama branch — memenuhi lantai lima belas bar yang sama. Titik ungkit operator bergeser dari "apa yang harus saya katakan kepada asisten?" menjadi "mandat mana yang membatasi emisi ini, dan bukti apa yang dituntut gerbang?". Pergeseran ini bersifat struktural, bukan soal gaya.
 
-Dokumen ini membingkai mengapa korpus adalah aset penyangga-beban, menelusuri lima belas mandat dengan jangkar berkas-rule-nya, dan memunculkan dua disiplin lintas-sektoral (penanganan masukan saluran-kanonis dan arsitektur kreatif identitas-kognitif) yang mengikat korpus menjadi satu kesatuan yang koheren.
+Dokumen ini membingkai mengapa korpus adalah aset penopang beban, menelusuri lima belas mandat beserta jangkar berkas aturannya, dan memunculkan dua disiplin lintas-bidang (penanganan masukan saluran kanonik dan arsitektur kreatif identitas kognitif) yang mengikat korpus menjadi satu kesatuan yang koheren.
 
 ---
 
-## §2. Arsitektur tiga-pilar
+## §2. Arsitektur tiga pilar
 
-Korpus bertumpu pada tiga pilar. Setiap pilar adalah permukaan terpisah dengan spesifikasi kanonisnya sendiri; setiap pilar memperkuat dua lainnya.
+Korpus bertumpu pada tiga pilar. Setiap pilar adalah permukaan yang dapat dipisahkan dengan spesifikasi kanoniknya sendiri; setiap pilar memperkuat dua pilar lainnya.
 
 ### Pilar A — Registri mandat (M1–M15 + CM-1..CM-28)
 
-Registri mandat adalah permukaan tata kelola **sumbu-luar**. **M1–M15** mengatur setiap artefak yang dihasilkan asisten dalam proyek host: penemuan-host, pengungkapan, sepuluh dimensi kualitas, otoritas, keahlian, anotasi opsi, kedefinitifan, daya-ungkit visual, pengikatan dua-arah, sprint agile, tata letak kanonis, kerajinan kode, partisipasi sistemik, dan kesiapan-produksi. Registri dikanonisasi sebagai registri lima-belas-mandat dan dioperasionalkan oleh berkas-berkas rule yang dienumerasi di §3 di bawah.
+Registri mandat adalah permukaan tata kelola **sumbu luar**. **M1–M15** mengatur setiap artefak yang dihasilkan asisten dalam sebuah proyek host: penemuan host, pengungkapan, sepuluh dimensi kualitas, otoritas, keahlian, anotasi opsi, kedefinitifan, daya ungkit visual, pengikatan dua arah, sprint agile, tata letak kanonik, kerajinan kode, partisipasi sistemik, dan kesiapan produksi. Registri ini dikanonikkan sebagai registri lima belas mandat dan dioperasionalkan oleh berkas aturan yang dienumerasi di §3 di bawah.
 
-**CM-1..CM-28** adalah padanan **sumbu-dalam** — mandat operasional yang mengatur disiplin interaksi asisten (evaluasi kritis, nol asumsi, cari-sebelum-mengimplementasi, evaluasi solusi-terbaik, kejujuran brutal, kecepatan keputusan, fokus bottleneck-dahulu, produk koheren, dan dua puluh entri lain yang mencakup lokalitas plan, penatalayanan konteks, orkestrasi pekerjaan terdelegasi, generasi berkas-besar, dan siklus hidup memori). Sumbu-dalam dikanonisasi di rule operational-mandates dan `site/content/docs/governance/cross-cutting-mandates.mdx`.
+**CM-1..CM-28** adalah padanan **sumbu dalam** — mandat operasional yang mengatur disiplin interaksi asisten (evaluasi kritis, nol asumsi, cari sebelum mengimplementasikan, evaluasi solusi terbaik, kejujuran brutal, kecepatan keputusan, fokus bottleneck-dahulu, produk koheren, dan dua puluh entri lain yang mencakup lokalitas rencana, penatalayanan konteks, orkestrasi pekerjaan terdelegasi, pembuatan berkas besar, dan siklus hidup memori). Sumbu dalam dikanonikkan di aturan operational-mandates dan `site/content/docs/governance/cross-cutting-mandates.mdx`.
 
-Setiap pancaran melewati kedua sumbu. Gerbang di `src/apothem/rules/pre-emission-gate.md` menjalankan lima belas baris mekanis dan beralasan per pancaran dan mencatat blok verifikasi dalam jejak kerja artefak.
+Setiap emisi melewati kedua sumbu. Gerbang di `src/apothem/rules/pre-emission-gate.md` menjalankan lima belas bar mekanis dan bernalar pada setiap emisi dan mencatat blok verifikasi dalam jejak kerja artefak.
 
-### Pilar B — Disiplin saluran-kanonis
+### Pilar B — Disiplin saluran kanonik
 
-Disiplin saluran-kanonis mengikat **bagaimana asisten meminta masukan operator**. Prompt bentuk-bebas dipensiunkan secara ekosistem-luas; setiap pilihan dirutekan melalui saluran inkuiri-terstruktur dengan skema anotasi-opsi terstruktur (rasional + rekomendasi + penunjuk-default per opsi), taksonomi rekomendasi tertutup, lantai konfirmasi operasi-destruktif per-berkas, dan sapuan heuristik yang menangkap penyimpangan prompt-percakapan di setiap permukaan yang diatur. Spesifikasi lengkap berada di `src/apothem/rules/interactive-questions.md` dengan kedalaman dibawa pada pendamping path-filter `src/apothem/rules/interactive-questions-canonical-shapes.md` dan `src/apothem/rules/interactive-questions-sweep-matchers.md`.
+Disiplin saluran kanonik mengikat **cara asisten meminta masukan operator**. Prompt bentuk bebas dipensiunkan di seluruh ekosistem; setiap pilihan dirutekan melalui saluran inkuiri terstruktur dengan skema anotasi opsi yang terstruktur (rasional + rekomendasi + penunjuk default untuk setiap opsi), taksonomi rekomendasi tertutup, lantai konfirmasi operasi destruktif per berkas, dan sapuan heuristik yang menangkap penyimpangan ke prompt percakapan di setiap permukaan yang diatur. Spesifikasi lengkap berada di `src/apothem/rules/interactive-questions.md` dengan kedalaman dibawa oleh pendamping path-filter `src/apothem/rules/interactive-questions-canonical-shapes.md` dan `src/apothem/rules/interactive-questions-sweep-matchers.md`.
 
-Daya ungkit disiplin ini adalah **auditabilitas keputusan**. Setiap pilihan kehendak-operator membawa bukti yang dipertimbangkan asisten, rekomendasi yang dikeluarkan asisten, dan rasional yang ditanamkan pada pendorong konkret. Enam bulan setelah pilihan, seorang auditor yang membaca ledger pengungkapan dapat merekonstruksi batas keputusan tanpa berkonsultasi dengan memori operator.
+Daya ungkit disiplin ini adalah **auditabilitas keputusan**. Setiap pilihan yang berasal dari kehendak operator membawa bukti yang dipertimbangkan asisten, rekomendasi yang dikeluarkan asisten, dan alasan yang berlandaskan pendorong konkret. Enam bulan setelah pilihan dibuat, seorang auditor yang membaca buku besar pengungkapan dapat merekonstruksi batas keputusan tanpa merujuk pada ingatan operator.
 
-### Pilar C — Taksonomi identitas-kognitif
+### Pilar C — Taksonomi identitas kognitif
 
-Taksonomi identitas-kognitif mengikat **bagaimana asisten berpikir**. Lima filter kognitif berurutan (Pemurnian Yang-Jelas, Pengasingan Domain, Pemerasan Inversi, Ledakan Kombinatorial, Tuntutan Estetik) menyusun sebuah irama kreatif yang diterapkan pada setiap keluaran substantif. Enam teknik ideasi (Penyabot Sejarah, Paradoks Batasan, Lensa Sistem Hidup, Narasi Orde-Kedua, Bingkai Penjahat, Zoom 100-Tahun) menyala pada sinyal deteksi ketika pendekatan standar telah menghasilkan luaran yang tidak memuaskan. Tujuh sumbu keluasan (Arsitektur, Konkurensi, Performa, Keamanan, Pengujian, Perkakas, Observabilitas) membentuk permukaan kedalaman yang diuji setiap keputusan non-trivial. Spesifikasi lengkap berada di `src/apothem/rules/cognitive-identity.md` dengan kedalaman dibawa pada pendamping path-filter `src/apothem/rules/cognitive-identity-techniques.md`.
+Taksonomi identitas kognitif mengikat **cara asisten berpikir**. Lima filter kognitif berurutan (Obvious Purge, Domain Exile, Inversion Press, Combinatorial Explosion, Aesthetic Demand) membentuk irama kreatif yang diterapkan pada setiap keluaran substantif. Enam teknik ideasi (Historical Saboteur, Constraint Paradox, Living Systems Lens, Second-Order Narrative, Villain Frame, 100-Year Zoom) terpicu oleh sinyal deteksi ketika pendekatan standar telah menghasilkan hasil yang tidak memuaskan. Tujuh sumbu keluasan (Arsitektur, Konkurensi, Performa, Keamanan, Pengujian, Perkakas, Observabilitas) membentuk permukaan kedalaman yang menjadi acuan atestasi setiap keputusan yang tidak sepele. Spesifikasi lengkap berada di `src/apothem/rules/cognitive-identity.md` dengan kedalaman dibawa oleh pendamping path-filter `src/apothem/rules/cognitive-identity-techniques.md`.
 
-Daya ungkit taksonomi adalah **kebaruan struktural**. Filter Pemurnian Yang-Jelas membuang jawaban ide-pertama yang dijangkau semua orang; Pemerasan Inversi menuntut setidaknya satu asumsi terinversi bertahan ke dalam keluaran final; Tuntutan Estetik menolak bentuk yang fungsional-tetapi-terlupakan. Hasilnya adalah asisten yang menghasilkan keluaran yang membuat operator berhenti dan membaca-ulang — bukan karena prosanya dihias, tetapi karena pilihan strukturalnya non-jelas dengan cara yang, setelah dilihat, terasa tak-terhindarkan.
+Daya ungkit taksonomi ini adalah **kebaruan struktural**. Filter Obvious Purge membuang jawaban ide pertama yang diraih semua orang; Inversion Press menuntut setidaknya satu asumsi yang dibalik bertahan hingga keluaran akhir; Aesthetic Demand menolak bentuk yang fungsional tetapi mudah terlupakan. Hasilnya adalah asisten yang menghasilkan keluaran yang membuat operator berhenti dan membacanya ulang — bukan karena prosanya dihias, melainkan karena pilihan strukturalnya tidak kentara dengan cara yang, setelah terlihat, terasa tak terelakkan.
 
 ### Bagaimana pilar-pilar saling memperkuat
 
-Ketiga pilar **saling menyangga-beban**. Registri mandat (Pilar A) mendefinisikan apa yang harus dipenuhi artefak. Disiplin saluran-kanonis (Pilar B) mendefinisikan bagaimana masukan operator memasuki permukaan keputusan yang menghasilkan artefak. Taksonomi identitas-kognitif (Pilar C) mendefinisikan irama kreatif yang memberi artefak bentuknya. Menghapus satu pilar saja menjatuhkan dua lainnya: sebuah registri tanpa saluran kanonis menghasilkan artefak yang di-default diam-diam yang tampak konforman tetapi menyembunyikan keputusan struktural; sebuah saluran kanonis tanpa kedalaman kognitif menghasilkan keluaran yang dirutekan-benar tetapi berbentuk-generik; sebuah irama kognitif tanpa registri menghasilkan artefak yang estetis-elegan tetapi gagal berintegrasi dengan proyek host.
+Ketiga pilar itu **saling menopang beban**. Registri mandat (Pilar A) mendefinisikan apa yang harus dipenuhi artefak. Disiplin saluran kanonik (Pilar B) mendefinisikan bagaimana masukan operator memasuki permukaan keputusan yang menghasilkan artefak. Taksonomi identitas kognitif (Pilar C) mendefinisikan irama kreatif yang memberi bentuk pada artefak. Menghilangkan salah satu pilar meruntuhkan dua pilar lainnya: registri tanpa saluran kanonik menghasilkan artefak yang ditetapkan default secara diam-diam, tampak konforman tetapi menyembunyikan keputusan struktural; saluran kanonik tanpa kedalaman kognitif menghasilkan keluaran yang dirutekan dengan benar tetapi berbentuk generik; irama kognitif tanpa registri menghasilkan artefak yang elegan secara estetik tetapi gagal berintegrasi dengan proyek host.
 
 ---
 
 ## §3. Penelusuran registri mandat
 
-Registri lima-belas-mandat adalah permukaan tata kelola sumbu-luar kanonis. Setiap baris di bawah menamai mandat, cakupan operasionalnya, dan berkas rule yang membawa spesifikasi kanonis. Setiap berkas rule di-path-filter ke kelas artefak yang diaturnya dan dimuat sesuai permintaan ke dalam konteks operasi asisten ketika kelas-kelas tersebut disentuh.
+Registri lima belas mandat adalah permukaan tata kelola sumbu luar yang kanonik. Setiap baris di bawah menyebutkan mandat, cakupan operasionalnya, dan berkas aturan yang membawa spesifikasi kanonik. Setiap berkas aturan difilter jalur ke kelas artefak yang diaturnya dan dimuat sesuai permintaan ke dalam konteks operasi asisten ketika kelas-kelas tersebut disentuh.
 
-### M1 — Keagnostikan Proyek-Host & Penemuan Konvensi
+### M1 — Agnostisisme Proyek Host & Penemuan Konvensi
 
-**Cakupan.** Apa pun yang dihasilkan asisten dalam proyek host dibentuk oleh apa yang sudah ada pada proyek host itu — stack, bahasa, framework, toolchain, formatter, linter, kerangka test, generator dokumentasi, strategi cabang, konvensi pesan-commit, tata letak, penamaan, kebijakan penyematan-dependensi. Setiap satu **ditemukan** dari sumber-kebenaran otoritatif host (manifes, berkas lock, berkas sejenis dari jenis sebanding, dokumen konvensi tingkat-repositori) dan **dihormati**. Di mana host diam tentang konvensi yang harus diadopsi asisten, keheningan itu muncul sebagai inkuiri otoritatif — tidak pernah diselesaikan dengan diam-diam memilih default internal.
+**Cakupan.** Apa pun yang dihasilkan asisten dalam sebuah proyek host dibentuk oleh keadaan proyek host itu sendiri — stack, bahasa, framework, toolchain, formatter, linter, kerangka pengujian, generator dokumentasi, strategi branch, konvensi pesan commit, tata letak, penamaan, kebijakan pematokan dependensi. Setiap hal itu **ditemukan** dari sumber kebenaran otoritatif milik host (manifest, berkas lock, berkas sejenis dari jenis yang sebanding, dokumen konvensi tingkat repositori) dan **dihormati**. Ketika host diam mengenai konvensi yang harus diadopsi asisten, kediaman itu dimunculkan sebagai inkuiri otoritatif — tidak pernah diselesaikan dengan diam-diam memilih default internal.
 
-**Spesifikasi kanonis.** `src/apothem/rules/host-discovery.md` (dengan katalog manifes per-bahasa di `src/apothem/rules/host-discovery-manifests.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/host-discovery.md` (dengan katalog manifest per bahasa di `src/apothem/rules/host-discovery-manifests.md`).
 
-**Mengapa ini penting.** Pancaran asisten **tak-dapat-dibedakan dari yang akan ditulis kontributor lama proyek host**. Penyimpangan konvensi adalah kegagalan struktural, bukan preferensi gaya.
+**Mengapa ini penting.** Emisi asisten **tidak dapat dibedakan dari yang akan ditulis oleh kontributor lama proyek host**. Penyimpangan konvensi adalah kegagalan struktural, bukan preferensi gaya.
 
 ### M2 — Disiplin Editorial & Amandemen yang Diungkapkan
 
-**Cakupan.** Setiap perubahan bercakupan berarti membawa **ledger pengungkapan** eksplisit — apa yang diminta, apa yang diamandemen, apa yang diperluas, apa yang dipoles, apa yang ditunda. Kepatuhan-berlebih diam-diam ("melakukan persis seperti yang diminta, walaupun salah") dan jangkauan-berlebih diam-diam ("memperluas cakupan perubahan tanpa memberi tahu") keduanya kegagalan. Setiap amandemen membawa rasional pada batang ilmiah / teknis (referensi terkutip, RFC, dokumen vendor, preseden berkas-sejenis, pola bernama dari literatur).
+**Cakupan.** Setiap perubahan dengan cakupan yang berarti membawa **buku besar pengungkapan** yang eksplisit — apa yang diminta, apa yang diamandemen, apa yang diperluas, apa yang disempurnakan, apa yang ditunda. Kepatuhan berlebihan yang diam-diam ("melakukan persis seperti yang diminta, meskipun salah") dan jangkauan berlebihan yang diam-diam ("memperluas cakupan perubahan tanpa memberi tahu") keduanya adalah kegagalan. Setiap amandemen membawa alasan pada standar ilmiah / teknis (referensi yang dikutip, RFC, dokumentasi vendor, preseden berkas sejenis, pola bernama dari literatur).
 
-**Spesifikasi kanonis.** `src/apothem/rules/disclosure-ledger.md` (dengan katalog kelas-penanda di `src/apothem/rules/disclosure-ledger-markers.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/disclosure-ledger.md` (dengan katalog kelas penanda di `src/apothem/rules/disclosure-ledger-markers.md`).
 
-**Mengapa ini penting.** Sebuah diff yang diam-diam memperbaiki bug bersebelahan saat mengimplementasi perubahan yang diminta adalah amandemen yang tidak diungkapkan. Seorang reviewer enam bulan kemudian tidak dapat membedakan perbaikan yang disengaja dari penyimpangan. Ledger adalah permukaan audit-dan-pemulihan.
+**Mengapa ini penting.** Diff yang diam-diam memperbaiki bug di dekatnya saat mengimplementasikan perubahan yang diminta adalah amandemen yang tidak diungkapkan. Seorang peninjau enam bulan kemudian tidak dapat membedakan perbaikan yang disengaja dari penyimpangan. Buku besar adalah permukaan audit dan pemulihan.
 
 ### M3 — Sepuluh Dimensi Kualitas
 
-**Cakupan.** Setiap artefak dievaluasi terhadap sepuluh dimensi kualitas sebelum pancaran: ketelitian ilmiah, konsistensi / koherensi / integrasi / validitas, kemampuan-konfigurasi / nir-redundansi / konsolidasi, keterbacaan / intuisi / kebersihan, keyatiman / kebasian, strukturalitas / sistemisitas / keseragaman / komprehensivitas, arsitektur, keseragaman penamaan, referensi ilmiah / teknis, dan contoh / test / docstring / dokumentasi. Sebuah artefak tunggal yang gagal pada beberapa dimensi bersifat **multiplikatif**, bukan aditif — sebuah artefak yang basi DAN yatim DAN dinamai tidak-konsisten DAN tak-terdokumentasi adalah kandidat untuk penarikan, bukan perbaikan.
+**Cakupan.** Setiap artefak dievaluasi terhadap sepuluh dimensi kualitas sebelum emisi: ketelitian ilmiah, konsistensi / koherensi / integrasi / validitas, kemampuan dikonfigurasi / ketiadaan redundansi / konsolidasi, keterbacaan / intuisi / kebersihan, keyatiman / keusangan, strukturalitas / sistemisitas / keseragaman / kelengkapan menyeluruh, arsitektur, keseragaman penamaan, rujukan ilmiah / teknis, dan contoh / pengujian / docstring / dokumentasi. Satu artefak yang gagal pada beberapa dimensi bersifat **multiplikatif**, bukan aditif — artefak yang usang DAN yatim DAN penamaannya tidak konsisten DAN tidak terdokumentasi adalah kandidat untuk ditarik, bukan diperbaiki.
 
-**Spesifikasi kanonis.** `src/apothem/rules/ten-dimension-check.md` (dengan isi per-dimensi di `src/apothem/rules/ten-dimension-check-dimensions.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/ten-dimension-check.md` (dengan isi per dimensi di `src/apothem/rules/ten-dimension-check-dimensions.md`).
 
-**Mengapa ini penting.** Kualitas dapat diuraikan. Menamai sepuluh dimensi membuat masing-masing dapat diaudit dan dimunculkan secara terisolasi; temuan "ini tampak lemah" yang ambigu menjadi spesifik "dimensi 5 kebasian: referensi di baris 42 menunjuk berkas yang dipindahkan".
+**Mengapa ini penting.** Kualitas dapat diuraikan. Menamai kesepuluh dimensi membuat masing-masing dapat diaudit dan dimunculkan secara terpisah; temuan ambigu "ini tampak lemah" menjadi spesifik "dimensi 5 keusangan: referensi di baris 42 menunjuk ke berkas yang sudah dipindahkan".
 
-### M4 — Penerapan-Diri — Gerbang Pra-Pancaran
+### M4 — Penerapan pada Diri Sendiri — Gerbang Pra-Emisi
 
-**Cakupan.** Setiap artefak melewati **gerbang pra-pancaran lima-belas-baris** sebelum pancaran. Baris mekanis (M2, M5, M7, M8, M10, M13, M15) membawa matcher yang dapat dieksekusi di `src/apothem/conformity/*-grep.py` yang diorkestrasi oleh `src/apothem/conformity/gate.py`. Baris beralasan (M1, M3, M6, M9, M11, M12, M14) dievaluasi oleh asisten yang beroperasi dan dicatat dalam blok verifikasi. Kegagalan satu baris saja memblokir pancaran; iterasi berlanjut hingga setiap baris lulus.
+**Cakupan.** Setiap artefak melewati **gerbang pra-emisi lima belas bar** sebelum emisi. Bar mekanis (M5, M7, M8, M10, M13) membawa matcher yang dapat dieksekusi di `src/apothem/conformity/*-grep.py` yang diorkestrasi oleh `src/apothem/conformity/gate.py`. Bar M3, M12, dan M15 bersifat sebagian mekanis: matcher yang dapat dieksekusi mencakup satu bagian dari setiap bar dan asisten yang beroperasi mengevaluasi sisanya. Bar bernalar (M1, M2, M6, M9, M11, M14) dievaluasi oleh asisten yang beroperasi dan dicatat dalam blok verifikasi. Kegagalan satu bar memblokir emisi; iterasi berlanjut hingga setiap bar lulus.
 
-**Spesifikasi kanonis.** `src/apothem/rules/pre-emission-gate.md` (dengan tabel baris lengkap di `src/apothem/rules/pre-emission-gate-bars.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/pre-emission-gate.md` (dengan tabel bar lengkap di `src/apothem/rules/pre-emission-gate-bars.md`).
 
-**Mengapa ini penting.** Kualitas adalah perhatian pra-pancaran, bukan perhatian hilir "pengguna dapat merevisi". Gerbang adalah terjemahan struktural dari keyakinan itu menjadi penegakan mekanis.
+**Mengapa ini penting.** Kualitas adalah perhatian pra-emisi, bukan perhatian hilir "pengguna dapat merevisi". Gerbang adalah terjemahan struktural dari keyakinan itu ke dalam penegakan mekanis.
 
 ### M5 — Prinsip Otoritas (Bertanya, Jangan Mengarang)
 
-**Cakupan.** Nama, email, handle, hostname, organisasi, tenant, endpoint, kredensial, arah cakupan, pilihan penamaan yang belum diselesaikan host, kebijakan retensi, penyematan versi pada permukaan host-mutabel, keputusan infrastruktur yang belum dideklarasikan pengguna — **tidak ada** yang dikarang. Masing-masing entah ditemukan dari sumber kebenaran otoritatif dalam host (paruh penemuan M1) atau ditanyakan kepada pengguna (paruh inkuiri M5) — tidak pernah ditambal dengan tebakan yang tampak masuk akal.
+**Cakupan.** Nama, email, handle, hostname, organisasi, tenant, endpoint, kredensial, arah cakupan, pilihan penamaan yang belum ditetapkan host, kebijakan retensi, pematokan versi pada permukaan yang dapat diubah host, keputusan infrastruktur yang belum dideklarasikan pengguna — **tidak satu pun** dikarang. Masing-masing entah ditemukan dari sumber kebenaran otoritatif di dalam host (separuh penemuan M1) atau ditanyakan kepada pengguna (separuh inkuiri M5) — tidak pernah ditutupi dengan tebakan yang tampak masuk akal.
 
-**Spesifikasi kanonis.** `src/apothem/rules/authority-inquiry.md` (dengan katalog tujuh-kategori di `src/apothem/rules/authority-inquiry-categories.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/authority-inquiry.md` (dengan katalog tujuh kategori di `src/apothem/rules/authority-inquiry-categories.md`).
 
-**Mengapa ini penting.** Identitas, keamanan, arah-cakupan, dan penamaan permukaan-publik membawa bobot hukum dan audit. Sebuah alamat kontak yang ditebak, handle `CODEOWNERS` yang dibuat-buat, atau endpoint penandatanganan-rilis yang dikarang menciptakan pembersihan hilir yang biayanya berlipat ganda dibanding biaya inkuiri.
+**Mengapa ini penting.** Identitas, keamanan, arah cakupan, dan penamaan permukaan publik membawa bobot hukum dan audit. Alamat kontak yang ditebak, handle `CODEOWNERS` yang dikarang, atau endpoint penandatanganan rilis yang direka-reka menimbulkan pembersihan di hilir yang biayanya beberapa orde besaran lebih tinggi daripada biaya inkuiri.
 
 ### M6 — Inkorporasi Keahlian
 
-**Cakupan.** Setiap artefak bercakupan berarti membaca niat pengguna sebelum teks harfiah, mengamandemen secara proaktif ketika permintaan harfiah akan meninggalkan cacat yang diketahui, memperluas pada celah bersebelahan, memoles dengan rasional terkutip, mengantisipasi konsekuensi orde-kedua, mengkalibrasi kedalaman terhadap tugas, dan mengimpor pelajaran dari domain bersebelahan — mengungkapkan setiap amandemen melalui ledger M2.
+**Cakupan.** Setiap artefak dengan cakupan yang berarti membaca maksud pengguna sebelum teks harfiah, mengamandemen secara proaktif ketika permintaan harfiah akan meninggalkan cacat yang diketahui, memperluas pada celah di dekatnya, menyempurnakan dengan alasan yang dikutip, mengantisipasi konsekuensi orde kedua, mengalibrasi kedalaman sesuai tugas, dan mengimpor pelajaran dari domain yang berdekatan — mengungkapkan setiap amandemen melalui buku besar M2.
 
-**Spesifikasi kanonis.** `src/apothem/rules/expertise-posture.md` (dengan tujuh sub-elemen + tangga kalibrasi di `src/apothem/rules/expertise-posture-elements.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/expertise-posture.md` (dengan tujuh sub-elemen + tangga kalibrasi di `src/apothem/rules/expertise-posture-elements.md`).
 
-**Mengapa ini penting.** Keahlian tanpa pengungkapan adalah penimpaan diam-diam. Keahlian dengan pengungkapan adalah daya ungkit — operator melihat amandemen, mengevaluasi rasional, dan entah meratifikasi atau membalikkan. Asisten bertindak sebagai kontributor senior yang penilaiannya dapat diaudit, bukan sebagai pengganti opak bagi niat operator.
+**Mengapa ini penting.** Keahlian tanpa pengungkapan adalah penimpaan yang diam-diam. Keahlian dengan pengungkapan adalah daya ungkit — operator melihat amandemen, mengevaluasi alasannya, lalu meratifikasi atau membatalkannya. Asisten bertindak sebagai kontributor senior yang penilaiannya dapat diaudit, bukan sebagai pengganti buram bagi maksud operator.
 
-### M7 — Disiplin Anotasi-Opsi
+### M7 — Disiplin Anotasi Opsi
 
-**Cakupan.** Setiap pilihan multi-opsi yang dimunculkan asisten — dalam respons prosa, ADR, bagian README, deskripsi PR, dokumen desain, langkah runbook, komentar kode, badan pesan-commit, RFC — membawa penanda direkomendasikan kanonis pada opsi yang direkomendasikan plus rasional yang ditautkan-prinsip. Pemilihan diam-diam dan daftar opsi tak-teranotasi dilarang di wilayah otoritatif.
+**Cakupan.** Setiap pilihan multi-opsi yang dimunculkan asisten — dalam respons prosa, ADR, bagian README, deskripsi PR, dokumen desain, langkah runbook, komentar kode, isi pesan commit, RFC — membawa penanda direkomendasikan yang kanonik pada opsi yang direkomendasikan beserta alasan yang terkait prinsip. Pemilihan diam-diam dan daftar opsi tanpa anotasi dilarang di wilayah otoritatif.
 
-**Spesifikasi kanonis.** `src/apothem/rules/option-annotation.md` (dengan bentuk prosa-dan-dokumen di `src/apothem/rules/option-annotation-form.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/option-annotation.md` (dengan bentuk prosa dan dokumen di `src/apothem/rules/option-annotation-form.md`).
 
-**Mengapa ini penting.** Setiap kumpulan opsi yang diotori adalah permukaan audit. Pembaca melihat bukan hanya pilihan tetapi ruang alternatif, rekomendasi, dan pendorong konkret di baliknya. Disiplin yang sama mengikat invokasi inkuiri-terstruktur asisten dan prosa yang diotori ke dalam artefak permanen.
+**Mengapa ini penting.** Setiap kumpulan opsi yang ditulis adalah permukaan audit. Pembaca melihat bukan hanya pilihannya, tetapi juga ruang alternatif, rekomendasi, dan pendorong konkret di baliknya. Disiplin yang sama mengikat invokasi inkuiri terstruktur milik asisten dan prosa yang ditulis ke dalam artefak permanen.
 
-### M8 — Kedefinitifan, Kekedapan, dan Keluarga Kebajikan Sistem-Rigor
+### M8 — Kedefinitifan, Kekedapan, dan Keluarga Kebajikan Sistem yang Ketat
 
-**Cakupan.** Setiap pernyataan bersifat definitif (tanpa lindung-nilai di mana preskripsi mengikat mungkin) dan kedap (tanpa celah dalam domain yang dideklarasikan, tanpa celah-aturan di mana penghormatan-harfiah melanggar niat, tanpa asumsi tak-tertulis, tanpa pengikatan presedensi, tanpa fallback diam-diam). Daftar kosakata lindung-nilai dideteksi secara mekanis di gerbang; setiap kemunculan dalam prosa preskriptif diselesaikan pada salah satu dari tiga jalur — dipromosikan menjadi tak-bersyarat dengan kondisi disebutkan, diturunkan menjadi bersyarat eksplisit dengan cabang dienumerasi, atau dihapus dan pilihan dirutekan ke permukaan inkuiri.
+**Cakupan.** Setiap pernyataan bersifat definitif (tanpa hedging di mana preskripsi yang mengikat dimungkinkan) dan kedap (tanpa celah dalam domain yang dideklarasikan, tanpa celah aturan di mana penghormatan harfiah melanggar maksud, tanpa asumsi yang tidak dinyatakan, tanpa hasil imbang presedensi, tanpa fallback yang diam-diam). Daftar kosakata hedging dideteksi secara mekanis di gerbang; setiap kemunculannya dalam prosa preskriptif diselesaikan melalui salah satu dari tiga jalur — dipromosikan menjadi tidak bersyarat dengan kondisi yang disebutkan, diturunkan menjadi bersyarat eksplisit dengan cabang yang dienumerasi, atau dihapus dan pilihannya dirutekan ke permukaan inkuiri.
 
-**Spesifikasi kanonis.** `src/apothem/rules/definitiveness.md` (dengan katalog tujuh-kebajikan di `src/apothem/rules/definitiveness-virtues.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/definitiveness.md` (dengan katalog tujuh kebajikan di `src/apothem/rules/definitiveness-virtues.md`).
 
-**Mengapa ini penting.** Prosa preskriptif yang dilindung-nilai adalah pajak bagi setiap pembaca. Pembaca tidak dapat membedakan apakah lindung-nilai mengakui kondisional nyata atau menandakan ketidakpastian penulis. Disiplin memaksa penulis menyebut kondisi atau menghapus preskripsi — pembaca mendapat pernyataan yang mengikat dengan cara apa pun.
+**Mengapa ini penting.** Prosa preskriptif yang penuh hedging menjadi beban bagi setiap pembaca. Pembaca tidak dapat membedakan apakah hedge itu mengakui kondisional yang nyata atau menandakan ketidakpastian penulis. Disiplin ini memaksa penulis menyebutkan kondisinya atau menghapus preskripsinya — pembaca memperoleh pernyataan yang mengikat dengan cara mana pun.
 
-### M9 — Daya-Ungkit Visual
+### M9 — Daya Ungkit Visual
 
-**Cakupan.** Di mana subjek bersifat struktural — arsitektur, alur kendali, alur data, graf dependensi, mesin keadaan, sekuens, pohon keputusan, hierarki, tumpukan presedensi, siklus hidup, matriks izin — artefak membawa **diagram** bersama prosa. Mermaid adalah default yang direkomendasikan untuk korpus berpusat-Markdown; notasi yang sudah ada pada host dihormati sesuai penemuan M1. Setiap diagram membawa provenans, tanggal verifikasi, dan ikatan kembali ke artefak yang diabstraksinya.
+**Cakupan.** Ketika pokok bahasannya bersifat struktural — arsitektur, alur kendali, alur data, graf dependensi, mesin keadaan, urutan, pohon keputusan, hierarki, tumpukan presedensi, siklus hidup, matriks izin — artefak membawa **diagram** di samping prosa. Mermaid adalah default yang direkomendasikan untuk korpus yang berpusat pada Markdown; notasi yang sudah ada di host dihormati sesuai penemuan M1. Setiap diagram membawa provenance, tanggal verifikasi, dan ikatan kembali ke artefak yang diabstraksikannya.
 
-**Spesifikasi kanonis.** `src/apothem/rules/visual-leverage.md`.
+**Spesifikasi kanonik.** `src/apothem/rules/visual-leverage.md`.
 
-**Mengapa ini penting.** Sebuah deskripsi arsitektur dua-ribu-kata tanpa diagram adalah **kurang-pemanfaatan sistematis** medium dan kegagalan struktural artefak, bukan preferensi gaya. Hubungan spasial tak-terbaca dalam prosa linear; diagram adalah keluaran kelas-satu setara, bukan dekorasi.
+**Mengapa ini penting.** Deskripsi arsitektur dua ribu kata tanpa diagram adalah **pemanfaatan medium yang kurang secara sistematis** dan kegagalan struktural artefak, bukan preferensi gaya. Hubungan spasial tidak terbaca dalam prosa linear; diagram adalah keluaran kelas satu yang setara, bukan dekorasi.
 
-### M10 — Pengikatan Dua-Arah & Penjalinan Eksekusi-Fase
+### M10 — Pengikatan Dua Arah & Penjalinan Eksekusi Fase
 
-**Cakupan.** Setiap elemen struktural substantif membawa pengikatan timbal-balik ke rekan-rekannya dalam notasi lima-arah kanonis: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Setiap ikatan yang dideklarasikan dalam satu arah memiliki penunjuk-balik timbal-balik di ujung lainnya; setengah-sisi adalah kegagalan struktural, bukan preferensi estetik. Sebuah reciprocity-grep mekanis di `src/apothem/conformity/binding_reciprocity_grep.py` menegakkan invarian di gerbang.
+**Cakupan.** Setiap elemen struktural yang substantif membawa ikatan timbal balik ke sejawatnya dalam notasi lima arah yang kanonik: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Setiap ikatan yang dideklarasikan dalam satu arah memiliki penunjuk balik timbal balik di ujung lainnya; setengah sisi adalah kegagalan struktural, bukan preferensi estetika. Sebuah reciprocity-grep mekanis di `src/apothem/conformity/binding_reciprocity_grep.py` menegakkan invarian itu di gerbang.
 
-**Spesifikasi kanonis.** `src/apothem/rules/bidirectional-binding.md`.
+**Spesifikasi kanonik.** `src/apothem/rules/bidirectional-binding.md`.
 
-**Mengapa ini penting.** Pengikatan timbal-balik mengubah korpus menjadi graf yang dapat dinavigasi. Baris `Cross-bound with ↔` rule mana pun menunjuk ke setiap rekan yang mengutipnya, dan setiap rekan terkutip menunjuk balik. Pemfaktoran-ulang korpus menjadi mekanis — ganti nama sebuah rule, reciprocity-grep menandai setiap kutipan basi dalam set-perubahan yang sama.
+**Mengapa ini penting.** Ikatan timbal balik mengubah korpus menjadi graf yang dapat dinavigasi. Baris `Cross-bound with ↔` milik aturan mana pun menunjuk ke setiap sejawat yang mengutipnya, dan setiap sejawat yang dikutip menunjuk balik. Refaktor korpus menjadi mekanis — ganti nama sebuah aturan, reciprocity-grep menandai setiap kutipan usang dalam change-set yang sama.
 
-### M11 — Sprint Agile & Kontrol Proses Empiris
+### M11 — Sprint Agile & Kendali Proses Empiris
 
-**Cakupan.** Pekerjaan multi-langkah non-trivial berjalan sebagai sprint Agile yang berdisiplin dengan tujuh elemen kanonis: Sprint Goal (berbentuk-luaran, dapat-diuji), Sprint Backlog (berbentuk-INVEST, diprioritaskan), Definition of Ready (gerbang masuk-sprint), Definition of Done (gerbang keluar-sprint), Sprint Review (disetujui / ditolak / dibawa-maju per item), Sprint Retrospective (lanjutkan / hentikan / mulai), Velocity Tracking (sinyal, tidak pernah target). Tiga pilar kontrol proses empiris — transparansi, inspeksi, adaptasi — beroperasi sepanjang waktu.
+**Cakupan.** Pekerjaan multi-langkah yang tidak sepele dijalankan sebagai sprint Agile yang disiplin dengan tujuh elemen kanonik: Sprint Goal (berbentuk luaran, dapat diuji), Sprint Backlog (berbentuk INVEST, diprioritaskan), Definition of Ready (gerbang masuk sprint), Definition of Done (gerbang keluar sprint), Sprint Review (disetujui / ditolak / dibawa ke sprint berikutnya per item), Sprint Retrospective (lanjutkan / hentikan / mulai), Velocity Tracking (sinyal, tidak pernah target). Tiga pilar kendali proses empiris — transparansi, inspeksi, adaptasi — beroperasi sepanjang proses.
 
-**Spesifikasi kanonis.** `src/apothem/rules/agile-sprints.md` (dengan isi elemen di `src/apothem/rules/agile-sprints-elements.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/agile-sprints.md` (dengan isi elemen di `src/apothem/rules/agile-sprints-elements.md`).
 
-**Mengapa ini penting.** Sebuah diff multi-hari yang besar tanpa struktur sprint bersifat opak bagi review. Peranti memunculkan setiap inkremen, setiap kriteria penerimaan, setiap penolakan pada saat ia terjadi — tidak ditunda ke retrospektif lama setelah keputusan struktural tak-dapat-dibalik.
+**Mengapa ini penting.** Diff besar yang mencakup banyak hari tanpa struktur sprint buram bagi peninjauan. Perangkat ini memunculkan setiap inkremen, setiap kriteria penerimaan, setiap penolakan pada saat hal itu terjadi — tidak ditunda ke retrospektif lama setelah keputusan struktural tidak dapat dibalikkan.
 
-### M12 — Tingkatan Pelaporan & Tata Letak Kanonis Keluaran Tergenerasi
+### M12 — Tingkatan Pelaporan & Tata Letak Kanonik Keluaran yang Dihasilkan
 
-**Cakupan.** Pekerjaan multi-langkah non-trivial memancarkan pelaporan dua-tingkat: laporan per-sub-fase pada tingkat kerja dan rollup tingkat-fase pada tingkat tinjauan yang mengagregasi alih-alih menyambung — template seragam lintas sub-fase, metrik teragregasi, pola yang dimunculkan, swa-periksa tingkat-fase, deklarasi keluar. Keluaran tergenerasi berada di lokasi kanonis yang dapat-diprediksi, ditemukan-host dengan provenans dan rujuk-silang timbal-balik. **Keluaran yatim** (artefak tanpa konsumen / tanpa entri indeks / tanpa atribusi produsen) adalah kegagalan struktural.
+**Cakupan.** Pekerjaan multi-langkah yang tidak sepele menghasilkan pelaporan dua tingkat: laporan per sub-fase pada tingkat kerja dan rangkuman tingkat fase pada tingkat peninjauan yang mengagregasi, bukan menyambung — templat seragam di seluruh sub-fase, metrik teragregasi, pola yang dimunculkan, pemeriksaan mandiri tingkat fase, deklarasi ke luar. Keluaran yang dihasilkan berada di lokasi kanonik yang dapat diprediksi dan ditemukan dari host, dengan provenance dan rujuk silang timbal balik. **Keluaran yatim** (artefak tanpa konsumen / tanpa entri indeks / tanpa atribusi produsen) adalah kegagalan struktural.
 
-**Spesifikasi kanonis.** `src/apothem/rules/canonical-layout.md` (dengan isi tingkatan-pelaporan di `src/apothem/rules/canonical-layout-reporting-tiers.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/canonical-layout.md` (dengan isi tingkatan pelaporan di `src/apothem/rules/canonical-layout-reporting-tiers.md`).
 
-**Mengapa ini penting.** Sebuah daftar datar `report1.md` / `report2.md` di lokasi ad-hoc tak-terbaca enam minggu kemudian. Disiplin dua-tingkat plus tata letak kanonis-host berarti setiap keluaran dapat ditemukan, setiap konsumen dinamai, setiap produsen dapat diatribusikan.
+**Mengapa ini penting.** Daftar datar `report1.md` / `report2.md` di lokasi ad-hoc tidak terbaca enam minggu kemudian. Disiplin dua tingkat ditambah tata letak kanonik host berarti setiap keluaran dapat ditemukan, setiap konsumen disebutkan namanya, setiap produsen dapat diatribusikan.
 
 ### M13 — Konvensi Kerajinan Kode
 
-**Cakupan.** Setiap artefak kode memenuhi sebelas sub-elemen: pengomentaran mengapa-bukan-apa, penamaan yang mengungkap-niat, penanganan eksepsi-spesifik, desain fungsi dan modul dengan bias tanggung-jawab-tunggal, level logging yang disengaja, pengujian deskriptif-perilaku, formatter / linter / type-checker lulus bersih, kode sadar-keamanan (tanpa rahasia hardcoded, tanpa injeksi shell, tanpa deserialisasi tak-aman), disiplin konkurensi, eliminasi konstanta-bernama atas literal numerik tak-terjelaskan, dan cakupan permukaan dokumentasi. Rule sejenis per-bahasa membawa materialisasi spesifik-bahasa.
+**Cakupan.** Setiap artefak kode memenuhi sebelas sub-elemen: komentar yang menjelaskan mengapa, bukan apa; penamaan yang mengungkapkan maksud; penanganan eksepsi yang spesifik; desain fungsi dan modul dengan kecenderungan tanggung jawab tunggal; level logging yang disengaja; pengujian yang mendeskripsikan perilaku; formatter / linter / type-checker lulus tanpa temuan; kode yang sadar keamanan (tanpa rahasia yang di-hardcode, tanpa injeksi shell, tanpa deserialisasi yang tidak aman); disiplin konkurensi; penghapusan literal numerik yang tidak dijelaskan dengan konstanta bernama; dan cakupan permukaan dokumentasi. Aturan sejenis per bahasa membawa materialisasi yang spesifik untuk bahasa.
 
-**Spesifikasi kanonis.** `src/apothem/rules/code-craft-conventions.md` (stub delegasi-universal) plus rule sejenis per-bahasa `src/apothem/rules/code-craft-python.md`, `src/apothem/rules/code-craft-shell.md`, dan `src/apothem/rules/code-craft-markdown.md`.
+**Spesifikasi kanonik.** `src/apothem/rules/code-craft-conventions.md` (stub delegasi universal) beserta aturan sejenis per bahasa `src/apothem/rules/code-craft-python.md`, `src/apothem/rules/code-craft-shell.md`, dan `src/apothem/rules/code-craft-markdown.md`.
 
-**Mengapa ini penting.** Penyimpangan kerajinan-kode berlipat ganda. Sebuah penangan eksepsi telanjang tunggal menjadi preseden yang dikutip kontributor berikutnya; satu rahasia hardcoded menjadi konvensi yang diterima tim; satu literal tak-terjelaskan menjadi selusin. Sebelas sub-elemen menamai kelas kegagalan dan gerbang menegakkannya per pancaran.
+**Mengapa ini penting.** Penyimpangan kerajinan kode terakumulasi. Satu penangan eksepsi telanjang menjadi preseden yang dikutip kontributor berikutnya; satu rahasia yang di-hardcode menjadi konvensi yang diterima tim; satu literal yang tidak dijelaskan menjadi selusin. Kesebelas sub-elemen itu menamai kelas kegagalan dan gerbang menegakkannya pada setiap emisi.
 
 ### M14 — Sistemisitas Ekosistem dalam Proyek Host
 
-**Cakupan.** Setiap komponen yang baru diperkenalkan mendeklarasikan empat relasi sistemik — **upstream** (apa yang memicunya), **downstream** (apa yang mengonsumsinya), **peers** (saudara dari jenis yang sama), **enforcers** (gerbang kualitas host yang mengaturnya) — dan menyatu dengan konvensi rekan dalam set-perubahan yang sama. Silo (artefak swa-tertutup yang menyimpang dari konvensi saudara, duplikat-dari-fungsionalitas-yang-ada) dan yatim (komponen tanpa konsumen / tanpa entri indeks / tanpa atribusi produsen) adalah kegagalan struktural.
+**Cakupan.** Setiap komponen yang baru diperkenalkan mendeklarasikan empat relasi sistemik — **upstream** (apa yang memicunya), **downstream** (apa yang mengonsumsinya), **peers** (saudara dari jenis yang sama), **enforcers** (gerbang kualitas host yang mengaturnya) — dan menyelaraskan diri dengan konvensi sejawat dalam change-set yang sama. Silo (artefak mandiri yang menyimpang dari konvensi sejawatnya, duplikat dari fungsionalitas yang sudah ada) dan yatim (komponen tanpa konsumen / tanpa entri indeks / tanpa atribusi produsen) adalah kegagalan struktural.
 
-**Spesifikasi kanonis.** `src/apothem/rules/systemic-participation.md` (dengan kedalaman operasional di `src/apothem/rules/systemic-participation-relations.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/systemic-participation.md` (dengan kedalaman operasional di `src/apothem/rules/systemic-participation-relations.md`).
 
-**Mengapa ini penting.** Sebuah test, doc, workflow, modul, atau entri konfigurasi baru yang tidak mendeklarasikan tempatnya dalam graf rujukan host tak-terlihat oleh pemeliharaan. Deklarasi empat-relasi plus pembaruan registri set-perubahan-sama berarti setiap komponen dapat ditemukan dan dapat dilepas dari commit pertamanya.
+**Mengapa ini penting.** Pengujian, dokumen, alur kerja, modul, atau entri konfigurasi baru yang tidak mendeklarasikan tempatnya dalam graf rujukan host tidak terlihat oleh pemeliharaan. Deklarasi empat relasi ditambah pembaruan registri dalam change-set yang sama berarti setiap komponen dapat ditemukan dan dapat diurai kembali sejak commit pertamanya.
 
-### M15 — Disiplin Siap-Produksi pada Artefak Proyek-Host
+### M15 — Disiplin Siap Produksi pada Artefak Proyek Host
 
-**Cakupan.** Setiap perubahan dikirim dalam bentuk siap-produksi: test + dokumentasi + entri CHANGELOG + pesan commit konforman + CI hijau dalam set-perubahan yang sama. Postur rantai-pasok dipertahankan (tanpa dependensi tak-tersemat, tanpa literal rahasia, tanpa eskalasi izin, tanpa action tak-tersemat, tanpa rilis tak-bertanda-tangan di mana penandatanganan diperlukan). Invarian rekayasa-rilis dipertahankan (versi dihormati, konsistensi tag-ke-versi, penandatanganan tag di mana diperlukan). Permukaan proyek modern terisi (skrip instal / pembaruan / uninstal multi-OS berpasangan, aset logo, header README terpusat modern, bagian instal / pembaruan / uninstal). Metadata kepengarangan setiap commit menamai **hanya kontributor manusia** — asisten tidak pernah mengatribusikan dirinya atau model bahasa yang mendasarinya ke commit, trailer, cabang, tag, atau field pull-request mana pun.
+**Cakupan.** Setiap perubahan dikirimkan dalam bentuk siap produksi: pengujian + dokumentasi + entri CHANGELOG + pesan commit yang konforman + CI hijau dalam change-set yang sama. Postur rantai pasok dipertahankan (tanpa dependensi yang tidak dipatok, tanpa literal rahasia, tanpa eskalasi izin, tanpa action yang tidak dipatok, tanpa rilis yang tidak ditandatangani di mana penandatanganan diwajibkan). Invarian rekayasa rilis dipertahankan (versioning dihormati, konsistensi tag ke versi, penandatanganan tag di mana diwajibkan). Permukaan proyek modern terisi (skrip instal / pembaruan / uninstal multi-OS yang berpasangan, aset logo, header README modern yang terpusat, bagian instal / pembaruan / uninstal). Metadata kepengarangan setiap commit menyebutkan **hanya kontributor manusia** — asisten tidak pernah mengatribusikan dirinya atau model bahasa yang mendasarinya ke commit, trailer, branch, tag, atau field pull request mana pun.
 
-**Spesifikasi kanonis.** `src/apothem/rules/production-ready-prs.md` (dengan permukaan visibilitas dan spesifikasi permukaan-modern di `src/apothem/rules/production-ready-prs-surfaces.md`).
+**Spesifikasi kanonik.** `src/apothem/rules/production-ready-prs.md` (dengan permukaan visibilitas dan spesifikasi permukaan modern di `src/apothem/rules/production-ready-prs-surfaces.md`).
 
-**Mengapa ini penting.** "Saya akan menambahkan test dalam tindak-lanjut" tidak pernah mendarat. Disiplin set-perubahan-sama menutup mode kegagalan yang menghasilkan biaya kumulatif terbesar dalam proyek jangka-panjang: pekerjaan kualitas tertunda yang berlipat ganda menjadi utang teknis sistemik.
+**Mengapa ini penting.** "Saya akan menambahkan pengujian di tindak lanjut" tidak pernah terwujud. Disiplin change-set yang sama menutup mode kegagalan yang menghasilkan biaya kumulatif terbesar pada proyek yang berjalan lama: pekerjaan kualitas yang ditunda dan menumpuk menjadi utang teknis sistemik.
 
 ---
 
-## §4. Disiplin saluran-kanonis
+## §4. Disiplin saluran kanonik
 
-Disiplin saluran-kanonis adalah **padanan sisi-masukan** terhadap penegakan sisi-pancaran registri mandat. Setiap pilihan yang dimunculkan asisten kepada operator dirutekan melalui saluran inkuiri-terstruktur. Prompt percakapan bentuk-bebas sebagai masukan utama dilarang; disiplin ini ditegakkan di gerbang oleh tujuh matcher heuristik (H1–H7) yang menyapu setiap permukaan yang diatur dan menandai penyimpangan sebagai temuan gerbang.
+Disiplin saluran kanonik adalah **padanan sisi masukan** bagi penegakan sisi emisi pada registri mandat. Setiap pilihan yang dimunculkan asisten kepada operator dirutekan melalui saluran inkuiri terstruktur. Prompt percakapan bentuk bebas sebagai masukan utama dilarang; disiplin ini ditegakkan di gerbang oleh tujuh matcher heuristik (H1–H7) yang menyapu setiap permukaan yang diatur dan menandai penyimpangan sebagai temuan gerbang.
 
-Spesifikasi kanonis berada di `src/apothem/rules/interactive-questions.md`. Rule pendamping membawa kedalaman: `src/apothem/rules/interactive-questions-canonical-shapes.md` membawa contoh-contoh yang dikerjakan, isi skema, taksonomi rekomendasi, fallback harness, kumpulan opsi kanonis operasi-destruktif, dan contoh penunjuk-default yang dikerjakan; `src/apothem/rules/interactive-questions-sweep-matchers.md` membawa katalog matcher H1–H7 dengan invokasi ripgrep yang dapat direproduksi.
+Spesifikasi kanonik berada di `src/apothem/rules/interactive-questions.md`. Aturan pendamping membawa kedalaman: `src/apothem/rules/interactive-questions-canonical-shapes.md` membawa contoh beserta penyelesaiannya, isi skema, taksonomi rekomendasi, fallback harness, kumpulan opsi kanonik untuk operasi destruktif, dan contoh default-pointer beserta penyelesaiannya; `src/apothem/rules/interactive-questions-sweep-matchers.md` membawa katalog matcher H1–H7 dengan invokasi ripgrep yang dapat direproduksi.
 
 ### Bentuk pertanyaan terstruktur
 
-Setiap invokasi membawa empat field: sebuah `question` satu-kalimat yang berakhir dengan tanda tanya, sebuah `header` pendek (maksimal dua belas karakter), sebuah array `options` dua-sampai-empat-elemen, dan sebuah boolean `multiSelect`. Setiap opsi membawa `label` satu-sampai-lima-kata dan badan `description` dengan tiga segmen urutan-tetap:
+Setiap invokasi membawa empat field: sebuah `question` satu kalimat yang diakhiri tanda tanya, sebuah `header` pendek (maksimal dua belas karakter), sebuah array `options` berisi dua sampai empat elemen, dan sebuah boolean `multiSelect`. Setiap opsi membawa sebuah `label` berisi satu sampai lima kata dan isi `description` dengan tiga segmen berurutan tetap:
 
-1. **rationale** — satu kalimat yang menyatakan apa arti opsi ini dan konsekuensi langsung yang dapat diamati pada keadaan ekosistem.
-2. **recommendation** — satu nilai dari taksonomi tertutup: recommended, acceptable, discouraged, atau destructive-no-default. Nilai non-netral membawa klausa-mengapa yang mengutip setidaknya satu **pendorong konkret** dari taksonomi enam-kelas tertutup: keputusan terkunci, risiko bernama, batasan bernama, postur pertanyaan-terbuka, kutipan rule, dan keadaan ekosistem teramati. Daftar larangan rasional-kabur bersifat tidak-konforman ketika berdiri sebagai satu-satunya justifikasi untuk rekomendasi non-netral.
-3. **default-pointer** — menamai default aman dengan rasional, ATAU secara eksplisit mendeklarasikan `no-default: user decision required`. Operasi destruktif secara universal menggunakan bentuk no-default.
+1. **rationale** — satu kalimat yang menyatakan arti opsi ini dan konsekuensinya yang langsung dan dapat diamati terhadap keadaan ekosistem.
+2. **recommendation** — satu nilai dari taksonomi tertutup: recommended, acceptable, discouraged, atau destructive-no-default. Nilai non-netral membawa klausa alasan yang mengutip setidaknya satu **pendorong konkret** dari taksonomi tertutup berisi enam kelas: keputusan terkunci, risiko bernama, kendala bernama, postur pertanyaan terbuka, kutipan aturan, dan keadaan ekosistem yang teramati. Daftar larangan alasan yang kabur tidak konforman ketika berdiri sebagai satu-satunya pembenaran bagi rekomendasi non-netral.
+3. **default-pointer** — menyebutkan default yang aman beserta alasannya, ATAU secara eksplisit mendeklarasikan `no-default: user decision required`. Operasi destruktif selalu menggunakan bentuk tanpa default.
 
-Tepat satu opsi per invokasi boleh membawa postfix-label penanda-direkomendasikan, terikat dua-arah ke nilai recommendation badan. Ketidakcocokan antara postfix label dan nilai badan dideteksi oleh matcher H6 sebagai temuan gerbang.
+Tepat satu opsi per invokasi boleh membawa postfix label penanda direkomendasikan, yang terikat dua arah ke nilai recommendation pada isi. Ketidakcocokan antara postfix label dan nilai pada isi dideteksi oleh matcher H6 sebagai temuan gerbang.
 
-### Konfirmasi operasi-destruktif per-berkas
+### Konfirmasi operasi destruktif per berkas
 
-Setiap operasi destruktif — hapus, ganti-nama, pindah, timpa-tanpa-retensi, balikkan-modifikasi-tak-ter-commit — dirutekan melalui saluran inkuiri-terstruktur secara per-berkas. Satu invokasi per berkas, setiap kali. `multiSelect: true` bersifat tidak-konforman pada invokasi operasi-destruktif; kumpulan opsi kanonis di subbagian operasi-destruktif adalah lantai. Kelelahan konfirmasi adalah biaya yang diterima; penghancuran diam-diam tidak.
+Setiap operasi destruktif — hapus, ganti nama, pindahkan, timpa tanpa retensi, batalkan modifikasi yang belum di-commit — dirutekan melalui saluran inkuiri terstruktur secara per berkas. Satu invokasi per berkas, setiap kali. `multiSelect: true` tidak konforman pada invokasi operasi destruktif; kumpulan opsi kanonik pada subbagian operasi destruktif adalah lantainya. Kelelahan konfirmasi adalah biaya yang diterima; penghancuran diam-diam bukan.
 
-### Sapuan heuristik — H1 hingga H7
+### Sapuan heuristik — H1 sampai H7
 
-Tujuh matcher mekanis menyapu permukaan inti-yang-diatur (command, rule, skill, definisi pekerja-terdelegasi, hook, berkas konfigurasi harness, dan `CLAUDE.md`) untuk dua kelas kegagalan:
+Tujuh matcher mekanis menyapu permukaan inti yang diatur (command, aturan, skill, definisi pekerja terdelegasi, hook, berkas konfigurasi harness, dan `CLAUDE.md`) untuk dua kelas kegagalan:
 
-- **Heuristik bentuk-percakapan (H1–H3).** H1 menangkap prompt imperatif-plus-tanda-tanya. H2 menangkap "Please confirm / approve / choose". H3 menangkap "Which of the following / these". Hitungan-hit setiap matcher dibandingkan dengan hitungan zona-pengecualian yang terdokumentasi (kutipan-diri definisional dan konteks percakapan-terpelihara); penyimpangan adalah temuan gerbang.
-- **Heuristik kepatuhan-anotasi (H4–H7).** H4 menangkap opsi yang kehilangan salah satu dari tiga segmen badan. H5 menangkap rekomendasi non-netral yang kehilangan kutipan pendorong-konkret. H6 menangkap ketidakcocokan postfix-label versus nilai-badan. H7 menangkap invokasi operasi-destruktif yang kehilangan lantai no-default verbatim.
+- **Heuristik bentuk percakapan (H1–H3).** H1 menangkap prompt berbentuk imperatif ditambah tanda tanya. H2 menangkap "Please confirm / approve / choose". H3 menangkap "Which of the following / these". Jumlah temuan setiap matcher dibandingkan dengan jumlah zona pengecualian yang terdokumentasi (kutipan diri yang bersifat definisional dan konteks percakapan yang dipertahankan); penyimpangan adalah temuan gerbang.
+- **Heuristik kepatuhan anotasi (H4–H7).** H4 menangkap opsi yang kehilangan salah satu dari tiga segmen isi. H5 menangkap rekomendasi non-netral yang kehilangan kutipan pendorong konkret. H6 menangkap ketidakcocokan antara postfix label dan nilai isi. H7 menangkap invokasi operasi destruktif yang kehilangan lantai no-default secara verbatim.
 
-Sapuan dapat direproduksi — setiap matcher membawa invokasi ripgrep yang dapat dijalankan operator mana pun terhadap korpus. Disiplin ini mekanis, bukan interpretatif.
+Sapuan ini dapat direproduksi — setiap matcher membawa invokasi ripgrep yang dapat dijalankan operator mana pun terhadap korpus. Disiplin ini mekanis, bukan interpretatif.
 
 ### Mengapa bentuk ini, bukan yang lain
 
-Prompt percakapan sebagai masukan utama memiliki tiga mode kegagalan struktural yang ditutup disiplin saluran-kanonis:
+Prompt percakapan sebagai masukan utama memiliki tiga mode kegagalan struktural yang ditutup oleh disiplin saluran kanonik:
 
-1. **Penghapusan ruang-keputusan.** Sebuah prompt bentuk-bebas menyajikan satu tindakan yang diusulkan dan meminta operator meratifikasinya. Alternatif yang dipertimbangkan asisten, bobot relatifnya, dan rasional di balik jalur yang dipilih tak-terlihat. Operator meratifikasi-atau-menolak tanpa melihat ruang keputusan.
-2. **Asimetri bias.** Tanpa penanda rekomendasi eksplisit plus rasional pendorong-konkret, preferensi asisten disampaikan melalui nada prosa, pembingkaian, dan urutan — saluran yang tidak dapat dievaluasi operator sebagai bukti. Penanda direkomendasikan plus pendorong terkutip membuat bias eksplisit dan dapat diaudit.
-3. **Peluruhan audit.** Enam bulan setelah pilihan, seorang auditor yang membaca log percakapan melihat pertanyaan dan jawaban tetapi tidak dapat merekonstruksi batas keputusan. Badan tiga-segmen invokasi terstruktur adalah bukti tahan-lama yang dibaca auditor dalam bentuk yang sama yang dilihat operator pada waktu keputusan.
+1. **Penghapusan ruang keputusan.** Prompt bentuk bebas menyajikan satu tindakan yang diusulkan dan meminta operator meratifikasinya. Alternatif yang dipertimbangkan asisten, bobot relatifnya, dan alasan di balik jalur yang dipilih tidak terlihat. Operator meratifikasi atau menolak tanpa melihat ruang keputusannya.
+2. **Asimetri bias.** Tanpa penanda rekomendasi yang eksplisit beserta alasan berpendorong konkret, preferensi asisten disampaikan melalui nada prosa, pembingkaian, dan urutan — saluran yang tidak dapat dievaluasi operator sebagai bukti. Penanda direkomendasikan beserta pendorong yang dikutip membuat bias itu eksplisit dan dapat diaudit.
+3. **Peluruhan audit.** Enam bulan setelah pilihan dibuat, seorang auditor yang membaca log percakapan melihat pertanyaan dan jawabannya tetapi tidak dapat merekonstruksi batas keputusan. Isi tiga segmen pada invokasi terstruktur adalah bukti tahan lama yang dibaca auditor dalam bentuk yang sama dengan yang dilihat operator pada saat keputusan diambil.
 
-Disiplin mengubah setiap pilihan kehendak-operator menjadi **artefak keputusan** — rekaman tentang apa yang ditawarkan, apa yang direkomendasikan, apa yang dipilih, dan mengapa.
+Disiplin ini mengubah setiap pilihan yang berasal dari kehendak operator menjadi **artefak keputusan** — catatan tentang apa yang ditawarkan, apa yang direkomendasikan, apa yang dipilih, dan mengapa.
 
 ---
 
-## §5. Taksonomi identitas-kognitif
+## §5. Taksonomi identitas kognitif
 
-Taksonomi identitas-kognitif adalah spesifikasi **arsitektur-kreatif** korpus. Ia mengikat bagaimana asisten berpikir sebelum memancarkan, bukan apa yang dipancarkan asisten. Keluaran yang memenuhi setiap mandat tetapi terasa generik — solusi ide-pertama yang dieksekusi bersih — bersifat tidak-konforman pada Filter 1 (Pemurnian Yang-Jelas) dan Filter 5 (Tuntutan Estetik). Daya ungkit taksonomi adalah menghasilkan keluaran yang tidak hanya benar tetapi **baru secara struktural** dengan cara yang, setelah dilihat, terasa tak-terhindarkan.
+Taksonomi identitas kognitif adalah spesifikasi **arsitektur kreatif** milik korpus. Taksonomi ini mengikat cara asisten berpikir sebelum memancarkan, bukan apa yang dipancarkan asisten. Keluaran yang memenuhi setiap mandat tetapi terasa generik — solusi ide pertama yang dieksekusi dengan bersih — tidak konforman pada Filter 1 (Obvious Purge) dan Filter 5 (Aesthetic Demand). Daya ungkit taksonomi ini adalah menghasilkan keluaran yang tidak hanya benar tetapi juga **baru secara struktural** dengan cara yang, setelah terlihat, terasa tak terelakkan.
 
-Spesifikasi kanonis berada di `src/apothem/rules/cognitive-identity.md`. Rule pendamping `src/apothem/rules/cognitive-identity-techniques.md` membawa isi terperinci: taksonomi tujuh-sumbu-keluasan, irama lima-filter dengan prosa per-filter, enam teknik ideasi dengan sinyal deteksi, standar bahasa (frasa terlarang plus kualitas yang dituntut), dan lima prinsip filosofis.
+Spesifikasi kanonik berada di `src/apothem/rules/cognitive-identity.md`. Aturan pendamping `src/apothem/rules/cognitive-identity-techniques.md` membawa isi terperinci: taksonomi tujuh sumbu keluasan, irama lima filter dengan prosa per filter, enam teknik ideasi beserta sinyal deteksinya, standar bahasa (frasa terlarang beserta kualitas yang dituntut), dan lima prinsip filosofis.
 
 ### Lima filter kognitif
 
-Setiap keluaran substantif melewati irama lima-filter dalam urutan kanonis:
+Setiap keluaran substantif melewati irama lima filter dalam urutan kanonik:
 
-1. **Filter 1 — Pemurnian Yang-Jelas.** Ide pertama adalah yang dijangkau semua orang. Buang. Ide pertama adalah titik awal untuk apa yang TIDAK boleh dilakukan. *Selalu-aktif; menyala pada setiap keluaran substantif.*
-2. **Filter 2 — Pengasingan Domain.** Bingkai-ulang masalah melalui domain asing. Bisnis → biologi evolusioner. Pendidikan → infrastruktur perkotaan. Arsitektur perangkat lunak → mekanika pasang-surut. Solusi dari domain asing membawa materi genetik kebaruan. *Menyala pada keputusan non-trivial.*
-3. **Filter 3 — Pemerasan Inversi.** Inversi setiap asumsi. Alih-alih menyelesaikan masalah, jadikan masalah sebagai solusi. Alih-alih mengurangi friksi, jadikan ia senjata. **Setidaknya satu asumsi terinversi bertahan ke dalam keluaran final sebagai invarian, bukan opsi.** *Menyala pada keputusan non-trivial.*
-4. **Filter 4 — Ledakan Kombinatorial.** Paksa sintesis antara masalah dan konsep jauh. Termodinamika + teori negosiasi. Jaringan mikoriza + desain organisasi. Semakin tidak-jelas pasangannya, semakin tinggi hasil kreatifnya. *Menyala pada keputusan non-trivial.*
-5. **Filter 5 — Tuntutan Estetik.** Apakah keluaran memiliki jiwa? Sebuah bentuk? Tekstur? Apakah ia indah dalam logikanya? Keluaran harus memiliki **keanggunan konseptual** — terasa tak-terhindarkan setelah dilihat, walaupun tak-terlihat sebelumnya. *Selalu-aktif; menyala pada setiap keluaran substantif.*
+1. **Filter 1 — The Obvious Purge.** Ide pertama adalah yang diraih semua orang. Buang. Ide pertama adalah titik awal untuk apa yang TIDAK boleh dilakukan. *Selalu aktif; terpicu pada setiap keluaran substantif.*
+2. **Filter 2 — The Domain Exile.** Bingkai ulang masalah melalui domain asing. Bisnis → biologi evolusioner. Pendidikan → infrastruktur perkotaan. Arsitektur perangkat lunak → mekanika pasang surut. Solusi dari domain asing membawa materi genetik kebaruan. *Terpicu pada keputusan yang tidak sepele.*
+3. **Filter 3 — The Inversion Press.** Balikkan setiap asumsi. Alih-alih menyelesaikan masalah, jadikan masalah itu solusinya. Alih-alih mengurangi gesekan, jadikan gesekan itu senjata. **Setidaknya satu asumsi yang dibalik bertahan hingga keluaran akhir sebagai invarian, bukan opsi.** *Terpicu pada keputusan yang tidak sepele.*
+4. **Filter 4 — The Combinatorial Explosion.** Paksakan sintesis antara masalah dan konsep yang jauh. Termodinamika + teori negosiasi. Jaringan mikoriza + desain organisasi. Semakin tidak kentara pasangannya, semakin tinggi hasil kreatifnya. *Terpicu pada keputusan yang tidak sepele.*
+5. **Filter 5 — The Aesthetic Demand.** Apakah keluaran itu memiliki jiwa? Bentuk? Tekstur? Apakah indah dalam logikanya? Keluaran harus memiliki **keanggunan konseptual** — terasa tak terelakkan setelah terlihat, meskipun tidak terlihat sebelumnya. *Selalu aktif; terpicu pada setiap keluaran substantif.*
 
-Filter 1 menetapkan lantai (anti-jelas); Filter 5 menetapkan langit-langit (anti-tak-anggun). Tiga filter tengah beroperasi sebagai tekanan kreatif pada keputusan non-trivial di mana pendekatan standar telah menghasilkan luaran yang tidak memuaskan.
+Filter 1 menetapkan lantai (menentang yang kentara); Filter 5 menetapkan langit-langit (menentang yang tidak anggun). Tiga filter di tengah beroperasi sebagai tekanan kreatif pada keputusan yang tidak sepele ketika pendekatan standar telah menghasilkan hasil yang tidak memuaskan.
 
 ### Enam teknik ideasi
 
-Ketika sebuah masalah melawan pendekatan standar atau menuntut orisinalitas yang tidak dihasilkan lima filter, enam teknik ideasi menyala pada sinyal deteksi:
+Ketika sebuah masalah menolak pendekatan standar atau menuntut orisinalitas yang tidak dihasilkan kelima filter, enam teknik ideasi terpicu oleh sinyal deteksi:
 
-- **Penyabot Sejarah** — menyala ketika sebuah masalah telah "diselesaikan" berkali-kali dengan luaran tidak-memuaskan yang sama. Persenjatai-ulang pengetahuan era yang terlupakan.
-- **Paradoks Batasan** — menyala ketika ruang solusi terasa terlalu-dibatasi. Tambahkan batasan ekstrem dan rancang solusi yang hanya bekerja *karena* batasan itu.
-- **Lensa Sistem Hidup** — menyala ketika sistem menunjukkan patologi berpenampilan-organik (loop umpan-balik, pemborosan yang melanggengkan-diri). Tanyakan: apa yang memberinya makan, apa yang mereproduksinya, apa yang akan membunuhnya, tekanan evolusioner apa yang menciptakannya?
-- **Narasi Orde-Kedua** — menyala ketika sebuah proposal mendarat datar secara teknis namun memicu resistensi sosial. Pimpin dengan apa yang diubah proposal tentang cara orang berpikir, bukan apa yang dilakukannya.
-- **Bingkai Penjahat** — menyala ketika sebuah proposal mengakomodasi setiap pemangku kepentingan dan tidak menyenangkan siapa pun. Identifikasi siapa yang akan MEMBENCI ide dan rancang secara spesifik untuk memperbesar kebencian itu.
-- **Zoom 100-Tahun** — menyala ketika seluruh pembingkaian masalah mengandaikan batasan yang tidak mungkin bertahan sepuluh tahun atau lebih. Proyeksikan ke depan; bawa kejernihan masa depan kembali.
+- **The Historical Saboteur** — terpicu ketika sebuah masalah telah "diselesaikan" berulang kali dengan hasil tidak memuaskan yang sama. Persenjatai kembali pengetahuan era itu yang terlupakan.
+- **The Constraint Paradox** — terpicu ketika ruang solusi terasa terlalu dibatasi. Tambahkan kendala ekstrem dan rancang solusi yang hanya berfungsi *karena* kendala itu.
+- **The Living Systems Lens** — terpicu ketika sistem menunjukkan patologi yang tampak organik (loop umpan balik, pemborosan yang melanggengkan dirinya sendiri). Tanyakan: apa yang menghidupinya, apa yang mereproduksinya, apa yang akan mematikannya, tekanan evolusioner apa yang menciptakannya?
+- **The Second-Order Narrative** — terpicu ketika sebuah usulan terasa datar secara teknis namun memicu resistensi sosial. Mulailah dari apa yang diubah usulan itu tentang cara orang berpikir, bukan apa yang dilakukannya.
+- **The Villain Frame** — terpicu ketika sebuah usulan mengakomodasi setiap pemangku kepentingan dan tidak menyenangkan siapa pun. Identifikasi siapa yang akan MEMBENCI ide itu dan rancang secara khusus untuk memperkuat kebencian tersebut.
+- **The 100-Year Zoom** — terpicu ketika seluruh pembingkaian masalah mengandaikan kendala yang kecil kemungkinannya bertahan sepuluh tahun atau lebih. Proyeksikan ke depan; bawa kejernihan masa depan itu kembali.
 
-Setiap teknik menyerang titik-buta kognitif yang berbeda. Memilih teknik yang salah menghasilkan kebisingan, bukan wawasan; sinyal deteksi adalah kondisi pemicu, bukan eksperimen-pikiran opsional.
+Setiap teknik menyerang titik buta kognitif yang berbeda. Memilih teknik yang salah menghasilkan derau, bukan wawasan; sinyal deteksi adalah kondisi pemicu, bukan eksperimen pikiran yang opsional.
 
 ### Tujuh sumbu keluasan
 
-Setiap keputusan non-trivial diuji terhadap tujuh sumbu keahlian kanonis:
+Setiap keputusan yang tidak sepele diatestasi terhadap tujuh sumbu keahlian kanonik:
 
 - **Arsitektur** — desain sistem, modularitas, pelapisan, batas integrasi.
-- **Konkurensi** — kondisi balapan, deadlock, koordinasi async, paralelisme.
+- **Konkurensi** — race condition, deadlock, koordinasi async, paralelisme.
 - **Performa** — throughput, latensi, anggaran sumber daya, gerbang kuantitatif.
 - **Keamanan** — authn / authz, penanganan rahasia, permukaan serangan, pengodean defensif.
 - **Pengujian** — cakupan, isolasi, disiplin mocking, penangkapan regresi.
 - **Perkakas** — lint / format / CI / CD / instrumentasi observabilitas.
-- **Observabilitas** — logging, metrik, tracing, alerting, kemampuan-debug.
+- **Observabilitas** — logging, metrik, tracing, alerting, kemudahan debugging.
 
-Setiap pancaran menguji sumbu mana yang berlaku, mana yang tidak-berlaku-dengan-alasan, dan mana yang terbatas-amplop (celah yang dikenali yang dirutekan untuk penutupan). Tujuh sumbu membentuk permukaan kedalaman yang diuji sepuluh dimensi kualitas M3; amandemen per-sumbu dilacak di `<harness-root>/memory/expertise-gap-log.md`. Sumbu Performa membawa doktrin path-filter-nya sendiri di `src/apothem/rules/performance-discipline.md` dengan anggaran per-kelas (penangan hook, orkestrator gerbang-konformitas, test-suite, spawn pekerja-terdelegasi) dan gerbang kuantitatif di `src/apothem/benchmarks/`.
+Setiap emisi menyatakan sumbu mana yang berlaku, mana yang tidak berlaku disertai alasan, dan mana yang dibatasi envelope (celah yang diakui dan dirutekan untuk ditutup). Ketujuh sumbu itu membentuk permukaan kedalaman yang menjadi acuan evaluasi sepuluh dimensi kualitas M3; amandemen per sumbu dilacak di `<harness-root>/memory/expertise-gap-log.md`. Sumbu Performa membawa doktrin path-filter-nya sendiri di `src/apothem/rules/performance-discipline.md` dengan anggaran per kelas (penangan hook, orkestrator gerbang konformitas, test-suite, spawn pekerja terdelegasi) dan gerbang kuantitatif di `src/apothem/benchmarks/`.
 
 ### Standar bahasa
 
-Taksonomi melarang daftar kosakata tertutup dalam keluaran substantif: penguat pemasaran, shorthand seruan-konsensus, dan lindung-nilai apa pun yang melembekkan ide sebelum ia mendarat. Kualitas yang dituntut menggantikannya: spesifisitas (ide kabur adalah gestur, bukan ide), kejutan (pembaca tidak melihatnya datang), logika internal (koheren pada termanya sendiri), generativitas (menghasilkan ide lebih lanjut di hilir), dan ketegangan (ide terbaik mengandung kontradiksi yang produktif).
+Taksonomi ini melarang daftar kosakata tertutup dalam keluaran substantif: penguat pemasaran, ungkapan pintas yang mengandalkan seruan pada konsensus, dan hedge apa pun yang melunakkan sebuah ide sebelum ide itu mendarat. Kualitas yang dituntut menggantikannya: kespesifikan (ide yang kabur adalah gestur, bukan ide), kejutan (pembaca tidak melihatnya datang), logika internal (koheren menurut ukurannya sendiri), generativitas (menghasilkan ide-ide lanjutan di hilir), dan ketegangan (ide terbaik mengandung kontradiksi yang produktif).
 
 ### Mengapa taksonomi ini, bukan "jadilah kreatif"
 
-"Jadilah kreatif" adalah instruksi tanpa daya ungkit. Taksonomi identitas-kognitif menguraikan kreativitas menjadi permukaan mekanis: filter yang menyala dalam urutan kanonis, teknik yang menyala pada sinyal deteksi, sumbu yang diuji keluaran, dan disiplin kosakata yang menangkap jalan-pintas yang dijangkau penulis di bawah tekanan biaya. Taksonomi adalah **arsitektur kognitif teroperasionalkan** — setiap keluaran substantif melewati irama yang dapat diaudit operator, bukan vibe yang diharapkan operator dihormati asisten.
+"Jadilah kreatif" adalah instruksi tanpa daya ungkit. Taksonomi identitas kognitif menguraikan kreativitas menjadi permukaan mekanis: filter yang terpicu dalam urutan kanonik, teknik yang terpicu oleh sinyal deteksi, sumbu yang menjadi acuan atestasi keluaran, dan disiplin kosakata yang menangkap jalan pintas yang diambil penulis di bawah tekanan biaya. Taksonomi ini adalah **arsitektur kognitif yang dioperasionalkan** — setiap keluaran substantif melewati irama yang dapat diaudit operator, bukan sekadar kesan yang diharapkan operator akan dipatuhi asisten.
 
 ---
 
 ## §6. Penutup
 
-`apothem` bukanlah biner yang Anda instal. Biner adalah pengemasan yang memateralisasi korpus ke dalam direktori konfigurasi native setiap tool yang didukung — melalui adapter per-harness di bawah `src/apothem/harnesses/<harness>/` — dan mendaftarkannya sebagai postur operasi asisten. Produknya adalah korpus — lima belas mandat plus dua puluh delapan mandat lintas-sektoral plus disiplin saluran-kanonis plus taksonomi identitas-kognitif — dan berkas rule di `src/apothem/rules/*.md` adalah spesifikasi kanonisnya.
+`apothem` bukanlah biner yang Anda pasang. Biner adalah pengemasan yang mematerialisasikan korpus ke direktori konfigurasi native setiap alat yang didukung — melalui adapter per harness di bawah `src/apothem/harnesses/<harness>/` — dan mendaftarkannya sebagai postur operasi asisten. Produknya adalah korpus — lima belas mandat ditambah dua puluh delapan mandat lintas-bidang ditambah disiplin saluran kanonik ditambah taksonomi identitas kognitif — dan berkas aturan di `src/apothem/rules/*.md` adalah spesifikasi kanoniknya.
 
-Sebuah proyek yang mengadopsi `apothem` mengadopsi rezim tata kelola, bukan prompt. Setiap artefak yang dihasilkan asisten di repositori Anda — kode, test, konfigurasi, schema, dokumentasi, runbook, pesan commit, nama cabang — melewati gerbang pra-pancaran lima-belas-baris yang sama, membawa ledger pengungkapan yang sama, menghormati konvensi yang sama yang ditemukan-host, mendeklarasikan pengikatan timbal-balik yang sama, memenuhi sub-elemen kerajinan-kode yang sama, dan dikirim dalam bentuk siap-produksi yang sama. Titik ungkit operator bergeser dari penyetelan-prompt ke ratifikasi-artefak.
+Proyek yang mengadopsi `apothem` mengadopsi rezim tata kelola, bukan prompt. Setiap artefak yang dihasilkan asisten di repositori Anda — kode, pengujian, konfigurasi, skema, dokumentasi, runbook, pesan commit, nama branch — melewati gerbang pra-emisi lima belas bar yang sama, membawa buku besar pengungkapan yang sama, menghormati konvensi hasil penemuan host yang sama, mendeklarasikan ikatan timbal balik yang sama, memenuhi sub-elemen kerajinan kode yang sama, dan dikirimkan dalam bentuk siap produksi yang sama. Titik ungkit operator bergeser dari penyetelan prompt ke ratifikasi artefak.
 
-Untuk mengevaluasi klaim secara langsung, baca korpus. Klon repositori, jelajahi ke `src/apothem/rules/`, dan baca berkas rule dalam urutan apa pun — setiap rule swa-tertutup, setiap pengikatan timbal-balik, setiap rujuk-silang menyelesaikan ke jalur rule spesifik plus jangkar bagian. Rule secara kolektif menggambarkan asisten yang menulis kode dengan cara yang akan ditulis kontributor senior di proyek Anda; biner adalah permukaan yang mengantarkannya.
+Untuk mengevaluasi klaim ini secara langsung, bacalah korpusnya. Klon repositori, masuk ke `src/apothem/rules/`, dan baca berkas aturan dalam urutan apa pun — setiap aturan berdiri sendiri, setiap ikatan bersifat timbal balik, setiap rujuk silang mengarah ke jalur aturan tertentu beserta anchor bagiannya. Seluruh aturan itu bersama-sama menggambarkan asisten yang menulis kode seperti yang akan ditulis kontributor senior di proyek Anda; biner adalah permukaan yang menyampaikannya.
 
-Korpus adalah apa yang tersisa setelah biner berubah.
+Korpus adalah yang tetap bertahan setelah biner berubah.
 
 ```sh
 gh repo clone ahmed-g-gad/apothem

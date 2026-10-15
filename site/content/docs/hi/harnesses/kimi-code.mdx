@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "ea49d4cc0938d230"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,11 +50,11 @@ Apothem उसे नामित करता है, लेकिन उसम
 `.kimi-code/.apothem/support/` के अंतर्गत वह डायरेक्टरी बताता है जिसके सापेक्ष
 प्रत्येक रिपॉज़िटरी-शैली उद्धरण (`rules/<name>.md`, `templates/...`, `hooks/...`)
 हल होता है, ताकि कमिट की गई `AGENTS.md` फ़ाइल में कोई मशीन-विशिष्ट पथ न रहे।
-([स्किल](https://moonshotai.github.io/kimi-code/en/customization/skills),
+(Kimi Code का व्यवहार उसके अनुकूलन पृष्ठों
+[स्किल](https://moonshotai.github.io/kimi-code/en/customization/skills),
 [सबएजेंट](https://moonshotai.github.io/kimi-code/en/customization/agents), और
-[हुक](https://moonshotai.github.io/kimi-code/en/customization/hooks) के लिए
-Kimi Code के अनुकूलन पृष्ठों के अनुसार Kimi Code का व्यवहार, 2026-10-02 को पढ़ा
-गया।)
+[हुक](https://moonshotai.github.io/kimi-code/en/customization/hooks) के अनुसार,
+2026-10-02 को पढ़ा गया।)
 
 ## संगतता टिप्पणियाँ
 
@@ -99,8 +99,12 @@ apothem update --harness kimi-code --project /path/to/project
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+प्रोजेक्ट-रूट `AGENTS.md` से Apothem ब्लॉक हटाता है और सेंटिनलों के बाहर का कोई भी
+टेक्स्ट बनाए रखता है। फ़ाइल केवल तभी हटाई जाती है जब उसमें और कुछ शेष न रहे। साथ
+ही `<project>/.kimi-code/.apothem/support/` के अंतर्गत Apothem द्वारा रखी गई समर्थन
+फ़ाइलें भी हटाता है। बदलाव से पहले, प्रत्येक फ़ाइल की एक टाइमस्टैम्प-युक्त प्रति
+`~/.apothem/backups/` के अंतर्गत सहेजी जाती है; प्रोजेक्ट में कोई बैकअप फ़ाइल नहीं
+छोड़ी जाती। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "71abe825552bafc8"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,10 +53,10 @@ Adapter schreibt das MCP-Inventar des Profils unter den Top-Level-Schlüssel
 `mcp_servers`, wo Hermes MCP-Server liest.
 Frühere Apothem-Releases schrieben es unter `auxiliary.mcp`, das Hermes als
 Hilfsmodell für den Dispatch von MCP-Werkzeugen liest; sowohl `apothem update`
-als auch `apothem uninstall` entfernen diesen Block, solange er noch genau das
-enthält, was ein solches Release geschrieben hat (siehe
-[Deinstallation](#deinstallation)). (Verhalten von Hermes gemäß den Seiten
-seines Benutzerhandbuchs zu
+als auch `apothem uninstall` entfernen diesen Block, solange er noch dem
+entspricht, was ein solches Release aus Ihrem gemeinsamen Profil schreiben
+würde (siehe [Deinstallation](#deinstallation)). (Verhalten von Hermes gemäß
+den Seiten seines Benutzerhandbuchs zu
 [Skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 und [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 gelesen am 2026-10-02.)
@@ -67,9 +67,9 @@ gelesen am 2026-10-02.)
 apothem verify --harness hermes
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
+1. Die native Konfiguration existiert am erwarteten Pfad.
 2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
@@ -99,13 +99,14 @@ Apothem-Engine bleiben unberührt.
 
 Bei einer Installation durch ein früheres Release, das die Server des Profils
 unter `auxiliary.mcp` schrieb, wird dieser Block ebenfalls entfernt, wenn er
-noch genau das enthält, was dieses Release geschrieben hat, wie aus dem
-gemeinsamen Profil unter `~/.config/apothem/profile.yaml` gerendert. Dies ist
-dieselbe Regel, die `apothem update` anwendet, sodass eine Deinstallation ohne
-vorheriges Update keinen veralteten Block hinterlässt. Ein Block, den Sie
-bearbeitet haben, oder einer, für den kein lesbares gemeinsames Profil zum
-Vergleich vorliegt, bleibt an Ort und Stelle, und der Rest Ihrer
-`auxiliary`-Einstellungen bleibt immer erhalten.
+noch dem entspricht, was dieses Release aus Ihrem aktuellen gemeinsamen Profil
+unter `~/.config/apothem/profile.yaml` schreiben würde. Dies ist dieselbe
+Regel, die `apothem update` anwendet, sodass eine Deinstallation ohne
+vorheriges Update keinen veralteten Block hinterlässt, solange die MCP-Server
+des Profils unverändert sind. Ein Block, den Sie bearbeitet haben, einer, der
+nicht mehr zu den MCP-Servern Ihres aktuellen Profils passt, oder einer, für
+den kein lesbares gemeinsames Profil zum Vergleich vorliegt, bleibt an Ort und
+Stelle, und der Rest Ihrer `auxiliary`-Einstellungen bleibt immer erhalten.
 
 ## Konformitäts-Gate
 

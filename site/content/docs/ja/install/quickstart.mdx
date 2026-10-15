@@ -2,7 +2,7 @@
 title: "クイックスタート"
 description: "Apothem をインストールし、プロファイルを作成し、最初のハーネスをマテリアライズして検証する — 期待される出力付きの、コピー＆ペーストで進めるツアー。"
 machineTranslated: true
-sourceHash: "cabe19810d3aad3a"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Apothem は自己完結型ランタイムとして出荷されます — エン�
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -53,8 +53,8 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="`apothem` コマンド">
-  インストーラーは `apothem` の shim を `PATH` 上に配置するため、エンジンを `apothem <command>` として直接実行します。
-  shim のディレクトリがまだ `PATH` 上にない場合、バナーは shim を必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。
+  インストーラーは `apothem` シムを `PATH` 上に配置するため、エンジンを `apothem <command>` として直接実行します。
+  シムのディレクトリがまだ `PATH` 上にない場合、バナーはシムを必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。
 </Callout>
 
 [インストールガイド](/docs/install)は、環境変数のオプションとあわせて、その他のインストール経路 — Claude Code プラグイン（`/plugin marketplace add ahmed-g-gad/apothem` の後に `/plugin install apothem@apothem`）、VS Code 系およびその他のツールネイティブな拡張機能、そしてオンデマンドの npx 形式（`npx @ahmed-g-gad/apothem <command>`） — を扱います。

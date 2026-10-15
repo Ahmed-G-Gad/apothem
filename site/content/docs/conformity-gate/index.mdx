@@ -9,8 +9,8 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 | Bar | ID | Mandate | Check class | Failure → action |
 |---|---|---|---|---|
 | 1 | M1 | Host-Project Agnosticism | Reasoned | Revise to match host conventions |
-| 2 | M2 | Editorial Discipline (disclosure ledger) | Mechanical | Add disclosure markers |
-| 3 | M3 | Ten Quality Dimensions | Reasoned | Revise on failing dimensions |
+| 2 | M2 | Editorial Discipline (disclosure ledger) | Reasoned | Add disclosure markers |
+| 3 | M3 | Ten Quality Dimensions | Mechanical + reasoned | Revise on failing dimensions |
 | 4 | M4 | Self-Application (gate signed record present) | Mechanical | Record signed-record block |
 | 5 | M5 | Authority Principle (no fabricated identity / endpoint / secret) | Mechanical | Route to inquiry |
 | 6 | M6 | Expertise Incorporation (surfaced gaps) | Reasoned | Surface gaps; cite refinements |
@@ -19,10 +19,10 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 | 9 | M9 | Visual Leverage (structural subjects carry diagrams) | Reasoned | Author / refresh diagram |
 | 10 | M10 | Bidirectional Binding (reciprocal back-pointers closed) | Mechanical | Close half-edges |
 | 11 | M11 | Agile Sprints (Goal / Backlog / DoR / DoD / Review / Retrospective) | Reasoned | Restructure as sprints |
-| 12 | M12 | Phase Reporting & Canonical Layout | Mechanical | Author rollup; relocate to canonical layout |
+| 12 | M12 | Phase Reporting & Canonical Layout | Mechanical + reasoned | Author rollup; relocate to canonical layout |
 | 13 | M13 | Code Craft (lint / format / type-check; magic-number; bare-except) | Mechanical | Apply per-language code-craft rules |
 | 14 | M14 | Systemicity (declares upstream / downstream / peers / enforcers) | Reasoned | Declare; index in registries |
-| 15 | M15 | Production-Ready (tests + docs + CHANGELOG + conformant commit + CI green + semver-stability) | Mechanical | Add missing surfaces |
+| 15 | M15 | Production-Ready (tests + docs + CHANGELOG + conformant commit + CI green + semver-stability) | Mechanical + reasoned | Add missing surfaces |
 
 ## Severity ladder
 
@@ -31,17 +31,17 @@ The gate has no Critical, Important or Advisory ladder and no two-finding thresh
 ## Validators
 
 The mechanical fraction lives at [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrated by [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-The gate runs each validator in one of three ways:
+Each validator runs in one of three ways:
 
 - **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`.
 - **standalone**: across the whole repository with `--all`, or one at a time with `--check <name>`.
-- **change-set**: against a staged diff, outside the gate's sweeps.
+- **change-set**: against a staged diff, run directly as `python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
 
 The table below is generated from the validator modules.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |

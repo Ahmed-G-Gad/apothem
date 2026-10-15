@@ -1,8 +1,8 @@
 ---
 title: "Palette de marque"
-description: "Couleurs de marque principales d'Apothem et les dix-sept couleurs de marque des environnements. La source unique de vérité est constituée des tokens de design canoniques dans assets/design-tokens.css ; le site reflète ces valeurs."
+description: "Couleurs de marque principales d'Apothem et les dix-sept couleurs de marque des environnements. La source unique de vérité pour les couleurs principales est constituée des tokens de design canoniques dans assets/design-tokens.css ; le site reflète ces valeurs."
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,9 +29,10 @@ Chaque valeur ci-dessous remonte à un palier de rampe canonique.
 Les couleurs des environnements se trouvent dans
 [Couleurs des environnements](/docs/brand/harness-colors). Le mappage géométrique sur
 l'hexagone de la marque Apothem — son nœud central et son nœud terminal — est intégré à
-la section de marque. La source de vérité CSS dans
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-relie chaque token à sa variable CSS.
+la section de marque. Les couleurs des environnements sont définies sur cette page, et
+non dans les tokens de design ni dans
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css),
+qui ne portent que la palette principale.
 
 ## Usage dans la documentation
 
@@ -44,5 +45,5 @@ de la classe `.dark` du thème.
 La palette n'est mise à jour que lorsqu'une couleur principale change (slate / emerald)
 ou qu'un environnement ratifie un changement de couleur de marque en amont. Les
 changements par environnement se propagent de manière atomique à travers
-`site/app/global.css`, [Couleurs des environnements](/docs/brand/harness-colors)
-et chaque maître SVG affecté sous `assets/src/`.
+[Couleurs des environnements](/docs/brand/harness-colors) et chaque master SVG
+concerné sous `assets/src/`.

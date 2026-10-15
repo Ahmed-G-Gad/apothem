@@ -1,13 +1,13 @@
 ---
 title: "헬퍼"
-description: "frontmatter 계약과 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 에이전트입니다."
+description: "프런트매터 계약과 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 에이전트입니다."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-영속적 헬퍼는 정규 헬퍼 디렉터리 아래에 `<name>.md` 접미사를 가진 플랫
-파일로 있습니다. 정규 경로는 다음과 같습니다.
+영속적 헬퍼는 표준 헬퍼 디렉터리 아래에 `<name>.md` 접미사를 가진 플랫
+파일로 존재합니다. 표준 경로는 다음과 같습니다.
 
 ```text
 src/apothem/agents/
@@ -23,7 +23,7 @@ src/apothem/agents/
 | Quality Gate | 아래 매니페스트 경로 참조 | 품질 | 호스트 선택 |
 | Memory Auditor | 아래 매니페스트 경로 참조 | 감사 | 호스트 선택 |
 
-정규 매니페스트 경로:
+표준 매니페스트 경로:
 
 ```text
 src/apothem/agents/codebase-explorer.md
@@ -32,7 +32,7 @@ src/apothem/agents/quality-gate.md
 src/apothem/agents/memory-auditor.md
 ```
 
-## Frontmatter 계약
+## 프런트매터 계약
 
 ```yaml
 ---
@@ -48,9 +48,10 @@ maxTurns: <integer>
 
 ## 하니스별 변환
 
-`disallowedTools`를 적용한 뒤의 `tools` 부여에 `Write`나
-`Edit`가 포함되지 않은 헬퍼는 읽기 전용입니다. 헬퍼를 변환하는 각 하니스는
-그 제한을 네이티브로 강제하거나 읽기 전용 레이블을 제거합니다.
+`disallowedTools`를 적용한 뒤에도 `tools` 부여에 파일 편집 도구(`Write`,
+`Edit`, `MultiEdit`, `NotebookEdit`)가 하나도 포함되지 않은 헬퍼는 읽기
+전용입니다. 헬퍼를 변환하는 각 하니스는 그 제한을 네이티브로 강제하거나
+읽기 전용 레이블을 제거합니다.
 
 | 하니스 | 도구 제한 | 턴 제한 | 모델과 노력 수준 |
 | --- | --- | --- | --- |
@@ -68,7 +69,7 @@ Hermes, Open-Claw, Kimi Code는 헬퍼 파일을 네이티브 헬퍼가 아니�
 
 헬퍼 배포, 병렬 실행 프로토콜, 반환 계약 강제, 격리 규율은
 오케스트레이션 규칙에 있습니다. 작업자별 디스패치 트리는 오케스트레이션
-패턴 규칙의 §Decision Tree에 있습니다. 정규 경로:
+패턴 규칙의 §Decision Tree에 있습니다. 표준 경로:
 
 ```text
 src/apothem/rules/agent-orchestration.md

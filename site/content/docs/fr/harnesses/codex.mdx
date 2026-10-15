@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptateur d'environnement Apothem pour Codex (bêta)."
 machineTranslated: true
-sourceHash: "99a652853bf9a864"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,12 +53,15 @@ bonne surface de Codex : les instructions dans `AGENTS.md`, les hooks dans
 `~/.config/apothem/` comme matériel de support.
 
 Chaque auxiliaire converti définit `name`, `description` et
-`developer_instructions`. Un auxiliaire dont l'autorisation d'outils ne permet
-pas d'écrire des fichiers définit aussi `sandbox_mode = "read-only"`, la
-restriction d'écriture propre à Codex. Aucun modèle ni effort de raisonnement
-n'est défini ; chaque auxiliaire hérite donc des choix de la session. Codex n'a
-ni liste d'outils ni limite de tours par auxiliaire ; les `tools` et `maxTurns`
-d'un auxiliaire ne sont donc pas repris.
+`developer_instructions`. Un auxiliaire dont l'autorisation d'outils, une fois sa
+liste de refus appliquée, ne comprend aucun outil d'édition de fichiers (`Write`,
+`Edit`, `MultiEdit` ou `NotebookEdit`) définit aussi
+`sandbox_mode = "read-only"`, la restriction d'écriture propre à Codex. `Bash`
+ne compte pas comme un outil d'édition de fichiers : un auxiliaire auquel `Bash`
+est accordé, sans aucun de ces outils, reste donc en lecture seule. Aucun modèle
+ni effort de raisonnement n'est défini ; chaque auxiliaire hérite donc des choix
+de la session. Codex n'a ni liste d'outils ni limite de tours par auxiliaire ;
+les `tools` et `maxTurns` d'un auxiliaire ne sont donc pas repris.
 
 ## Notes de compatibilité
 
@@ -83,7 +86,10 @@ apothem verify --harness codex
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour

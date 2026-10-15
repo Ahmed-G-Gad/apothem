@@ -2,7 +2,7 @@
 title: "Warna merek harness"
 description: "Palet warna per harness yang digunakan di seluruh situs web proyek Apothem dan di setiap diagram arsitektur. Satu sumber kebenaran: satu warna per harness, satu hub apothem."
 machineTranslated: true
-sourceHash: "7a191edb550076ef"
+sourceHash: "8bd8ae0d07b55675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -104,8 +104,21 @@ graph LR
 
 ## Aksesibilitas
 
-Setiap token mode terang memenuhi kontras WCAG 2.2 AA terhadap teks putih (≥4.5 : 1) sejauh kontras tersebut memungkinkan tanpa mendistorsi warna merek. Ketika warna merek native sebuah harness dengan sendirinya berada di bawah ambang AA terhadap teks putih (terutama keluarga amber / oranye dan keluarga biru langit / teal dari token yang dienumerasi di atas), diagram yang membutuhkan kontras teks-pada-warna WCAG AA menggunakan **varian mode gelap** (rona yang diangkat) sebagai isian diagram agar teks putih terbaca dengan jelas. Kolom mode gelap dikalibrasi untuk tujuan ini: setiap token mode gelap melampaui ambang AA terhadap teks putih.
+Setiap token mode terang mempertahankan warna mereknya tanpa distorsi, sehingga delapan di antaranya berada di bawah kontras WCAG 2.2 AA terhadap teks putih (≥4.5 : 1). Token mode terang lainnya memenuhinya. Kedelapan token tersebut, beserta kontrasnya terhadap warna putih:
+
+```text
+shared-profile   2.54 : 1
+claude-code      3.28 : 1
+codex            3.20 : 1
+gemini-cli       3.56 : 1
+opencode         2.15 : 1
+qwen-code        2.87 : 1
+trae             3.86 : 1
+windsurf         2.77 : 1
+```
+
+Kolom mode gelap diperuntukkan bagi latar belakang gelap, dan tidak ada satu pun tokennya yang mencapai 4.5 : 1 terhadap teks putih. Diagram yang membutuhkan kontras teks-pada-warna WCAG AA pada salah satu dari kedelapan isian itu HARUS menggunakan teks gelap (`#0F172A`, yang terukur 4.63 : 1 hingga 8.31 : 1 pada isian tersebut) sebagai ganti teks putih.
 
 ## Pembaruan
 
-Palet diperbarui hanya ketika sebuah harness meratifikasi perubahan merek di hulu. Perubahan merek per harness merambat secara atomik ke `site/app/global.css`, halaman ini, dan setiap master SVG terdampak di bawah `assets/src/`.
+Palet diperbarui hanya ketika sebuah harness meratifikasi perubahan merek di hulu. Warna harness didefinisikan di halaman ini, bukan di `assets/design-tokens.css` atau `site/app/global.css`. Perubahan merek per harness merambat secara atomik di halaman ini dan di setiap master SVG terdampak di bawah `assets/src/`.

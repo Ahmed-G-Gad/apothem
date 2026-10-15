@@ -2,7 +2,7 @@
 title: "制品 Schema 规范"
 description: "Apothem 源码树中所有制品类型的规范 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -297,7 +297,7 @@ argument-hint: "[--focus area] [--fix]"
 
 ### 必需事件
 
-Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreCompact 与 PostCompact 未在 Claude Code 上注册（参见[钩子参考](/docs/reference/hooks)），`scripts/dev/validate_hooks.py` 会将其中每一项报告为缺失警告。下表列出 `validate_hooks.py` 检查的五个事件：
+Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreCompact 与 PostCompact 未在 Claude Code 上注册（参见[钩子参考](/docs/reference/hooks)），`scripts/dev/validate_hooks.py` 会将其中每一项作为缺失项以警告形式报告。下表列出 `validate_hooks.py` 检查的五个事件：
 
 > **超时值镜像规范的钩子事件预算**——下表为方便读者而复现了这些值；以规范来源为准。
 
@@ -338,7 +338,7 @@ Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreC
 
 **路径：** `CLAUDE.md`（根目录）
 
-**用途：** 全局生态系统配置索引。
+**用途：** 项目范围的 Claude Code 指令。
 
 ### 必填 YAML Frontmatter
 
@@ -347,27 +347,15 @@ Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreC
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### 必需章节（按顺序）
+### 章节
 
-1. **§1 计划套件**——模板位置的引用
-2. **§2 认知身份**——创造性架构强制规定
-3. **§3 制品目录**——路径与用途表
-4. **§4 按严肃度分级的治理**——四个级别的定义
-5. **§5 操作指令**——问题解决、沟通原则
-6. **§6 横切强制规定**——CM-1–28 概览
-7. **§7 注册表**——制品表：
-   - 7.1 命令
-   - 7.2 规则
-   - 7.3 辅助器
-   - 7.4 钩子
-   - 7.5 技能
-   - 7.6 制品演进
+`CLAUDE.md` 以散文式章节编写，详见 [`CLAUDE.md`](/docs/reference/claude-md)。没有任何校验器要求固定的章节列表：`scripts/dev/validate_ecosystem.py` 检查上述 frontmatter 键。
 
 ---
 
@@ -389,7 +377,7 @@ portability: "universal"
 
 ### 内容校验
 
-- [ ] 内容在闭合 `---` 之后紧接着另起一行开始
+- [ ] 内容在闭合 `---` 之后另起一行开始；在 Markdown 系列文件上，作者署名头横幅是其后的第一项内容
 - [ ] 没有计划内部引用（符合 CM-7）
 - [ ] 交叉引用可以解析（若列出了其他制品）
 - [ ] 链接使用带正斜杠的相对路径

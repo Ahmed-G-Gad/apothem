@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "适用于 GLM（Z.ai）的 Apothem 工具适配器，将其作为可配置的模型后端。"
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ apothem install --harness glm --project /path/to/project
 
 ## 配置档案到原生配置的映射
 
-提供方文件记录两个后端。Anthropic 兼容后端使用基础 URL `https://api.z.ai/api/anthropic`；支持 Anthropic 协议的工具通过设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 以及可选的 `API_TIMEOUT_MS` 路由到 GLM。同一个 env 表还列出了 `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，它们将该工具的 opus、sonnet 和 haiku 角色映射到 GLM 模型。OpenAI 兼容后端使用基础 URL `https://api.z.ai/api/coding/paas/v4`。认证令牌是一个占位符，需由你替换为自己的 Z.ai 密钥——Apothem 绝不写入真实的机密。模型 ID 随版本变化，因此 Apothem 不锁定任何模型 ID；该文件带有 `<GLM_MODEL_ID>` 占位符，由你根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填写。
+提供方文件记录两个后端。Anthropic 兼容后端使用基础 URL `https://api.z.ai/api/anthropic`；支持 Anthropic 协议的工具通过设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 以及可选的 `API_TIMEOUT_MS` 路由到 GLM。同一个 env 表还列出了 `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，它们将该工具的 opus、sonnet 和 haiku 角色映射到 GLM 模型。OpenAI 兼容后端使用基础 URL `https://api.z.ai/api/coding/paas/v4`。认证令牌是一个占位符，需由你替换为自己的 Z.ai 密钥——Apothem 绝不写入真实的机密。模型 ID 随版本变化，因此 Apothem 不锁定任何模型 ID；该文件带有 `<GLM_MODEL_ID>` 占位符，由你根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填写。共享配置档案中的任何内容都不会进入此文件；它是一份固定的模板。
 
 ## 兼容性说明
 
@@ -72,8 +72,8 @@ python -m apothem.conformity.gate --all .
 | 症状 | 修复方法 |
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness glm --project /path/to/project` |
-| 验证失败 | 运行 `apothem update --harness glm --project /path/to/project`，然后再次验证 |
-| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness glm --project /path/to/project` |
+| 验证失败 | 提供方文件缺失或为空。若文件缺失，运行 `apothem update --harness glm --project /path/to/project`。若文件为空，请先将 `.apothem/providers/glm.toml` 移到别处，再运行 `update`，然后再次验证 |
+| 意外的配置内容 | 直接编辑 `.apothem/providers/glm.toml`；Apothem 绝不会重写已存在的文件，共享配置档案也不会向其中添加任何内容。若需要全新的模板，请将该文件移到别处，然后运行 `apothem update --harness glm --project /path/to/project` |
 
 ## 配置开关
 

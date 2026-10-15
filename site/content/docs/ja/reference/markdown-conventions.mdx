@@ -2,11 +2,11 @@
 title: "Markdown 規約"
 description: "Markdown のフレーバー、見出し構造、コードフェンスの宣言、内部リンクの形式、著作者バナー、バリデーターによる強制を標準化します。"
 machineTranslated: true
-sourceHash: "f23d6b35db5b9a17"
+sourceHash: "940c41973c1d1e98"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **執筆されるすべての `.md` アーティファクトにわたる、Markdown の形と書式の正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の規約（Conventions）にある要約はインラインの宣言であり、このページは下流のコントリビューターが引用する独立したリファレンスです。
+> **執筆されるすべての `.md` アーティファクトにわたる、Markdown の形と書式の正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の Conventions にある要約はインラインの宣言であり、このページは下流のコントリビューターが引用する独立したリファレンスです。
 
 ---
 
@@ -16,26 +16,26 @@ GitHub-Flavored Markdown（GFM）がホストのフレーバーです。すべ�
 
 ## 2. 見出しの階層
 
-H1 はファイルごとに 1 つです。後続の見出しは、レベルを飛ばさずに単調に下っていきます（H2 → H3 → H4）。見出しはセンテンスケースにします。すべて大文字（ALL-CAPS）にはせず、すべての単語を大文字で始めるタイトルケース（Title Case Across Every Word）にもしません。H1 はドキュメントの主タイトルを担い、ドキュメントサイトのナビゲーションにおけるドキュメントのアンカーそのものです。
+H1 はファイルごとに 1 つです。後続の見出しは、レベルを飛ばさずに単調に下っていきます（H2 → H3 → H4）。見出しはセンテンスケースにします。すべて大文字（ALL-CAPS）にはせず、すべての単語を大文字で始めるタイトルケース（Title Case Across Every Word）にもしません。H1 はドキュメントの主たるタイトルを担い、ドキュメントサイトのナビゲーションにおけるドキュメントのアンカーそのものです。
 
 ## 3. コードブロック
 
-フェンス付きコードブロックは言語を宣言します（` ```python `、` ```bash `、` ```yaml `、` ```json `、` ```mermaid `）。タグのないブロックはシンタックスハイライトを抑制し、執筆時のドリフトを示すシグナルになります。[`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) で設定された markdownlint の MD040 ルールが、言語タグを強制します。
+フェンス付きコードブロックは、言語を宣言します（` ```python `、` ```bash `、` ```yaml `、` ```json `、` ```mermaid `）。タグのないブロックは、シンタックスハイライトを抑制し、執筆上のドリフトを示すシグナルになります。[`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) で設定された markdownlint の MD040 ルールが、言語タグを強制します。
 
 ## 4. 内部リンク
 
-内部の相互参照には**サイトルートパス**を使用します（例: `[Authorship header](/docs/reference/authorship-header)`）。`.md`/`.mdx` 拡張子付きの素のリポジトリ相対パス（`/docs/foo.md`）や、同じリポジトリへの完全な URL（`https://github.com/ahmed-g-gad/apothem/blob/main/...`）は、ページの名前変更やセクションの再編成に追従しにくいため、サイト内リンクでは避けます。
+内部の相互参照には、**サイトルートパス**を使います（例: `[Authorship header](/docs/reference/authorship-header)`）。`.md`/`.mdx` 拡張子付きの素のリポジトリ相対パス（`/docs/foo.md`）や、同じリポジトリへの完全な URL（`https://github.com/ahmed-g-gad/apothem/blob/main/...`）は、ページの名前変更やセクションの再編成に弱いため、サイト内リンクでは避けます。
 
-これらの `/docs/...` サイトルートパス — およびデフォルト以外のコホートのロケール向けの `/<locale>/docs/...` 形式 — は、`link-check` バリデーターによって、`site/content/docs/` 配下のディスク上のページセットに照らして解決されます: `/docs/a/b` は `site/content/docs/a/b.mdx` またはフォルダーのインデックス `site/content/docs/a/b/index.mdx` に対応し、ロケール形式は `site/content/docs/<locale>/` サブツリー配下に対応します。削除または名前変更されたルートへのリンクはどちらのファイルにも解決されず、サイトのビルドだけで検出されるのではなく、コンフォーミティゲートで死んだルート（ユーザーに見える 404）として検出されます。
+これらの `/docs/...` サイトルートパス — およびデフォルト以外のコホートロケール向けの `/<locale>/docs/...` 形式 — は、`link-check` バリデーターによって、`site/content/docs/` 配下のディスク上のページセットに照らして解決されます。`/docs/a/b` は `site/content/docs/a/b.mdx`、またはフォルダーのインデックス `site/content/docs/a/b/index.mdx` に対応し、ロケール形式は `site/content/docs/<locale>/` サブツリー配下に対応します。削除または名前変更されたルートへのリンクは、どちらのファイルにも解決されず、死んだルート（ユーザーに見える 404）として、助言的なマッチャーである `link-check` によって報告されます。このマッチャーは実行を失敗させません（§6 を参照）。
 
-可変な参照（`main`、`master`、`latest`、`HEAD`）への外部リンクは、リンク先の内容の安定性が重要な場合は常に、コミット SHA またはリリースタグに固定されます。揮発性の参照は、隣接する `{/* volatile */}` コメントによってその旨が記録されます。
+変更されうる参照（`main`、`master`、`latest`、`HEAD`）への外部リンクは、リンク先の内容の安定性が重要な場合は常に、コミット SHA またはリリースタグにピン留めされます。揮発性の参照は、隣接する `{/* volatile */}` コメントによって、その旨が記録されます。
 
 ## 5. 著作者バナー
 
-すべての Markdown アーティファクト（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) に列挙された例外を除く）は、[著作者ヘッダー](/docs/reference/authorship-header)に従い、HTML コメント形式の正規の著作者ヘッダーバナーをバイト 0 に持ちます。両方が存在する場合、バナーは YAML フロントマターの上に置かれます。
+すべての Markdown アーティファクトは（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) に列挙された例外を除く）、[著作者ヘッダー](/docs/reference/authorship-header)に従い、HTML コメント形式の正規の著作者ヘッダーバナーを持ちます。フロントマターがない場合、バナーは 1 行目です。YAML フロントマターがある場合、フロントマターはバイト 0 に置かれ、バナーは閉じの `---` の後に続きます。
 
 ## 6. バリデーター
 
-[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) にあるプリコミットの `markdownlint` フックは、[`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) のルールポリシーで `markdownlint-cli` を実行し、§§1–4 のルールの大部分を強制します。CI は markdownlint を実行しないため、markdownlint が実行されるのはこのフックです。このポリシーは、MD013（行の長さ）、MD033（インライン HTML）、MD041（先頭行の見出し）を無効にしています。また、正規の選択肢ラベルの接尾辞 ` (Recommended)` がコードスパン内で先頭のスペースを保持するため MD038 を、コーパスが使用する、詰めた `|---|` 区切り行を持つコンパクトなセルの表を受け付ける表の列スタイルが存在しないため MD060 を、それぞれ無効にしています。MD024 は兄弟見出しのみをチェックするため、`CHANGELOG.md` でリリースごとに繰り返される Added、Changed、Fixed、Security の見出しは合格します。それぞれの選択の理由は、フックの横に記載されています。このフックは、テストがバイト内容を定めているテストフィクスチャのツリー `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/`、`tests/scripts/inject-header/fixtures/` をスキップします。ただし、`src/apothem/` から生成される `plugins/claude-code/` は引き続き lint の対象になるため、そこでの検出結果は `src/apothem/` の元ソースで修正し、`python scripts/dev/assemble_plugin_tree.py` でプラグインツリーを再生成してください。
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) にあるプリコミットの `markdownlint` フックは、[`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) のルールポリシーで `markdownlint-cli` を実行し、§§1–4 のルールの大部分を強制します。CI は markdownlint を実行しないため、markdownlint が実行されるのはこのフックです。このポリシーは、MD013（行の長さ）、MD033（インライン HTML）、MD041（先頭行の見出し）を無効にしています。また、MD038 と MD060 も無効にしています。MD038 を無効にしているのは、正規の選択肢ラベルの接尾辞 ` (Recommended)` が、コードスパン内で先頭のスペースを保持するためです。MD060 を無効にしているのは、コーパスが使用する、詰めた `|---|` 区切り行を持つコンパクトなセルの表を受け付ける、表の列スタイルが存在しないためです。MD024 は兄弟見出しのみをチェックするため、`CHANGELOG.md` でリリースごとに繰り返される Added、Changed、Fixed、Security の見出しは合格します。それぞれの選択の理由は、フックの横に記載されています。このフックは、テストがバイト内容を定めているテストフィクスチャのツリー `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/`、`tests/scripts/inject-header/fixtures/` をスキップします。ただし、`src/apothem/` から生成される `plugins/claude-code/` は引き続き lint の対象になるため、そこでの検出結果は `src/apothem/` の元ソースで修正し、`python scripts/dev/assemble_plugin_tree.py` でプラグインツリーを再生成してください。
 
-`src/apothem/conformity/file_header_grep.py` にある `file-header-grep` は §5 をチェックします。`src/apothem/conformity/link_check.py` にある `link-check` バリデーターは §4 のリンク解決のディシプリンをチェックします — 相対リンクはソースファイルのディレクトリを基準に、`/docs/...`（および `/<locale>/docs/...`）のサイトルートは `site/content/docs/` のページセットを基準に解決し、ディスク上のどのページにも解決されないものにフラグを立てます。どちらも助言的な Write ごとのマッチャーです。これらは、プリコミットの `conformity-corpus-perwrite` フックと、[`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) にある Conformity ワークフローの `corpus-perwrite-gate` ジョブで実行され、どちらの場所でも実行を失敗させずに検出結果を報告します。[`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) にある CI の品質ジョブの `python -m apothem.conformity.gate --all . --strict` はスタンドアロンのバリデーターのみを対象とするため、そのどちらも実行しません。
+`src/apothem/conformity/file_header_grep.py` にある `file-header-grep` は、§5 をチェックします。`src/apothem/conformity/link_check.py` にある `link-check` バリデーターは、§4 のリンク解決の規律をチェックします — 相対リンクはソースファイルのディレクトリを基準に、`/docs/...`（および `/<locale>/docs/...`）のサイトルートは `site/content/docs/` のページセットを基準に解決し、ディスク上のどのページにも解決されないものにフラグを立てます。どちらも、助言的な Write ごとのマッチャーです。これらは、プリコミットの `conformity-corpus-perwrite` フックと、[`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) にある Conformity ワークフローの `corpus-perwrite-gate` ジョブで実行され、どちらの場所でも、実行を失敗させずに検出結果を報告します。[`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) にある CI の品質ジョブの `python -m apothem.conformity.gate --all . --strict` は、スタンドアロンのバリデーターのみを対象とするため、そのどちらも実行しません。

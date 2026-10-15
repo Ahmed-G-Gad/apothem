@@ -2,7 +2,7 @@
 title: "Desinstalação"
 description: "Remova o Apothem e limpe as configurações de harness."
 machineTranslated: true
-sourceHash: "11d7a265fc5e60b9"
+sourceHash: "39bf18da03eaad73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,6 +35,26 @@ A remoção corresponde ao canal de instalação que você usou:
   correspondente a partir do checkout: `scripts/installer/uninstall.sh` (POSIX)
   ou `scripts/installer/uninstall.ps1` (PowerShell). Ambos pedem confirmação
   antes de remover e recusam alvos inseguros.
+- **Extensão da família VS Code** — execute **Apothem: Uninstall** na paleta de
+  comandos primeiro, para remover as configurações de harness, e depois remova a
+  extensão na visualização Extensões ou com
+  `code --uninstall-extension ahmed-g-gad.apothem`. Por padrão, a extensão
+  executa o motor por meio do `npx`, de modo que a entrada **npx** acima cobre o
+  cache.
+- **Bootstraps de linha de comando (canais 5–7)** — remova a extensão ou o
+  plugin com a ferramenta do respectivo host depois que as configurações de
+  harness tiverem sido removidas. O bootstrap apenas adiciona contexto do
+  assistente (um arquivo de contexto, um comando ou uma skill) que chama o motor
+  por meio do `npx`, de modo que nada mais permanece. Os hosts de extensão dos
+  canais 5 e 6 aceitam um comando de desinstalação; para o host de plugin do
+  canal 7, desinstale `apothem` no navegador de plugins dele.
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **Motor direto** — nada a desinstalar; exclua o clone depois que as
+  configurações de harness forem removidas.
 - **Backups e estado** — os backups de instalação ficam sob
   `~/.apothem/backups/` e o livro-razão de instalação sob `~/.apothem/state/`.
   Ambos permanecem limitados: após cada instalação, desinstalação e reversão, o
