@@ -258,24 +258,31 @@ def _materialize_data_surfaces(
                 f"could not materialize memory/contexts/learning data surfaces: {exc}",
             )
         ]
+    # Each result carries the resolved home so the install ledger record can
+    # replay it: uninstall and rollback reverse the stores where they were
+    # written, not where the profile says they would be today.
+    detail = {"data_home": str(home_spec.root)}
     return [
         _result(
             outcome,
             "data_surface",
             memory_path,
             "materialized memory surface data home",
+            detail=detail,
         ),
         _result(
             outcome,
             "data_surface",
             contexts_path,
             "materialized contexts surface data home",
+            detail=detail,
         ),
         _result(
             outcome,
             "data_surface",
             learning_path,
             "materialized learning surface data home",
+            detail=detail,
         ),
     ]
 

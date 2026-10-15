@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,7 +14,7 @@ import yaml
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
-from apothem.lib.data_home import resolve_shared_data_home
+from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
     extract_managed_block,
@@ -33,8 +34,10 @@ from .install_driver_backup import (
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
+    _normalized,
     _root_for,
     _validate_target_path,
+    _within_allowed_root,
 )
 from .install_driver_planvalidation import (
     _generated_targets_for_entry,
@@ -357,33 +360,73 @@ def _rendered_template_text(
     )
 
 
-def _shared_home_root_for(root: Path) -> Path:
-    """Return the shared working-directory root anchored at *root*.
+def _same_path(left: Path, right: Path) -> bool:
+    """Return True when *left* and *right* name the same location."""
+    return os.path.normcase(str(_normalized(left))) == os.path.normcase(
+        str(_normalized(right))
+    )
 
-    Uninstall carries no profile, so the workspace scope defaults to
-    project-local and the directory name to ``.apothem`` — the base is *root*
-    and the shared root is ``<root>/.apothem``. This mirrors the resolution the
-    install pass uses on the no-profile path, so an install and its later
-    uninstall agree on the home's location.
+
+def _data_home_for(record: install_ledger.LedgerRecord | None, *, root: Path) -> Path:
+    """Return the shared working directory the install recorded under *root*.
+
+    An install pass writes its data stores under the home its profile resolved
+    (see :func:`apothem.lib.data_home.resolve_install_data_home`) and records that
+    home on its ledger record. Uninstall and rollback reverse the stores there,
+    so the removal always targets what the install wrote.
+
+    The recorded home is trusted only when it is ``<base>/<name>``, with *base*
+    the install root or the user home and *name* a single path component. A
+    ledger entry that names anything else falls through to the default. A record
+    with no home (written before the field existed) and an absent record resolve
+    to the default ``<root>/.apothem``, the location every install used before
+    the field was recorded.
     """
+    recorded = record.data_home if record is not None else None
+    if recorded:
+        home = Path(recorded)
+        base = home.parent
+        if _same_path(base, root) or _same_path(base, Path.home()):
+            try:
+                return resolve_shared_data_home(
+                    base=base, directory_name=home.name
+                ).root
+            except DataHomeError:
+                pass
     return resolve_shared_data_home(base=root).root
 
 
-def _other_harness_shares_home(*, current_harness: str, shared_root: Path) -> bool:
-    """Report whether another installed harness still shares *shared_root*.
+def _store_boundary(home: Path, *, allowed_root: Path) -> Path:
+    """Return the write boundary the data stores under *home* are removed within.
+
+    The install write root guards the default home, which sits inside it. A
+    user-home store sits outside a project-scope write root by design, so the
+    boundary widens to the base the home sits beneath. That base is already
+    pinned to the install root or the user home by :func:`_data_home_for`.
+    """
+    if _within_allowed_root(_normalized(home), _normalized(allowed_root)):
+        return allowed_root
+    return home.parent
+
+
+def _other_harness_shares_home(*, current_harness: str, shared_home: Path) -> bool:
+    """Report whether another installed harness still shares *shared_home*.
 
     The shared data home is collapsed across harnesses, so removing it on the
     first uninstall would destroy data the remaining harnesses depend on. This
     consults the install ledger across every package key (except
-    *current_harness*) and returns ``True`` when any other harness's latest
-    record at its install root resolves to the SAME ``shared_root`` AND that
-    latest record is an ``install`` (not yet uninstalled or rolled back).
+    *current_harness*) and returns ``True`` when any other harness is still
+    installed at a root whose data home is *shared_home*.
 
-    A harness is "still installed at its root" when its most recent ledger
-    record of any kind for that root is an ``install``. Because the current
+    A harness is "still installed at a root" when its most recent ledger
+    record of any kind for that root is an ``install``. The records are grouped
+    by install root before the latest is taken. Grouping by home instead would
+    let an ``uninstall`` marker (which carries no home) go unmatched, leaving the
+    guard stuck on "retain". The home of each latest install record comes from
+    :func:`_data_home_for`, so two roots that share a user-home store are both
+    counted. *current_harness* is excluded explicitly because the current
     uninstall's own ``uninstall`` marker is appended only AFTER this guard runs
-    (see :func:`run_uninstall`), *current_harness* is excluded explicitly so it
-    never counts itself as a co-occupant.
+    (see :func:`run_uninstall`).
 
     The check is fail-safe: any error reading the ledger raises out to the
     caller, which treats it as "cannot prove last-harness" and retains the
@@ -392,51 +435,57 @@ def _other_harness_shares_home(*, current_harness: str, shared_root: Path) -> bo
     for package_key in SUPPORTED_PACKAGE_KEYS:
         if package_key == current_harness:
             continue
-        # Find this harness's MOST RECENT record whose install root resolves to
-        # the same shared home. Records are append-ordered, so the last match in
-        # iteration order is the latest. Its kind tells the live state: an
-        # `install` means still installed; an `uninstall`/`rollback` means gone.
-        latest_kind: str | None = None
+        # Records are append-ordered, so the last record per root is the latest.
+        latest_by_root: dict[str, install_ledger.LedgerRecord] = {}
         for record in install_ledger.read_records(package_key):
-            if _shared_home_root_for(Path(record.root)) == shared_root:
-                latest_kind = record.kind
-        if latest_kind == "install":
-            return True
+            latest_by_root[str(_normalized(Path(record.root)))] = record
+        for record in latest_by_root.values():
+            if record.kind != "install":
+                continue
+            root = Path(record.root)
+            if _same_path(_data_home_for(record, root=root), shared_home):
+                return True
     return False
 
 
 def _remove_data_home(
-    harness_name: str, *, root: Path, allowed_root: Path
+    harness_name: str,
+    *,
+    root: Path,
+    allowed_root: Path,
+    home: Path | None = None,
 ) -> MaterializationResult | None:
     """Back up and remove the shared data home only when it is last-referenced.
 
-    The data home is the Apothem-owned ``<root>/.apothem/`` subtree shared
-    across every harness rooted at *root*, holding the operator's memory
-    records, context fragments, and learning signals (see
-    :func:`apothem.lib.data_home.resolve_shared_data_home`). Because it is
-    SHARED, removing it on the first harness uninstall would destroy data the
-    other still-installed harnesses depend on. The removal is therefore
-    conditional:
+    *home* is the shared Apothem working directory the install under *root*
+    wrote its data stores into, as :func:`_data_home_for` resolves it from the
+    install record. When omitted it is the default ``<root>/.apothem/``. The
+    directory is shared across every harness that resolves to the same home,
+    holding the operator's memory records, context fragments, and learning
+    signals (see :func:`apothem.lib.data_home.resolve_shared_data_home`).
+    Because it is SHARED, removing it on the first harness uninstall would
+    destroy data the other still-installed harnesses depend on. The removal is
+    therefore conditional:
 
     * If another installed harness still shares this home, the home is RETAINED
       and an informational ``unchanged`` result is returned.
     * If this is the last harness referencing the home, only the data stores
       (``memory/``, ``contexts/``, ``learning/``) are backed up and removed.
       ``plans/`` is NEVER auto-removed — it is operator planning state, not
-      Apothem-materialized config — and the ``.apothem`` root itself is left
+      Apothem-materialized config — and the working directory itself is left
       in place so any operator ``plans/`` survives. Each removed child is copied
       into the Apothem backup root first, so the data stays recoverable.
 
     Returns ``None`` when no data store exists (nothing to remove) or the home
-    path falls outside the allowed write root.
+    path falls outside the write boundary (see :func:`_store_boundary`).
     """
-    home = _shared_home_root_for(root)
+    if home is None:
+        home = _data_home_for(None, root=root)
     if not home.exists():
         return None
+    boundary = _store_boundary(home, allowed_root=allowed_root)
     if (
-        _validate_target_path(
-            home, allowed_root=allowed_root, operation="remove_data_home"
-        )
+        _validate_target_path(home, allowed_root=boundary, operation="remove_data_home")
         is not None
     ):
         return None
@@ -446,7 +495,7 @@ def _remove_data_home(
     # back to RETAIN — the safe default that never risks shared-data loss.
     try:
         retain = _other_harness_shares_home(
-            current_harness=harness_name, shared_root=home
+            current_harness=harness_name, shared_home=home
         )
     except Exception:  # pragma: no cover - defensive: ledger read is robust
         retain = True
@@ -458,7 +507,7 @@ def _remove_data_home(
             "shared data home retained — another harness is still installed",
         )
 
-    spec = resolve_shared_data_home(base=root)
+    spec = DataHome.from_root(home)
     backups: list[Path] = []
     removed_any = False
     # plans/ is intentionally excluded — operator planning state is never
@@ -470,7 +519,7 @@ def _remove_data_home(
             child,
             install_root=root,
             harness_name=harness_name,
-            allowed_root=allowed_root,
+            allowed_root=boundary,
         )
         if backup is not None:
             backups.append(backup)
@@ -514,10 +563,11 @@ def run_uninstall(
     added to the manifest later is untouched; a recorded target removed from the
     manifest is still cleaned). Tree/discovery surfaces stay manifest+source
     driven. The shared data home (memory / contexts / learning) is backed up and
-    removed only when last-referenced, the directories the installs since the
-    last uninstall created are removed once empty, and an uninstall marker is
-    appended to the ledger. With no ledger
-    record (a pre-ledger install), the pass falls back to the full manifest.
+    removed only when last-referenced, at the home the latest install recorded
+    (see :func:`_data_home_for`). The directories the installs since the last
+    uninstall created are removed once empty, and an uninstall marker is
+    appended to the ledger. With no ledger record (a pre-ledger install), the
+    pass falls back to the full manifest and the default data home.
 
     Returns every removal's :class:`MaterializationResult` so callers can
     surface path-escape, backup, and write failures instead of reporting an
@@ -615,8 +665,13 @@ def run_uninstall(
 
     # Back up and remove the shared data home (memory / contexts / learning) only
     # when this is the last harness referencing it; plans/ is always retained.
+    # The home is the one the latest install recorded, so the stores are reversed
+    # where they were written.
     data_home_removal = _remove_data_home(
-        harness_name, root=root, allowed_root=allowed_root
+        harness_name,
+        root=root,
+        home=_data_home_for(record, root=root),
+        allowed_root=allowed_root,
     )
     if data_home_removal is not None:
         results.append(data_home_removal)

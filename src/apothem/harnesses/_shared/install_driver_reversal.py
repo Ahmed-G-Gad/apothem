@@ -31,12 +31,12 @@ from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib.data_home import resolve_install_data_home, resolve_shared_data_home
+from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
 from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_lifecycle import _remove_data_home
+from .install_driver_lifecycle import _data_home_for, _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _normalized,
@@ -245,9 +245,13 @@ def rollback_install(
         if result is not None:
             results.append(result)
     created = {Path(path) for path in record.created_dirs}
-    stores = resolve_shared_data_home(base=root)
+    # The stores live where the reversed install wrote them, as its record says.
+    home = _data_home_for(record, root=root)
+    stores = DataHome.from_root(home)
     if created & {stores.memory, stores.contexts, stores.learning}:
-        removal = _remove_data_home(harness_name, root=root, allowed_root=allowed_root)
+        removal = _remove_data_home(
+            harness_name, root=root, home=home, allowed_root=allowed_root
+        )
         if removal is not None and removal.outcome != "unchanged":
             results.append(removal)
     results.extend(remove_created_dirs(created, allowed_root=allowed_root))
