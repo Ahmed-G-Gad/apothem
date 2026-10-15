@@ -1,49 +1,37 @@
 ---
 title: "Apothem と素の CodeBuddy ルールの比較"
-description: "CodeBuddy のプロジェクトルールを、プロジェクトごとに .codebuddy/rules ファイルを手書きするのではなく Apothem 経由にする理由。"
+description: "CodeBuddy のプロジェクトルールを、プロジェクトごとに .codebuddy/rules ファイルを手書きするのではなく、Apothem 経由で管理する理由。"
 machineTranslated: true
 sourceHash: "54d7b1eeaef0f675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-CodeBuddy はプロジェクトルールを `.codebuddy/rules/*.md` から読み込みます。それ
-らのファイルをプロジェクトごとに、ずっと手書きすることもできます。Apothem はその
-うちの 1 つをあなたの代わりに管理し、すべての環境とすべてのプロジェクトにわたって
-一貫させます。
+CodeBuddy は、プロジェクトのルールを `.codebuddy/rules/*.md` から読み込みます。これらのファイルは、プロジェクトごとに、いつまでも手作業で作成できます。Apothem の codebuddy アダプターは、共有プロファイルからそのうちの一つをレンダリングし、すべてのハーネスとすべてのプロジェクトにわたって一貫性を保ちます。このページでは、その設定を手作業で管理する場合と、Apothem で管理する場合を比較します。
 
-## 素のやり方
+## 作業量の比較
 
-CodeBuddy ルールを手書きするとは、次のことを意味します。
+| タスク | 手作業の設定 | Apothem で管理 |
+| ---- | --------------- | --------------- |
+| ルールを作成する | 同じ規律を、プロジェクトごとに `.codebuddy/rules/` へコピー＆ペーストする | 共有コーパスからレンダリングされる |
+| 正とする情報源 | 各プロジェクト独自のファイル | 正規のコホートが一つ |
+| ルールをハーネス間で揃えて保つ | ツールごとに導き直す | 自動的に投影される |
+| ルールを更新する | すべてのプロジェクトを手作業で編集する | `apothem update --harness codebuddy --project <path>` |
+| 設定を削除する | 手作業で削除 | タイムスタンプ付きバックアップを取って `apothem uninstall` |
 
-- 新しいプロジェクトごとに同じエンジニアリングの規律を `.codebuddy/rules/` へ
-  コピー＆ペーストする。
-- 規律が進化するにつれて同期がずれていく——単一の信頼できる情報源がない。
-- Cursor、Windsurf、Claude Code、そしてあなたが使う他のすべてのツールについて
-  同じ慣習を再導出する。各ツールに独自のルール面があるためです。
+## Apothem が管理する対象
 
-## Apothem のやり方
+codebuddy アダプターは、共有ルールを専用ファイル `<project>/.codebuddy/rules/apothem-rules.md` にレンダリングし、それ以外には何も書き込みません。`CODEBUDDY.md` のメモリファイル、`.codebuddy/settings.json` の権限と MCP サーバー、作成したその他のルールファイルは、すべてオペレーターが所有したままです。アダプターはこれらの面を認識しますが、編集することは決してありません。共有ルールへの変更はすべて、次の `apothem update` の際にファイルを再レンダリングします。
 
-Apothem はソースリポジトリに 1 つの正規のルール群を保ち、それを各環境のネイティブ
-面へ投影します。CodeBuddy には次を書き込みます。
+## 移行の手順
 
-```
-<project>/.codebuddy/rules/apothem-rules.md
-```
+1. まだの場合は、`apothem profile init` を実行して共有プロファイルを作成します。
+2. 既存の `.codebuddy/rules/` ファイルにある規律を、
+   共有コーパスへ移します。
+3. `apothem install --harness codebuddy --project <path>` を実行して、手を加えていない自分のルールと並べて `apothem-rules.md` ファイルをレンダリングします。
+4. `apothem verify --harness codebuddy --project <path>` を実行して、設定が配置されたことを確認します。
+5. 以降の変更はすべて `apothem update --harness codebuddy --project <path>` を使います。
 
-| 関心事 | 素の CodeBuddy | Apothem |
-| --- | --- | --- |
-| 信頼できる情報源 | 各プロジェクトのファイル | 1 つの正規の群 |
-| 環境間の一貫性 | ツールごとに手動 | 自動で投影 |
-| 更新 | プロジェクトごとに手で編集 | `apothem update --harness codebuddy --project <path>` |
-| 操作者自身のルール | 規律と混在 | 影響なし——Apothem は専用ファイルを書き込む |
-| 削除 | 手動削除 | タイムスタンプ付きバックアップを伴う `apothem uninstall` |
+## 次に読むもの
 
-## あなたのものとして残るもの
-
-Apothem は `apothem-rules.md` だけを書き込みます。あなたの `CODEBUDDY.md` メモリ
-ファイル、`.codebuddy/settings.json` の権限と MCP サーバー、そしてあなたが書いた
-他のあらゆるルールファイルは、完全に操作者の所有のままです。アダプターはそれらの
-面を認識しますが、決して編集しません。
-
-ライフサイクルコマンド全体は
-[CodeBuddy 環境ページ](/docs/harnesses/codebuddy)を参照してください。
+- [CodeBuddy アダプターのリファレンス](/docs/harnesses/codebuddy)
+- [比較の概要](/docs/comparison)

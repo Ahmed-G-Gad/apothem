@@ -2,7 +2,7 @@
 title: "/security-audit"
 description: "/security-audit — Auditoría integral de la postura de seguridad frente a la versión vigente de OWASP ASVS y el OWASP Top 10."
 machineTranslated: true
-sourceHash: "dc9e7b7c5af237c5"
+sourceHash: "b27563cba30f3df4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Auditoría integral de la postura de seguridad frente a la versión vigente de O
 Con argumentos:
 
 ```bash
-/security-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/security-audit [path/to/repo/] [--focus CATEGORY] [--dry-run]
 ```
 
 ## Entradas
 
-Repositorio anfitrión en cualquier estado de su ciclo de vida
+Repositorio anfitrión en un commit de git fijado
 
 ## Salidas
 
-Hallazgos de seguridad + REPORT.md
+Hallazgos de seguridad en `_inputs/security-audit-findings.md`
 
 ## Aguas abajo
 
@@ -37,22 +37,15 @@ La etapa security-audit de la Secuencia de Revisión de Auditoría
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
-
-1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
-2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
-3. **Ejecutar tareas** — Cumple la misión del comando.
-4. **Verificar salidas** — Confirma que todas las salidas declaradas existen y pasan las compuertas de calidad.
-5. **Actualizar PROGRESS.md** — Registra las salidas verificadas en el Registro de Salidas de Fase.
-6. **Emitir REPORT.md** — Queda registrada la prueba de liberación de la compuerta de pre-emisión.
+El comando ejecuta seis fases de auditoría: ingesta de entradas, secretos y permisos, validación de entradas e inyección, deserialización y recorrido de rutas, CVE de dependencias y CodeQL, y emisión de hallazgos con la puerta de validación.
 
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
-| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
+| Destino rechazado | La ruta no es un árbol de trabajo de git | Indica la raíz del repositorio como ruta |
 
 ## Ejemplos
 
@@ -60,8 +53,8 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 # Dry-run to preview what would happen
 /security-audit --dry-run
 
-# Execute against a named plan suite
-/security-audit path/to/plan-suite/
+# Execute against a host repository
+/security-audit path/to/repo/
 ```
 
 ## Referencias cruzadas

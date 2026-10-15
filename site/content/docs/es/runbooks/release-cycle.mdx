@@ -2,7 +2,7 @@
 title: "Runbook del ciclo de lanzamiento"
 description: "Flujo de lanzamiento completo, desde las puertas locales, pasando por el GitHub Release firmado, hasta la publicación en npm."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,9 +15,7 @@ superficie orientada al usuario responde al comando de instalación canónico.
 
 El modelo de lanzamiento es **aditivo**. Cada lanzamiento agrega un commit en
 `main` y una etiqueta `vX.Y.Z` anotada y firmada; no se hace force-push de nada y
-no se elimina ninguna etiqueta, GitHub Release ni versión de npm anterior. El
-proyecto tiene tres lanzamientos, cada uno con su etiqueta, su GitHub Release y
-su versión de npm, y todos siguen publicados: las versiones de npm son
+no se elimina ninguna etiqueta, GitHub Release ni versión de npm anterior. Cada lanzamiento conserva su etiqueta, su GitHub Release y su versión de npm, y todos siguen publicados: las versiones de npm son
 inmutables (un `name@version` publicado nunca puede reemplazarse), y las
 instalaciones fijadas dependen de las etiquetas.
 
@@ -90,7 +88,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -244,6 +241,8 @@ apothem --version
 ```
 
 Salida esperada: `Apothem, version X.Y.Z`.
+
+El lanzador se escribe en `~/.local/bin`, que debe estar en `PATH` para que la comprobación anterior se ejecute. Cuando ese directorio no está en `PATH`, el instalador imprime la línea `export PATH` que hay que añadir.
 
 ### 5.4 Instalador de script de un solo paso (Windows)
 

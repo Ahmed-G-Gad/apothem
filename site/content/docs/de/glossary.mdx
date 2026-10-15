@@ -2,7 +2,7 @@
 title: "Glossar"
 description: "Apothem-Glossar — wichtige Begriffe und Konzepte."
 machineTranslated: true
-sourceHash: "3f83ebe8ab57a917"
+sourceHash: "970b0d22cc5f76db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,11 +35,12 @@ Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates — die maschine
 prüfbaren Validatoren unter `src/apothem/conformity/gate.py`. Läuft vor jeder
 Artefakt-Ausgabe; die abwägungsbasierten Stufen werden im Review bewertet.
 
-## Kohorte
-Eine gruppierte Menge synchronisierter Artefakte einer Art — Regeln, Commands,
-Skills, Agents, Hooks, Output-Styles, Schemas oder Templates —, die die Engine aus
-dem einzigen gemeinsamen Profil in jeden Harness materialisiert. Ein Profil trägt
-jede Kohorte; jeder Adapter projiziert sie in die native Oberfläche seines Harness.
+## Konformitäts-Gate
+Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates — die maschinell
+prüfbaren Validatoren unter `src/apothem/conformity/gate.py`. Läuft als beratende
+Prüfung vor der Artefaktausgabe, wo der Harness einen PreToolUse-Hook bereitstellt
+(nur mit `--strict` blockierend, wie in CI und Pre-Commit); die abwägungsbasierten
+Stufen werden im Review bewertet.
 
 ## Einstiegspunkt
 Die in `pyproject.toml` deklarierte setuptools-Einstiegspunkt-Gruppe

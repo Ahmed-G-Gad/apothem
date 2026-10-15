@@ -2,7 +2,7 @@
 title: "Spécification du schéma d'artefacts"
 description: "Schéma canonique de frontmatter YAML et champs requis pour tous les types d'artefacts de l'arbre des sources d'Apothem, avec modèles par classe et règles de validation."
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,9 +31,10 @@ chaque type.
 **Convention de versionnage (classes d'artefacts versionnées : commandes, assistants, skills, CLAUDE.md) :**
 
 - `version` est **sémantique** (`MAJOR.MINOR.PATCH`). Incrémentez MAJOR pour les changements incompatibles de schéma ou de contrat ; MINOR pour les changements additifs compatibles (nouveaux champs optionnels, sections supplémentaires, anti-modèles supplémentaires) ; PATCH pour un changement de comportement qui corrige une directive existante sans rompre le contrat.
-- Les corrections de fautes de frappe, les corrections de liens, la mise en forme et les modifications portant uniquement sur des commentaires ou sur la documentation laissent `version` inchangée. Seul un changement de comportement l'incrémente.
+- Les corrections de fautes de frappe, les corrections de liens, la mise en forme et les modifications de commentaires ou de documentation seules laissent `version` inchangée. Seul un changement de comportement l'incrémente.
 - `updated` est la **date ISO 8601** (`YYYY-MM-DD`) de la modification la plus récente. Elle doit changer à chaque incrément de `version`, et elle change aussi lors d'une correction de faute de frappe ou de lien qui n'incrémente pas la version.
 - Les nouveaux artefacts démarrent à `v0.Y.Z`. La promotion vers `vX.Y.Z` indique que le contrat de l'artefact est suffisamment stable pour constituer un engagement public.
+- Les suites de planification sont hors de cette convention. Une correction de faute de frappe dans une suite de planification incrémente le numéro PATCH de la version de la suite (`vX.Y.Z` vers `vX.Y.(Z+1)`) et ajoute une ligne au tableau Revision History. Le [guide du développeur](/docs/developer-guide) décrit la règle des suites de planification dans sa section sur les révisions des suites de planification.
 
 ---
 

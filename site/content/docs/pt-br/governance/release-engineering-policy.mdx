@@ -2,7 +2,7 @@
 title: "Política de engenharia de lançamento"
 description: "Cinco políticas canônicas para versionamento, tags de lançamento, ciclos de descontinuação, mudanças incompatíveis e procedimentos de reversão."
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,18 +35,15 @@ Convenções de tags:
   sem sufixo `-final`.
 - **Anotação** — toda tag é uma tag anotada (`git tag -a -s`)
   que carrega o resumo das notas de lançamento na mensagem da tag.
-- **Assinatura** — toda tag é assinada com GPG. O fluxo de trabalho de
-  lançamento também produz uma assinatura cosign sem chave do Sigstore em
-  cada artefato e uma prova de procedência de lançamento SLSA-3, ambas
-  anexadas à página do GitHub Release.
+- **Assinatura** — toda tag é assinada com GPG. O fluxo de trabalho de lançamento
+  também produz uma assinatura cosign sem chave do Sigstore para cada artefato e um
+  registro de procedência SLSA-3, ambos anexados à página do GitHub Release.
 
 ### Modelo de lançamento: aditivo
 
 Os lançamentos são aditivos. Cada lançamento adiciona um commit em `main` e uma
 tag; `main` nunca recebe force-push, e nenhuma tag, GitHub Release ou versão do
-npm publicada é excluída, movida ou reutilizada. O projeto tem três lançamentos,
-cada um com sua tag, seu GitHub Release e sua versão do npm, e todos os três
-permanecem publicados. As versões do npm são imutáveis: um `name@version`
+npm publicada é excluída, movida ou reutilizada. Cada lançamento mantém sua tag, seu GitHub Release e sua versão do npm, e todos permanecem publicados. As versões do npm são imutáveis: um `name@version`
 publicado nunca pode ser substituído, e um número despublicado nunca pode ser
 usado novamente. As instalações fixadas e os builds reproduzíveis dependem de
 cada tag publicada. Os runbooks de

@@ -2,7 +2,7 @@
 title: "Pages 有効化ランブック"
 description: "CNAME DNS 設定により apothem.ahmedgad.com 上でカスタムドメイン付きの GitHub Pages を立ち上げる手順別ランブック。"
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -168,7 +168,7 @@ Pages の再起動が必要です（API 経由でカスタムドメインをオ�
 ### 2.6 ディープリンクを検証する
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 期待される出力:
@@ -313,10 +313,10 @@ Pages 有効化の手順には、文書化された 4 つの障害モードが�
 
 | 障害 | 診断 | 復旧 |
 |---|---|---|
-| `gh api .../pages` が 404 を返す | リポジトリで Pages が有効化されていない | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` を実行し、§2.1 を再試行 |
-| 30 分後も `dig` が空を返す | DNS レコードがプロバイダーで確定されていない | 一致するプロバイダー付録へ戻る。レコードが保存されている（下書き / 保留ではない）ことを検証する。`Save` 手順を見落としていないかパネルを検査する |
-| `https_certificate.state: errored` | Pages が証明書を発行できない | Pages 設定でカスタムドメインをオフにしてからオンにする。これで発行が再トリガーされる。新しい試行のため最大 24 時間待つ |
-| ビルド後のディープリンク 404 | 静的サイトのビルドがそのページを含めていない | `gh workflow run publish-static-site.yml`。完了後、`gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` が `success` を返すことを検証する |
+| `gh api .../pages` が 404 を返す | リポジトリで Pages が有効化されていない | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` を実行してから、§2.1 を再試行 |
+| 30 分後も `dig` が空を返す | DNS レコードがプロバイダーで確定されていない | 一致するプロバイダーの付録へ戻る。レコードが保存されている（下書き・保留ではない）ことを検証する。`Save` の手順を見落としていないか、パネルを検査する |
+| `https_certificate.state: errored` | Pages が証明書を発行できない | Pages の設定でカスタムドメインをオフにしてからオンにする。これで発行が再度トリガーされる。新しい試行まで最大 24 時間待つ |
+| ビルド後のディープリンクで 404 | 静的サイトのビルドにそのページが含まれていない | `gh workflow run publish-static-site.yml` を実行する。完了後、`gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` が `success` を返すことを検証する |
 
 一致する診断を 1 サイクル実行しても復旧が失敗する場合は、リリース復旧
 ランブックへエスカレーションしてください（新しい履歴の強制プッシュにより、

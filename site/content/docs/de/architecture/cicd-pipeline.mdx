@@ -2,7 +2,7 @@
 title: "CI/CD-Pipeline-Diagramm"
 description: "Visuelle Karte und Spuraufschlüsselung der Workflow-Phasen für Build, Test, Lint, Sicherheit und Veröffentlichung, die jede Codeänderung und jedes Release kontrollieren."
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -42,15 +42,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -67,30 +68,33 @@ flowchart LR
 
 - **Spur für statische Analyse** — schnelles Feedback. Ruff deckt den Python-Stil
   und ein kuratiertes Regelwerk ab; mypy erzwingt Typdisziplin im Strict-Modus;
-  der Frontmatter-Validator kontrolliert die Artefakt-Schema-Konformität für
-  Regeln, Skills, delegierte Worker und Befehle. markdownlint gehört nicht zu
-  dieser Spur: Es läuft nur als Pre-Commit-Hook, und die CI führt es nicht aus
-  (siehe [Markdown-Konventionen](/docs/reference/markdown-conventions)).
+  der Frontmatter-Validator prüft die Schemakonformität der Artefakte für Regeln,
+  Skills, delegierte Worker und Befehle. markdownlint gehört nicht zu dieser
+  Spur: Es läuft nur als Pre-Commit-Hook, und die CI führt es nicht aus (siehe
+  [Markdown-Konventionen](/docs/reference/markdown-conventions)).
 - **Test-Spur** — `pytest tests/hooks` übt die Hook-Laufzeit gegen die vollständige
   Ereignismatrix aus; `validate_ecosystem.py` ist das primäre strukturelle Gate
-  für artefaktübergreifende Konsistenz; `chaos_pass.py` und die
-  klassenbezogene Benchmark-Suite unter `src/apothem/benchmarks/` aktivieren sich
-  auf der Release-Spur, um Verschlechterung bei verschlechterten Eingaben und
-  Laufzeitbudget-Regressionen zu erkennen.
+  für artefaktübergreifende Konsistenz; `chaos_pass.py` läuft im CI-Qualitätsjob
+  bei Pushes und Pull Requests auf `main` (pfadgefiltert), um Verschlechterungen
+  bei beeinträchtigten Eingaben zu erkennen. Die klassenbezogene Benchmark-Suite
+  unter `src/apothem/benchmarks/` läuft in keinem CI-Workflow.
 - **Sicherheits-Spur** — das Secret-Scanning erkennt versehentlich committete
-  Anmeldedaten; die SBOM-Generierung und die Lizenzaudits kontrollieren die
-  Lieferketten-Oberfläche für jede Produktionsreife-Installation.
-- **Veröffentlichungs-Spur** — läuft nur bei getaggten Releases. Die
-  Signed-Tag-Verifikation bestätigt die Herkunft des Release-Branches; die
-  Projekt-Website wird von `site/dist/` zum GitHub-Pages-Ziel veröffentlicht; die
-  Release-Notes leiten sich aus dem Keep-A-Changelog-Format von `CHANGELOG.md` ab.
+  Anmeldedaten; SBOM-Generierung und Lizenzaudits kontrollieren die
+  Lieferketten-Oberfläche jeder Installation mit Produktionsreife.
+- **Veröffentlichungs-Spur** — die Release-Workflows werden durch Tag-Pushes
+  ausgelöst; die npm- und VS-Code-Publisher lassen sich für einen bestehenden Tag
+  auch per manuellem Dispatch erneut ausführen. Die Signed-Tag-Verifikation
+  bestätigt die Herkunft des Release-Branches; die Release-Notes leiten sich aus
+  `CHANGELOG.md` im Keep-A-Changelog-Format ab. Die Projekt-Website wird von
+  `site/dist/` auf das GitHub-Pages-Ziel veröffentlicht, bei Pushes auf `main`,
+  die ihre Build-Eingaben berühren, oder bei manuellem Dispatch.
 
 ## Konkrete Konfiguration
 
 Die tatsächlichen Workflow-Dateien (`.github/workflows/ci.yml`,
-`.github/workflows/release.yml` usw.) werden während des Aufbaus des
-Produktionsreife-Ökosystems installiert. Dieses Diagramm definiert die kanonische
-Form, die jede zukünftige Konfiguration widerspiegelt.
+`.github/workflows/release.yml` usw.) liegen im Repository. Dieses Diagramm
+definiert die kanonische Form, an der sich jede künftige Konfiguration
+ausrichtet.
 
 ## Maßgebliche Querverweise
 

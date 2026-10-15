@@ -2,7 +2,7 @@
 title: "बाइनरी आर्टिफैक्ट स्वीप"
 description: "Apothem बाइनरी-आर्टिफैक्ट स्वीप — स्रोत में ट्रैक किए गए शून्य कंपाइल/पैकेज किए गए बाइनरी। OpenSSF Scorecard Binary-Artifacts जाँच का प्रमाण।"
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,8 @@ Apothem एक **शुद्ध Python स्रोत-वृक्ष** है
 
 स्रोत में बाइनरी आर्टिफैक्ट की दो संकीर्ण श्रेणियाँ अनुमत हैं:
 
-1. **ब्रांड एसेट** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`। ये `scripts/dev/rebuild-assets.{sh,ps1}` के माध्यम से `assets/src/` के SVG मास्टर से **नियतात्मक रूप से पुनर्जनित** किए जा सकते हैं। Scorecard इन्हें अपनी `image/png` छूट के अनुसार वैध मानता है।
-2. **फ़ॉन्ट फ़ाइलें** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`। प्रलेखित लाइसेंस वाली बंडल की गई फ़ॉन्ट फ़ाइलें; Scorecard की `font/*` छूट के अनुसार।
+1. **ब्रांड एसेट** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`। ये `scripts/dev/rebuild-assets-resvg.py` के माध्यम से `assets/src/` के SVG मास्टर से **नियतात्मक रूप से पुनर्जनित** किए जा सकते हैं। Scorecard इन्हें अपनी `image/png` छूट के अनुसार वैध मानता है।
+2. **फ़ॉन्ट फ़ाइलें** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`। प्रलेखित लाइसेंस वाली बंडल्ड फ़ॉन्ट फ़ाइलें; Scorecard की `font/*` छूट के अनुसार।
 
 दोनों श्रेणियाँ [`site/content/docs/brand/index.mdx`](/docs/brand) में प्रलेखित हैं और उनका उद्गम एसेट-पुनर्निर्माण रेसिपी में दर्ज है।
 
@@ -39,7 +39,7 @@ Apothem एक **शुद्ध Python स्रोत-वृक्ष** है
 
 ```shell
 # apothem रिपॉज़िटरी रूट से:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 इस आह्वान को **शून्य पंक्तियाँ** लौटानी चाहिए। एक गैर-रिक्त परिणाम यह संकेत देता है कि स्रोत में कोई बाइनरी आर्टिफैक्ट ट्रैक हो गया है — यह एक HIGH-गंभीरता वाला निष्कर्ष है जो अगली रिलीज़ को रोक देता है।
@@ -48,7 +48,6 @@ git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|cla
 
 यह स्वीप निम्न का हिस्सा है:
 
-- **प्रति-PR CI** — `.github/workflows/ci.yml` में एक बाइनरी-आर्टिफैक्ट grep चरण शामिल है।
 - **प्रति-रिलीज़ चेकपॉइंट** — रिलीज़-इंजीनियरिंग रनबुक टैगिंग से पहले स्वीप सत्यापित करता है।
 - **साप्ताहिक Scorecard रन** — OpenSSF Scorecard वर्कफ़्लो पुष्टि करता है कि जाँच उत्तीर्ण होती है।
 

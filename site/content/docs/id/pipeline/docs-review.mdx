@@ -2,7 +2,7 @@
 title: "/docs-review"
 description: "/docs-review — Pass tinjauan dokumentasi terhadap konvensi prosa dan standar kualitas sepuluh dimensi."
 machineTranslated: true
-sourceHash: "123fb8b2a0b00354"
+sourceHash: "96830aacc7564a81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Pass tinjauan dokumentasi terhadap konvensi prosa dan standar kualitas sepuluh d
 Dengan argumen:
 
 ```bash
-/docs-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/docs-review [path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]
 ```
 
 ## Masukan
@@ -29,7 +29,7 @@ Permukaan dokumentasi repositori host
 
 ## Keluaran
 
-Temuan dokumentasi + REPORT.md
+Temuan dokumentasi di `_inputs/docs-review-findings.md`
 
 ## Hilir
 
@@ -37,22 +37,14 @@ Tahap tinjauan dokumentasi dari Urutan Tinjauan Audit
 
 ## Fase alur kerja
 
-Perintah ini mengikuti alur kerja pipeline `/plan` standar:
-
-1. **Memuat konteks** — Membaca suite plan, aturan, dan Kontrak Pelanjutan.
-2. **Memverifikasi prasyarat** — Memastikan fase dependensi telah selesai.
-3. **Mengeksekusi tugas** — Menjalankan misi perintah.
-4. **Memverifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lulus gerbang kualitas.
-5. **Memperbarui PROGRESS.md** — Mencatat keluaran terverifikasi di Registri Keluaran Fase.
-6. **Memancarkan REPORT.md** — Bukti rilis gerbang pra-emisi dicatat.
+Perintah ini menjalankan lima fase: penyerapan masukan, penelusuran per-halaman, triase per-temuan, emisi temuan, dan gerbang validasi.
 
 ## Mode kegagalan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Prasyarat tidak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| File masukan hilang | File suite plan tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+| File masukan hilang | Tidak ada berkas dokumentasi yang dapat dijangkau pada jalur tersebut | Berikan root repositori atau direktori sumber dokumentasi yang berisi halaman Markdown |
 
 ## Contoh
 
@@ -60,8 +52,8 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 # Dry-run to preview what would happen
 /docs-review --dry-run
 
-# Execute against a named plan suite
-/docs-review path/to/plan-suite/
+# Execute against a repository root
+/docs-review path/to/repo/
 ```
 
 ## Referensi silang

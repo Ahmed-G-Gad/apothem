@@ -2,7 +2,7 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,7 @@ kanonische Schema für jeden Typ.
 - Tippfehlerkorrekturen, Linkkorrekturen, Formatierungen sowie reine Kommentar- oder Dokumentationsänderungen lassen `version` unverändert. Nur eine Verhaltensänderung erhöht sie.
 - `updated` ist das **ISO-8601-Datum** (`YYYY-MM-DD`) der jüngsten Bearbeitung. Es muss sich bei jeder Erhöhung von `version` ändern und ändert sich auch bei einer Tippfehler- oder Linkkorrektur ohne Versionserhöhung.
 - Neue Artefakte beginnen bei `v0.Y.Z`. Die Hochstufung auf `vX.Y.Z` zeigt an, dass der Vertrag des Artefakts stabil genug ist, um eine öffentliche Zusage zu sein.
+- Plan-Suiten fallen nicht unter diese Konvention. Eine Tippfehlerkorrektur an einer Plan-Suite erhöht die PATCH-Nummer der Suite-Version (`vX.Y.Z` zu `vX.Y.(Z+1)`) und hängt eine Zeile an die Revisionshistorie an. Der [Entwicklerleitfaden](/docs/developer-guide) beschreibt die Plan-Suite-Regel in seinem Abschnitt zu Revisionen von Plan-Suiten.
 
 ---
 

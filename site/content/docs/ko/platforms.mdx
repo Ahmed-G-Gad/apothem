@@ -2,7 +2,7 @@
 title: "플랫폼"
 description: "Apothem이 지원하는 운영 체제, 셸, 설치 프로그램 스크립트, 그리고 자체 포함 런타임을 위한 시스템 Python 사전 요건."
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,19 +19,16 @@ Apothem은 두 개의 설치 프로그램 스크립트를 제공하며, 이 둘�
 
 | OS 계열 | 지원 셸 | 설치 프로그램 스크립트 |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash`(시스템 bash 또는 사용자가 설치한 더 최신 bash) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| ChromeOS Linux 컨테이너 (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`, `bash`도 허용(시스템 bash 또는 사용자가 설치한 최신 bash) | `install.sh` |
+| Linux | POSIX `sh`(`bash`도 허용) | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `sh`(`bash`도 허용) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `sh`(`bash`도 허용) | `install.sh` |
+| Termux (Android) | POSIX `sh`(`bash`도 허용) | `install.sh` |
+| ChromeOS Linux 컨테이너 (Crostini) | POSIX `sh`(`bash`도 허용) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
-| PowerShell 7+가 있는 모든 플랫폼 | PowerShell 7+ (크로스 플랫폼) | `install.ps1` |
+| PowerShell 7+를 지원하는 모든 플랫폼 | PowerShell 7+(크로스 플랫폼) | `install.ps1` |
 
-두 스크립트는 서로 기능적으로 동등합니다. `install.sh`는 POSIX `bash`를
-요구합니다. `install.ps1`은 Windows PowerShell 5.1 이상, 또는 PowerShell 7
-자체가 지원하는 모든 플랫폼의 PowerShell 7+를 요구합니다 — macOS와 Linux를
-포함하며, 그곳에서는 `install.sh`의 대안이 됩니다.
+두 스크립트는 기능적으로 동등합니다. `install.sh`는 POSIX 셸(`sh`, `dash`, `ash` 또는 `bash`)을 요구합니다. `install.ps1`은 Windows PowerShell 5.1 이상, 또는 PowerShell 7 자체가 지원하는 모든 플랫폼의 PowerShell 7 이상을 요구합니다. 여기에는 macOS와 Linux도 포함되며, 그곳에서 `install.ps1`은 `install.sh`의 대안입니다.
 
 ## 단 하나의 사전 요건: 시스템 Python
 

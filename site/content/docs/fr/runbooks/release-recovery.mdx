@@ -2,7 +2,7 @@
 title: "Runbook de récupération de publication"
 description: "Procédures de récupération, étape par étape, pour une publication qui échoue en cours de route sous le modèle de publication additif, sans réécrire l'historique publié."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,9 +15,7 @@ de publication et npm. Aucun force-push n'est effectué, et l'historique de
 `main` n'est jamais réécrit.
 
 L'historique publié est permanent. Chaque étiquette de publication, chaque
-GitHub Release et chaque version npm que le projet a publiés restent publiés :
-le projet compte trois publications, chacune avec son étiquette, son GitHub
-Release et sa version npm. Les versions npm sont immuables : un `name@version`
+GitHub Release et chaque version npm que le projet a publiés restent publiés. Les versions npm sont immuables : un `name@version`
 publié ne peut jamais être remplacé, et un numéro de version dépublié ne peut
 jamais être réutilisé. La récupération avance donc avec une nouvelle publication
 de niveau patch ; elle ne supprime ni ne réaffecte rien de ce qu'un utilisateur

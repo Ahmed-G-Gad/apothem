@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "‏/plan-generate — يُولّد حزمة خطة رئيسية كاملة من ملف `_spec/spec.md` المكتوب."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## المدخلات
 
-ملف <bdi>`_spec/spec.md`</bdi> المكتوب + <bdi>`_inputs/handoff-manifest.yml`</bdi> من <bdi>`/plan-spec`</bdi> (أو نثر يقدّمه المشغّل).
+ملف <bdi>`_spec/spec.md`</bdi> المكتوب + <bdi>`_inputs/handoff-manifest.yml`</bdi> الصادران من <bdi>`/plan-spec`</bdi> (يُرفَض النثر وحده: شغِّل <bdi>`/plan-spec`</bdi> لتأليف <bdi>`_spec/spec.md`</bdi>؛ و<bdi>`--override`</bdi> يتجاوز البوابة ويسجّل ملاحظةً في <bdi>PLAN-NOTES.md</bdi>).
 
 ## المخرجات
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## المراحل اللاحقة
 
-<bdi>/plan-review</bdi> أو <bdi>/plan-execute</bdi> (المستهلِك اللاحق)
+<bdi>/plan-review</bdi> (المستهلِك اللاحق)؛ و<bdi>`/plan-execute`</bdi> فقط بعد وجود بطاقات المراجعة (أو مع <bdi>`--override`</bdi>)
 
 ## مراحل سير العمل
 

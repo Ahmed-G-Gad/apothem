@@ -49,7 +49,7 @@ def test_docs_state_the_additive_model(path: Path) -> None:
 def test_policy_records_the_release_facade_contradiction() -> None:
     text = _POLICY.read_text(encoding="utf-8")
     assert "release-facade" in text
-    assert "three" in text, "the policy records how many releases exist"
+    assert "stay published" in text, "the policy says every release stays published"
     # A published page names work in plain words, never by a work-item code
     # (a capital letter, a dash and two digits, with an optional infix).
     leaked = re.findall(r"\b[DFR]-(?:[A-Z][0-9]-)?[0-9]{2}\b", text)

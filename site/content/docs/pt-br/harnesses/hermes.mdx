@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de harness do Apothem para o Hermes (Prévia)."
 machineTranslated: true
-sourceHash: "d9218fbdb9417528"
+sourceHash: "f51d1e3b53ab82e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,11 +32,13 @@ qual cada citação no estilo do repositório (`rules/<name>.md`, `templates/...
 
 ## Mapeamento do perfil para a configuração nativa
 
-O adaptador lê o perfil compartilhado do Apothem e renderiza a configuração YAML
-nativa, incluindo o inventário MCP do perfil. A identidade, as preferências e as
-regras do perfil vão para o documento de perfil. Os comandos compartilhados, as
-skills, as definições de auxiliares, as regras, os templates e os prompts de
-hook chegam como material de suporte sob `~/.hermes/.apothem/support/`.
+O adaptador lê o perfil compartilhado do Apothem e renderiza a configuração YAML nativa,
+incluindo o inventário de MCP do perfil. Os servidores MCP vêm da seção `mcp_servers`
+do perfil. Eles são renderizados em `config.yaml` a cada instalação e atualização, e não
+copiados como arquivos. A identidade, as preferências e as regras do perfil vão para o
+documento de perfil. Os comandos compartilhados, as skills, as definições de auxiliares,
+as regras, os templates e os prompts de hook chegam como material de suporte em
+`~/.hermes/.apothem/support/`.
 
 ## Notas de compatibilidade
 

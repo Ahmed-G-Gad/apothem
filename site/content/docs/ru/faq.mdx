@@ -2,7 +2,7 @@
 title: "Часто задаваемые вопросы"
 description: "Распространённые вопросы о назначении Apothem, поддерживаемых окружениях, необязательности наборов планов, настройке правил, типах артефактов и расположении состояния экосистемы."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,8 +29,9 @@ Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
 Адаптер Claude Code материализуется в `~/.claude/`; его диспетчер хуков нейтрален к хосту —
-он разрешает корень экосистемы сначала из `$CLAUDE_PROJECT_DIR`, затем
-из `$LLM_PROJECT_DIR`, а затем откатывается к `$HOME/.claude`.
+он разрешает корень экосистемы сначала из `$CLAUDE_PROJECT_DIR`, затем из
+`$LLM_PROJECT_DIR`, затем пробует поиск относительно скрипта и рабочего каталога и в
+конце откатывается к `$HOME/.claude`.
 
 ## Обязательно ли использовать конвейер наборов планов?
 
@@ -40,9 +41,9 @@ Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 
 ## Как настроить правила без форка репозитория?
 
-Добавьте собственный файл правила в `src/apothem/rules/<my-rule>.md`
-с каноническим frontmatter. Загрузчик правил подхватывает каждый
-файл, соответствующий шаблону `src/apothem/rules/*.md`.
+Добавьте строку в список `rules:` в `~/.config/apothem/profile.yaml` и повторно запустите
+установку или обновление. Файлы правил в `src/apothem/rules/` редактируют упакованное
+дерево исходников, которое архивный установщик заменяет при запуске с `--yes`.
 
 ## Как временно отключить правило?
 
@@ -75,8 +76,13 @@ Advisories и `me@ahmedgad.com`.
 ## Где хранится состояние экосистемы?
 
 - **Состояние планов по набору** хранится в `<project>/.apothem/plans/{suite}/`.
-- **Память по проекту** хранится в `projects/{hash}/memory/`.
-- **Межпроектная память** хранится в `memory/`.
+- **Память Apothem** хранится в `.apothem/memory/` под корнем установки (для Claude Code:
+  `~/.claude/.apothem/memory/`; `~/.apothem/memory/`, когда `workspace.scope` равен
+  `user-home`; `<project>/.apothem/memory/` для установок в масштабе проекта). Собственная
+  автопамять Claude Code хранится в корне конфигурации окружения, в
+  `projects/{hash}/memory/` (для Claude Code: `~/.claude/projects/{hash}/memory/`).
+- **Межпроектная память** хранится в том же корне конфигурации окружения, в
+  `.apothem/memory/` (для Claude Code: `~/.claude/.apothem/memory/`).
 - **Черновики по сессии** хранятся в `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Могу ли я продолжить длительную работу в новой сессии или на другой машине?

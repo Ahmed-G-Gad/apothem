@@ -2,7 +2,7 @@
 title: "Sikap agnostik-host"
 description: "Bagaimana Apothem mencapai sikap agnostik-host melalui profil bersama dan adaptor harness."
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,4 +83,4 @@ inti. Penyimpangan secara struktural mustahil.
 
 ## Jaminan portabilitas
 
-Perintah dan pembantu yang ditandai `portability: universal` dijamin dapat diterjemahkan ke setiap harness yang didukung. Perintah dan pembantu yang ditandai `portability: project-specific` mungkin memerlukan dokumentasi override per-harness di badan berkas.
+Perintah dan pembantu yang ditandai `portability: universal` diterjemahkan ke setiap harness yang entri registrinya mendukung permukaan command (dikonversi atau pohon dukungan); harness tanpa permukaan itu tidak menerima command. Mesin tidak mengevaluasi penanda tersebut. Perintah dan pembantu yang ditandai `portability: project-specific` mungkin memerlukan dokumentasi override per-harness di badan berkas.

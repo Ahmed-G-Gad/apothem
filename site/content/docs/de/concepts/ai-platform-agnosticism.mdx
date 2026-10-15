@@ -2,7 +2,7 @@
 title: "Host-agnostische Haltung"
 description: "Wie Apothem über das gemeinsame Profil und Harness-Adapter eine host-agnostische Haltung erreicht."
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,4 +83,4 @@ Kern. Drift ist strukturell unmöglich.
 
 ## Portabilitätsgarantien
 
-Befehle und Helfer, die mit `portability: universal` gekennzeichnet sind, sind garantiert in jeden unterstützten Harness übersetzbar. Befehle und Helfer, die mit `portability: project-specific` gekennzeichnet sind, können im Dateitext eine Dokumentation der Überschreibungen je Harness erfordern.
+Befehle und Helfer, die mit `portability: universal` gekennzeichnet sind, werden in jeden Harness übersetzt, dessen Registry-Eintrag eine Befehlsoberfläche unterstützt (konvertiert oder als Unterstützungs-Teilbaum); Harnesses ohne eine solche Oberfläche erhalten keine Befehle. Die Engine wertet die Markierung nicht aus. Befehle und Helfer, die mit `portability: project-specific` gekennzeichnet sind, können im Dateitext eine Dokumentation der Überschreibungen je Harness erfordern.

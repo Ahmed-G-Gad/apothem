@@ -2,7 +2,7 @@
 title: "Barrido de artefactos binarios"
 description: "Barrido de artefactos binarios de Apothem: cero binarios compilados / empaquetados rastreados en el código fuente. Evidencia de la verificación Binary-Artifacts de OpenSSF Scorecard."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,8 @@ El barrido enumera los tipos de archivo que Scorecard considera binarios y luego
 
 Dos clases acotadas de artefactos binarios SÍ se permiten en el código fuente:
 
-1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Estos son **regenerables de forma determinista** a partir de los maestros SVG en `assets/src/` mediante `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard los considera legítimos según su exención `image/png`.
-2. **Archivos de fuentes tipográficas** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Archivos de fuentes empaquetados con licencias documentadas; según la exención `font/*` de Scorecard.
+1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Son **regenerables de forma determinista** a partir de los maestros SVG de `assets/src/` mediante `scripts/dev/rebuild-assets-resvg.py`. Scorecard los considera legítimos según su exención `image/png`.
+2. **Archivos de fuentes tipográficas** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Archivos de fuentes incluidos con licencias documentadas; según la exención `font/*` de Scorecard.
 
 Ambas clases están documentadas en [`site/content/docs/brand/index.mdx`](/docs/brand) y su procedencia queda registrada en la receta de reconstrucción de recursos.
 
@@ -39,7 +39,7 @@ Ambas clases están documentadas en [`site/content/docs/brand/index.mdx`](/docs/
 
 ```shell
 # Desde la raíz del repositorio apothem:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 Esta invocación debería devolver **cero líneas**. Un resultado no vacío indica que un artefacto binario quedó rastreado en el código fuente: un hallazgo de severidad ALTA que bloquea la siguiente publicación.
@@ -48,9 +48,8 @@ Esta invocación debería devolver **cero líneas**. Un resultado no vacío indi
 
 El barrido forma parte de:
 
-- **CI por cada PR** — `.github/workflows/ci.yml` incluye un paso de grep de artefactos binarios.
-- **Punto de control por cada publicación** — el runbook de ingeniería de publicaciones verifica el barrido antes de etiquetar.
-- **Ejecución semanal de Scorecard** — el flujo de trabajo de OpenSSF Scorecard reconfirma que la verificación pasa.
+- **Punto de control por lanzamiento** — el runbook de ingeniería de lanzamientos verifica el barrido antes de etiquetar.
+- **Ejecución semanal de Scorecard** — el flujo de trabajo de OpenSSF Scorecard vuelve a confirmar que la comprobación pasa.
 
 ## Referencias
 

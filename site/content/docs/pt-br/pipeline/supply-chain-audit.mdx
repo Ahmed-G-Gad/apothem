@@ -2,7 +2,7 @@
 title: "/supply-chain-audit"
 description: "/supply-chain-audit — Auditoria da cadeia de suprimentos frente aos padrões SLSA + Sigstore + SBOM."
 machineTranslated: true
-sourceHash: "873c959cabdae74c"
+sourceHash: "4aa08dd70480e8a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Auditoria da cadeia de suprimentos frente aos padrões SLSA + Sigstore + SBOM.
 Com argumentos:
 
 ```bash
-/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/supply-chain-audit [path/to/repo/] [--focus AXIS] [--dry-run]
 ```
 
 ## Entradas
@@ -29,7 +29,7 @@ Pipeline de publicação do repositório anfitrião
 
 ## Saídas
 
-Achados da cadeia de suprimentos + REPORT.md
+Achados da cadeia de suprimentos em `_inputs/supply-chain-audit-findings.md`
 
 ## Downstream
 
@@ -37,22 +37,15 @@ A etapa supply-chain-audit da Sequência de Revisão de Auditoria
 
 ## Fases do fluxo de trabalho
 
-O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
-
-1. **Carregar contexto** — Lê a suite de plano, as regras e o Contrato de Retomada.
-2. **Verificar pré-requisitos** — Confirma que as fases de dependência estão concluídas.
-3. **Executar tarefas** — Cumpre a missão do comando.
-4. **Verificar saídas** — Confirma que todas as saídas declaradas existem e passam pelos portões de qualidade.
-5. **Atualizar PROGRESS.md** — Registra as saídas verificadas no Registro de Saídas de Fase.
-6. **Emitir REPORT.md** — Fica registrada a prova de liberação do portão de pré-emissão.
+O comando executa cinco fases de auditoria: ingestão de entrada, percurso por eixo, triagem por achado, emissão de achados e o portão de validação.
 
 ## Modos de falha
 
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
 | Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
-| Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
-| Falta um arquivo de entrada | Arquivo da suite de plano ausente | Execute `/plan-generate` para criá-lo |
+| Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e execute novamente |
+| Alvo recusado | O alvo não tem uma superfície de lançamento | Informe uma raiz de repositório com .github/workflows/, um script de lançamento ou um manifesto de build |
 
 ## Exemplos
 
@@ -60,8 +53,8 @@ O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
 # Dry-run to preview what would happen
 /supply-chain-audit --dry-run
 
-# Execute against a named plan suite
-/supply-chain-audit path/to/plan-suite/
+# Execute against a host repository
+/supply-chain-audit path/to/repo/
 ```
 
 ## Referências cruzadas

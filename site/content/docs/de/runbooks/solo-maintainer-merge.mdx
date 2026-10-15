@@ -2,7 +2,7 @@
 title: "PR-Merge-Zeremonie für Solo-Maintainer"
 description: "Wann der Maintainer seinen eigenen Pull Request direkt mergen kann, und die Zeremonie für einen Branch-Schutz, der eine Genehmigung verlangt und sie für Administratoren durchsetzt."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,8 +85,8 @@ Wenn das Repository einen zweiten Maintainer aufnimmt, stellen Sie die Zeremonie
 
 Jeder Aufruf der Zeremonie hinterlässt Spuren auf drei dauerhaften Oberflächen, die ein Operator im Nachhinein inspizieren kann:
 
-- **Die Merge-Metadaten des PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` gibt den Merge-Akteur, den Merge-Zeitstempel und den SHA des Squash-Commits zurück. Der `mergedBy`-Akteur stimmt mit der Maintainer-Identität überein, die Schritt 3 ausgeführt hat.
-- **Das Audit-Log des Repositorys.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` ordnet den CI-Lauf nach dem Merge dem Merge-Commit zu; das Audit-Log der Schutzregeln des Repositorys (`gh api /repos/<owner>/<repo>/branches/main/protection`-Verlauf über die Oberfläche Settings → Branches) zeigt die Umschaltungen aus Schritt 2 und Schritt 4, die das Merge-Fenster einrahmen.
-- **Die Git-Historie des Maintainers.** `git log main --merges --first-parent` listet jeden Squash-Merge-Commit auf `main` mit der entsprechenden PR-Nummer im Commit-Betreff auf (Suffix `(#<pr-number>)` gemäß der Voreinstellung von `gh pr merge --squash`), sodass der Operator jede vergangene Landung bis zu ihrem PR und ihrem Aufruf der Zeremonie zurückverfolgen kann.
+- **Die Merge-Metadaten des PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` liefert den Merge-Akteur, den Merge-Zeitstempel und den SHA des Squash-Commits. Der Akteur `mergedBy` stimmt mit der Maintainer-Identität überein, die Schritt 3 ausgeführt hat.
+- **Das Audit-Log des Repositorys.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` ordnet den CI-Lauf nach dem Merge dem Merge-Commit zu; das Audit-Log der Schutzregeln des Repositorys (der Verlauf von `gh api /repos/<owner>/<repo>/branches/main/protection` über die Oberfläche Settings → Branches) zeigt die Umschaltungen aus Schritt 2 und Schritt 4, die das Merge-Fenster einrahmen.
+- **Die Git-Historie des Maintainers.** `git log main --first-parent --oneline` listet jeden Squash-Merge-Commit auf `main` mit der zugehörigen PR-Nummer im Commit-Betreff auf (Suffix `(#<pr-number>)` gemäß der Voreinstellung von `gh pr merge --squash`), sodass der Operator jede frühere Übernahme bis zu ihrem PR und dem Aufruf des Zeremoniells zurückverfolgen kann.
 
-Wenn `scripts/dev/admin_merge.py` der Einstiegspunkt ist, nennt sein nicht-interaktives Log (stdout) die drei Schutz-API-Aufrufe und den Merge-API-Aufruf der Reihe nach; wird die Ausgabe des Wrappers per Pipe an `tee` weitergeleitet, entsteht ein Audit-Fragment pro Lauf, ohne von der Log-Aufbewahrung auf GitHub-Seite abzuhängen.
+Wenn `scripts/dev/admin_merge.py` der Einstiegspunkt ist, nennt sein nicht-interaktives Log (stderr) die drei Aufrufe der Schutz-API und den Aufruf der Merge-API in dieser Reihenfolge. Leitet man seinen stderr per Pipe an `tee` (`2>&1 | tee`), entsteht pro Lauf ein Audit-Fragment, ohne von der Log-Aufbewahrung auf Seiten von GitHub abzuhängen.

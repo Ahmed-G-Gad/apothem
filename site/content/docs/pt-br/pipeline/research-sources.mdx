@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Coleta sistemática de fontes: decompõe a especificação em subconsultas, dispara a descoberta em paralelo, filtra e classifica, e extrai por fonte em um livro-razão de fontes classificado."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Coleta sistemática de fontes — decompõe a especificação de pesquisa em sub
 Com argumentos:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Entradas
@@ -64,8 +64,8 @@ Além do livro-razão de fontes, este estágio constrói um livro-razão de proc
 # Coletar fontes para uma suíte de pesquisa enquadrada
 /research-sources path/to/research-suite/
 
-# Disparo de descoberta mais profundo
-/research-sources path/to/research-suite/ --depth N
+# Limitar o número de fontes aprovadas na triagem
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Referências cruzadas

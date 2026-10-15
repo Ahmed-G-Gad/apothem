@@ -2,7 +2,7 @@
 title: "Deployment-Checkliste"
 description: "Vorab-Verifizierungscheckliste zum Bereitstellen oder Teilen des Apothem-Ökosystems"
 machineTranslated: true
-sourceHash: "f19a44b28a1febc6"
+sourceHash: "09dbc1fde38d4135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,10 +108,10 @@ strukturelle Regressionen ab:
 
 Dann Live-Szenarien:
 
-- [ ] `/plan-spec --interactive` (oder `/plan-spec <sample-file>`) — schließt Ingest/Klärung ohne Fehler auf Befehlsebene ab
+- [ ] `/plan-spec <sample-file>` — schließt Ingest und Klärung ohne Fehler auf Befehlsebene ab
 - [ ] `/plan-generate --dry-run` — erzeugt eine Strukturvorschau, ohne Dateien zu schreiben
 - [ ] `/plan-status` auf einer vollständigen Plan-Suite — liefert genaue Phasenzählungen
-- [ ] Delegierter-Worker-Dispatch: der `codebase-explorer`-Worker, mit kleinem Umfang aufgerufen, schließt innerhalb von maxTurns ab und liefert strukturierte Ausgabe
+- [ ] Dispatch delegierter Worker: der Worker `codebase-explorer`, mit kleinem Umfang aufgerufen, schließt innerhalb von maxTurns ab und liefert strukturierte Ausgabe
 
 ---
 

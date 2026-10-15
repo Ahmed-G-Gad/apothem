@@ -2,7 +2,7 @@
 title: "Varredura de artefatos binários"
 description: "Varredura de artefatos binários do Apothem — zero binários compilados / empacotados rastreados no código-fonte. Evidência da verificação Binary-Artifacts do OpenSSF Scorecard."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ A varredura enumera os tipos de arquivo que o Scorecard considera binários e, e
 
 Duas classes restritas de artefatos binários SÃO permitidas no código-fonte:
 
-1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Esses são **deterministicamente regeneráveis** a partir dos mestres SVG em `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. O Scorecard os trata como legítimos conforme sua isenção `image/png`.
+1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Esses são **deterministicamente regeneráveis** a partir dos mestres SVG em `assets/src/` por meio de `scripts/dev/rebuild-assets-resvg.py`. O Scorecard os trata como legítimos conforme sua isenção `image/png`.
 2. **Arquivos de fonte** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Arquivos de fonte empacotados com licenças documentadas; conforme a isenção `font/*` do Scorecard.
 
 Ambas as classes estão documentadas em [`site/content/docs/brand/index.mdx`](/docs/brand) e sua procedência fica registrada na receita de reconstrução de recursos.
@@ -39,7 +39,7 @@ Ambas as classes estão documentadas em [`site/content/docs/brand/index.mdx`](/d
 
 ```shell
 # A partir da raiz do repositório apothem:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 Esta invocação deve retornar **zero linhas**. Um resultado não vazio indica que um artefato binário foi rastreado no código-fonte — um achado de severidade ALTA que bloqueia o próximo lançamento.
@@ -48,8 +48,7 @@ Esta invocação deve retornar **zero linhas**. Um resultado não vazio indica q
 
 A varredura faz parte de:
 
-- **CI por PR** — o `.github/workflows/ci.yml` inclui uma etapa de grep de artefatos binários.
-- **Ponto de verificação por lançamento** — o runbook de engenharia de lançamento verifica a varredura antes de etiquetar.
+- **Ponto de verificação por lançamento** — o runbook de engenharia de lançamento verifica a varredura antes de criar a tag.
 - **Execução semanal do Scorecard** — o fluxo de trabalho do OpenSSF Scorecard reconfirma que a verificação passa.
 
 ## Referências

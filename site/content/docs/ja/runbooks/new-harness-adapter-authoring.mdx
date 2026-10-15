@@ -2,7 +2,7 @@
 title: "新しいハーネスアダプターの作成"
 description: "新しい Apothem ハーネスアダプターを作成・公開するためのランブック。"
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ python -m apothem.conformity.gate --all .
 - アダプターの実装
 - `site/content/docs/harnesses/<slug>.mdx` のドキュメントページ
 - テスト
-- `pyproject.toml` でのエントリーポイント登録
+- `pyproject.toml` でのエントリーポイント登録、`src/apothem/lib/harness_registry_data.py` の `HARNESS_REGISTRY` のエントリー（そこで `SUPPORTED_HARNESS_COUNT` を更新する）、および `src/apothem/schemas/profile.schema.json` の `harnessId` 列挙への ID の追加
 - 変更履歴のエントリー

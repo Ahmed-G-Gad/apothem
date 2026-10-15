@@ -2,7 +2,7 @@
 title: "Dentro del diseño del adaptador multi-entorno"
 description: "Un análisis técnico a fondo del protocolo HarnessAdapter de Apothem y las tres clases de adaptador que materializan un perfil en diecisiete entornos."
 machineTranslated: true
-sourceHash: "aa3e6ce912cf7275"
+sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,10 +20,10 @@ proveedor. Declara las operaciones que la CLI invoca y los metadatos que la CLI
 lee:
 
 - `name` — el identificador registrado del adaptador.
-- `output_path` — dónde aterriza en disco la configuración materializada.
+- `output_path` — dónde termina en disco la configuración materializada.
 - `install` — renderizar y escribir la configuración nativa del entorno.
-- `uninstall` — eliminar la configuración materializada, dejando intacto el
-  perfil compartido.
+- `update` — volver a renderizar la configuración nativa del entorno cuando cambia el perfil.
+- `uninstall` — eliminar la configuración materializada, dejando intacto el perfil compartido.
 - `is_installed` — informar si la configuración del entorno está presente.
 - `verify` — detectar la deriva entre el perfil y la configuración en disco.
 
@@ -97,13 +97,7 @@ ajustes de proveedor bajo
 renderiza un archivo de configuración nativo a partir del perfil; propaga
 artefactos y directorios de convención directamente.
 
-Un límite deliberado: el adaptador claude-code no gestiona `CLAUDE.md`. Ese
-archivo es territorio propiedad del operador. Apothem materializa la superficie
-de configuración circundante — las reglas, los hooks, los ajustes — y deja
-intacta la voz del propio `CLAUDE.md` del operador. Un adaptador que lo
-sobrescribiera borraría instrucciones de proyecto escritas a mano en cada
-`apothem install`, así que el adaptador traza la línea en el límite del
-directorio y se detiene.
+Un límite deliberado: el adaptador claude-code gestiona solo un bloque delimitado por centinelas dentro de `CLAUDE.md`; la prosa fuera de ese bloque se conserva. El resto de ese archivo es territorio propiedad del operador. Apothem materializa la superficie de configuración que lo rodea (las reglas, los hooks, los ajustes) y conserva la prosa del operador fuera de ese bloque tal cual. Un adaptador que reescribiera todo el archivo borraría las instrucciones escritas a mano en cada `apothem install`; este solo reescribe su bloque gestionado.
 
 ## Por qué importa la uniformidad
 

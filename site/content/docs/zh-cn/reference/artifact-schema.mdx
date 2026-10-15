@@ -2,7 +2,7 @@
 title: "制品 Schema 规范"
 description: "Apothem 源码树中所有制品类型的规范 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,10 +33,11 @@ Apothem 源码树中的所有制品（位于 `src/apothem/` 下以及根配置�
 
 **版本约定（带版本的制品类别——命令、辅助器、技能、CLAUDE.md）：**
 
-- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。破坏性的 schema 或契约变更递增 MAJOR；增量式的非破坏性变更（新的可选字段、新增章节、新增反模式）递增 MINOR；在不破坏契约的前提下修正现有指令的行为变更，递增 PATCH。
+- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。破坏性的模式或契约变更递增 MAJOR；增量式的非破坏性变更（新的可选字段、新增章节、新增反模式）递增 MINOR；在不破坏契约的前提下修正现有指令的行为变更，递增 PATCH。
 - 拼写修正、链接修正、格式调整，以及仅限注释或仅限文档的编辑，都不改变 `version`。只有行为变更才会递增它。
 - `updated` 是最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而改变；在不递增版本的拼写或链接修正中，它同样会改变。
-- 新制品从 `v0.Y.Z` 起步。提升到 `vX.Y.Z` 表示该制品的契约已足够稳定，可作为公开承诺。
+- 新工件从 `v0.Y.Z` 起步。提升到 `vX.Y.Z` 表示该工件的契约已足够稳定，可作为公开承诺。
+- 计划套件不适用本约定。计划套件的错字修正会递增该套件版本的 PATCH 号（`vX.Y.Z` 变为 `vX.Y.(Z+1)`），并追加一行修订历史。[开发者指南](/docs/developer-guide)在其计划套件修订一节中描述了计划套件规则。
 
 ---
 

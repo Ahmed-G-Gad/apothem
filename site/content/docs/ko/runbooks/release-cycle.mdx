@@ -2,7 +2,7 @@
 title: "릴리스 주기 런북"
 description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 npm 게시에 이르는 완전한 릴리스 워크플로입니다."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,9 +14,7 @@ sourceHash: "5f0a7e3183712b33"
 
 릴리스 모델은 **추가형**입니다. 각 릴리스는 `main`에 커밋 하나와 서명된 주석
 `vX.Y.Z` 태그 하나를 추가합니다. 어떤 것도 강제 푸시되지 않으며, 이전의 태그,
-GitHub Release, npm 버전은 어느 것도 제거되지 않습니다. 프로젝트에는 세 개의
-릴리스가 있으며, 각 릴리스는 자체 태그, 자체 GitHub Release, 자체 npm 버전을
-가지고, 모두 게시된 상태로 남습니다. npm 버전은 변경할 수 없고(게시된
+GitHub Release, npm 버전은 어느 것도 제거되지 않습니다. 각 릴리스는 자체 태그, 자체 GitHub Release, 자체 npm 버전을 유지하며, 모두 게시된 상태로 남습니다. npm 버전은 변경할 수 없고(게시된
 `name@version`은 절대 교체할 수 없음), 고정된 설치는 태그에 의존하기
 때문입니다.
 
@@ -87,7 +85,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -228,6 +225,8 @@ apothem --version
 ```
 
 예상 출력: `Apothem, version X.Y.Z`.
+
+런처는 `~/.local/bin`에 기록되며, 위 검사를 실행하려면 이 디렉터리가 `PATH`에 있어야 합니다. 이 디렉터리가 `PATH`에 없으면 설치 프로그램이 추가할 `export PATH` 줄을 출력합니다.
 
 ### 5.4 원샷 스크립트 설치 프로그램(Windows)
 

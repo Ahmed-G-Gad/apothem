@@ -2,7 +2,7 @@
 title: "Pages 활성화 런북"
 description: "CNAME DNS 구성을 통해 apothem.ahmedgad.com에서 사용자 지정 도메인으로 GitHub Pages를 출시하는 단계별 런북."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -162,7 +162,7 @@ gh api /repos/ahmed-g-gad/apothem/pages \
 ### 2.6 딥 링크 검증하기
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 예상 출력:
@@ -303,10 +303,10 @@ Pages 활성화 절차에는 문서화된 네 가지 장애 모드가 있습니�
 
 | 장애 | 진단 | 복구 |
 |---|---|---|
-| `gh api .../pages`가 404를 반환함 | 저장소에서 Pages가 활성화되지 않음 | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` 후 §2.1 재시도 |
-| 30분 후에도 `dig`가 빈 값을 반환함 | DNS 레코드가 제공자에서 확정되지 않음 | 일치하는 제공자 부록으로 돌아가기; 레코드가 저장되었는지(초안 / 보류가 아님) 검증; 놓친 `Save` 단계가 있는지 패널 검사 |
-| `https_certificate.state: errored` | Pages가 인증서를 발급할 수 없음 | Pages 설정에서 사용자 지정 도메인을 껐다가 다시 켜기; 이는 발급을 재트리거함. 새 시도를 위해 최대 24시간 대기 |
-| 빌드 후 딥 링크 404 | 정적 사이트 빌드가 해당 페이지를 포함하지 않음 | `gh workflow run publish-static-site.yml`; 완료 시 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'`가 `success`를 반환하는지 검증 |
+| `gh api .../pages`가 404를 반환함 | 저장소에서 Pages가 활성화되지 않음 | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow`를 실행한 뒤 §2.1을 다시 시도 |
+| 30분 후에도 `dig`가 빈 값을 반환함 | 제공자에 DNS 레코드가 커밋되지 않음 | 일치하는 제공자 부록으로 돌아가기. 레코드가 저장되었는지(초안이나 보류 상태가 아닌지) 확인하고, 놓친 `Save` 단계가 있는지 패널을 확인 |
+| `https_certificate.state: errored` | Pages가 인증서를 발급할 수 없음 | Pages 설정에서 사용자 지정 도메인을 껐다가 다시 켭니다. 이렇게 하면 발급이 다시 시작됩니다. 새 시도까지 최대 24시간 기다립니다 |
+| 빌드 후 딥 링크 404 | 정적 사이트 빌드에 해당 페이지가 포함되지 않음 | `gh workflow run publish-static-site.yml`을 실행합니다. 완료되면 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'`이 `success`를 반환하는지 확인합니다 |
 
 일치하는 진단을 한 차례 거친 후에도 복구가 실패하면, 릴리스 복구 런북으로
 에스컬레이션하세요(새 히스토리의 강제 푸시가 Pages 구성을 불일치 상태로

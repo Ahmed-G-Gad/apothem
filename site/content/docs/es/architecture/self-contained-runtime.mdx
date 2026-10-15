@@ -2,7 +2,7 @@
 title: "Tiempo de ejecución autónomo"
 description: "Cómo el motor de Apothem se ejecuta desde cualquier checkout — dependencias incorporadas, el modelo de invocación PYTHONPATH=src y el arranque del árbol del plugin."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,7 +58,7 @@ supuesto ninguno. En su lugar, el motor tiene dos superficies de invocación:
 | Superficie | Invocación | Contexto |
 | ------- | ---------- | ------- |
 | CLI del motor | `python -m apothem <command>` | Un árbol de código fuente con `src/` en `PYTHONPATH` (checkout, caché de npx, árbol del plugin) |
-| Tiempo de ejecución de hooks | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | La copia materializada bajo el árbol compartido `.apothem/support/` de la raíz del entorno, por ruta absoluta |
+| Tiempo de ejecución de hooks | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | La materialización de Claude Code: la copia bajo el árbol compartido `.apothem/support/` de la raíz del entorno, por ruta absoluta |
 
 - `python -m apothem` ejecuta `src/apothem/__main__.py`, que coloca
   `src/apothem/_vendor` en `sys.path`, comprueba que `click` y `rich` se puedan
@@ -85,8 +85,7 @@ del checkout a `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Esta es exactamente la invocación que imprime el instalador de un solo paso al
-terminar.
+Cuando el lanzador `apothem` no está en PATH, el instalador de un solo paso imprime esta forma al terminar, con el directorio de dependencias incluidas antes de `src/` y el CPython que resolvió en lugar de `python`.
 
 ## Arranque del árbol del plugin
 

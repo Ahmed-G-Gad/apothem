@@ -2,7 +2,7 @@
 title: "प्लेटफ़ॉर्म"
 description: "Apothem के लिए समर्थित ऑपरेटिंग सिस्टम, शेल, और इंस्टॉलर स्क्रिप्ट, साथ ही स्व-निहित रनटाइम के लिए सिस्टम Python पूर्वापेक्षा।"
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,19 +20,16 @@ Apothem दो इंस्टॉलर स्क्रिप्ट भेजत
 
 | OS परिवार | समर्थित शेल | इंस्टॉलर स्क्रिप्ट |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash` (सिस्टम bash या एक नया उपयोगकर्ता-इंस्टॉल किया हुआ bash) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| ChromeOS Linux container (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`, साथ में `bash` भी स्वीकृत (सिस्टम bash या एक नया उपयोगकर्ता-इंस्टॉल किया हुआ bash) | `install.sh` |
+| Linux | POSIX `sh` (`bash` भी स्वीकृत) | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `sh` (`bash` भी स्वीकृत) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `sh` (`bash` भी स्वीकृत) | `install.sh` |
+| Termux (Android) | POSIX `sh` (`bash` भी स्वीकृत) | `install.sh` |
+| ChromeOS Linux container (Crostini) | POSIX `sh` (`bash` भी स्वीकृत) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | PowerShell 7+ वाला कोई भी प्लेटफ़ॉर्म | PowerShell 7+ (आर-पार-प्लेटफ़ॉर्म) | `install.ps1` |
 
-दोनों स्क्रिप्ट एक-दूसरे के कार्यात्मक समतुल्य हैं। `install.sh` को एक
-POSIX `bash` की आवश्यकता है। `install.ps1` को Windows PowerShell 5.1 या बाद के, या
-उस किसी भी प्लेटफ़ॉर्म पर PowerShell 7+ की आवश्यकता है जिसे PowerShell 7 स्वयं समर्थन करता है — जिसमें
-macOS और Linux शामिल हैं, जहाँ यह `install.sh` का एक विकल्प है।
+दोनों स्क्रिप्ट एक-दूसरे की कार्यात्मक समतुल्य हैं। `install.sh` को एक POSIX शेल (`sh`, `dash`, `ash`, या `bash`) की आवश्यकता है। `install.ps1` को Windows PowerShell 5.1 या बाद के, या उस किसी भी प्लेटफ़ॉर्म पर PowerShell 7+ की आवश्यकता है जिसे PowerShell 7 स्वयं समर्थन करता है — जिसमें macOS और Linux शामिल हैं, जहाँ यह `install.sh` का एक विकल्प है।
 
 ## एक पूर्वापेक्षा: एक सिस्टम Python
 

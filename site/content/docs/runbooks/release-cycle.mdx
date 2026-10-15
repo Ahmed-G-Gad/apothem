@@ -11,12 +11,12 @@ terminates with a verified Release page, a filed CHANGELOG, and an
 install-path smoke confirming each user-facing surface answers the
 canonical install command.
 
-The release model is **additive**. Each release adds one commit on `main`
-and one signed, annotated `vX.Y.Z` tag; nothing is force-pushed and no
-earlier tag, GitHub Release or npm version is removed. The project has three
-releases, each with its tag, its GitHub Release and its npm version, and all
-stay published: npm versions are immutable (a published `name@version` can
-never be replaced), and pinned installs depend on the tags.
+The release model is **additive**. Each release adds one commit on `main` and
+one signed, annotated `vX.Y.Z` tag; nothing is force-pushed and no earlier
+tag, GitHub Release or npm version is removed. Every release keeps its tag,
+its GitHub Release and its npm version, and all stay published: npm versions
+are immutable (a published `name@version` can never be replaced), and pinned
+installs depend on the tags.
 
 The tag push starts two workflows. `.github/workflows/release.yml` builds,
 signs, attests, and publishes the GitHub Release with its full artifact set:

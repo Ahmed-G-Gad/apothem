@@ -2,7 +2,7 @@
 title: "المسرد"
 description: "مسرد Apothem — المصطلحات والمفاهيم الأساسية."
 machineTranslated: true
-sourceHash: "3f83ebe8ab57a917"
+sourceHash: "970b0d22cc5f76db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,9 +35,7 @@ sourceHash: "3f83ebe8ab57a917"
 محوّل الحزمَ في السطح الأصلي لإطار عمله.
 
 ## بوابة المطابقة (Conformity gate)
-الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا — أدوات التحقّق
-القابلة للفحص الآلي في `src/apothem/conformity/gate.py`. تعمل قبل كل إصدار مُنتَج؛
-وتُقيَّم الأشرطة الاستدلالية في المراجعة.
+الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا — أدوات التحقّق القابلة للفحص الآلي في `src/apothem/conformity/gate.py`. تعمل بوصفها فحصًا استشاريًّا قبل إصدار القِطَع حيثما يكشف إطار العمل عن خطّاف <bdi>PreToolUse</bdi> (ولا تحجب إلا مع `--strict`، كما في <bdi>CI</bdi> و<bdi>pre-commit</bdi>)؛ وتُقيَّم الأشرطة الاستدلالية في المراجعة.
 
 ## نقطة الدخول (Entry point)
 مجموعة نقاط دخول `apothem.harnesses` الخاصة بـ setuptools المُعلَنة في

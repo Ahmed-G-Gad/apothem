@@ -2,7 +2,7 @@
 title: "자체 완결형 런타임"
 description: "Apothem 엔진이 어떤 체크아웃에서든 실행되는 방식입니다. 벤더링된 종속성, PYTHONPATH=src 호출 모델, 플러그인 트리 부트스트랩을 다룹니다."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,7 +54,7 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 | 표면 | 호출 | 맥락 |
 | ------- | ---------- | ------- |
 | 엔진 CLI | `python -m apothem <command>` | `src/`가 `PYTHONPATH`에 있는 소스 트리(체크아웃, npx 캐시, 플러그인 트리) |
-| 훅 런타임 | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | 하니스 루트의 공유 `.apothem/support/` 트리 아래에 머티리얼라이즈된 사본, 절대 경로로 호출 |
+| 훅 런타임 | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code용 머티리얼라이즈 결과: 하니스 루트의 공유 `.apothem/support/` 트리 아래에 있는 사본을 절대 경로로 호출 |
 
 - `python -m apothem`은 `src/apothem/__main__.py`를 실행합니다. 이 파일은
   `src/apothem/_vendor`를 `sys.path`에 넣고, `click`과 `rich`를 임포트할 수
@@ -79,7 +79,7 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-이것이 바로 원샷 설치 프로그램이 완료 시 출력하는 호출입니다.
+`apothem` 런처가 PATH에 없으면, 원샷 설치 프로그램은 완료 시 이 형식을 출력합니다. 이 형식에서는 벤더링된 디렉터리가 `src/`보다 앞에 오며, `python` 대신 설치 프로그램이 해석한 CPython이 쓰입니다.
 
 ## 플러그인 트리 부트스트랩
 

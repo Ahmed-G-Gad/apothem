@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — Adversarielle Kritik des Artikels auf Peer-Review-Niveau: eine siebenachsige Gutachter-Bewertungskarte (Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung, Konformität mit Berichtsrichtlinien) plus eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen."
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Unterzieht den Artikel einer adversariellen Kritik auf Peer-Review-Niveau gegen 
 Mit Argumenten:
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## Eingaben
@@ -33,16 +33,16 @@ Das Artikel-Liefergut am hostnatürlichen Ort, den die Artikel-Phase aufgezeichn
 
 ## Nachgelagert
 
-/research-publish (nachgelagerter Konsument). Ein `major-revision`- oder `reject`-Urteil treibt die Überarbeitungsschleife zurück zu `/research-paper`, um die erforderlichen Überarbeitungen vor einer erneuten Begutachtung umzusetzen.
+/research-publish (nachgelagerter Konsument). Ein Urteil `major-revision` oder `reject` bedeutet, dass die erforderlichen Überarbeitungen umgesetzt sein müssen, bevor `/research-publish` läuft.
 
 ## Workflow-Phasen
 
 Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
 
-1. **Kontext laden** — Das Artikel-Liefergut lesen.
-2. **Das Sequenz-Tor prüfen** — Bestätigen, dass der Artikel existiert; andernfalls mit `Blocked: run /research-paper first` anhalten.
-3. **Adversariell begutachten** — Die sieben Achsen bewerten (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien); die Reproduzierbarkeits-Wiederholung und das Audit der Zitationsintegrität durchführen; Widerlegung als Standard; konkrete Mängel mit Belegen verorten.
-4. **Überarbeitungen triagieren** — Die erforderlichen Überarbeitungen mit einer Begründung mit konkretem Treiber als HIGH / MEDIUM / LOW einstufen.
+1. **Kontext laden** — Das Paper als Liefergut lesen.
+2. **Das Sequenz-Gate prüfen** — Bestätigen, dass das Paper, `_outputs/analysis.md` und `_inputs/synthesis.md` existieren und nicht leer sind; andernfalls mit `Blocked: run /research-paper first` anhalten.
+3. **Adversariell begutachten** — Die sieben Achsen bewerten (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien); die Reproduzierbarkeits-Wiederholung und das Audit der Zitationsintegrität durchführen; Widerlegung als Standard ansetzen; konkrete Mängel mit Belegen verorten.
+4. **Überarbeitungen triagieren** — Die erforderlichen Überarbeitungen nach HIGH / MEDIUM / LOW einstufen, jeweils mit einer Begründung über einen konkreten Auslöser.
 5. **Das Übergabe-Manifest aktualisieren** — Den Begutachtungsbericht und das Urteil der Bewertungskarte festhalten.
 6. **Die Begutachtung ausgeben** — `_outputs/review-report.md`.
 
@@ -62,7 +62,7 @@ Die Begutachtung bewertet die empirischen Behauptungen gegen die Latte des Vorr�
 
 ```bash
 # Den Artikel per Peer-Review begutachten und eine Gutachter-Bewertungskarte ausgeben
-/research-review path/to/research-suite/
+/research-review --suite-name <name>
 ```
 
 ## Querverweise

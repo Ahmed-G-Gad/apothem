@@ -2,7 +2,7 @@
 title: "Alur kerja instalasi"
 description: "Bagaimana apothem install, update, dan uninstall bekerja secara menyeluruh."
 machineTranslated: true
-sourceHash: "78eac5e560d75cd8"
+sourceHash: "41b3200ed90016e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,12 +11,12 @@ sourceHash: "78eac5e560d75cd8"
 ```mermaid
 flowchart TD
     accTitle: Apothem install workflow
-    accDescr: Top-down flowchart of the apothem install command from CLI invocation through adapter lookup, profile load, adapter install call, native config write, and final apothem verify check.
+    accDescr: Top-down flowchart of the apothem install command from CLI invocation through adapter lookup, profile load, adapter install call, native config write, and a follow-up apothem verify check that the operator runs.
     A[apothem install --harness X] --> B[Resolve adapter through registry]
     B --> C[Load and validate profile YAML<br/>before writes]
     C --> D[Adapter.install(profile, project)]
     D --> E[Write native config and support cohorts]
-    E --> F[apothem verify --harness X]
+    E --> F[Operator runs: apothem verify --harness X]
     F --> G{All checks pass?}
     G -- yes --> H[Done]
     G -- no --> I[Report failures]

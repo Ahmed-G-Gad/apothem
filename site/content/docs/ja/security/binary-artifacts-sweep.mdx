@@ -2,7 +2,7 @@
 title: "バイナリ成果物スイープ"
 description: "Apothem のバイナリ成果物スイープ — ソースに追跡されるコンパイル済み/パッケージ化済みバイナリはゼロ。OpenSSF Scorecard の Binary-Artifacts チェックの証拠。"
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,8 @@ Apothem は**純粋な Python のソースツリー**であり、バージョン
 
 ソースには、ごく限られた 2 区分のバイナリ成果物が許可されています。
 
-1. **ブランドアセット** — `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。これらは `scripts/dev/rebuild-assets.{sh,ps1}` を介して `assets/src/` の SVG マスターから**決定論的に再生成可能**です。Scorecard はこれらを `image/png` 免除に基づき正当とみなします。
-2. **フォントファイル** — `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。ライセンスが明記された同梱フォントファイル。Scorecard の `font/*` 免除に基づきます。
+1. **ブランドアセット** — `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。これらは `scripts/dev/rebuild-assets-resvg.py` を介して、`assets/src/` の SVG マスターから**決定論的に再生成可能**です。Scorecard は、その `image/png` の免除に基づき、これらを正当なものとみなします。
+2. **フォントファイル** — `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。文書化されたライセンスを伴う同梱のフォントファイル。Scorecard の `font/*` の免除に基づきます。
 
 両区分は [`site/content/docs/brand/index.mdx`](/docs/brand) に記載され、その出所はアセット再構築レシピに記録されています。
 
@@ -39,7 +39,7 @@ Apothem は**純粋な Python のソースツリー**であり、バージョン
 
 ```shell
 # apothem リポジトリのルートから:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 この呼び出しは**ゼロ行**を返すはずです。空でない結果は、バイナリ成果物がソースに追跡されたことを示します — これは次のリリースをブロックする重大度 HIGH の指摘です。
@@ -48,9 +48,8 @@ git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|cla
 
 このスイープは次の一部です。
 
-- **PR ごとの CI** — `.github/workflows/ci.yml` にバイナリ成果物の grep ステップが含まれます。
-- **リリースごとのチェックポイント** — リリースエンジニアリングのランブックがタグ付け前にスイープを検証します。
-- **週次の Scorecard 実行** — OpenSSF Scorecard のワークフローがチェックの合格を再確認します。
+- **リリースごとのチェックポイント** — リリースエンジニアリングのランブックが、タグ付けの前にスイープを検証します。
+- **週次の Scorecard 実行** — OpenSSF Scorecard のワークフローが、チェックの合格を再確認します。
 
 ## 参考資料
 

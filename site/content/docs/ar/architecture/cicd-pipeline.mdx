@@ -2,7 +2,7 @@
 title: "مخطّط خط أنابيب CI/CD"
 description: "خريطة بصرية وتفصيل بالمسارات لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي يُشترَط اجتيازها لكلّ تغيير في الشيفرة وكلّ إصدار."
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -42,15 +42,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -65,32 +66,14 @@ flowchart LR
 
 ## أدوار المسارات
 
-- **مسار التحليل الساكن** — تغذية راجعة سريعة. يغطّي <bdi>Ruff</bdi> أسلوب
-  <bdi>Python</bdi> ومجموعة قواعد منتقاة؛ ويفرض <bdi>mypy</bdi> انضباط الأنواع
-  عند <bdi>strict</bdi>؛ ويعمل مُتحقِّق <bdi>frontmatter</bdi> بوصفه بوّابة
-  لامتثال مخطّط القِطَع للقواعد والمهارات والعمّال المُفوَّضين والأوامر. لا يقع
-  <bdi>markdownlint</bdi> في هذا المسار: فهو يعمل فقط بوصفه خطّاف
-  <bdi>pre-commit</bdi>، ولا يُشغِّله <bdi>CI</bdi> (راجع
-  [اصطلاحات <bdi>Markdown</bdi>](/docs/reference/markdown-conventions)).
-- **مسار الاختبار** — يختبر <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الخطّافات
-  على مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi> هو البوّابة
-  البنيوية الرئيسية لاتّساق ما بين القِطَع؛ ويُفعَّل <bdi>`chaos_pass.py`</bdi>
-  ومجموعة المقاييس المرجعية حسب الصنف تحت <bdi>`src/apothem/benchmarks/`</bdi>
-  على مسار الإصدار لالتقاط التدهور عند المدخلات المتدهورة وتراجعات ميزانية وقت
-  التشغيل.
-- **مسار الأمن** — يلتقط فحص الأسرار بيانات الاعتماد المُودَعة بالخطأ؛ ويشكّل
-  توليد <bdi>SBOM</bdi> وعمليات تدقيق التراخيص بوّابةً لسطح سلسلة التوريد في أي
-  تثبيت للجاهزية للإنتاج.
-- **مسار النشر** — لا يعمل إلّا على الإصدارات الموسومة. يؤكّد التحقّق من الوسم
-  الموقَّع منشأ فرع الإصدار؛ ويُنشَر موقع المشروع من <bdi>`site/dist/`</bdi> إلى
-  هدف <bdi>GitHub Pages</bdi>؛ وتُشتَقّ ملاحظات الإصدار من تنسيق
-  <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>.
+- **مسار التحليل الساكن** — تغذية راجعة سريعة. يغطّي <bdi>Ruff</bdi> أسلوب <bdi>Python</bdi> ومجموعة قواعد منتقاة؛ ويفرض <bdi>mypy</bdi> انضباط الأنواع عند <bdi>strict</bdi>؛ ويعمل مُتحقِّق <bdi>frontmatter</bdi> بوصفه بوّابة لامتثال مخطّط القِطَع للقواعد والمهارات والعمّال المُفوَّضين والأوامر. لا يقع <bdi>markdownlint</bdi> في هذا المسار: فهو يعمل فقط بوصفه خطّاف <bdi>pre-commit</bdi>، ولا يُشغِّله <bdi>CI</bdi> (راجع [اصطلاحات <bdi>Markdown</bdi>](/docs/reference/markdown-conventions)).
+- **مسار الاختبار** — يختبر <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الخطّافات عبر مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi> هو البوّابة البنيوية الرئيسية لاتّساق ما بين القِطَع؛ ويعمل <bdi>`chaos_pass.py`</bdi> في مهمّة جودة <bdi>CI</bdi> عند عمليات الدفع وطلبات السحب إلى <bdi>`main`</bdi> (مُصفّاة بحسب المسارات) لالتقاط التدهور عند المدخلات المتدهورة. ولا تعمل مجموعة المقاييس المرجعية لكل صنف تحت <bdi>`src/apothem/benchmarks/`</bdi> ضمن أيّ سير عمل لـ <bdi>CI</bdi>.
+- **مسار الأمن** — يلتقط فحص الأسرار بيانات الاعتماد المُودَعة عن طريق الخطأ؛ وتُخضِع عمليات توليد <bdi>SBOM</bdi> وتدقيق التراخيص سطحَ سلسلة التوريد لبوّابة في أي تثبيت للجاهزية للإنتاج.
+- **مسار النشر** — تُطلَق سير عمل الإصدار عند دفع الوسوم، ويمكن أيضًا إعادة تشغيل ناشِري <bdi>npm</bdi> و<bdi>VS Code</bdi> يدويًّا عبر الإرسال اليدوي لوسم موجود. يؤكّد التحقّق من الوسم الموقَّع منشأ فرع الإصدار؛ وتُشتَقّ ملاحظات الإصدار من تنسيق <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>. ينشر موقع المشروع من <bdi>`site/dist/`</bdi> إلى هدف <bdi>GitHub Pages</bdi> عند الدفع إلى <bdi>`main`</bdi> الذي يمسّ مدخلات بنائه، أو عند الإرسال اليدوي.
 
 ## التهيئة الملموسة
 
-تُثبَّت ملفّات سير العمل الفعلية (<bdi>`.github/workflows/ci.yml`</bdi>،
-<bdi>`.github/workflows/release.yml`</bdi>، وغيرها) أثناء بناء منظومة الجاهزية
-للإنتاج. يُعرِّف هذا المخطّط الشكل المعياري الذي تعكسه كلّ تهيئة مستقبلية.
+توجد ملفات سير العمل الفعلية (<bdi>`.github/workflows/ci.yml`</bdi>، <bdi>`.github/workflows/release.yml`</bdi>، وغيرها) في المستودع. يُعرِّف هذا المخطّط الشكل المعياري الذي تعكسه كلّ تهيئة مستقبلية.
 
 ## مراجع متقاطعة موثوقة
 

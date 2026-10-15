@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — Generiert eine vollständige Master-Plan-Suite aus der verfassten `_spec/spec.md`."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Mit Argumenten:
 
 ## Eingaben
 
-Die verfasste `_spec/spec.md` + `_inputs/handoff-manifest.yml` aus `/plan-spec` (oder vom Operator bereitgestellte Prosa).
+Das verfasste `_spec/spec.md` + `_inputs/handoff-manifest.yml` aus `/plan-spec` (reine Prosa wird abgewiesen: führe `/plan-spec` aus, um `_spec/spec.md` zu verfassen; `--override` umgeht das Gate und hält einen Befund in PLAN-NOTES.md fest).
 
 ## Ausgaben
 
@@ -33,7 +33,7 @@ Die verfasste `_spec/spec.md` + `_inputs/handoff-manifest.yml` aus `/plan-spec` 
 
 ## Nachgelagert
 
-/plan-review oder /plan-execute (nachgelagert)
+/plan-review (nachgelagert); `/plan-execute` erst, nachdem Review-Scorecards vorliegen (oder mit `--override`)
 
 ## Workflow-Phasen
 

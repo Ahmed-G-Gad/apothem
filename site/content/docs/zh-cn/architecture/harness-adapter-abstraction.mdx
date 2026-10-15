@@ -2,7 +2,7 @@
 title: "harness适配器抽象"
 description: "HarnessAdapter 协议——Apothem 适配器如何转译共享配置文件。"
 machineTranslated: true
-sourceHash: "bf8b17806fd4c2c6"
+sourceHash: "3e2bf8f9744fc759"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,29 +19,14 @@ Apothem 使用一份经模式校验的 YAML 配置文件作为语义层面的权
 泄漏进核心，而新增一个harness就意味着要同步改动安装、更新、卸载和校验
 逻辑。
 
-适配器模式将其反转。核心只知道 `HarnessAdapter`
-协议——一份由生命周期方法组成的小型契约。每个harness的方言都驻留在
-一个自包含的子包内，由它实现该契约。核心请求一个适配器去*安装*，
-而不必知道这究竟意味着渲染一个 JSON
-文件、写入一个规则目录，还是铺设一棵支持树。新的harness
-通过满足该协议并注册一个入口点而加入；核心中无需任何改动。这正是 Apothem
-保持宿主无关的结构性原因——该抽象就是那道边界，
-它阻止harness专属的知识扩散开来。
+适配器模式颠转了这一点。核心只认识 `HarnessAdapter` 协议——一份由生命周期方法组成的小型契约。每个工具的方言都封装在一个自包含的子包中，由该子包实现这份契约。核心请求适配器执行*安装*，而不必知道这意味着渲染一个 JSON 文件、写入规则目录，还是铺设支持子树。新的工具只需满足该协议，在 `src/apothem/lib/harness_registry_data.py` 中添加一条 `HARNESS_REGISTRY` 条目（并在那里更新 `SUPPORTED_HARNESS_COUNT`），在 `pyproject.toml` 的 `apothem.harnesses` 入口点中予以镜像，并把该 ID 加入 `src/apothem/schemas/profile.schema.json` 的 `harnessId` 枚举。这正是 Apothem 保持宿主无关的结构性原因——该抽象即是那道边界，阻止工具专属的知识扩散开来。
 
 ## 适配器的形态
 
 适配器分为两种物化形态，两者在注册表中皆可见：
 
-- **单文件渲染器**将配置文件字段转译为一份harness原生的
-  配置文件。例如，Claude Code 适配器总是从共享配置文件写出
-  `~/.claude/settings.json`，并将 Apothem
-  约定目录（`agents/`、`rules/`、`skills/`、……）摊平铺设在它旁边。
-- **规则面与支持树适配器**将 Apothem 载荷
-  cohort 传播到该harness所记录的规则位置，在存在原生格式时把 cohort 转换为
-  原生格式，而把其余部分停放在一棵从原生锚点引用的
-  Apothem 自有支持子树下。Cursor
-  适配器把单个 `.cursor/rules/apothem-rules.mdc` 写入所提供的
-  项目根目录，仅交付规则面。
+- **单文件渲染器**将配置档案字段转译为一份工具原生的配置文件。例如，OpenCode 适配器通过物化器，从共享配置档案渲染其原生配置文件。
+- **规则面与支持树适配器**将 Apothem 载荷集合传播到该工具所记录的规则位置，在存在原生格式时把集合转换为原生格式，并把其余部分放在从原生锚点引用的 Apothem 自有支持子树下。Cursor 适配器将单个 `.cursor/rules/apothem-rules.mdc` 写入所提供的项目根目录，仅交付规则面。Claude Code 适配器不从配置档案渲染 `settings.json`。它将随附的设置模板复制到 `~/.claude/settings.json` 并填入钩子解释器，把 Apothem 约定目录（`agents/`、`rules/`、`skills/`、……）扁平化铺设在其旁边，并将配置档案写入 `CLAUDE.md` 中由哨兵界定的受管块。
 
 某个给定的适配器要么是**用户作用域**（写入主目录之下），要么是
 **项目作用域**（需要 `--project <path>` 并写入该目录树内部）；
@@ -66,7 +51,7 @@ flowchart TD
     AL --> WS["windsurf adapter<br/>(project scope)"]
     AL --> ETC["… 12 more registered adapters<br/>(antigravity, gemini-cli, glm, hermes,<br/>kimi-code, open-claw, opencode, qwen-code,<br/>codebuddy, kiro, trae, zed)"]
 
-    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(single-file render)"]
+    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
     CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
     CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]

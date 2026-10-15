@@ -2,7 +2,7 @@
 title: "배포 체크리스트"
 description: "Apothem 에코시스템을 배포하거나 공유하기 전의 사전 검증 체크리스트"
 machineTranslated: true
-sourceHash: "f19a44b28a1febc6"
+sourceHash: "09dbc1fde38d4135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,10 +108,10 @@ src/apothem/agents/*.md
 
 그다음 라이브 시나리오:
 
-- [ ] `/plan-spec --interactive` (또는 `/plan-spec <sample-file>`) — 명령 수준 오류 없이 수집/명확화를 완료함
+- [ ] `/plan-spec <sample-file>` — 명령 수준 오류 없이 수집 및 명확화를 완료함
 - [ ] `/plan-generate --dry-run` — 파일을 쓰지 않고 구조 미리보기를 생성함
-- [ ] 완성된 플랜 스위트에 대한 `/plan-status` — 정확한 단계 수를 반환함
-- [ ] 위임 작업자 디스패치: 작은 범위로 호출된 `codebase-explorer` 작업자가 maxTurns 내에 완료하고 구조화된 출력을 반환함
+- [ ] 완성된 플랜 스위트에 대한 `/plan-status` — 정확한 페이즈 수를 반환함
+- [ ] 위임된 워커 디스패치: 작은 범위로 호출된 `codebase-explorer` 워커가 maxTurns 내에 완료되고 구조화된 출력을 반환함
 
 ---
 

@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 —— 发布版本"
 description: "Apothem v1.0.1 现已发布 —— 一份共享配置档案物化为十七种编码助手、多条安装路径，以及一个已签名、带凭证的版本。"
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,8 +36,7 @@ Apothem 读取 `~/.config/apothem/profile.yaml` 处的单一共享配置档案�
 - windsurf
 - zed
 
-往你的工作流里添加一个工具，运行一条命令，你的配置就到位了。移除一个工具，
-Apothem 会干净地卸载 —— 不留下任何遗留文件。
+向你的工作流添加一个工具，运行一条命令，你的配置即刻就位。移除一个工具时，Apothem 会删除它所写入的文件；共享的记忆、上下文与学习存储会在最后一个工具被移除时、备份之后一并移除，而 `plans/` 始终保留。
 
 ## 安装
 
@@ -57,12 +56,13 @@ Apothem 会干净地卸载 —— 不留下任何遗留文件。
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **一次性脚本安装器** —— 在 PATH 上放置一个自包含运行时与 `apothem`
-   启动器：
+3. **一次性脚本安装器** —— 放置一个自包含运行时与一个 `apothem` 启动器（在 POSIX 上为 `~/.local/bin/apothem`，当该目录不在 `PATH` 上时附带 PATH 提示；在 Windows 上为 WindowsApps 中的 `apothem.cmd`）：
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   POSIX 脚本默认校验发布标签的 GPG 签名，当维护者密钥不在本地密钥环中时中止。在维护者发布密钥指纹之前（参见 `SECURITY.md`），可设置 `APOTHEM_VERIFY=checksum` 以依据发布的 `SHA256SUMS` 校验归档文件，或设置 `APOTHEM_ALLOW_UNVERIFIED=1` 以在不校验标签的情况下继续。
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -104,12 +104,7 @@ GitHub Actions 中生成的 Sigstore 构建溯源。
 - `apothem profile` —— 检视并管理共享配置档案。
 - `apothem doctor` —— 诊断环境与配置问题。
 
-每个编码助手适配器都实现一个统一的 `HarnessAdapter` 协议 —— `install`、
-`uninstall`、`is_installed`、`verify` —— 因此无论底层厂商格式如何，从操作者
-的视角看，每种编码助手的行为都可预测。关于这一设计的更多内容，请阅读
-[适配器架构深度解析](/docs/blog/posts/multi-harness-adapter-design)，关于格式
-调和的更多内容，请阅读
-[跨编码助手约定收敛](/docs/blog/posts/cross-harness-convention-convergence)。
+每个工具适配器都实现统一的 `HarnessAdapter` 协议——`install`、`update`、`uninstall`、`is_installed`、`verify`——因此，无论底层厂商格式如何，从操作者的视角看，每个工具的行为都可预测。关于这一设计的更多内容，请阅读[适配器架构深度解析](/docs/blog/posts/multi-harness-adapter-design)，关于格式调和的更多内容，请阅读[跨工具约定收敛](/docs/blog/posts/cross-harness-convention-convergence)。
 
 ## 下一步去哪里
 

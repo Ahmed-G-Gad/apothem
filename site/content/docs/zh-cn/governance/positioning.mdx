@@ -2,7 +2,7 @@
 title: "定位"
 description: "将 Apothem 理解为工件批准式治理——具有十五条强制规定、规范通道输入纪律，以及面向助手驱动工作的认知身份创意架构。"
 machineTranslated: true
-sourceHash: "f3d0b1757dd0e823"
+sourceHash: "e6a2bf3e43924684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +92,7 @@ sourceHash: "f3d0b1757dd0e823"
 
 ### M4——自我应用——预发布闸门
 
-**范围。** 每个工件在发布之前都要通过一道**十五关卡预发布闸门**。机械关卡（M5、M7、M8、M10、M13）带有可执行匹配器，位于 `src/apothem/conformity/*-grep.py`，由 `src/apothem/conformity/gate.py` 编排。关卡 M3、M12 和 M15 为部分机械关卡：可执行匹配器覆盖每道关卡的一部分，其余部分由运行中的助手评估。推理关卡（M1、M2、M4、M6、M9、M11、M14）由运行中的助手评估，并记录在验证块中。关卡 M4 本身会检查验证块是否存在于工件的工作轨迹中。任何一道关卡失败都会阻止发布；迭代持续进行，直到每道关卡都通过为止。
+**范围。** 每个工件在发出之前都须通过一道**十五关卡预发布闸门**。机械关卡（M5、M7、M8、M10、M13）携带可执行匹配器，位于 `src/apothem/conformity/*-grep.py`，由 `src/apothem/conformity/gate.py` 编排。关卡 M3、M9、M12、M14 与 M15 部分属于机械关卡：可执行匹配器覆盖每道关卡的一部分，其余部分由运行中的助手评估。推理判断关卡（M1、M2、M4、M6、M11）没有匹配器，由运行中的助手评估并记录在验证块中。关卡 M4 本身会检查验证块是否存在于工件的工作轨迹中。任一关卡失败即阻止发出；迭代持续进行，直到每道关卡都通过为止。
 
 **权威规范。** `src/apothem/rules/pre-emission-gate.md`（完整的关卡表位于 `src/apothem/rules/pre-emission-gate-bars.md`）。
 

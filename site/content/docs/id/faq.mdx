@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Pertanyaan umum tentang tujuan Apothem, harness yang didukung, opsionalitas suite-rencana, kustomisasi aturan, jenis artefak, dan lokasi state ekosistem."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,9 +29,7 @@ Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
 GLM (Z.ai), and Kimi Code
 ```
 
-Adaptor Claude Code memateri ke dalam `~/.claude/`; dispatcher hook-nya bersifat netral-host —
-ia me-resolve akar ekosistem dari `$CLAUDE_PROJECT_DIR` terlebih dahulu, lalu
-`$LLM_PROJECT_DIR`, kemudian jatuh kembali ke `$HOME/.claude`.
+Adapter Claude Code mematerialisasikan ke dalam `~/.claude/`; dispatcher hook-nya bersifat netral-host — ia me-resolve akar ekosistem dari `$CLAUDE_PROJECT_DIR` terlebih dahulu, lalu `$LLM_PROJECT_DIR`, kemudian mencoba pencarian relatif-skrip dan direktori kerja, dan akhirnya kembali ke `$HOME/.claude`.
 
 ## Apakah saya perlu menggunakan pipeline suite-rencana?
 
@@ -41,9 +39,7 @@ berguna secara independen.
 
 ## Bagaimana saya mengustomisasi aturan tanpa mem-fork repositori?
 
-Tambahkan berkas aturan Anda sendiri di bawah `src/apothem/rules/<my-rule>.md`
-dengan frontmatter kanonis. Pemuat aturan mengambil setiap
-berkas yang cocok dengan pola `src/apothem/rules/*.md`.
+Tambahkan sebuah string ke daftar `rules:` di `~/.config/apothem/profile.yaml` lalu jalankan ulang pemasangan atau pembaruan. Berkas aturan di bawah `src/apothem/rules/` mengedit pohon sumber yang dipaketkan; pemasang arsip menggantinya ketika dijalankan dengan `--yes`.
 
 ## Bagaimana saya menonaktifkan aturan untuk sementara?
 
@@ -76,8 +72,8 @@ lolos.
 ## Di mana state ekosistem berada?
 
 - **State rencana per-suite** berada di bawah `<project>/.apothem/plans/{suite}/`.
-- **Memori per-proyek** berada di bawah `projects/{hash}/memory/`.
-- **Memori lintas-proyek** berada di bawah `memory/`.
+- **Memori Apothem** berada di bawah `.apothem/memory/` di dalam akar pemasangan (untuk Claude Code: `~/.claude/.apothem/memory/`; `~/.apothem/memory/` ketika `workspace.scope` bernilai `user-home`; `<project>/.apothem/memory/` untuk pemasangan berlingkup-proyek). Memori otomatis milik Claude Code sendiri berada di bawah akar konfigurasi harness, pada `projects/{hash}/memory/` (untuk Claude Code: `~/.claude/projects/{hash}/memory/`).
+- **Memori lintas-proyek** berada di bawah akar konfigurasi harness yang sama, pada `.apothem/memory/` (untuk Claude Code: `~/.claude/.apothem/memory/`).
 - **Scratch per-sesi** berada di bawah `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Bisakah saya melanjutkan pekerjaan jangka panjang di sesi baru atau di mesin lain?

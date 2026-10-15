@@ -2,7 +2,7 @@
 title: "/ux-review"
 description: "/ux-review — Revisión de experiencia de desarrollador sobre la ergonomía de la CLI, la documentación y la incorporación."
 machineTranslated: true
-sourceHash: "9f5bcdfb23374608"
+sourceHash: "17401a86d59ea454"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Revisión de experiencia de desarrollador sobre la ergonomía de la CLI, la docu
 Con argumentos:
 
 ```bash
-/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/ux-review [path/to/repo/] [--focus SURFACE] [--dry-run]
 ```
 
 ## Entradas
 
-Repositorio anfitrión en cualquier estado del ciclo de vida
+Repositorio anfitrión desplegado con README, scripts de instalación y un punto de entrada de CLI
 
 ## Salidas
 
-Hallazgos de UX + REPORT.md
+Hallazgos de UX en `_inputs/ux-review-findings.md`
 
 ## Aguas abajo
 
@@ -37,22 +37,15 @@ La etapa de revisión de UX de la Secuencia de Auditoría de Revisión
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
-
-1. **Cargar contexto** — Leer la suite de plan, las reglas y el Contrato de Reanudación.
-2. **Verificar prerrequisitos** — Confirmar que las fases dependientes están completas.
-3. **Ejecutar tareas** — Realizar la misión del comando.
-4. **Verificar salidas** — Confirmar que todas las salidas declaradas existen y pasan las compuertas de calidad.
-5. **Actualizar PROGRESS.md** — Registrar las salidas verificadas en el Registro de Salidas de Fase.
-6. **Emitir REPORT.md** — Prueba de publicación de la compuerta de pre-emisión registrada.
+El comando ejecuta cinco fases: ingesta de entradas, recorrido de ergonomía de la CLI, auditoría del flujo de instalación y de recuperación de errores, barrido de descubribilidad de la documentación y emisión de hallazgos con la puerta de validación.
 
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
-| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
+| Destino no desplegado | El destino no tiene la superficie orientada al operador | Indica la raíz del repositorio desplegado |
 
 ## Ejemplos
 
@@ -60,8 +53,8 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 # Dry-run to preview what would happen
 /ux-review --dry-run
 
-# Execute against a named plan suite
-/ux-review path/to/plan-suite/
+# Execute against a host repository
+/ux-review path/to/repo/
 ```
 
 ## Referencias cruzadas

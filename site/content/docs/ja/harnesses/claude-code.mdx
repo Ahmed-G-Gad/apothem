@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,11 +17,17 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-`claude-code` アダプターは、共有の Apothem コーパスを Claude Code のネイティブな検出ツリーにインストールします。
-Markdown のエージェント、ルール、スキル、出力スタイル、設定は、それぞれのネイティブな場所にインストールされます。
-コマンドプロンプトはスキルに変換されるため、再利用可能なワークフローは現在の Claude Code のスキル面を通じて見える状態に保たれます。
-ステータスラインレンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code はステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
-有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の `statusLine` エントリを `settings.json` に追加してください。
+`claude-code` アダプターは、共有の Apothem コーパスを Claude Code のネイティブな検出ツリーに
+インストールします。Markdown のエージェント、ルール、スキル、出力スタイル、設定は、それぞれの
+ネイティブな場所にインストールされます。コマンドプロンプトはスキルに変換されるため、再利用可能な
+ワークフローは、現在の Claude Code のスキル面を通じて見える状態に保たれます。ステータスライン
+レンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code は
+ステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
+有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の `statusLine`
+エントリーを `settings.json` に追加してください。スニペットの `commandWindows` の値は Windows で
+実行され、インタープリターを引用符なしで指定します。インタープリターのパスに空白が含まれる場合、
+ボリュームが 8.3 形式の短い名前を持っていれば、インストールはその値に Windows 8.3 形式の短い形式を
+書き込みます。`settings.json` のフックのエントリーは、完全なパスのまま残ります。
 
 **書き込まれるファイル：** `~/.claude/` 配下の `settings.json`、`CLAUDE.md` 内の Apothem ブロック、
 `agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`、および `.apothem/support/`

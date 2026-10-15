@@ -1,14 +1,14 @@
 ---
 title: "Registro do portão de pré-emissão — Verificação obrigatória de quinze barras"
-description: "Verificação de conformidade obrigatória de quinze barras executada antes da emissão de escopo significativo, com mapeamentos de ação ante falha e esquema de prova de release."
+description: "Verificação de conformidade obrigatória de quinze barras, executada antes da emissão de escopo significativo, com os mapeamentos de ação em caso de falha e o esquema do resultado do portão."
 machineTranslated: true
-sourceHash: "be81c64b8d309fc6"
+sourceHash: "69b0b6994504621b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registro canônico do portão de pré-emissão de quinze barras.** Este documento carrega a tabela completa de quinze barras do portão e o bloco YAML do esquema de prova de release; a tabela substantiva e o esquema vivem aqui, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
+> **Registro canônico do portão de pré-emissão de quinze barras.** Este documento contém a tabela completa das quinze barras do portão e o bloco YAML do esquema de resultado do portão; a tabela substantiva e o esquema vivem aqui, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
 
-Antes de qualquer emissão de artefato de escopo significativo (segundo o limiar trivial versus não trivial em `site/content/docs/governance/outward-conformity-registry.mdx` §1), execute o portão de pré-emissão de quinze barras. Mecanize via hooks PreToolUse onde possível (os greps mecânicos em `src/apothem/conformity/*-grep.py` orquestrados por `src/apothem/conformity/gate.py`); raciocine onde a mecanização for impossível. **A falha de qualquer barra individual bloqueia a emissão; revise até que cada barra passe; emita com a prova de release do portão registrada.**
+Antes de qualquer emissão de artefato de escopo significativo (segundo o limiar entre trivial e não trivial em `site/content/docs/governance/outward-conformity-registry.mdx` §1), execute o portão de pré-emissão de quinze barras. Mecanize via hooks PreToolUse sempre que possível (os greps mecânicos em `src/apothem/conformity/*-grep.py`, orquestrados por `src/apothem/conformity/gate.py`); raciocine onde a mecanização for impossível. **A falha de qualquer barra individual bloqueia a emissão; revise até que cada barra passe; emita com o resultado do portão registrado.**
 
 | # | Barra | Tipo de verificação | Falha → ação |
 | - | --- | ---------- | ---------------- |
@@ -19,16 +19,16 @@ Antes de qualquer emissão de artefato de escopo significativo (segundo o limiar
 | 5 | M5 autoridade | mecânica (grep de marcador `<USER-CONFIRM:…>`) | reencaminhar à superfície de consulta |
 | 6 | M6 expertise | raciocinada (seção de lacunas expostas presente) | expor lacunas; citar |
 | 7 | M7 anotação de opções | mecânica (o conjunto de opções carrega marcador de recomendação) | anotar |
-| 8 | M8 caráter definitivo | mecânica (grep de vocabulário de hesitação) | converter as hesitações em condicionais |
-| 9 | M9 alavancagem visual | raciocinada (existe diagrama onde é estrutural) | criar / atualizar diagrama |
-| 10 | M10 vínculo bidirecional | mecânica (grep de reciprocidade de vínculos) | fechar meias-arestas |
+| 8 | M8 definitividade | mecânica (grep de vocabulário de hesitação) | promover as hesitações a condicionais |
+| 9 | M9 alavancagem visual | mista (mecânica: data de verificação do diagrama; raciocinada: existe diagrama onde há estrutura) | criar / atualizar o diagrama |
+| 10 | M10 vinculação bidirecional | mecânica (grep de reciprocidade de vínculos) | fechar as meias-arestas |
 | 11 | M11 sprints ágeis | raciocinada (aparato de sprint instanciado) | reestruturar como sprints |
-| 12 | M12 relatório de fases e disposição canônica | mecânica (grep de saída órfã) + raciocinada | criar resumo; realocar |
-| 13 | M13 ofício de código | mecânica (lint / formatação / verificação de tipos; grep de bare-except, número-mágico, código-comentado) | revisar |
-| 14 | M14 sistematicidade | raciocinada (declara montante / jusante / pares / aplicadores) | declarar; indexar |
+| 12 | M12 relatórios de fase e disposição | mecânica (grep de saída órfã) + raciocinada | criar o resumo; realocar |
+| 13 | M13 ofício de código | mecânica (lint / formatação / verificação de tipos; grep de bare-except, número mágico, código comentado) | revisar |
+| 14 | M14 sistematicidade | mista (mecânica: procedência do produtor; raciocinada: declara montante / jusante / pares / aplicadores) | declarar; indexar |
 | 15 | M15 pronto para produção | mecânica (grep de production-ready-pr) + raciocinada | adicionar testes / documentação / CHANGELOG |
 
-## 1. Esquema de prova de release
+## 1. Esquema do resultado do portão
 
 Cada execução do portão registra o resultado na trilha de trabalho do artefato (um comentário oculto, um bloco de metadados, um arquivo de registro de emissão à parte — o que as convenções do anfitrião permitirem):
 
@@ -58,4 +58,4 @@ conformity-attestation:
   date: <ISO-8601>
 ```
 
-As marcações `n/a` são explícitas e raciocinadas — nunca omissões silenciosas. O campo `ecosystem-version` ancora a prova de release a um estado reproduzível do ecossistema de escopo de usuário (o commit git da árvore de fontes do Apothem ativo quando o portão foi executado — p. ex., o checkout `~/.claude/` para o adaptador do Claude Code), de modo que auditorias futuras possam repetir o portão contra os mesmos corpos de regras.
+As marcações `n/a` são explícitas e raciocinadas — nunca omissões silenciosas. O campo `ecosystem-version` ancora o resultado do portão a um estado reproduzível do ecossistema de escopo de usuário (o commit git da árvore de fontes ativa do Apothem quando o portão foi executado — por exemplo, o checkout em `~/.claude/` para o adaptador do Claude Code), de modo que auditorias futuras possam repetir o portão contra os mesmos corpos de regras.

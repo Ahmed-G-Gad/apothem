@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Выполняет спроектированное исследование и фиксирует сырые данные с полным происхождением, а также манифест воспроизводимости (окружение, семя, протокол, закреплённые версии)."
 machineTranslated: true
-sourceHash: "43edb7c712cda071"
+sourceHash: "669b49f8909599c4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "43edb7c712cda071"
 С аргументами:
 
 ```bash
-/research-experiment [path/to/research-suite/]
+/research-experiment [--suite-name NAME]
 ```
 
 ## Входные данные
@@ -61,8 +61,8 @@ sourceHash: "43edb7c712cda071"
 ## Примеры
 
 ```bash
-# Выполнить спроектированное исследование и зафиксировать воспроизводимые сырые данные
-/research-experiment path/to/research-suite/
+# Выполните спроектированное исследование и зафиксируйте воспроизводимые сырые данные
+/research-experiment --suite-name <name>
 ```
 
 ## Перекрёстные ссылки

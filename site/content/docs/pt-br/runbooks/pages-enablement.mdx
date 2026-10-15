@@ -2,7 +2,7 @@
 title: "Runbook de habilitação do Pages"
 description: "Runbook passo a passo para lançar o GitHub Pages com domínio personalizado em apothem.ahmedgad.com via configuração DNS de CNAME."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -172,7 +172,7 @@ API).
 ### 2.6 Verifique os links profundos
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Saída esperada:
@@ -320,10 +320,10 @@ documentados:
 
 | Falha | Diagnóstico | Recuperação |
 |---|---|---|
-| `gh api .../pages` retorna 404 | O Pages não está habilitado no repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` e depois reexecute §2.1 |
-| `dig` retorna vazio após 30 minutos | O registro DNS não está confirmado no provedor | Retorne ao apêndice do provedor correspondente; verifique que o registro esteja salvo (não rascunho / pendente); inspecione o painel por um passo `Save` omitido |
-| `https_certificate.state: errored` | O Pages não consegue emitir um certificado | Desative e reative o domínio personalizado nas configurações do Pages; isso redispara a emissão. Aguarde até 24 horas para a nova tentativa |
-| 404 em link profundo após a compilação | A compilação do site estático não incluiu a página | `gh workflow run publish-static-site.yml`; ao concluir, verifique que `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` retorne `success` |
+| `gh api .../pages` retorna 404 | O Pages não está habilitado no repositório | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` e depois tente novamente §2.1 |
+| `dig` retorna vazio após 30 minutos | O registro DNS não foi confirmado no provedor | Volte ao apêndice do provedor correspondente; verifique se o registro está salvo (não em rascunho / pendente); inspecione o painel em busca de uma etapa `Save` que tenha sido omitida |
+| `https_certificate.state: errored` | O Pages não consegue emitir um certificado | Desative e reative o domínio personalizado nas configurações do Pages; isso dispara a emissão novamente. Aguarde até 24 horas pela nova tentativa |
+| Link profundo com 404 após o build | O build do site estático não incluiu a página | `gh workflow run publish-static-site.yml`; ao concluir, verifique se `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` retorna `success` |
 
 Se a recuperação falhar após um ciclo do diagnóstico correspondente, escale
 para o runbook de recuperação de versões (um push forçado de histórico novo

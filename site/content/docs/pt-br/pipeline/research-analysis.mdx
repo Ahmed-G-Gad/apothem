@@ -2,7 +2,7 @@
 title: "/research-analysis"
 description: "/research-analysis — Analisa os dados brutos conforme o plano pré-registrado: testes planejados, tamanhos de efeito com intervalos de confiança, verificações de robustez e desvios divulgados."
 machineTranslated: true
-sourceHash: "2df8f57aeeb8e8d9"
+sourceHash: "c9d0df0af4550cbb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Analisa os dados brutos conforme o plano pré-registrado — executa os testes e
 Com argumentos:
 
 ```bash
-/research-analysis [path/to/research-suite/]
+/research-analysis [--suite-name NAME] [--override] [--correction METHOD] [--alpha LEVEL]
 ```
 
 ## Entradas
@@ -62,7 +62,7 @@ Os resultados estocásticos são reportados como melhor, média, mediana, desvio
 
 ```bash
 # Analisar os dados brutos conforme o plano pré-registrado
-/research-analysis path/to/research-suite/
+/research-analysis --suite-name my-study
 ```
 
 ## Referências cruzadas

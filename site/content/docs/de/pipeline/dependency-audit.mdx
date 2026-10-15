@@ -2,7 +2,7 @@
 title: "/dependency-audit"
 description: "/dependency-audit — Audit-Durchlauf pro Abhängigkeit (direkte + transitive) für Lizenz, CVE und Aktualität."
 machineTranslated: true
-sourceHash: "c4d7e94a7338bf03"
+sourceHash: "0c54a480092da944"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Audit-Durchlauf pro Abhängigkeit (direkte + transitive) für Lizenz, CVE und Ak
 Mit Argumenten:
 
 ```bash
-/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/dependency-audit [path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]
 ```
 
 ## Eingaben
@@ -29,7 +29,7 @@ Abhängigkeitsmanifeste des Host-Repositorys
 
 ## Ausgaben
 
-Abhängigkeitsbefunde + REPORT.md
+Abhängigkeitsbefunde unter `_inputs/dependency-audit-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,14 @@ Die dependency-audit-Stufe der Audit-Prüfsequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
-
-1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
-2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
-4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
-6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+Der Befehl durchläuft fünf Phasen: Eingabeaufnahme, Durchlauf je Abhängigkeit, Triage je Befund, Ausgabe der Befunde und das Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
 | Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
-| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+| Fehlende Eingabedatei | Im Repository-Wurzelverzeichnis wird kein Abhängigkeitsmanifest aufgelöst | Übergib ein Repository-Wurzelverzeichnis, das ein Abhängigkeitsmanifest enthält |
 
 ## Beispiele
 
@@ -60,8 +52,8 @@ Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
 # Dry-run to preview what would happen
 /dependency-audit --dry-run
 
-# Execute against a named plan suite
-/dependency-audit path/to/plan-suite/
+# Execute against a repository root
+/dependency-audit path/to/repo/
 ```
 
 ## Querverweise

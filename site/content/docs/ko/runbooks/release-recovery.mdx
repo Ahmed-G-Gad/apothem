@@ -2,7 +2,7 @@
 title: "릴리스 복구 런북"
 description: "추가형 릴리스 모델에서 진행 도중 실패한 릴리스를 게시된 히스토리를 다시 쓰지 않고 단계별로 복구하는 절차입니다."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,7 @@ sourceHash: "263f18e3216bf674"
 어떤 것도 강제 푸시되지 않으며, `main`의 히스토리는 절대 다시 쓰이지 않습니다.
 
 게시된 히스토리는 영구적입니다. 프로젝트가 게시한 모든 릴리스 태그, GitHub
-Release, npm 버전은 게시된 상태로 남습니다. 프로젝트에는 세 개의 릴리스가
-있으며, 각 릴리스는 자체 태그, 자체 GitHub Release, 자체 npm 버전을 가집니다.
+Release, npm 버전은 게시된 상태로 남습니다.
 npm 버전은 변경할 수 없습니다. 게시된 `name@version`은 절대 교체할 수 없으며,
 게시가 취소된 버전 번호는 절대 다시 사용할 수 없습니다. 따라서 복구는 새 패치
 릴리스로 앞으로 나아가며, 사용자가 이미 설치했을 수 있는 어떤 것도 삭제하거나

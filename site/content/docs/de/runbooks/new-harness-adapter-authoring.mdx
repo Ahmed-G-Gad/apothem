@@ -2,7 +2,7 @@
 title: "Einen neuen Harness-Adapter erstellen"
 description: "Runbook für das Erstellen und Veröffentlichen eines neuen Apothem-Harness-Adapters."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,8 +59,8 @@ python -m apothem.conformity.gate --all .
 
 Öffne eine PR mit:
 
-- der Adapter-Implementierung
-- der Dokumentationsseite unter `site/content/docs/harnesses/<slug>.mdx`
-- den Tests
-- der Einstiegspunkt-Registrierung in `pyproject.toml`
-- einem Changelog-Eintrag
+- Adapter-Implementierung
+- Dokumentationsseite unter `site/content/docs/harnesses/<slug>.mdx`
+- Tests
+- Einstiegspunkt-Registrierung in `pyproject.toml`, ein Eintrag `HARNESS_REGISTRY` in `src/apothem/lib/harness_registry_data.py` (dort `SUPPORTED_HARNESS_COUNT` erhöhen) sowie die ID im Enum `harnessId` von `src/apothem/schemas/profile.schema.json`
+- Changelog-Eintrag

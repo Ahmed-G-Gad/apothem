@@ -2,7 +2,7 @@
 title: "Création d'un nouvel adaptateur d'environnement"
 description: "Runbook pour créer et publier un nouvel adaptateur d'environnement Apothem."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,8 +59,8 @@ python -m apothem.conformity.gate --all .
 
 Ouvrez une PR avec :
 
-- L'implémentation de l'adaptateur
-- La page de documentation à `site/content/docs/harnesses/<slug>.mdx`
-- Les tests
-- L'enregistrement du point d'entrée dans `pyproject.toml`
-- Une entrée de journal des modifications
+- Implémentation de l'adaptateur
+- Page de documentation à `site/content/docs/harnesses/<slug>.mdx`
+- Tests
+- Enregistrement du point d'entrée dans `pyproject.toml`, une entrée `HARNESS_REGISTRY` dans `src/apothem/lib/harness_registry_data.py` (en incrémentant `SUPPORTED_HARNESS_COUNT` à cet endroit), et l'identifiant dans l'énumération `harnessId` de `src/apothem/schemas/profile.schema.json`
+- Entrée au journal des modifications

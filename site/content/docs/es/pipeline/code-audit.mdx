@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — Auditoría forense de código entre archivos a escala del corpus del repositorio."
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Auditoría forense de código entre archivos a escala del corpus del repositorio
 Con argumentos:
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Entradas
 
-Repositorio anfitrión en cualquier estado del ciclo de vida
+Repositorio anfitrión con una disposición de código fuente aprobada, una línea base de cobertura de pruebas y (en SHARED+) una puerta de CI superada
 
 ## Salidas
 
-Hallazgos a nivel de corpus + REPORT.md
+Hallazgos a nivel de corpus en `_inputs/code-audit-findings.md`
 
 ## Aguas abajo
 
@@ -37,22 +37,14 @@ La etapa de auditoría forense de código de la Secuencia de Auditoría de Revis
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
-
-1. **Cargar contexto** — Leer la suite de plan, las reglas y el Contrato de Reanudación.
-2. **Verificar prerrequisitos** — Confirmar que las fases dependientes están completas.
-3. **Ejecutar tareas** — Realizar la misión del comando.
-4. **Verificar salidas** — Confirmar que todas las salidas declaradas existen y pasan las compuertas de calidad.
-5. **Actualizar PROGRESS.md** — Registrar las salidas verificadas en el Registro de Salidas de Fase.
-6. **Emitir REPORT.md** — Prueba de publicación de la compuerta de pre-emisión registrada.
+El comando ejecuta seis fases forenses: ingesta de entradas, recorrido de dependencias entre archivos, auditoría de anotaciones de tipo y cobertura, detección de código muerto y duplicado, auditoría de integridad arquitectónica y emisión de hallazgos con la puerta de validación.
 
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
-| Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
-| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
+| Falta un archivo de entrada | No hay ejecución de la puerta de CI ni línea base de cobertura de pruebas en SHARED+ | Ejecuta primero el pipeline de CI del anfitrión y luego vuelve a ejecutar el comando |
 
 ## Ejemplos
 
@@ -60,8 +52,8 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Referencias cruzadas

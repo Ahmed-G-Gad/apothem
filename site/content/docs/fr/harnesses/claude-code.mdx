@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptateur d'environnement Apothem pour Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-L'adaptateur `claude-code` installe le corpus partagé d'Apothem dans
-l'arborescence de découverte native de Claude Code. Les agents Markdown, les
-règles, les skills, les output-styles et les settings sont installés à leurs
-emplacements natifs ; les prompts de commande sont convertis en skills afin que
-les flux de travail réutilisables restent visibles via la surface de skills
-actuelle de Claude Code. Le moteur de rendu de la ligne d'état est copié dans
-`~/.claude/statuslines/` mais n'est pas branché : Claude Code lit sa ligne
-d'état dans le paramètre `statusLine`, que l'adaptateur laisse non défini. Pour
-l'activer, ajoutez à `settings.json` une entrée `statusLine` avec
-`"type": "command"` qui exécute `~/.claude/statuslines/render.py`.
+L'adaptateur `claude-code` installe le corpus partagé d'Apothem dans l'arborescence de découverte native de Claude Code. Les agents Markdown, les règles, les skills, les output-styles et les settings sont installés à leurs emplacements natifs ; les prompts de commande sont convertis en skills afin que les flux de travail réutilisables restent visibles via la surface de skills actuelle de Claude Code. Le moteur de rendu de la ligne d'état est copié dans `~/.claude/statuslines/` mais n'est pas branché : Claude Code lit sa ligne d'état dans le paramètre `statusLine`, que l'adaptateur laisse non défini. Pour l'activer, ajoutez à `settings.json` une entrée `statusLine` avec `"type": "command"` qui exécute `~/.claude/statuslines/render.py`. La valeur `commandWindows` de l'extrait s'exécute sous Windows et désigne l'interpréteur sans guillemets. Lorsque le chemin de l'interpréteur contient un espace, l'installation écrit dans cette valeur sa forme courte Windows 8.3 si le volume en possède une. Les entrées de hooks dans `settings.json` conservent le chemin complet.
 
 **Fichiers écrits :** `settings.json`, le bloc Apothem de `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` et la sous-arborescence de support `.apothem/support/`

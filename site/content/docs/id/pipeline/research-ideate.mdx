@@ -2,7 +2,7 @@
 title: "/research-ideate"
 description: "/research-ideate — Merumuskan ruang masalah dari benih domain: pemindaian peluang-dan-celah, pemindaian hipotesis-terdahulu yang telah digugurkan, dan pembangkitan pertanyaan riset kandidat yang diperingkat — tahap awal pipeline /research, yang memasok /research-spec."
 machineTranslated: true
-sourceHash: "705fcb742a990b2f"
+sourceHash: "d5f2efd865584459"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,9 @@ Sebuah benih domain — catatan domain berformat bebas (disediakan operator seca
 Perintah ini mengikuti alur kerja standar pipeline `/research`:
 
 1. **Memuat konteks** — Membaca benih domain, aturan, dan keadaan suite yang sudah ada.
-2. **Memindai ruang peluang dan celah** — Memetakan apa yang sudah dikaji, apa yang diperdebatkan, dan apa yang masih belum tertangani dalam domain tersebut.
-3. **Memindai hipotesis-terdahulu yang digugurkan** — Memunculkan hipotesis yang telah disanggah oleh karya terdahulu agar daftarnya tidak menapaki kembali tanah yang sudah tuntas.
-4. **Membangkitkan dan memeringkat kandidat** — Menghasilkan pertanyaan riset kandidat, masing-masing dinyatakan dalam bentuk yang dapat difalsifikasi, diperingkat berdasarkan keterolahan dan dampak.
+2. **Memindai ruang peluang dan celah** — Memetakan apa yang sudah dikaji, apa yang diperdebatkan, dan apa yang belum ditangani dalam domain tersebut.
+3. **Memindai hipotesis-terdahulu yang digugurkan** — Memunculkan hipotesis yang telah disanggah oleh karya terdahulu agar daftar tidak menapaki kembali tanah yang sudah mapan.
+4. **Membangkitkan dan memeringkat kandidat** — Menghasilkan pertanyaan riset kandidat, masing-masing dinyatakan dalam bentuk yang dapat difalsifikasi, diperingkat terhadap kriteria yang disetujui operator (kebaruan, kelayakan, dampak, kekuatan falsifiabilitas).
 5. **Memverifikasi keluaran** — Memastikan setiap kandidat berlandaskan karya terdahulu primer dan dapat disanggah; menyelesaikan setiap ambiguitas melalui kanal kueri terstruktur.
 6. **Mengeluarkan daftar ideasi** — `_inputs/ideation.md` ditambah manifes serah-terima.
 

@@ -2,7 +2,7 @@
 title: "Runbook pengaktifan Pages"
 description: "Runbook langkah demi langkah untuk meluncurkan GitHub Pages dengan domain kustom di apothem.ahmedgad.com melalui konfigurasi DNS CNAME."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -170,7 +170,7 @@ Pages (matikan dan nyalakan domain kustom melalui API).
 ### 2.6 Verifikasi deep link
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Keluaran yang diharapkan:
@@ -317,10 +317,10 @@ terdokumentasi:
 
 | Kegagalan | Diagnostik | Pemulihan |
 |---|---|---|
-| `gh api .../pages` mengembalikan 404 | Pages tidak diaktifkan pada repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` lalu ulangi §2.1 |
-| `dig` mengembalikan kosong setelah 30 menit | DNS record tidak ter-commit di penyedia | Kembali ke lampiran penyedia yang cocok; verifikasi record disimpan (bukan draf / pending); periksa panel untuk langkah `Save` yang terlewat |
-| `https_certificate.state: errored` | Pages tidak dapat menerbitkan sertifikat | Matikan dan nyalakan domain kustom di pengaturan Pages; ini memicu ulang penerbitan. Tunggu hingga 24 jam untuk percobaan baru |
-| 404 deep-link setelah build | Build situs statis tidak menyertakan halaman | `gh workflow run publish-static-site.yml`; saat selesai verifikasi `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` mengembalikan `success` |
+| `gh api .../pages` mengembalikan 404 | Pages tidak diaktifkan pada repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` lalu ulangi §2.1 |
+| `dig` mengembalikan kosong setelah 30 menit | Rekaman DNS tidak ter-commit di penyedia | Kembali ke lampiran penyedia yang cocok; verifikasi rekaman tersimpan (bukan draf / pending); periksa panel untuk langkah `Save` yang terlewat |
+| `https_certificate.state: errored` | Pages tidak dapat menerbitkan sertifikat | Matikan lalu nyalakan kembali domain kustom di pengaturan Pages; ini memicu ulang penerbitan. Tunggu hingga 24 jam untuk percobaan baru |
+| 404 deep-link setelah build | Build situs statis tidak menyertakan halaman | `gh workflow run publish-static-site.yml`; setelah selesai verifikasi bahwa `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` mengembalikan `success` |
 
 Jika pemulihan gagal setelah satu siklus diagnostik yang cocok,
 eskalasikan ke runbook pemulihan-rilis (force-push riwayat baru mungkin

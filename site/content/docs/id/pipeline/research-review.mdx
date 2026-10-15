@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — Kritik adversarial setingkat tinjauan sejawat atas makalah: kartu skor peninjau tujuh sumbu (kebaruan, ketelitian, reproduktibilitas, kejelasan, etika, tinjauan statistik, kesesuaian pedoman pelaporan) ditambah daftar revisi wajib yang dipilah berdasarkan tingkat keparahan."
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Memberikan makalah kritik adversarial setingkat tinjauan sejawat terhadap standa
 Dengan argumen:
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## Masukan
@@ -33,17 +33,17 @@ Hasil makalah di lokasi alami host yang dicatat oleh tahap makalah.
 
 ## Hilir
 
-/research-publish (konsumen hilir). Verdik `major-revision` atau `reject` mendorong putaran revisi kembali ke `/research-paper` untuk menangani revisi wajib sebelum ditinjau ulang.
+/research-publish (konsumen hilir). Putusan `major-revision` atau `reject` berarti revisi wajib harus ditangani sebelum `/research-publish` dijalankan.
 
 ## Fase alur kerja
 
 Perintah ini mengikuti alur kerja standar pipeline `/research`:
 
-1. **Muat konteks** — Baca hasil makalah.
-2. **Verifikasi Gerbang urutan** — Pastikan makalah ada; jika tidak, berhenti dengan `Blocked: run /research-paper first`.
-3. **Tinjau secara adversarial** — Beri skor pada tujuh sumbu (kebaruan · ketelitian · reproduktibilitas · kejelasan · etika · tinjauan statistik · kesesuaian pedoman pelaporan); jalankan jalankan-ulang reproduktibilitas dan audit integritas-sitasi; sanggahan secara bawaan; temukan cacat konkret dengan bukti.
-4. **Pilah revisi** — Urutkan revisi wajib HIGH / MEDIUM / LOW dengan alasan pendorong konkret.
-5. **Perbarui manifes serah terima** — Catat laporan tinjauan dan putusan kartu skor.
+1. **Memuat konteks** — Membaca hasil makalah.
+2. **Verifikasi Gerbang Urutan** — Pastikan makalah, `_outputs/analysis.md`, dan `_inputs/synthesis.md` ada dan tidak kosong; jika tidak, berhenti dengan `Blocked: run /research-paper first`.
+3. **Tinjau secara adversarial** — Beri skor pada tujuh sumbu (kebaruan · ketelitian · reproduktibilitas · kejelasan · etika · tinjauan statistik · kepatuhan pedoman pelaporan); jalankan uji ulang reproduktibilitas dan audit integritas sitasi; sanggahan secara bawaan; temukan cacat konkret dengan bukti.
+4. **Pilah revisi** — Urutkan revisi wajib HIGH / MEDIUM / LOW dengan alasan berbasis pendorong konkret.
+5. **Perbarui manifes serah-terima** — Catat laporan tinjauan dan putusan kartu skor.
 6. **Keluarkan tinjauan** — `_outputs/review-report.md`.
 
 ## Landasan ketelitian
@@ -62,7 +62,7 @@ Tinjauan menilai klaim empiris terhadap batas gerbang-kemajuan — replikasi mem
 
 ```bash
 # Tinjau makalah secara sejawat dan keluarkan kartu skor peninjau
-/research-review path/to/research-suite/
+/research-review --suite-name <name>
 ```
 
 ## Referensi silang

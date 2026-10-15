@@ -2,7 +2,7 @@
 title: "/dependency-audit"
 description: "/dependency-audit——针对许可证、CVE 和新鲜度的逐依赖审计扫查（直接 + 传递）。"
 machineTranslated: true
-sourceHash: "c4d7e94a7338bf03"
+sourceHash: "0c54a480092da944"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "c4d7e94a7338bf03"
 带参数：
 
 ```bash
-/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/dependency-audit [path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]
 ```
 
 ## 输入
@@ -29,7 +29,7 @@ sourceHash: "c4d7e94a7338bf03"
 
 ## 输出
 
-依赖发现项 + REPORT.md
+依赖发现项位于 `_inputs/dependency-audit-findings.md`
 
 ## 下游
 
@@ -37,22 +37,14 @@ sourceHash: "c4d7e94a7338bf03"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则和恢复契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 履行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+该命令分为五个阶段：输入摄取、逐依赖遍历、逐项分诊、发现项输出，以及校验门。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
-| 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 缺失输入文件 | 仓库根目录下没有可解析的依赖清单 | 传入包含依赖清单的仓库根目录 |
 
 ## 示例
 
@@ -60,8 +52,8 @@ sourceHash: "c4d7e94a7338bf03"
 # Dry-run to preview what would happen
 /dependency-audit --dry-run
 
-# Execute against a named plan suite
-/dependency-audit path/to/plan-suite/
+# Execute against a repository root
+/dependency-audit path/to/repo/
 ```
 
 ## 交叉引用

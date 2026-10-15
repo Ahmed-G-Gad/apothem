@@ -2,7 +2,7 @@
 title: "مراسم دمج طلب السحب للمشرف المنفرد"
 description: "متى يستطيع المشرف دمج طلب السحب الخاص به مباشرةً، والمراسم الخاصة بحماية فرع تشترط موافقةً وتفرضها على المسؤولين."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,8 +85,8 @@ python scripts/dev/admin_merge.py <pr-number>
 
 يترك كل استدعاء للمراسم أثرًا على ثلاثة أسطح دائمة يمكن للمُشغِّل تفحّصها لاحقًا:
 
-- **البيانات الوصفية لدمج طلب السحب.** يُرجِع <bdi>`gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit`</bdi> الجهة المُنفِّذة للدمج، وطابع وقت الدمج، وقيمة <bdi>SHA</bdi> لكوميت الـ <bdi>squash</bdi>. وتطابق الجهة <bdi>`mergedBy`</bdi> هوية المشرف الذي شغّل الخطوة 3.
-- **سجلّ تدقيق المستودع.** يربط <bdi>`gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'`</bdi> تشغيل <bdi>CI</bdi> اللاحق للدمج بكوميت الدمج؛ ويُظهر سجلّ تدقيق قاعدة الحماية في المستودع (تاريخ <bdi>`gh api /repos/<owner>/<repo>/branches/main/protection`</bdi> عبر واجهة <bdi>Settings → Branches</bdi>) عمليتَي التبديل في الخطوة 2 والخطوة 4 المُحيطتين بنافذة الدمج.
-- **تاريخ <bdi>git</bdi> لدى المشرف.** يسرد <bdi>`git log main --merges --first-parent`</bdi> كل كوميت دمج <bdi>squash</bdi> على <bdi>`main`</bdi> مع رقم طلب السحب المقابل في موضوع الكوميت (اللاحقة <bdi>`(#<pr-number>)`</bdi> وفق الافتراضي في <bdi>`gh pr merge --squash`</bdi>)، مما يتيح للمُشغِّل تتبّع أي إنزال سابق رجوعًا إلى طلب السحب الخاص به واستدعاء المراسم.
+- **بيانات الدمج الوصفية لطلب السحب.** يُرجِع <bdi>`gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit`</bdi> الجهة المُنفِّذة للدمج، وطابع وقت الدمج، وقيمة <bdi>SHA</bdi> لكوميت الـ<bdi>squash</bdi>. وتطابق الجهة <bdi>`mergedBy`</bdi> هوية المُشرِف الذي نفّذ الخطوة 3.
+- **سجلّ تدقيق المستودع.** يربط <bdi>`gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'`</bdi> تشغيل <bdi>CI</bdi> اللاحق للدمج بكوميت الدمج؛ ويُظهر سجلّ تدقيق قاعدة الحماية في المستودع (السجلّ عبر <bdi>`gh api /repos/<owner>/<repo>/branches/main/protection`</bdi> أو عبر واجهة <bdi>Settings → Branches</bdi>) عمليتَي التبديل في الخطوة 2 والخطوة 4 المُحيطتين بنافذة الدمج.
+- **تاريخ <bdi>git</bdi> لدى المُشرِف.** يسرد <bdi>`git log main --first-parent --oneline`</bdi> كل كوميت دمج <bdi>squash</bdi> على <bdi>`main`</bdi> مع رقم طلب السحب المقابل في عنوان الكوميت (اللاحقة <bdi>`(#<pr-number>)`</bdi> وفق الافتراضي في <bdi>`gh pr merge --squash`</bdi>)، ويتيح للمُشغِّل تتبّع أي إنزال سابق رجوعًا إلى طلب السحب الخاص به وإلى استدعاء إجراء الدمج الإداري.
 
-عندما يكون <bdi>`scripts/dev/admin_merge.py`</bdi> هو نقطة الدخول، يُسمّي سجلّه غير التفاعلي (<bdi>stdout</bdi>) استدعاءات واجهة برمجة تطبيقات الحماية الثلاثة واستدعاء واجهة برمجة تطبيقات الدمج بالتسلسل؛ وتوجيه خرج الغلاف عبر أنبوب إلى <bdi>`tee`</bdi> يلتقط جزءًا تدقيقيًا لكل تشغيل دون الاعتماد على احتفاظ <bdi>GitHub</bdi> بالسجلّ من جانبه.
+عندما يكون <bdi>`scripts/dev/admin_merge.py`</bdi> هو نقطة الدخول، يُسمّي سجلّه غير التفاعلي (<bdi>stderr</bdi>) استدعاءات واجهة برمجة تطبيقات الحماية الثلاثة واستدعاء واجهة برمجة تطبيقات الدمج بالتسلسل؛ وتوجيه <bdi>stderr</bdi> عبر أنبوب إلى <bdi>`tee`</bdi> (<bdi>`2>&1 | tee`</bdi>) يلتقط جزءًا تدقيقيًا لكل تشغيل دون الاعتماد على احتفاظ <bdi>GitHub</bdi> بالسجلّ من جانبه.

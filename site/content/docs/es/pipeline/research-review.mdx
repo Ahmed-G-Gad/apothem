@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — Crítica adversarial de nivel de revisión por pares del artículo: una tarjeta de puntuación del revisor de siete ejes (novedad, rigor, reproducibilidad, claridad, ética, revisión estadística, conformidad con las directrices de presentación de informes) más una lista de revisiones obligatorias clasificada por gravedad."
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Somete el artículo a una crítica adversarial de nivel de revisión por pares f
 Con argumentos:
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## Entradas
@@ -33,16 +33,16 @@ El entregable del artículo en la ubicación natural del host que registró la e
 
 ## Aguas abajo
 
-/research-publish (consumidor aguas abajo). Un veredicto de `major-revision` o `reject` activa el bucle de revisión de vuelta a `/research-paper` para atender las revisiones obligatorias antes de la nueva revisión.
+/research-publish (consumidor aguas abajo). Un veredicto `major-revision` o `reject` significa que las revisiones obligatorias deben atenderse antes de que se ejecute `/research-publish`.
 
 ## Fases del flujo de trabajo
 
 El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar el contexto** — Leer el entregable del artículo.
-2. **Verificar la Compuerta de secuencia** — Confirmar que el artículo existe; de lo contrario, detenerse con `Blocked: run /research-paper first`.
-3. **Revisar adversarialmente** — Puntuar los siete ejes (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de presentación de informes); ejecutar la reejecución de reproducibilidad y la auditoría de integridad de citas; refutación por defecto; localizar defectos concretos con evidencia.
-4. **Clasificar las revisiones** — Ordenar las revisiones obligatorias HIGH / MEDIUM / LOW con una justificación de motor concreto.
+2. **Verificar la puerta de secuencia** — Confirmar que el artículo, `_outputs/analysis.md` y `_inputs/synthesis.md` existen y no están vacíos; en caso contrario, detenerse con `Blocked: run /research-paper first`.
+3. **Revisar de forma adversarial** — Puntuar los siete ejes (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de informe); ejecutar la reejecución de reproducibilidad y la auditoría de integridad de citas; refutación por defecto; localizar defectos concretos con evidencia.
+4. **Clasificar las revisiones** — Ordenar las revisiones obligatorias HIGH / MEDIUM / LOW con una justificación de impulsor concreto.
 5. **Actualizar el manifiesto de traspaso** — Registrar el informe de revisión y el veredicto de la tarjeta de puntuación.
 6. **Emitir la revisión** — `_outputs/review-report.md`.
 
@@ -62,7 +62,7 @@ La revisión puntúa las afirmaciones empíricas frente al listón de la compuer
 
 ```bash
 # Revisa el artículo por pares y emite una tarjeta de puntuación del revisor
-/research-review path/to/research-suite/
+/research-review --suite-name <name>
 ```
 
 ## Referencias cruzadas

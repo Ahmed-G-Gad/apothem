@@ -1,56 +1,60 @@
 ---
 title: "マシン間同期検証チェックリスト"
-description: "Claude Code アダプターが新しいホスト上で正しくインストール・検証・アンインストールされることを、完全な可搬性チェック付きで確認する検証手順。"
+description: "完全な可搬性チェックを伴い、新しいホスト上で Claude Code アダプターが正しくインストール、検証、アンインストールされることを確認する検証手順。"
 machineTranslated: true
-sourceHash: "f92b79a38674f058"
+sourceHash: "fe0bc745cce7932a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **スコープ。** このチェックリストは、新しい 2 台目のホスト上で **Claude Code アダプター**のインストール / アンインストール可搬性レイヤーを検証します。他のツールには [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 配下に文書化されたホストごとの検証レシピがあります。パス `~/.claude/` は Claude Code アダプターの標準インストール先です。別のツールを検証する際は、そのアダプター固有のパスに置き換えてください。
+> **適用範囲。** このチェックリストは、新しい二台目のホストで **Claude Code アダプター** のインストール／アンインストールのポータビリティ層を検証します。他のハーネスには、ホストごとの検証手順が [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) に記載されています。
 
-> **新しい 2 台目のホスト上でのインストール / アンインストール可搬性レイヤーのオペレーター主導検証。** 公開層（`vX.Y.Z`）は単一の Windows ホスト上で作成されました。`~/.claude/` の可搬性に関する主張（`CLAUDE.md` `portability: universal`）は、マルチホスト不変条件が意味を持つ前に、2 台目のホストでエンドツーエンドの実施が必要です。このチェックリストは標準の 2 台目ホスト検証レシピ（Claude Code アダプター）です。
+> **二つのパス、二つの役割。** このチェックリストを読む間は、両者を区別してください。`$HOME/.apothem` は **エンジンホーム** です。ソースツリーのクローン先であり、インストーラーが読み込む場所でもあります（`APOTHEM_HOME` で上書きできます）。`~/.claude/` は **Claude Code の設定ルート** です。アダプターの出力先であり、マテリアライズされた `settings.json` とサポートサブツリーが配置される場所です。エンジンが `~/.claude/` にインストールされることは決してありません。別のハーネスを検証する際は、アダプター固有の出力パスに読み替えてください。
+
+> **新しい二台目のホストでの、インストール／アンインストールのポータビリティ層のオペレーター主導の検証。** 公開ティア（`vX.Y.Z`）は単一の Windows ホストで作成されました。ポータビリティの主張（`CLAUDE.md` の `portability: universal`）は、複数ホストの不変条件を裏付ける前に、二台目のホストでエンドツーエンドの実行を必要とします。このチェックリストが、正規の二台目ホストの検証手順（Claude Code アダプター）です。
 
 ---
 
-## 1. 2 台目のホストでの前提条件
+## 1. 二台目のホストでの事前条件
 
-検証を開始する前に 2 台目のホストで実行します:
+検証を開始する前に、二台目のホストで次を実行します:
 
-| 項目 | コマンド | 期待値 |
+| 項目 | コマンド | 期待される結果 |
 |------|---------|----------|
-| Git がインストール済み | `git --version` | Git 2.40+ |
+| Git のインストール | `git --version` | Git 2.40+ |
 | Python 3.10+ が利用可能 | `python3 --version`（POSIX）または `py -3 --version`（Windows） | 3.10 / 3.11 / 3.12 / 3.13 |
-| GitHub 認証（任意、認証付きクローン / API チェック用） | `gh auth status` | 認証付きワークフローを使用する場合、リポジトリの認可済みアカウントでログイン済み |
-| Shell が利用可能 | `bash --version`（POSIX）または `pwsh --version`（Windows） | Bash 4+ または PowerShell 7+ |
-| 既存の `~/.claude/` ディレクトリがない | `ls ~/.claude 2>&1` | "No such file or directory" — 存在する場合は続行前にバックアップする |
+| GitHub 認証（任意、認証済みのクローンや API チェック用） | `gh auth status` | 認証済みのワークフローを使う場合は、リポジトリの許可されたアカウントでログイン済みであること |
+| シェルが利用可能 | `bash --version`（POSIX）または `pwsh --version`（Windows） | Bash 4+ または PowerShell 7+ |
+| 既存のエンジンホームがないこと | `ls "$HOME/.apothem" 2>&1` | "No such file or directory" — 存在する場合は、続行前にバックアップを取ってください |
 
 ## 2. クローンとインストールの検証
 
-2 台目のホストで実行します:
+二台目のホストで次を実行します:
 
 ```bash
-# Clone the published repo to ~/.claude (the install destination)
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
-cd ~/.claude
+# Clone the published repo to the engine home. This is NOT ~/.claude — that
+# is the Claude Code configuration root the adapter writes into, and cloning
+# a source tree on top of it would bury the harness's own config.
+git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
+cd "$HOME/.apothem"
 
 # (POSIX path) Run scripts/installer/install.sh dry-run first
-bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+bash scripts/installer/install.sh --dry-run                                    # exit 0; prints Dry-run complete — no changes were made.
 
 # (POSIX path) Run scripts/installer/install.sh for real
-bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+bash scripts/installer/install.sh                                               # exit 0; idempotent
 
 # (Windows path) PowerShell parallel
-pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; prints Dry-run complete - no changes were made.
 pwsh -File scripts/installer/install.ps1                                        # exit 0
 ```
 
-各コマンドの終了コードと stdout バナーを取得します。`<second-host>/.audit/cross-machine-clone-install.md` に記録します。
+各コマンドの終了コードと標準出力のバナーを記録してください。`<second-host>/.audit/cross-machine-clone-install.md` に記録します。
 
-## 3. 4 要素のディシプリン（`src/apothem/rules/production-ready-prs.md` §8.3 に従う）
+## 3. 四要素の規律（`src/apothem/rules/production-ready-prs.md` に従う）
 
-2 台目のホストで 4 つの不変条件のそれぞれを検証します:
+二台目のホストで、四つの不変条件をそれぞれ検証します:
 
-### 3.1 センチネルファイルの安全性
+### 3.1 既存の配置先の安全性
 
 ```bash
 # Re-run installer at the same destination.
@@ -58,16 +62,16 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**期待値:** インストーラーは既存の有効な `~/.claude/`（センチネルファイルが存在）を検出し、再インストールや重複ではなくファストフォワードする。終了コード 0。
+**期待される結果:** インストーラーは既存のエンジンホームを検出し、再インストールや複製を行う代わりに fast-forward します。終了コードは 0 です。
 
-### 3.2 前提条件チェック済み
+### 3.2 前提条件のチェック
 
 ```bash
-# Temporarily move git out of PATH.
-PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+# Run from a copy outside any checkout, with git not on PATH.
+d="$(mktemp -d)" && cp scripts/installer/install.sh "$d/" && PATH=<directory holding python3, click, rich and coreutils, but no git> /bin/sh "$d/install.sh"                            # POSIX (no git)
 ```
 
-**期待値:** インストーラーは実行を拒否し、明示的な "git not found" 診断を出力する。終了コードは非ゼロ。
+**期待される結果:** インストーラーは実行を拒否し、明示的な "git not found" の診断を出力して、終了コードは 0 以外になります。
 
 ### 3.3 冪等な再実行
 
@@ -77,87 +81,97 @@ for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  
 1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
 ```
 
-**期待値:** すべての呼び出しが終了コード 0 で終了する。初回呼び出し後に副作用なし。重複ファイルなし。shell-profile RC の重複なし。
+**期待される結果:** すべての呼び出しが終了コード 0 で終了し、最初の呼び出しの後に副作用がなく、重複したファイルも、シェルプロファイルの RC の重複もないこと。
 
-### 3.4 環境変数で構成可能
+### 3.4 環境変数による設定
 
 ```bash
-# Install to a non-default location.
-CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
-$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+# Install to a non-default engine home. APOTHEM_HOME is the destination
+# override the installers actually read; see the installer-environment-variables
+# reference for the full set.
+APOTHEM_HOME=/tmp/alt-apothem bash scripts/installer/install.sh                 # POSIX
+$env:APOTHEM_HOME='C:\tmp\alt-apothem'; pwsh -File scripts/installer/install.ps1   # Windows
 ```
 
-**期待値:** インストーラーは環境変数を尊重する。`~/.claude/` は変更されない。代替先には期待されるレイアウトが含まれる。
+**期待される結果:** インストーラーは環境変数を尊重します。既定の `$HOME/.apothem` は作成されず、代替の配置先には想定どおりのレイアウトが含まれます。
 
-## 4. バリデータースイートの検証（インストール後）
+## 4. バリデーター群の検証（インストール後）
 
 ```bash
-cd ~/.claude
+cd "$HOME/.apothem"
 make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff + mypy
+make lint                                                     # ruff check + ruff format --check
 make test                                                     # exit 0, no failures
 ```
 
-**期待値:** すべてのゲートが緑。終了コード + サマリー行を取得します。
+**期待される結果:** すべてのゲートがグリーンであること。終了コードと要約行を記録します。
 
 ## 5. アンインストールの検証
 
 ```bash
 # POSIX path — interactive uninstall
 bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
-ls ~/.claude 2>&1                                             # "No such file or directory"
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 
-# Re-install from clone, then uninstall non-interactively
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+# Re-install from the kept checkout, then uninstall non-interactively
+bash scripts/installer/install.sh
 bash scripts/installer/uninstall.sh --yes
-ls ~/.claude 2>&1                                             # "No such file or directory"
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**期待値:** 対話フローはプロンプトを表示する。`--yes` はバッチ実行のためにプロンプトをスキップする。どちらのフローも `~/.claude/` をクリーンに削除する。関連する shell-profile 環境変数の参照はクリーンアップされる。
+**期待される結果:** 対話式のフローでプロンプトが表示されること。`--yes` はバッチ実行のためにプロンプトを省略すること。どちらのフローでも、Claude Code の設定ルートに Apothem がマテリアライズしたファイルが残らないこと。`apothem` シムが削除されること（POSIX では `~/.local/bin/apothem`、Windows では `%LOCALAPPDATA%\Microsoft\WindowsApps` 内の `apothem.cmd`）。
 
-## 6. セーフティガードの検証
+## 6. 安全ガードの検証
+
+アンインストーラーのガードは、センチネルファイルではなく、ソースツリーの形状チェックです。対象に `src/apothem/` があり、かつ `pyproject.toml` または `.claude-plugin/` のいずれかがある場合にのみ処理を進めます。これらのプローブは、スクリプトが読み取る変数 `APOTHEM_HOME` を使って実行してください。スクリプトが無視する変数に対して書かれたプローブは、ガードを検証せず、実際のインストールに対してアンインストーラーを実行してしまいます。
 
 ```bash
-# Run uninstall against a path that fails the sentinel-file check.
-mkdir -p /tmp/not-a-claude-install
-CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+# Run uninstall against a directory that is not an apothem source tree.
+mkdir -p /tmp/not-an-apothem-install
+APOTHEM_HOME=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
 ```
 
-**期待値:** アンインストーラーは拒否し、"sentinel-file missing; refusing to remove unsafe target" 診断を出力する。終了コードは非ゼロ。そのパスは変更されない。
+**期待される結果:** アンインストーラーは実行を拒否し、`No apothem source found at /tmp/not-an-apothem-install — nothing to uninstall` を出力します。終了コードは 0 以外です。そのパスには触れていません。
 
 ```bash
-# Run uninstall against $HOME, /, or empty path.
-CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+# Run uninstall against $HOME and /.
+APOTHEM_HOME=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+APOTHEM_HOME=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 ```
 
-**期待値:** それぞれが明示的な "unsafe target" 診断で拒否する。いずれもファイルシステムに触れない。
+**期待される結果:** `APOTHEM_HOME=$HOME` と `APOTHEM_HOME=/` は、それぞれ `No apothem source found at …` の診断を出して拒否され、どちらもファイルシステムに触れないこと。空の `APOTHEM_HOME` は意図的に対象外としています。これは、実際のインストールが置かれうる `~/.apothem` にフォールバックするためです。
 
-## 7. レポート
+```bash
+# An explicit APOTHEM_SOURCE that is not a source tree is rejected separately.
+APOTHEM_SOURCE=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
+```
 
-2 台目ホストでの実行後、結果を次の場所に取得します:
+**期待される結果:** `APOTHEM_SOURCE is not an apothem source tree: /tmp/not-an-apothem-install` で拒否され、終了コードは 0 以外です。
 
-- `<second-host>/.audit/cross-machine-clone-install.md`（クローン + インストールコマンドの結果）
-- `<second-host>/.audit/cross-machine-validators.md`（第 4 節バリデーターの結果）
-- `<second-host>/.audit/cross-machine-uninstall.md`（第 5〜6 節アンインストール + 安全性の結果）
+## 7. 報告
 
-メンテナーに所見を提示します:
+二台目のホストでの実行後、結果を次の場所に記録してください:
 
-- ✅ 4 要素のディシプリン不変条件がすべて成立 + すべてのバリデーターゲートが緑 + すべてのアンインストール・セーフティガードが安全でないターゲットを拒否 → 公開物の `portability: universal` の主張がエンドツーエンドで検証される
-- ❌ 何らかの失敗 → 失敗した節 + 取得した出力を添えて `https://github.com/ahmed-g-gad/apothem/issues/new` に課題を提出する。メンテナーがトリアージする
+- `<second-host>/.audit/cross-machine-clone-install.md`（クローンとインストールのコマンドの結果）
+- `<second-host>/.audit/cross-machine-validators.md`（セクション 4 のバリデーターの結果）
+- `<second-host>/.audit/cross-machine-uninstall.md`（セクション 5–6 のアンインストールと安全性の結果）
+
+検出事項をメンテナーに報告します:
+
+- ✅ 四要素の規律の不変条件がすべて成立し、すべてのバリデーターのゲートがグリーンで、すべてのアンインストールの安全ガードが安全でないターゲットを拒否した → 公開物の `portability: universal` の主張がエンドツーエンドで検証された
+- ❌ いずれかの失敗 → 失敗したセクションと取得した出力を添えて `https://github.com/ahmed-g-gad/apothem/issues/new` に issue を登録します。メンテナーが振り分けます。
 
 ## 8. 受け入れ基準
 
-- [ ] §1 前提条件を満たす
-- [ ] §2 POSIX と Windows の両シェルでクローンとインストールが成功する
-- [ ] §3 4 要素のディシプリンが成立する（センチネルファイルの安全性；前提条件チェック済み；冪等；環境変数で構成可能）
-- [ ] §4 すべてのバリデーターゲートが緑
-- [ ] §5 対話式アンインストールが成功する；`--yes` がプロンプトなしで成功する
-- [ ] §6 すべてのセーフティガード拒否が発火する
-- [ ] §7 結果が文書化された監査パスに取得される
+- [ ] §1 の事前条件が満たされている
+- [ ] §2 のクローンとインストールが、POSIX と Windows の両方のシェルで成功すること
+- [ ] §3 の四要素の規律が成立すること（既存の配置先の安全性、前提条件のチェック、冪等性、環境変数による設定可能性）
+- [ ] §4 のすべてのバリデーターのゲートがグリーンであること
+- [ ] §5 の対話式のアンインストールが成功し、`--yes` がプロンプトなしで成功すること
+- [ ] §6 のすべての安全ガードの拒否が発火すること
+- [ ] §7 の結果が、文書化された監査パスに記録されていること
 
-新しい 2 台目のホスト上で上記の各チェックボックスがすべてチェックされたとき、マシン間同期のフォローオンはクローズされます。
+二台目のホストで上記のチェックボックスがすべてオンになったら、クロスマシン同期の検証は完了し、`portability: universal` の主張がエンドツーエンドで検証されたことになります。

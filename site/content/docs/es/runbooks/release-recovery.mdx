@@ -2,7 +2,7 @@
 title: "Runbook de recuperación de lanzamientos"
 description: "Procedimientos de recuperación, etapa por etapa, para un lanzamiento que falla a mitad de camino bajo el modelo de lanzamiento aditivo, sin reescribir el historial publicado."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,9 +15,7 @@ de lanzamiento y de npm. No se hace force-push de nada, y el historial de `main`
 nunca se reescribe.
 
 El historial publicado es permanente. Cada etiqueta de lanzamiento, GitHub
-Release y versión de npm que el proyecto ha publicado sigue publicada: el
-proyecto tiene tres lanzamientos, cada uno con su etiqueta, su GitHub Release y
-su versión de npm. Las versiones de npm son inmutables: un `name@version`
+Release y versión de npm que el proyecto ha publicado sigue publicada. Las versiones de npm son inmutables: un `name@version`
 publicado nunca puede reemplazarse, y un número de versión cuya publicación se
 retiró nunca puede volver a usarse. Por lo tanto, la recuperación avanza con un
 nuevo lanzamiento de parche; no elimina ni redirige nada que un usuario ya pueda

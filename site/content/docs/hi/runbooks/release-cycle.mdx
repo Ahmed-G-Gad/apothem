@@ -2,7 +2,7 @@
 title: "रिलीज़-चक्र रनबुक"
 description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,9 +15,7 @@ sourceHash: "5f0a7e3183712b33"
 
 रिलीज़ मॉडल **योगात्मक** है। प्रत्येक रिलीज़ `main` पर एक कमिट और एक
 हस्ताक्षरित, एनोटेटेड `vX.Y.Z` टैग जोड़ती है; कुछ भी फ़ोर्स-पुश नहीं किया जाता
-और कोई भी पिछला टैग, GitHub Release या npm संस्करण हटाया नहीं जाता। परियोजना की
-तीन रिलीज़ हैं, जिनमें से प्रत्येक का अपना टैग, अपनी GitHub Release और अपना npm
-संस्करण है, और सभी प्रकाशित रहती हैं: npm संस्करण अपरिवर्तनीय हैं (किसी प्रकाशित
+और कोई भी पिछला टैग, GitHub Release या npm संस्करण हटाया नहीं जाता। प्रत्येक रिलीज़ अपना टैग, अपनी GitHub Release और अपना npm संस्करण बनाए रखती है, और सभी प्रकाशित रहती हैं: npm संस्करण अपरिवर्तनीय हैं (किसी प्रकाशित
 `name@version` को कभी बदला नहीं जा सकता), और पिन किए गए इंस्टॉल टैगों पर निर्भर
 करते हैं।
 
@@ -89,7 +87,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -237,6 +234,8 @@ apothem --version
 ```
 
 अपेक्षित आउटपुट: `Apothem, version X.Y.Z`।
+
+लॉन्चर `~/.local/bin` में लिखा जाता है, जो ऊपर की जाँच चलने के लिए `PATH` पर होना चाहिए। जब वह डायरेक्टरी `PATH` पर न हो, तो इंस्टॉलर जोड़ने के लिए `export PATH` पंक्ति प्रिंट करता है।
 
 ### 5.4 एक-चरण स्क्रिप्ट इंस्टॉलर (Windows)
 

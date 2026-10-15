@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "924c7b14d9e24e4a"
+sourceHash: "887c6c6136f1dccb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -246,6 +246,13 @@ Contoh:
 Naikkan `version` dan `updated` bersama-sama pada setiap suntingan yang mengubah
 perilaku pada artefak yang membawa keduanya. Tambahkan baris yang sesuai ke
 `CHANGELOG.md` tingkat ekosistem untuk rilis yang membundel perubahan artefak.
+
+### Revisi suite rencana
+
+Aturan artefak di atas tidak berlaku untuk suite rencana. Versi suite rencana adalah nilai `vX.Y.Z` yang tercatat di header `MASTER-PLAN.md` dan tabel Revision History-nya. Perbaikan salah ketik pada suite rencana merupakan revisi yang menaikkan nomor PATCH. Langkah 10.2 dari `/plan-review` menetapkan klasifikasi dan menambahkan baris Revision History.
+
+- `vX.Y.Z` → `vX.Y.(Z+1)` (suite rencana, perbaikan salah ketik: PATCH)
+- `vX.Y.Z` → `vX.Y.Z` (artefak, perbaikan salah ketik: tanpa kenaikan; aturan artefak di atas)
 
 ## Kapan Menyunting Artefak
 

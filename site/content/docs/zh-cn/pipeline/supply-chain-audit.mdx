@@ -2,7 +2,7 @@
 title: "/supply-chain-audit"
 description: "/supply-chain-audit——针对 SLSA + Sigstore + SBOM 标准的供应链审计。"
 machineTranslated: true
-sourceHash: "873c959cabdae74c"
+sourceHash: "4aa08dd70480e8a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "873c959cabdae74c"
 带参数：
 
 ```bash
-/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/supply-chain-audit [path/to/repo/] [--focus AXIS] [--dry-run]
 ```
 
 ## 输入
@@ -29,7 +29,7 @@ sourceHash: "873c959cabdae74c"
 
 ## 输出
 
-供应链发现项 + REPORT.md
+供应链发现项位于 `_inputs/supply-chain-audit-findings.md`
 
 ## 下游
 
@@ -37,22 +37,15 @@ sourceHash: "873c959cabdae74c"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则和恢复契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 履行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+该命令分为五个审计阶段：输入摄取、逐轴遍历、逐项分诊、发现项输出，以及校验门。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
 | 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 目标被拒绝 | 目标缺少发布表面 | 传入带有 .github/workflows/、发布脚本或构建清单之一的仓库根目录 |
 
 ## 示例
 
@@ -60,8 +53,8 @@ sourceHash: "873c959cabdae74c"
 # Dry-run to preview what would happen
 /supply-chain-audit --dry-run
 
-# Execute against a named plan suite
-/supply-chain-audit path/to/plan-suite/
+# Execute against a host repository
+/supply-chain-audit path/to/repo/
 ```
 
 ## 交叉引用

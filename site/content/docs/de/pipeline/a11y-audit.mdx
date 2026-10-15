@@ -2,7 +2,7 @@
 title: "/a11y-audit"
 description: "/a11y-audit — Barrierefreiheits-Audit gegen WCAG 2.2 AA für jede gerenderte Seite."
 machineTranslated: true
-sourceHash: "f5de8736f03f79c9"
+sourceHash: "cf220a187d49ba18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Barrierefreiheits-Audit gegen WCAG 2.2 AA für jede gerenderte Seite.
 Mit Argumenten:
 
 ```bash
-/a11y-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/a11y-audit [path/to/site/ or URL] [--focus PAGE_OR_DIR] [--dry-run]
 ```
 
 ## Eingaben
@@ -29,7 +29,7 @@ Bereitgestellte oder lokal ausgelieferte Projekt-Website
 
 ## Ausgaben
 
-Barrierefreiheits-Befunde + REPORT.md
+Barrierefreiheits-Befunde unter `_inputs/a11y-audit-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,15 @@ Die Barrierefreiheits-Prüfungsstufe der Audit-Prüfsequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
-
-1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
-2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
-4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
-6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+Der Befehl durchläuft fünf Audit-Phasen: Eingabeaufnahme, Audit je Seite, Triage je
+Befund, Ausgabe der Befunde und das Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
 | Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
-| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+| Fehlende Eingabedatei | Pfad zur Website oder URL wird nicht aufgelöst | Übergib ein gebautes Website-Verzeichnis oder eine erreichbare URL |
 
 ## Beispiele
 
@@ -60,8 +53,8 @@ Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
 # Dry-run to preview what would happen
 /a11y-audit --dry-run
 
-# Execute against a named plan suite
-/a11y-audit path/to/plan-suite/
+# Execute against a built site directory
+/a11y-audit path/to/site/
 ```
 
 ## Querverweise

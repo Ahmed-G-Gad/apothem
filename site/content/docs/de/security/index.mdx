@@ -2,7 +2,7 @@
 title: "Sicherheit"
 description: "Apothems Sicherheitshaltung — OpenSSF-Scorecard-Ziel, Schwachstellenmeldung, Härtungsoberflächen."
 machineTranslated: true
-sourceHash: "1bc24c695dbc976f"
+sourceHash: "0b4ba23080c1c9b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,34 +15,11 @@ und schreibt harness-native Konfigurationsdateien in die Verzeichnisse, die
 jeder Harness liest. Diese eine Funktion begrenzt, was es als vertrauenswürdig
 behandelt und was nicht.
 
-- **Was Apothem als vertrauenswürdig behandelt.** Das gemeinsame Profil, das
-  Sie verfassen, und den gebündelten Quellbaum, den der Installer ablegt. Das
-  Profil ist Ihre erklärte Absicht; die Engine behandelt es nach der
-  Schemavalidierung als maßgebliche Eingabe.
-- **Was Apothem nicht als vertrauenswürdig behandelt.** Profilinhalte erreichen
-  das Dateisystem erst nach der Validierung: Schemafehler, unbekannte
-  Harness-IDs, unsichere Projektpfade, fehlende Manifestquellen,
-  Ziel-Traversierung und Symlink-Überschreitungen stoppen alle vor jedem
-  Schreibvorgang und liefern strukturierte Diagnosen mit `files_written: []`
-  zurück.
-- **Was materialisierte Ausgabe niemals enthält.** Keine Geheimnisse.
-  Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
-  bevor sie Klartextausgabe, JSON, Logs, Doku-Schnipsel oder Tests erreichen,
-  und öffentliche Beispiele verwenden fiktive Platzhalter-Identitäten und
-  -Domains. Materialisierte Konfiguration ist dafür gedacht, committet und
-  geteilt zu werden; sie enthält keine Anmeldedaten.
-- **Die universelle Verweigerungsuntergrenze.** Die Regeln, die Apothem
-  materialisiert, tragen eine nicht verhandelbare Verweigerungsuntergrenze,
-  unabhängig von jeder harness-spezifischen Erlaubnisliste — Geheimnispfade
-  (`.env*`, `~/.ssh/**`, Anmeldedatenspeicher), destruktive Shell-Operationen
-  (`rm -rf`, `sudo`, Force-Pushes auf geschützte Branches) und die Ausführung
-  nicht vertrauenswürdiger Eingaben. Keine Erlaubnisliste erweitert diese
-  Untergrenze stillschweigend.
-- **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und
-  die Apothem-eigenen Unterstützungs-Teilbäume beschränkt. Bestehende
-  verwaltete Ziele werden vor dem Ersetzen gesichert, und gemeinsame
-  Discovery-Verzeichnisse werden Kind für Kind zusammengeführt, sodass nicht
-  zugehörige, vom Operator verfasste Dateien an Ort und Stelle bleiben.
+- **Was Apothem als vertrauenswürdig behandelt.** Das gemeinsame Profil, das Sie verfassen, und den gebündelten Quellbaum, den der Installer ablegt. Das Profil ist Ihre erklärte Absicht; die Engine behandelt es nach der Schemavalidierung als maßgebliche Eingabe.
+- **Was Apothem nicht als vertrauenswürdig behandelt.** Profilinhalte erreichen das Dateisystem erst nach der Validierung: Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen stoppen alle vor jedem Schreibvorgang und liefern strukturierte Diagnosen mit `files_written: []`.
+- **Was materialisierte Ausgaben nie enthalten.** Keine Geheimnisse. Profil-Diagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte, bevor sie in Klartextausgaben, JSON, Logs, Doku-Snippets oder Tests gelangen; öffentliche Beispiele verwenden erfundene Platzhalter-Identitäten und -Domains. Materialisierte Konfiguration ist dafür gedacht, committet und geteilt zu werden; sie enthält keine Anmeldedaten.
+- **Die universelle Verbotsuntergrenze.** Die `settings.json` von Claude Code, die Apothem materialisiert, trägt unabhängig von jeder Allow-Liste pro Harness eine nicht verhandelbare Verbotsuntergrenze; bei anderen Harnesses steht dieselbe Untergrenze als Richtlinientext in den materialisierten Regeln, nicht als Verbotsliste auf Settings-Ebene — Geheimnispfade (`.env*`, `~/.ssh/**`, Anmeldedaten-Speicher), destruktive Shell-Operationen (`rm -rf`, `sudo`, Force-Pushes auf geschützte Branches) und die Ausführung nicht vertrauenswürdiger Eingaben. Keine Allow-Liste weitet diese Untergrenze stillschweigend aus.
+- **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und die Apothem-eigenen Unterstützungs-Teilbäume beschränkt. Vorhandene verwaltete Ziele werden vor dem Ersetzen gesichert, und gemeinsam genutzte Discovery-Verzeichnisse werden Kind für Kind zusammengeführt, sodass nicht zugehörige, vom Operator verfasste Dateien an ihrem Platz bleiben.
 
 ## Sicherheitshaltung zur Laufzeit
 
@@ -67,17 +44,17 @@ erreichen. Öffentliche Beispiele verwenden fiktive Platzhalter-Identitäten und
 ## Schnelllinks
 
 - [**OpenSSF-Scorecard-Haltung**](/docs/security/openssf-scorecard-target) — Nachweis je Prüfung und bekannte Plattformgrenzen
-- [**Webhooks-Audit**](/docs/security/webhooks-audit) — Nachweis der Webhook-Secret-Hygiene
+- [**Webhooks-Audit**](/docs/security/webhooks-audit) — Nachweis der Hygiene bei Webhook-Geheimnissen
 - [**Branch-Schutz**](/docs/security/branch-protection-ruleset) — Pull-Request-Pflicht, erforderliche Statusprüfungen sowie Sperren für Force-Pushes und Löschungen
-- [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Release-Nachweis ohne Binärdateien im Quellcode
-- [Sicherheitsrichtlinie](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — Schwachstellenmeldung & unterstützte Versionen
+- [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Beleg, dass der Quellbaum keine Binärdateien enthält
+- [Sicherheitsrichtlinie](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — Meldung von Schwachstellen & unterstützte Versionen
 - [OpenSSF-Scorecard-Badge](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — Live-Bewertung
 
 ## Eine Schwachstelle melden
 
 Verwenden Sie [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) im Security-Tab des Repositorys. Die vollständige Richtlinie, die Matrix der unterstützten Versionen und die Reaktionszeiten finden Sie in [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Release-Nachweise der Lieferkette
+## Release-Belege der Lieferkette
 
 Jedes Release-Artefakt wird ausgeliefert mit:
 

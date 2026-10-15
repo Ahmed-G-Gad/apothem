@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review——针对 `_inputs/design.md` 的设计制品进行架构完整性审查。"
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "e17f69d6a67eaf55"
 带参数：
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## 输入
@@ -29,7 +29,7 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## 输出
 
-架构发现 + REPORT.md
+架构发现项位于 `_inputs/architecture-review-findings.md`
 
 ## 下游
 
@@ -37,22 +37,14 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则和恢复契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 履行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+该命令分为五个审计阶段：输入摄取、设计到代码的可追溯性遍历、分层边界完整性审计、跨包耦合扫描，以及附带校验门的发现项输出。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
-| 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 缺失输入文件 | 设计工件 `_inputs/design.md` 不存在 | 运行 `/plan-design` 以创建它 |
 
 ## 示例
 
@@ -60,8 +52,8 @@ sourceHash: "e17f69d6a67eaf55"
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## 交叉引用

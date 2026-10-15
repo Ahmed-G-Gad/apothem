@@ -2,7 +2,7 @@
 title: "Eigenständige Laufzeit"
 description: "Wie Apothems Engine aus jedem Checkout läuft — gevendorte Abhängigkeiten, das Aufrufmodell PYTHONPATH=src und der Bootstrap des Plugin-Baums."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,7 +59,7 @@ stattdessen zwei Aufrufoberflächen:
 | Oberfläche | Aufruf | Kontext |
 | ------- | ---------- | ------- |
 | Engine-CLI | `python -m apothem <command>` | Ein Quellbaum mit `src/` auf dem `PYTHONPATH` (Checkout, npx-Cache, Plugin-Baum) |
-| Hook-Laufzeit | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Die materialisierte Kopie unter dem gemeinsamen `.apothem/support/`-Baum der Harness-Wurzel, per absolutem Pfad |
+| Hook-Laufzeit | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Die Materialisierung für Claude Code: die Kopie im gemeinsamen Baum `.apothem/support/` der Harness-Wurzel, per absolutem Pfad |
 
 - `python -m apothem` führt `src/apothem/__main__.py` aus, das
   `src/apothem/_vendor` in den `sys.path` aufnimmt, prüft, dass `click` und
@@ -85,7 +85,9 @@ Checkouts dem `PYTHONPATH` vorangestellt wird:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Genau diesen Aufruf gibt der Ein-Schritt-Installer bei Abschluss aus.
+Wenn der Starter `apothem` nicht im PATH liegt, gibt der Ein-Schritt-Installer
+bei Abschluss diese Form aus, mit dem vendored-Verzeichnis vor `src/` und dem
+CPython, den er aufgelöst hat, an Stelle von `python`.
 
 ## Bootstrap des Plugin-Baums
 

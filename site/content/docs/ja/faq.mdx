@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Apothem の目的、サポート対象ハーネス、プランスイートの任意性、ルールのカスタマイズ、アーティファクトの種類、エコシステム状態の保存場所に関するよくある質問。"
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,9 +27,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-Claude Code アダプターは `~/.claude/` にマテリアライズします。そのフックディスパッチャーは
-ホスト中立で、エコシステムルートをまず `$CLAUDE_PROJECT_DIR` から解決し、次に
-`$LLM_PROJECT_DIR`、それから `$HOME/.claude` にフォールバックします。
+Claude Code アダプターは `~/.claude/` にマテリアライズします。そのフックディスパッチャーはホスト非依存です。エコシステムのルートを、まず `$CLAUDE_PROJECT_DIR` から解決し、次に `$LLM_PROJECT_DIR` から解決します。その後、スクリプトからの相対的な位置と作業ディレクトリに基づく探索を試み、最後に `$HOME/.claude` にフォールバックします。
 
 ## プランスイートパイプラインを使う必要がありますか?
 
@@ -38,9 +36,7 @@ Claude Code アダプターは `~/.claude/` にマテリアライズします。
 
 ## リポジトリをフォークせずにルールをカスタマイズするにはどうすればよいですか?
 
-正規のフロントマターを備えた独自のルールファイルを `src/apothem/rules/<my-rule>.md` の下に
-追加します。ルールローダーは `src/apothem/rules/*.md` パターンに一致するすべてのファイルを
-取り込みます。
+`~/.config/apothem/profile.yaml` の `rules:` リストに文字列を追加し、インストールまたは更新を再実行してください。`src/apothem/rules/` 配下のルールファイルは、パッケージ化されたソースツリーを編集するものです。`--yes` を付けて実行した場合、アーカイブインストーラーがそのソースツリーを置き換えます。
 
 ## ルールを一時的に無効にするにはどうすればよいですか?
 
@@ -68,10 +64,10 @@ Claude Code アダプターは `~/.claude/` にマテリアライズします。
 
 ## エコシステムの状態はどこに保存されますか?
 
-- **スイートごとのプラン状態**は `<project>/.apothem/plans/{suite}/` 配下に保存されます。
-- **プロジェクトごとのメモリ**は `projects/{hash}/memory/` 配下に保存されます。
-- **プロジェクト横断のメモリ**は `memory/` 配下に保存されます。
-- **セッションごとのスクラッチ**は `<project>/.apothem/plans/{suite}/_inputs/` 配下に保存されます。
+- **スイートごとのプラン状態**は、`<project>/.apothem/plans/{suite}/` 配下に置かれます。
+- **Apothem のメモリ**は、インストールルートの下の `.apothem/memory/` 配下に置かれます（Claude Code の場合は `~/.claude/.apothem/memory/`、`workspace.scope` が `user-home` の場合は `~/.apothem/memory/`、プロジェクトスコープのインストールの場合は `<project>/.apothem/memory/`）。Claude Code 独自の自動メモリは、ハーネスの設定ルート配下の `projects/{hash}/memory/` にあります（Claude Code の場合は `~/.claude/projects/{hash}/memory/`）。
+- **プロジェクト横断のメモリ**は、同じハーネスの設定ルート配下の `.apothem/memory/` にあります（Claude Code の場合は `~/.claude/.apothem/memory/`）。
+- **セッションごとのスクラッチ領域**は、`<project>/.apothem/plans/{suite}/_inputs/` 配下にあります。
 
 ## 長時間に及ぶ作業を、新しいセッションや別のマシンで再開できますか?
 

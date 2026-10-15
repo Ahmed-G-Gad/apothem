@@ -1,70 +1,51 @@
 ---
 title: "Практические руководства по авторству и конвейеру"
-description: "Ориентированные на задачи пошаговые руководства по доработке контента в спецификации, генерации наборов планов, проверке планов, выполнению фаз, добавлению артефактов и запуску шлюзов качества."
+description: "Пошаговые руководства, ориентированные на задачи: доработка содержимого в спецификации, генерация наборов планов, проверка планов, выполнение фаз, добавление артефактов и запуск шлюзов качества."
 machineTranslated: true
-sourceHash: "7886387aff090853"
+sourceHash: "51dd595a3c38f228"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Ориентированные на задачи пошаговые руководства по **авторству артефактов Apothem
-и управлению конвейером планов**. Каждое руководство отвечает на один конкретный
-вопрос.
+Пошаговые руководства, ориентированные на задачи, по **созданию артефактов Apothem и управлению конвейером планов**. Каждое руководство отвечает на один конкретный вопрос.
 
-Для рецептов первоначальной настройки — добавление среды, редактирование профиля,
-управление установщиком — см. вместо этого раздел [Практические рецепты](/docs/how-to).
+Для рецептов первоначальной настройки — добавления окружения, редактирования профиля, запуска установщика — см. вместо этого раздел [Практические рецепты](/docs/how-to).
 
 ## Конвейер набора планов
 
 ### Как доработать сырой контент в спецификацию?
 
-Вызовите `/plan-spec` с сырым контентом в качестве ввода. Роль Forge выполняет шесть
-фаз преобразования (Discovery, Meticulous Consideration, Potency Mapping,
-Preservation Verification, Expertise Application, Question-Resolution Sweep) и выдаёт
-консолидированную спецификацию в `.apothem/plans/{suite}/_spec/spec.md`. См.
-`src/apothem/commands/plan-spec.md` для полного протокола.
+Вызовите `/plan-spec` с сырым контентом в качестве входных данных. Роль Forge выполняет шесть фаз преобразования (Discovery, Meticulous Consideration, Potency Mapping, Preservation Verification, Expertise Application, Question-Resolution Sweep) и выдаёт консолидированную спецификацию в `.apothem/plans/{suite}/_spec/spec.md`. Полный протокол см. в `src/apothem/commands/plan-spec.md`.
 
 ### Как сгенерировать набор планов из спецификации?
 
-Вызовите `/plan-generate <suite-name>`, как только спецификация будет в
-`.apothem/plans/{suite}/_spec/spec.md`. Генератор выдаёт канонические инфраструктурные файлы
-плюс пофазные файлы `phases/NN-kebab-topic/PHASE.md`. См.
-`src/apothem/commands/plan-generate.md`.
+Вызовите `/plan-generate .apothem/plans/{suite}/_spec/spec.md` после того, как `/plan-spec` запишет спецификацию. Генератор выдаёт канонические инфраструктурные файлы и пофазные файлы `phases/NN-kebab-topic/PHASE.md`. См. `src/apothem/commands/plan-generate.md`.
 
 ### Как проверить сгенерированный план?
 
-Вызовите `/plan-review path/to/plan-suite/`. Проверяющий применяет восемь методик
-планирования и выдаёт оценочные карты. Проваленные оценочные карты блокируют
-выполнение на SHARED+ до устранения. См. `src/apothem/commands/plan-review.md`.
+Вызовите `/plan-review path/to/plan-suite/`. Проверяющий применяет девять методик планирования и выдаёт оценочные карты. Проваленные оценочные карты блокируют выполнение на уровне SHARED+ до устранения. См. `src/apothem/commands/plan-review.md`.
 
 ### Как выполнить план?
 
-Вызовите `/plan-execute path/to/plan-suite/ [phase-id]`. Без `phase-id` выполняется
-следующая ожидающая фаза. С конкретным id выполняется только эта фаза. См.
-`src/apothem/commands/plan-execute.md`.
+Вызовите `/plan-execute path/to/plan-suite/ [phase-id]`. Без `phase-id` выполняется следующая ожидающая фаза. С конкретным идентификатором выполняется только эта фаза. См. `src/apothem/commands/plan-execute.md`.
 
 ### Как проверить статус плана?
 
-Вызовите `/plan-status path/to/plan-suite/ [--verbose]`. Отчёт только для чтения.
-См. `src/apothem/commands/plan-status.md`.
+Вызовите `/plan-status path/to/plan-suite/ [--verbose]`. Отчёт только для чтения. См. `src/apothem/commands/plan-status.md`.
 
-## Авторство артефактов
+## Создание артефактов
 
 ### Как добавить новое правило?
 
-1. Выберите имя файла kebab-case под `src/apothem/rules/`, например
-   `src/apothem/rules/my-new-rule.md`.
-2. Создайте фронтматтер (`name`, `description`, `type: instruction`, опциональный
-   `pathFilter`).
-3. Напишите тело с каноническими разделами: Purpose, Obligations, Seriousness
-   Scaling, Anti-Patterns, Enforcement, Bindings.
-4. Добавьте строку в когорту правил (`src/apothem/rules/`).
-5. Запустите `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort`
-   для проверки.
+1. Выберите имя файла в формате kebab-case в каталоге `src/apothem/rules/`, например `src/apothem/rules/my-new-rule.md`.
+2. Создайте фронтматтер (`name`, `description`, `pathFilter`, `alwaysApply`).
+3. Напишите тело с каноническими разделами: Purpose, Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings.
+4. Запустите `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort` для проверки.
+
+Загрузчик правил работает на основе glob-шаблонов: он подхватывает каждый файл, соответствующий `src/apothem/rules/*.md`, поэтому запись в реестре не нужна. Достаточно поместить файл с каноническим именем в этот каталог — это и есть вся регистрация.
 
 ### Как добавить нового делегированного исполнителя?
 
-Выберите имя файла kebab-case под показанным ниже каталогом, используя форму
-`my-worker.md`:
+Выберите имя файла в формате kebab-case в каталоге, показанном ниже, используя форму `my-worker.md`:
 
 ```text
 src/apothem/agents/
@@ -73,23 +54,18 @@ src/apothem/agents/my-worker.md
 
 Затем:
 
-1. Создайте фронтматтер — включая `name`, `description`, `allowedTools`, `maxTurns`,
-   `version` и маркер типа, показанный ниже:
+1. Создайте фронтматтер — включая `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns` и `effort`.
 
-```text
-type: agent
-```
+2. Напишите системный промпт в качестве тела.
 
-1. Напишите системный запрос в качестве тела.
-1. Добавьте строку в реестр помощников в когорте делегированных исполнителей (`src/apothem/agents/`).
+Группа делегированных исполнителей загружается по glob-шаблону из `src/apothem/agents/*.md`, поэтому файл с каноническим именем подхватывается сразу после размещения — редактировать таблицу реестра не нужно.
 
 ### Как добавить новый хук?
 
-1. Создайте контекстное сообщение под
-   `src/apothem/hooks/messages/<event>-<scope>.md`.
+1. Создайте контекстное сообщение в `src/apothem/hooks/messages/<event>-<scope>.md`.
 2. Подключите хук в `settings.json`.
 3. Обновите конвейер хуков.
-4. Запустите `python scripts/dev/validate_ecosystem.py --check hook-validator`.
+4. Запустите `python scripts/dev/validate_ecosystem.py`.
 
 ## Шлюзы качества
 

@@ -1,100 +1,79 @@
 ---
 title: "Cara-pakai penulisan & pipeline"
-description: "Panduan berorientasi-tugas untuk memperhalus konten menjadi spec, membangkitkan plan suite, meninjau rencana, mengeksekusi fase, menambah artefak, dan menjalankan gerbang mutu."
+description: "Panduan berorientasi-tugas untuk memperhalus konten menjadi spec, membangkitkan suite rencana, meninjau rencana, mengeksekusi fase, menambah artefak, dan menjalankan gerbang mutu."
 machineTranslated: true
-sourceHash: "7886387aff090853"
+sourceHash: "51dd595a3c38f228"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Panduan berorientasi-tugas untuk **menulis artefak Apothem dan menjalankan
-pipeline rencana**. Setiap panduan menjawab satu pertanyaan konkret.
+Panduan langkah demi langkah berorientasi tugas untuk **menulis artefak Apothem dan menjalankan pipeline rencana**. Setiap panduan menjawab satu pertanyaan konkret.
 
-Untuk resep pengaturan jalankan-pertama — menambah perkakas, menyunting profil, menjalankan
-pemasang — lihat bagian [Resep cara-pakai](/docs/how-to) sebagai gantinya.
+Untuk resep penyiapan pertama kali — menambahkan harness, menyunting profil, menjalankan pemasang — lihat bagian [Resep cara-pakai](/docs/how-to) sebagai gantinya.
 
-## Pipeline plan-suite
+## Pipeline suite rencana
 
 ### Bagaimana saya memperhalus konten mentah menjadi spec?
 
-Panggil `/plan-spec` dengan konten mentah sebagai masukan. Peran Forge
-menjalankan enam fase transformasi (Discovery, Meticulous
-Consideration, Potency Mapping, Preservation Verification,
-Expertise Application, Question-Resolution Sweep) dan memancarkan
-spec terkonsolidasi di `.apothem/plans/{suite}/_spec/spec.md`. Lihat
-`src/apothem/commands/plan-spec.md` untuk protokol lengkap.
+Panggil `/plan-spec` dengan konten mentah sebagai masukan. Peran Forge menjalankan enam fase transformasi (Discovery, Meticulous Consideration, Potency Mapping, Preservation Verification, Expertise Application, Question-Resolution Sweep) dan menghasilkan spec terkonsolidasi di `.apothem/plans/{suite}/_spec/spec.md`. Lihat `src/apothem/commands/plan-spec.md` untuk protokol lengkap.
 
-### Bagaimana saya membangkitkan plan suite dari spec?
+### Bagaimana saya membangkitkan suite rencana dari spec?
 
-Panggil `/plan-generate <suite-name>` setelah spec berada di
-`.apothem/plans/{suite}/_spec/spec.md`. Pembangkit memancarkan berkas
-infrastruktur kanonik plus berkas per-fase
-`phases/NN-kebab-topic/PHASE.md`. Lihat
-`src/apothem/commands/plan-generate.md`.
+Panggil `/plan-generate .apothem/plans/{suite}/_spec/spec.md` setelah `/plan-spec` menulis spec. Pembangkit menghasilkan berkas infrastruktur kanonis beserta berkas `phases/NN-kebab-topic/PHASE.md` per fase. Lihat `src/apothem/commands/plan-generate.md`.
 
-### Bagaimana saya meninjau rencana yang dibangkitkan?
+### Bagaimana saya meninjau rencana yang dihasilkan?
 
-Panggil `/plan-review path/to/plan-suite/`. Peninjau menerapkan
-delapan teknik perencanaan dan memancarkan kartu-skor. Kartu-skor
-yang gagal memblokir eksekusi pada SHARED+ sampai diselesaikan. Lihat
-`src/apothem/commands/plan-review.md`.
+Panggil `/plan-review path/to/plan-suite/`. Peninjau menerapkan sembilan teknik perencanaan dan menghasilkan kartu skor. Kartu skor yang gagal memblokir eksekusi pada SHARED+ sampai diselesaikan. Lihat `src/apothem/commands/plan-review.md`.
 
 ### Bagaimana saya mengeksekusi rencana?
 
-Panggil `/plan-execute path/to/plan-suite/ [phase-id]`. Tanpa
-`phase-id`, fase tertunda berikutnya berjalan. Dengan id spesifik,
-hanya fase itu yang berjalan. Lihat `src/apothem/commands/plan-execute.md`.
+Panggil `/plan-execute path/to/plan-suite/ [phase-id]`. Tanpa `phase-id`, fase yang tertunda berikutnya dijalankan. Dengan id tertentu, hanya fase tersebut yang dijalankan. Lihat `src/apothem/commands/plan-execute.md`.
 
 ### Bagaimana saya memeriksa status rencana?
 
-Panggil `/plan-status path/to/plan-suite/ [--verbose]`. Laporan
-hanya-baca. Lihat `src/apothem/commands/plan-status.md`.
+Panggil `/plan-status path/to/plan-suite/ [--verbose]`. Laporan hanya-baca. Lihat `src/apothem/commands/plan-status.md`.
 
 ## Menulis artefak
 
-### Bagaimana saya menambah aturan baru?
+### Bagaimana saya menambahkan aturan baru?
 
-1. Pilih nama berkas kebab-case di bawah `src/apothem/rules/`, mis.
+1. Pilih nama berkas kebab-case di bawah `src/apothem/rules/`, misalnya
    `src/apothem/rules/my-new-rule.md`.
-2. Tulis frontmatter (`name`, `description`, `type:
-   instruction`, opsional `pathFilter`).
-3. Tulis badan dengan bagian kanonik: Purpose,
+2. Tulis frontmatter (`name`, `description`, `pathFilter`,
+   `alwaysApply`).
+3. Tulis badan dengan bagian kanonis: Purpose,
    Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
    Bindings.
-4. Tambahkan baris ke kohort rules (`src/apothem/rules/`).
-5. Jalankan `python scripts/dev/validate_ecosystem.py --check
+4. Jalankan `python scripts/dev/validate_ecosystem.py --check
    frontmatter-cohort` untuk memverifikasi.
 
-### Bagaimana saya menambah pekerja-terdelegasi baru?
+Pemuat aturan berbasis glob — ia mengambil setiap berkas yang cocok dengan `src/apothem/rules/*.md`, sehingga tidak diperlukan entri registri; menaruh berkas dengan nama kanonis ke dalam direktori itu adalah seluruh proses registrasi.
 
-Pilih nama berkas kebab-case di bawah direktori yang ditunjukkan di bawah, menggunakan
-bentuk `my-worker.md`:
+### Bagaimana saya menambahkan pekerja yang didelegasikan baru?
+
+Pilih nama berkas kebab-case di bawah direktori yang ditunjukkan di bawah ini, dengan format `my-worker.md`:
 
 ```text
 src/apothem/agents/
 src/apothem/agents/my-worker.md
 ```
 
-Lalu:
+Kemudian:
 
-1. Tulis frontmatter — termasuk `name`, `description`,
-   `allowedTools`, `maxTurns`, `version`, dan penanda type yang ditunjukkan
-   di bawah:
+1. Tulis frontmatter — termasuk `name`, `version`, `updated`,
+   `description`, `tools`, `disallowedTools`, `maxTurns`, dan
+   `effort`.
 
-```text
-type: agent
-```
+2. Tulis system prompt sebagai badan.
 
-1. Tulis system prompt sebagai badan.
-1. Tambahkan baris ke registri pembantu di kohort pekerja-terdelegasi (`src/apothem/agents/`).
+Kohor pekerja yang didelegasikan dimuat berbasis glob dari `src/apothem/agents/*.md`, sehingga berkas dengan nama kanonis otomatis terbaca saat ditempatkan — tidak ada tabel registri yang perlu disunting.
 
-### Bagaimana saya menambah hook baru?
+### Bagaimana saya menambahkan hook baru?
 
 1. Tulis pesan konteks di bawah
    `src/apothem/hooks/messages/<event>-<scope>.md`.
-2. Hubungkan hook di `settings.json`.
-3. Perbarui hooks pipeline.
-4. Jalankan `python scripts/dev/validate_ecosystem.py --check
-   hook-validator`.
+2. Pasang hook di `settings.json`.
+3. Perbarui pipeline hook.
+4. Jalankan `python scripts/dev/validate_ecosystem.py`.
 
 ## Gerbang mutu
 
@@ -109,9 +88,9 @@ python scripts/dev/validate_ecosystem.py
 python scripts/dev/chaos_pass.py
 ```
 
-Pipeline CI menjalankan himpunan yang sama secara paralel.
+Pipeline CI menjalankan kumpulan yang sama secara paralel.
 
-### Bagaimana saya memeriksa frontmatter satu kelas-artefak?
+### Bagaimana saya memeriksa frontmatter satu kelas artefak?
 
 ```bash
 python scripts/dev/validate_ecosystem.py --check frontmatter-cohort

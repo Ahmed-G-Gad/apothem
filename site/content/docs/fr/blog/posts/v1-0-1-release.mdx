@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — version de lancement"
 description: "Apothem v1.0.1 est disponible — un unique profil partagé matérialisé dans dix-sept environnements d'assistant d'IA, plusieurs chemins d'installation et une version signée et attestée."
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,10 @@ Les dix-sept adaptateurs de cette version :
 - zed
 
 Ajoutez un outil à votre flux de travail, lancez une commande, et votre
-configuration est là. Retirez un outil, et Apothem le désinstalle proprement —
-sans laisser de fichiers orphelins.
+configuration est en place.
+Retirez un outil, et Apothem supprime les fichiers qu'il a écrits ; la mémoire
+partagée, les contextes et les magasins d'apprentissage disparaissent avec le
+dernier environnement, après une sauvegarde, et `plans/` reste toujours en place.
 
 ## Installation
 
@@ -62,12 +64,21 @@ Plusieurs chemins d'installation, une seule CLI en dessous :
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **Installateur par script en une seule étape** — place un runtime autonome
-   et le lanceur `apothem` sur le PATH :
+3. **Installateur par script en une seule étape** — place un runtime autonome et
+   un lanceur `apothem` (`~/.local/bin/apothem` sous POSIX, avec une indication
+   PATH lorsque ce répertoire ne figure pas dans `PATH` ; `apothem.cmd` dans
+   WindowsApps sous Windows) :
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   Le script POSIX vérifie par défaut la signature GPG de l'étiquette de publication
+   et s'interrompt lorsque la clé du mainteneur ne figure pas dans le trousseau
+   local. Tant que le mainteneur ne publie pas l'empreinte de la clé (voir
+   `SECURITY.md`), définissez `APOTHEM_VERIFY=checksum` pour vérifier l'archive par
+   rapport aux `SHA256SUMS` de la publication, ou `APOTHEM_ALLOW_UNVERIFIED=1` pour
+   poursuivre sans vérification de l'étiquette.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -117,12 +128,12 @@ cycle de vie complet de la configuration :
   configuration.
 
 Chaque adaptateur d'environnement implémente un protocole `HarnessAdapter`
-uniforme — `install`, `uninstall`, `is_installed`, `verify` — afin que chaque
-environnement se comporte de manière prévisible depuis le siège de l'opérateur,
-quel que soit le format d'éditeur en dessous. Pour en savoir plus sur la
-conception, lisez
+uniforme — `install`, `update`, `uninstall`, `is_installed`, `verify` — afin que
+chaque environnement se comporte de manière prévisible depuis le poste de
+l'opérateur, quel que soit le format propre à l'éditeur situé en dessous. Pour en
+savoir plus sur la conception, lisez
 [la plongée technique dans l'architecture de l'adaptateur](/docs/blog/posts/multi-harness-adapter-design)
-et sur la réconciliation des formats
+; sur la réconciliation des formats, lisez
 [la convergence des conventions entre environnements](/docs/blog/posts/cross-harness-convention-convergence).
 
 ## Où aller ensuite

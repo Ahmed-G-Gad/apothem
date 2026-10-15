@@ -2,7 +2,7 @@
 title: "CI/CD パイプライン図"
 description: "あらゆるコード変更とリリースを門にかけるビルド・テスト・lint・セキュリティ・公開のワークフロー段階の視覚マップとレーン分解。"
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -42,15 +42,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -67,28 +68,31 @@ flowchart LR
 
 - **静的解析レーン** —— 高速なフィードバック。Ruff は Python のスタイルと
   厳選されたルールセットを扱います。mypy は strict で型の規律を強制します。
-  frontmatter バリデーターは、ルール・スキル・委任されたワーカー・コマンドの
-  アーティファクトスキーマ準拠を門にかけます。markdownlint はこのレーンには
+  frontmatter バリデーターは、ルール、スキル、委任されたワーカー、コマンドの
+  アーティファクトスキーマへの準拠を門にかけます。markdownlint はこのレーンには
   含まれません。pre-commit フックとしてのみ実行され、CI では実行されません
   （[Markdown 規約](/docs/reference/markdown-conventions)を参照してください）。
-- **テストレーン** —— `pytest tests/hooks` はフックランタイムを完全な
-  イベントマトリクスに対して走らせます。`validate_ecosystem.py` は
-  アーティファクト横断の整合性に対する主要な構造ゲートです。`chaos_pass.py` と
-  `src/apothem/benchmarks/` 配下のクラス別ベンチマークスイートは、劣化した入力下
-  での退化と実行時予算のリグレッションを捕捉するため、リリースレーンで起動します。
-- **セキュリティレーン** —— シークレットスキャンは誤ってコミットされた認証情報を
-  捕捉します。SBOM 生成とライセンス監査は、あらゆる本番準備インストールに対して
+- **テストレーン** —— `pytest tests/hooks` は、フックランタイムを完全な
+  イベントマトリクスに対して実行します。`validate_ecosystem.py` は、
+  アーティファクト横断の整合性に対する主要な構造ゲートです。`chaos_pass.py` は、
+  `main` へのプッシュとプルリクエストに対して、CI の品質ジョブ内で（パスフィルター付きで）
+  実行され、劣化した入力のもとでの品質低下を捕捉します。`src/apothem/benchmarks/` 配下の
+  クラス別ベンチマークスイートは、どの CI ワークフローでも実行されません。
+- **セキュリティレーン** —— シークレットスキャンは、誤ってコミットされた認証情報を
+  捕捉します。SBOM 生成とライセンス監査は、あらゆる本番準備インストールについて、
   サプライチェーンの表面を門にかけます。
-- **公開レーン** —— タグ付きリリースのみで実行されます。署名済みタグの検証は
-  リリースブランチの来歴を確認します。プロジェクトのウェブサイトは
-  `site/dist/` から GitHub Pages のターゲットへ公開されます。リリースノートは
-  `CHANGELOG.md` の Keep-A-Changelog 形式から派生します。
+- **公開レーン** —— リリースワークフローはタグのプッシュによって起動されます。npm と
+  VS Code の公開処理は、既存のタグに対して手動ディスパッチによって再実行することもできます。
+  署名済みタグの検証は、リリースブランチの来歴を確認します。リリースノートは
+  `CHANGELOG.md` の Keep-A-Changelog 形式から派生します。プロジェクトのウェブサイトは、
+  ビルド入力に触れる `main` へのプッシュ時、または手動ディスパッチ時に、
+  `site/dist/` から GitHub Pages のターゲットへ公開されます。
 
 ## 具体的な構成
 
 実際のワークフローファイル（`.github/workflows/ci.yml`、
-`.github/workflows/release.yml` など）は、本番準備エコシステムの構築の際に
-インストールされます。この図は、将来のあらゆる構成が反映する正規の形を定義します。
+`.github/workflows/release.yml` など）はリポジトリにあります。この図は、今後のあらゆる構成が
+反映する正規の形を定義します。
 
 ## 権威ある相互参照
 

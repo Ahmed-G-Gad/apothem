@@ -2,7 +2,7 @@
 title: "/ux-review"
 description: "/ux-review — Developer-Experience-Review der CLI-Ergonomie, der Dokumentation und des Onboardings."
 machineTranslated: true
-sourceHash: "9f5bcdfb23374608"
+sourceHash: "17401a86d59ea454"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Developer-Experience-Review der CLI-Ergonomie, der Dokumentation und des Onboard
 Mit Argumenten:
 
 ```bash
-/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/ux-review [path/to/repo/] [--focus SURFACE] [--dry-run]
 ```
 
 ## Eingaben
 
-Host-Repository in einem beliebigen Lebenszyklus-Zustand
+Bereitgestelltes Host-Repository mit einer README, Installationsskripten und einem CLI-Einstiegspunkt
 
 ## Ausgaben
 
-UX-Befunde + REPORT.md
+UX-Befunde unter `_inputs/ux-review-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,15 @@ Die UX-Review-Stufe der Audit-Review-Sequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
-
-1. **Kontext laden** — Plan-Suite, Regeln und Wiederaufnahme-Vertrag lesen.
-2. **Voraussetzungen prüfen** — Bestätigen, dass abhängige Phasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Die Mission des Befehls erfüllen.
-4. **Ausgaben prüfen** — Bestätigen, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verifizierte Ausgaben im Phasen-Ausgaberegister erfassen.
-6. **REPORT.md ausgeben** — Freigabenachweis des Pre-Emission-Tors erfasst.
+Der Befehl durchläuft fünf Phasen: Eingabeaufnahme, Durchlauf der CLI-Ergonomie, Audit des Installationsablaufs und der Fehlerwiederherstellung, Sweep der Auffindbarkeit der Dokumentation sowie Ausgabe der Befunde mit dem Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht beendet | Zuerst die vorgelagerte Phase abschließen |
-| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Ausgabe korrigieren und erneut ausführen |
-| Eingabedatei fehlt | Plan-Suite-Datei fehlt | `/plan-generate` ausführen, um sie zu erstellen |
+| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
+| Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Ziel nicht bereitgestellt | Dem Ziel fehlt die für Operatoren sichtbare Oberfläche | Übergib das bereitgestellte Repository-Wurzelverzeichnis |
 
 ## Beispiele
 
@@ -60,8 +53,8 @@ Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
 # Dry-run to preview what would happen
 /ux-review --dry-run
 
-# Execute against a named plan suite
-/ux-review path/to/plan-suite/
+# Execute against a host repository
+/ux-review path/to/repo/
 ```
 
 ## Querverweise

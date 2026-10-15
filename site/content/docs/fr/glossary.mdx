@@ -2,7 +2,7 @@
 title: "Glossaire"
 description: "Glossaire d'Apothem — termes et concepts clés."
 machineTranslated: true
-sourceHash: "3f83ebe8ab57a917"
+sourceHash: "970b0d22cc5f76db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,10 @@ surface native de son environnement.
 
 ## Portail de conformité
 La fraction mécanique du portail de pré-émission à quinze barres — les
-validateurs vérifiables par machine à `src/apothem/conformity/gate.py`.
-S'exécute avant chaque émission d'artefact ; les barres raisonnées sont
-évaluées en revue.
+validateurs vérifiables par machine à `src/apothem/conformity/gate.py`. S'exécute
+comme contrôle consultatif avant l'émission d'un artefact lorsque l'environnement
+expose un hook PreToolUse (bloquant uniquement avec `--strict`, comme en CI et en
+pre-commit) ; les barres raisonnées sont évaluées en revue.
 
 ## Point d'entrée
 Le groupe de points d'entrée setuptools `apothem.harnesses` déclaré dans

@@ -2,7 +2,7 @@
 title: "Di dalam desain adapter multi-harness"
 description: "Telaah teknis mendalam tentang protokol HarnessAdapter milik Apothem dan tiga kelas adapter yang memateriilkan satu profil menjadi tujuh belas harness."
 machineTranslated: true
-sourceHash: "aa3e6ce912cf7275"
+sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,12 +19,12 @@ Protokol adalah jahitan antara CLI dan detail spesifik-vendor. Ia mendeklarasika
 operasi yang dipanggil CLI dan metadata yang dibaca CLI:
 
 - `name` — pengenal terdaftar dari adapter.
-- `output_path` — tempat konfigurasi yang dimateriilkan mendarat di disk.
-- `install` — merender dan menulis konfigurasi asli-harness.
-- `uninstall` — menghapus konfigurasi yang dimateriilkan, membiarkan profil
-  bersama tidak tersentuh.
+- `output_path` — tempat konfigurasi yang dimaterialisasikan mendarat di disk.
+- `install` — merender dan menulis konfigurasi native-harness.
+- `update` — merender ulang konfigurasi native-harness setelah profil berubah.
+- `uninstall` — menghapus konfigurasi yang dimaterialisasikan, dengan profil bersama dibiarkan tidak tersentuh.
 - `is_installed` — melaporkan apakah konfigurasi harness ada.
-- `verify` — mendeteksi penyimpangan antara profil dan konfigurasi di disk.
+- `verify` — mendeteksi penyimpangan (drift) antara profil dan konfigurasi di disk.
 
 Karena kontraknya berupa `typing.Protocol`, sebuah adapter memenuhinya
 berdasarkan bentuk, bukan pewarisan. CLI memuat adapter secara dinamis melalui
@@ -91,12 +91,7 @@ bawah `src/apothem/harnesses/claude_code/templates/`. Ia tidak membawa
 `materializer.py` — ia tidak merender berkas konfigurasi asli dari profil; ia
 mempropagasi artefak dan direktori konvensi secara langsung.
 
-Satu batas yang disengaja: adapter claude-code tidak mengelola `CLAUDE.md`.
-Berkas itu adalah wilayah milik operator. Apothem memateriilkan permukaan
-konfigurasi di sekitarnya — aturan, hooks, pengaturan — dan membiarkan suara
-`CLAUDE.md` milik operator sendiri tidak tersentuh. Sebuah adapter yang menimpanya
-akan menghapus instruksi proyek yang ditulis tangan pada setiap `apothem
-install`, jadi adapter menarik garis di batas direktori dan berhenti.
+Satu batas yang disengaja: adapter claude-code hanya mengelola satu blok yang dibatasi sentinel di dalam `CLAUDE.md`; prosa di luar blok itu dipertahankan. Sisa berkas tersebut adalah wilayah milik operator. Apothem mematerialisasikan permukaan konfigurasi di sekitarnya — aturan, hook, pengaturan — dan mempertahankan prosa operator di luar blok itu apa adanya. Adapter yang menulis ulang seluruh berkas akan menghapus instruksi yang ditulis tangan pada setiap `apothem install`; adapter ini hanya menulis ulang blok terkelolanya.
 
 ## Mengapa keseragaman itu penting
 

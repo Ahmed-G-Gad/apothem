@@ -2,7 +2,7 @@
 title: "Especificação do schema de artefatos"
 description: "Schema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de código-fonte do Apothem, com templates por classe e regras de validação."
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,10 +36,11 @@ cada tipo.
 
 **Convenção de versionamento (classes de artefato versionadas — comandos, auxiliares, skills, CLAUDE.md):**
 
-- `version` é **semântica** (`MAJOR.MINOR.PATCH`). Incremente MAJOR para mudanças incompatíveis de schema ou de contrato; MINOR para mudanças aditivas e compatíveis (novos campos opcionais, seções adicionais, antipadrões adicionais); PATCH para uma mudança de comportamento que corrige uma diretiva existente sem quebrar o contrato.
-- Correções de erro de digitação, correções de link, formatação e edições somente em comentários ou somente de documentação deixam `version` inalterada. Somente uma mudança de comportamento a incrementa.
-- `updated` é a **data ISO 8601** (`YYYY-MM-DD`) da edição mais recente. Ela deve mudar a cada incremento de `version` e também muda em uma correção de erro de digitação ou de link que não incrementa a versão.
+- `version` é **semântica** (`MAJOR.MINOR.PATCH`). Incremente MAJOR para mudanças incompatíveis de schema ou de contrato; MINOR para mudanças aditivas compatíveis (novos campos opcionais, seções adicionais, antipadrões adicionais); PATCH para uma mudança de comportamento que corrige uma diretiva existente sem quebrar o contrato.
+- Correções de erro de digitação, correções de link, formatação e edições somente de comentário ou somente de documentação deixam `version` inalterada. Somente uma mudança de comportamento a incrementa.
+- `updated` é a **data ISO 8601** (`YYYY-MM-DD`) da edição mais recente. Ela deve mudar a cada incremento de `version`, e também muda em uma correção de digitação ou de link que não incrementa a versão.
 - Artefatos novos começam em `v0.Y.Z`. A promoção para `vX.Y.Z` indica que o contrato do artefato é estável o bastante para ser um compromisso público.
+- As suítes de planejamento estão fora desta convenção. Uma correção de digitação em uma suíte de planejamento incrementa o número PATCH da versão da suíte (`vX.Y.Z` para `vX.Y.(Z+1)`) e acrescenta uma linha no Histórico de revisões. O [guia do desenvolvedor](/docs/developer-guide) descreve a regra das suítes de planejamento na sua seção de revisões da suíte de planejamento.
 
 ---
 

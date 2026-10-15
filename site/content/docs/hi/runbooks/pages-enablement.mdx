@@ -2,7 +2,7 @@
 title: "Pages सक्षमीकरण रनबुक"
 description: "CNAME DNS कॉन्फ़िगरेशन के माध्यम से apothem.ahmedgad.com पर कस्टम डोमेन के साथ GitHub Pages लॉन्च करने के लिए चरण-दर-चरण रनबुक।"
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -168,7 +168,7 @@ Pages रीस्टार्ट की माँग करती है (API �
 ### 2.6 डीप लिंक सत्यापित करें
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 अपेक्षित आउटपुट:
@@ -314,10 +314,10 @@ Pages-सक्षमीकरण प्रक्रिया में चा�
 
 | विफलता | निदान | पुनर्प्राप्ति |
 |---|---|---|
-| `gh api .../pages` 404 लौटाता है | रिपॉज़िटरी पर Pages सक्षम नहीं है | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` फिर §2.1 पुनः प्रयास करें |
-| `dig` 30 मिनट के बाद खाली लौटाता है | DNS रिकॉर्ड प्रदाता पर कमिट नहीं है | मेल खाने वाले प्रदाता परिशिष्ट पर लौटें; सत्यापित करें कि रिकॉर्ड सहेजा गया है (ड्राफ़्ट / लंबित नहीं); छूटे हुए `Save` चरण के लिए पैनल का निरीक्षण करें |
-| `https_certificate.state: errored` | Pages प्रमाणपत्र जारी नहीं कर सकता | Pages सेटिंग्स में कस्टम डोमेन को बंद और चालू करें; यह जारी करने को पुनः ट्रिगर करता है। नए प्रयास के लिए 24 घंटे तक प्रतीक्षा करें |
-| बिल्ड के बाद डीप-लिंक 404 | स्थैतिक-साइट बिल्ड ने पेज शामिल नहीं किया | `gh workflow run publish-static-site.yml`; पूरा होने पर सत्यापित करें कि `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` `success` लौटाता है |
+| `gh api .../pages` 404 लौटाता है | रिपॉज़िटरी पर Pages सक्षम नहीं है | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` चलाएँ, फिर §2.1 पुनः प्रयास करें |
+| 30 मिनट बाद `dig` खाली लौटाता है | DNS रिकॉर्ड प्रदाता पर कमिट नहीं हुआ | मेल खाने वाले प्रदाता परिशिष्ट पर लौटें; सत्यापित करें कि रिकॉर्ड सहेजा गया है (ड्राफ़्ट / लंबित नहीं); छूटे हुए `Save` चरण के लिए पैनल का निरीक्षण करें |
+| `https_certificate.state: errored` | Pages प्रमाणपत्र जारी नहीं कर सकता | Pages सेटिंग्स में कस्टम डोमेन को बंद और चालू करें; इससे जारी करना पुनः ट्रिगर होता है। नए प्रयास के लिए 24 घंटे तक प्रतीक्षा करें |
+| बिल्ड के बाद डीप-लिंक 404 | स्थैतिक-साइट बिल्ड में वह पृष्ठ शामिल नहीं था | `gh workflow run publish-static-site.yml` चलाएँ; पूरा होने पर सत्यापित करें कि `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` `success` लौटाता है |
 
 यदि मेल खाने वाले निदान के एक चक्र के बाद पुनर्प्राप्ति विफल रहती है, तो
 रिलीज़-पुनर्प्राप्ति रनबुक तक एस्केलेट करें (नए इतिहास के फ़ोर्स-पुश ने

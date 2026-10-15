@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,14 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-`claude-code` 어댑터는 공유 Apothem 코퍼스를 Claude Code의 네이티브 디스커버리
-트리에 설치합니다. Markdown 에이전트, 규칙, 스킬, 출력 스타일, 설정은 각자의
-네이티브 위치에 설치됩니다. 커맨드 프롬프트는 스킬로 변환되므로, 재사용 가능한
-워크플로가 현재 Claude Code 스킬 표면을 통해 계속 보입니다. 상태 표시줄
-렌더러는 `~/.claude/statuslines/`에 복사되지만 연결되지는 않습니다. Claude Code는
-상태 표시줄을 `statusLine` 설정에서 읽는데, 어댑터는 이 설정을 비워 둡니다.
-켜려면 `~/.claude/statuslines/render.py`를 실행하는 `"type": "command"`의
-`statusLine` 항목을 `settings.json`에 추가하세요.
+`claude-code` 어댑터는 공유 Apothem 코퍼스를 Claude Code의 네이티브 디스커버리 트리에 설치합니다. Markdown 에이전트, 규칙, 스킬, 출력 스타일, 설정은 각자의 네이티브 위치에 설치됩니다. 커맨드 프롬프트는 스킬로 변환되므로, 재사용 가능한 워크플로가 현재 Claude Code 스킬 표면을 통해 계속 보입니다. 상태 표시줄 렌더러는 `~/.claude/statuslines/`에 복사되지만 연결되지는 않습니다. Claude Code는 상태 표시줄을 `statusLine` 설정에서 읽는데, 어댑터는 이 설정을 비워 둡니다. 켜려면 `settings.json`에 `"type": "command"`인 `statusLine` 항목을 추가하고, 이 항목이 `~/.claude/statuslines/render.py`를 실행하도록 하세요. 스니펫의 `commandWindows` 값은 Windows에서 실행되며 인터프리터를 따옴표 없이 지정합니다. 인터프리터 경로에 공백이 있고 볼륨에 8.3 단축 형식이 있으면, 설치 프로그램은 이 값에 Windows 8.3 단축 형식을 씁니다. `settings.json`의 훅 항목은 전체 경로를 유지합니다.
 
 **작성되는 파일:** `~/.claude/` 아래의 `settings.json`, `CLAUDE.md` 안의 Apothem 블록, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/`, 그리고 `.apothem/support/` 지원 하위 트리

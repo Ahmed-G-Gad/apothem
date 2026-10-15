@@ -2,7 +2,7 @@
 title: "常见问题"
 description: "关于 Apothem 的用途、受支持的工具、计划套件的可选性、规则定制、制品类型以及生态系统状态位置的常见问题。"
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-Claude Code 适配器具现化到 `~/.claude/`；其钩子调度器与宿主无关——它先从 `$CLAUDE_PROJECT_DIR` 解析生态系统根目录，然后是 `$LLM_PROJECT_DIR`，最后回退到 `$HOME/.claude`。
+Claude Code 适配器物化到 `~/.claude/`；其钩子分派器与宿主无关——它首先从 `$CLAUDE_PROJECT_DIR` 解析生态系统根目录，然后是 `$LLM_PROJECT_DIR`，接着尝试相对于脚本与工作目录的查找，最后回退到 `$HOME/.claude`。
 
 ## 我必须使用计划套件流水线吗？
 
@@ -29,7 +29,7 @@ Claude Code 适配器具现化到 `~/.claude/`；其钩子调度器与宿主无�
 
 ## 如何在不分叉仓库的情况下定制规则？
 
-在 `src/apothem/rules/<my-rule>.md` 下添加你自己的规则文件，并带上规范的 frontmatter。规则加载器会拾取每个匹配 `src/apothem/rules/*.md` 模式的文件。
+在 `~/.config/apothem/profile.yaml` 的 `rules:` 列表中添加一个字符串，然后重新运行安装或更新。`src/apothem/rules/` 下的规则文件会编辑已打包的源码树，而归档安装器在以 `--yes` 运行时会替换该源码树。
 
 ## 如何临时禁用某条规则？
 
@@ -52,8 +52,8 @@ Claude Code 适配器具现化到 `~/.claude/`；其钩子调度器与宿主无�
 ## 生态系统状态保存在哪里？
 
 - **每个套件的计划状态**位于 `<project>/.apothem/plans/{suite}/` 下。
-- **每个项目的记忆**位于 `projects/{hash}/memory/` 下。
-- **跨项目记忆**位于 `memory/` 下。
+- **Apothem 记忆**位于安装根目录之下的 `.apothem/memory/` 中（对 Claude Code 为 `~/.claude/.apothem/memory/`；当 `workspace.scope` 为 `user-home` 时为 `~/.apothem/memory/`；对项目范围的安装为 `<project>/.apothem/memory/`）。Claude Code 自身的自动记忆位于工具配置根目录下的 `projects/{hash}/memory/`（对 Claude Code 为 `~/.claude/projects/{hash}/memory/`）。
+- **跨项目记忆**位于同一工具配置根目录下的 `.apothem/memory/`（对 Claude Code 为 `~/.claude/.apothem/memory/`）。
 - **每个会话的临时草稿**位于 `<project>/.apothem/plans/{suite}/_inputs/` 下。
 
 ## 我能在新会话或另一台机器上接续长时间运行的工作吗？

@@ -2,7 +2,7 @@
 title: "Comparação"
 description: "Como avaliar o Apothem frente à configuração de harness mantida à mão e a outras abordagens de configuração, com uma matriz de recursos e páginas por harness."
 machineTranslated: true
-sourceHash: "0291d627acd6aa88"
+sourceHash: "3f105749820c670d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,19 +19,20 @@ projeto (consulte [Fontes](#fontes)); verifique-os novamente a cada lançamento
 de versão menor.
 
 Outras ferramentas resolvem fatias adjacentes deste problema. Gerenciadores de
-configuração baseados em arquivos, como **chezmoi** e **GNU Stow**, posicionam,
-linkam ou geram templates de arquivos, mas nunca traduzem uma fonte para o schema de
-configuração *nativo* de cada harness. As CLIs de sincronização entre ferramentas
-geram arquivos por ferramenta a partir de uma única fonte: **rulesync** gera
-configuração nativa para 60 ferramentas de programação e dois padrões abertos, em
-uma unidade sincronizada que acrescenta MCP, arquivos ignore, permissões e
-verificações de revisão, nenhum dos quais o manifesto do Apothem sincroniza; e
-**ruler** distribui um único diretório `.ruler/` para 33 alvos, concatenando regras
-no arquivo de instruções de cada ferramenta e traduzindo servidores MCP, skills e
-subagentes para configuração nativa. A distinção do Apothem é a **disciplina de
-governança e de ciclo de vida distribuída em torno da sincronização**: um conformity
-gate mecanizado, pipelines deterministas, uma fortaleza de auditoria e um ciclo de
-vida reversível e verificado.
+configuração baseados em arquivos, como **chezmoi** e **GNU Stow**, posicionam, linkam
+ou geram templates de arquivos, mas nunca traduzem uma fonte para o schema de
+configuração *nativo* de cada harness. As CLIs de sincronização entre ferramentas geram
+arquivos por ferramenta a partir de uma única fonte: **rulesync** gera configuração
+nativa para 60 ferramentas de programação e dois padrões abertos, em uma unidade
+sincronizada que acrescenta MCP, arquivos ignore, permissões e verificações de revisão,
+nenhum dos quais o manifesto do Apothem sincroniza; o Apothem renderiza seus servidores
+MCP a partir do perfil, pelos materializadores dos adaptadores que os criam. **ruler**
+distribui um único diretório `.ruler/` para 33 alvos, concatenando regras no arquivo de
+instruções de cada ferramenta e traduzindo servidores MCP, skills e subagentes para
+configuração nativa. A distinção do Apothem é a **disciplina de governança e de ciclo
+de vida distribuída em torno da sincronização**: um conformity gate mecanizado,
+pipelines determinísticos, uma fortaleza de auditoria e um ciclo de vida reversível e
+verificado.
 
 | Capacidade | Apothem | Gerenciadores de configuração de arquivos (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |

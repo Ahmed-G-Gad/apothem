@@ -2,7 +2,7 @@
 title: "Criação de um novo adaptador de ambiente"
 description: "Manual operacional para criar e publicar um novo adaptador de ambiente do Apothem."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ Abra um PR com:
 - A implementação do adaptador
 - A página de documentação em `site/content/docs/harnesses/<slug>.mdx`
 - Os testes
-- O registro do ponto de entrada em `pyproject.toml`
-- Uma entrada no registro de alterações
+- O registro do ponto de entrada em `pyproject.toml`, uma entrada `HARNESS_REGISTRY` em `src/apothem/lib/harness_registry_data.py` (incrementando `SUPPORTED_HARNESS_COUNT` ali) e o ID no enum `harnessId` de `src/apothem/schemas/profile.schema.json`
+- Entrada no CHANGELOG

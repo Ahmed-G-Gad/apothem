@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — リポジトリコーパス規模のクロスファイル・フォレンジックコード監査。"
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ sourceHash: "2f3c290241ac5fb5"
 引数付き：
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## 入力
 
-任意のライフサイクル状態にあるホストリポジトリ
+承認済みのソースレイアウト、テストカバレッジのベースライン、そして（SHARED+ では）合格した CI ゲートを備えたホストリポジトリ
 
 ## 出力
 
-コーパスレベルの発見 + REPORT.md
+コーパスレベルの所見（`_inputs/code-audit-findings.md`）
 
 ## 下流
 
@@ -37,22 +37,14 @@ sourceHash: "2f3c290241ac5fb5"
 
 ## ワークフローのフェーズ
 
-このコマンドは標準の `/plan` パイプラインワークフローに従います。
-
-1. **コンテキストの読み込み** — 計画スイート、ルール、再開契約を読み込みます。
-2. **前提条件の検証** — 依存フェーズが完了していることを確認します。
-3. **タスクの実行** — コマンドの使命を遂行します。
-4. **出力の検証** — 宣言されたすべての出力が存在し、品質ゲートを通過することを確認します。
-5. **PROGRESS.md の更新** — 検証済みの出力をフェーズ出力レジストリに記録します。
-6. **REPORT.md の発出** — 事前発行ゲートのリリース証明を記録します。
+このコマンドは 6 つのフォレンジックフェーズを実行します。入力の取り込み、ファイル横断の依存関係の走査、型ヒントとカバレッジの監査、デッドコードと重複の検出、アーキテクチャの整合性の監査、そして検証ゲートを伴う所見の出力です。
 
 ## 失敗モード
 
-| 症状 | 原因 | 回復 |
+| 症状 | 原因 | 復旧 |
 |---------|-------|----------|
-| 前提条件が未完了 | 依存フェーズが未完了 | まず上流フェーズを完了する |
 | 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
-| 入力ファイルの欠落 | 計画スイートのファイルがない | `/plan-generate` を実行して作成する |
+| 入力ファイルが欠落 | SHARED+ で CI ゲートの実行またはテストカバレッジのベースラインがない | ホストの CI パイプラインを先に実行してから、再実行する |
 
 ## 例
 
@@ -60,8 +52,8 @@ sourceHash: "2f3c290241ac5fb5"
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## 相互参照

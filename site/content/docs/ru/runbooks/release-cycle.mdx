@@ -2,7 +2,7 @@
 title: "Руководство по циклу релиза"
 description: "Полный рабочий процесс релиза от локальных шлюзов через подписанный GitHub Release до публикации в npm."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,8 +16,7 @@ CHANGELOG и дымовой проверкой пути установки, по
 Модель релизов — **аддитивная**. Каждый релиз добавляет один коммит в `main`
 и один подписанный аннотированный тег `vX.Y.Z`; ничего не отправляется через
 force-push, и ни один более ранний тег, GitHub Release или версия npm не
-удаляется. У проекта три релиза, каждый со своим тегом, своим GitHub Release
-и своей версией npm, и все остаются опубликованными: версии npm неизменяемы
+удаляется. Каждый релиз сохраняет свой тег, свой GitHub Release и свою версию npm, и все остаются опубликованными: версии npm неизменяемы
 (опубликованный `name@version` никогда не может быть заменён), а закреплённые
 установки зависят от тегов.
 
@@ -88,7 +87,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -242,6 +240,8 @@ apothem --version
 ```
 
 Ожидаемый вывод: `Apothem, version X.Y.Z`.
+
+Лаунчер записывается в `~/.local/bin`, который должен находиться в `PATH`, чтобы описанная выше проверка работала. Если этого каталога нет в `PATH`, установщик выводит строку `export PATH`, которую нужно добавить.
 
 ### 5.4 Одношаговый скриптовый установщик (Windows)
 

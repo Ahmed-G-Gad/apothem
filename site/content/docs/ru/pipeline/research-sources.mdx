@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Систематический сбор источников: разбивает спецификацию на подзапросы, разворачивает поиск параллельно, отсеивает и ранжирует, и извлекает по источникам в ранжированный реестр источников."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "61f80a4f92aed2b6"
 С аргументами:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Входные данные
@@ -64,8 +64,8 @@ sourceHash: "61f80a4f92aed2b6"
 # Собрать источники для оформленного набора исследования
 /research-sources path/to/research-suite/
 
-# Более глубокое развёртывание поиска
-/research-sources path/to/research-suite/ --depth N
+# Ограничить количество отобранных источников
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Перекрёстные ссылки

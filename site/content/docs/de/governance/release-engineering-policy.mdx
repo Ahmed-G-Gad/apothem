@@ -2,7 +2,7 @@
 title: "Release-Engineering-Richtlinie"
 description: "Fünf kanonische Richtlinien für Versionierung, Release-Tagging, Veraltungszyklen, inkompatible Änderungen und Rollback-Verfahren."
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,23 +31,19 @@ GitHub-Release-Seite veröffentlicht.
 
 Tag-Konventionen:
 
-- **Format** — exakt `vMAJOR.MINOR.PATCH`. Kein `release-`-Präfix,
-  kein `-final`-Suffix.
-- **Annotation** — jedes Tag ist ein annotiertes Tag (`git tag -a -s`),
-  das die Zusammenfassung der Release-Notes in der Tag-Nachricht trägt.
-- **Signatur** — jedes Tag ist GPG-signiert. Der Release-Workflow
-  erzeugt zusätzlich eine schlüssellose Sigstore-cosign-Signatur für
-  jedes Artefakt und einen SLSA-3-Provenienz-Release-Nachweis, beide
-  an die GitHub-Release-Seite angehängt.
+- **Format** — genau `vMAJOR.MINOR.PATCH`. Kein `release-`-Präfix, kein `-final`-Suffix.
+- **Annotation** — jedes Tag ist ein annotiertes Tag (`git tag -a -s`), das die
+  Zusammenfassung der Release-Notes in der Tag-Nachricht trägt.
+- **Signatur** — jedes Tag ist GPG-signiert. Der Release-Workflow erzeugt
+  zusätzlich eine schlüssellose Sigstore-cosign-Signatur für jedes Artefakt und
+  einen SLSA-3-Provenienzdatensatz, beide an die GitHub-Release-Seite angehängt.
 
 ### Release-Modell: additiv
 
 Releases sind additiv. Jedes Release fügt einen Commit auf `main` und ein
 Tag hinzu; `main` wird niemals per Force-Push überschrieben, und kein
 veröffentlichtes Tag, kein GitHub Release und keine npm-Version wird gelöscht,
-verschoben oder wiederverwendet. Das Projekt hat drei Releases, jedes mit
-seinem Tag, seinem GitHub Release und seiner npm-Version, und alle drei
-bleiben veröffentlicht. npm-Versionen sind unveränderlich: Ein veröffentlichtes
+verschoben oder wiederverwendet. Jedes Release behält sein Tag, sein GitHub Release und seine npm-Version, und alle bleiben veröffentlicht. npm-Versionen sind unveränderlich: Ein veröffentlichtes
 `name@version` kann niemals ersetzt werden, und eine Nummer, deren
 Veröffentlichung zurückgezogen wurde, kann niemals wieder verwendet werden.
 Gepinnte Installationen und reproduzierbare Builds hängen von jedem

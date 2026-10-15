@@ -1,30 +1,29 @@
 ---
 title: "`CLAUDE.md`"
-description: "La configuración del ecosistema, siempre cargada, que proporciona contexto de base a cada interacción, con siete secciones que cubren el conjunto de planificación, identidad, directorios, niveles de gobernanza, directivas, mandatos y registros."
+description: "La configuración de proyecto siempre cargada que da a cada interacción su contexto base: secciones en prosa sobre el canon de la superficie de IA, el bucle operativo, el propósito y las disciplinas, con los mandatos transversales operacionalizados en la cohorte de reglas."
 machineTranslated: true
 sourceHash: "d6a8ebfda25b9f38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`CLAUDE.md` es la configuración del ecosistema que siempre se carga. El runtime
-del harness anfitrión la carga en cada interacción, por lo que
-su contenido es el *contexto de base* que todo otro artefacto extiende.
+`CLAUDE.md` es la configuración de proyecto que siempre está cargada. El entorno anfitrión la carga en cada interacción, por lo que su contenido es el *contexto base* que extiende todo otro artefacto. Se mantiene coherente con `AGENTS.md` (la superficie canónica de instrucciones para agentes) y con `.github/copilot-instructions.md`, que reflejan las mismas disciplinas.
 
-## Secciones
+## Qué contiene
 
-| Sección | Propósito |
-|---------|---------|
-| §1 Conjunto de planificación | Nombra la plantilla maestra del conjunto de planificación y los ocho comandos `/plan-<stage>` |
-| §2 Identidad cognitiva y arquitectura de software | Declara el rol de Arquitecto de Software Sénior y la postura creativa |
-| §3 Directorios de artefactos | Raíces en disco por clase (reglas, comandos, habilidades, trabajadores delegados, etc.) |
-| §4 Gobernanza escalada por seriedad | Lente de escalado de cuatro niveles (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
-| §5 Directivas operativas | Marcos de resolución de problemas, descubrimiento estratégico y comunicación |
-| §6 Mandatos transversales | El registro CM-N (CM-1 hasta CM-28) |
-| §7 Registros | Subregistros para comandos, reglas, trabajadores delegados, hooks, habilidades, evolución y clases vacías |
+El `CLAUDE.md` del proyecto está redactado en secciones de prosa: el canon de superficies de IA, el bucle operativo plan → endurecer → lanzar, el propósito del proyecto y su diseño de fuentes, las disciplinas de planes, de publicación y de cabeceras de archivo, el manejo de la ambigüedad, y las convenciones de código y de adaptadores de entorno. Declara *qué es el proyecto* y *cómo trabajar en él*; no repite los mandatos de gobernanza, que viven en la cohorte de reglas y llegan al tiempo de ejecución como archivos de regla.
 
-## Convenciones de identificador de mandato
+| Superficie de gobernanza | Dónde vive |
+|---|---|
+| Mandatos transversales (CM-N) | `src/apothem/rules/operational-mandates.md` y los archivos de regla por mandato |
+| Los quince mandatos de producción (M-N) | los archivos de regla por mandato (`definitiveness.md`, `pre-emission-gate.md`, `production-ready-prs.md`, …) |
+| Identidad cognitiva y postura de arquitectura | `src/apothem/rules/cognitive-identity.md` |
+| Gobernanza escalada por seriedad | la sección *Escalado por seriedad* de cada regla |
+| La canalización `/plan` | los comandos `/plan-*` y `src/apothem/skills/plan-suite/` |
+| Directorios de artefactos | el diseño de fuentes: `rules/`, `commands/`, `skills/`, `agents/`, `hooks/` |
 
-Tres prefijos llevan significados distintos:
+## Convenciones de identificadores de mandato
+
+Tres prefijos tienen significados distintos:
 
 - **CM-N** — mandato de configuración, definido en la cohorte de reglas
   (`src/apothem/rules/operational-mandates.md` y los archivos de regla por mandato).
@@ -32,12 +31,10 @@ Tres prefijos llevan significados distintos:
   `src/apothem/skills/plan-suite/master-template.md` §4.
 - **CP-N** — principio central, definido en la misma plantilla §6.
 
-La plantilla del conjunto de planificación es el registro canónico de TM/CP; las
-etapas de la canalización `/plan` resuelven las referencias cruzadas a través de
-ese archivo.
+La plantilla de la suite de plan es el registro canónico de TM/CP; las etapas de la canalización `/plan` resuelven las referencias cruzadas a través de ese archivo.
 
 ## Véase también
 
-- [Reglas](/docs/reference/rules) — los archivos de regla que operacionalizan CM-1 hasta CM-28.
-- [Comandos](/docs/reference/commands) — las etapas de la canalización `/plan` que nombra el ancla del §1 Conjunto de planificación.
-- [Hooks](/docs/reference/hooks) — la capa de hooks que aplica CM-7, CM-22 y CM-24.
+- [Reglas](/docs/reference/rules) — los archivos de regla que operacionalizan los mandatos transversales.
+- [Comandos](/docs/reference/commands) — las etapas de la canalización `/plan`.
+- [Hooks](/docs/reference/hooks) — la capa de hooks que aplica los mandatos de producto coherente, de convenciones y de gestión del contexto.

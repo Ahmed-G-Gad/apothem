@@ -2,7 +2,7 @@
 title: "Платформы"
 description: "Поддерживаемые операционные системы, оболочки и скрипты установщика для Apothem, а также системное требование Python для самодостаточной среды выполнения."
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,19 +20,19 @@ Node.js 18+.
 
 | Семейство ОС | Поддерживаемые оболочки | Скрипт установщика |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash` (системный bash или более новый bash, установленный пользователем) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Подсистема Windows для Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| Контейнер Linux ChromeOS (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`, а также `bash` (системный bash или более новый bash, установленный пользователем) | `install.sh` |
+| Linux | POSIX `sh` (`bash` также допускается) | `install.sh` |
+| Подсистема Windows для Linux (WSL2) | POSIX `sh` (`bash` также допускается) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `sh` (`bash` также допускается) | `install.sh` |
+| Termux (Android) | POSIX `sh` (`bash` также допускается) | `install.sh` |
+| Контейнер Linux ChromeOS (Crostini) | POSIX `sh` (`bash` также допускается) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | Любая платформа с PowerShell 7+ | PowerShell 7+ (кроссплатформенный) | `install.ps1` |
 
-Два скрипта функционально эквивалентны друг другу. `install.sh` требует POSIX
-`bash`. `install.ps1` требует Windows PowerShell 5.1 или новее, либо PowerShell 7+
-на любой платформе, поддерживаемой самим PowerShell 7 — включая macOS и Linux, где
-он является альтернативой `install.sh`.
+Два скрипта функционально эквивалентны друг другу. `install.sh` требует оболочку POSIX
+(`sh`, `dash`, `ash` или `bash`). `install.ps1` требует Windows PowerShell 5.1 или новее
+либо PowerShell 7+ на любой платформе, которую поддерживает сам PowerShell 7, включая
+macOS и Linux, где он является альтернативой `install.sh`.
 
 ## Единственное требование: системный Python
 

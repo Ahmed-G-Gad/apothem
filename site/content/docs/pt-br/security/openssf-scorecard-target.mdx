@@ -2,7 +2,7 @@
 title: "Postura do OpenSSF Scorecard"
 description: "A meta do Apothem no OpenSSF Scorecard e as superfícies de evidência usadas para manter a pontuação em melhoria."
 machineTranslated: true
-sourceHash: "5e9567b9ec6c681e"
+sourceHash: "94c192fa1985b563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,24 +14,24 @@ A pontuação ao vivo está no [visualizador do Scorecard](https://securityscore
 
 | Verificação | Superfície de evidência | Notas |
 |---|---|---|
-| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Nenhum binário executável é rastreado no código-fonte; os arquivos de distribuição gerados permanecem em `dist/`. |
-| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` é protegida antes da promoção para lançamento público; force-pushes e exclusões são bloqueados depois que o novo commit de lançamento aterrissa. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matriz de Pytest, ruff, mypy, CodeQL, Trivy, build da documentação e verificações de fumaça do empacotamento. |
-| **CII-Best-Practices** | Registro no OpenSSF Best Practices | Exige registro por parte do mantenedor no site do OpenSSF Best Practices; isso não pode ser concluído apenas com arquivos do repositório. |
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Nenhum binário executável rastreado no código-fonte; os arquivos de distribuição gerados permanecem em `dist/`. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` é protegida antes da promoção para lançamento público; force-pushes e exclusões são bloqueados depois que o novo commit de lançamento é integrado. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matriz de Pytest, ruff, mypy, Trivy, build da documentação e verificações de fumaça do empacotamento. |
+| **CII-Best-Practices** | Registro no OpenSSF Best Practices | Exige registro do lado do mantenedor no site do OpenSSF Best Practices; isso não pode ser concluído apenas com arquivos do repositório. |
 | **Code-Review** | Proteção de branch + CODEOWNERS | Pull requests são obrigatórios para `main` para todos, exceto os administradores do repositório, e a proteção de branch exige 0 revisões de aprovação enquanto o projeto tiver um único mantenedor (consulte [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); o histórico do Scorecard permanece limitado até que existam PRs revisados. |
-| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Um projeto novo com mantenedor solo não pode fabricar um histórico de contribuições de várias organizações; isso melhora naturalmente à medida que colaboradores entram. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Um projeto novo, com mantenedor solo, não pode criar artificialmente um histórico de contribuições de várias organizações; isso melhora naturalmente à medida que colaboradores entram. |
 | **Dangerous-Workflow** | Auditoria de fluxos de trabalho | Sem `pull_request_target`; as Actions são fixadas por SHA e têm escopo definido com permissões explícitas. |
 | **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | O Renovate cobre GitHub Actions, manifestos Python, requisitos de lançamento travados por hash e superfícies do npm, mantendo disponíveis PRs de dependências agrupadas. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Testes de propriedade do Hypothesis exercitam as invariantes do parser e do frontmatter; o Scorecard upstream pode não reconhecer o Hypothesis como uma integração de fuzzing. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Testes de propriedade com Hypothesis exercitam invariantes do parser e do frontmatter; o Scorecard upstream pode não reconhecer o Hypothesis como integração de fuzzer. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Licença MIT na raiz do repositório. |
-| **Maintained** | Histórico do Git | O commit de lançamento atual e a cadência ativa de fluxos de trabalho demonstram manutenção; repositórios muito novos podem receber um aviso de idade. |
+| **Maintained** | Histórico do Git | O commit de lançamento atual e a cadência ativa dos fluxos de trabalho demonstram manutenção; repositórios muito novos podem receber um aviso de idade. |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Fluxos de trabalho de lançamento, Pages e npmjs.com que produzem o sdist, o wheel, o SBOM, a procedência SLSA e as assinaturas do Sigstore. |
 | **Pinned-Dependencies** | Auditoria de fluxos de trabalho + requisitos travados por hash | As Actions são fixadas por SHA; as instalações das ferramentas de lançamento usam `--require-hashes`; as ferramentas pip usadas apenas nos fluxos de trabalho usam fixações exatas. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Consultas `security-extended` do CodeQL em Python e Actions. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Política de divulgação coordenada, matriz de versões suportadas e cronograma de resposta. |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Assinaturas sem chave do Sigstore, procedência SLSA, SBOM, somas de verificação e artefatos de lançamento. |
-| **Token-Permissions** | Auditoria de fluxos de trabalho | Os fluxos de trabalho usam permissões somente leitura por padrão; os escopos de escrita são locais ao job e vinculados a operações de implantação/pacote. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Varredura semanal de vulnerabilidades e varredura de CI com upload de SARIF; o portão de dependency-review bloqueia pull requests que introduzem dependências vulneráveis ou com licença não permitida. |
+| **Token-Permissions** | Auditoria de fluxos de trabalho | Os fluxos de trabalho usam permissões somente leitura por padrão; os escopos de escrita são locais ao job e vinculados a operações de implantação e de pacote. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Varredura semanal de vulnerabilidades e varredura de CI com envio de SARIF; o portão de dependency-review bloqueia pull requests que introduzem dependências vulneráveis ou com licença não permitida. |
 
 ## Interpretação da pontuação
 

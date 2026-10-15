@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Systematische Quellensammlung: zerlegt die Spezifikation in Teilabfragen, fächert die Entdeckung parallel auf, siebt und reiht, und extrahiert pro Quelle in ein gereihtes Quellenregister."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Systematische Quellensammlung — zerlegt die Forschungsspezifikation in Teilabf
 Mit Argumenten:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Eingaben
@@ -64,8 +64,8 @@ Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 # Quellen für eine gerahmte Forschungssuite sammeln
 /research-sources path/to/research-suite/
 
-# Tiefere Entdeckungs-Auffächerung
-/research-sources path/to/research-suite/ --depth N
+# Die Anzahl der aufgenommenen Quellen begrenzen
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Querverweise

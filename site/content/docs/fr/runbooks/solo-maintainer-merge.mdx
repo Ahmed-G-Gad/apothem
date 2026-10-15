@@ -2,7 +2,7 @@
 title: "Cérémonie de fusion de PR pour mainteneur unique"
 description: "Quand le mainteneur peut fusionner directement sa propre pull request, et la cérémonie pour une protection de branche qui exige une approbation et l'applique aux administrateurs."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,6 +87,6 @@ Chaque invocation de la cérémonie laisse une trace sur trois surfaces durables
 
 - **Les métadonnées de fusion de la PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` renvoie l'acteur de la fusion, l'horodatage de la fusion et le SHA du commit de squash. L'acteur `mergedBy` correspond à l'identité du mainteneur qui a exécuté l'étape 3.
 - **Le journal d'audit du dépôt.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` met en correspondance l'exécution CI post-fusion et le commit de fusion ; le journal d'audit des règles de protection du dépôt (historique de `gh api /repos/<owner>/<repo>/branches/main/protection` via l'interface Settings → Branches) montre les bascules de l'étape 2 et de l'étape 4 qui encadrent la fenêtre de fusion.
-- **L'historique git du mainteneur.** `git log main --merges --first-parent` liste chaque commit de squash-merge sur `main` avec le numéro de PR correspondant dans l'objet du commit (suffixe `(#<pr-number>)` selon la valeur par défaut de `gh pr merge --squash`), ce qui permet à l'opérateur de retracer tout atterrissage passé jusqu'à sa PR et à son invocation de cérémonie.
+- **L'historique git du mainteneur.** `git log main --first-parent --oneline` liste chaque commit de squash-merge sur `main` avec le numéro de PR correspondant dans l'objet du commit (suffixe `(#<pr-number>)` selon la valeur par défaut de `gh pr merge --squash`), ce qui permet à l'opérateur de remonter de tout atterrissage passé à sa PR et à l'invocation de sa cérémonie.
 
-Lorsque `scripts/dev/admin_merge.py` est le point d'entrée, son journal non interactif (stdout) nomme en séquence les trois appels à l'API de protection et l'appel à l'API de fusion ; rediriger l'enveloppe vers `tee` capture un fragment d'audit par exécution sans dépendre de la rétention du journal côté GitHub.
+Lorsque `scripts/dev/admin_merge.py` est le point d'entrée, son journal non interactif (stderr) nomme, dans l'ordre, les trois appels à l'API de protection et l'appel à l'API de fusion ; rediriger sa sortie d'erreur vers `tee` (`2>&1 | tee`) capture un fragment d'audit par exécution sans dépendre de la rétention du journal côté GitHub.

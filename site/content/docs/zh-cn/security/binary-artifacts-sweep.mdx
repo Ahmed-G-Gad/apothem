@@ -2,7 +2,7 @@
 title: "二进制制品扫描"
 description: "Apothem 二进制制品扫描——源码中不跟踪任何编译/打包的二进制文件。OpenSSF Scorecard Binary-Artifacts 检查的证据。"
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Apothem 是一个**纯 Python 源码树**，版本控制中不跟踪任何编译
 
 源码中**确实**允许两类范围狭窄的二进制制品：
 
-1. **品牌资产** —— `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。这些可通过 `scripts/dev/rebuild-assets.{sh,ps1}` 从 `assets/src/` 的 SVG 母版**确定性地重新生成**。Scorecard 依据其 `image/png` 豁免将这些视为合法。
+1. **品牌资产** —— `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。这些文件可通过 `scripts/dev/rebuild-assets-resvg.py` 从 `assets/src/` 中的 SVG 母版**确定性地重新生成**。Scorecard 依据其 `image/png` 豁免将这些文件视为合法。
 2. **字体文件** —— `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。带有书面许可证的捆绑字体文件；依据 Scorecard 的 `font/*` 豁免。
 
 这两类都记录在 [`site/content/docs/brand/index.mdx`](/docs/brand) 中，其来源记录在资产重建配方里。
@@ -38,8 +38,8 @@ Apothem 是一个**纯 Python 源码树**，版本控制中不跟踪任何编译
 ## 验证命令
 
 ```shell
-# 从 apothem 仓库根目录：
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+# 在 apothem 仓库根目录下执行：
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 此调用应返回**零行**。非空结果表示源码中跟踪了某个二进制制品——这是一项会阻塞下一次发布的高严重性发现。
@@ -48,7 +48,6 @@ git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|cla
 
 该扫描属于以下环节的一部分：
 
-- **每次 PR 的 CI** —— `.github/workflows/ci.yml` 包含一个二进制制品 grep 步骤。
 - **每次发布检查点** —— 发布工程运行手册在打标签前验证该扫描。
 - **每周 Scorecard 运行** —— OpenSSF Scorecard 工作流重新确认该检查通过。
 

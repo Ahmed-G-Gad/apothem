@@ -2,7 +2,7 @@
 title: "/ux-review"
 description: "/ux-review — Tinjauan pengalaman pengembang atas ergonomi CLI, dokumentasi, dan orientasi awal."
 machineTranslated: true
-sourceHash: "9f5bcdfb23374608"
+sourceHash: "17401a86d59ea454"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Tinjauan pengalaman pengembang atas ergonomi CLI, dokumentasi, dan orientasi awa
 Dengan argumen:
 
 ```bash
-/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/ux-review [path/to/repo/] [--focus SURFACE] [--dry-run]
 ```
 
 ## Masukan
 
-Repositori hos pada keadaan siklus-hidup mana pun
+Repositori host yang sudah di-deploy dengan README, skrip pemasangan, dan titik masuk CLI
 
 ## Keluaran
 
-Temuan UX + REPORT.md
+Temuan UX di `_inputs/ux-review-findings.md`
 
 ## Hilir
 
@@ -37,14 +37,7 @@ Tahap tinjauan UX dari Urutan Audit Tinjauan
 
 ## Fase alur kerja
 
-Perintah ini mengikuti alur kerja pipeline `/plan` standar:
-
-1. **Muat konteks** — Membaca suite rencana, aturan, dan Kontrak Pelanjutan.
-2. **Verifikasi prasyarat** — Memastikan fase dependen telah selesai.
-3. **Jalankan tugas** — Menjalankan misi perintah.
-4. **Verifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lolos gerbang kualitas.
-5. **Perbarui PROGRESS.md** — Mencatat keluaran terverifikasi dalam Registri Keluaran Fase.
-6. **Keluarkan REPORT.md** — Bukti rilis gerbang pra-pengeluaran tercatat.
+Perintah ini menjalankan lima fase: penyerapan masukan, penelusuran ergonomi CLI, audit alur pemasangan dan pemulihan galat, sapuan keterjangkauan dokumentasi, dan emisi temuan dengan gerbang validasi.
 
 ## Mode kegagalan
 
@@ -52,7 +45,7 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 |---------|-------|----------|
 | Prasyarat belum lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| Berkas masukan hilang | Berkas suite rencana tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+| Target belum di-deploy | Target tidak memiliki permukaan yang menghadap operator | Berikan root repositori yang sudah di-deploy |
 
 ## Contoh
 
@@ -60,8 +53,8 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 # Dry-run to preview what would happen
 /ux-review --dry-run
 
-# Execute against a named plan suite
-/ux-review path/to/plan-suite/
+# Execute against a host repository
+/ux-review path/to/repo/
 ```
 
 ## Referensi silang

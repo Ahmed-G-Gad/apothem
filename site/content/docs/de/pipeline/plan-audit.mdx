@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Closed-Loop-Wächter der /plan-Pipeline — umhüllt spec → generate → review und behebt Befunde aktiv, bis die Suite ein geprüftes, befundfreies Ganzes ist."
 machineTranslated: true
-sourceHash: "13a1d2a19472e583"
+sourceHash: "6f82709e6c4d40fc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ Ein persistenter, begrenzter Bericht unter `<suite>/_outputs/audit-report-<YYYY-
 
 ## Pipeline-Position
 
-`/plan-audit` ist **orthogonal** zur linearen Pipeline, keine Stufe darin. Die kanonische lineare Sequenz ist `/plan-spec → /plan-generate → /plan-review → /plan-design` (bedingt, nur architekturtragende Suites) `→ /plan-execute`. `/plan-audit` umfasst `/plan-spec → /plan-generate → /plan-review` als einzige Closed-Loop-Umhüllung, die an jedem Punkt aufgerufen werden kann: Sie inspiziert den Zustand und führt nur die fehlenden Stufen aus. Sie unterscheidet sich von der Festungs-Audit-Kette (Eintritt bei `/code-review`, terminal bei `/threat-model-audit`), die eine ausgeführte Codebasis statt einer Plan-Suite auditiert.
+`/plan-audit` ist **orthogonal** zur linearen Pipeline und keine Stufe innerhalb davon. Die kanonische lineare Sequenz lautet `/plan-spec → /plan-generate → /plan-review → /plan-design` (bedingt, nur für Suiten mit Architekturbezug) `→ /plan-execute`. `/plan-audit` umfasst `/plan-spec → /plan-generate → /plan-review` als eine einzige Closed-Loop-Umhüllung, die an jedem beliebigen Punkt aufgerufen werden kann: Sie prüft den Zustand und führt nur die fehlenden Stufen aus, sobald eine generierte Suite vorliegt; ohne generierte Suite verweigert sie mit `Blocked: run /plan-generate first`. Sie unterscheidet sich von der Festungs-Audit-Kette (Eintritt bei `/code-review`, Abschluss bei `/threat-model-audit`), die eine ausgeführte Codebasis statt einer Plan-Suite auditiert.
 
 ## Workflow-Phasen
 

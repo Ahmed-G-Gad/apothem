@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,9 +16,7 @@ l'utilisateur répond à la commande d'installation canonique.
 Le modèle de publication est **additif**. Chaque publication ajoute un commit
 sur `main` et une étiquette `vX.Y.Z` annotée et signée ; aucun force-push n'est
 effectué et aucune étiquette, aucun GitHub Release ni aucune version npm
-antérieurs ne sont retirés. Le projet compte trois publications, chacune avec
-son étiquette, son GitHub Release et sa version npm, et toutes restent
-publiées : les versions npm sont immuables (un `name@version` publié ne peut
+antérieurs ne sont retirés. Chaque publication conserve son étiquette, son GitHub Release et sa version npm, et toutes restent publiées : les versions npm sont immuables (un `name@version` publié ne peut
 jamais être remplacé), et les installations épinglées dépendent des étiquettes.
 
 Le push de l'étiquette démarre deux flux de travail.
@@ -91,7 +89,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -253,6 +250,8 @@ apothem --version
 ```
 
 Sortie attendue : `Apothem, version X.Y.Z`.
+
+Le lanceur est écrit dans `~/.local/bin`, qui doit figurer dans `PATH` pour que la vérification ci-dessus s'exécute. Lorsque ce répertoire ne figure pas dans `PATH`, l'installateur affiche la ligne `export PATH` à ajouter.
 
 ### 5.4 Installateur de script en une seule étape (Windows)
 

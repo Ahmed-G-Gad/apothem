@@ -21,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## Cakupan aturan
 
-| Cakupan | Kapan diterapkan |
-|-------|-------------|
-| `always-on` | Setiap sesi, setiap berkas |
-| `path-filtered` | Hanya ketika berkas aktif cocok dengan `path-filter` |
-| `operator-selected` | Operator mengaktifkannya secara eksplisit di settings.json |
+Cakupan aturan ditetapkan oleh dua field frontmatter, `alwaysApply` dan `pathFilter`:
+
+| `alwaysApply` | `pathFilter` | Kapan diterapkan |
+|---------------|--------------|--------------|
+| `true` | `""` (kosong) | Selalu aktif: setiap sesi, setiap berkas |
+| `false` | glob seperti `"**/*.py"` | Berbasis path: hanya ketika berkas aktif cocok dengan glob |
 
 ## Contoh aturan
 
@@ -46,9 +47,7 @@ alwaysApply: false
 
 ## Menerapkan aturan ke harness
 
-Setelah menulis aturan, perbarui setiap adapter harness yang terpasang.
-Jalankan `apothem harnesses list` untuk melihat himpunan yang terpasang, lalu
-panggil update sekali untuk tiap harness:
+Setelah menulis aturan, perbarui setiap adapter harness yang terpasang. Jalankan `apothem harnesses list` untuk melihat kumpulan yang terpasang, lalu panggil update satu kali untuk setiap harness:
 
 ```bash
 apothem update --harness claude-code

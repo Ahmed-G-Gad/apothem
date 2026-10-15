@@ -2,7 +2,7 @@
 title: "단독 메인테이너 PR 병합 의식"
 description: "메인테이너가 자신의 풀 리퀘스트를 직접 병합할 수 있는 경우와, 승인을 요구하고 이를 관리자에게도 적용하는 브랜치 보호를 위한 의식입니다."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,7 +86,7 @@ python scripts/dev/admin_merge.py <pr-number>
 모든 의식 실행은 운영자가 사후에 검사할 수 있는 세 가지 지속적인 표면에 남습니다.
 
 - **PR의 병합 메타데이터.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit`은 병합 행위자, 병합 타임스탬프, 스쿼시 커밋의 SHA를 반환합니다. `mergedBy` 행위자는 3단계를 실행한 메인테이너 신원과 일치합니다.
-- **저장소의 감사 로그.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'`는 병합 후 CI 실행을 병합 커밋과 연관 짓습니다. 저장소의 보호 규칙 감사 로그(Settings → Branches UI를 통한 `gh api /repos/<owner>/<repo>/branches/main/protection` 기록)는 병합 윈도우를 앞뒤로 감싸는 2단계와 4단계 토글을 보여 줍니다.
-- **메인테이너의 git 히스토리.** `git log main --merges --first-parent`는 `main`의 모든 스쿼시 병합 커밋을 커밋 제목의 해당 PR 번호(`gh pr merge --squash` 기본값에 따른 `(#<pr-number>)` 접미사)와 함께 나열하므로, 운영자는 과거의 어떤 안착이든 그 PR과 의식 실행까지 거슬러 추적할 수 있습니다.
+- **저장소의 감사 로그.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'`는 병합 후 CI 실행을 병합 커밋과 연관 짓습니다. 저장소의 보호 규칙 감사 로그(Settings → Branches UI를 통한 `gh api /repos/<owner>/<repo>/branches/main/protection` 기록)는 병합 구간을 감싸는 2단계와 4단계 토글을 보여 줍니다.
+- **메인테이너의 git 히스토리.** `git log main --first-parent --oneline`은 `main`의 모든 스쿼시 병합 커밋을 나열합니다. 커밋 제목에는 해당 PR 번호(`gh pr merge --squash` 기본값에 따른 `(#<pr-number>)` 접미사)가 들어 있으므로, 운영자는 과거의 어떤 반영이든 그 PR과 실행 의식까지 거슬러 추적할 수 있습니다.
 
-`scripts/dev/admin_merge.py`가 진입점일 때, 그 비대화형 로그(stdout)는 세 번의 보호 API 호출과 병합 API 호출을 순서대로 기록합니다. 래퍼의 출력을 `tee`로 파이프하면 GitHub 측 로그 보존에 의존하지 않고 실행별 감사 조각을 캡처할 수 있습니다.
+`scripts/dev/admin_merge.py`가 진입점일 때, 그 비대화형 로그(stderr)는 세 번의 보호 API 호출과 병합 API 호출을 순서대로 나열합니다. stderr를 `tee`로 파이프하면(`2>&1 | tee`) GitHub 측 로그 보존 기간에 의존하지 않고 실행별 감사 조각을 캡처할 수 있습니다.

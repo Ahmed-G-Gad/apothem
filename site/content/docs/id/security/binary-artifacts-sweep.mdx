@@ -2,7 +2,7 @@
 title: "Penyapuan artefak biner"
 description: "Penyapuan artefak biner Apothem — nol biner terkompilasi / terpaket yang dilacak di kode sumber. Bukti untuk pemeriksaan Binary-Artifacts OpenSSF Scorecard."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Penyapuan mendaftar tipe berkas yang dianggap biner oleh Scorecard, lalu memveri
 
 Dua kelas sempit artefak biner MEMANG diizinkan di kode sumber:
 
-1. **Aset merek** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Ini **dapat diregenerasi secara deterministik** dari master SVG di `assets/src/` melalui `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard menganggapnya sah sesuai pengecualian `image/png` miliknya.
+1. **Aset merek** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Ini **dapat diregenerasi secara deterministik** dari master SVG di `assets/src/` melalui `scripts/dev/rebuild-assets-resvg.py`. Scorecard menganggapnya sah sesuai pengecualian `image/png` miliknya.
 2. **Berkas font** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Berkas font terbundel dengan lisensi terdokumentasi; sesuai pengecualian `font/*` Scorecard.
 
 Kedua kelas didokumentasikan di [`site/content/docs/brand/index.mdx`](/docs/brand) dan asal-usulnya dicatat dalam resep pembangunan-ulang aset.
@@ -39,7 +39,7 @@ Kedua kelas didokumentasikan di [`site/content/docs/brand/index.mdx`](/docs/bran
 
 ```shell
 # Dari akar repositori apothem:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 Pemanggilan ini seharusnya mengembalikan **nol baris**. Hasil yang tidak kosong menandakan sebuah artefak biner terlacak di kode sumber — temuan dengan tingkat keparahan TINGGI yang memblokir rilis berikutnya.
@@ -48,7 +48,6 @@ Pemanggilan ini seharusnya mengembalikan **nol baris**. Hasil yang tidak kosong 
 
 Penyapuan ini merupakan bagian dari:
 
-- **CI per PR** — `.github/workflows/ci.yml` menyertakan langkah grep artefak biner.
 - **Titik periksa per rilis** — runbook rekayasa rilis memverifikasi penyapuan sebelum penandaan.
 - **Eksekusi Scorecard mingguan** — alur kerja OpenSSF Scorecard mengonfirmasi ulang bahwa pemeriksaan lolos.
 

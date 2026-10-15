@@ -2,7 +2,7 @@
 title: "ホスト非依存の姿勢"
 description: "Apothem が共有プロファイルとハーネスアダプターを通じて、どのようにホスト非依存の姿勢を実現するか。"
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,4 +80,7 @@ One shared Apothem profile (YAML) + packaged cohorts
 
 ## ポータビリティの保証
 
-`portability: universal` とマークされたコマンドおよびヘルパーは、サポート対象のすべてのハーネスへ翻訳可能であることが保証されます。`portability: project-specific` とマークされたコマンドおよびヘルパーは、ファイル本体にハーネスごとのオーバーライドの記述が必要になる場合があります。
+`portability: universal` とマークされたコマンドおよびヘルパーは、レジストリのエントリーがコマンド面
+（変換済み、またはサポートツリー）をサポートするすべてのハーネスへ変換されます。コマンド面を持たない
+ハーネスは、コマンドを一切受け取りません。エンジンはこのマーカーを評価しません。`portability: project-specific`
+とマークされたコマンドおよびヘルパーは、ファイル本体に、ハーネスごとのオーバーライドのドキュメントが必要になる場合があります。

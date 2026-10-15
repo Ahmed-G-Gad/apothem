@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — Audit de code forensique inter-fichiers à l'échelle du corpus du dépôt."
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Audit de code forensique inter-fichiers à l'échelle du corpus du dépôt.
 Avec arguments :
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Entrées
 
-Dépôt hôte dans n'importe quel état de cycle de vie
+Dépôt hôte avec une disposition des sources approuvée, une base de référence de couverture des tests et, au niveau SHARED+, un portail CI au vert
 
 ## Sorties
 
-Constats au niveau du corpus + REPORT.md
+Constats au niveau du corpus dans `_inputs/code-audit-findings.md`
 
 ## En aval
 
@@ -37,22 +37,14 @@ L'étape d'audit de code forensique de la Séquence d'Audit de Revue
 
 ## Phases du flux de travail
 
-La commande suit le flux de travail standard du pipeline `/plan` :
-
-1. **Charger le contexte** — Lire la suite de plan, les règles et le Contrat de Reprise.
-2. **Vérifier les prérequis** — Confirmer que les phases dépendantes sont achevées.
-3. **Exécuter les tâches** — Accomplir la mission de la commande.
-4. **Vérifier les sorties** — Confirmer que toutes les sorties déclarées existent et passent les portes qualité.
-5. **Mettre à jour PROGRESS.md** — Consigner les sorties vérifiées dans le Registre des Sorties de Phase.
-6. **Émettre REPORT.md** — Preuve de publication de la porte de pré-émission consignée.
+La commande exécute six phases d'analyse forensique : ingestion des entrées, parcours des dépendances inter-fichiers, audit des annotations de types et de la couverture, détection du code mort et des doublons, audit de l'intégrité architecturale, et émission des constats avec le portail de validation.
 
 ## Modes de défaillance
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
-| Prérequis incomplet | Phase dépendante non terminée | Achevez d'abord la phase amont |
-| Porte qualité FAIL | La sortie ne respecte pas les standards | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de la suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Porte qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Aucune exécution du portail CI ni base de référence de couverture des tests au niveau SHARED+ | Exécutez d'abord le pipeline CI de l'hôte, puis relancez |
 
 ## Exemples
 
@@ -60,8 +52,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Références croisées

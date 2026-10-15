@@ -2,7 +2,7 @@
 title: "Posture OpenSSF Scorecard"
 description: "L'objectif OpenSSF Scorecard d'Apothem et les surfaces de preuve utilisées pour continuer à améliorer le score."
 machineTranslated: true
-sourceHash: "5e9567b9ec6c681e"
+sourceHash: "94c192fa1985b563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,22 +14,22 @@ Le score en direct se trouve dans le [visionneur Scorecard](https://securityscor
 
 | Vérification | Surface de preuve | Notes |
 |---|---|---|
-| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Aucun binaire exécutable n'est suivi dans le code source ; les archives de distribution générées restent dans `dist/`. |
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Aucun binaire exécutable suivi dans le code source ; les archives de distribution générées restent dans `dist/`. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` est protégée avant la promotion vers une publication publique ; les force-pushes et les suppressions sont bloqués une fois le nouveau commit de publication déposé. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matrice Pytest, ruff, mypy, CodeQL, Trivy, build de la documentation et vérifications de fumée de l'empaquetage. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matrice Pytest, ruff, mypy, Trivy, build de la documentation et vérifications de fumée de l'empaquetage. |
 | **CII-Best-Practices** | Inscription à OpenSSF Best Practices | Nécessite une inscription côté mainteneur sur le site OpenSSF Best Practices ; les seuls fichiers du dépôt ne permettent pas de l'accomplir. |
-| **Code-Review** | Protection de branche + CODEOWNERS | Les pull requests sont exigées pour `main` pour tout le monde sauf les administrateurs du dépôt, et la protection de branche exige 0 revue d'approbation tant que le projet a un seul mainteneur (voir [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)) ; l'historique Scorecard reste limité tant qu'il n'existe pas de PR revues. |
+| **Code-Review** | Protection de branche + CODEOWNERS | Les pull requests sont exigées pour `main` pour tous, sauf les administrateurs du dépôt, et la protection de branche exige 0 revue d'approbation tant que le projet n'a qu'un seul mainteneur (voir [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)) ; l'historique Scorecard reste limité tant qu'il n'existe pas de PR revues. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Un nouveau projet à mainteneur unique ne peut pas fabriquer un historique de contributions multi-organisations ; cela s'améliore naturellement à mesure que des contributeurs rejoignent le projet. |
-| **Dangerous-Workflow** | Audit des workflows | Aucun `pull_request_target` ; les Actions sont épinglées par SHA et cadrées par des permissions explicites. |
+| **Dangerous-Workflow** | Audit des workflows | Aucun `pull_request_target` ; les Actions sont épinglées par SHA et restreintes par des permissions explicites. |
 | **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate couvre GitHub Actions, les manifestes Python, les exigences de publication verrouillées par hash et les surfaces npm, tout en gardant disponibles les PR de dépendances groupées. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Les tests de propriété Hypothesis exercent les invariants du parseur et du frontmatter ; Scorecard en amont peut ne pas reconnaître Hypothesis comme une intégration de fuzzing. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Les tests de propriétés Hypothesis exercent les invariants du parseur et du frontmatter ; Scorecard en amont peut ne pas reconnaître Hypothesis comme une intégration de fuzzer. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Licence MIT à la racine du dépôt. |
 | **Maintained** | Historique Git | Le commit de publication actuel et la cadence active des workflows démontrent la maintenance ; les dépôts très récents peuvent recevoir un avertissement d'ancienneté. |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Workflows de publication, Pages et npmjs.com qui produisent le sdist, le wheel, le SBOM, la provenance SLSA et les signatures Sigstore. |
 | **Pinned-Dependencies** | Audit des workflows + exigences verrouillées par hash | Les Actions sont épinglées par SHA ; les installations de l'outillage de publication utilisent `--require-hashes` ; les outils pip réservés aux workflows utilisent des épinglages exacts. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Requêtes `security-extended` de CodeQL sur Python et Actions. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Politique de divulgation coordonnée, matrice des versions prises en charge et calendrier de réponse. |
-| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Signatures sans clé Sigstore, provenance SLSA, SBOM, sommes de contrôle et artefacts de publication. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Signatures Sigstore sans clé, provenance SLSA, SBOM, sommes de contrôle et artefacts de publication. |
 | **Token-Permissions** | Audit des workflows | Les workflows utilisent par défaut des permissions en lecture seule ; les portées d'écriture sont locales au job et liées aux opérations de déploiement ou de paquet. |
 | **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Analyse hebdomadaire des vulnérabilités et analyse CI avec téléversement SARIF ; le contrôle dependency-review bloque les pull requests qui introduisent des dépendances vulnérables ou sous licence interdite. |
 

@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit —— 仓库语料库范围的跨文件取证代码审计。"
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ sourceHash: "2f3c290241ac5fb5"
 带参数：
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## 输入
 
-处于任意生命周期状态的目标仓库
+具有经批准的源码布局、测试覆盖率基线，以及（在 SHARED+ 级别）通过的 CI 闸门的宿主仓库
 
 ## 输出
 
-语料库级别的发现 + REPORT.md
+语料库级别的发现项位于 `_inputs/code-audit-findings.md`
 
 ## 下游
 
@@ -37,22 +37,14 @@ sourceHash: "2f3c290241ac5fb5"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则以及续行契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 执行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **发出 REPORT.md** — 记录预发出门的发布证明。
+该命令分为六个取证式阶段：输入摄取、跨文件依赖遍历、类型提示与覆盖率审计、死代码与重复代码检测、架构完整性审计，以及附带校验门的发现项输出。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
-| 前置条件未完成 | 依赖阶段未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 缺失输入文件 | 在 SHARED+ 级别未运行 CI 闸门，或缺少测试覆盖率基线 | 先运行宿主的 CI 流水线，然后重新运行 |
 
 ## 示例
 
@@ -60,8 +52,8 @@ sourceHash: "2f3c290241ac5fb5"
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## 交叉引用

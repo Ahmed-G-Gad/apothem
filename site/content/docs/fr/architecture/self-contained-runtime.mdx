@@ -2,7 +2,7 @@
 title: "Runtime autonome"
 description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances vendorisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,7 +59,7 @@ un. Le moteur dispose plutôt de deux surfaces d'invocation :
 | Surface | Invocation | Contexte |
 | ------- | ---------- | ------- |
 | CLI du moteur | `python -m apothem <command>` | Un arbre de code source avec `src/` sur le `PYTHONPATH` (checkout, cache npx, arbre du plugin) |
-| Runtime des hooks | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | La copie matérialisée sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
+| Runtime des hooks | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Matérialisation Claude Code : la copie située sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
 
 - `python -m apothem` exécute `src/apothem/__main__.py`, qui place
   `src/apothem/_vendor` dans `sys.path`, vérifie que `click` et `rich` sont
@@ -86,7 +86,9 @@ checkout en tête de `PYTHONPATH` :
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-C'est exactement l'invocation que l'installateur en une étape affiche à la fin.
+Lorsque le lanceur `apothem` ne figure pas dans le PATH, l'installateur en une
+seule étape affiche cette forme à la fin, avec le répertoire vendorisé placé avant
+`src/` et le CPython qu'il a résolu à la place de `python`.
 
 ## Bootstrap de l'arbre du plugin
 

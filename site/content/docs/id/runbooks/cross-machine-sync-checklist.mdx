@@ -1,14 +1,16 @@
 ---
 title: "Daftar Periksa Verifikasi Sinkronisasi Antar-Mesin"
-description: "Prosedur verifikasi untuk memastikan adaptor Claude Code terinstal, tervalidasi, dan terhapus dengan benar pada host baru, dengan pemeriksaan portabilitas yang lengkap."
+description: "Prosedur verifikasi untuk memastikan adapter Claude Code terpasang, tervalidasi, dan terhapus dengan benar pada host baru, dengan pemeriksaan portabilitas yang lengkap."
 machineTranslated: true
-sourceHash: "f92b79a38674f058"
+sourceHash: "fe0bc745cce7932a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Cakupan.** Daftar periksa ini memverifikasi lapisan portabilitas instalasi / penghapusan **adaptor Claude Code** pada host kedua yang baru. Alat-alat lain memiliki resep verifikasi per-host tersendiri yang didokumentasikan di [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses). Path `~/.claude/` adalah tujuan instalasi kanonis untuk adaptor Claude Code; ganti dengan path nativ adaptor saat memvalidasi alat yang berbeda.
+> **Cakupan.** Daftar periksa ini memverifikasi lapisan portabilitas instalasi / penghapusan **adapter Claude Code** pada host kedua yang baru. Harness lain memiliki resep verifikasi per-host tersendiri yang didokumentasikan di [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses).
 
-> **Verifikasi yang dijalankan operator atas lapisan portabilitas instalasi / penghapusan pada host kedua yang baru.** Tingkat publikasi (`vX.Y.Z`) ditulis pada satu host Windows; klaim portabilitas `~/.claude/` (`CLAUDE.md` `portability: universal`) memerlukan latihan menyeluruh pada host kedua sebelum invarian multi-host memiliki bobot. Daftar periksa ini adalah resep verifikasi host kedua yang kanonis (adaptor Claude Code).
+> **Dua jalur, dua peran.** Pisahkan keduanya saat membaca daftar periksa ini. `$HOME/.apothem` adalah **engine home** — tempat pohon sumber dikloning dan tempat pemasang membaca, dapat ditimpa dengan `APOTHEM_HOME`. `~/.claude/` adalah **akar konfigurasi Claude Code** — permukaan keluaran adapter, tempat `settings.json` yang dimaterialisasi dan subpohon dukungan ditempatkan. Mesin tidak pernah dipasang ke dalam `~/.claude/`; ganti dengan path keluaran native adapter saat memvalidasi harness yang berbeda.
+
+> **Verifikasi yang digerakkan operator atas lapisan portabilitas instalasi / penghapusan pada host kedua yang baru.** Tingkat publikasi (`vX.Y.Z`) disusun pada satu host Windows; klaim portabilitas (`CLAUDE.md` `portability: universal`) memerlukan latihan ujung-ke-ujung pada host kedua sebelum invarian multi-host memiliki bobot. Daftar periksa ini adalah resep verifikasi host kedua yang kanonis (adapter Claude Code).
 
 ---
 
@@ -20,37 +22,39 @@ Jalankan pada host kedua sebelum memulai verifikasi:
 |------|---------|----------|
 | Git terinstal | `git --version` | Git 2.40+ |
 | Python 3.10+ tersedia | `python3 --version` (POSIX) atau `py -3 --version` (Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
-| Autentikasi GitHub (opsional, untuk klona terautentikasi / pemeriksaan API) | `gh auth status` | Masuk dengan akun yang diotorisasi repo saat menggunakan alur kerja terautentikasi |
+| Autentikasi GitHub (opsional, untuk klon / pemeriksaan API terautentikasi) | `gh auth status` | Masuk dengan akun yang diotorisasi untuk repo saat menggunakan alur kerja terautentikasi |
 | Shell tersedia | `bash --version` (POSIX) atau `pwsh --version` (Windows) | Bash 4+ atau PowerShell 7+ |
-| Tidak ada direktori `~/.claude/` yang sudah ada | `ls ~/.claude 2>&1` | "No such file or directory" — jika ada, cadangkan sebelum melanjutkan |
+| Tidak ada engine home sebelumnya | `ls "$HOME/.apothem" 2>&1` | "No such file or directory" — jika ada, cadangkan sebelum melanjutkan |
 
-## 2. Verifikasi Klona-dan-Instal
+## 2. Verifikasi Klon-dan-Instal
 
 Jalankan pada host kedua:
 
 ```bash
-# Clone the published repo to ~/.claude (the install destination)
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
-cd ~/.claude
+# Clone the published repo to the engine home. This is NOT ~/.claude — that
+# is the Claude Code configuration root the adapter writes into, and cloning
+# a source tree on top of it would bury the harness's own config.
+git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
+cd "$HOME/.apothem"
 
 # (POSIX path) Run scripts/installer/install.sh dry-run first
-bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+bash scripts/installer/install.sh --dry-run                                    # exit 0; prints Dry-run complete — no changes were made.
 
 # (POSIX path) Run scripts/installer/install.sh for real
-bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+bash scripts/installer/install.sh                                               # exit 0; idempotent
 
 # (Windows path) PowerShell parallel
-pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; prints Dry-run complete - no changes were made.
 pwsh -File scripts/installer/install.ps1                                        # exit 0
 ```
 
 Tangkap kode keluar dan banner stdout setiap perintah. Catat di `<second-host>/.audit/cross-machine-clone-install.md`.
 
-## 3. Disiplin Empat Elemen (sesuai `src/apothem/rules/production-ready-prs.md` §8.3)
+## 3. Disiplin Empat Elemen (sesuai `src/apothem/rules/production-ready-prs.md`)
 
 Verifikasi masing-masing dari empat invarian pada host kedua:
 
-### 3.1 Keamanan Berkas Sentinel
+### 3.1 Keamanan Tujuan yang Sudah Ada
 
 ```bash
 # Re-run installer at the same destination.
@@ -58,16 +62,16 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Diharapkan:** Pemasang mendeteksi `~/.claude/` valid yang sudah ada (berkas sentinel ada), melakukan fast-forward alih-alih menginstal ulang atau menduplikasi; kode keluar 0.
+**Diharapkan:** Pemasang mendeteksi engine home yang sudah ada, melakukan fast-forward alih-alih menginstal ulang atau menduplikasi; kode keluar 0.
 
-### 3.2 Diperiksa Prasyaratnya
+### 3.2 Prasyarat Diperiksa
 
 ```bash
-# Temporarily move git out of PATH.
-PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+# Run from a copy outside any checkout, with git not on PATH.
+d="$(mktemp -d)" && cp scripts/installer/install.sh "$d/" && PATH=<directory holding python3, click, rich and coreutils, but no git> /bin/sh "$d/install.sh"                            # POSIX (no git)
 ```
 
-**Diharapkan:** Pemasang menolak berjalan; mengeluarkan diagnostik eksplisit "git not found"; kode keluar bukan nol.
+**Diharapkan:** Pemasang menolak berjalan; mengeluarkan diagnostik "git not found" yang eksplisit; kode keluar bukan nol.
 
 ### 3.3 Jalan Ulang Idempoten
 
@@ -79,85 +83,95 @@ for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  
 
 **Diharapkan:** Setiap pemanggilan keluar dengan 0; tidak ada efek samping setelah pemanggilan pertama; tidak ada berkas duplikat; tidak ada duplikasi RC shell-profile.
 
-### 3.4 Dapat Dikonfigurasi via Variabel Lingkungan
+### 3.4 Dapat Dikonfigurasi lewat Variabel Lingkungan
 
 ```bash
-# Install to a non-default location.
-CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
-$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+# Install to a non-default engine home. APOTHEM_HOME is the destination
+# override the installers actually read; see the installer-environment-variables
+# reference for the full set.
+APOTHEM_HOME=/tmp/alt-apothem bash scripts/installer/install.sh                 # POSIX
+$env:APOTHEM_HOME='C:\tmp\alt-apothem'; pwsh -File scripts/installer/install.ps1   # Windows
 ```
 
-**Diharapkan:** Pemasang menghormati variabel lingkungan; `~/.claude/` TIDAK dimodifikasi; tujuan alternatif berisi tata letak yang diharapkan.
+**Diharapkan:** Pemasang menghormati variabel lingkungan; `$HOME/.apothem` default TIDAK dibuat; tujuan alternatif berisi tata letak yang diharapkan.
 
 ## 4. Verifikasi Suite Validator (Pasca-Instal)
 
 ```bash
-cd ~/.claude
+cd "$HOME/.apothem"
 make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff + mypy
+make lint                                                     # ruff check + ruff format --check
 make test                                                     # exit 0, no failures
 ```
 
-**Diharapkan:** Setiap gerbang hijau. Tangkap kode keluar + baris ringkasan.
+**Diharapkan:** Setiap gerbang hijau. Tangkap kode keluar dan baris ringkasan.
 
 ## 5. Verifikasi Penghapusan
 
 ```bash
 # POSIX path — interactive uninstall
 bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
-ls ~/.claude 2>&1                                             # "No such file or directory"
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 
-# Re-install from clone, then uninstall non-interactively
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+# Re-install from the kept checkout, then uninstall non-interactively
+bash scripts/installer/install.sh
 bash scripts/installer/uninstall.sh --yes
-ls ~/.claude 2>&1                                             # "No such file or directory"
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**Diharapkan:** Alur interaktif menampilkan prompt; `--yes` melewati prompt untuk jalan batch; kedua alur meninggalkan `~/.claude/` terhapus bersih; referensi variabel lingkungan shell-profile pendamping dibersihkan.
+**Diharapkan:** Alur interaktif menampilkan prompt; `--yes` melewati prompt untuk jalan batch; kedua alur membiarkan akar konfigurasi Claude Code bebas dari berkas yang dimaterialisasi Apothem; shim `apothem` dihapus (`~/.local/bin/apothem` pada POSIX, `apothem.cmd` di `%LOCALAPPDATA%\Microsoft\WindowsApps` pada Windows).
 
 ## 6. Verifikasi Pengaman Keselamatan
 
-```bash
-# Run uninstall against a path that fails the sentinel-file check.
-mkdir -p /tmp/not-a-claude-install
-CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
-```
-
-**Diharapkan:** Penghapus menolak; mengeluarkan diagnostik "sentinel-file missing; refusing to remove unsafe target"; kode keluar bukan nol. Path TIDAK disentuh.
+Pengaman penghapus adalah pemeriksaan bentuk pohon sumber, bukan berkas sentinel: ia hanya berjalan ketika target memuat `src/apothem/` bersama salah satu dari `pyproject.toml` atau `.claude-plugin/`. Jalankan probe ini dengan `APOTHEM_HOME`, variabel yang dibaca skrip — probe yang ditulis terhadap variabel yang diabaikan skrip tidak menguji pengaman, melainkan menjalankan penghapus terhadap instalasi nyata Anda.
 
 ```bash
-# Run uninstall against $HOME, /, or empty path.
-CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+# Run uninstall against a directory that is not an apothem source tree.
+mkdir -p /tmp/not-an-apothem-install
+APOTHEM_HOME=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
 ```
 
-**Diharapkan:** Masing-masing menolak dengan diagnostik "unsafe target" eksplisit; tidak ada yang menyentuh sistem berkas.
+**Diharapkan:** Penghapus menolak; mengeluarkan `No apothem source found at /tmp/not-an-apothem-install — nothing to uninstall`; kode keluar bukan nol. Path TIDAK disentuh.
+
+```bash
+# Run uninstall against $HOME and /.
+APOTHEM_HOME=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+APOTHEM_HOME=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**Diharapkan:** `APOTHEM_HOME=$HOME` dan `APOTHEM_HOME=/` masing-masing menolak dengan diagnostik `No apothem source found at …`, dan tidak satu pun menyentuh sistem berkas. `APOTHEM_HOME` kosong sengaja dikecualikan: ia jatuh kembali ke `~/.apothem`, tempat instalasi asli dapat berada.
+
+```bash
+# An explicit APOTHEM_SOURCE that is not a source tree is rejected separately.
+APOTHEM_SOURCE=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
+```
+
+**Diharapkan:** Menolak dengan `APOTHEM_SOURCE is not an apothem source tree: /tmp/not-an-apothem-install`; kode keluar bukan nol.
 
 ## 7. Pelaporan
 
 Setelah jalan pada host kedua, tangkap hasil di:
 
-- `<second-host>/.audit/cross-machine-clone-install.md` (hasil perintah klona + instal)
+- `<second-host>/.audit/cross-machine-clone-install.md` (hasil perintah klon + instal)
 - `<second-host>/.audit/cross-machine-validators.md` (hasil validator Bagian 4)
-- `<second-host>/.audit/cross-machine-uninstall.md` (hasil penghapusan + keselamatan Bagian 5–6)
+- `<second-host>/.audit/cross-machine-uninstall.md` (hasil penghapusan dan pengaman keselamatan Bagian 5–6)
 
 Sampaikan temuan kepada pemelihara:
 
-- ✅ semua invarian disiplin empat elemen berlaku + semua gerbang validator hijau + semua pengaman keselamatan penghapusan menolak target tidak aman → klaim `portability: universal` dari publikasi terverifikasi menyeluruh
-- ❌ kegagalan apa pun → ajukan isu di `https://github.com/ahmed-g-gad/apothem/issues/new` dengan bagian yang gagal + output yang ditangkap; pemelihara melakukan triase
+- ✅ semua invarian disiplin empat elemen berlaku + semua gerbang validator hijau + semua pengaman keselamatan penghapusan menolak target yang tidak aman → klaim `portability: universal` dari publikasi terverifikasi secara ujung-ke-ujung
+- ❌ kegagalan apa pun → ajukan isu di `https://github.com/ahmed-g-gad/apothem/issues/new` dengan bagian yang gagal dan output yang ditangkap; pemelihara melakukan triase
 
 ## 8. Kriteria Penerimaan
 
 - [ ] §1 prasyarat terpenuhi
-- [ ] §2 klona-dan-instal berhasil baik pada shell POSIX maupun Windows
-- [ ] §3 disiplin empat elemen berlaku (keamanan berkas sentinel; diperiksa prasyaratnya; idempoten; dapat dikonfigurasi via variabel lingkungan)
+- [ ] §2 klon-dan-instal berhasil pada shell POSIX maupun Windows
+- [ ] §3 disiplin empat elemen berlaku (keamanan tujuan yang sudah ada; prasyarat diperiksa; idempoten; dapat dikonfigurasi lewat variabel lingkungan)
 - [ ] §4 setiap gerbang validator hijau
 - [ ] §5 penghapusan interaktif berhasil; `--yes` berhasil tanpa prompt
 - [ ] §6 setiap penolakan pengaman keselamatan terpicu
 - [ ] §7 hasil ditangkap pada path audit yang didokumentasikan
 
-Ketika setiap kotak centang di atas dicentang pada host kedua yang baru, tindak lanjut sinkronisasi antar-mesin ditutup.
+Ketika setiap kotak centang di atas dicentang pada host kedua yang baru, verifikasi sinkronisasi lintas-mesin selesai dan klaim `portability: universal` terverifikasi secara ujung-ke-ujung.

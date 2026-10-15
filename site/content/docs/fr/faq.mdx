@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Questions courantes sur la finalité d'Apothem, les environnements pris en charge, le caractère optionnel des suites de planification, la personnalisation des règles, les types d'artefacts et l'emplacement de l'état de l'écosystème."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-L'adaptateur Claude Code se matérialise dans `~/.claude/` ; son répartiteur de hooks est neutre vis-à-vis de l'hôte —
-il résout la racine de l'écosystème d'abord depuis `$CLAUDE_PROJECT_DIR`, puis
-`$LLM_PROJECT_DIR`, et se rabat enfin sur `$HOME/.claude`.
+L'adaptateur Claude Code se matérialise dans `~/.claude/` ; son répartiteur de hooks est neutre vis-à-vis de l'hôte : il résout la racine de l'écosystème d'abord depuis `$CLAUDE_PROJECT_DIR`, puis depuis `$LLM_PROJECT_DIR`, essaie ensuite des recherches relatives au script et au répertoire de travail, et se rabat enfin sur `$HOME/.claude`.
 
 ## Dois-je utiliser le pipeline des suites de planification ?
 
@@ -40,9 +38,7 @@ sont utiles indépendamment.
 
 ## Comment personnaliser les règles sans forker le dépôt ?
 
-Ajoutez votre propre fichier de règle sous `src/apothem/rules/<my-rule>.md`
-avec le frontmatter canonique. Le chargeur de règles récupère chaque
-fichier correspondant au motif `src/apothem/rules/*.md`.
+Ajoutez une chaîne à la liste `rules:` de `~/.config/apothem/profile.yaml`, puis relancez l'installation ou la mise à jour. Les fichiers de règles sous `src/apothem/rules/` modifient l'arborescence source packagée, que l'installateur d'archive remplace lorsqu'il est exécuté avec `--yes`.
 
 ## Comment désactiver une règle temporairement ?
 
@@ -74,8 +70,8 @@ vérifications CI réussissent.
 ## Où se trouve l'état de l'écosystème ?
 
 - **L'état de planification par suite** se trouve sous `<project>/.apothem/plans/{suite}/`.
-- **La mémoire par projet** se trouve sous `projects/{hash}/memory/`.
-- **La mémoire inter-projets** se trouve sous `memory/`.
+- **La mémoire Apothem** se trouve sous `.apothem/memory/`, à partir de la racine d'installation (pour Claude Code : `~/.claude/.apothem/memory/` ; `~/.apothem/memory/` lorsque `workspace.scope` vaut `user-home` ; `<project>/.apothem/memory/` pour les installations à portée projet). La mémoire automatique propre à Claude Code se trouve sous la racine de configuration de l'environnement, à `projects/{hash}/memory/` (pour Claude Code : `~/.claude/projects/{hash}/memory/`).
+- **La mémoire inter-projets** se trouve sous cette même racine de configuration de l'environnement, à `.apothem/memory/` (pour Claude Code : `~/.claude/.apothem/memory/`).
 - **Le brouillon par session** se trouve sous `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Puis-je reprendre un travail de longue haleine dans une nouvelle session ou sur une autre machine ?

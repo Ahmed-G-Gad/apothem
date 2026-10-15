@@ -2,7 +2,7 @@
 title: "Ein Blick in das Multi-Harness-Adapter-Design"
 description: "Ein technischer Tiefgang in Apothems HarnessAdapter-Protokoll und die drei Adapterklassen, die ein Profil in siebzehn Harnesses materialisieren."
 machineTranslated: true
-sourceHash: "aa3e6ce912cf7275"
+sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,9 +20,9 @@ anbieterspezifischen Details. Es deklariert die Operationen, die die CLI
 aufruft, und die Metadaten, die die CLI liest:
 
 - `name` — der registrierte Bezeichner des Adapters.
-- `output_path` — wo die materialisierte Konfiguration auf der Festplatte
-  landet.
+- `output_path` — wo die materialisierte Konfiguration auf der Festplatte landet.
 - `install` — die harness-native Konfiguration rendern und schreiben.
+- `update` — die harness-native Konfiguration nach einer Profiländerung erneut rendern.
 - `uninstall` — die materialisierte Konfiguration entfernen und das gemeinsame
   Profil unangetastet lassen.
 - `is_installed` — melden, ob die Konfiguration des Harness vorhanden ist.
@@ -98,13 +98,14 @@ Anbieter-Einstellungs-Templates unter
 — er rendert keine native Konfigurationsdatei aus dem Profil; er propagiert
 Artefakte und Konventionsverzeichnisse direkt.
 
-Eine bewusste Grenze: Der claude-code-Adapter verwaltet `CLAUDE.md` nicht. Diese
-Datei ist Territorium des Operators. Apothem materialisiert die umgebende
-Konfigurationsoberfläche — die Regeln, die Hooks, die Einstellungen — und lässt
-die eigene `CLAUDE.md`-Stimme des Operators unangetastet. Ein Adapter, der sie
-überschreiben würde, würde bei jedem `apothem install` handgeschriebene
-Projektanweisungen löschen, also zieht der Adapter die Linie an der
-Verzeichnisgrenze und hält an.
+Eine bewusste Grenze: Der claude-code-Adapter verwaltet nur einen durch
+Sentinel-Marker abgegrenzten Block in `CLAUDE.md`; Prosa außerhalb dieses Blocks
+bleibt erhalten. Der Rest dieser Datei liegt im Verantwortungsbereich des
+Operators. Apothem materialisiert die umgebende Konfigurationsoberfläche — die
+Regeln, die Hooks, die Einstellungen — und lässt die Prosa des Operators außerhalb
+dieses Blocks wortgetreu unverändert. Ein Adapter, der die gesamte Datei
+umschriebe, würde bei jedem `apothem install` handgeschriebene Anweisungen
+löschen; dieser schreibt nur seinen verwalteten Block neu.
 
 ## Warum die Einheitlichkeit zählt
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "d9218fbdb9417528"
+sourceHash: "f51d1e3b53ab82e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ apothem install --harness hermes
 
 ## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案并渲染原生 YAML 配置，其中包括配置档案的 MCP 清单。配置档案中的身份、偏好和规则写入配置档案文档。共享的命令、技能、辅助程序定义、规则、模板和钩子提示词作为支持材料落在 `~/.hermes/.apothem/support/` 下。
+该适配器读取 Apothem 的共享配置档案，并渲染原生 YAML 配置，其中包括配置档案的 MCP 清单。MCP 服务器来自配置档案的 `mcp_servers` 部分，每次安装与更新时都渲染到 `config.yaml` 中，而非复制为文件。配置档案的身份、偏好与规则写入配置档案文档本身。共享的命令、技能、辅助器定义、规则、模板与钩子提示词，则作为支持材料落在 `~/.hermes/.apothem/support/` 下。
 
 ## 兼容性说明
 

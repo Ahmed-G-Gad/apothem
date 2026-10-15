@@ -2,7 +2,7 @@
 title: "/supply-chain-audit"
 description: "/supply-chain-audit — Audit rantai pasok terhadap standar SLSA + Sigstore + SBOM."
 machineTranslated: true
-sourceHash: "873c959cabdae74c"
+sourceHash: "4aa08dd70480e8a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Audit rantai pasok terhadap standar SLSA + Sigstore + SBOM.
 Dengan argumen:
 
 ```bash
-/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/supply-chain-audit [path/to/repo/] [--focus AXIS] [--dry-run]
 ```
 
 ## Masukan
@@ -29,7 +29,7 @@ Pipeline rilis repositori host
 
 ## Keluaran
 
-Temuan rantai pasok + REPORT.md
+Temuan rantai pasok di `_inputs/supply-chain-audit-findings.md`
 
 ## Hilir
 
@@ -37,22 +37,15 @@ Tahap supply-chain-audit dari Urutan Tinjauan Audit
 
 ## Fase alur kerja
 
-Perintah ini mengikuti alur kerja pipeline `/plan` standar:
-
-1. **Memuat konteks** — Membaca suite plan, aturan, dan Kontrak Pelanjutan.
-2. **Memverifikasi prasyarat** — Memastikan fase dependensi telah selesai.
-3. **Mengeksekusi tugas** — Menjalankan misi perintah.
-4. **Memverifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lulus gerbang kualitas.
-5. **Memperbarui PROGRESS.md** — Mencatat keluaran terverifikasi di Registri Keluaran Fase.
-6. **Memancarkan REPORT.md** — Bukti rilis gerbang pra-emisi dicatat.
+Perintah ini menjalankan lima fase audit: penyerapan masukan, penelusuran per-sumbu, triase per-temuan, emisi temuan, dan gerbang validasi.
 
 ## Mode kegagalan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Prasyarat tidak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
+| Prasyarat belum lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| File masukan hilang | File suite plan tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+| Target ditolak | Target tidak memiliki permukaan rilis | Berikan root repositori yang berisi .github/workflows/, skrip rilis, atau manifest build |
 
 ## Contoh
 
@@ -60,8 +53,8 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 # Dry-run to preview what would happen
 /supply-chain-audit --dry-run
 
-# Execute against a named plan suite
-/supply-chain-audit path/to/plan-suite/
+# Execute against a host repository
+/supply-chain-audit path/to/repo/
 ```
 
 ## Referensi silang

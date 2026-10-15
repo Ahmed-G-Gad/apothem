@@ -2,7 +2,7 @@
 title: "Seremoni Merge PR untuk Pemelihara Tunggal"
 description: "Kapan pemelihara dapat men-merge pull request miliknya sendiri secara langsung, dan seremoni untuk proteksi branch yang mensyaratkan persetujuan dan memberlakukannya bagi admin."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,8 +85,8 @@ Jika repositori meng-onboard pemelihara kedua, pensiunkan seremoni: alur tinjaua
 
 Setiap pemanggilan seremoni mendarat pada tiga permukaan tahan lama yang dapat diperiksa operator setelahnya:
 
-- **Metadata merge PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` mengembalikan aktor merge, cap waktu merge, dan SHA commit squash. Aktor `mergedBy` cocok dengan identitas pemelihara yang menjalankan langkah 3.
-- **Log audit repositori.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` mengaitkan eksekusi CI pasca-merge dengan commit merge; log audit aturan proteksi repositori (riwayat `gh api /repos/<owner>/<repo>/branches/main/protection` via antarmuka Settings → Branches) menampilkan alih langkah 2 dan langkah 4 yang mengapit jendela merge.
-- **Riwayat git pemelihara.** `git log main --merges --first-parent` mendaftar setiap commit squash-merge pada `main` dengan nomor PR terkait pada subjek commit (sufiks `(#<pr-number>)` sesuai bawaan `gh pr merge --squash`), memungkinkan operator menelusuri setiap pendaratan lampau kembali ke PR dan pemanggilan seremoninya.
+- **Metadata merge pada PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` mengembalikan aktor merge, cap waktu merge, dan SHA commit squash. Aktor `mergedBy` cocok dengan identitas pemelihara yang menjalankan langkah 3.
+- **Log audit repositori.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` mengaitkan eksekusi CI pasca-merge dengan commit merge; log audit aturan proteksi repositori (riwayat `gh api /repos/<owner>/<repo>/branches/main/protection` melalui antarmuka Settings → Branches) menampilkan alih langkah 2 dan langkah 4 yang mengapit jendela merge.
+- **Riwayat git pemelihara.** `git log main --first-parent --oneline` mendaftar setiap commit squash-merge pada `main` dengan nomor PR terkait pada subjek commit (sufiks `(#<pr-number>)` sesuai bawaan `gh pr merge --squash`), memungkinkan operator menelusuri setiap pendaratan lampau kembali ke PR dan pemanggilan seremoninya.
 
-Ketika `scripts/dev/admin_merge.py` adalah titik masuknya, log non-interaktifnya (stdout) menyebutkan tiga panggilan API proteksi dan panggilan API merge secara berurutan; menyalurkan pembungkus ke `tee` menangkap fragmen audit per-eksekusi tanpa bergantung pada retensi log sisi GitHub.
+Ketika `scripts/dev/admin_merge.py` adalah titik masuk, log non-interaktifnya (stderr) menyebutkan tiga panggilan API proteksi dan panggilan API merge secara berurutan; menyalurkan stderr-nya ke `tee` (`2>&1 | tee`) menangkap fragmen audit per-eksekusi tanpa bergantung pada retensi log sisi GitHub.

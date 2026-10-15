@@ -1,34 +1,34 @@
 ---
 title: "Registro de la compuerta de preemisión — Comprobación obligatoria de quince barras"
-description: "Comprobación de conformidad obligatoria de quince barras ejecutada antes de la emisión de alcance significativo, con mapeos de acción ante fallo y esquema de prueba de release."
+description: "Comprobación de conformidad obligatoria de quince barras, ejecutada antes de la emisión de un alcance significativo, con las asignaciones de acción ante fallo y el esquema del resultado de la puerta."
 machineTranslated: true
-sourceHash: "be81c64b8d309fc6"
+sourceHash: "69b0b6994504621b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registro canónico de la compuerta de preemisión de quince barras.** Este documento contiene la tabla completa de quince barras de la compuerta y el bloque YAML del esquema de prueba de release; la tabla sustantiva y el esquema viven aquí, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
+> **Registro canónico de la puerta de pre-emisión de quince barras.** Este documento contiene la tabla completa de quince barras de la puerta y el bloque YAML del esquema del resultado de la puerta; la tabla sustantiva y el esquema viven aquí, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
 
-Antes de cualquier emisión de artefacto de alcance significativo (según el umbral trivial frente a no trivial en `site/content/docs/governance/outward-conformity-registry.mdx` §1), ejecuta la compuerta de preemisión de quince barras. Mecaniza mediante hooks PreToolUse donde sea posible (los greps mecánicos en `src/apothem/conformity/*-grep.py` orquestados por `src/apothem/conformity/gate.py`); razona donde la mecanización sea imposible. **El fallo de cualquier barra individual bloquea la emisión; revisa hasta que cada barra pase; emite con la prueba de release de la compuerta registrada.**
+Antes de cualquier emisión de artefacto de alcance significativo (según el umbral trivial frente a no trivial en `site/content/docs/governance/outward-conformity-registry.mdx` §1), ejecuta la puerta de pre-emisión de quince barras. Mecaniza mediante hooks PreToolUse donde sea posible (los greps mecánicos en `src/apothem/conformity/*-grep.py` orquestados por `src/apothem/conformity/gate.py`); razona donde la mecanización sea imposible. **El fallo de cualquier barra individual bloquea la emisión; revisa hasta que cada barra pase; emite con el resultado de la puerta registrado.**
 
 | # | Barra | Tipo de comprobación | Fallo → acción |
 | - | --- | ---------- | ---------------- |
-| 1 | M1 agnosticismo del anfitrión | razonada | revisar para coincidir con las convenciones del anfitrión |
-| 2 | M2 divulgación editorial | razonada | añadir libro mayor de divulgación |
-| 3 | M3 diez dimensiones | mixta (mecánica + razonada) | revisar en la dimensión que falla |
+| 1 | M1 agnosticismo del anfitrión | razonada | revisar para ajustarse a las convenciones del anfitrión |
+| 2 | M2 divulgación editorial | razonada | añadir el libro mayor de divulgación |
+| 3 | M3 diez dimensiones | mixta (mecánica + razonada) | revisar la dimensión que falla |
 | 4 | M4 autoaplicación | razonada (bloque de verificación presente) | registrar el bloque de verificación |
 | 5 | M5 autoridad | mecánica (grep del marcador de posición `<USER-CONFIRM:…>`) | reencaminar a la superficie de consulta |
-| 6 | M6 pericia | razonada (sección de carencias expuestas presente) | exponer carencias; citar |
+| 6 | M6 pericia | razonada (sección de carencias expuestas presente) | exponer las carencias; citar |
 | 7 | M7 anotación de opciones | mecánica (el conjunto de opciones lleva el marcador de recomendación) | anotar |
-| 8 | M8 carácter definitivo | mecánica (grep de vocabulario evasivo) | convertir las evasivas en condicionales |
-| 9 | M9 aprovechamiento visual | razonada (existe un diagrama donde es estructural) | crear / actualizar el diagrama |
+| 8 | M8 carácter definitivo | mecánica (grep del vocabulario de vaguedad) | convertir las vaguedades en condicionales |
+| 9 | M9 aprovechamiento visual | mixta (mecánica: fecha de verificación del diagrama; razonada: existe un diagrama donde el contenido es estructural) | crear / actualizar el diagrama |
 | 10 | M10 vinculación bidireccional | mecánica (grep de reciprocidad de vínculos) | cerrar las semiaristas |
 | 11 | M11 sprints ágiles | razonada (aparato de sprints instanciado) | reestructurar en sprints |
-| 12 | M12 informes de fase y disposición | mecánica (grep de salida huérfana) + razonada | redactar el resumen consolidado; reubicar |
+| 12 | M12 informes de fase y disposición | mecánica (grep de salidas huérfanas) + razonada | redactar el resumen consolidado; reubicar |
 | 13 | M13 oficio de código | mecánica (lint / formato / comprobación de tipos; grep de bare-except, número mágico y código comentado) | revisar |
-| 14 | M14 sistemicidad | razonada (declara aguas arriba / aguas abajo / pares / aplicadores) | declarar; indexar |
+| 14 | M14 sistemicidad | mixta (mecánica: procedencia del productor; razonada: declara aguas arriba / aguas abajo / pares / aplicadores) | declarar; indexar |
 | 15 | M15 listo para producción | mecánica (grep de production-ready-pr) + razonada | añadir pruebas / documentación / CHANGELOG |
 
-## 1. Esquema de prueba de release
+## 1. Esquema del resultado de la puerta
 
 Cada ejecución de la compuerta registra el resultado en la traza de trabajo del artefacto (un comentario oculto, un bloque de metadatos, un archivo de registro de emisión aparte — lo que permitan las convenciones del anfitrión):
 
@@ -58,4 +58,4 @@ conformity-attestation:
   date: <ISO-8601>
 ```
 
-Las marcas `n/a` son explícitas y razonadas — nunca omisiones silenciosas. El campo `ecosystem-version` ancla la prueba de release a un estado reproducible del ecosistema de ámbito de usuario (el commit git del árbol de fuentes de Apothem activo cuando se ejecutó la compuerta — p. ej., el checkout `~/.claude/` para el adaptador de Claude Code), de modo que auditorías futuras puedan repetir la compuerta contra los mismos cuerpos de reglas.
+Las marcas `n/a` son explícitas y razonadas, nunca omisiones silenciosas. El campo `ecosystem-version` ancla el resultado de la puerta a un estado reproducible del ecosistema de ámbito de usuario (el commit de git del árbol de fuentes de Apothem activo cuando se ejecutó la puerta; p. ej., el checkout de `~/.claude/` para el adaptador de Claude Code), de modo que las auditorías futuras puedan repetir la puerta contra los mismos cuerpos de reglas.

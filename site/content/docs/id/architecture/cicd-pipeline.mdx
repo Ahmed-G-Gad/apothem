@@ -2,7 +2,7 @@
 title: "Diagram pipeline CI/CD"
 description: "Peta visual dan rincian per jalur dari tahap alur kerja build, uji, lint, keamanan, dan publikasi yang mengawal setiap perubahan kode dan rilis."
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -42,15 +42,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -73,23 +74,25 @@ flowchart LR
   menjalankannya (lihat [Konvensi Markdown](/docs/reference/markdown-conventions)).
 - **Jalur uji** — `pytest tests/hooks` menjalankan runtime hook terhadap matriks
   peristiwa lengkap; `validate_ecosystem.py` adalah gerbang struktural utama
-  untuk konsistensi lintas-artefak; `chaos_pass.py` dan suite benchmark per-kelas
-  di bawah `src/apothem/benchmarks/` aktif pada jalur rilis untuk menangkap
-  degradasi di bawah masukan yang terdegradasi dan regresi anggaran runtime.
+  untuk konsistensi lintas-artefak; `chaos_pass.py` berjalan di job kualitas CI
+  pada push dan pull request ke `main` (difilter menurut jalur) untuk menangkap
+  degradasi di bawah masukan yang terdegradasi. Suite benchmark per-kelas di
+  bawah `src/apothem/benchmarks/` tidak berjalan di workflow CI mana pun.
 - **Jalur keamanan** — pemindaian rahasia menangkap kredensial yang tidak sengaja
   di-commit; pembuatan SBOM dan audit lisensi mengawal permukaan rantai pasok
   untuk setiap pemasangan kesiapan produksi.
-- **Jalur publikasi** — berjalan hanya pada rilis bertag. Verifikasi tag yang
-  ditandatangani memastikan asal-usul cabang rilis; situs web proyek
-  dipublikasikan dari `site/dist/` ke target GitHub Pages; catatan rilis berasal
-  dari format Keep-A-Changelog `CHANGELOG.md`.
+- **Jalur publikasi** — workflow rilis dipicu oleh push tag; penerbit npm dan
+  VS Code juga dapat dijalankan ulang melalui dispatch manual untuk tag yang
+  sudah ada. Verifikasi tag yang ditandatangani memastikan asal-usul cabang
+  rilis; catatan rilis berasal dari format Keep-A-Changelog `CHANGELOG.md`.
+  Situs web proyek dipublikasikan dari `site/dist/` ke target GitHub Pages pada
+  push ke `main` yang menyentuh masukan build-nya, atau melalui dispatch manual.
 
 ## Konfigurasi konkret
 
 Berkas alur kerja yang sebenarnya (`.github/workflows/ci.yml`,
-`.github/workflows/release.yml`, dst.) dipasang selama pembangunan ekosistem
-kesiapan produksi. Diagram ini mendefinisikan bentuk kanonik yang dicerminkan
-oleh setiap konfigurasi mendatang.
+`.github/workflows/release.yml`, dst.) ada di dalam repositori. Diagram ini
+mendefinisikan bentuk kanonik yang dicerminkan oleh setiap konfigurasi mendatang.
 
 ## Referensi silang otoritatif
 

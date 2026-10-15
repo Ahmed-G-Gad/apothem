@@ -2,7 +2,7 @@
 title: "エージェントアーキテクチャ"
 description: "Apothem が、フック面やルール形式の異なる 17 種類の AI ハーネスにわたって、単一のエージェント能力コホートをどのように投影するか。"
 machineTranslated: true
-sourceHash: "5ef9a38bd5d1cdff"
+sourceHash: "a0655f91d2726ce9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,20 +29,20 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
 
 | ハーネス | PreToolUse フック面 | ルール有効化形式 | アダプタークラス | マテリアライザー |
 |---------|-------------------------|------------------------|---------------|--------------|
-| antigravity | ネイティブフック面は存在するが、Apothem はサポート資料のみ | `GEMINI.md` および Antigravity CLI プラグインルール | クラス I | なし |
-| claude-code | ネイティブ PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 配下のフラットな `.md` ルール | クラス II-A | なし(ベンダー設定テンプレート) |
+| antigravity | ネイティブのフック面は存在するが、Apothem はサポート資料のみ | `GEMINI.md` および Antigravity CLI プラグインのルール | クラス I | なし |
+| claude-code | ネイティブの PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 配下のフラットな `.md` ルール | クラス II-A | なし（ベンダー設定テンプレート） |
 | codebuddy | なし | `.codebuddy/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
-| codex | ネイティブ `hooks.json` ライフサイクルフック | `AGENTS.md` およびインストール済みスキルが参照するサポートルール | クラス I | なし |
-| cursor | なし | `.mdc` ワークスペースルール(MDC フロントマター: `description` / `globs` / `alwaysApply`) | クラス I | なし |
-| gemini-cli | なし | 単一の `GEMINI.md` に埋め込まれたルール | クラス I | なし |
-| github-copilot | なし(IDE 拡張機能であり、ツール呼び出しフックなし) | `.github/copilot-instructions.md` 内のルール | クラス I | なし |
-| glm | なし(モデルバックエンドであり、エージェントツール面なし) | `.apothem/providers/glm.toml` バックエンドプロバイダー構成(ルールコホートなし) | クラス I | なし |
-| hermes | サポート資料のみ | `config.yaml` および外部スキルディレクトリ | クラス II-B | `config.yaml` |
-| kimi-code | なし | `AGENTS.md` および `.kimi-code/.apothem/support/` 配下のサポートルール | クラス I | なし |
-| kiro | なし(Kiro のエージェントフックはアダプターの対象外) | `.kiro/steering/apothem-rules.md` ステアリングファイル | クラス I | なし |
-| open-claw | サポート資料のみ | `openclaw.json` および追加スキルディレクトリ | クラス II-B | `openclaw.json` |
-| opencode | サポート資料のみ | プロファイルでレンダリングされた JSON およびネイティブのコマンド・スキル・エージェント | クラス II-B | `opencode.json` |
-| qwen-code | ネイティブ PreToolUse / Stop / SessionStart | `QWEN.md` およびネイティブのコマンド・スキル・エージェント | クラス II-B | `settings.json` / `QWEN.md` |
+| codex | ネイティブの `hooks.json` ライフサイクルフック | `AGENTS.md` と、インストール済みスキルが参照するサポートルール | クラス I | なし |
+| cursor | なし | `.mdc` ワークスペースルール（MDC フロントマター: `description` / `globs` / `alwaysApply`） | クラス I | なし |
+| gemini-cli | サポート資料のみ | 単一の `GEMINI.md` に埋め込まれたルール | クラス I | なし |
+| github-copilot | なし（IDE 拡張機能であり、ツール呼び出しフックはない） | `.github/copilot-instructions.md` 内のルール | クラス I | なし |
+| glm | なし（モデルバックエンドであり、エージェントツール面はない） | `.apothem/providers/glm.toml` バックエンドプロバイダー構成（ルールコホートなし） | クラス I | なし |
+| hermes | サポート資料のみ | `config.yaml` と外部スキルディレクトリ | クラス II-B | `config.yaml` |
+| kimi-code | サポート資料のみ | `AGENTS.md` と、`.kimi-code/.apothem/support/` 配下のサポートルール | クラス I | なし |
+| kiro | なし（Kiro のエージェントフックはアダプターの対象外） | `.kiro/steering/apothem-rules.md` ステアリングファイル | クラス I | なし |
+| open-claw | サポート資料のみ | `openclaw.json` と追加のスキルディレクトリ | クラス II-B | `openclaw.json` |
+| opencode | サポート資料のみ | プロファイルでレンダリングされた JSON と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `opencode.json` |
+| qwen-code | ネイティブの PreToolUse / Stop / SessionStart | `QWEN.md` と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `settings.json` / `QWEN.md` |
 | trae | なし | `.trae/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
 | windsurf | なし | `.devin/rules/` 内のルール | クラス I | なし |
 | zed | なし | プロジェクトルートの `.rules` フラットファイル | クラス I | なし |
@@ -52,27 +52,26 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
 
 - **claude-code** は参照アダプターです。ネイティブの PreToolUse、
   PostToolUse、Stop、SessionStart フックを備え、ベンダー設定テンプレートを
-  同梱します。`CLAUDE.md` は意図的に管理しません ——
-  そのファイルはオペレーターが所有する領域です。
-- **codex** は `hooks.json` を通じてネイティブのライフサイクルフックを
-  インストールし、エージェントを TOML に変換し、コマンドプロンプトを
-  Codex スキルとしてラップし、`config.toml` はオペレーター所有のまま残します。
-- **antigravity** は `~/.gemini/GEMINI.md` をグローバルコンテキストの
-  アンカーとして保持し、`~/.gemini/antigravity-cli/plugins/apothem/` 配下に
-  Apothem プラグインをインストールします。フックファイルは、アダプターが
-  Antigravity のフックスキーマ変換を担うまで、サポート資料として保持されます。
-- **cursor** は、ベンダーの MDC フロントマター(`description`、`globs`、
-  `alwaysApply`)を備えた `.mdc` ファイルを介してルールを有効化します。
-  アダプターは単一ファイルの `.cursorrules` を書き込みません。
+  同梱します。`CLAUDE.md` に、センチネルで区切られた管理ブロックを 1 つ書き込み、
+  センチネルの外側にあるオペレーターの文章はそのまま残します。
+- **codex** は `hooks.json` を通じてネイティブのライフサイクルフックをインストールし、
+  エージェントを TOML に変換し、コマンドプロンプトを Codex スキルとしてラップし、
+  `config.toml` はオペレーター所有のまま残します。
+- **antigravity** は `~/.gemini/GEMINI.md` をグローバルなコンテキストのアンカーとして保持し、
+  `~/.gemini/antigravity-cli/plugins/apothem/` 配下に Apothem プラグインをインストールします。
+  アダプターが Antigravity のフックスキーマの変換を担うまで、フックファイルは
+  サポート資料として保持されます。
+- **cursor** は、ベンダーの MDC フロントマター（`description`、`globs`、`alwaysApply`）を
+  備えた `.mdc` ファイルを介してルールを有効化します。アダプターは単一ファイルの
+  `.cursorrules` を書き込みません。
 - **windsurf** は `.devin/rules/` を使用します。アダプターは単一ファイルの
   `.windsurfrules` を書き込みません。
-- **hermes** と **open-claw** はネイティブ構成ファイルをレンダリングし、
-  各ハーネスが文書化しているスキルディレクトリ設定を通じて Apothem の
-  サポートスキルディレクトリを接続します。サポートされていない共有コホートは、
-  Apothem が所有するサポートサブツリー配下に残ります。
-- **qwen-code** はコンテキストとフックディスパッチ用に文書化された
-  `settings.json` キーをレンダリングし、その後 Qwen ネイティブの
-  コマンド・スキル・エージェントディレクトリを使用します。
+- **hermes** と **open-claw** は、ネイティブの構成ファイルをレンダリングし、各ハーネスが
+  文書化しているスキルディレクトリの設定を通じて、Apothem のサポートスキルディレクトリを
+  接続します。サポートされていない共有コホートは、Apothem 所有のサポートサブツリーの下に残ります。
+- **qwen-code** は、コンテキストとフックディスパッチについて文書化された `settings.json` の
+  キーをレンダリングし、その後、Qwen ネイティブのコマンド、スキル、エージェントの
+  ディレクトリを使用します。
 
 ## ハーネスをまたぐオーケストレーションの規律
 
@@ -140,9 +139,9 @@ CLI を実行するとき —— に現れます:
 
 | 軸 | 17 種類のハーネスにわたって観測される範囲 |
 |------|---------------------------------------------|
-| フック面 | ネイティブな複数イベント(claude-code、codex、qwen-code)→ サポートのみのフック資料(antigravity、gemini-cli、hermes、open-claw、opencode)→ なし(codebuddy、cursor、github-copilot、glm、kimi-code、kiro、trae、windsurf、zed) |
-| ルール有効化形式 | フラットな `.md`(claude-code)→ プラグインルール(antigravity)→ `.mdc` ワークスペース(cursor)→ ディレクトリルール(codebuddy、trae、windsurf)→ ステアリングファイル(kiro)→ プロジェクトルートのフラットファイル(zed)→ 単一の埋め込みファイル(codex、gemini-cli、github-copilot、kimi-code)→ 構成から参照されるサポート資料(hermes、open-claw、opencode、qwen-code)→ バックエンドプロバイダー構成(glm) |
-| アダプタークラス | クラス I 生伝播 → クラス II-A 生伝播 + ベンダー設定 → クラス II-B プロファイルレンダリングの単一面 |
+| フック面 | ネイティブな複数イベント（claude-code、codex、qwen-code）→ サポート専用のフック資料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ なし（codebuddy、cursor、github-copilot、glm、kiro、trae、windsurf、zed） |
+| ルール有効化形式 | フラットな `.md`（claude-code）→ プラグインルール（antigravity）→ `.mdc` ワークスペース（cursor）→ ディレクトリルール（codebuddy、trae、windsurf）→ ステアリングファイル（kiro）→ プロジェクトルートのフラットファイル（zed）→ 単一の埋め込みファイル（codex、gemini-cli、github-copilot、kimi-code）→ 構成から参照されるサポート資料（hermes、open-claw、opencode、qwen-code）→ バックエンドプロバイダー構成（glm） |
+| アダプタークラス | クラス I の生の伝播 → クラス II-A の生の伝播 + ベンダー設定 → クラス II-B のプロファイルレンダリングによる単一面 |
 
 
 Apothem の役割は、これら 3 つの軸がハーネスごとに変化するあいだ、

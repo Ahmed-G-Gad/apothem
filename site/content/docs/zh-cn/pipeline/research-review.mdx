@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — 对论文进行同行评审级别的对抗式批判：一份七轴评审记分卡（新颖性、严谨性、可复现性、清晰度、伦理、统计审查、报告规范符合度）以及一份按严重程度分级的必需修订清单。"
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "2aafbd301812aded"
 带参数：
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## 输入
@@ -33,18 +33,18 @@ sourceHash: "2aafbd301812aded"
 
 ## 下游
 
-/research-publish（下游消费者）。`major-revision` 或 `reject` 裁决会驱动修订循环回到 `/research-paper`，先处理必需修订，再重新评审。
+/research-publish（下游消费者）。`major-revision` 或 `reject` 裁决意味着，必须先处理所需修订，然后才能运行 `/research-publish`。
 
 ## 工作流阶段
 
 该命令遵循标准的 `/research` 流水线工作流：
 
 1. **加载上下文** —— 读取论文交付物。
-2. **验证序列门** —— 确认论文存在；否则以 `Blocked: run /research-paper first` 中止。
-3. **对抗式评审** —— 对七个轴评分（新颖性 · 严谨性 · 可复现性 · 清晰度 · 伦理 · 统计审查 · 报告规范符合度）；运行可复现性重跑与引用完整性审计；默认反驳；用证据定位具体缺陷。
-4. **分级修订** —— 将必需修订按 HIGH / MEDIUM / LOW 排序，并附具体驱动因素的理由。
-5. **更新交接清单** —— 记录评审报告和记分卡裁决。
-6. **产出评审** —— `_outputs/review-report.md`。
+2. **验证序列闸门** —— 确认论文、`_outputs/analysis.md` 与 `_inputs/synthesis.md` 均存在且非空；否则以 `Blocked: run /research-paper first` 中止。
+3. **对抗式评审** —— 对七个轴评分（新颖性 · 严谨性 · 可复现性 · 清晰度 · 伦理 · 统计审查 · 报告规范符合度）；运行可复现性重跑与引用完整性审计；默认反驳；以证据定位具体缺陷。
+4. **分级修订** —— 将所需修订按 HIGH / MEDIUM / LOW 排序，并附具体驱动因素的理由。
+5. **更新交接清单** —— 记录评审报告与记分卡裁决。
+6. **发出评审** —— `_outputs/review-report.md`。
 
 ## 严谨性强制底线
 
@@ -62,7 +62,7 @@ sourceHash: "2aafbd301812aded"
 
 ```bash
 # 对论文进行同行评审并产出评审记分卡
-/research-review path/to/research-suite/
+/research-review --suite-name <name>
 ```
 
 ## 交叉引用

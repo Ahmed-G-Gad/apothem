@@ -2,7 +2,7 @@
 title: "Postura agnóstica respecto al host"
 description: "Cómo Apothem logra una postura agnóstica respecto al host a través del perfil compartido y los adaptadores de entorno."
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,4 +83,4 @@ núcleo. La deriva es estructuralmente imposible.
 
 ## Garantías de portabilidad
 
-Los comandos y los ayudantes marcados con `portability: universal` están garantizados como traducibles a cada entorno compatible. Los comandos y los ayudantes marcados con `portability: project-specific` pueden requerir documentación de anulación por entorno en el cuerpo del archivo.
+Los comandos y los ayudantes marcados con `portability: universal` se traducen a cada entorno cuya entrada en el registro admite una superficie de comandos (convertida o de subárbol de soporte); los entornos sin ella no reciben comandos. El motor no evalúa el marcador. Los comandos y los ayudantes marcados con `portability: project-specific` pueden requerir documentación de anulación por entorno en el cuerpo del archivo.

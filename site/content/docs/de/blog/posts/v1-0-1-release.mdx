@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — Launch-Veröffentlichung"
 description: "Apothem v1.0.1 ist verfügbar — ein gemeinsames Profil, materialisiert in siebzehn KI-Assistenz-Harnesses, mehrere Installationswege und eine signierte, attestierte Veröffentlichung."
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,9 @@ Die siebzehn Adapter in dieser Veröffentlichung:
 - zed
 
 Füge deinem Arbeitsablauf ein Werkzeug hinzu, führe einen Befehl aus, und deine
-Konfiguration ist da. Entferne ein Werkzeug, und Apothem deinstalliert es sauber
-— ohne verwaiste Dateien zu hinterlassen.
+Konfiguration ist da. Entferne ein Werkzeug, und Apothem entfernt die Dateien, die
+es geschrieben hat; die gemeinsamen Speicher, Kontexte und Lernspeicher gehen mit
+dem letzten Harness, nach einer Sicherung, und `plans/` bleibt immer erhalten.
 
 ## Installation
 
@@ -62,12 +63,21 @@ Mehrere Installationswege, eine CLI darunter:
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **Einschritt-Skript-Installer** — platziert eine eigenständige Laufzeit und
-   den `apothem`-Starter im PATH:
+3. **Einschritt-Skript-Installer** — legt eine eigenständige Laufzeit und einen
+   `apothem`-Starter an (`~/.local/bin/apothem` unter POSIX, mit einem
+   PATH-Hinweis, wenn dieses Verzeichnis nicht im `PATH` liegt; `apothem.cmd` in
+   WindowsApps unter Windows):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   Das POSIX-Skript prüft die GPG-Signatur des Release-Tags standardmäßig und bricht
+   ab, wenn der Maintainer-Schlüssel nicht im lokalen Schlüsselbund liegt. Bis der
+   Maintainer den Schlüssel-Fingerprint veröffentlicht (siehe `SECURITY.md`), setze
+   `APOTHEM_VERIFY=checksum`, um das Archiv gegen die `SHA256SUMS` des Releases zu
+   prüfen, oder `APOTHEM_ALLOW_UNVERIFIED=1`, um ohne Tag-Verifikation
+   fortzufahren.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -115,12 +125,12 @@ Konfigurations-Lebenszyklus brauchst:
 - `apothem profile` — inspiziert und verwaltet das gemeinsame Profil.
 - `apothem doctor` — diagnostiziert Umgebungs- und Konfigurationsprobleme.
 
-Jeder Harness-Adapter implementiert ein einheitliches
-`HarnessAdapter`-Protokoll — `install`, `uninstall`, `is_installed`, `verify` —
-sodass sich jedes Harness vom Sitz des Operators aus vorhersehbar verhält,
-unabhängig vom Anbieterformat darunter. Mehr über den Entwurf liest du im
+Jeder Harness-Adapter implementiert ein einheitliches `HarnessAdapter`-Protokoll —
+`install`, `update`, `uninstall`, `is_installed`, `verify` — sodass sich jedes
+Harness vom Sitz des Operators aus vorhersehbar verhält, unabhängig vom
+Anbieterformat darunter. Mehr über den Entwurf liest du im
 [Tiefgang zur Adapter-Architektur](/docs/blog/posts/multi-harness-adapter-design)
-und über den Formatabgleich in der
+und über die Formatabstimmung in der
 [Konvergenz der Konventionen über Harnesses hinweg](/docs/blog/posts/cross-harness-convention-convergence).
 
 ## Wohin als Nächstes

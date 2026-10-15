@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "924c7b14d9e24e4a"
+sourceHash: "887c6c6136f1dccb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -184,6 +184,13 @@ alwaysApply: false
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR：移除必填 frontmatter 字段）
 
 对于带有 `version` 和 `updated` 的制品，在每次改变行为的编辑中，一并提升这两个字段。对于捆绑了制品变更的发布，在生态级的 `CHANGELOG.md` 中追加一条相应的行。
+
+### 计划套件修订
+
+上文的工件规则不适用于计划套件。计划套件的版本是其 `MASTER-PLAN.md` 页首与修订历史表中记录的 `vX.Y.Z` 值。计划套件的错字修正属于一次修订，应递增 PATCH 号。`/plan-review` 的第 10.2 步负责确定分类，并追加修订历史行。
+
+- `vX.Y.Z` → `vX.Y.(Z+1)`（计划套件，错字修正：PATCH）
+- `vX.Y.Z` → `vX.Y.Z`（工件，错字修正：不递增；适用上文的工件规则）
 
 ## 何时编辑制品
 

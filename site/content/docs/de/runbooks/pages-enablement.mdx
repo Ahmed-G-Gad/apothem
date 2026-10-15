@@ -2,7 +2,7 @@
 title: "Runbook zur Pages-Aktivierung"
 description: "Schritt-für-Schritt-Runbook zum Starten von GitHub Pages mit benutzerdefinierter Domain auf apothem.ahmedgad.com über CNAME-DNS-Konfiguration."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -175,7 +175,7 @@ benutzerdefinierte Domain über die API aus und wieder ein).
 ### 2.6 Verifizieren Sie Deep Links
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Erwartete Ausgabe:
@@ -326,10 +326,10 @@ Die Prozedur zur Pages-Aktivierung hat vier dokumentierte Fehlermodi:
 
 | Fehler | Diagnose | Behebung |
 |---|---|---|
-| `gh api .../pages` gibt 404 zurück | Pages ist auf dem Repo nicht aktiviert | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site`, dann §2.1 erneut versuchen |
-| `dig` gibt nach 30 Minuten leer zurück | Der DNS-Datensatz ist beim Anbieter nicht festgeschrieben | Kehren Sie zum passenden Anbieter-Anhang zurück; verifizieren Sie, dass der Datensatz gespeichert ist (nicht Entwurf / ausstehend); inspizieren Sie das Panel auf einen verpassten `Save`-Schritt |
-| `https_certificate.state: errored` | Pages kann kein Zertifikat ausstellen | Schalten Sie die benutzerdefinierte Domain in den Pages-Einstellungen aus und wieder ein; dies löst die Ausstellung erneut aus. Warten Sie bis zu 24 Stunden auf den neuen Versuch |
-| Deep-Link-404 nach dem Build | Der Build der statischen Site hat die Seite nicht eingeschlossen | `gh workflow run publish-static-site.yml`; verifizieren Sie nach Abschluss, dass `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` `success` zurückgibt |
+| `gh api .../pages` gibt 404 zurück | Pages ist im Repository nicht aktiviert | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow`, dann §2.1 erneut versuchen |
+| `dig` gibt nach 30 Minuten leer zurück | Der DNS-Datensatz ist beim Anbieter nicht gespeichert | Kehren Sie zum passenden Anhang des Anbieters zurück; prüfen Sie, dass der Datensatz gespeichert ist (nicht Entwurf / ausstehend); prüfen Sie das Panel auf einen übersehenen Schritt `Save` |
+| `https_certificate.state: errored` | Pages kann kein Zertifikat ausstellen | Schalten Sie die benutzerdefinierte Domain in den Pages-Einstellungen aus und wieder ein; das löst die Ausstellung erneut aus. Warten Sie bis zu 24 Stunden auf den neuen Versuch |
+| Deep-Link-404 nach dem Build | Der Build der statischen Site hat die Seite nicht enthalten | `gh workflow run publish-static-site.yml`; prüfen Sie nach Abschluss, dass `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` `success` zurückgibt |
 
 Wenn die Behebung nach einem Zyklus der passenden Diagnose fehlschlägt,
 eskalieren Sie zum Runbook zur Release-Wiederherstellung (ein erzwungener

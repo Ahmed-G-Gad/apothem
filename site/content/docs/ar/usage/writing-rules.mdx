@@ -6,8 +6,7 @@ sourceHash: "310b05b6b5b3dd5d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-القواعد هي ملفّات <bdi>Markdown</bdi> في <bdi>`src/apothem/rules/`</bdi> بامتداد
-<bdi>`.md`</bdi>.
+القواعد ملفات <bdi>Markdown</bdi> في <bdi>`src/apothem/rules/`</bdi> بامتداد <bdi>`.md`</bdi>.
 
 ## الـ<bdi>frontmatter</bdi> الخاص بالقاعدة
 
@@ -22,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## نطاقات القاعدة
 
-| النطاق | متى يُطبَّق |
-|-------|-------------|
-| <bdi>`always-on`</bdi> | كلّ جلسة، كلّ ملف |
-| <bdi>`path-filtered`</bdi> | فقط عندما يطابق الملفّ النشط <bdi>`path-filter`</bdi> |
-| <bdi>`operator-selected`</bdi> | يُفعِّلها المُشغِّل صراحةً في <bdi>settings.json</bdi> |
+يُحدَّد نطاق القاعدة بحقلين في الـ<bdi>frontmatter</bdi>، هما <bdi>`alwaysApply`</bdi> و<bdi>`pathFilter`</bdi>:
+
+| <bdi>`alwaysApply`</bdi> | <bdi>`pathFilter`</bdi> | متى تُطبَّق |
+|---------------|--------------|--------------|
+| <bdi>`true`</bdi> | <bdi>`""`</bdi> (فارغ) | مفعّلة دائمًا: كل جلسة، وكل ملف |
+| <bdi>`false`</bdi> | نمط <bdi>glob</bdi> مثل <bdi>`"**/*.py"`</bdi> | مُرشَّحة بالمسار: فقط حين يطابق الملف النشط النمط |
 
 ## مثال على قاعدة
 
@@ -45,18 +45,16 @@ alwaysApply: false
 - Prefer explicit over implicit.
 ```
 
-## تطبيق القواعد على الـ<bdi>harnesses</bdi>
+## تطبيق القواعد على أُطُر العمل
 
-بعد كتابة قاعدة، حدِّث كلّ محوِّل <bdi>harness</bdi> مُثبَّت. شغِّل
-<bdi>`apothem harnesses list`</bdi> لرؤية المجموعة المُثبَّتة، ثم استدعِ
-<bdi>update</bdi> مرّة واحدة لكلّ <bdi>harness</bdi>:
+بعد كتابة القاعدة، حدِّث كل محوّل لإطار عمل مُثبَّت. شغّل <bdi>`apothem harnesses list`</bdi> لرؤية المجموعة المُثبَّتة، ثم استدعِ <bdi>update</bdi> مرة واحدة لكل إطار عمل:
 
 ```bash
 apothem update --harness claude-code
 apothem update --harness cursor
 ```
 
-## التحقّق من القواعد
+## التحقق من القواعد
 
 ```bash
 python -m apothem.conformity.gate --check frontmatter

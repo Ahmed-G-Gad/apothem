@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review — Architektur-Integritätsprüfung gegen das Design-Artefakt in `_inputs/design.md`."
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Architektur-Integritätsprüfung gegen das Design-Artefakt in `_inputs/design.md
 Mit Argumenten:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## Eingaben
@@ -29,7 +29,7 @@ Host-Repository + `_inputs/design.md`
 
 ## Ausgaben
 
-Architektur-Befunde + REPORT.md
+Architektur-Befunde unter `_inputs/architecture-review-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,16 @@ Die Architektur-Prüfungsstufe der Audit-Prüfsequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
-
-1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
-2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
-4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
-6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+Der Befehl durchläuft fünf Audit-Phasen: Eingabeaufnahme, Rückverfolgung von Design
+zu Code, Audit der Integrität der Schichtgrenzen, Sweep der Kopplung zwischen
+Paketen sowie Ausgabe der Befunde mit dem Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
 | Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
-| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+| Fehlende Eingabedatei | Designartefakt `_inputs/design.md` fehlt | Führe `/plan-design` aus, um es zu erstellen |
 
 ## Beispiele
 
@@ -60,8 +54,8 @@ Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## Querverweise

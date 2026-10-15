@@ -2,7 +2,7 @@
 title: "Plataformas"
 description: "Sistemas operativos, shells y scripts de instalación soportados por Apothem, además del requisito previo de Python del sistema para el entorno de ejecución autocontenido."
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,21 +18,18 @@ SO con Node.js 18+.
 
 ## Matriz de sistemas operativos y shells
 
-| Familia de SO | Shells soportados | Script de instalación |
-| ------------- | ----------------- | --------------------- |
-| macOS | `bash` POSIX (el bash del sistema o un bash más reciente instalado por el usuario) | `install.sh` |
-| Linux | `bash` POSIX | `install.sh` |
-| Subsistema de Windows para Linux (WSL2) | `bash` POSIX | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | `bash` POSIX | `install.sh` |
-| Termux (Android) | `bash` POSIX | `install.sh` |
-| Contenedor Linux de ChromeOS (Crostini) | `bash` POSIX | `install.sh` |
+| Familia de SO | Shells admitidos | Script de instalación |
+| ------------- | ---------------- | --------------------- |
+| macOS | `sh` POSIX, también admitiendo `bash` (el bash del sistema o un bash más reciente instalado por el usuario) | `install.sh` |
+| Linux | `sh` POSIX (también se admite `bash`) | `install.sh` |
+| Subsistema de Windows para Linux (WSL2) | `sh` POSIX (también se admite `bash`) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | `sh` POSIX (también se admite `bash`) | `install.sh` |
+| Termux (Android) | `sh` POSIX (también se admite `bash`) | `install.sh` |
+| Contenedor Linux de ChromeOS (Crostini) | `sh` POSIX (también se admite `bash`) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | Cualquier plataforma con PowerShell 7+ | PowerShell 7+ (multiplataforma) | `install.ps1` |
 
-Los dos scripts tienen paridad funcional entre sí. `install.sh` requiere un `bash`
-POSIX. `install.ps1` requiere Windows PowerShell 5.1 o posterior, o PowerShell 7+ en
-cualquier plataforma que el propio PowerShell 7 soporte — incluidos macOS y Linux,
-donde es una alternativa a `install.sh`.
+Los dos scripts tienen paridad funcional entre sí. `install.sh` requiere un shell POSIX (`sh`, `dash`, `ash` o `bash`). `install.ps1` requiere Windows PowerShell 5.1 o posterior, o PowerShell 7+ en cualquier plataforma que el propio PowerShell 7 admita, incluidos macOS y Linux, donde es una alternativa a `install.sh`.
 
 ## El único requisito previo: un Python del sistema
 

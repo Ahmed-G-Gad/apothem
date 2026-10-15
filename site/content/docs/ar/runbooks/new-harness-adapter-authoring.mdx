@@ -2,7 +2,7 @@
 title: "تأليف محوّل بيئة جديد"
 description: "دليل تشغيلي لتأليف ونشر محوّل بيئة جديد لـ Apothem."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ python -m apothem.conformity.gate --all .
 - تنفيذ المحوّل
 - صفحة التوثيق في `site/content/docs/harnesses/<slug>.mdx`
 - الاختبارات
-- تسجيل نقطة الدخول في `pyproject.toml`
+- تسجيل نقطة الدخول في `pyproject.toml`، ومدخل `HARNESS_REGISTRY` في `src/apothem/lib/harness_registry_data.py` (مع رفع `SUPPORTED_HARNESS_COUNT` هناك)، والمعرّف في تعداد `harnessId` الخاص بـ`src/apothem/schemas/profile.schema.json`
 - مدخل في سجلّ التغييرات

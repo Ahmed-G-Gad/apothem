@@ -2,7 +2,7 @@
 title: "دليل تشغيل تفعيل Pages"
 description: "دليل تشغيل خطوة بخطوة لإطلاق GitHub Pages مع نطاق مخصص على apothem.ahmedgad.com عبر تهيئة سجل DNS من نوع CNAME."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -174,7 +174,7 @@ gh api /repos/ahmed-g-gad/apothem/pages \
 ### 2.6 تحقَّق من الروابط العميقة
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 المخرجات المتوقعة:
@@ -327,9 +327,9 @@ content-type: text/html; charset=utf-8
 
 | الفشل | التشخيص | التعافي |
 |---|---|---|
-| `gh api .../pages` يُعيد 404 | <bdi>Pages</bdi> غير مُفعَّل على المستودع | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` ثم أعِد §2.1 |
-| `dig` يُعيد فراغًا بعد 30 دقيقة | سجل <bdi>DNS</bdi> غير مُودَع عند المزوِّد | عُد إلى ملحق المزوِّد المطابق؛ وتحقَّق من حفظ السجل (لا مسوَّدة / لا معلَّق)؛ وافحص اللوحة بحثًا عن خطوة `Save` مفقودة |
-| `https_certificate.state: errored` | لا يستطيع <bdi>Pages</bdi> إصدار شهادة | أوقِف النطاق المخصص وأعِد تشغيله في إعدادات <bdi>Pages</bdi>؛ فهذا يعيد تشغيل الإصدار. انتظر حتى 24 ساعة للمحاولة الجديدة |
+| `gh api .../pages` يُعيد 404 | <bdi>Pages</bdi> غير مُفعَّل على المستودع | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` ثم أعِد §2.1 |
+| `dig` يُعيد فراغًا بعد 30 دقيقة | سجل <bdi>DNS</bdi> غير مُودَع لدى المزوِّد | عُد إلى ملحق المزوِّد المطابق؛ وتحقَّق من حفظ السجل (لا مسوَّدة ولا معلَّق)؛ وافحص اللوحة بحثًا عن خطوة `Save` فائتة |
+| `https_certificate.state: errored` | لا يستطيع <bdi>Pages</bdi> إصدار شهادة | أوقِف النطاق المخصص ثم أعِد تشغيله في إعدادات <bdi>Pages</bdi>؛ فهذا يعيد تشغيل الإصدار. انتظر حتى 24 ساعة للمحاولة الجديدة |
 | 404 على رابط عميق بعد البناء | لم يتضمن بناء الموقع الثابت الصفحة | `gh workflow run publish-static-site.yml`؛ وعند الاكتمال تحقَّق من أن `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` يُعيد `success` |
 
 إذا فشل التعافي بعد دورة واحدة من التشخيص المطابق، صعِّد إلى دليل تشغيل

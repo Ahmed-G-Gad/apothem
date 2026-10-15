@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Guardião de laço fechado do pipeline /plan — envolve spec → generate → review e remedia ativamente os achados até a suite ser um todo revisado e com zero achados."
 machineTranslated: true
-sourceHash: "13a1d2a19472e583"
+sourceHash: "6f82709e6c4d40fc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ Um relatório persistente e limitado em `<suite>/_outputs/audit-report-<YYYY-MM-
 
 ## Posição no pipeline
 
-`/plan-audit` é **ortogonal** ao pipeline linear, não uma etapa dentro dele. A sequência linear canônica é `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, apenas suites com arquitetura) `→ /plan-execute`. `/plan-audit` abrange `/plan-spec → /plan-generate → /plan-review` como um único invólucro de laço fechado que pode ser invocado em qualquer ponto: inspeciona o estado e executa apenas as etapas que faltam. É distinto da cadeia de auditoria de fortaleza (entrada em `/code-review`, terminal em `/threat-model-audit`), que audita uma base de código executada em vez de uma suite de plano.
+`/plan-audit` é **ortogonal** ao pipeline linear, e não uma etapa dentro dele. A sequência linear canônica é `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, apenas para suítes com arquitetura) `→ /plan-execute`. `/plan-audit` engloba `/plan-spec → /plan-generate → /plan-review` como um único invólucro de laço fechado que pode ser invocado em qualquer ponto: inspeciona o estado e executa apenas as etapas que faltam, uma vez que exista uma suíte gerada; sem suíte gerada, recusa-se com `Blocked: run /plan-generate first`. Ele é distinto da cadeia de auditoria de fortaleza (que entra em `/code-review` e termina em `/threat-model-audit`), que audita uma base de código executada, e não uma suíte de planejamento.
 
 ## Fases do fluxo de trabalho
 

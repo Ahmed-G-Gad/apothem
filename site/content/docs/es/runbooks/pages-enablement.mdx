@@ -2,7 +2,7 @@
 title: "Runbook de habilitación de Pages"
 description: "Runbook paso a paso para lanzar GitHub Pages con dominio personalizado en apothem.ahmedgad.com mediante la configuración DNS de CNAME."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -174,7 +174,7 @@ mediante la API).
 ### 2.6 Verifica los enlaces profundos
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Salida esperada:
@@ -325,9 +325,9 @@ documentados:
 
 | Fallo | Diagnóstico | Recuperación |
 |---|---|---|
-| `gh api .../pages` devuelve 404 | Pages no está habilitado en el repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` y luego reintenta §2.1 |
-| `dig` devuelve vacío tras 30 minutos | El registro DNS no está confirmado en el proveedor | Vuelve al apéndice del proveedor correspondiente; verifica que el registro esté guardado (no borrador / pendiente); inspecciona el panel por un paso `Save` omitido |
-| `https_certificate.state: errored` | Pages no puede emitir un certificado | Desactiva y reactiva el dominio personalizado en la configuración de Pages; esto vuelve a disparar la emisión. Espera hasta 24 horas para el nuevo intento |
+| `gh api .../pages` devuelve 404 | Pages no está habilitado en el repositorio | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` y luego vuelve a intentar §2.1 |
+| `dig` devuelve vacío tras 30 minutos | El registro DNS no se guardó en el proveedor | Vuelve al apéndice del proveedor correspondiente; verifica que el registro esté guardado (no en borrador ni pendiente); revisa el panel por si se omitió un paso `Save` |
+| `https_certificate.state: errored` | Pages no puede emitir un certificado | Desactiva y vuelve a activar el dominio personalizado en la configuración de Pages; esto vuelve a iniciar la emisión. Espera hasta 24 horas al nuevo intento |
 | 404 en enlace profundo tras la compilación | La compilación del sitio estático no incluyó la página | `gh workflow run publish-static-site.yml`; al completarse, verifica que `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` devuelva `success` |
 
 Si la recuperación falla tras un ciclo del diagnóstico correspondiente,

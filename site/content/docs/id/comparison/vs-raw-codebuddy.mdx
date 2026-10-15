@@ -1,52 +1,36 @@
 ---
 title: "Apothem vs. aturan CodeBuddy mentah"
-description: "Mengapa mengalirkan aturan proyek CodeBuddy melalui Apothem alih-alih menulis tangan berkas .codebuddy/rules per proyek."
+description: "Mengapa mengalirkan aturan proyek CodeBuddy melalui Apothem alih-alih menulis berkas .codebuddy/rules secara manual untuk setiap proyek."
 machineTranslated: true
 sourceHash: "54d7b1eeaef0f675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-CodeBuddy membaca aturan proyek dari `.codebuddy/rules/*.md`. Anda dapat menulis
-berkas-berkas itu dengan tangan, per proyek, selamanya. Apothem mengelola salah
-satunya untuk Anda dan menjaganya konsisten di setiap lingkungan dan setiap
-proyek.
+CodeBuddy membaca aturan proyek dari `.codebuddy/rules/*.md`. Anda dapat menulis berkas-berkas itu dengan tangan, per proyek, selamanya. Adapter codebuddy Apothem merender salah satunya dari profil bersama dan menjaganya tetap konsisten di setiap harness dan setiap proyek. Halaman ini membandingkan pemeliharaan konfigurasi itu secara manual dengan pengelolaannya memakai Apothem.
 
-## Pendekatan mentah
+## Perbandingan upaya
 
-Menulis tangan aturan CodeBuddy berarti:
+| Tugas | Konfigurasi manual mentah | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Salin-tempel disiplin yang sama ke `.codebuddy/rules/` per proyek | Dirender dari satu korpus bersama |
+| Sumber kebenaran | Berkas milik setiap proyek | Satu kohor kanonis |
+| Menjaga aturan tetap selaras lintas harness | Derivasi ulang per alat | Diproyeksikan otomatis |
+| Memperbarui aturan | Sunting tangan di setiap proyek | `apothem update --harness codebuddy --project <path>` |
+| Menghapus konfigurasi | Hapus manual | `apothem uninstall` dengan cadangan berstempel waktu |
 
-- Menyalin-tempel disiplin rekayasa yang sama ke `.codebuddy/rules/` untuk setiap
-  proyek baru.
-- Menjadi tidak sinkron saat disiplin berkembang — tidak ada satu sumber
-  kebenaran.
-- Menurunkan ulang konvensi yang sama untuk Cursor, Windsurf, Claude Code, dan
-  setiap alat lain yang Anda gunakan, karena masing-masing punya permukaan
-  aturannya sendiri.
+## Apa yang dikelola Apothem
 
-## Pendekatan Apothem
+Adapter codebuddy merender aturan bersama ke dalam berkas khusus `<project>/.codebuddy/rules/apothem-rules.md` dan tidak menulis apa pun selain itu. Berkas memori `CODEBUDDY.md` Anda, izin dan server MCP di `.codebuddy/settings.json`, serta berkas aturan lain yang Anda tulis tetap sepenuhnya milik operator — adapter mengenali permukaan tersebut tetapi tidak pernah menyuntingnya. Setiap perubahan pada aturan bersama merender ulang berkas pada `apothem update` berikutnya.
 
-Apothem menyimpan satu kohort aturan kanonis di repositori sumber dan
-memproyeksikannya ke permukaan native setiap lingkungan. Untuk CodeBuddy ia
-menulis:
+## Jalur migrasi
 
-```
-<project>/.codebuddy/rules/apothem-rules.md
-```
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum melakukannya.
+2. Pindahkan disiplin dari berkas `.codebuddy/rules/` yang sudah ada ke dalam korpus bersama.
+3. Jalankan `apothem install --harness codebuddy --project <path>` untuk merender berkas `apothem-rules.md` berdampingan dengan aturan Anda yang tidak tersentuh.
+4. Jalankan `apothem verify --harness codebuddy --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness codebuddy --project <path>` untuk setiap perubahan berikutnya.
 
-| Perhatian | CodeBuddy mentah | Apothem |
-| --- | --- | --- |
-| Sumber kebenaran | Berkas tiap proyek | Satu kohort kanonis |
-| Konsistensi lintas lingkungan | Manual per alat | Diproyeksikan otomatis |
-| Pembaruan | Sunting tangan tiap proyek | `apothem update --harness codebuddy --project <path>` |
-| Aturan operator sendiri | Tercampur dengan disiplin | Tak tersentuh — Apothem menulis berkas khusus |
-| Penghapusan | Hapus manual | `apothem uninstall` dengan cadangan bertanda waktu |
+## Baca berikutnya
 
-## Apa yang tetap milik Anda
-
-Apothem hanya menulis `apothem-rules.md`. Berkas memori `CODEBUDDY.md` Anda,
-izin dan server MCP Anda di `.codebuddy/settings.json`, serta berkas aturan lain
-mana pun yang Anda tulis tetap sepenuhnya milik operator. Adaptor mengenali
-permukaan-permukaan itu tetapi tidak pernah menyuntingnya.
-
-Lihat [halaman lingkungan CodeBuddy](/docs/harnesses/codebuddy) untuk perintah
-siklus hidup lengkap.
+- [Referensi adapter CodeBuddy](/docs/harnesses/codebuddy)
+- [Ikhtisar perbandingan](/docs/comparison)

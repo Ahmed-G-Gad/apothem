@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — Генерирует полный Master Plan Suite из написанного `_spec/spec.md`."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## Входы
 
-Написанный `_spec/spec.md` + `_inputs/handoff-manifest.yml` из `/plan-spec` (или предоставленная оператором проза).
+Написанные `_spec/spec.md` + `_inputs/handoff-manifest.yml` из `/plan-spec` (одна лишь проза отклоняется: выполните `/plan-spec`, чтобы написать `_spec/spec.md`; `--override` обходит шлюз и записывает замечание в PLAN-NOTES.md).
 
 ## Выходы
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## Ниже по потоку
 
-/plan-review или /plan-execute (ниже по потоку)
+/plan-review (далее по потоку); `/plan-execute` — только после появления карточек оценки ревью (или с `--override`)
 
 ## Фазы рабочего процесса
 

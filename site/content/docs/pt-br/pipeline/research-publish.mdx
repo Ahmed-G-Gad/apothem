@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formata o artigo conforme o modelo do veículo e monta o pacote de submissão (suplementar, disponibilidade de dados/código, carta de apresentação, ética/conflito de interesse), com um plano de preprint/DOI."
 machineTranslated: true
-sourceHash: "fbebb0df60083bca"
+sourceHash: "34e0993ca051136c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Formata o artigo conforme o modelo do veículo e monta o pacote de submissão �
 Com argumentos:
 
 ```bash
-/research-publish [path/to/research-suite/]
+/research-publish [--suite-name NAME]
 ```
 
 ## Entradas
@@ -62,7 +62,7 @@ A formatação honra a divulgação em estágios: para um veículo de revisão d
 
 ```bash
 # Montar o pacote de submissão do veículo
-/research-publish path/to/research-suite/
+/research-publish --suite-name <name>
 ```
 
 ## Referências cruzadas

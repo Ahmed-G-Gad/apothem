@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — إصدار الإطلاق"
 description: "أصبح Apothem v1.0.1 متاحًا — ملف تعريف مشترك واحد يُجسَّد في سبع عشرة أداة برمجية، ومسارات تثبيت متعددة، وإصدار موقَّع ومُوثَّق."
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,8 +38,8 @@ sourceHash: "8078642da3930d22"
 - windsurf
 - zed
 
-أضِف أداةً إلى سير عملك، وشغِّل أمرًا واحدًا، وستجد تهيئتك في مكانها. أزِل أداةً،
-فيُلغي <bdi>Apothem</bdi> تثبيتها بنظافة — دون ترك ملفّات يتيمة وراءه.
+أضِف أداةً إلى سير عملك، وشغِّل أمرًا واحدًا، وستجد تهيئتك في مكانها.
+أزِل أداةً، فيُزيل <bdi>Apothem</bdi> الملفّات التي كتبها؛ وتُزال الذاكرة المشتركة والسياقات ومخازن التعلّم مع آخر إطار عمل، بعد أخذ نسخة احتياطية، أمّا <bdi>`plans/`</bdi> فتبقى دائمًا.
 
 ## التثبيت
 
@@ -60,12 +60,13 @@ sourceHash: "8078642da3930d22"
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **مُثبِّت سكربت بخطوة واحدة** — يضع زمن تشغيل مكتفيًا ذاتيًا والمُشغِّل
-   <bdi>`apothem`</bdi> على الـ<bdi>PATH</bdi>:
+3. **مُثبِّت سكربت بخطوة واحدة** — يضع زمن تشغيل مكتفيًا ذاتيًا ومُشغِّل <bdi>`apothem`</bdi> (<bdi>`~/.local/bin/apothem`</bdi> على أنظمة <bdi>POSIX</bdi>، مع تلميح بـ<bdi>PATH</bdi> حين لا يكون ذلك الدليل على <bdi>`PATH`</bdi>؛ و<bdi>`apothem.cmd`</bdi> في <bdi>WindowsApps</bdi> على <bdi>Windows</bdi>):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   يتحقّق السكربت الخاص بـ <bdi>POSIX</bdi> من توقيع <bdi>GPG</bdi> لوسم الإصدار افتراضيًّا، ويُوقف التنفيذ حين لا يكون مفتاح المُشرِف على المشروع في حلقة المفاتيح المحلية. وإلى أن يَنشر المُشرِف بصمة المفتاح (راجع <bdi>`SECURITY.md`</bdi>)، اضبط <bdi>`APOTHEM_VERIFY=checksum`</bdi> للتحقّق من الأرشيف مقابل <bdi>`SHA256SUMS`</bdi> الخاصّ بالإصدار، أو <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> للمضيّ دون التحقّق من الوسم.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -113,13 +114,7 @@ sourceHash: "8078642da3930d22"
 - ‏<bdi>`apothem profile`</bdi> — يفحص ملف التعريف المشترك ويُديره.
 - ‏<bdi>`apothem doctor`</bdi> — يُشخِّص مشكلات البيئة والتهيئة.
 
-ينفِّذ كلُّ محوِّل إطار عمل بروتوكولًا موحَّدًا هو <bdi>`HarnessAdapter`</bdi> —
-‏<bdi>`install`</bdi> و<bdi>`uninstall`</bdi> و<bdi>`is_installed`</bdi>
-و<bdi>`verify`</bdi> — بحيث يتصرّف كلُّ إطار عمل على نحوٍ متوقَّع من مقعد
-المُشغِّل بصرف النظر عن صيغة المُورِّد في الأسفل. اقرأ المزيد عن التصميم في
-[الغوص العميق في معماريّة المحوِّل](/docs/blog/posts/multi-harness-adapter-design)،
-وعن توفيق الصيغ في
-[تقارب الاصطلاحات عبر أطر العمل](/docs/blog/posts/cross-harness-convention-convergence).
+ينفِّذ كلُّ محوِّل إطار عمل بروتوكولًا موحَّدًا هو <bdi>`HarnessAdapter`</bdi> — <bdi>`install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> و<bdi>`is_installed`</bdi> و<bdi>`verify`</bdi> — بحيث يتصرّف كلُّ إطار عمل على نحوٍ متوقَّع من مقعد المُشغِّل بصرف النظر عن صيغة المورّد في الأسفل. اقرأ المزيد عن التصميم في [الغوص العميق في معماريّة المحوِّل](/docs/blog/posts/multi-harness-adapter-design)، وعن توفيق الصيغ في [تقارب الاصطلاحات عبر أطر العمل](/docs/blog/posts/cross-harness-convention-convergence).
 
 ## إلى أين بعد ذلك
 

@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "‏/research-sources — جمع منهجي للمصادر: يُفكّك المواصفة إلى استعلامات فرعية، ويوزّع الاكتشاف على التوازي، ويفرز ويُرتّب، ويستخرج لكل مصدر في سجلّ مصادر مُرتَّب."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "61f80a4f92aed2b6"
 مع الوسائط:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## المدخلات
@@ -64,8 +64,8 @@ sourceHash: "61f80a4f92aed2b6"
 # جمع المصادر لمجموعة بحث مُؤطَّرة
 /research-sources path/to/research-suite/
 
-# توزيع اكتشاف أعمق
-/research-sources path/to/research-suite/ --depth N
+# احصر عدد المصادر المُدرَجة بعد الفرز
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## الإحالات المرجعية

@@ -2,7 +2,7 @@
 title: "Vergleich"
 description: "Wie Sie Apothem gegenüber handgepflegter Harness-Konfiguration und anderen Konfigurationsansätzen bewerten, mit einer Funktionsmatrix und Seiten je Harness."
 machineTranslated: true
-sourceHash: "0291d627acd6aa88"
+sourceHash: "3f105749820c670d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,21 @@ Die Angaben zu vergleichbaren Projekten auf dieser Seite haben den Stand
 jeweiligen Projekts (siehe [Quellen](#quellen)); prüfen Sie sie bei jedem
 Minor-Release erneut.
 
-Andere Werkzeuge lösen angrenzende Teile dieses Problems. Dateibasierte Konfigurationsmanager wie **chezmoi** und **GNU Stow** legen Dateien ab, verlinken sie oder erzeugen sie aus Templates, übersetzen aber niemals eine Quelle in das *native* Konfigurationsschema jedes Harness. Werkzeugübergreifende Sync-CLIs erzeugen aus einer Quelle Dateien je Werkzeug: **rulesync** erzeugt native Konfiguration für 60 Coding-Werkzeuge und zwei offene Standards, und zwar über eine synchronisierte Einheit, die MCP, Ignore-Dateien, Berechtigungen und Review-Checks umfasst; keines davon synchronisiert das Apothem-Manifest. **ruler** verteilt ein `.ruler/`-Verzeichnis auf 33 Ziele, verkettet Regeln in die Anweisungsdatei jedes Werkzeugs und übersetzt MCP-Server, Skills und Subagenten in native Konfiguration. Das Unterscheidungsmerkmal von Apothem ist die **Governance- und Lebenszyklus-Disziplin, die rund um die Synchronisierung ausgeliefert wird**: ein mechanisiertes Konformitäts-Gate, deterministische Pipelines, eine Audit-Festung und ein reversibler, verifizierter Lebenszyklus.
+Andere Werkzeuge lösen angrenzende Teile dieses Problems. Dateibasierte
+Konfigurationsmanager wie **chezmoi** und **GNU Stow** legen Dateien ab, verlinken
+sie oder erzeugen sie aus Templates, übersetzen aber niemals eine Quelle in das
+*native* Konfigurationsschema jedes Harness. Werkzeugübergreifende Sync-CLIs
+erzeugen aus einer Quelle Dateien je Werkzeug: **rulesync** erzeugt native
+Konfiguration für 60 Coding-Werkzeuge und zwei offene Standards, und zwar über eine
+synchronisierte Einheit, die MCP, Ignore-Dateien, Berechtigungen und Review-Checks
+umfasst, von denen keines im Apothem-Manifest synchronisiert wird; Apothem rendert
+seine MCP-Server aus dem Profil über die Materializer der Adapter, die sie
+erzeugen. **ruler** verteilt ein `.ruler/`-Verzeichnis auf 33 Ziele, verkettet
+Regeln in die Anweisungsdatei jedes Werkzeugs und übersetzt MCP-Server, Skills und
+Subagenten in native Konfiguration. Das Unterscheidungsmerkmal von Apothem ist die
+**Governance- und Lebenszyklus-Disziplin, die rund um die Synchronisierung
+ausgeliefert wird**: ein mechanisiertes Konformitäts-Gate, deterministische
+Pipelines, eine Audit-Festung und ein reversibler, verifizierter Lebenszyklus.
 
 | Fähigkeit | Apothem | Dateibasierte Konfigurationsmanager (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |

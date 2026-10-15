@@ -2,7 +2,7 @@
 title: "単独メンテナーの PR マージ儀式"
 description: "メンテナーが自分のプルリクエストを直接マージできる場合と、承認を要求し管理者にもそれを強制するブランチ保護のもとでの儀式。"
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,7 +86,7 @@ python scripts/dev/admin_merge.py <pr-number>
 儀式の各呼び出しは、オペレーターが事後に検査できる 3 つの永続的な面に記録されます。
 
 - **PR のマージメタデータ。** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` は、マージのアクター、マージのタイムスタンプ、squash コミットの SHA を返します。`mergedBy` のアクターは、手順 3 を実行したメンテナーのアイデンティティと一致します。
-- **リポジトリの監査ログ。** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` は、マージ後の CI 実行をマージコミットと関連付けます。リポジトリの保護ルール監査ログ（Settings → Branches の UI を介した `gh api /repos/<owner>/<repo>/branches/main/protection` の履歴）は、マージウィンドウを挟む手順 2 と手順 4 の切り替えを示します。
-- **メンテナーの git 履歴。** `git log main --merges --first-parent` は、`main` 上のすべての squash マージコミットを、コミットの件名に含まれる対応する PR 番号（`gh pr merge --squash` のデフォルトによる `(#<pr-number>)` サフィックス）とともに一覧表示し、オペレーターが過去のあらゆる着地を、その PR と儀式の呼び出しまで遡れるようにします。
+- **リポジトリの監査ログ。** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` は、マージ後の CI 実行をマージコミットと関連付けます。リポジトリの保護ルールの監査ログ（Settings → Branches の UI を介した `gh api /repos/<owner>/<repo>/branches/main/protection` の履歴）は、マージのウィンドウを挟む手順 2 と手順 4 の切り替えを示します。
+- **メンテナーの git 履歴。** `git log main --first-parent --oneline` は、`main` 上のすべての squash マージコミットを、コミットの件名に含まれる対応する PR 番号（`gh pr merge --squash` の既定による `(#<pr-number>)` の接尾辞）とともに一覧表示し、オペレーターが過去のあらゆる着地を、その PR と儀式の呼び出しまで遡れるようにします。
 
-`scripts/dev/admin_merge.py` がエントリーポイントである場合、その非対話ログ（stdout）は、3 つの保護 API 呼び出しとマージ API 呼び出しを順番に示します。ラッパーを `tee` にパイプすれば、GitHub 側のログ保持に依存することなく、実行ごとの監査フラグメントを取得できます。
+`scripts/dev/admin_merge.py` がエントリーポイントである場合、その非対話ログ（stderr）は、3 つの保護 API 呼び出しとマージ API 呼び出しを順番に示します。stderr を `tee` にパイプ（`2>&1 | tee`）すれば、GitHub 側のログ保持に依存することなく、実行ごとの監査フラグメントを取得できます。

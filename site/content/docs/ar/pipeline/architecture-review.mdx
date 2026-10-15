@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "‏/architecture-review — مراجعة سلامة المعمارية مقابل مُنتَج التصميم في `_inputs/design.md`."
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "e17f69d6a67eaf55"
 مع وسائط:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## المدخلات
@@ -29,7 +29,7 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## المخرجات
 
-نتائج المعمارية + <bdi>REPORT.md</bdi>
+نتائج المعمارية في <bdi>`_inputs/architecture-review-findings.md`</bdi>
 
 ## في اتجاه المصبّ
 
@@ -37,22 +37,14 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## مراحل سير العمل
 
-يتّبع الأمر سير العمل المعياري لخط أنابيب <bdi>`/plan`</bdi>:
-
-1. **تحميل السياق** — يقرأ حزمة الخطة والقواعد وعقد الاستئناف.
-2. **التحقّق من المتطلبات المسبقة** — يؤكّد اكتمال مراحل التبعية.
-3. **تنفيذ المهام** — يؤدّي مهمّة الأمر.
-4. **التحقّق من المخرجات** — يؤكّد وجود جميع المخرجات المُعلَنة واجتيازها بوّابات الجودة.
-5. **تحديث <bdi>PROGRESS.md</bdi>** — يسجّل المخرجات المُتحقَّق منها في سجلّ مخرجات المرحلة.
-6. **إصدار <bdi>REPORT.md</bdi>** — يُسجَّل إثبات الإفراج لبوّابة ما قبل الإصدار.
+يُنفِّذ الأمر خمس مراحل للتدقيق: استيعاب المدخلات، وجولة التتبّع من التصميم إلى الشيفرة، وتدقيق سلامة حدود الطبقات، ومسح الاقتران بين الحزم، وإصدار النتائج مع بوابة التحقّق.
 
 ## أنماط الفشل
 
 | العَرَض | السبب | الاستعادة |
 |---------|-------|----------|
-| متطلب مسبق غير مكتمل | لم تنتهِ المرحلة المعتمَد عليها | أكمل المرحلة في اتجاه المنبع أولًا |
-| بوّابة الجودة FAIL | المُخرَج لا يفي بالمعايير | أصلح المُخرَج وأعد التشغيل |
-| ملف إدخال مفقود | ملف حزمة الخطة غائب | شغّل <bdi>`/plan-generate`</bdi> لإنشائه |
+| بوابة الجودة <bdi>FAIL</bdi> | المُخرَج لا يفي بالمعايير | أصلِح المُخرَج وأعِد التشغيل |
+| ملف إدخال مفقود | قِطعة التصميم <bdi>`_inputs/design.md`</bdi> غائبة | شغِّل <bdi>`/plan-design`</bdi> لإنشائها |
 
 ## أمثلة
 
@@ -60,8 +52,8 @@ sourceHash: "e17f69d6a67eaf55"
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## إحالات مرجعية

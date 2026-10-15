@@ -1,42 +1,40 @@
 ---
 title: "`CLAUDE.md`"
-description: "始终加载的生态系统配置，为每次交互提供基线上下文，包含七个部分，涵盖计划套件、身份、目录、治理层级、指令、强制要求和注册表。"
+description: "始终加载的项目配置，为每次交互提供基线上下文：以散文章节涵盖 AI 表面规范、运行循环、用途与纪律，并将横切性强制规定落实在规则集合中。"
 machineTranslated: true
 sourceHash: "d6a8ebfda25b9f38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`CLAUDE.md` 是始终加载的生态系统配置。宿主
-harness运行时会在每次交互时加载它，因此其内容是
-其他每个工件所扩展的*基线上下文*。
+`CLAUDE.md` 是始终加载的项目配置。宿主工具会在每次交互时加载它，因此其内容即为其他每个工件所扩展的*基线上下文*。它与 `AGENTS.md`（规范的智能体指令表面）以及 `.github/copilot-instructions.md` 保持一致，二者镜像的是同样的纪律。
 
-## 各部分
+## 所含内容
 
-| 部分 | 用途 |
-|---------|---------|
-| §1 计划套件 | 命名主计划套件模板和八个 `/plan-<stage>` 命令 |
-| §2 认知身份与软件架构 | 声明高级软件架构师角色和创造性姿态 |
-| §3 工件目录 | 各类别的磁盘根目录（规则、命令、技能、委托工作者等） |
-| §4 严肃度分级治理 | 四层级分级视角（EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH） |
-| §5 操作指令 | 问题解决、战略发现、沟通框架 |
-| §6 横切强制要求 | CM-N 注册表（CM-1 至 CM-28） |
-| §7 注册表 | 命令、规则、委托工作者、钩子、技能、演进、空类别的子注册表 |
+项目 `CLAUDE.md` 以散文章节的形式撰写，涵盖 AI 表面规范、计划 → 加固 → 交付的运行循环、项目宗旨与源码布局、计划 / 发布 / 文件头纪律、歧义处理，以及编码与工具适配器约定。它说明*项目是什么*以及*如何在其中工作*；它不重述治理强制要求，这些要求位于规则集合中，并以规则文件的形式呈现给运行时。
+
+| 治理表面 | 所在位置 |
+|---|---|
+| 横切强制要求（CM-N） | `src/apothem/rules/operational-mandates.md` 以及各强制要求对应的规则文件 |
+| 十五项生产强制要求（M-N） | 各强制要求对应的规则文件（`definitiveness.md`、`pre-emission-gate.md`、`production-ready-prs.md`，……） |
+| 认知身份与架构姿态 | `src/apothem/rules/cognitive-identity.md` |
+| 按严肃度分级的治理 | 各规则自身的 *Seriousness Scaling* 章节 |
+| `/plan` 流水线 | `/plan-*` 命令与 `src/apothem/skills/plan-suite/` |
+| 工件目录 | 源码布局——`rules/`、`commands/`、`skills/`、`agents/`、`hooks/` |
 
 ## 强制要求标识符约定
 
-三个前缀承载不同的含义：
+三个前缀各自承载不同的含义：
 
-- **CM-N** — 配置强制要求，在规则集（`src/apothem/rules/operational-mandates.md`
-  及各强制规定对应的规则文件）中定义。
-- **TM-N** — 模板强制要求，在
-  `src/apothem/skills/plan-suite/master-template.md` §4 中定义。
-- **CP-N** — 核心原则，在同一模板的 §6 中定义。
+- **CM-N** —— 配置强制要求，定义于规则集合中
+  （`src/apothem/rules/operational-mandates.md` 以及各强制要求对应的规则文件）。
+- **TM-N** —— 模板强制要求，定义于
+  `src/apothem/skills/plan-suite/master-template.md` §4。
+- **CP-N** —— 核心原则，定义于同一模板的 §6。
 
-计划套件模板是规范的 TM/CP 注册表；`/plan`
-流水线各阶段通过该文件解析交叉引用。
+计划套件模板是规范的 TM/CP 注册表；`/plan` 流水线的各阶段通过该文件解析交叉引用。
 
 ## 另请参阅
 
-- [规则](/docs/reference/rules) —— 将 CM-1 至 CM-28 操作化的规则文件。
-- [命令](/docs/reference/commands) —— §1 计划套件锚点命名的 `/plan` 流水线阶段。
-- [钩子](/docs/reference/hooks) —— 强制执行 CM-7、CM-22 和 CM-24 的钩子层。
+- [规则](/docs/reference/rules) —— 将横切强制要求落实为操作的规则文件。
+- [命令](/docs/reference/commands) —— `/plan` 流水线的各阶段。
+- [钩子](/docs/reference/hooks) —— 强制执行产品一致性、约定与上下文管理等强制要求的钩子层。

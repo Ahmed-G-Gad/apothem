@@ -1,14 +1,14 @@
 ---
 title: "Registre du portail de pré-émission — Vérification obligatoire à quinze barres"
-description: "Vérification de conformité obligatoire à quinze barres exécutée avant l'émission de portée significative, avec correspondances action-en-cas-d'échec et schéma de preuve de release."
+description: "Vérification de conformité obligatoire à quinze barres, exécutée avant l'émission de portée significative, avec les correspondances action-en-cas-d'échec et le schéma du résultat du portail."
 machineTranslated: true
-sourceHash: "be81c64b8d309fc6"
+sourceHash: "69b0b6994504621b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registre canonique du portail de pré-émission à quinze barres.** Ce document porte le tableau complet à quinze barres du portail et le bloc YAML du schéma de preuve de release ; le tableau substantiel et le schéma vivent ici, opérationnalisés par `src/apothem/rules/pre-emission-gate.md`.
+> **Registre canonique du portail de pré-émission à quinze barres.** Ce document porte le tableau complet à quinze barres du portail et le bloc YAML du schéma du résultat du portail ; le tableau substantiel et le schéma vivent ici, opérationnalisés par `src/apothem/rules/pre-emission-gate.md`.
 
-Avant toute émission d'artefact de portée significative (selon le seuil trivial vs non trivial dans `site/content/docs/governance/outward-conformity-registry.mdx` §1), exécute le portail de pré-émission à quinze barres. Mécanise via les hooks PreToolUse là où c'est possible (les greps mécaniques dans `src/apothem/conformity/*-grep.py` orchestrés par `src/apothem/conformity/gate.py`) ; raisonne là où la mécanisation est impossible. **L'échec d'une seule barre bloque l'émission ; révise jusqu'à ce que chaque barre passe ; émets avec la preuve de release du portail enregistrée.**
+Avant toute émission d'artefact de portée significative (selon le seuil trivial / non trivial défini dans `site/content/docs/governance/outward-conformity-registry.mdx` §1), exécute le portail de pré-émission à quinze barres. Mécanise via les hooks PreToolUse lorsque c'est possible (les greps mécaniques dans `src/apothem/conformity/*-grep.py`, orchestrés par `src/apothem/conformity/gate.py`) ; raisonne là où la mécanisation est impossible. **L'échec d'une seule barre bloque l'émission ; révise jusqu'à ce que chaque barre passe ; émets avec le résultat du portail consigné.**
 
 | # | Barre | Type de vérification | Échec → action |
 | - | --- | ---------- | ---------------- |
@@ -20,15 +20,15 @@ Avant toute émission d'artefact de portée significative (selon le seuil trivia
 | 6 | M6 expertise | raisonnée (section des lacunes mises au jour présente) | mettre les lacunes au jour ; citer |
 | 7 | M7 annotation d'options | mécanique (l'ensemble d'options porte le marqueur de recommandation) | annoter |
 | 8 | M8 caractère définitif | mécanique (grep du vocabulaire évasif) | transformer les formulations évasives en conditionnels |
-| 9 | M9 levier visuel | raisonnée (un diagramme existe là où c'est structurel) | créer / actualiser le diagramme |
+| 9 | M9 levier visuel | mixte (mécanique : date de vérification du diagramme ; raisonnée : un diagramme existe là où c'est structurel) | créer / actualiser le diagramme |
 | 10 | M10 liaison bidirectionnelle | mécanique (grep de réciprocité des liaisons) | fermer les demi-arêtes |
 | 11 | M11 sprints agiles | raisonnée (appareil de sprint instancié) | restructurer en sprints |
 | 12 | M12 rapports de phase et disposition | mécanique (grep de sortie orpheline) + raisonnée | rédiger la synthèse ; relocaliser |
 | 13 | M13 artisanat du code | mécanique (lint / formatage / vérification de types ; grep de bare-except, de nombre magique, de code commenté) | réviser |
-| 14 | M14 systémicité | raisonnée (déclare amont / aval / pairs / applicateurs) | déclarer ; indexer |
+| 14 | M14 systémicité | mixte (mécanique : provenance du producteur ; raisonnée : déclare amont / aval / pairs / applicateurs) | déclarer ; indexer |
 | 15 | M15 prêt pour la production | mécanique (grep de production-ready-pr) + raisonnée | ajouter tests / documentation / CHANGELOG |
 
-## 1. Schéma de preuve de release
+## 1. Schéma du résultat du portail
 
 Chaque exécution du portail enregistre le résultat dans la trace de travail de l'artefact (un commentaire masqué, un bloc de métadonnées, un fichier de journal d'émission distinct — ce que permettent les conventions de l'hôte) :
 
@@ -58,4 +58,4 @@ conformity-attestation:
   date: <ISO-8601>
 ```
 
-Les marques `n/a` sont explicites et raisonnées — jamais des omissions silencieuses. Le champ `ecosystem-version` ancre la preuve de release à un état reproductible de l'écosystème de portée utilisateur (le commit git de l'arbre des sources d'Apothem actif au moment de l'exécution du portail — p. ex. le checkout `~/.claude/` pour l'adaptateur Claude Code), afin que de futurs audits puissent rejouer le portail contre les mêmes corps de règles.
+Les marques `n/a` sont explicites et raisonnées — jamais des omissions silencieuses. Le champ `ecosystem-version` ancre le résultat du portail à un état reproductible de l'écosystème à portée utilisateur (le commit git de l'arbre source d'Apothem actif lors de l'exécution du portail — par exemple le checkout `~/.claude/` pour l'adaptateur Claude Code), afin que les audits futurs puissent rejouer le portail sur les mêmes corps de règles.

@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Ejecuta el estudio diseñado y captura datos en bruto con procedencia completa, junto con un manifiesto de reproducibilidad (entorno, semilla, protocolo, fijación de versiones)."
 machineTranslated: true
-sourceHash: "43edb7c712cda071"
+sourceHash: "669b49f8909599c4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Ejecuta el estudio o experimento diseñado y captura datos en bruto con proceden
 Con argumentos:
 
 ```bash
-/research-experiment [path/to/research-suite/]
+/research-experiment [--suite-name NAME]
 ```
 
 ## Entradas
@@ -62,7 +62,7 @@ La ejecución realiza una pasada piloto para calibrar presupuestos y rangos, y l
 
 ```bash
 # Ejecuta el estudio diseñado y captura datos en bruto reproducibles
-/research-experiment path/to/research-suite/
+/research-experiment --suite-name <name>
 ```
 
 ## Referencias cruzadas

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,15 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف
-الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد،
-والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر
-إلى مهارات لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في
-<bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى
-<bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط
-حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. لتفعيله، أضف
-إلى <bdi>`settings.json`</bdi> مدخل <bdi>`statusLine`</bdi> من النوع
-<bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>.
+يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد، والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر إلى مهارات، لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في <bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى <bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. ولتفعيله، أضف إلى <bdi>`settings.json`</bdi> مدخلَ <bdi>`statusLine`</bdi> من النوع <bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>. تعمل القيمة <bdi>`commandWindows`</bdi> في المقتطف على Windows، وتذكر المُفسِّر دون علامات اقتباس. وحين يحتوي مسار المُفسِّر على مسافة، يكتب التثبيت في تلك القيمة صيغة Windows 8.3 القصيرة له إن توفّرت على وحدة التخزين. وتحتفظ مدخلات الخطّافات في <bdi>`settings.json`</bdi> بالمسار الكامل.
 
 **الملفات المكتوبة:** <bdi>`settings.json`</bdi>، وكتلة <bdi>Apothem</bdi> في
 <bdi>`CLAUDE.md`</bdi>، و<bdi>`agents/`</bdi>، و<bdi>`rules/`</bdi>،

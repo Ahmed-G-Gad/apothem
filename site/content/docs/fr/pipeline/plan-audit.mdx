@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Gardien en boucle fermée du pipeline /plan — enveloppe spec → generate → review et remédie activement aux constats jusqu'à ce que la suite soit un tout revu, sans aucun constat."
 machineTranslated: true
-sourceHash: "13a1d2a19472e583"
+sourceHash: "6f82709e6c4d40fc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ Un rapport persistant et borné dans `<suite>/_outputs/audit-report-<YYYY-MM-DD>
 
 ## Position dans le pipeline
 
-`/plan-audit` est **orthogonal** au pipeline linéaire, et non une étape en son sein. La séquence linéaire canonique est `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditionnelle, suites porteuses d'architecture uniquement) `→ /plan-execute`. `/plan-audit` englobe `/plan-spec → /plan-generate → /plan-review` comme un unique enveloppeur en boucle fermée pouvant être invoqué à tout moment : il inspecte l'état et n'exécute que les étapes manquantes. Il se distingue de la chaîne d'audit de forteresse (entrée à `/code-review`, terminale à `/threat-model-audit`), qui audite une base de code exécutée plutôt qu'une suite de planification.
+`/plan-audit` est **orthogonal** au pipeline linéaire, et non une étape en son sein. La séquence linéaire canonique est `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditionnelle, réservée aux suites porteuses d'architecture) `→ /plan-execute`. `/plan-audit` englobe `/plan-spec → /plan-generate → /plan-review` comme un unique enveloppeur en boucle fermée, invocable à tout moment : il inspecte l'état et n'exécute que les étapes manquantes lorsqu'une suite générée existe ; sans suite générée, il refuse avec `Blocked: run /plan-generate first`. Il se distingue de la chaîne d'audit de forteresse (entrée à `/code-review`, terminale à `/threat-model-audit`), qui audite une base de code exécutée plutôt qu'une suite de planification.
 
 ## Phases du flux de travail
 

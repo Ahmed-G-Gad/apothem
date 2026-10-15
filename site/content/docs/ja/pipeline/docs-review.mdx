@@ -2,7 +2,7 @@
 title: "/docs-review"
 description: "/docs-review——散文規約と十次元品質基準に照らしたドキュメントレビューパス。"
 machineTranslated: true
-sourceHash: "123fb8b2a0b00354"
+sourceHash: "96830aacc7564a81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "123fb8b2a0b00354"
 引数付き：
 
 ```bash
-/docs-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/docs-review [path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]
 ```
 
 ## 入力
@@ -29,7 +29,7 @@ sourceHash: "123fb8b2a0b00354"
 
 ## 出力
 
-ドキュメントの発見事項 + REPORT.md
+ドキュメントの所見（`_inputs/docs-review-findings.md`）
 
 ## 下流
 
@@ -37,22 +37,14 @@ sourceHash: "123fb8b2a0b00354"
 
 ## ワークフローのフェーズ
 
-このコマンドは標準の `/plan` パイプラインワークフローに従います。
-
-1. **コンテキストの読み込み** — プランスイート、ルール、再開コントラクトを読み取ります。
-2. **前提条件の検証** — 依存フェーズが完了していることを確認します。
-3. **タスクの実行** — コマンドのミッションを遂行します。
-4. **出力の検証** — 宣言されたすべての出力が存在し、品質ゲートを通過することを確認します。
-5. **PROGRESS.md の更新** — 検証済みの出力をフェーズ出力レジストリに記録します。
-6. **REPORT.md の発行** — 事前発出ゲートのリリース証跡が記録されます。
+このコマンドは 5 つのフェーズを実行します。入力の取り込み、ページごとの走査、所見ごとのトリアージ、所見の出力、そして検証ゲートです。
 
 ## 失敗モード
 
 | 症状 | 原因 | 復旧 |
 |---------|-------|----------|
-| 前提条件が未完了 | 依存フェーズが終わっていない | まず上流のフェーズを完了させる |
 | 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
-| 入力ファイルが欠落 | プランスイートのファイルが存在しない | `/plan-generate` を実行して作成する |
+| 入力ファイルが欠落 | 指定したパスで文書ファイルに到達できない | Markdown ページを含むリポジトリルートまたはドキュメントのソースディレクトリを渡す |
 
 ## 例
 
@@ -60,8 +52,8 @@ sourceHash: "123fb8b2a0b00354"
 # Dry-run to preview what would happen
 /docs-review --dry-run
 
-# Execute against a named plan suite
-/docs-review path/to/plan-suite/
+# Execute against a repository root
+/docs-review path/to/repo/
 ```
 
 ## 相互参照

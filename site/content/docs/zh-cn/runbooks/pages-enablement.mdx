@@ -2,7 +2,7 @@
 title: "Pages 启用操作手册"
 description: "通过 CNAME DNS 配置在 apothem.ahmedgad.com 上以自定义域名启用 GitHub Pages 的分步操作手册。"
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -155,7 +155,7 @@ gh api /repos/ahmed-g-gad/apothem/pages \
 ### 2.6 验证深层链接
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 预期输出：
@@ -290,10 +290,10 @@ Pages 启用流程有四种有记录的故障模式：
 
 | 故障 | 诊断 | 恢复 |
 |---|---|---|
-| `gh api .../pages` 返回 404 | 仓库上未启用 Pages | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` 然后重试 §2.1 |
-| `dig` 在 30 分钟后仍返回空 | DNS 记录未在提供商处提交 | 返回匹配的提供商附录；验证记录已保存（而非草稿 / 待定）；检查面板是否漏掉了某个 `Save` 步骤 |
-| `https_certificate.state: errored` | Pages 无法签发证书 | 在 Pages 设置中将自定义域名关闭再打开；这会重新触发签发。新尝试最多等待 24 小时 |
-| 构建后深层链接 404 | 静态站点构建未纳入该页面 | `gh workflow run publish-static-site.yml`；完成后验证 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success` |
+| `gh api .../pages` 返回 404 | 仓库上未启用 Pages | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow`，然后重试 §2.1 |
+| `dig` 在 30 分钟后返回空结果 | DNS 记录未在提供商处提交 | 返回匹配的提供商附录；验证记录已保存（而非草稿／待定）；检查面板中是否漏掉了 `Save` 步骤 |
+| `https_certificate.state: errored` | Pages 无法签发证书 | 在 Pages 设置中先关闭再打开自定义域名；这会重新触发签发。新一次尝试最多等待 24 小时 |
+| 构建后深层链接 404 | 静态站点构建未包含该页面 | `gh workflow run publish-static-site.yml`；完成后，验证 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success` |
 
 如果在执行一轮匹配诊断后恢复仍然失败，请上升到发布恢复操作手册
 （强制推送的全新历史可能使 Pages 配置处于不一致状态）。

@@ -2,7 +2,7 @@
 title: "Positionnement"
 description: "Comprendre Apothem comme une gouvernance de ratification d'artefacts dotée de quinze mandats, d'une discipline d'entrée par canal canonique et d'une architecture créative d'identité cognitive pour le travail piloté par un assistant."
 machineTranslated: true
-sourceHash: "f3d0b1757dd0e823"
+sourceHash: "e6a2bf3e43924684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +92,7 @@ Le registre de quinze mandats est la surface canonique de gouvernance de l'axe e
 
 ### M4 — Auto-application — portail de pré-émission
 
-**Portée.** Chaque artefact passe un **portail de pré-émission à quinze barres** avant l'émission. Les barres mécaniques (M5, M7, M8, M10, M13) portent des matchers exécutables dans `src/apothem/conformity/*-grep.py`, orchestrés par `src/apothem/conformity/gate.py`. Les barres M3, M12 et M15 sont en partie mécaniques : des matchers exécutables couvrent une partie de chaque barre, et l'assistant opérant évalue le reste. Les barres raisonnées (M1, M2, M4, M6, M9, M11, M14) sont évaluées par l'assistant opérant et consignées dans le bloc de vérification. La barre M4 vérifie elle-même que le bloc de vérification est présent dans la trace de travail de l'artefact. L'échec d'une seule barre bloque l'émission ; l'itération se poursuit jusqu'à ce que chaque barre passe.
+**Portée.** Chaque artefact passe un **portail de pré-émission à quinze barres** avant son émission. Les barres mécaniques (M5, M7, M8, M10, M13) portent des matchers exécutables dans `src/apothem/conformity/*-grep.py`, orchestrés par `src/apothem/conformity/gate.py`. Les barres M3, M9, M12, M14 et M15 sont en partie mécaniques : des matchers exécutables couvrent une partie de chaque barre, et l'assistant opérant évalue le reste. Les barres raisonnées (M1, M2, M4, M6, M11) n'ont pas de matcher ; elles sont évaluées par l'assistant opérant et consignées dans le bloc de vérification. La barre M4 vérifie elle-même que le bloc de vérification est présent dans la trace de travail de l'artefact. L'échec d'une seule barre bloque l'émission ; l'itération se poursuit jusqu'à ce que chaque barre passe.
 
 **Spécification canonique.** `src/apothem/rules/pre-emission-gate.md` (avec la table complète des barres à `src/apothem/rules/pre-emission-gate-bars.md`).
 

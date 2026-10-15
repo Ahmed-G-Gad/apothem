@@ -2,7 +2,7 @@
 title: "Perbandingan"
 description: "Cara mengevaluasi Apothem dibandingkan konfigurasi harness yang dipelihara secara manual dan pendekatan konfigurasi lainnya, dengan matriks fitur dan halaman per harness."
 machineTranslated: true
-sourceHash: "0291d627acd6aa88"
+sourceHash: "3f105749820c670d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Fakta tentang alat sejawat di halaman ini berlaku per **2026-10-02**, dibaca
 dari README atau dokumentasi milik masing-masing proyek (lihat
 [Sumber](#sumber)); periksa ulang fakta tersebut pada setiap rilis minor.
 
-Alat lain menyelesaikan irisan-irisan yang berdekatan dari masalah ini. Pengelola konfigurasi berbasis berkas seperti **chezmoi** dan **GNU Stow** menempatkan, menautkan, atau membuat templat berkas, tetapi tidak pernah menerjemahkan satu sumber ke dalam skema konfigurasi *native* setiap harness. CLI sinkronisasi lintas-alat menghasilkan berkas per alat dari satu sumber: **rulesync** menghasilkan konfigurasi native untuk 60 alat pengodean dan dua standar terbuka, di seluruh unit tersinkron yang menambahkan MCP, berkas ignore, izin, dan pemeriksaan tinjauan, yang tidak satu pun disinkronkan oleh manifest Apothem; **ruler** mendistribusikan satu direktori `.ruler/` ke 33 target, menggabungkan aturan ke dalam berkas instruksi setiap alat dan menerjemahkan server MCP, skill, dan subagen ke dalam konfigurasi native. Pembeda Apothem adalah **disiplin tata kelola dan siklus hidup yang disertakan di sekitar sinkronisasi**: gerbang konformitas yang dimekanisasi, pipeline deterministik, benteng audit, dan siklus hidup terverifikasi yang dapat dibalik.
+Alat lain menyelesaikan irisan-irisan yang berdekatan dari masalah ini. Pengelola konfigurasi berbasis berkas seperti **chezmoi** dan **GNU Stow** menempatkan, menautkan, atau membuat templat berkas, tetapi tidak pernah menerjemahkan satu sumber ke dalam skema konfigurasi *native* setiap harness. CLI sinkronisasi lintas-alat menghasilkan berkas per alat dari satu sumber: **rulesync** menghasilkan konfigurasi native untuk 60 alat pengodean dan dua standar terbuka, di seluruh unit tersinkron yang menambahkan MCP, berkas ignore, izin, dan pemeriksaan tinjauan, yang tidak satu pun disinkronkan oleh manifest Apothem; Apothem merender server MCP-nya dari profil melalui materializer adapter yang menulisnya. **ruler** mendistribusikan satu direktori `.ruler/` ke 33 target, menggabungkan aturan ke dalam berkas instruksi setiap alat dan menerjemahkan server MCP, skill, dan subagen ke dalam konfigurasi native. Pembeda Apothem adalah **disiplin tata kelola dan siklus hidup yang disertakan di sekitar sinkronisasi**: gerbang konformitas yang dimekanisasi, pipeline deterministik, benteng audit, dan siklus hidup terverifikasi yang dapat dibalik.
 
 | Kemampuan | Apothem | Pengelola konfigurasi berkas (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |

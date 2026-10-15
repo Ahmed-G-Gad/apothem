@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review — Revisión de integridad arquitectónica frente al artefacto de diseño en `_inputs/design.md`."
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Revisión de integridad arquitectónica frente al artefacto de diseño en `_inpu
 Con argumentos:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## Entradas
@@ -29,7 +29,7 @@ Repositorio anfitrión + `_inputs/design.md`
 
 ## Salidas
 
-Hallazgos de arquitectura + REPORT.md
+Hallazgos de arquitectura en `_inputs/architecture-review-findings.md`
 
 ## Aguas abajo
 
@@ -37,22 +37,14 @@ La etapa de revisión de arquitectura de la Secuencia de Revisión de Auditoría
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
-
-1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
-2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
-3. **Ejecutar tareas** — Cumple la misión del comando.
-4. **Verificar salidas** — Confirma que todas las salidas declaradas existen y pasan las compuertas de calidad.
-5. **Actualizar PROGRESS.md** — Registra las salidas verificadas en el Registro de Salidas de Fase.
-6. **Emitir REPORT.md** — Queda registrada la prueba de liberación de la compuerta de pre-emisión.
+El comando ejecuta cinco fases de auditoría: ingesta de entradas, recorrido de trazabilidad del diseño al código, auditoría de integridad de los límites de capa, barrido de acoplamiento entre paquetes y emisión de hallazgos con la puerta de validación.
 
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
-| Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
-| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
+| Falta un archivo de entrada | Falta el artefacto de diseño `_inputs/design.md` | Ejecuta `/plan-design` para crearlo |
 
 ## Ejemplos
 
@@ -60,8 +52,8 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## Referencias cruzadas

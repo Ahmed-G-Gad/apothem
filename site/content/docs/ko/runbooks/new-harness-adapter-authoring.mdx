@@ -2,7 +2,7 @@
 title: "새 도구 어댑터 작성"
 description: "새 Apothem 도구 어댑터를 작성하고 게시하기 위한 런북."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ python -m apothem.conformity.gate --all .
 - 어댑터 구현
 - `site/content/docs/harnesses/<slug>.mdx`의 문서 페이지
 - 테스트
-- `pyproject.toml`의 진입점 등록
+- `pyproject.toml`의 진입점 등록, `src/apothem/lib/harness_registry_data.py`의 `HARNESS_REGISTRY` 항목(그 안의 `SUPPORTED_HARNESS_COUNT`를 올림), 그리고 `src/apothem/schemas/profile.schema.json`의 `harnessId` 열거형에 있는 ID
 - 변경 로그 항목

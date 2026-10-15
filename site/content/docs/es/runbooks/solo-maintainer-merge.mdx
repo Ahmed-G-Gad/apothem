@@ -2,7 +2,7 @@
 title: "Ceremonia de fusión de PR para mantenedor único"
 description: "Cuándo el mantenedor puede fusionar directamente su propia pull request, y la ceremonia para una protección de rama que exige una aprobación y la aplica a los administradores."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,7 +86,7 @@ Si el repositorio incorpora a un segundo mantenedor, retira la ceremonia: el flu
 Cada invocación de la ceremonia queda registrada en tres superficies duraderas que un operador puede inspeccionar a posteriori:
 
 - **Los metadatos de fusión de la PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` devuelve el actor de la fusión, la marca de tiempo de la fusión y el SHA del commit de squash. El actor `mergedBy` coincide con la identidad del mantenedor que ejecutó el paso 3.
-- **El registro de auditoría del repositorio.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlaciona la ejecución de CI posterior a la fusión con el commit de fusión; el registro de auditoría de las reglas de protección del repositorio (historial de `gh api /repos/<owner>/<repo>/branches/main/protection` a través de la interfaz Settings → Branches) muestra las alternancias de los pasos 2 y 4 delimitando la ventana de fusión.
-- **El historial de git del mantenedor.** `git log main --merges --first-parent` lista cada commit de squash-merge en `main` con el número de PR correspondiente en el asunto del commit (sufijo `(#<pr-number>)` según el comportamiento predeterminado de `gh pr merge --squash`), lo que permite al operador rastrear cualquier integración pasada hasta su PR y su invocación de la ceremonia.
+- **El registro de auditoría del repositorio.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlaciona la ejecución de CI posterior a la fusión con el commit de fusión; el registro de auditoría de las reglas de protección del repositorio (el historial de `gh api /repos/<owner>/<repo>/branches/main/protection`, a través de la interfaz Settings → Branches) muestra las alternancias de los pasos 2 y 4 que delimitan la ventana de fusión.
+- **El historial de git del mantenedor.** `git log main --first-parent --oneline` enumera cada commit de squash-merge en `main` con el número de PR correspondiente en el asunto del commit (sufijo `(#<pr-number>)` según el valor predeterminado de `gh pr merge --squash`), lo que permite al operador rastrear cualquier integración anterior hasta su PR y su invocación de la ceremonia.
 
-Cuando `scripts/dev/admin_merge.py` es el punto de entrada, su registro no interactivo (stdout) nombra en secuencia las tres llamadas a la API de protección y la llamada a la API de fusión; canalizar la salida del envoltorio a `tee` captura un fragmento de auditoría por ejecución sin depender de la retención de registros del lado de GitHub.
+Cuando `scripts/dev/admin_merge.py` es el punto de entrada, su registro no interactivo (stderr) nombra en secuencia las tres llamadas a la API de protección y la llamada a la API de fusión; canalizar su stderr a `tee` (`2>&1 | tee`) captura un fragmento de auditoría por ejecución sin depender de la retención de registros del lado de GitHub.

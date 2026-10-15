@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "d9218fbdb9417528"
+sourceHash: "f51d1e3b53ab82e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,10 +30,7 @@ apothem install --harness hermes
 
 ## 프로필-네이티브 구성 매핑
 
-어댑터는 Apothem의 공유 프로필을 읽고, 프로필의 MCP 인벤토리를 포함한 네이티브
-YAML 구성을 렌더링합니다. 프로필의 신원, 선호, 규칙은 프로필 문서에
-들어갑니다. 공유 커맨드, 스킬, 도우미 정의, 규칙, 템플릿, 훅 프롬프트는
-`~/.hermes/.apothem/support/` 아래에 지원 자료로 배치됩니다.
+어댑터는 Apothem의 공유 프로필을 읽고, 프로필의 MCP 인벤토리를 포함한 네이티브 YAML 구성을 렌더링합니다. MCP 서버는 프로필의 `mcp_servers` 섹션에서 가져옵니다. 이들은 설치와 업데이트마다 파일로 복사되지 않고 `config.yaml`에 렌더링됩니다. 프로필의 신원, 선호, 규칙은 프로필 문서에 들어갑니다. 공유 커맨드, 스킬, 도우미 정의, 규칙, 템플릿, 훅 프롬프트는 `~/.hermes/.apothem/support/` 아래에 지원 자료로 배치됩니다.
 
 ## 호환성 참고 사항
 
