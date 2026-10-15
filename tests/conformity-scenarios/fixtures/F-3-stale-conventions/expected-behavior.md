@@ -150,6 +150,6 @@ satisfies:
   Spec §7.1 row 3.
 - **Cross-bound with ↔** Sibling fixtures F-1 (M1 alone, rich
   conventions) and F-2 (M1 + M5 + M7, silent conventions). Together
-  the three exercise M1 across the rich / silent / stale axs.
+  the three exercise M1 across the rich / silent / stale axes.
   F-3 specifically tests the disclosure path (M2) and the
   surfaced-gap discipline (M6) at the divergence boundary.

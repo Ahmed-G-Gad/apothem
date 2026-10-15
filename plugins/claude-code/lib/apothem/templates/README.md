@@ -26,7 +26,7 @@ Deliverables of the four operational disciplines (D1–D4) plus the Phase-6 Ques
 | [`consideration-log.md`](consideration-log.md) | D1 Meticulous Consideration | Every consideration item surfaced during the prose-to-spec transformation — directives, intentions, rationales, adjacent-domain scans, second-order consequences, contradictions. |
 | [`potency-map.md`](potency-map.md) | D2 EXTREME Potency | Every preserved prose element paired with its potent operational form. |
 | [`preservation-audit.md`](preservation-audit.md) | D3 STRICT Preservation | Per-clause verdicts at all three preservation levels — syntactic, semantic, tonal. |
-| [`expertise-gap-log.md`](expertise-gap-log.md) | D4 Extensive Expertise | Which of the seven axs of breadth applied per transformation, which were not-applicable-with-rationale, which surfaced an expertise-envelope limit. |
+| [`expertise-gap-log.md`](expertise-gap-log.md) | D4 Extensive Expertise | Which of the seven axes of breadth applied per transformation, which were not-applicable-with-rationale, which surfaced an expertise-envelope limit. |
 | [`question-resolution-audit.md`](question-resolution-audit.md) | D5 Question-Resolution Audit | Every structured-inquiry invocation across the six mandatory gate points G0–G5 — proof no question was suppressed and no default was silent. |
 
 ## Conventions

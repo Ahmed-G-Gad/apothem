@@ -249,6 +249,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   text on the install page and in the README, the continuous-form alias labels,
   the release runbook's repository variable and the CI/CD page now say what the
   code does.
+- **Codex hooks on Windows run the install-resolved interpreter.** The
+  `commandWindows` entries in `hooks.json` ran the `py -3` launcher; they now
+  run the CPython that install resolves, as the Claude Code hooks do, and an
+  install with no CPython 3.10+ stops before it writes any file. Run
+  `apothem update --harness codex` to re-render an existing install.
 - **Shipped Markdown renders as written.** A row in the Bash plan-guard hook
   message no longer splits on an unescaped pipe, two trace-matrix template
   cells and the host-discovery default marker keep their nested code spans

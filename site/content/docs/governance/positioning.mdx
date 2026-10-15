@@ -88,9 +88,9 @@ The fifteen-mandate registry is the canonical outward-axis governance surface. E
 
 **Why it matters.** Quality is decomposable. Naming the ten dimensions makes each one auditable and surfaceable in isolation; ambiguous "this looks weak" findings become specific "dimension 5 staleness: reference at line 42 points at a moved file".
 
-### M4 — Self-Application — Pre-Emission Gate
+### M4 — Self-application — Pre-Emission Gate
 
-**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Bars M3, M12 and M15 are part mechanical: executable matchers cover one part of each bar and the operating assistant evaluates the rest. Reasoned bars (M1, M2, M6, M9, M11, M14) are evaluated by the operating assistant and recorded in the verification block. Bar M4 itself checks that the verification block is present in the artifact's working trace. A single bar failure blocks emission; iteration continues until every bar passes.
+**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Bars M3, M12 and M15 are part mechanical: executable matchers cover one part of each bar and the operating assistant evaluates the rest. Reasoned bars (M1, M2, M4, M6, M9, M11, M14) are evaluated by the operating assistant and recorded in the verification block. Bar M4 itself checks that the verification block is present in the artifact's working trace. A single bar failure blocks emission; iteration continues until every bar passes.
 
 **Canonical specification.** `src/apothem/rules/pre-emission-gate.md` (with full bar table at `src/apothem/rules/pre-emission-gate-bars.md`).
 
