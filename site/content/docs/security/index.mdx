@@ -24,8 +24,8 @@ harness reads. That single function bounds what it trusts and what it does not.
   output, JSON, logs, docs snippets, or tests, and public examples use fake
   placeholder identities and domains. Materialized configuration is meant to be
   committed and shared; it carries no credentials.
-- **The universal-deny floor.** The rules Apothem materializes carry a
-  non-negotiable deny floor regardless of any per-harness allow-list — secrets
+- **The universal-deny floor.** The Claude Code `settings.json` that Apothem materializes carries a
+  non-negotiable deny floor regardless of any per-harness allow-list; on other harnesses the same floor is policy text in the materialized rules, not a settings-level deny list — secrets
   paths (`.env*`, `~/.ssh/**`, credential stores), destructive shell operations
   (`rm -rf`, `sudo`, force-pushes to protected branches), and execution of
   untrusted input. No allow-list silently widens this floor.
@@ -56,7 +56,7 @@ examples use fake placeholder identities and domains.
 - [**OpenSSF Scorecard posture**](/docs/security/openssf-scorecard-target) — per-check evidence and known platform limits
 - [**Webhooks audit**](/docs/security/webhooks-audit) — webhook-secret hygiene evidence
 - [**Branch protection**](/docs/security/branch-protection-ruleset) — pull-request requirement, required status checks, and force-push and deletion blocks
-- [**Binary artifacts sweep**](/docs/security/binary-artifacts-sweep) — zero-binary-in-source release proof
+- [**Binary artifacts sweep**](/docs/security/binary-artifacts-sweep) — evidence that the source tree holds no binary files
 - [Security policy](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — vulnerability reporting & supported versions
 - [OpenSSF Scorecard badge](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — live score
 
@@ -64,7 +64,7 @@ examples use fake placeholder identities and domains.
 
 Use [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) on the repository's Security tab. The full policy, supported-version matrix, and response timelines are at [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Supply-chain release proofs
+## Supply-chain release evidence
 
 Every release artifact ships with:
 

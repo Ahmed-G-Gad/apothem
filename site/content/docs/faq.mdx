@@ -31,7 +31,7 @@ GLM (Z.ai), and Kimi Code
 
 The Claude Code adapter materializes into `~/.claude/`; its hook dispatcher is host-neutral —
 it resolves the ecosystem root from `$CLAUDE_PROJECT_DIR` first, then
-`$LLM_PROJECT_DIR`, then falls back to `$HOME/.claude`.
+`$LLM_PROJECT_DIR`, then tries script-relative and working-directory lookups, and finally falls back to `$HOME/.claude`.
 
 ## Do I need to use the plan-suite pipeline?
 
@@ -41,9 +41,10 @@ toolchain are independently useful.
 
 ## How do I customize the rules without forking the repository?
 
-Add your own rule file under `src/apothem/rules/<my-rule>.md`
-with the canonical frontmatter. The rule loader picks up every
-file matching the `src/apothem/rules/*.md` pattern.
+Add a string to the `rules:` list in `~/.config/apothem/profile.yaml` and
+re-run the install or update. Rule files under `src/apothem/rules/` edit the
+packaged source tree, which the archive installer replaces when run with
+`--yes`.
 
 ## How do I disable a rule temporarily?
 
@@ -76,10 +77,14 @@ canonical PR template populated, and make sure the CI checks pass — the
 ## Where does ecosystem state live?
 
 - **Per-suite plan state** lives under `<project>/.apothem/plans/{suite}/`.
-- **Per-project memory** lives under the harness config root, at
-  `projects/{hash}/memory/` (for Claude Code: `~/.claude/projects/{hash}/memory/`).
+- **Apothem memory** lives under `.apothem/memory/` beneath the install root
+  (for Claude Code: `~/.claude/.apothem/memory/`; `~/.apothem/memory/` when
+  `workspace.scope` is `user-home`; `<project>/.apothem/memory/` for
+  project-scope installs). Claude Code's own auto-memory lives under the harness
+  config root, at `projects/{hash}/memory/` (for Claude Code:
+  `~/.claude/projects/{hash}/memory/`).
 - **Cross-project memory** lives under that same harness config root, at
-  `memory/` (for Claude Code: `~/.claude/memory/`).
+  `.apothem/memory/` (for Claude Code: `~/.claude/.apothem/memory/`).
 - **Per-session scratch** lives under `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Can I pick up long-running work in a new session or on another machine?

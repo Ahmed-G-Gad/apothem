@@ -18,6 +18,7 @@ declares the operations the CLI invokes and the metadata the CLI reads:
 - `name` — the adapter's registered identifier.
 - `output_path` — where the materialized config lands on disk.
 - `install` — render and write the harness-native config.
+- `update` — re-render the harness-native config after the profile changes.
 - `uninstall` — remove the materialized config, leaving the shared profile
   untouched.
 - `is_installed` — report whether the harness's config is present.
@@ -94,12 +95,12 @@ under `src/apothem/harnesses/claude_code/templates/`. It carries no
 `materializer.py` — it does not render a native config file from the profile;
 it propagates artifacts and convention directories directly.
 
-One deliberate boundary: the claude-code adapter does not manage `CLAUDE.md`.
-That file is operator-owned territory. Apothem materializes the surrounding
-config surface — the rules, the hooks, the settings — and leaves the operator's
-own `CLAUDE.md` voice untouched. An adapter that overwrote it would erase
-hand-authored project instructions on every `apothem install`, so the adapter
-draws the line at the directory boundary and stops.
+One deliberate boundary: the claude-code adapter manages only a sentinel-delimited
+block inside `CLAUDE.md`; prose outside that block is preserved. The rest of that file
+is operator-owned territory. Apothem materializes the surrounding config surface — the
+rules, the hooks, the settings — and keeps the operator's prose outside that block
+verbatim. An adapter that rewrote the whole file would erase hand-authored instructions
+on every `apothem install`; this one rewrites only its managed block.
 
 ## Why the uniformity matters
 

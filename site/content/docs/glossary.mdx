@@ -35,8 +35,7 @@ surface.
 
 ## Conformity gate
 The mechanical fraction of the fifteen-bar pre-emission gate — the
-machine-checkable validators at `src/apothem/conformity/gate.py`. Runs before
-every artifact emission; the reasoned bars are evaluated in review.
+machine-checkable validators at `src/apothem/conformity/gate.py`. Runs as an advisory check before artifact emission where the harness exposes a PreToolUse hook (blocking only with `--strict`, as in CI and pre-commit); the reasoned bars are evaluated in review.
 
 ## Entry point
 The `apothem.harnesses` setuptools entry-point group declared in

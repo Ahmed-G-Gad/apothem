@@ -31,7 +31,7 @@ A persistent, bounded report at `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`;
 
 ## Pipeline position
 
-`/plan-audit` is **orthogonal** to the linear pipeline, not a stage within it. The canonical linear sequence is `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditional, architecture-bearing suites only) `→ /plan-execute`. `/plan-audit` encompasses `/plan-spec → /plan-generate → /plan-review` as a single closed-loop wrapper that can be invoked at any point: it inspects state and runs only the missing stages. It is distinct from the fortress-audit chain (entered at `/code-review`, terminal at `/threat-model-audit`), which audits an executed codebase rather than a plan suite.
+`/plan-audit` is **orthogonal** to the linear pipeline, not a stage within it. The canonical linear sequence is `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditional, architecture-bearing suites only) `→ /plan-execute`. `/plan-audit` encompasses `/plan-spec → /plan-generate → /plan-review` as a single closed-loop wrapper that can be invoked at any point: it inspects state and runs only the missing stages once a generated suite exists; with no generated suite it refuses with `Blocked: run /plan-generate first`. It is distinct from the fortress-audit chain (entered at `/code-review`, terminal at `/threat-model-audit`), which audits an executed codebase rather than a plan suite.
 
 ## Workflow phases
 

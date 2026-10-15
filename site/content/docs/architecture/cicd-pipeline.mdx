@@ -33,8 +33,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -44,15 +44,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -75,23 +76,25 @@ flowchart LR
   [Markdown conventions](/docs/reference/markdown-conventions)).
 - **Test lane** — `pytest tests/hooks` exercises the hook runtime against the
   full event matrix; `validate_ecosystem.py` is the primary structural gate
-  for cross-artifact consistency; `chaos_pass.py` and the per-class benchmark
-  suite under `src/apothem/benchmarks/` activate on the release lane to catch
-  degradation under degraded inputs and runtime-budget regressions.
+  for cross-artifact consistency; `chaos_pass.py` runs in the CI quality job on
+  pushes and pull requests to `main` (path-filtered) to catch degradation under
+  degraded inputs. The per-class benchmark suite under `src/apothem/benchmarks/`
+  runs in no CI workflow.
 - **Security lane** — secret scanning catches accidental committed
   credentials; SBOM generation and license audits gate the supply-chain
   surface for any production-readiness install.
-- **Publish lane** — runs only on tagged releases. Signed-tag verification
-  confirms release-branch provenance; the project website publishes from
-  `site/dist/` to the GitHub Pages target; release notes derive from
-  `CHANGELOG.md` Keep-A-Changelog format.
+- **Publish lane** — the release workflows are triggered by tag pushes; the npm
+  and VS Code publishers can also be re-run by manual dispatch for an existing
+  tag. Signed-tag verification confirms release-branch provenance; release notes
+  derive from `CHANGELOG.md` Keep-A-Changelog format. The project website
+  publishes from `site/dist/` to the GitHub Pages target on pushes to `main` that
+  touch its build inputs, or on manual dispatch.
 
 ## Concrete configuration
 
 The actual workflow files (`.github/workflows/ci.yml`,
-`.github/workflows/release.yml`, etc.) install during the production-readiness
-ecosystem build-out. This diagram defines the canonical shape every future
-configuration mirrors.
+`.github/workflows/release.yml`, etc.) are in the repository. This diagram
+defines the canonical shape every future configuration mirrors.
 
 ## Authoritative cross-references
 

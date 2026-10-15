@@ -37,7 +37,7 @@ The seventeen adapters in this release:
 - zed
 
 Add a tool to your workflow, run one command, and your configuration is there.
-Remove a tool, and Apothem uninstalls cleanly — no orphaned files left behind.
+Remove a tool, and Apothem removes the files it wrote; the shared memory, contexts and learning stores go with the last harness, after a backup, and `plans/` always stays.
 
 ## Install
 
@@ -58,12 +58,14 @@ Several install paths, one CLI underneath:
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **One-shot script installer** — places a self-contained runtime and the
-   `apothem` launcher on PATH:
+3. **One-shot script installer** — places a self-contained runtime and an
+   `apothem` launcher (`~/.local/bin/apothem` on POSIX, with a PATH hint when that directory is not on `PATH`; `apothem.cmd` in WindowsApps on Windows):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   The POSIX script verifies the release tag's GPG signature by default and aborts when the maintainer key is not in the local keyring. Until the maintainer publishes the key fingerprint (see `SECURITY.md`), set `APOTHEM_VERIFY=checksum` to check the archive against the release `SHA256SUMS`, or `APOTHEM_ALLOW_UNVERIFIED=1` to proceed without tag verification.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -110,7 +112,7 @@ configuration lifecycle:
 - `apothem doctor` — diagnose environment and configuration issues.
 
 Each harness adapter implements a uniform `HarnessAdapter` protocol —
-`install`, `uninstall`, `is_installed`, `verify` — so every harness behaves
+`install`, `update`, `uninstall`, `is_installed`, `verify` — so every harness behaves
 predictably from the operator's seat regardless of the vendor format
 underneath. Read more about the design in
 [the adapter architecture deep-dive](/docs/blog/posts/multi-harness-adapter-design)

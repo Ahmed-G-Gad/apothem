@@ -1,13 +1,13 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Audits against per-class performance budgets (Core Web Vitals, USE method)."
+description: "/perf-audit — Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint), using the USE method."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Role:** Perf auditor
 **Pipeline position:** fortress
 
-Audits against per-class performance budgets (Core Web Vitals, USE method).
+Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint), using the USE method.
 
 ## Canonical invocation
 
@@ -18,16 +18,16 @@ Audits against per-class performance budgets (Core Web Vitals, USE method).
 With arguments:
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## Inputs
 
-Host repository at any lifecycle state
+Host repository that contains `hooks/`, `src/apothem/benchmarks/`, `tests/`, and the hook bootstrap stubs `hooks/lib/bootstrap.{sh,ps1}`
 
 ## Outputs
 
-Performance findings + REPORT.md
+Performance findings at `_inputs/perf-audit-findings.md`
 
 ## Downstream
 
@@ -35,22 +35,14 @@ The performance-audit stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate result recorded.
+The command runs five audit phases: input ingest, per-class budget discovery, benchmark execution, hot-path identification by the USE method, and findings emission with the validation gate.
 
 ## Failure modes
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
-| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Missing input file | Repository lacks `src/apothem/benchmarks/` | Add the benchmark drivers, then re-run; the command refuses until they exist |
 
 ## Examples
 
@@ -58,8 +50,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## Cross-references

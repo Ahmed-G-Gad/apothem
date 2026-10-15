@@ -23,8 +23,7 @@ consolidated spec at `.apothem/plans/{suite}/_spec/spec.md`. See
 
 ### How do I generate a plan suite from a spec?
 
-Invoke `/plan-generate <suite-name>` once the spec lives at
-`.apothem/plans/{suite}/_spec/spec.md`. The generator emits the canonical
+Invoke `/plan-generate .apothem/plans/{suite}/_spec/spec.md` once `/plan-spec` has written the spec. The generator emits the canonical
 infrastructure files plus the per-phase
 `phases/NN-kebab-topic/PHASE.md` files. See
 `src/apothem/commands/plan-generate.md`.
@@ -32,7 +31,7 @@ infrastructure files plus the per-phase
 ### How do I review a generated plan?
 
 Invoke `/plan-review path/to/plan-suite/`. The reviewer applies
-the eight planning techniques and emits scorecards. Failing
+the nine planning techniques and emits scorecards. Failing
 scorecards block execution at SHARED+ until resolved. See
 `src/apothem/commands/plan-review.md`.
 
@@ -93,8 +92,7 @@ edit.
    `src/apothem/hooks/messages/<event>-<scope>.md`.
 2. Wire the hook in `settings.json`.
 3. Update the hooks pipeline.
-4. Run `python scripts/dev/validate_ecosystem.py --check
-   hook-validator`.
+4. Run `python scripts/dev/validate_ecosystem.py`.
 
 ## Quality gates
 

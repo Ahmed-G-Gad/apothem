@@ -18,17 +18,17 @@ Node.js 18+.
 
 | OS family | Supported shells | Installer script |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash` (the system bash or a newer user-installed bash) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| ChromeOS Linux container (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`, with `bash` also accepted (the system bash or a newer user-installed bash) | `install.sh` |
+| Linux | POSIX `sh` (`bash` also accepted) | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `sh` (`bash` also accepted) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `sh` (`bash` also accepted) | `install.sh` |
+| Termux (Android) | POSIX `sh` (`bash` also accepted) | `install.sh` |
+| ChromeOS Linux container (Crostini) | POSIX `sh` (`bash` also accepted) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | Any platform with PowerShell 7+ | PowerShell 7+ (cross-platform) | `install.ps1` |
 
 The two scripts are functional parity to each other. `install.sh` requires a
-POSIX `bash`. `install.ps1` requires Windows PowerShell 5.1 or later, or
+POSIX shell (`sh`, `dash`, `ash` or `bash`). `install.ps1` requires Windows PowerShell 5.1 or later, or
 PowerShell 7+ on any platform PowerShell 7 itself supports — including
 macOS and Linux, where it is an alternative to `install.sh`.
 
