@@ -85,7 +85,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -248,6 +247,8 @@ apothem --version
 ```
 
 Expected output: `Apothem, version X.Y.Z`.
+
+The launcher is written to `~/.local/bin`, which must be on `PATH` for the check above to run. When that directory is not on `PATH`, the installer prints the `export PATH` line to add.
 
 ### 5.4 One-shot script installer (Windows)
 

@@ -18,16 +18,16 @@ Cross-file forensic code audit at repository-corpus scope.
 With arguments:
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Inputs
 
-Host repository at any lifecycle state
+Host repository with an approved source layout, a test-coverage baseline, and (at SHARED+) a passing CI gate
 
 ## Outputs
 
-Corpus-level findings + REPORT.md
+Corpus-level findings at `_inputs/code-audit-findings.md`
 
 ## Downstream
 
@@ -35,22 +35,14 @@ The forensic-code-audit stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+The command runs six forensic phases: input ingest, cross-file dependency walk, type-hint and coverage audit, dead-code and duplicate detection, architectural-integrity audit, and findings emission with the validation gate.
 
 ## Failure modes
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
-| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Missing input file | No CI gate run or test-coverage baseline at SHARED+ | Run the host's CI pipeline first, then re-run |
 
 ## Examples
 
@@ -58,8 +50,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Cross-references

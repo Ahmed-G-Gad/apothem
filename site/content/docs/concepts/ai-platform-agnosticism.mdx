@@ -82,6 +82,6 @@ the core. Drift is structurally impossible.
 
 ## Portability guarantees
 
-Commands and helpers marked `portability: universal` are guaranteed translatable to
-every supported harness. Commands and helpers marked `portability: project-specific`
+Commands and helpers marked `portability: universal` translate to every harness whose registry
+entry supports a command surface (converted or support-tree); harnesses without one receive no commands. The engine does not evaluate the marker. Commands and helpers marked `portability: project-specific`
 may require per-harness override documentation in the file body.

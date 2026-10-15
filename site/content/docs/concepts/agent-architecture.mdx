@@ -31,11 +31,11 @@ whether the adapter renders a native config via a materializer.
 | codebuddy | None | `.codebuddy/rules/apothem-rules.md` project rules file | Class I | none |
 | codex | Native `hooks.json` lifecycle hooks | `AGENTS.md` plus support rules referenced by installed skills | Class I | none |
 | cursor | None | `.mdc` workspace rules (MDC frontmatter: `description` / `globs` / `alwaysApply`) | Class I | none |
-| gemini-cli | None | Rules embedded in single `GEMINI.md` | Class I | none |
+| gemini-cli | Support material only | Rules embedded in single `GEMINI.md` | Class I | none |
 | github-copilot | None (IDE extension, no tool-call hooks) | Rules in `.github/copilot-instructions.md` | Class I | none |
 | glm | None (model backend; no agent tool surface) | `.apothem/providers/glm.toml` backend provider config (no rule cohort) | Class I | none |
 | hermes | Support material only | `config.yaml` plus external skill directory | Class II-B | `config.yaml` |
-| kimi-code | None | `AGENTS.md` plus support rules under `.kimi-code/.apothem/support/` | Class I | none |
+| kimi-code | Support material only | `AGENTS.md` plus support rules under `.kimi-code/.apothem/support/` | Class I | none |
 | kiro | None (Kiro agent hooks are out of adapter scope) | `.kiro/steering/apothem-rules.md` steering file | Class I | none |
 | open-claw | Support material only | `openclaw.json` plus extra skill directory | Class II-B | `openclaw.json` |
 | opencode | Support material only | Profile-rendered JSON plus native commands, skills, and agents | Class II-B | `opencode.json` |
@@ -49,8 +49,8 @@ Notes on the matrix:
 
 - **claude-code** is the reference adapter. It carries native PreToolUse,
   PostToolUse, Stop, and SessionStart hooks and ships vendor settings
-  templates. It deliberately does
-  not manage `CLAUDE.md` — that file is operator-owned territory.
+  templates. It writes one sentinel-delimited managed block into
+  `CLAUDE.md` and leaves operator prose outside the sentinels unchanged.
 - **codex** installs native lifecycle hooks through `hooks.json`, converts
   agents to TOML, wraps command prompts as Codex skills, and leaves
   `config.toml` operator-owned.
@@ -131,7 +131,7 @@ in the matrix reduces to one of these.
 
 | Axis | Range observed across the seventeen harnesses |
 |------|---------------------------------------------|
-| Hook surface | Native multi-event (claude-code, codex, qwen-code) → support-only hook material (antigravity, gemini-cli, hermes, open-claw, opencode) → none (codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| Hook surface | Native multi-event (claude-code, codex, qwen-code) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → none (codebuddy, cursor, github-copilot, glm, kiro, trae, windsurf, zed) |
 | Rule-activation format | Flat `.md` (claude-code) → plugin rules (antigravity) → `.mdc` workspace (cursor) → directory rules (codebuddy, trae, windsurf) → steering file (kiro) → project-root flat file (zed) → single embedded file (codex, gemini-cli, github-copilot, kimi-code) → config-referenced support material (hermes, open-claw, opencode, qwen-code) → backend provider config (glm) |
 | Adapter class | Class I raw-propagation → Class II-A raw + vendor settings → Class II-B profile-rendered single-surface |
 

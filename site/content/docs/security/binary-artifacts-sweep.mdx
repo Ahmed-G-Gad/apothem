@@ -28,7 +28,7 @@ The sweep enumerates the file types Scorecard considers binary, then verifies ea
 
 Two narrow classes of binary artifacts ARE permitted in source:
 
-1. **Brand assets** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. These are **deterministically regenerable** from the SVG masters at `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard treats these as legitimate per its `image/png` exemption.
+1. **Brand assets** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. These are **deterministically regenerable** from the SVG masters at `assets/src/` via `scripts/dev/rebuild-assets-resvg.py`. Scorecard treats these as legitimate per its `image/png` exemption.
 2. **Font files** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Bundled font files with documented licenses; per Scorecard's `font/*` exemption.
 
 Both classes are documented at [`site/content/docs/brand/index.mdx`](/docs/brand) and their provenance is recorded in the asset-rebuild recipe.
@@ -37,7 +37,7 @@ Both classes are documented at [`site/content/docs/brand/index.mdx`](/docs/brand
 
 ```shell
 # From the apothem repository root:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 This invocation should return **zero lines**. A non-empty result indicates a binary artifact was tracked in source — a HIGH-severity finding that blocks the next release.
@@ -46,7 +46,6 @@ This invocation should return **zero lines**. A non-empty result indicates a bin
 
 The sweep is part of:
 
-- **Per-PR CI** — `.github/workflows/ci.yml` includes a binary-artifacts grep step.
 - **Per-release checkpoint** — the release-engineering runbook verifies the sweep before tagging.
 - **Weekly Scorecard run** — the OpenSSF Scorecard workflow re-confirms the check passes.
 

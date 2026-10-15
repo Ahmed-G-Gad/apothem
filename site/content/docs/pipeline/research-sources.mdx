@@ -18,7 +18,7 @@ Systematic source collection — decomposes the research spec into sub-queries, 
 With arguments:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Inputs
@@ -62,8 +62,8 @@ Beyond the source ledger, this stage builds a comparator provenance ledger: the 
 # Collect sources for a framed research suite
 /research-sources path/to/research-suite/
 
-# Deeper discovery fan-out
-/research-sources path/to/research-suite/ --depth N
+# Cap the screened-in source count
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Cross-references

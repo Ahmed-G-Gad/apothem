@@ -18,16 +18,16 @@ Developer-experience review of CLI ergonomics, docs, and onboarding.
 With arguments:
 
 ```bash
-/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/ux-review [path/to/repo/] [--focus SURFACE] [--dry-run]
 ```
 
 ## Inputs
 
-Host repository at any lifecycle state
+Deployed host repository with a README, install scripts, and a CLI entry point
 
 ## Outputs
 
-UX findings + REPORT.md
+UX findings in `_inputs/ux-review-findings.md`
 
 ## Downstream
 
@@ -35,14 +35,7 @@ The UX-review stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+The command runs five phases: input ingest, CLI-ergonomics walk, installation-flow and error-recovery audit, documentation-discoverability sweep, and findings emission with the validation gate.
 
 ## Failure modes
 
@@ -50,7 +43,7 @@ The command follows the standard `/plan` pipeline workflow:
 |---------|-------|----------|
 | Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Target not deployed | Target lacks the operator-facing surface | Pass the deployed repository root |
 
 ## Examples
 
@@ -58,8 +51,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /ux-review --dry-run
 
-# Execute against a named plan suite
-/ux-review path/to/plan-suite/
+# Execute against a host repository
+/ux-review path/to/repo/
 ```
 
 ## Cross-references

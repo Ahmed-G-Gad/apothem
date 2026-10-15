@@ -18,16 +18,16 @@ Comprehensive security posture audit against the current OWASP ASVS release and 
 With arguments:
 
 ```bash
-/security-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/security-audit [path/to/repo/] [--focus CATEGORY] [--dry-run]
 ```
 
 ## Inputs
 
-Host repository at any lifecycle state
+Host repository at a pinned git commit
 
 ## Outputs
 
-Security findings + REPORT.md
+Security findings in `_inputs/security-audit-findings.md`
 
 ## Downstream
 
@@ -35,14 +35,7 @@ The security-audit stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+The command runs six audit phases: input ingest, secrets and permissions, input-validation and injection, deserialization and path traversal, dependency-CVE and CodeQL, and findings emission with the validation gate.
 
 ## Failure modes
 
@@ -50,7 +43,7 @@ The command follows the standard `/plan` pipeline workflow:
 |---------|-------|----------|
 | Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Target refused | Path is not a git working tree | Pass the repository root as the path |
 
 ## Examples
 
@@ -58,8 +51,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /security-audit --dry-run
 
-# Execute against a named plan suite
-/security-audit path/to/plan-suite/
+# Execute against a host repository
+/security-audit path/to/repo/
 ```
 
 ## Cross-references

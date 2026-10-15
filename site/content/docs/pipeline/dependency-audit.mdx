@@ -18,7 +18,7 @@ Per-dependency audit pass (direct + transitive) for license, CVE, and freshness.
 With arguments:
 
 ```bash
-/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/dependency-audit [path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]
 ```
 
 ## Inputs
@@ -27,7 +27,7 @@ Host repository dependency manifests
 
 ## Outputs
 
-Dependency findings + REPORT.md
+Dependency findings at `_inputs/dependency-audit-findings.md`
 
 ## Downstream
 
@@ -35,22 +35,14 @@ The dependency-audit stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+The command runs five phases: input ingest, per-dependency walk, per-finding triage, findings emission, and the validation gate.
 
 ## Failure modes
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
-| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Missing input file | No dependency manifest resolves at the repository root | Pass a repository root that contains a dependency manifest |
 
 ## Examples
 
@@ -58,8 +50,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /dependency-audit --dry-run
 
-# Execute against a named plan suite
-/dependency-audit path/to/plan-suite/
+# Execute against a repository root
+/dependency-audit path/to/repo/
 ```
 
 ## Cross-references
