@@ -1,7 +1,7 @@
 ---
 name: "research-spec"
-version: "0.1.0"
-updated: "2026-10-02"
+version: "0.1.1"
+updated: "2026-10-15"
 description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Produces falsifiable hypotheses with stated null forms (R3), explicit inclusion/exclusion scope, independently-measurable success metrics (R2), and a glossary, surfacing every ambiguity through the structured-inquiry channel instead of inventing scope or hypotheses. Emits `_spec/research-spec.md` plus the Handoff Manifest in the research-suite folder. `--quick` skips elicitation and writes one lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
 argument-hint: "[path/to/question-or-notes] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
@@ -33,7 +33,7 @@ Read the question or notes in full. Triple-extract the implicit **claim**, **sco
 
 **Handoff Manifest.**
 
-- **Consumed.** None (entry-position stage).
+- **Consumed.** `{suite}/_inputs/ideation.md` (the ideation from `/research-ideate`) when present, otherwise the research question or notes source the operator supplies (see the Sequence Gate). When `/research-ideate` ran, the Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for its attestation block.
 - **Emitted.** `{suite}/_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml`. The manifest carries the authored `_spec/research-spec.md` path, the spec's section completeness (question · hypotheses · scope · inclusion/exclusion criteria · success metrics · glossary), the Question-Resolution Audit's open-vs-resolved counts, the Deferral Ledger's downstream routing entries, and the rigor-mandate attestation block (R1–R7 applicability per §Mandates).
 
 **Pre-flight inquiry set.** The suite-name inquiry surfaces before any spec write per `rules/interactive-questions.md`. Every implicit hypothesis form, every unstated scope boundary, every undefined success threshold enters the inquiry set; every authoritative-data gap surfaces as a `USER-CONFIRM` placeholder (the canonical `kind=`-tagged form) per the canonical-channel rule.
