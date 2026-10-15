@@ -1,18 +1,19 @@
 # SPDX-License-Identifier: MIT
 
-"""The POSIX installer's inline interpreter probe skips Microsoft Store shims.
+"""The POSIX installers' inline interpreter probes skip Microsoft Store shims.
 
 ``scripts/installer/install.sh`` reuses the ``find-python.sh`` locator when it
 runs from a source tree. Run from anywhere else (the ``curl ... | sh`` form, or
 a copy outside the checkout), the script probes the bare interpreter names on
-``PATH`` itself. That fallback must not execute a candidate that resolves under
+``PATH`` itself. ``update.sh`` and ``uninstall.sh`` have no locator and always
+probe ``PATH`` that way. No probe may execute a candidate that resolves under
 a ``WindowsApps`` directory: the Store launcher alias opens the Store page
-instead of Python. ``install.ps1`` and the npm shim reject the same alias.
+instead of Python. The PowerShell twins and the npm shim reject the same alias.
 
-Each case runs a copy of ``install.sh`` placed outside the source tree, so the
-locator is absent and the fallback is the only probe that runs. The stub
-interpreters append to a sentinel file every time they are executed, so a stub
-the fallback runs is visible even when the run then fails.
+Each case runs a copy of the script placed outside the source tree, so the
+install.sh locator is absent and the inline probe is the only one that runs in
+every script. The stub interpreters append to a sentinel file every time they
+are executed, so a stub the probe runs is visible even when the run then fails.
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
-INSTALL_SH: Path = REPO_ROOT / "scripts" / "installer" / "install.sh"
+INSTALLER_DIR: Path = REPO_ROOT / "scripts" / "installer"
 SH: str = shutil.which("sh") or "sh"
 
 # The names the inline probe tries, in order.
@@ -39,11 +40,22 @@ PROBE_NAMES: tuple[str, ...] = (
     "python3.11",
     "python3.10",
 )
+# uninstall.sh appends " — nothing to uninstall"; the prefix is shared.
 NO_PYTHON: str = "No Python >= 3.10 found in PATH"
+
+# The stream and the text that show a run got past the probe. install.sh
+# reports the interpreter it chose. update.sh and uninstall.sh do not, so their
+# marker is the APOTHEM_SOURCE check that follows the probe and fails on the
+# empty directory the run passes.
+PAST_PROBE: dict[str, tuple[str, str]] = {
+    "install.sh": ("stdout", "python3 ("),
+    "update.sh": ("stderr", "APOTHEM_SOURCE is not an apothem source tree"),
+    "uninstall.sh": ("stderr", "APOTHEM_SOURCE is not an apothem source tree"),
+}
 
 pytestmark = pytest.mark.skipif(
     shutil.which("sh") is None,
-    reason="runs the POSIX install.sh under sh",
+    reason="runs the POSIX installer scripts under sh",
 )
 
 
@@ -51,7 +63,7 @@ def _write_stub_dir(directory: Path, sentinel: Path) -> None:
     """Write a stub for every probed name into *directory*.
 
     Each stub appends a line to *sentinel* when it runs, then runs the interpreter
-    executing this test, so it passes the version probe. A fallback that runs the
+    executing this test, so it passes the version probe. A probe that runs the
     stub therefore accepts it and records the run.
     """
     directory.mkdir(parents=True)
@@ -65,24 +77,28 @@ def _write_stub_dir(directory: Path, sentinel: Path) -> None:
         stub.chmod(0o755)
 
 
-def _run_copied_installer(
-    tmp_path: Path, path_dirs: tuple[Path, ...]
+def _run_copied_script(
+    tmp_path: Path, script_name: str, path_dirs: tuple[Path, ...]
 ) -> subprocess.CompletedProcess[str]:
-    """Run a copy of install.sh outside the source tree, with *path_dirs* first on PATH."""
+    """Run a copy of *script_name* outside the source tree, with *path_dirs* first on PATH."""
     # A copy outside the checkout has no ../../src/apothem/hooks/lib/find-python.sh
-    # beside it, so the inline fallback is the probe that runs.
+    # beside it, so install.sh falls back to its inline probe. update.sh and
+    # uninstall.sh only have that probe; the copy keeps every case alike.
     installer = tmp_path / "outside" / "scripts" / "installer"
     installer.mkdir(parents=True)
-    script = installer / "install.sh"
-    shutil.copyfile(INSTALL_SH, script)
+    script = installer / script_name
+    shutil.copyfile(INSTALLER_DIR / script_name, script)
 
     home = tmp_path / "home"
     source = tmp_path / "empty-source"
     home.mkdir()
     source.mkdir()
 
-    # APOTHEM_SOURCE names an empty directory. install.sh checks it after the
-    # Python prerequisite, so a run that clears the probe ends quickly there.
+    # APOTHEM_SOURCE names an empty directory. Each script checks it after the
+    # Python prerequisite, so a run that clears the probe ends quickly there:
+    # update.sh never fetches and uninstall.sh never reaches its removal step.
+    # Dropping every APOTHEM_* variable also keeps APOTHEM_AUTO_INSTALL_DEPS
+    # unset, so no run installs packages.
     env = {
         key: value
         for key, value in os.environ.items()
@@ -111,25 +127,31 @@ def _run_copied_installer(
     )
 
 
-def test_inline_probe_does_not_execute_a_windowsapps_candidate(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_name", sorted(PAST_PROBE))
+def test_inline_probe_does_not_execute_a_windowsapps_candidate(
+    tmp_path: Path, script_name: str
+) -> None:
     """A candidate under a WindowsApps directory is skipped before it runs.
 
     The stub would pass the version probe, so without the skip the probe would
     run it, record the run, and accept it. With the skip, nothing runs and the
-    installer stops at the missing-Python message.
+    script stops at the missing-Python message.
     """
     sentinel = tmp_path / "ran.log"
     shim_dir = tmp_path / "Microsoft" / "WindowsApps"
     _write_stub_dir(shim_dir, sentinel)
 
-    result = _run_copied_installer(tmp_path, (shim_dir,))
+    result = _run_copied_script(tmp_path, script_name, (shim_dir,))
 
     assert not sentinel.exists(), "the inline probe executed a WindowsApps candidate"
     assert result.returncode != 0
     assert NO_PYTHON in result.stderr
 
 
-def test_inline_probe_accepts_the_same_stub_outside_windowsapps(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_name", sorted(PAST_PROBE))
+def test_inline_probe_accepts_the_same_stub_outside_windowsapps(
+    tmp_path: Path, script_name: str
+) -> None:
     """The same stub is accepted once its directory is not a WindowsApps one.
 
     This case shows the skip is by path. A probe that dropped every candidate
@@ -139,8 +161,9 @@ def test_inline_probe_accepts_the_same_stub_outside_windowsapps(tmp_path: Path) 
     bin_dir = tmp_path / "Other" / "bin"
     _write_stub_dir(bin_dir, sentinel)
 
-    result = _run_copied_installer(tmp_path, (bin_dir,))
+    result = _run_copied_script(tmp_path, script_name, (bin_dir,))
 
     assert sentinel.exists(), "the inline probe did not run the stub"
     assert NO_PYTHON not in result.stderr
-    assert "python3 (" in result.stdout
+    stream, marker = PAST_PROBE[script_name]
+    assert marker in getattr(result, stream)
