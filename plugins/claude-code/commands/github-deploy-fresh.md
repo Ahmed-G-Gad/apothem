@@ -121,7 +121,7 @@ When uncertain about the `<repo-name>` token, the sub-package set, the OpenSSF S
 | **M5 — Authority** | Every ambiguity in the `<repo-name>` token, the sub-package set, the Scorecard applicability, the registry coordinates, or the signing requirement routes through `rules/authority-inquiry.md`; every destructive GitHub-side step clears a per-action confirmation per `rules/interactive-questions.md` §6 before acting. |
 | **M2 — Plain-language / Disclosure** | Removed process-narration (backward, placeholder, refinement, fix, modification references) is replaced with current-product voice per `rules/plain-language.md`; every removal is recorded in the disclosure ledger per `rules/disclosure-ledger.md`. |
 | **M1 — Host Agnosticism (inherited core)** | The agnostic freshening core is inherited from `/freshify`, which discovers every host surface per `rules/host-discovery.md`; this command adds only the GitHub-specific surface on top. |
-| **M4 — Self-Application** | The deployed tree, the `release: <repo-name> v0.1.0` commit, and the CHANGELOG pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
+| **M4 — Self-application** | The deployed tree, the `release: <repo-name> v0.1.0` commit, and the CHANGELOG pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
 
 ---
 

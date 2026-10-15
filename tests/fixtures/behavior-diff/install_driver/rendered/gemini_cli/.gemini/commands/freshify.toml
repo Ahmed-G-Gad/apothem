@@ -98,7 +98,7 @@ When uncertain about the ignore manifest's contents, the quality-gate command se
 | **M2 — Plain-language** | Removed process-narration (refinement / fix / modification mentions) is replaced with current-product voice per `rules/plain-language.md`; the freshened narrative reads as human-authored product copy. |
 | **Naming & convention coherence** | File / folder naming is normalized to the host's ratified convention and reconciled to one coherent voice per `rules/persistent-conventions-vigilance.md`; every off-convention name is a rename target cleared through the per-target Rename / Move confirmation. |
 | **Propagation** | Every removal and rename propagates in the same change-set to every dependent reference across the whole reference graph per `rules/propagation.md`; emerging or existing merits / features / changes are highlighted everywhere applicable so both AI coding agents and end users understand the freshened project. |
-| **M4 — Self-Application** | The freshened tree and the changelog pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
+| **M4 — Self-application** | The freshened tree and the changelog pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
 
 ---
 

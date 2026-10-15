@@ -156,7 +156,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M1 host-discovery.** Every identifier / interface / convention honors the host's discovered idioms per `rules/host-discovery.md`.
 - **M2 editorial disclosure.** Every amendment / extension / refinement during design authoring is disclosed in the artifact's working trace per `rules/disclosure-ledger.md`.
 - **M3 ten-dimension check.** Each of the ten dimensions per `rules/ten-dimension-check.md` passes individually.
-- **M4 self-application.** The gate attestation block is present in the artifact's §Validation Gate Outcome section.
+- **M4 Self-application.** The gate attestation block is present in the artifact's §Validation Gate Outcome section.
 - **M5 authority.** Zero authoritative-confirmation placeholders remain unfilled; no fabricated authoritative data.
 - **M6 expertise.** A surfaced-gaps section is present where adjacent gaps exist.
 - **M7 option annotation.** Every multi-option choice surfaced inline carries `**Recommended**` + concrete-driver rationale per `rules/option-annotation.md`.

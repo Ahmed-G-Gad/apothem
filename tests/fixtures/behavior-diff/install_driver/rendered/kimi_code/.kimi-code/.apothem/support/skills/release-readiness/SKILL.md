@@ -91,7 +91,7 @@ When uncertain about the quality-matrix command set, the signing-ratification po
 | **M15 — Production-Ready** | The sweep operationalizes `rules/production-ready-prs.md` — the same-change-set discipline (§1), the seven visibility surfaces (§2), supply-chain posture preservation (§3), and release-engineering invariants (§4) are the gate's pass conditions. |
 | **M5 — Authority** | Every ambiguity in the quality-matrix set, signing posture, CHANGELOG format, or versioning scheme routes through `rules/authority-inquiry.md`; no host-mutable convention is invented. |
 | **M7 — Option Annotation** | Every borderline severity-triage call carries `**Recommended**` plus concrete-driver rationale per `rules/option-annotation.md`. |
-| **M4 — Self-Application** | The verdict artifact passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before promotion. |
+| **M4 — Self-application** | The verdict artifact passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before promotion. |
 
 ---
 

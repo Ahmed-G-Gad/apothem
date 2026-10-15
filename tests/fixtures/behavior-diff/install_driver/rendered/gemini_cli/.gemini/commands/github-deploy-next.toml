@@ -101,7 +101,7 @@ Each stage names its acceptance condition. The merge stage (1) and the publish s
 | **M5 — Authority** | Every ambiguity in the ready-PR set, the addressed-issue set, the derived bump, or the signing requirement routes through `rules/authority-inquiry.md`; the merge and publish steps each clear a per-action confirmation per `rules/interactive-questions.md` §6 before acting, while the preview stages proceed un-gated. |
 | **M1 — Host Discovery** | The signing posture (cosign / SLSA / SBOM), the commit-message convention, and the manifest version surface are discovered per `rules/host-discovery.md` — no signing tool, convention, or version surface is presumed present. |
 | **M2 — Plain-language / Disclosure** | The release notes carry current-product voice with no back-reference to retired artifacts per `rules/plain-language.md`; every merge, resolution, and bump is recorded in the disclosure ledger per `rules/disclosure-ledger.md`. |
-| **M4 — Self-Application** | The merged tree, the bumped manifest, the rolled CHANGELOG, and the release notes pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
+| **M4 — Self-application** | The merged tree, the bumped manifest, the rolled CHANGELOG, and the release notes pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
 
 ---
 
