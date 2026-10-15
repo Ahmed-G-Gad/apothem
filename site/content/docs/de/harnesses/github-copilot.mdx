@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Apothem-Harness-Adapter für GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "7759dbb2505688c7"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ sourceHash: "7759dbb2505688c7"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-Der Adapter leitet die Projekt-Anweisungsdatei aus der gemeinsamen Regel- und
-Governance-Oberfläche von Apothem ab.
+Der Adapter leitet die Projekt-Anweisungsdatei aus Ihrem gemeinsamen Profil und
+der gemeinsamen Regel- und Governance-Oberfläche von Apothem ab.
 
 **Geschriebene Dateien:** `<project>/.github/copilot-instructions.md`
 
@@ -46,11 +46,12 @@ die dokumentierte Anweisungsdatei auf Projektebene und überlässt die
 Benutzereinstellungen auf IDE-Ebene dem Operator.
 
 Innerhalb des Apothem-Repositorys ist `.github/copilot-instructions.md` eine
-Stimme unter den Assistenten-Anweisungsoberflächen des Projekts. In einem
-Apothem-Checkout vergleicht die oberflächenübergreifende Kohärenzprüfung des
-Konformitäts-Gates die gemeinsamen Aussagen in `AGENTS.md`, `CLAUDE.md` und
-`.github/copilot-instructions.md` und meldet eine Aussage, die eine dieser
-Dateien auslässt oder der sie widerspricht. Die Prüfung liest nicht die
+Stimme unter den Assistenten-Anweisungsoberflächen dieses Repositorys. In einem
+Checkout dieses Repositorys vergleicht die oberflächenübergreifende
+Kohärenzprüfung des Konformitäts-Gates die gemeinsamen Aussagen in `AGENTS.md`,
+`CLAUDE.md` und `.github/copilot-instructions.md`. Die Prüfung meldet eine
+gemeinsame Aussage, die eine der drei Dateien auslässt, sowie eine Datei, die
+einer Aussage widerspricht, die `AGENTS.md` trifft. Die Prüfung liest nicht die
 Anweisungsdatei, die Apothem in Ihr Projekt schreibt. Das Gate ist
 standardmäßig beratend: Es meldet Befunde und endet mit `0`.
 
@@ -63,7 +64,10 @@ apothem verify --harness github-copilot --project /path/to/project
 Der Befehl verify bestätigt Folgendes:
 
 1. Die native Konfiguration existiert am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -81,8 +85,11 @@ Profils neu ab.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block aus `<project>/.github/copilot-instructions.md` und
+behält jeden Text außerhalb davon. Die Datei wird nur gelöscht, wenn darin sonst
+nichts mehr steht. Vor der Änderung wird eine mit Zeitstempel versehene Kopie
+der Datei unter `~/.apothem/backups/` gespeichert. Die YAML-Datei des gemeinsamen
+Profils und die Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 

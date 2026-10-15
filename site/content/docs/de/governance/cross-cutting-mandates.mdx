@@ -2,7 +2,7 @@
 title: "Registry der übergreifenden Mandate (CM-1–CM-28)"
 description: "Vollständige Registry und Definitionen der ökosysteminternen übergreifenden Mandate (CM-1–CM-28), die alle Interaktionen und Pipeline-Operationen regeln."
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ Dieses Dokument IST die kanonische CM-N-Registry — es ist die Quelle, in der d
 
 ## Namensräume
 
-`CM-N` = Konfigurationsmandat (hier definiert oder in `src/apothem/rules/*.md` gemäß der Regelzeile der Artefakt-Registries); `TM-N` = Template-Mandat (definiert in `src/apothem/skills/plan-suite/master-template.md` §4 „General Mandates“, TM-1–28); `CP-N` = Kernprinzip (definiert im selben Template, §6 „Core Principles“, CP-1–27). Das Plan-Suite-Template ist die kanonische TM/CP-Registry — `/plan`-Befehle lösen Querverweise über diese Datei auf. Helfer-Artefakte (Regeln, Helfer, Befehle, Hooks) zitieren diese Registry per Verweis.
+`CM-N` = Konfigurationsmandat (hier definiert oder in `src/apothem/rules/*.md` gemäß der Regeltabelle in `site/content/docs/reference/rules.mdx`); `TM-N` = Template-Mandat (definiert in `src/apothem/skills/plan-suite/master-template.md` §4 „General Mandates“, TM-1–28); `CP-N` = Kernprinzip (definiert im selben Template, §6 „Core Principles“, CP-1–27). Das Plan-Suite-Template ist die kanonische TM/CP-Registry — `/plan`-Befehle lösen Querverweise über diese Datei auf. Helfer-Artefakte (Regeln, Helfer, Befehle, Hooks) zitieren diese Registry per Verweis.
 
 ## Aktivierung
 
@@ -38,7 +38,7 @@ Codebase-Artefakte dürfen NIEMALS plan-interne Verweise enthalten. **Verbotene 
 
 ## CM-12 (Kontextverwaltung)
 
-Schlanke Kontextverwaltung zu jeder Zeit — siehe die Regel zu CM-24. Vier Unterstufen sind im Abschnitt zur Unterreferenz-Konvention weiter unten aufgezählt. Die Kompaktierungsdisziplin (CM-19) regelt die Handlung; CM-12 regelt die Disziplin im Dauerzustand.
+Schlanke Kontextverwaltung zu jeder Zeit — siehe die Regel zu CM-24. Vier Unterstufen sind im Abschnitt zur Unterreferenz-Konvention weiter unten aufgezählt. Die Kompaktierungsdisziplin (CM-19) regelt den Vorgang des Kompaktierens; CM-12 regelt die Disziplin im Dauerzustand.
 
 ## CM-13 (Commits)
 
@@ -54,7 +54,7 @@ Schlanke Kontextverwaltung zu jeder Zeit — siehe die Regel zu CM-24. Vier Unte
 
 ## CM-15–21 (Pipeline)
 
-CM-15 und CM-16 sind hier inline definiert (keine separate Regel); CM-17–21 delegieren gemäß der Regeltabelle der Artefakt-Registries an Regeln.
+CM-15 und CM-16 sind hier inline definiert (keine separate Regel); CM-17–21 delegieren gemäß der Regeltabelle in `site/content/docs/reference/rules.mdx` an Regeln. Die Überschrift fasst diese Mandate thematisch zusammen; ihr Geltungsbereich folgt dem Absatz zur Aktivierung: CM-15, CM-16 und CM-20 gelten nur innerhalb der `/plan`-Pipeline, und CM-17–19 sowie CM-21 gelten universell.
 
 - **CM-15 Kollektive Kohärenz:** Verifizieren, dass Plan-Artefakte nach einer Änderung kohärent bleiben.
 - **CM-16 Autonome Ausführung:** Ab SHARED+ niemals zwischen Phasen anhalten. Kompaktierung an Phasenübergängen verpflichtend (PERSONAL_USE+).
@@ -78,12 +78,12 @@ Einzeilige Anker für die an Regeln delegierten Mandate (die vollständigen Spez
 
 ## An Regeln delegierte vs. inline definierte Mandate
 
-- **An Regeln delegiert** (vollständige Spezifikation in `src/apothem/rules/`): siehe die Spalte „Implements“ der Regeltabelle der Artefakt-Registries. Umfasst CM-1–10, CM-12, CM-14, CM-17–28.
-- **Inline definiert** (vollständige Spezifikation hier, keine separate Regel): CM-11 (Plan-Integrität), CM-13 (Commits), CM-15 (Kollektive Kohärenz), CM-16 (Autonome Ausführung).
+- **An Regeln delegiert** (vollständige Spezifikation in `src/apothem/rules/`): siehe die Spalte „Implements“ der Regeltabelle in `site/content/docs/reference/rules.mdx`. Umfasst CM-1–10, CM-12, CM-14, CM-17–28.
+- **Inline definiert** (vollständige Spezifikation hier, keine separate Regel): CM-11 (Plan-Integrität), CM-13 (Commits; die Unterregeln D und E verweisen für ihre ausführliche Spezifikation auf Regeldateien), CM-15 (Kollektive Kohärenz), CM-16 (Autonome Ausführung).
 
 ## Unterreferenz-Konvention
 
-Befehle verwenden Buchstabensuffixe, um auf bestimmte Unterabschnitte innerhalb von Mandaten zu verweisen. Muster: `CM-N` + Suffixbuchstabe = Regelabschnitt. **Konvention zur Groß-/Kleinschreibung:** Großbuchstaben als Suffix bezeichnen strukturelle Unterabschnitte innerhalb eines Mandats; Kleinbuchstaben als Suffix bezeichnen feiner gegliederte Direktiven innerhalb einer Stufe der Kontextverwaltung. Die kanonische Zuordnungstabelle der Unterreferenz-Schlüssel (registry-interne Definitionen) ist im folgenden umzäunten Block wörtlich erhalten:
+Befehle verwenden Buchstabensuffixe, um auf bestimmte Unterabschnitte innerhalb von Mandaten zu verweisen. Muster: `CM-N` + Suffixbuchstabe = Regelabschnitt. **Konvention zur Groß-/Kleinschreibung:** Großbuchstaben als Suffix bezeichnen strukturelle Unterabschnitte innerhalb eines Mandats; Kleinbuchstaben als Suffix bezeichnen feiner gegliederte Direktiven innerhalb einer Stufe der Kontextverwaltung. Die kanonische Zuordnungstabelle der Unterreferenz-Schlüssel (registry-interne Definitionen) steht im folgenden Codeblock:
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

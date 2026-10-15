@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "96531a4a5fa4a15e"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,12 +39,13 @@ Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
 
 Alles, was rollback entfernt oder ersetzt, wird zuerst in die
 Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein
-Rollback selbst von Hand rückgängig machen lässt. Anschließend hängt es einen
-`rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer älteren
-Installation stellt nur die Ziele, die diese ältere Installation erfasst hat,
-wieder her oder entfernt sie, und nimmt jede spätere Installation an derselben
-Wurzel aus dem aktiven Datensatz heraus. Dateien, die eine spätere Installation
-außerhalb dieser Ziele hinzugefügt hat, bleiben an ihrem Ort.
+Rollback selbst von Hand rückgängig machen lässt. Anschließend hängt Rollback
+einen `rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer
+älteren Installation stellt nur die Ziele, die diese ältere Installation erfasst
+hat, wieder her oder entfernt sie, und nimmt jede spätere Installation an
+derselben Wurzel aus den aktiven Installationen des Ledgers heraus. Dateien, die
+eine spätere Installation außerhalb dieser Ziele hinzugefügt hat, bleiben an
+ihrem Ort.
 
 Das Ledger behält die neuesten 10 Installationseinträge pro Installationswurzel
 (mit den Sicherungen, auf die sie verweisen); eine ältere Installation lässt
@@ -71,10 +72,10 @@ registrierten Harness, einschließlich derer, die `exclude_harnesses` des Profil
 bei der Installation überspringt — das Wiederherstellen des Zustands vor der
 Installation ist ein Aufräumvorgang, daher erreicht er Einträge, die eine zuvor
 breiter angelegte Installation hinterlassen haben kann. Ein Harness ohne
-aufgezeichnete Installation schlägt mit `rollback.no_record` fehl (eine Zeile
-mit `"outcome": "error"` in `results`), und der Durchlauf wird mit den übrigen
+aufgezeichnete Installation schlägt als Zeile mit `"outcome": "error"` in
+`results` fehl (siehe JSON-Ausgabe), und der Durchlauf wird mit den übrigen
 Harnesses fortgesetzt. Der Befehl endet anschließend mit Exit-Code 1, oder mit 2,
-wenn ein anderer Harness zurückgesetzt wurde.
+wenn mindestens ein Ziel eines anderen Harness zurückgesetzt wurde.
 
 ## Optionen
 
@@ -116,9 +117,11 @@ Jedes wiederhergestellte oder entfernte Ziel erscheint in `results` mit
 in `files_written`); die `message` gibt an, ob der Pfad wiederhergestellt oder
 entfernt wurde. Eine fehlgeschlagene Wiederherstellung (zum Beispiel bei einer
 gelöschten Sicherung) ist `"outcome": "error"`. Eine Installation, die keine
-Änderungen aufgezeichnet hat, wird mit `"outcome": "skipped"` gemeldet. Wenn
-kein passender Installationseintrag existiert, meldet der Befehl einen
-`rollback.no_record`-Fehler mit `"status": "error"`.
+Änderungen aufgezeichnet hat, wird mit `"outcome": "skipped"` gemeldet. Wenn für
+einen einzelnen benannten Harness kein passender Installationseintrag existiert,
+meldet der Befehl einen `rollback.no_record`-Fehler mit `"status": "error"`. Bei
+`--harness all` ist ein Harness ohne passenden Eintrag stattdessen eine Zeile mit
+`"outcome": "error"` in `results`.
 
 ## Beispiele
 
@@ -134,7 +137,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | Erfolgreich zurückgesetzt oder nichts zurückzusetzen (die Installation hat keine Änderungen aufgezeichnet) |
 | 1 | Erwarteter Fehler — kein Installationseintrag, widersprüchliche Selektoren, unbekannter Harness, fehlende Projektwurzel oder abgelehnte bzw. nicht verfügbare Bestätigung (nicht interaktiver oder JSON-Modus ohne `--yes`) |
-| 2 | Teilweise Wiederherstellung, nachdem mindestens ein Ziel zurückgesetzt wurde |
+| 2 | Teilergebnis — mindestens ein Ziel wurde zurückgesetzt, und zusätzlich wurde ein Fehlschlag aufgezeichnet (eine fehlgeschlagene Wiederherstellung oder, bei `--harness all`, ein Harness ohne Installationseintrag) |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch

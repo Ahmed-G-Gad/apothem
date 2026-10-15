@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,11 +13,12 @@ aus einem Checkout unter System-Python 3.10 oder neuer (siehe
 [die eigenständige Laufzeit](/docs/architecture/self-contained-runtime)).
 
 **Zwei Voraussetzungen gelten für jeden Weg:** System-**Python 3.10 oder neuer**
-im `PATH`, unter dem die Pakete `click` und `rich` importierbar sind. Die Wege
-über den npm-Shim und die Werkzeug-Plugins benötigen zusätzlich **Node.js 18
-oder neuer**, um `npx` auszuführen. Python 3.10 sowie Node.js 18 und 20 haben
-ihr Upstream-Lebensende überschritten; sie bleiben unterstützt und getestet,
-neuere Versionen werden jedoch bevorzugt (siehe
+im `PATH`, unter dem die Pakete `click` und `rich` importierbar sind. Der npm-Shim
+(Kanal 2), die Erweiterung für die VS Code-Familie (Kanal 4) und die
+Kommandozeilen-Bootstraps (Kanäle 5–7) benötigen zusätzlich **Node.js 18 oder
+neuer**, um `npx` auszuführen. Python 3.10 sowie Node.js 18 und 20 haben ihr
+Upstream-Lebensende überschritten; sie bleiben unterstützt und getestet, neuere
+Versionen werden jedoch bevorzugt (siehe
 [Voraussetzungen auf einen Blick](#voraussetzungen-auf-einen-blick)). Der
 eigene Abschnitt jedes Kanals unten wiederholt seine exakten Voraussetzungen,
 einen kopierbereiten Befehl und einen Verifizierungsschritt.
@@ -83,9 +84,10 @@ und ein persönlicher `code-review`-Skill ersetzt das mitgelieferte
 `/code-review` (sein Alias `/review` führt weiterhin das mitgelieferte aus).
 Zwei Namen, `projectify` und `workflow`, werden sowohl als Befehl als auch als
 Skill ausgeliefert; Claude Code führt den Skill aus, wenn beides existiert,
-daher führt das Plugin den Skill aus, und die Engine-Installation schreibt den
-Skill in diesen Platz. Siehe [Slash-Befehle](/docs/reference/commands) für den
-vollständigen Befehlskatalog.
+daher führt das Plugin den Skill aus, und die Engine-Installation schreibt nur
+den Skill, nicht einen aus dem Befehl abgeleiteten Skill, nach
+`~/.claude/skills/<name>/`. Siehe [Slash-Befehle](/docs/reference/commands) für
+den vollständigen Befehlskatalog.
 
 **Verifizieren:** Führen Sie `/plugin` innerhalb von Claude Code aus und
 bestätigen Sie, dass **apothem** als installiert aufgeführt ist, oder prüfen
@@ -259,14 +261,15 @@ Die **Apothem**-Erweiterung wird aus einem `apothem.vsix`-Paket installiert:
 `code --install-extension apothem.vsix` oder der Befehl *Install from VSIX…*
 des Editors. Der Release-Workflow signiert das Paket und hängt es an jedes
 GitHub Release an. Releases, die veröffentlicht wurden, bevor der Workflow die
-Erweiterung paketierte, enthalten keines; fehlt es im neuesten Release, bauen
-Sie das Paket aus einem Checkout mit dem in `.github/vsce/` festgeschriebenen
-vsce-Release, das Node.js 22 oder neuer benötigt: Führen Sie
+Erweiterung paketierte, enthalten keine `.vsix`-Datei; fehlt sie im neuesten
+Release, bauen Sie das Paket aus einem Checkout mit dem in `.github/vsce/`
+festgeschriebenen vsce-Release (dieses vsce-Release benötigt Node.js 22 oder
+neuer): Führen Sie
 `npm ci --prefix .github/vsce --ignore-scripts` aus, dann
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Ein Eintrag im [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-ist noch nicht veröffentlicht. Eine Erweiterung deckt VS Code und seine im
-Editor integrierte Oberfläche für den begleitenden Assistenten ab. Ihre
+ist noch nicht veröffentlicht. Eine Erweiterung deckt die Editoren der
+VS Code-Familie ab. Ihre
 Palettenbefehle (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
 führen dieselbe Engine über den konfigurierten Runner aus (standardmäßig
 `npx @ahmed-g-gad/apothem@<extension version>`, sodass die Erweiterung die
@@ -408,15 +411,20 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 Ersetzen Sie den Harness-Namen durch den Adapter, den Sie installiert haben;
 alle unterstützten Namen finden Sie in der [Harness-Liste](/docs/harnesses). Um
 jeden installierten Adapter auf einmal zu prüfen (seine Verifizierung und seine
-Hook-Befehle), führen Sie `apothem doctor` (oder
-`npx @ahmed-g-gad/apothem doctor`) in derselben Form aus. Für den Plugin-Weg
-führen Sie `/plugin` innerhalb von Claude Code aus und bestätigen, dass
-**apothem** als installiert aufgeführt ist.
+Hook-Befehle), führen Sie `doctor` anstelle von `verify --harness NAME` aus, in
+derselben Form, die Sie oben verwendet haben: `apothem doctor`,
+`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` oder
+`npx @ahmed-g-gad/apothem doctor`. Für den Plugin-Weg führen Sie `/plugin`
+innerhalb von Claude Code aus und bestätigen, dass **apothem** als installiert
+aufgeführt ist.
 
 ## Voraussetzungen auf einen Blick
 
-- **Python 3.10 oder neuer** — jeder Weg, der die Engine ausführt, sucht danach
-  (`python3`, `python`, die versionierten Namen und `py -3` unter Windows).
+- **Python 3.10 oder neuer** — die Wege, die es ermitteln, tun dies über den
+  Namen, und die Namen unterscheiden sich je nach Weg. Der npm-Shim versucht
+  `python3`, `python` und dann `py -3`. Die Installer versuchen `python3`,
+  `python` und die versionierten Namen von `python3.14` bis hinunter zu
+  `python3.10`.
 - **`click` und `rich` importierbar** unter diesem Interpreter — die beiden
   terminalseitigen Abhängigkeiten, die die Engine nicht vendort. Die Installer
   prüfen beide, benennen alles Fehlende und bieten an, es für Sie zu
@@ -428,8 +436,9 @@ führen Sie `/plugin` innerhalb von Claude Code aus und bestätigen, dass
   (`<interpreter> -m pip install "click==…" "rich>=…"`); mit `--json` kommt
   derselbe Fehler als JSON-Envelope mit dem Code `runtime.dependency_missing`
   an.
-- **Node.js 18 oder neuer** — nur die Wege über den npm-Shim und die
-  Werkzeug-Plugins.
+- **Node.js 18 oder neuer** — nur die Wege, die `npx` ausführen: der npm-Shim
+  (2), die Erweiterung für die VS Code-Familie (4) und die
+  Kommandozeilen-Bootstraps (5–7).
 - **Laufzeiten am Lebensende.** Python 3.10 erreichte sein Upstream-Lebensende
   am 2026-10-01, Node.js 18 und 20 am 2025-04-30 bzw. 2026-04-30. Apothem
   unterstützt sie weiterhin als seine deklarierten Mindestversionen und testet

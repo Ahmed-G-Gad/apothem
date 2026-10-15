@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Apothem-Harness-Adapter für Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,7 @@ der universellen AGENTS.md-Konvention, und die Projektkonfiguration liegt unter
 dem Operator; Apothem benennt sie, verfasst aber keine Einträge.
 
 **Geschriebene Dateien:** `<project>/AGENTS.md` (verwalteter Block) sowie die
-Kohorten Commands, Skills, Hooks, Agents, Regeln und Templates unter
+Kohorten Commands, Skills, Hooks, Agenten, Regeln und Templates unter
 `<project>/.kimi-code/.apothem/support/`.
 
 ## Zuordnung von Profil zu nativer Konfiguration
@@ -40,7 +40,7 @@ Kohorten Commands, Skills, Hooks, Agents, Regeln und Templates unter
 Der Adapter liest Apothems gemeinsames Profil und rendert die Anweisungsoberfläche
 `AGENTS.md` im Projektstammverzeichnis bei jedem Lauf von `apothem install` oder
 `apothem update`. Die Verhaltensregeln und der Governance-Korpus landen im
-verwalteten Block der `AGENTS.md`; die Kohorten Commands, Skills, Hooks, Agents,
+verwalteten Block der `AGENTS.md`; die Kohorten Commands, Skills, Hooks, Agenten,
 Regeln und Templates werden unter `.kimi-code/.apothem/support/` abgelegt und von
 der Anweisungsoberfläche referenziert. Dies ist das vom Adapter gewählte Layout,
 keine Lücke in Kimi Code: Kimi Code lädt Skills aus `.kimi-code/skills/` und
@@ -55,7 +55,7 @@ Repository-Stil (`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst wir
 sodass eine committete `AGENTS.md` keinen maschinenspezifischen Pfad enthält.
 (Verhalten von Kimi Code gemäß seinen Anpassungsseiten zu
 [Skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
-[Subagents](https://moonshotai.github.io/kimi-code/en/customization/agents) und
+[Subagenten](https://moonshotai.github.io/kimi-code/en/customization/agents) und
 [Hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), gelesen
 am 2026-10-02.)
 
@@ -64,9 +64,12 @@ am 2026-10-02.)
 Kimi Code liest Projektanweisungen aus `AGENTS.md` oder
 `.kimi-code/AGENTS.md` und erkennt `.kimi-code/mcp.json` als die dem Operator
 gehörende MCP-Oberfläche; Apothem benennt diese Oberfläche, verfasst aber keine
-Einträge darin. Die gerenderte Anweisungsoberfläche steuert das Projekt direkt.
-Kimi Code stellt keine Dateioberfläche für Statuszeilen oder Output-Styles
-bereit, daher werden diese Kohorten nicht materialisiert.
+Einträge darin. Von den beiden Anweisungsdateien schreibt der Adapter nur die
+`AGENTS.md` im Projektstammverzeichnis, die Kimi Code als Projektanweisungen
+liest; die Kimi-Code-Dokumentation sagt nicht, welche der beiden Dateien Vorrang
+hat, wenn beide existieren. Kimi Code stellt keine Dateioberfläche für
+Statuszeilen oder Output-Styles bereit, daher werden diese Kohorten nicht
+materialisiert.
 
 Kimi Code läuft auf der Kimi-Modellfamilie von Moonshot; das aktuelle Modell und
 die aktuelle Konfigurationsoberfläche finden Sie in der
@@ -81,7 +84,10 @@ apothem verify --harness kimi-code --project /path/to/project
 Der Befehl verify bestätigt Folgendes:
 
 1. Die native Konfiguration existiert am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung

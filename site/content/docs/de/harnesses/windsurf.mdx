@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Apothem-Harness-Adapter für Windsurf (GA)."
 machineTranslated: true
-sourceHash: "454c37fe1917092f"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,13 @@ Einzeldatei-Form `.windsurfrules` wird absichtlich nicht geschrieben.
 apothem verify --harness windsurf --project /path/to/project
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -73,8 +76,13 @@ Profils neu ab.
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block und das Frontmatter, das Apothem darüber geschrieben
+hat, aus `<project>/.devin/rules/apothem-rules.md` und behält jeden anderen Text
+darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig ist.
+Vor der Änderung wird eine mit Zeitstempel versehene Kopie der Datei unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
 ## Konformitäts-Gate
 
@@ -94,7 +102,7 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
 
 ## Siehe auch
 

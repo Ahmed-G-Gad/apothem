@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Hermes-Konfiguration"
 description: "Die Hermes-Konfiguration von Hand pflegen oder sie über das gemeinsame Profil von Apothem verwalten."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ Skills sind, bleiben Apothem-Unterstützungsmaterial.
 
 Der Hermes-Adapter schreibt `config.yaml`, verpackt Apothem-Slash-Befehle als
 Skills, kopiert Apothem-Skills in das Unterstützungsverzeichnis und hält Regeln,
-Templates, Agents und Hook-Material unter dem Apothem-Unterstützungs-Teilbaum.
+Templates, Agenten und Hook-Material unter dem Apothem-Unterstützungs-Teilbaum.
 Hermes lädt diese Skills erst, nachdem Sie
 `~/.hermes/.apothem/support/skills` in `config.yaml` zu `skills.external_dirs`
 hinzugefügt haben.
@@ -44,7 +44,10 @@ hinzugefügt haben.
    gemeinsame Korpus.
 3. Führen Sie `apothem install --harness hermes` aus, um die native
    Konfiguration und das Unterstützungsverzeichnis für Skills zu rendern.
-4. Führen Sie `apothem verify --harness hermes` aus, um zu bestätigen, dass die
+4. Fügen Sie `~/.hermes/.apothem/support/skills` in `config.yaml` zu
+   `skills.external_dirs` hinzu, damit Hermes die installierten Skills lädt.
+   `apothem update` behält Schlüssel, die Sie zu `config.yaml` hinzufügen.
+5. Führen Sie `apothem verify --harness hermes` aus, um zu bestätigen, dass die
    Konfiguration angekommen ist.
 
 ## Als Nächstes lesen

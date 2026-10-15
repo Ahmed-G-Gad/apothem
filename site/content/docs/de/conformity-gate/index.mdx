@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Apothems Konformitäts-Gate — der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15), den jedes ausgegebene Artefakt bestehen muss."
 machineTranslated: true
-sourceHash: "56cca9f8f53e7f52"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,16 +26,18 @@ sourceHash: "56cca9f8f53e7f52"
 | 14 | M14 | Systemizität (deklariert Upstream / Downstream / Gleichrangige / Durchsetzer) | Abwägungsbasiert | Deklarieren; in Registries indexieren |
 | 15 | M15 | Produktionsreife (Tests + Doku + CHANGELOG + konformer Commit + grüne CI + Semver-Stabilität) | Mechanisch + abwägungsbasiert | Fehlende Oberflächen ergänzen |
 
+Das Gate führt nur maschinell prüfbare Validatoren aus. Die abwägende Beurteilung, die die abwägungsbasierten Stufen verlangen, und die abwägende Hälfte jeder Stufe der Klasse Mechanisch + abwägungsbasiert werden im Review bewertet.
+
 ## Schweregradleiter
 
-Das Gate kennt keine Stufenleiter aus Kritisch, Wichtig und Beratend und keinen Schwellenwert von zwei Befunden. Ohne `--strict` (oder `APOTHEM_CONFORMITY_STRICT=1`) meldet das Gate Befunde und endet mit `0`. Mit `--strict` endet eine Prüfung einer einzelnen Datei oder eines Hooks mit `2`, sobald ein Matcher fehlschlägt, und ein Korpuslauf (`--all-perwrite`) endet mit `2`, wenn ein blockierender Matcher fehlschlägt; beratende Matcher werden nur gemeldet. Der installierte Write/Edit-Hook übergibt kein `--strict`. Er meldet daher Befunde, und der Schreibvorgang läuft weiter, sofern nicht `APOTHEM_CONFORMITY_STRICT=1` in seiner Umgebung gesetzt ist.
+Das Gate kennt keine Leiter aus Kritisch, Wichtig oder Beratend und keinen Schwellenwert von zwei Befunden. Ohne `--strict` (oder `APOTHEM_CONFORMITY_STRICT=1`) meldet das Gate Befunde und endet mit `0`. Mit `--strict` endet eine Prüfung einer einzelnen Datei oder eines Hooks mit `2`, sobald ein Matcher fehlschlägt, und ein Korpuslauf (`--all` oder `--all-perwrite`) endet mit `2`, wenn ein blockierender Validator oder Matcher fehlschlägt; beratende Befunde werden nur gemeldet. Der installierte Write/Edit-Hook übergibt kein `--strict`. Er meldet daher Befunde, und der Schreibvorgang läuft weiter, sofern nicht `APOTHEM_CONFORMITY_STRICT=1` in seiner Umgebung gesetzt ist.
 
 ## Validatoren
 
 Der mechanische Anteil liegt unter [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity) und wird von [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) orchestriert.
 Jeder Validator läuft auf eine von drei Arten:
 
-- **per-write**: bei jedem anstehenden Schreibvorgang (`--hook`) oder mit `--all-perwrite` für jede versionierte Datei.
+- **per-write**: bei jedem anstehenden Schreibvorgang (`--hook`) oder mit `--all-perwrite` bei jeder versionierten Datei.
 - **standalone**: mit `--all` über das gesamte Repository oder mit `--check <name>` einzeln.
 - **change-set**: gegen einen gestagten Diff, direkt ausgeführt als `python -m apothem.conformity.semver_stability_grep --staged`, nicht über das Gate.
 
@@ -108,9 +110,13 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 Auf einem installierten Harness läuft das Gate automatisch: Die `settings.json`
 von Claude Code bindet es als `PreToolUse`-Hook ein, der vor jedem Write/Edit die
 materialisierte Kopie unter `~/.claude/.apothem/support/conformity/gate.py`
-aufruft. Aus einem Quell-Checkout treibt die Modulform denselben Code an. Das
-Gate ist standardmäßig beratend: Es meldet Befunde und endet mit `0`. Fügen Sie
-`--strict` hinzu, damit es bei einem blockierenden Befund mit `2` endet. Ein
+aufruft. Das Gate prüft dann nur Schreibvorgänge im Geltungsbereich seines Hooks,
+und ein Schreibvorgang außerhalb des Geltungsbereichs wird stillschweigend
+durchgelassen; [Das Konformitäts-Gate ausführen](/docs/usage/conformity-gate)
+listet den Geltungsbereich auf. Aus einem Quell-Checkout treibt die Modulform
+denselben Code an; setzen Sie jedem `python`-Befehl unten `PYTHONPATH=src` voran.
+Das Gate ist standardmäßig beratend: Es meldet Befunde und endet mit `0`. Fügen
+Sie `--strict` hinzu, damit es bei einem blockierenden Befund mit `2` endet. Ein
 unbekannter Validator-Name endet mit `3`.
 
 ```shell

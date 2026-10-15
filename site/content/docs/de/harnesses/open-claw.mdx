@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Apothem-Harness-Adapter für Open-Claw (Vorschau)."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,8 +37,8 @@ das jeder Verweis im Repository-Stil (`rules/<name>.md`, `templates/...`,
 Der Adapter liest Apothems gemeinsames Profil, verfasst aber keine
 Konfigurationsschlüssel: Eine neue oder leere `openclaw.json` wird als leeres
 Objekt geschrieben, und eine bestehende Datei behält ihre Schlüssel. Identität,
-Präferenzen und Regeln des Profils gehen in das Profildokument.
-Gemeinsame Commands, Skills, Regeln, Templates und Hook-Prompts werden als
+Präferenzen und Regeln des Profils gehen in das Profildokument. Gemeinsame
+Commands, Skills, Regeln, Templates und Hook-Prompts werden als
 Unterstützungsmaterial unter `~/.openclaw/.apothem/support/` installiert.
 
 ## Kompatibilitätshinweise
@@ -67,7 +67,10 @@ apothem verify --harness open-claw
 Der Befehl verify bestätigt Folgendes:
 
 1. Die native Konfiguration existiert am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -88,8 +91,11 @@ aktualisiert haben.
 apothem uninstall --harness open-claw
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt, was der Adapter hinzugefügt hat: das Profildokument und den
+Unterstützungsbaum. Ihre eigenen Schlüssel in `openclaw.json` bleiben erhalten,
+und die Datei wird nur gelöscht, wenn Apothem sie angelegt hat und nichts von
+Ihnen übrig ist. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine
+bleiben unberührt.
 
 ## Konformitäts-Gate
 

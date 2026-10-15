@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Apothem-Harness-Adapter für OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,12 +20,13 @@ apothem install --harness opencode
 Der Adapter schreibt die JSON-Konfiguration von OpenCode, installiert
 Apothem-Skills in die Skill-Oberfläche von OpenCode, konvertiert Command-Prompts
 in Markdown-Command-Dateien von OpenCode und normalisiert Apothems
-Helfer-Definitionen als OpenCode-Sub-Helfer.
+Helferdefinitionen als OpenCode-Subhelfer.
 
 **Geschriebene Dateien:**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -42,16 +43,16 @@ Apothem verwaltete Kindeinträge werden vor dem Ersetzen gesichert.
 
 ## Kompatibilitätshinweise
 
-OpenCode fasst jede Datei, die die `instructions`-Liste nennt, in jeder Sitzung
+OpenCode führt jede Datei, die die `instructions`-Liste nennt, in jeder Sitzung
 zusammen ([OpenCode-Regeln](https://opencode.ai/docs/rules/)). Die Liste nennt
 daher zuerst Ihr Profildokument und danach nur die Regeln, deren `alwaysApply`
 den Wert `true` hat, jeweils mit einem expliziten Pfad
-`~/.config/opencode/.apothem/support/rules/<name>.md`; OpenCode
-löst das führende `~/` gegen Ihr Home-Verzeichnis auf. Die pfadgefilterten
-Regeln, Templates und Hook-Prompts bleiben als Referenzmaterial unter
+`~/.config/opencode/.apothem/support/rules/<name>.md`; OpenCode löst das
+führende `~/` gegen Ihr Home-Verzeichnis auf. Die pfadgefilterten Regeln,
+Templates und Hook-Prompts bleiben als Referenzmaterial unter
 `~/.config/opencode/.apothem/support/` installiert, wo eine Regel, ein Skill oder
 ein Command, die bzw. der eines davon zitiert, es bei Bedarf liest. Commands,
-Skills und Helfer-Definitionen nutzen native Discovery-Speicherorte.
+Skills und Helferdefinitionen nutzen native Discovery-Speicherorte.
 
 Das Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md`
 trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil und endet
@@ -73,10 +74,13 @@ eigenen `instructions`-Einträge bleiben in jedem Fall erhalten.
 apothem verify --harness opencode
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -85,7 +89,7 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness opencode
 ```
 
-Aktualisiert `opencode.json`, native Commands, Skills, Helfer-Definitionen und
+Aktualisiert `opencode.json`, native Commands, Skills, Helferdefinitionen und
 den Apothem-Unterstützungsbaum.
 
 ## Deinstallation
@@ -94,8 +98,18 @@ den Apothem-Unterstützungsbaum.
 apothem uninstall --harness opencode
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt die Einträge, die der Adapter zu `~/.config/opencode/opencode.json`
+hinzugefügt hat (Ihre eigenen Schlüssel, MCP-Server und `instructions`-Einträge
+bleiben erhalten, und die Datei wird nur gelöscht, wenn Apothem sie angelegt hat
+und nichts von Ihnen übrig ist). Entfernt den Apothem-Block aus dem
+Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md` und
+behält jeden anderen Text darin; diese Datei wird nur gelöscht, wenn darin
+nichts anderes mehr übrig ist. Entfernt außerdem die Apothem-Dateien in
+`~/.config/opencode/commands/`, `~/.config/opencode/skills/`,
+`~/.config/opencode/agents/` und `~/.config/opencode/.apothem/support/`; andere
+Dateien in diesen Ordnern bleiben bestehen. Jede Datei wird unter
+`~/.apothem/backups/` gesichert, bevor sie geändert oder entfernt wird. Die
+YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 
@@ -115,7 +129,7 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
 
 ## Siehe auch
 

@@ -2,7 +2,7 @@
 title: "Eigenständige Laufzeit"
 description: "Wie Apothems Engine aus jedem Checkout läuft — gevendorte Abhängigkeiten, das Aufrufmodell PYTHONPATH=src und der Bootstrap des Plugin-Baums."
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,8 +107,8 @@ Python-Pakete in `site-packages` installiert. Der Klon ist das vollständige
 Repository, einschließlich der Testsuite und der Dokumentationsseite, die die
 Laufzeit niemals importiert, und zwar aus zwei bewussten Gründen: Die Engine
 **materialisiert ihre Kohorten** — Regeln, Skills, Befehle und Templates —
-direkt aus dem Baum in jeden Harness, sodass der Baum die lebendige maßgebliche
-Quelle ist und nicht nur eine Laufzeit; und das `.git`-Verzeichnis bleibt an
+direkt aus dem Baum in jeden Harness, sodass der Baum die lebendige Quelle der
+Wahrheit ist und nicht nur eine Laufzeit; und das `.git`-Verzeichnis bleibt an
 Ort und Stelle, sodass `apothem update` den bestehenden Klon per Fast-Forward
 aktualisiert, statt neu herunterzuladen.
 
@@ -124,13 +124,15 @@ minimalem Speicherbedarf.
 
 ## Wie die Laufzeit Python findet
 
-Die Ein-Schritt-Installer und der npx-Shim finden einen Interpreter auf dieselbe
-Weise: Sie sondieren `python3`, `python`, die versionierten Namen
-(`python3.14` bis `python3.10`) und unter Windows `py -3`; sie weisen
-Launcher-Shims des Microsoft Store zurück; und sie akzeptieren den ersten
-Kandidaten, der Version 3.10 oder neuer meldet. Bei Ausführung aus einem
-Quellbaum verwenden die Installer den gebündelten Locator
-`hooks/lib/find-python` wieder, der dieselbe Untergrenze anwendet.
+Die Ein-Schritt-Installer und der npx-Shim sondieren unterschiedliche Namen und
+wenden dieselben Regeln an. Die Installer sondieren `python3`, `python` und die
+versionierten Namen (`python3.14` bis `python3.10`). Der npx-Shim sondiert
+`APOTHEM_PYTHON`, wenn die Variable gesetzt ist, danach `python3`, `python` und
+`py -3`; er hat keine versionierten Namen. Beide weisen Launcher-Shims des
+Microsoft Store zurück und akzeptieren den ersten Kandidaten, der Version 3.10
+oder neuer meldet. Bei Ausführung aus einem Quellbaum verwenden die Installer
+den gebündelten Locator `hooks/lib/find-python` wieder, der dieselbe Untergrenze
+anwendet.
 
 ## Empfohlener nächster Schritt
 

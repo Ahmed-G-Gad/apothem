@@ -2,18 +2,20 @@
 title: "Einrichtung des Publisher-Kontos"
 description: "Den vertrauenswürdigen npmjs.com-Publisher für @ahmed-g-gad/apothem und die GitHub-seitigen Release-Voraussetzungen konfigurieren."
 machineTranslated: true
-sourceHash: "4f750a0f9fdb2429"
+sourceHash: "ee07a06a98f62864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Dieses Runbook konfiguriert die Publisher-Seite der Release-Oberfläche. Die
 Distributionsgeschichte hat eine einzige Registry: das Scoped-npm-Paket
 `@ahmed-g-gad/apothem` auf npmjs.com, veröffentlicht vom Workflow
-`publish-npm.yml` (er läuft beim Push eines `v*.*.*`-Tags; ein manueller
-Dispatch mit einer `tag`-Eingabe ist der Ausweichweg), nachdem die Workflows für
-GitHub Release, Pages, CI, Konformität und Harness grün sind. Jedes andere
-Artefakt wird auf der GitHub-Release-Seite selbst ausgeliefert und benötigt kein
-externes Publisher-Konto.
+`publish-npm.yml`. Der Workflow läuft beim Push eines `v*.*.*`-Tags neben
+`release.yml` und wartet nicht auf ihn (ein manueller Dispatch mit einer
+`tag`-Eingabe ist der Ausweichweg). Die Genehmigung der Umgebung `release` ist
+das Gate: Der Operator erteilt sie, nachdem die Workflows für GitHub Release,
+Pages, CI, Konformität und Harness grün sind. Jedes andere Artefakt wird auf
+der GitHub-Release-Seite selbst ausgeliefert und benötigt kein externes
+Publisher-Konto.
 
 ## Identitätszuordnung
 
@@ -77,8 +79,9 @@ Es ist kein `NPM_TOKEN`-, Benutzernamen- oder Passwort-Secret erforderlich. Der
 Workflow veröffentlicht über npm Trusted Publishing (OIDC), wobei die
 Node-Version und der OIDC-Mindeststand der npm-CLI in
 `.github/workflows/publish-npm.yml` gepinnt sind. Er führt
-`npm publish --access public` gegen npmjs.com aus; npm erzeugt automatisch
-Provenienz für öffentliche Pakete, die aus einem öffentlichen
+`npm publish --provenance --access public` gegen npmjs.com aus, sodass die
+Sigstore-Provenienzaussage ausdrücklich angefordert wird; npm erzeugt außerdem
+standardmäßig Provenienz für öffentliche Pakete, die aus einem öffentlichen
 GitHub-Actions-Workflow veröffentlicht werden. Ein Registry-`404` während `PUT`
 bedeutet, dass der vertrauenswürdige Publisher auf npm-Seite, der Paket-Scope
 oder die Kontoautorisierung noch nicht abgestimmt ist; korrigieren Sie die

@@ -2,7 +2,7 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ kanonische Schema für jeden Typ.
 **Universelle Regeln:**
 
 - Das Frontmatter ist YAML-1.2-konform
-- Alle Zeichenkettenwerte verwenden doppelte Anführungszeichen, sofern sie nicht leer sind
+- Alle Zeichenkettenwerte verwenden doppelte Anführungszeichen, und eine leere Zeichenkette wird als `""` geschrieben
 - Feldreihenfolge: Pflichtfelder zuerst, optionale Felder nach Relevanz gruppiert
 - Kommentare im Frontmatter verwenden `#` mit Leerzeichen: `# comment`
 - Pfadwerte müssen relativ sein (kein führender `/`) und für plattformübergreifende Kompatibilität Schrägstriche (`/`) verwenden
@@ -150,8 +150,8 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Zweck:** Persistente Helfer-Definitionen für parallele Exploration, Audits
-und Qualitäts-Gates.
+**Zweck:** Persistente Helfer-Definitionen (auch delegierte Worker genannt)
+für parallele Exploration, Audits und Qualitäts-Gates.
 
 ### Pflichtfelder
 
@@ -306,7 +306,7 @@ Die Form `-m apothem.hooks.dispatch` ist für die Entwicklung aus einem Quell-Ch
 
 | Feld | Typ | Zweck | Beispiel |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | Werkzeugnamensmuster (oder `"*"` für werkzeugunabhängige Ereignisse) | `"Write"` |
+| `matcher` | string | Tool-Namensmuster (oder `"*"` für tool-unabhängige Ereignisse) | `"Write"` |
 | `hooks[].type` | Literal `"command"` | Der derzeit einzige unterstützte Hook-Handler-Typ | `"command"` |
 | `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet den Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird | `"${PYTHON_BIN}"` |
 | `hooks[].args` | Array von Strings | Argumente in Exec-Form: ein Skriptpfad unter `${HARNESS_ROOT}/.apothem/support/`, danach seine Argumente | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
@@ -315,7 +315,7 @@ Die Form `-m apothem.hooks.dispatch` ist für die Entwicklung aus einem Quell-Ch
 
 ### Erforderliche Ereignisse
 
-Die Claude-Code-Vorlage registriert SessionStart, PreToolUse, PostToolUse und Stop. PreCompact und PostCompact sind für Claude Code nicht registriert ([Hook-Referenz](/docs/reference/hooks)), und `scripts/dev/validate_hooks.py` meldet jedes von ihnen als fehlend, jeweils als Warnung. Die Tabelle listet die fünf Ereignisse auf, die `validate_hooks.py` prüft:
+Die Claude-Code-Vorlage registriert vier Ereignisse: SessionStart, PreToolUse, PostToolUse und Stop. `scripts/dev/validate_hooks.py` prüft `settings.json` auf die fünf Ereignisse in der Tabelle unten, eine andere Menge, und meldet jedes, das es nicht findet, als Warnung, nicht als Fehlschlag. PostToolUse ist registriert, gehört aber nicht zu den fünf. PreCompact und PostCompact gehören zu den fünf, sind aber für Claude Code nicht registriert ([Hook-Referenz](/docs/reference/hooks)); der Prüfer warnt dort daher vor beiden.
 
 > **Die Timeout-Werte spiegeln die kanonischen Budgets der Hook-Ereignisse
 > wider** — die Tabelle unten gibt sie zur Bequemlichkeit der Lesenden wieder;
@@ -349,7 +349,7 @@ Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 
 `scripts/dev/validate_hooks.py` erzwingt den Hook-Vertrag:
 
-- `settings.json` lässt sich als JSON parsen und deklariert jedes erforderliche Ereignis.
+- `settings.json` lässt sich als JSON parsen und deklariert jedes der fünf Ereignisse in der Tabelle; ein fehlendes Ereignis ist eine Warnung, kein Fehlschlag.
 - Alle drei Python-Skripte existieren und lassen sich als gültiges Python parsen.
 - Alle Nachrichtendateien, auf die `--context-file`-Argumente verweisen, existieren.
 - In `src/apothem/hooks/**.py` erscheinen keine fest codierten absoluten Benutzerpfade (`C:\Users\...` usw.).
@@ -400,7 +400,7 @@ Jedes Artefakt muss diese Prüfungen bestehen:
 
 ### Inhaltsvalidierung
 
-- [ ] Der Inhalt beginnt in einer neuen Zeile nach dem schließenden `---`; bei Dateien der Markdown-Familie ist das Banner des Autorschafts-Headers der erste Inhalt danach
+- [ ] Der Inhalt beginnt in einer neuen Zeile nach dem schließenden `---`; bei Dateien der Markdown-Familie ist die kanonische SPDX-Header-Zeile der erste Inhalt danach
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
 - [ ] Querverweise lassen sich auflösen (falls andere Artefakte aufgeführt werden)
 - [ ] Links verwenden relative Pfade mit Schrägstrichen
