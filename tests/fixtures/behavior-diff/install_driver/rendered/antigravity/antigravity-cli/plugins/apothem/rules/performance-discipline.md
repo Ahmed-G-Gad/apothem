@@ -1,6 +1,6 @@
 ---
 trigger: glob
-description: "Per-class runtime performance budgets with quantitative pass/fail gates — each artifact class (hook handlers, the conformity sweep, the test suite, agent spawn, install resolution) carries a runtime ceiling, a measurement boundary, and a benchmark verifier that exits zero on compliance; budget exceedances surface as findings routed to the expertise-gap log. Closes the Performance axis of the seven-axs-of-breadth taxonomy."
+description: "Per-class runtime performance budgets with quantitative pass/fail gates — each artifact class (hook handlers, the conformity sweep, the test suite, agent spawn, install resolution) carries a runtime ceiling, a measurement boundary, and a benchmark verifier that exits zero on compliance; budget exceedances surface as findings routed to the expertise-gap log. Closes the Performance axis of the seven-axes-of-breadth taxonomy."
 globs: "**/hooks/**, **/tools/**, **/tests/**, **/agents/**"
 ---
 
@@ -10,7 +10,7 @@ globs: "**/hooks/**, **/tools/**, **/tests/**, **/agents/**"
 
 ## Purpose
 
-Establish per-class performance budgets and quantitative gates; close the Performance gap of the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1.
+Establish per-class performance budgets and quantitative gates; close the Performance gap of the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1.
 
 ## Obligations
 
@@ -83,12 +83,12 @@ An operator MAY amend a per-class budget at the §1 table; each amendment cites 
 
 ## Enforcement
 
-Path-filtered (the four glob entries in this rule's `pathFilter` field), scaling per the table above. Canonical specification for per-class performance budgets and quantitative gates across the Performance axis of the seven-axs-of-breadth taxonomy.
+Path-filtered (the four glob entries in this rule's `pathFilter` field), scaling per the table above. Canonical specification for per-class performance budgets and quantitative gates across the Performance axis of the seven-axes-of-breadth taxonomy.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every artifact-class touch under the four path-filter entries (`**/hooks/**`, `**/tools/**`, `**/tests/**`, `**/agents/**`) — the per-class budget table at §1 enforces a quantitative ceiling. ● Every benchmark-suite invocation under `src/apothem/benchmarks/` (the four scripts `bench_hooks.py` + `bench_validate_ecosystem.py` + `bench_tests.py` + `bench_agents.py` realize the §3 verifier specification). ● Every budget-exceedance routing to `memory/expertise-gap-log.md` for closure tracking. ◐ The CI pipeline's release-tier benchmark gating.
-- **Satisfies →** ● the rules registry row "Performance Discipline" (W19-BIS extension). ● The Performance axis declared in `rules/cognitive-identity.md` §1's seven-axs-of-breadth taxonomy. ● the hooks pipeline timeout cliffs (the per-class budgets at §1 align with the canonical hook-event timeout values).
-- **Established by ↑** ● `rules/cognitive-identity.md` §1 (the seven-axs-of-breadth taxonomy declares the Performance axis this rule operationalizes). ● the hooks pipeline (the timeout-value canonical block this rule's §1 budgets align with).
+- **Satisfies →** ● the rules registry row "Performance Discipline" (W19-BIS extension). ● The Performance axis declared in `rules/cognitive-identity.md` §1's seven-axes-of-breadth taxonomy. ● the hooks pipeline timeout cliffs (the per-class budgets at §1 align with the canonical hook-event timeout values).
+- **Established by ↑** ● `rules/cognitive-identity.md` §1 (the seven-axes-of-breadth taxonomy declares the Performance axis this rule operationalizes). ● the hooks pipeline (the timeout-value canonical block this rule's §1 budgets align with).
 - **Gated by ←** ● The path-filter (the four glob entries: hooks/, tools/, tests/, agents/) — this rule activates only on matching artifact touches. ● `rules/cognitive-identity.md` Senior Software Architect role declaration.
-- **Cross-bound with ↔** ↔ `rules/cognitive-identity.md` (the seven-axs-of-breadth declaration this rule closes). ↔ `src/apothem/benchmarks/` (the per-class benchmark scripts the §3 verifier specification operationalizes). ↔ `memory/expertise-gap-log.md` (per-axis amendment ledger; budget exceedances route here per §2). ↔ `scripts/dev/validate_ecosystem.py` (the `--check perf-budgets` subcommand operationalizes the §1 budgets). ↔ `rules/code-craft-python.md` (the per-class performance budgets apply to Python artifacts under this rule's path-filter). ↔ `rules/code-craft-shell.md` (per-shell budgets — bootstrap.sh ≤ 500ms, bootstrap.ps1 ≤ 1500ms, find-python.{sh,ps1} ≤ 200ms, shellcheck ≤ 5s, Invoke-ScriptAnalyzer ≤ 10s; this rule is the static-form quality discipline whose runtime is governed there). ↔ `rules/token-budget-discipline.md` (the budget methodology).
+- **Cross-bound with ↔** ↔ `rules/cognitive-identity.md` (the seven-axes-of-breadth declaration this rule closes). ↔ `src/apothem/benchmarks/` (the per-class benchmark scripts the §3 verifier specification operationalizes). ↔ `memory/expertise-gap-log.md` (per-axis amendment ledger; budget exceedances route here per §2). ↔ `scripts/dev/validate_ecosystem.py` (the `--check perf-budgets` subcommand operationalizes the §1 budgets). ↔ `rules/code-craft-python.md` (the per-class performance budgets apply to Python artifacts under this rule's path-filter). ↔ `rules/code-craft-shell.md` (per-shell budgets — bootstrap.sh ≤ 500ms, bootstrap.ps1 ≤ 1500ms, find-python.{sh,ps1} ≤ 200ms, shellcheck ≤ 5s, Invoke-ScriptAnalyzer ≤ 10s; this rule is the static-form quality discipline whose runtime is governed there). ↔ `rules/token-budget-discipline.md` (the budget methodology).

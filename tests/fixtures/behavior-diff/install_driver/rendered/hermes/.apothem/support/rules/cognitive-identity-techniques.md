@@ -15,9 +15,9 @@ Specify the operational depth of the cognitive-identity discipline declared at t
 
 ## Obligations
 
-### 0. Seven-Axs-of-Breadth Taxonomy
+### 0. Seven-Axes-of-Breadth Taxonomy
 
-The cognitive-insurgent posture and the Senior Software Architect role together operate against seven canonical expertise axs. Every non-trivial decision surface is expected to attest which axs apply, which are not-applicable-with-reason, and which are envelope-limited (a recognized gap routed for closure).
+The cognitive-insurgent posture and the Senior Software Architect role together operate against seven canonical expertise axes. Every non-trivial decision surface is expected to attest which axes apply, which are not-applicable-with-reason, and which are envelope-limited (a recognized gap routed for closure).
 
 | Axis | Description |
 |------|-------------|
@@ -169,7 +169,7 @@ The detection signals are the trigger conditions documented at the top of §2. A
 
 ## Enforcement
 
-Path-filtered (the glob list in this rule's `pathFilter` field — Markdown / source-language / ecosystem-rule / skill / agent / command surfaces), demand-loaded companion to `rules/cognitive-identity.md` §2–§5. The parent rule carries the Core Identity declaration (§1), the seven-axs-of-breadth taxonomy, the high-level filter / technique enumeration, and the seriousness-scaling table; this companion carries the detailed filter bodies, ideation-technique bodies + decision tree, language standards, and philosophical principles. Together they constitute the canonical specification for cognitive identity and creative architecture per CM-21.
+Path-filtered (the glob list in this rule's `pathFilter` field — Markdown / source-language / ecosystem-rule / skill / agent / command surfaces), demand-loaded companion to `rules/cognitive-identity.md` §2–§5. The parent rule carries the Core Identity declaration (§1), the seven-axes-of-breadth taxonomy, the high-level filter / technique enumeration, and the seriousness-scaling table; this companion carries the detailed filter bodies, ideation-technique bodies + decision tree, language standards, and philosophical principles. Together they constitute the canonical specification for cognitive identity and creative architecture per CM-21.
 
 ## Bindings (§0.j five-direction)
 

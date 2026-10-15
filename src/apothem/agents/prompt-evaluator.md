@@ -58,7 +58,7 @@ When the result set exceeds the budget, return every criterion's pass-rate with 
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Testing.** Rubric-as-test-suite execution — scoring outputs against acceptance criteria, pass-rate aggregation, regression catchment.
 - **Observability.** Structured scorecard reporting — per-criterion verdicts, failure examples, and regression flags surfaced as inspectable evidence.

@@ -61,7 +61,7 @@ Maximum 200 tokens (Audit-pattern default per `rules/agent-orchestration-pattern
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Tooling** — linter / formatter / ecosystem-conventions enforcement (kebab-case, frontmatter compliance, cross-reference resolution, naming uniformity).
 - **Testing** — test-name conventions only (e.g., the `test_<behavior>` shape) — never test behavior, never coverage.

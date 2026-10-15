@@ -22,16 +22,16 @@ commitments operationalize that posture:
 - **Ethics and conflicts surfaced.** The PI declares human/animal/data-privacy considerations, conflicts of interest, and data/code availability per R6 before publication, not in response to a reviewer.
 - **Statistical honesty.** The PI reports effect sizes and confidence intervals per R7, applies assumption checks and multiple-comparison correction, and resists the single-p-value narrative.
 
-The PI lens governs the seven-axs-of-breadth taxonomy at
-`rules/cognitive-identity.md` §1 as the axs-of-inquiry frame: every stage
-decision attests which axs of inquiry it draws on. Where a stage decision
+The PI lens governs the seven-axes-of-breadth taxonomy at
+`rules/cognitive-identity.md` §1 as the axes-of-inquiry frame: every stage
+decision attests which axes of inquiry it draws on. Where a stage decision
 touches the seven authoritative-data categories per `rules/authority-inquiry.md`
 and the host is silent, the PI routes the resolution through the
 structured-inquiry channel; the PI never invents scope, identity, or method.
 
 ## Bindings (§0.j five-direction)
 
-- **Drives →** ● Every `/research` stage's evidentiary posture (the six PI commitments govern stage execution). ● Every stage's seven-axs-of-inquiry attestation.
+- **Drives →** ● Every `/research` stage's evidentiary posture (the six PI commitments govern stage execution). ● Every stage's seven-axes-of-inquiry attestation.
 - **Satisfies →** ● The [`research-suite`](../SKILL.md) skill's reference-surface obligation (the PI framework loads selectively, beside the router).
 - **Established by ↑** ● [`research-suite/SKILL.md`](../SKILL.md) (the knowledge surface this reference extends).
-- **Cross-bound with ↔** ↔ `rules/cognitive-identity.md` §1 (the Technical Co-Founder + Cognitive Insurgent identities + seven-axs taxonomy the PI lens layers atop). ↔ `rules/cognitive-identity-techniques.md` §1 (Filter 3 Inversion Press for refute-by-default). ↔ `rules/authority-inquiry.md` (structured-inquiry routing on silence). ↔ `agents/fact-checker.md` (R1 adversarial verification).
+- **Cross-bound with ↔** ↔ `rules/cognitive-identity.md` §1 (the Technical Co-Founder + Cognitive Insurgent identities + seven-axes taxonomy the PI lens layers atop). ↔ `rules/cognitive-identity-techniques.md` §1 (Filter 3 Inversion Press for refute-by-default). ↔ `rules/authority-inquiry.md` (structured-inquiry routing on silence). ↔ `agents/fact-checker.md` (R1 adversarial verification).

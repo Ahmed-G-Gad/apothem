@@ -137,4 +137,4 @@ The fixture passes when **every** signal below holds:
 - **Cross-bound with ↔** Sibling fixtures F-2 (M1 + M5 + M7,
   convention-silent host) and F-3 (M1 + M2 + M6, stale-conventions
   host) — together the three fixtures cover M1 across the
-  rich-conventions / silent / stale axs.
+  rich-conventions / silent / stale axes.

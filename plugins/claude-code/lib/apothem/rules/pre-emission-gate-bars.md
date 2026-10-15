@@ -17,7 +17,7 @@ Carry the executable detail of the fifteen-bar pre-emission gate the parent `rul
 
 ### 1. The Fifteen Bars — Full Detail
 
-Every emitted artifact passes each bar individually. Mechanical-fraction bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `conformity/*-grep.py`, run as `PreToolUse` hook checks orchestrated by `conformity/gate.py`. Reasoned bars (M1, M3, M6, M9, M11, M12, M14) are agent-evaluated and recorded in the attestation block.
+Every emitted artifact passes each bar individually. Mechanical-fraction bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `conformity/*-grep.py`, run as `PreToolUse` hook checks orchestrated by `conformity/gate.py`. Reasoned bars (M1, M3, M4, M6, M9, M11, M12, M14) are agent-evaluated and recorded in the attestation block.
 
 | # | Bar | Check (mechanical or reasoned) | Failure → action |
 |---|---|---|---|
@@ -80,7 +80,7 @@ Path-filtered (the seven glob patterns in this rule's `pathFilter` field), alway
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● The per-bar Check + Failure→action enforcement on every emitted artifact under the path-filter. ● The attestation YAML schema's appearance in every artifact's working trace. ● The iteration-on-failure protocol's revise-and-re-run loop, capped at three rounds with a BLOCKED retreat.
-- **Satisfies →** ● the fifteen-mandate registry row **M4 — Self-Application** (companion-sub-rule materialization). ● the Pre-Emission Gate Attestation Schema. ● `rules/pre-emission-gate.md` anchor (the parent rule's pointer to this companion's full bar-level catalog).
+- **Satisfies →** ● the fifteen-mandate registry row **M4 — Self-application** (companion-sub-rule materialization). ● the Pre-Emission Gate Attestation Schema. ● `rules/pre-emission-gate.md` anchor (the parent rule's pointer to this companion's full bar-level catalog).
 - **Established by ↑** ● `rules/pre-emission-gate.md` (parent-rule anchor). ● the Pre-Emission Gate. ● the Pre-Emission Gate Attestation Schema.
 - **Gated by ←** ● The path-filter (seven glob patterns) — this rule demand-loads only on emission-surface touches. ● `rules/pre-emission-gate.md` always-on baseline (parent rule's anchor must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/pre-emission-gate.md` (parent rule; anchor binds this companion). ↔ Every M-rule named in the gate's "Failure → action" column (`rules/host-discovery.md`, `rules/disclosure-ledger.md`, `rules/ten-dimension-check.md`, `rules/authority-inquiry.md`, `rules/expertise-posture.md`, `rules/option-annotation.md`, `rules/definitiveness.md`, `rules/visual-leverage.md`, `rules/bidirectional-binding.md`, `rules/agile-sprints.md`, `rules/canonical-layout.md`, `rules/code-craft-python.md` and sibling per-language code-craft rules, `rules/systemic-participation.md`, `rules/production-ready-prs.md`).

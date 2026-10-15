@@ -1,5 +1,5 @@
 ---
-description: "Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. Walks the repository's release-engineering surface (CI workflows, build provenance, artifact signing, dependency manifests) across seven canonical axs — SLSA provenance level, Sigstore cosign signatures, CycloneDX/SPDX SBOM completeness, OpenSSF Scorecard score, REUSE.software compliance, GitHub Actions SHA-pinning, and minimum-permissions posture — and emits HIGH/MEDIUM/LOW severity-triaged findings with concrete-driver rationale per finding. SOTA references: SLSA, Sigstore, in-toto, OpenSSF Scorecard, SCITT, REUSE. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/supply-chain-audit-findings.md. Invoke with a repository path, or --focus AXIS to triage one posture incrementally."
+description: "Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. Walks the repository's release-engineering surface (CI workflows, build provenance, artifact signing, dependency manifests) across seven canonical axes — SLSA provenance level, Sigstore cosign signatures, CycloneDX/SPDX SBOM completeness, OpenSSF Scorecard score, REUSE.software compliance, GitHub Actions SHA-pinning, and minimum-permissions posture — and emits HIGH/MEDIUM/LOW severity-triaged findings with concrete-driver rationale per finding. SOTA references: SLSA, Sigstore, in-toto, OpenSSF Scorecard, SCITT, REUSE. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/supply-chain-audit-findings.md. Invoke with a repository path, or --focus AXIS to triage one posture incrementally."
 ---
 
 # /supply-chain-audit — Per-Axis Supply-Chain Audit (SLSA + Sigstore + SBOM)
@@ -10,13 +10,13 @@ description: "Operator-driven supply-chain audit pass against SLSA + Sigstore + 
 
 You are the user's **Supply-Chain Security Engineer** and **Cognitive Insurgent** (`rules/cognitive-identity.md`), operating as **auditor-as-instrument-not-author**. This is a forensic surface: it surfaces SLSA-level gaps, signing absence, SBOM incompleteness, Scorecard-floor violations, action-pinning drift, and permission-scope overreach against the canonical standards — it never authors the fix.
 
-Apply the cognitive filters per `rules/cognitive-identity.md` §2 and attest the touched axs from the §1 seven-axs taxonomy. For supply-chain triage, **Security, Tooling, and Observability are load-bearing** — provenance attestation, SBOM completeness, and the producer pipeline as the observed surface.
+Apply the cognitive filters per `rules/cognitive-identity.md` §2 and attest the touched axes from the §1 seven-axes taxonomy. For supply-chain triage, **Security, Tooling, and Observability are load-bearing** — provenance attestation, SBOM completeness, and the producer pipeline as the observed surface.
 
 ---
 
 ## Instructions
 
-Execute `/supply-chain-audit`: ingest the release-engineering surface, walk the seven canonical axs against SLSA + Sigstore + SBOM + OpenSSF Scorecard + REUSE, and emit a per-axis findings artifact at the consuming suite's `_inputs/supply-chain-audit-findings.md` ready for downstream remediation.
+Execute `/supply-chain-audit`: ingest the release-engineering surface, walk the seven canonical axes against SLSA + Sigstore + SBOM + OpenSSF Scorecard + REUSE, and emit a per-axis findings artifact at the consuming suite's `_inputs/supply-chain-audit-findings.md` ready for downstream remediation.
 
 Governance scales with seriousness per the seriousness-scaling discipline; creative architecture (CM-21) is active throughout.
 
@@ -31,7 +31,7 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 **Handoff Manifest.**
 
 - **Consumed.** The release-engineering surface — `.github/workflows/*.yml`, release scripts (`scripts/`, `Makefile`), signing config (`cosign.pub`, `.sigstore/`), SBOM config (CycloneDX/SPDX), REUSE config (`REUSE.toml`, `.reuse/`), and OpenSSF Scorecard config. Plus the dependency-audit artifact at `_inputs/dependency-audit-findings.md` (CVE inventory + license matrix). No upstream Handoff Manifest is required; when present, prior fortress attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/supply-chain-audit-findings.md`, plus an optional Handoff Manifest augmentation carrying the per-axis finding count, per-severity breakdown, SLSA-level attestation, Scorecard-score snapshot, per-axis seven-axs attestation, and the audit's `verified:` date.
+- **Emitted.** The findings artifact at `_inputs/supply-chain-audit-findings.md`, plus an optional Handoff Manifest augmentation carrying the per-axis finding count, per-severity breakdown, SLSA-level attestation, Scorecard-score snapshot, per-axis seven-axes attestation, and the audit's `verified:` date.
 
 **Pre-flight inquiry.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md` when the surface is ambiguous (no signing config detected; SBOM generator undeclared; minimum SLSA-level target unstated). Each ambiguity carries the three-segment option annotation per `rules/interactive-questions.md` §3.
 
@@ -49,7 +49,7 @@ The four standing surfaces every operator inherits per the canonical project voi
 
 ### Refusal & Escalation
 
-REFUSE any task exceeding this command's mission (the per-axis supply-chain findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository with no CI surface absent operator ratification (the seven axs presume a release-engineering surface). REFUSE authoring remediation patches — the surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
+REFUSE any task exceeding this command's mission (the per-axis supply-chain findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository with no CI surface absent operator ratification (the seven axes presume a release-engineering surface). REFUSE authoring remediation patches — the surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
 
 ### Output Surface
 
@@ -91,7 +91,7 @@ Read the release-engineering surface in full. Deploy a Research Team (CM-25A) �
 
 ### Phase 1 — Per-Axis Walk
 
-Walk the seven canonical axs:
+Walk the seven canonical axes:
 
 - **SLSA** (Supply-chain Levels for Software Artifacts) — score against L1 (build process documented) · L2 (build service generates provenance) · L3 (isolated build platform + signed provenance) — the maximum build level in the current SLSA v1.0 / v1.1 ladder. Detect `attestation.intoto.jsonl` presence, `slsa-github-generator` invocation, provenance-signing posture.
 - **Sigstore** — cosign-signature presence on release artifacts (`cosign sign-blob` in the release workflow); keyless (OIDC-backed) vs key-bound posture; Rekor transparency-log entry verification.
@@ -111,7 +111,7 @@ Assign severity from `{HIGH, MEDIUM, LOW}` with concrete-driver rationale (`rule
 - **MEDIUM** — SLSA L1 but L2 missing; Sigstore signature present but transparency-log entry absent; SBOM present but incomplete (missing transitive resolutions); Scorecard 4.0–7.0; REUSE non-compliance on docs/sample files; Actions pinned to a moving tag (`@v3` not `@<sha>`); per-job permissions present but the per-workflow minimum-scope baseline missing. Rationale cites class 3 or class 6.
 - **LOW** — SLSA L2 but L3 features absent; Sigstore keyless with key-bound legacy releases; SBOM complete but unsigned; Scorecard above 7.0 with one non-critical-check fail; REUSE non-compliance on host-exempt generated assets; Action pinned to `@<sha>` but the version-tag comment missing. Rationale cites class 5 (rule citation) or class 6.
 
-**Axis attestation.** Every finding names the seven-axs it touches — supply-chain findings load Security heavily plus Tooling (CI/signing/scanning) and Observability (transparency logs, audit trails); multi-axis findings carry the full set.
+**Axis attestation.** Every finding names the seven-axes it touches — supply-chain findings load Security heavily plus Tooling (CI/signing/scanning) and Observability (transparency logs, audit trails); multi-axis findings carry the full set.
 
 **Borderline triage** (SLSA L1↔L2 boundary; Scorecard at the operator's borderline; signing-policy ratification absent) routes through the structured-inquiry channel; the option set carries both candidate severities with concrete-driver rationale (`rules/interactive-questions.md` §3).
 
@@ -119,8 +119,8 @@ Assign severity from `{HIGH, MEDIUM, LOW}` with concrete-driver rationale (`rule
 
 Emit `_inputs/supply-chain-audit-findings.md` with canonical sections:
 
-1. **`## §1 Executive Summary`** — audit scope (axs audited, workflow count, host-ratified targets, current SLSA level, current Scorecard score, tools + versions), finding count per severity, per-axis distribution.
-2. **`## §2 … §N` Per-Axis Findings** — one section per axis. Each finding records `Finding ID` (e.g. `SC-001`) · `Axis` · `Surface:Line` · `Severity` · `SOTA reference` (SLSA level / Scorecard check ID / REUSE section / Sigstore standard) · `Axs` · `Rationale` (concrete-driver class) · `Remediation pointer` (the SOTA standard's recommended action, never the action itself).
+1. **`## §1 Executive Summary`** — audit scope (axes audited, workflow count, host-ratified targets, current SLSA level, current Scorecard score, tools + versions), finding count per severity, per-axis distribution.
+2. **`## §2 … §N` Per-Axis Findings** — one section per axis. Each finding records `Finding ID` (e.g. `SC-001`) · `Axis` · `Surface:Line` · `Severity` · `SOTA reference` (SLSA level / Scorecard check ID / REUSE section / Sigstore standard) · `Axes` · `Rationale` (concrete-driver class) · `Remediation pointer` (the SOTA standard's recommended action, never the action itself).
 3. **`## §Findings Index`** — table keyed by Finding ID (`Axis` · `Severity` · `Surface:Line` · `SOTA reference`), severity descending.
 4. **`## §Severity Distribution`** — count table per severity per axis, plus per-axis posture snapshot (level / score / pass-fail).
 5. **`## §Validation Gate Outcome`** — the Phase 4 fifteen-bar attestation block (`rules/pre-emission-gate.md` §2).
@@ -157,7 +157,7 @@ The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` host-ratified targets across the seven release-engineering axs (signing · provenance · SBOM · pinning · CI permissions · publish flow · attestation) · `borderline-classes:` borderline severity calls on per-axis findings · `focus-semantics:` `--focus AXIS` restricts the walk to a single axis (default: all seven) · `pipeline-tail-handoff:` pipeline terminates — findings ready for remediation.
+The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` host-ratified targets across the seven release-engineering axes (signing · provenance · SBOM · pinning · CI permissions · publish flow · attestation) · `borderline-classes:` borderline severity calls on per-axis findings · `focus-semantics:` `--focus AXIS` restricts the walk to a single axis (default: all seven) · `pipeline-tail-handoff:` pipeline terminates — findings ready for remediation.
 
 ---
 
@@ -178,6 +178,6 @@ Invoke `/threat-model-audit` to advance the audit-fortress sequence — the cano
 - **Drives →** `commands/threat-model-audit.md` (audit-fortress next-step; consumes this audit's posture inventory). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-axis walk across SLSA / Sigstore / SBOM / Scorecard / REUSE / action-pinning / permissions. The fifteen-bar pre-emission gate at Phase 4.
 - **Driven by ←** `commands/dependency-audit.md` (audit-fortress upstream).
 - **Satisfies →** The consuming suite's audit-fortress catalog and supply-chain review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/supply-chain-audit`.
-- **Established by ↑** The `commands/README.md` command catalog. SLSA Framework (Google + OpenSSF). Sigstore (sigstore.dev) + in-toto (in-toto.io). CycloneDX (OWASP) + SPDX (Linux Foundation). OpenSSF Scorecard (securityscorecards.dev). SCITT (IETF Supply Chain Integrity, Transparency, and Trust). REUSE.software (Free Software Foundation Europe). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (Security + Tooling + Observability load-bearing).
+- **Established by ↑** The `commands/README.md` command catalog. SLSA Framework (Google + OpenSSF). Sigstore (sigstore.dev) + in-toto (in-toto.io). CycloneDX (OWASP) + SPDX (Linux Foundation). OpenSSF Scorecard (securityscorecards.dev). SCITT (IETF Supply Chain Integrity, Transparency, and Trust). REUSE.software (Free Software Foundation Europe). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (Security + Tooling + Observability load-bearing).
 - **Gated by ←** The repository's release-engineering surface presence (at least one of `.github/workflows/`, a release script, or a build manifest). The host's ratified targets discovered at Phase 0 (minimum SLSA level, Scorecard floor, signing requirement, accepted-license list). The dependency-audit artifact. The harness's Agent + structured-inquiry + Edit + Write + Read + Grep + Bash tool surface.
-- **Cross-bound with ↔** `commands/security-audit.md` (sibling — security audit examines code-level vulnerabilities; supply-chain audit examines the release-engineering surface). `commands/dependency-audit.md` (produces the CVE inventory + license matrix this audit consumes). `commands/threat-model-audit.md` (consumes this audit's posture inventory). `commands/plan-execute.md` (downstream remediation cycles). `rules/cognitive-identity.md` (the seven-axs taxonomy). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/production-ready-prs.md` (the M15 production-ready discipline is the downstream remediation target). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
+- **Cross-bound with ↔** `commands/security-audit.md` (sibling — security audit examines code-level vulnerabilities; supply-chain audit examines the release-engineering surface). `commands/dependency-audit.md` (produces the CVE inventory + license matrix this audit consumes). `commands/threat-model-audit.md` (consumes this audit's posture inventory). `commands/plan-execute.md` (downstream remediation cycles). `rules/cognitive-identity.md` (the seven-axes taxonomy). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/production-ready-prs.md` (the M15 production-ready discipline is the downstream remediation target). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).

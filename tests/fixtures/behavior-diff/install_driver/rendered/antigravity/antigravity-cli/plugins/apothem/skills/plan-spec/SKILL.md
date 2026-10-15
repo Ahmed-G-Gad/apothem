@@ -161,11 +161,11 @@ Every preserved prose element pairs with its potent operational form. The pairin
 
 **Preservation Audit deliverable.** Per-level pass-rates in the Preservation Audit appendix (Appendix C schema).
 
-### Phase 5 — Expertise Application (D4) — Seven Axs of Breadth
+### Phase 5 — Expertise Application (D4) — Seven Axes of Breadth
 
-Every transformation attests which of the seven axs applied: Domain · Adjacent-domain · Meta-engineering · Operational · Process · Scholarly-technical-literature · Second-order-systems-thinking. Inline markers `**[Expertise amendment — axis: X — rationale: ...]**` at every amended locus.
+Every transformation attests which of the seven axes applied: Domain · Adjacent-domain · Meta-engineering · Operational · Process · Scholarly-technical-literature · Second-order-systems-thinking. Inline markers `**[Expertise amendment — axis: X — rationale: ...]**` at every amended locus.
 
-**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axs block emission as `**P1**` per §4.8.3 D4.
+**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axes block emission as `**P1**` per §4.8.3 D4.
 
 ### Phase 6 — Question-Resolution Sweep (Ten Disciplines D1–D10) — Mandatory Gates G0–G5
 
@@ -283,7 +283,7 @@ $ /plan-spec ~/notes/migration-plan-draft.md --suite-name database-migration-v2
 [Phase 2] Tension surfaced (rollback-strategy ambiguity); structured inquiry fired at G3.
 [Phase 3] Potency Map — 47 element/potent-form pairings; 0 unpaired.
 [Phase 4] Preservation Audit — L1 PASS (124 distinctive phrases all grep-matched); L2 PASS (47 requirements operationally enforced); L3 PASS (12 ALL-CAPS / repeated-intensifier loci preserved).
-[Phase 5] Expertise — 5 of 7 axs applied; 2 explicitly N/A-with-rationale.
+[Phase 5] Expertise — 5 of 7 axes applied; 2 explicitly N/A-with-rationale.
 [Phase 6] Question-Resolution Sweep — 6 questions across 4 gates; 0 P0-unresolved; 0 P1-unresolved.
 [G4] Four-Discipline Invariant — PASS on all 6 conditions; promotion authorized.
 [G4] Promoting forge.md → _spec/spec.md.
@@ -322,7 +322,7 @@ This command's restatement of `_spec/spec.md` §0.a–§0.o, scoped to the prose
 - **§I.0.c Ten dimensional gates** — the §0.d fifteen-bar self-check applies recursively at G4.
 - **§I.0.d Self-application** — this command is itself subject to the verification recipe (§I.6).
 - **§I.0.e Authority before invention** — no prose datum is fabricated; gaps surface as `<USER-CONFIRM:kind=...>` placeholders per D4 Deferral Discipline.
-- **§I.0.f Expertise** — D4 Seven Axs of Breadth applied with attestation.
+- **§I.0.f Expertise** — D4 Seven Axes of Breadth applied with attestation.
 - **§I.0.g Option annotation** — every structured-inquiry invocation carries the §3 three-segment body per `rules/interactive-questions.md`.
 - **§I.0.h Definitiveness** — closed-set enumeration on every option set; airtight input-class coverage.
 - **§I.0.i Visual leverage** — Mermaid diagrams installed where the prose admits flow / sequence / state structure per the D2 pairing dictionary.

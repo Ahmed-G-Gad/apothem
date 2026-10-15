@@ -172,7 +172,7 @@ Definitively resolve every ambiguity — every implicit hypothesis form, every u
 | **Rigor scaled to venue ambition (R2, R7)** | The depth of the required rigor floor (replication-count floor, effect-size-plus-CI-plus-ranks form, budget-parity, tuning-split — all forward-declared here, run downstream) scales to the target-venue ambition per `skills/research-suite/references/advancement-gate.md`; the success metrics forward-declare the reproducibility-evidence outputs that scaffold the deliverable's evidence package. Unspecified ambition surfaces as a `USER-CONFIRM` placeholder, never invented. |
 | **R1 / R5 / R6 / R8 / R9 — Forward-Declared** | Authoritative sources (R1), preregistration discipline (R5), ethics / conflicts (R6), open-science / FAIR (R8), and reporting-guideline conformance (R9) are applicability-attested here and operationalized downstream (`/research-theory`, `/research-sources`, `/research-design`, `/research-paper`); the Handoff Manifest carries the per-mandate attestation. |
 | **M5 — Authority** | Every scope boundary, metric threshold, hypothesis form, and glossary definition the source leaves implicit routes through `rules/authority-inquiry.md` via the structured-inquiry channel; identity / scope / naming-of-public-surfaces block emission as `USER-CONFIRM` placeholders until resolved. |
-| **M4 — Self-Application** | The candidate spec passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before promotion; the Handoff Manifest carries the attestation. |
+| **M4 — Self-application** | The candidate spec passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before promotion; the Handoff Manifest carries the attestation. |
 
 ---
 

@@ -9,7 +9,7 @@ Output-style definitions — flat `.md` files, each defining a tone and output-s
 | Style | `name` | What it sets |
 |-------|--------|--------------|
 | [`default.md`](default.md) | Default | Ecosystem-default output style — the baseline tone every session inherits. Encodes unified output conventions, planning-content routing, and the file-authoring contract. |
-| [`default-architect.md`](default-architect.md) | Default Architect | Senior Software Architect tone — analytical, brutally honest, concrete-driver citations, seven-axs-of-breadth attestation. |
+| [`default-architect.md`](default-architect.md) | Default Architect | Senior Software Architect tone — analytical, brutally honest, concrete-driver citations, seven-axes-of-breadth attestation. |
 | [`concise-engineer.md`](concise-engineer.md) | Concise Engineer | Engineering-focused short-form output — minimum prose, maximum signal, code-first. |
 | [`forensic-auditor.md`](forensic-auditor.md) | Forensic Auditor | Forensic-audit posture for review-class work — finding-by-finding, scorecard-shaped output, a falsifier per finding. |
 
