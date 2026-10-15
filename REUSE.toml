@@ -416,6 +416,7 @@ path = [
   "tests/scripts/inject-header/test_emit_patch_diff_format.py",
   "tests/scripts/inject-header/test_fix_in_place_idempotent.py",
   "tests/scripts/inject-header/test_frontmatter_preserved.py",
+  "tests/scripts/inject-header/test_line_endings_preserved.py",
   "tests/scripts/inject-header/test_mdx_variant.py",
   "tests/unit/test_adapter_discovery.py",
   "tests/unit/test_conformity_gate_orchestration.py",
