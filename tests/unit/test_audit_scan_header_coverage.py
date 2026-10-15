@@ -45,6 +45,7 @@ from apothem.audit.scan_header_coverage import (
     VARIANT_EXEMPT,
     VARIANT_HASH,
     VARIANT_HTML,
+    VARIANT_MDX,
     VARIANT_SEMICOLON,
     CoverageSummary,
     FileCoverage,
@@ -124,6 +125,52 @@ class TestVariantFamilyFor:
         """An unrecognised extension resolves to exempt, never a guess."""
         assert variant_family_for(Path("data.xyz")) == VARIANT_EXEMPT
         assert variant_family_for(Path("mystery")) == VARIANT_EXEMPT
+
+
+class TestMdxVariant:
+    """The MDX comment form is a first-class variant in the coverage audit.
+
+    A ``.mdx`` file resolves to its own variant, renders the JSX comment
+    wrapper, and is read back against that wrapper. Expected text is built from
+    the scanner's own rendering so this file carries no literal license tag.
+    """
+
+    _EXPECTED_LINE = "{/* " + _HASH_LINE[1:].strip() + " */}"
+
+    def test_suffix_resolves_to_mdx(self) -> None:
+        """The .mdx suffix maps to the MDX variant family, not exempt."""
+        assert variant_family_for(Path("docs/page.mdx")) == VARIANT_MDX
+
+    def test_renders_jsx_comment_wrapper(self) -> None:
+        """The MDX rendering is the JSX expression comment."""
+        assert canonical_banner_lines(VARIANT_MDX) == [self._EXPECTED_LINE]
+
+    def test_canonical_mdx_head_is_present_canonical(self) -> None:
+        """The wrapper followed by its blank line is the canonical block."""
+        head = [self._EXPECTED_LINE, "", "# Page"]
+        status, line_range, malform, _detail = scan_for_banner(head, VARIANT_MDX)
+        assert status == HEADER_PRESENT_CANONICAL
+        assert line_range == (1, 1)
+        assert malform is None
+
+    def test_html_wrapper_in_mdx_file_is_wrong_variant(self) -> None:
+        """An html comment wrapper in an MDX file is a wrong-variant header."""
+        html_line = "<!-- " + _HASH_LINE[1:].strip() + " -->"
+        head = [html_line, "", "# Page"]
+        status, _range, malform, detail = scan_for_banner(head, VARIANT_MDX)
+        assert status == HEADER_PRESENT_MALFORMED
+        assert malform == MALFORM_WRONG_VARIANT
+        assert detail is not None
+        assert "{/* wrapper" in detail
+
+    def test_absent_mdx_head_gets_an_insert_plan(self) -> None:
+        """An MDX file with no header gets an insert plan at line 1."""
+        plan = build_injection_plan(
+            "docs/page.mdx", ["# Page"], HEADER_ABSENT, VARIANT_MDX, None
+        )
+        assert plan is not None
+        assert plan["action"] == "insert"
+        assert plan["insertion-line"] == 1
 
 
 class TestLoadExceptionGlobs:

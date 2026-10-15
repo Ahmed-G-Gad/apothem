@@ -50,6 +50,7 @@ from apothem.audit.header_vocabulary import (
     VARIANT_EXEMPT,
     VARIANT_HASH,
     VARIANT_HTML,
+    VARIANT_MDX,
     VARIANT_SEMICOLON,
 )
 
@@ -230,6 +231,10 @@ def _detect_wrong_variant(observed_line: str, target_variant: str) -> str | None
         if not stripped.startswith("/*"):
             return "missing /* wrapper"
         return None
+    if target_variant == VARIANT_MDX:
+        if not stripped.startswith("{/*"):
+            return "missing {/* wrapper"
+        return None
 
     target_prefix_map = {
         VARIANT_HASH: "#",
@@ -242,7 +247,7 @@ def _detect_wrong_variant(observed_line: str, target_variant: str) -> str | None
         return None
     if not stripped.startswith(target_prefix):
         # Sniff which marker the line uses instead.
-        for sniff_prefix in ("//", "--", ";", "#", "<!--", "/*"):
+        for sniff_prefix in ("//", "--", ";", "#", "<!--", "/*", "{/*"):
             if stripped.startswith(sniff_prefix):
                 return sniff_prefix
         return "unrecognized marker"
