@@ -2,7 +2,7 @@
 title: "diff"
 description: "Referensi CLI untuk perintah apothem diff."
 machineTranslated: true
-sourceHash: "eadb04c11c65af92"
+sourceHash: "c72e575434a36191"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ perintah ini merender sebuah aksi dalam bahasa sederhana (misalnya `Write file`,
 status pratinjau (`would create`, `would update`, `would remove`, atau
 `no change`), dan — untuk jangkar milik operator yang akan digabungkan — diff
 terpadu dari perubahan tersebut. Status dihitung dengan membandingkan sumber
-terhadap target yang saat ini ada di disk, sehingga target yang sudah cocok
+dengan target yang saat ini ada di disk, sehingga target yang sudah cocok
 terbaca `no change` dan disembunyikan dari tampilan default. Perintah ini
 menjawab pertanyaan "apa yang akan dilakukan `apothem install` terhadap harness
 ini sekarang?" tanpa membuat perubahan tersebut.
@@ -34,7 +34,7 @@ berkas konfigurasi milik harness itu sendiri (misalnya `opencode.json` atau
 `config.yaml`), jangkar instruksi atau dokumen profil tempat profil bersama
 diproyeksikan (seperti `CLAUDE.md`), dan penyimpanan data bersama di bawah
 `.apothem/`. Tepat setelah pemasangan, `diff` tidak melaporkan perubahan
-tertunda apa pun; pemasangan ulang kemudian tidak menulis apa pun dan tidak
+tertunda apa pun; pemasangan ulang setelah itu tidak menulis apa pun dan tidak
 membuat cadangan baru. `install --dry-run` menampilkan rencana yang sama.
 
 Untuk target milik operator — berkas yang membawa konten Anda sendiri sekaligus
@@ -118,5 +118,5 @@ apothem diff --harness claude-code --json
 ## Lihat juga
 
 - [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan/verifikasi/penyimpangan di setiap harness
-- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan satu harness
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan adapter harness
 - [apothem install](/docs/cli-reference/install) — menerapkan perubahan yang dipratinjau

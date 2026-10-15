@@ -2,7 +2,7 @@
 title: "Registri harness"
 description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,9 +83,10 @@ tersebut terhadap keluarannya.
 Sebagian target pemasangan dimuat oleh harness selain harness yang menulisnya.
 Registri mencatat setiap jalur semacam itu di `SHARED_ROOTS` dengan satu pemilik
 (satu-satunya adapter yang menulisnya) dan para pembaca yang dokumentasi
-vendornya memuat jalur itu secara bawaan, dengan halaman vendor sebagai bukti.
-Memasang pemilik menempatkan konten Apothem di hadapan setiap pembaca, dan
-mencopot pemilik menghapusnya dari setiap pembaca.
+vendornya memuat jalur itu secara bawaan, beserta halaman vendor yang
+memperlihatkannya dan tanggal halaman tersebut diambil. Memasang pemilik
+menempatkan konten Apothem di hadapan setiap pembaca, dan mencopot pemilik
+menghapusnya dari setiap pembaca.
 
 | Jalur | Pemilik | Pembaca |
 | --- | --- | --- |
@@ -99,10 +100,12 @@ mencopot pemilik menghapusnya dari setiap pembaca.
 
 Blok Apothem yang ditulis pemilik ke dalam berkas instruksi bersama tidak
 menyebut satu tool tunggal pun sebagai pembacanya.
-`tests/unit/test_shared_roots.py` gagal ketika sebuah target registri ditulis
-oleh dua adapter, atau dinamai seperti berkas instruksi lintas tool
-(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `copilot-instructions.md`), tanpa
-pemilik yang dideklarasikan.
+`tests/unit/test_shared_roots.py` gagal ketika dua adapter menulis target
+registri yang sama, dan ketika sebuah target registri yang dinamai seperti
+berkas instruksi lintas tool (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`copilot-instructions.md`) tidak memiliki pemilik yang dideklarasikan.
+Satu-satunya pengecualian adalah `~/.codex/AGENTS.md`, yang tidak
+didokumentasikan sebagai dimuat oleh harness terdaftar lain mana pun.
 
 ## Hook validasi
 
@@ -110,7 +113,7 @@ Registri tetap tersinkronisasi melalui pemeriksaan berikut:
 
 | Pemeriksaan | Tujuan |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adapter memiliki pin konvensi berusia kurang dari 90 hari yang mengutip setidaknya satu URL vendor dan tidak memiliki target penemuan yang lewat tenggat. CI menjalankannya pada setiap pull request, setiap minggu, dan sebelum rilis. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adapter memiliki pin konvensi yang berusia paling lama 90 hari, mengutip setidaknya satu URL vendor, dan tidak memiliki target penemuan yang lewat tenggat. CI menjalankannya pada setiap pull request, setiap minggu, dan sebelum rilis. |
 | `python scripts/dev/check_vendor_urls.py` | Mengambil setiap URL vendor yang dikutip pin dan templat harness, dan gagal pada halaman yang dipindahkan atau mati, termasuk nama host yang tidak lagi ter-resolve atau sertifikat yang gagal verifikasi; timeout, koneksi yang ditolak atau di-reset, atau galat server 5xx dilaporkan sebagai tidak terjangkau dan tidak menggagalkannya. Monitor konvensi mingguan menjalankannya. |
 | `python -m apothem.conformity.gate --all .` | Menjalankan pemeriksaan konformitas dokumentasi dan implementasi. |
 | `python -m pytest` | Menjalankan pengujian fixture registri dan pengujian kontrak adapter. |

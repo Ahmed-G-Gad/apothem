@@ -2,11 +2,11 @@
 title: "Apothem versus penyambungan backend GLM mentah"
 description: "Mengapa merutekan konfigurasi backend GLM (Z.ai) melalui Apothem alih-alih menyambungkan variabel lingkungan secara manual per proyek."
 machineTranslated: true
-sourceHash: "869ef5c768dfec73"
+sourceHash: "5f27ebf7f953394a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-GLM (Z.ai) adalah backend model yang diarahkan oleh harness yang kompatibel
+GLM (Z.ai) adalah backend model yang diarahkan oleh alat yang kompatibel
 dengan menyetel base URL dan sebuah kunci. Anda dapat mengekspor variabel
 lingkungan tersebut dengan tangan, per proyek, per mesin, selamanya. Adapter glm
 milik Apothem mencatat endpoint backend dan placeholder yang dapat dikonfigurasi
@@ -20,13 +20,13 @@ mengelolanya melalui Apothem.
 | ---- | --------------- | --------------- |
 | Mencatat URL backend | Menghafal dan mengekspor ulang per proyek | Ditulis ke dalam satu berkas penyedia |
 | Sumber kebenaran | Ekspor milik masing-masing shell | Satu berkas penyedia kanonis |
-| Menjaga backend tetap selaras antarproyek | Menyambungkan ulang per proyek | Templat yang sama ditulis ke setiap proyek |
+| Menjaga backend tetap selaras antarproyek | Menyambungkan ulang per proyek | Templat yang sama ditulis ke setiap proyek ketika berkas itu tidak ada; suntingan berikutnya tetap berada di berkas masing-masing proyek |
 | Memulihkan konfigurasi | Mengekspor ulang di setiap proyek | `apothem update --harness glm --project <path>` menulis berkas itu lagi hanya ketika berkas tersebut hilang |
-| Menghapus konfigurasi | Hapus manual | `apothem uninstall` dengan cadangan |
+| Menghapus konfigurasi | Hapus manual | `apothem uninstall` mencadangkan berkas itu, lalu menghapusnya hanya selama berkas itu masih berupa templat yang belum disunting yang ditulis Apothem |
 
 ## Apa yang dikelola Apothem
 
-Adapter glm merender satu berkas penyedia di
+Adapter glm menulis satu berkas penyedia di
 `<project>/.apothem/providers/glm.toml` dan tidak menulis apa pun selain itu.
 Adapter ini mencatat base URL yang kompatibel dengan Anthropic
 (`https://api.z.ai/api/anthropic`), base URL yang kompatibel dengan OpenAI
@@ -38,8 +38,9 @@ tidak mematok ID model yang mudah berubah antarversi.
 ## Jalur migrasi
 
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
-   melakukannya.
-2. Jalankan `apothem install --harness glm --project <path>` untuk merender
+   melakukannya. Berkas glm tidak mengambil apa pun dari profil, tetapi setiap
+   eksekusi install dan update memuatnya.
+2. Jalankan `apothem install --harness glm --project <path>` untuk menulis
    berkas penyedia `glm.toml`.
 3. Isi kunci Z.ai Anda dan ID model yang Anda inginkan dari
    [dokumentasi Z.ai](https://docs.z.ai/devpack/tool/claude) yang terkini.

@@ -2,7 +2,7 @@
 title: "Konvensi Harness Multi-Permukaan"
 description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "d17a5f2f79af7cc9"
+sourceHash: "8b401418bac95c44"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ Permukaan rekayasa modern disentuh oleh beberapa harness — konsol chat, mesin 
 
 Biaya dari permukaan yang hilang adalah **penyimpangan senyap pada kode yang dihasilkan mesin** — kelas cacat terburuk karena menumpuk tanpa terlihat. Setiap artefak yang dihasilkan mesin memperparah divergensi itu; pada saat peninjau manusia melihat kontradiksinya, basis kode sudah membawa konvensi yang tidak konsisten selama berminggu-minggu.
 
-Konfigurasi runtime harness bersifat jamak karena realitas deployment. Ekosistem yang dipublikasikan HARUS mengirimkan berkas memori perilaku untuk runtime konsol chat DAN berkas instruksi berlingkup repo untuk runtime pelengkapan di dalam IDE. Kedua permukaan itu HARUS saling koheren — tanpa kontradiksi, tanpa penyimpangan — dan HARUS bersama-sama mengodekan disiplin yang sama.
+Konfigurasi runtime harness bersifat jamak karena realitas deployment. Ekosistem yang dipublikasikan HARUS mengirimkan tiga permukaan wajib di §3: `AGENTS.md`, berkas memori perilaku untuk runtime konsol chat (`CLAUDE.md`), dan berkas instruksi berlingkup repo untuk runtime pelengkapan di dalam IDE. Permukaan-permukaan itu HARUS saling koheren — tanpa kontradiksi, tanpa penyimpangan — dan HARUS bersama-sama mengodekan disiplin yang sama.
 
 ---
 
@@ -29,7 +29,7 @@ Setiap permukaan konvensi dalam cakupan (§3) adalah sebuah *kanal* yang mengeks
 
 Validator `multi-surface-coherence` (§7) dijalankan pada setiap eksekusi CI dan pada pre-commit, untuk menegaskan kontrak tersebut.
 
-Kedua (atau lebih) permukaan itu adalah *kanal* berbeda yang mengekspresikan satu *spesifikasi*. Bagian bersama HARUS cocok — secara semantik dan, jika memungkinkan, secara leksikal — di semua permukaan. Bagian khusus permukaan TIDAK BOLEH bertentangan dengan bagian bersama.
+Permukaan-permukaan itu adalah *kanal* berbeda yang mengekspresikan satu *spesifikasi*. Bagian bersama HARUS cocok — secara semantik dan, jika memungkinkan, secara leksikal — di semua permukaan. Bagian khusus permukaan TIDAK BOLEH bertentangan dengan bagian bersama.
 
 ---
 
@@ -39,12 +39,12 @@ Kedua (atau lebih) permukaan itu adalah *kanal* berbeda yang mengekspresikan sat
 |---|---|---|---|
 | `AGENTS.md` | root repo (dan/atau `.codex/AGENTS.md`) | **HARUS** | harness yang mengenali AGENTS |
 | `CLAUDE.md` | root repo (dan/atau `.claude/CLAUDE.md`) | **HARUS** | Claude Code |
-| Berkas instruksi yang berakar di `.github/` | Berkas instruksi yang berakar di `.github/` | **HARUS** | runtime pelengkapan di dalam IDE |
+| Berkas instruksi yang berakar di `.github/` | `.github/copilot-instructions.md` | **HARUS** | runtime pelengkapan di dalam IDE |
 | Manifest pembantu yang berakar di `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **BOLEH** (opt-in melalui kanal kueri terstruktur) | platform orkestrasi multi-pembantu |
 | `.cursorrules` | root repo | **BOLEH** (opt-in) | runtime editor di dalam IDE |
 | `.windsurfrules` | root repo | **BOLEH** (opt-in) | runtime pendamping di dalam IDE |
 
-Untuk penugasan ini, operator memilih ikut (opt-in) pada permukaan asisten opsional yang dicatat oleh fixture. Konfigurasi root khusus vendor yang tidak digunakan sengaja tidak disertakan; berkas konfigurasi khusus tool ditambahkan hanya ketika tool tersebut menjadi permukaan penyuntingan aktif untuk repositori ini.
+Untuk repositori ini, permukaan opt-in adalah permukaan yang dicantumkan fixture daftar klaim ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) di bawah `optional-in`. Konfigurasi root khusus vendor yang tidak digunakan sengaja tidak disertakan; berkas konfigurasi khusus tool ditambahkan hanya ketika tool tersebut menjadi permukaan penyuntingan aktif untuk repositori ini.
 
 ---
 
@@ -62,7 +62,7 @@ Berkas instruksi berlingkup repo di bawah `.github/` HARUS memuat, dalam urutan 
 6. **Forbidden Patterns** — larangan eksplisit: tanpa kata sifat pemasaran, tanpa pengisi yang mengelak, tanpa sisa debug console.log, tanpa jalur absolut yang di-hardcode ke direktori home pengguna, tanpa meng-commit rahasia, tanpa meng-commit berkas di bawah `.apothem/plans/` (atau `.plans/` warisan), tanpa bertentangan dengan berkas instruksi proyek kanonik.
 7. **Output Format** — kode/prosa yang dihasilkan mematuhi konvensi keluaran percakapan terpadu: ketegasan, pembagian bagian yang seragam, kepadatan, disiplin ringkasan, sitasi. Untuk kode: permukaan publik terdokumentasi, bertipe jika bahasanya mendukung tipe, teruji jika perancah pengujian tersedia.
 8. **Review Checklist** — apa yang HARUS diverifikasi peninjau (manusia atau runtime dalam mode tinjauan PR) sebelum menyetujui: header ada, penamaan patuh, tidak ada penulisan ke `.apothem/plans/`, tidak ada kontradiksi dengan berkas instruksi proyek kanonik, validator hijau secara lokal.
-9. **Pointers** — tautan ke `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, dokumen konvensi ini, `schemas/`, dan `CONTRIBUTING.md`.
+9. **Pointers** — tautan ke `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, dokumen konvensi ini, `src/apothem/schemas/`, dan `CONTRIBUTING.md`.
 
 Berkas ini diawali dengan baris SPDX header kepengarangan kanonik (varian Markdown) sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — terlihat atau tak terlihat sesuai kebijakan visibilitas header yang dipilih proyek.
 
@@ -116,7 +116,7 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 
 - Validator pertama menegaskan bahwa berkas instruksi di dalam IDE ada, dapat diurai, memuat setiap bagian kanonik yang dicantumkan di §4, dan diawali dengan baris `SPDX-License-Identifier: MIT` kanonik (varian Markdown).
 - Validator kedua mengurai bagian-bagian kanonik setiap permukaan; validator ini menegaskan bahwa bagian bersama saling konsisten menurut komparator yang dinormalisasi (tidak peka huruf besar-kecil, toleran terhadap spasi, mengizinkan parafrase leksikal tetapi mensyaratkan kesetaraan semantik pada daftar klaim yang didefinisikan fixture).
-- Validator ketiga menegaskan bahwa LICENSE di root memuat baris `Copyright (c) <name>` yang dapat diurai; header per berkas tidak memuat nama penulis.
+- Validator ketiga hanya menegaskan bahwa LICENSE di root memuat baris `Copyright (c) <name>` yang dapat diurai. Validator ini tidak membaca header per berkas, yang tidak memuat nama penulis.
 
 ---
 

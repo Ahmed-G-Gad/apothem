@@ -2,7 +2,7 @@
 title: "Skema Frontmatter"
 description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
 machineTranslated: true
-sourceHash: "482f970f0b254769"
+sourceHash: "d6c49336e4d3abf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,13 +12,13 @@ sourceHash: "482f970f0b254769"
 
 ## 1. Bentuk Blok Frontmatter
 
-Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Pada berkas keluarga Markdown, frontmatter adalah konten pertama berkas, dan banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) mengikuti `---` penutup.
+Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Pada berkas keluarga Markdown, frontmatter adalah konten pertama berkas, dan baris header SPDX kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) mengikuti `---` penutup.
 
 Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber (instalasi Claude Code mengganti namanya menjadi `user-invocable`). Kunci aturan dan pekerja terdelegasi menggunakan camelCase, sebagaimana tercantum dalam tabel kunci wajib di bagian 2. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter YAML penting lainnya diberi tanda kutip.
 
 ## 2. Field Wajib per Kelas
 
-Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `src/apothem/schemas/` (satu berkas skema per kelas artefak).
+Himpunan kunci wajib bervariasi menurut kelas artefak. Bentuk otoritatifnya ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `src/apothem/schemas/`. Kelas pembantu, skill, command, output-style, dan plan masing-masing memiliki satu berkas skema, yang tercantum di bawah; kelas `CLAUDE.md` dan aturan tidak memilikinya, dan `validate_ecosystem.py` memeriksa kunci kedua kelas itu. Berkas plan tidak ada dalam tabel di bawah; kuncinya tercantum di [Disiplin plan](/docs/reference/plans-discipline).
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (konfigurasi root) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Aturan (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Command (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Pekerja terdelegasi (direktori kanonik ditunjukkan di bawah) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema menerima tepat salah satu dari kedua ejaan tersebut |
+| Pembantu, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema mewajibkan setiap skill membawa tepat salah satu dari kedua ejaan tersebut, tidak pernah keduanya |
 | Gaya keluaran (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 
 Skema per kelas di [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).

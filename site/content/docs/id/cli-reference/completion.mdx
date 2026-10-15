@@ -2,7 +2,7 @@
 title: "completion"
 description: "Referensi CLI untuk perintah apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,9 +35,12 @@ didukung.
 
 ## Mengaktifkan pelengkapan per shell
 
-Perintah `apothem` harus berada di `PATH` Anda terlebih dahulu (pemasang
-sekali-jalan menempatkannya di sana). Lalu aktifkan pelengkapan dengan
-menambahkan skrip ke berkas pelengkapan shell dan memulai ulang shell:
+Perintah `apothem` harus berada di `PATH` Anda terlebih dahulu. Pemasang
+sekali-jalan menulis shim `apothem` ke `$HOME/.local/bin` (POSIX) atau
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) dan tidak pernah menyunting
+`PATH` Anda, jadi tambahkan direktori itu jika belum tercantum. Lalu aktifkan
+pelengkapan dengan menambahkan skrip ke berkas pelengkapan shell dan memulai
+ulang shell:
 
 ```bash
 # bash — append to your bashrc

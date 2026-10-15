@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adapter harness Apothem untuk Open-Claw (Pratinjau)."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,8 +90,10 @@ paket Apothem yang terpasang.
 apothem uninstall --harness open-claw
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus apa yang ditambahkan adapter: dokumen profil dan pohon pendukung.
+Kunci milik Anda sendiri di `openclaw.json` tetap ada, dan berkas itu dihapus
+hanya ketika Apothem yang membuatnya dan tidak ada lagi yang tersisa milik
+Anda. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

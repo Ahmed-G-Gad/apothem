@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,15 +52,15 @@ agen ke TOML, skill ke `~/.agents/skills/`, dan aturan/templat Markdown
 non-native ke `~/.config/apothem/` sebagai materi pendukung.
 
 Setiap helper yang dikonversi menyetel `name`, `description`, dan
-`developer_instructions`. Helper yang izin alatnya, setelah daftar tolaknya
-diterapkan, tidak menyertakan alat penyunting berkas apa pun (`Write`, `Edit`,
-`MultiEdit`, atau `NotebookEdit`) juga menyetel `sandbox_mode = "read-only"`,
-pembatasan penulisan milik Codex sendiri. `Bash` tidak dihitung sebagai alat
-penyunting berkas, sehingga helper yang diberi `Bash` tanpa satu pun alat
-tersebut tetap bersifat read-only. Tidak ada model atau upaya penalaran yang
-disetel, sehingga setiap helper mewarisi pilihan sesi. Codex tidak memiliki
-daftar alat atau batas giliran per helper, sehingga `tools` dan `maxTurns`
-milik helper tidak terbawa.
+`developer_instructions`. Helper yang izin alatnya, setelah alat-alat dalam
+daftar `disallowedTools` miliknya sendiri dikeluarkan, tidak menyertakan alat
+penyunting berkas apa pun (`Write`, `Edit`, `MultiEdit`, atau `NotebookEdit`)
+juga menyetel `sandbox_mode = "read-only"`, pembatasan penulisan milik Codex
+sendiri. `Bash` tidak dihitung sebagai alat penyunting berkas, sehingga helper
+yang diberi `Bash` tanpa satu pun alat tersebut tetap mendapat pengaturan itu.
+Tidak ada model atau upaya penalaran yang disetel, sehingga setiap helper
+mewarisi pilihan sesi. Codex tidak memiliki daftar alat atau batas giliran per
+helper, sehingga `tools` dan `maxTurns` milik helper tidak terbawa.
 
 ## Catatan kompatibilitas
 
@@ -103,8 +103,15 @@ Menyegarkan bootstrap Codex, agen yang dikonversi, skill, dan kohor pendukung.
 apothem uninstall --harness codex
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `~/.codex/AGENTS.md` dan mempertahankan teks apa
+pun di luarnya, serta menghapus entri milik Apothem dari `~/.codex/hooks.json`
+dan mempertahankan entri milik Anda. Juga menghapus berkas Apothem di
+`~/.codex/hooks/`, `~/.codex/agents/`, `~/.agents/skills/`, dan
+`~/.config/apothem/{rules,templates}/`; berkas lain di folder-folder tersebut
+tetap ada. Skill yang dihapus dari `~/.agents/skills/` juga hilang dari alat
+lain yang memuatnya (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)).
+Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah atau
+dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

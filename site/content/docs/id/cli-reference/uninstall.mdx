@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,13 +26,21 @@ milik Anda tetap ada). Meminta konfirmasi kecuali
 Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dengan
 pemberitahuan "nothing to remove".
 
+Penyimpanan data bersama di bawah `.apothem/` pada root pemasangan (`memory/`,
+`contexts/`, `learning/`) tetap ada selama harness terpasang lain pada root yang
+sama masih menggunakannya. Ketika harness yang Anda hapus adalah yang terakhir
+pada root tersebut, perintah terlebih dahulu menyalin setiap penyimpanan ke root
+cadangan Apothem (`~/.apothem/backups/`), lalu menghapusnya beserta seluruh
+isinya. Apa pun yang Anda simpan di `plans/` tidak pernah dihapus.
+
 Penghapusan `--harness all` sengaja dibuat menyeluruh: penghapusan ini mencakup
 setiap harness yang terdaftar, termasuk harness apa pun yang dilewati
 `exclude_harnesses` milik profil saat pemasangan — pembersihan menjangkau
 keadaan yang mungkin ditinggalkan oleh pemasangan sebelumnya yang lebih luas.
 Harness yang tidak pernah dipasang melaporkan "nothing to remove".
 
-Alias bentuk-kontinu `apothem uninstalling` di-resolve ke handler yang sama.
+Alias bentuk-kontinu `apothem uninstalling` (juga diterima sebagai
+`apothem Uninstalling`) di-resolve ke handler yang sama.
 
 ## Opsi
 
