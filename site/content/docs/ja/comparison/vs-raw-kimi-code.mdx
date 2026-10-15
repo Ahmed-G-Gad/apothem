@@ -1,48 +1,52 @@
 ---
-title: "Apothem vs raw Kimi Code config"
-description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
+title: "Apothem と手作業の Kimi Code 構成の比較"
+description: "Kimi Code のプロジェクトルートの AGENTS.md と .kimi-code/ のサポートファイルを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "3973fe015cf877a5"
+sourceHash: "95d0fa19ca3ddd46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Kimi Code reads project-root `AGENTS.md` as its instruction file and keeps
-project configuration under `<project>/.kimi-code/`, including the
-operator-owned `.kimi-code/mcp.json` MCP surface. You can author that
-instruction file and its supporting cohorts by hand, per project, forever.
-Apothem's kimi-code adapter renders the governance surface into `AGENTS.md` as a
-managed block from the shared profile and keeps it consistent across every
-harness and every project. This page contrasts hand-maintaining that config
-against managing it with Apothem.
+Kimi Code はプロジェクトルートの `AGENTS.md` を命令ファイルとして読み取り、
+プロジェクト設定を `<project>/.kimi-code/` の下に保持します。これには、
+オペレーター所有の `.kimi-code/mcp.json` MCP 面も含まれます。
+その命令ファイルと、それを支えるコホートは、プロジェクトごとに、いつまでも
+手作業で書き続けることができます。
+Apothem の kimi-code アダプターは、ガバナンス面を共有プロファイルから `AGENTS.md` に
+管理ブロックとしてレンダリングし、すべてのハーネスとすべてのプロジェクトにわたって
+一貫した状態を保ちます。このページでは、その構成を手作業で維持する場合と、
+Apothem で管理する場合とを対比します。
 
-## Effort comparison
+## 労力の比較
 
 | タスク | 手作業の構成 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| `AGENTS.md` の指示の表面を書く | プロジェクトごとに手で書いて再同期する | 共有プロファイルからレンダリングされた管理ブロックが 1 つ |
+| `AGENTS.md` 命令面を書く | プロジェクトごとに手で書いて再同期する | 共有プロファイルからレンダリングされる 1 つの管理ブロック |
 | ルール、コマンド、スキル、エージェントを同期し続ける | プロジェクトごとに手作業でコピー | インストールのたびに `<project>/.kimi-code/.apothem/support/` の下へマテリアライズ |
-| 更新時に運用者の文章を保持する | 手作業でマージ | センチネルで区切られたブロック。その外側にある運用者の文章は保持される |
+| 更新時にオペレーターの文章を保持する | 手作業でマージ | センチネルで区切られたブロック。その外側にあるオペレーターの文章は保持される |
 | ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
 | 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness kimi-code --project <path>` |
 
-## What Apothem manages
+## Apothem が管理するもの
 
-The kimi-code adapter renders the shared rules and governance surface into the
-project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
-agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
-instruction surface drives the project directly. Every change to the shared
-rules re-renders the files on the next `apothem update`.
+kimi-code アダプターは、共有ルールとガバナンス面をプロジェクトルートの `AGENTS.md` の
+管理ブロックへレンダリングし、コマンド、スキル、フック、エージェント、ルール、
+テンプレートの各コホートを `.kimi-code/.apothem/support/` の下にインストールします。
+`.kimi-code/mcp.json` は作成しません。MCP 面はオペレーター所有のままです。
+Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AGENTS.md` から
+読み取ります。アダプターが書き込むのはプロジェクトルートの `AGENTS.md` だけであり、
+両方のファイルが存在する場合にどちらが優先されるかは、Kimi Code のドキュメントに
+記載されていません。共有ルールが変更されるたびに、次回の `apothem update` で
+ファイルが再レンダリングされます。
 
-## Migration path
+## 移行手順
 
 1. まだ共有プロファイルを作成していなければ、`apothem profile init` を実行して作成します。
 2. 既存の `AGENTS.md` のルールを、共有コーパスへ移します。
-3. `apothem install --harness kimi-code --project <path>` を実行して、`AGENTS.md` の指示の表面と、`.kimi-code/.apothem/support/` のサポートサブツリーをレンダリングします。
+3. `apothem install --harness kimi-code --project <path>` を実行して、`AGENTS.md` 命令面と、`.kimi-code/.apothem/support/` のサポートツリーをレンダリングします。
 4. `apothem verify --harness kimi-code --project <path>` を実行して、構成が配置されたことを確認します。
 5. 以降の変更には毎回 `apothem update --harness kimi-code --project <path>` を使います。
 
-## Read next
+## 次に読む
 
-- [Kimi Code adapter reference](/docs/harnesses/kimi-code)
-- [Comparison overview](/docs/comparison)
+- [Kimi Code アダプターのリファレンス](/docs/harnesses/kimi-code)
+- [比較の概要](/docs/comparison)

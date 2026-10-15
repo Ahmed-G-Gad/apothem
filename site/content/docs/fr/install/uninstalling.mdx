@@ -2,7 +2,7 @@
 title: "Désinstallation"
 description: "Supprimer Apothem et nettoyer les configurations d'environnement."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,36 +24,49 @@ Passez `--yes` pour ignorer l'invite de confirmation par environnement.
 
 ## Supprimer le moteur
 
-La suppression dépend du canal d'installation que vous avez utilisé :
+La suppression dépend du canal d'installation que vous avez utilisé. Les numéros
+de canal sont ceux du
+[tableau des canaux d'installation](/docs/install#choisir-un-canal) :
 
-- **Plugin Claude Code** — supprimez le plugin depuis Claude Code :
+- **Plugin Claude Code (canal 1)** — supprimez le plugin depuis Claude Code :
   `/plugin uninstall apothem@apothem` (l'entrée de marketplace peut être
   supprimée avec `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — rien à supprimer ; `npx` s'exécute depuis son cache. Videz-le avec
-  `npm cache clean --force` si vous voulez faire disparaître la copie en cache.
-- **Installateur en une seule étape** — exécutez le script de désinstallation
-  correspondant depuis le checkout : `scripts/installer/uninstall.sh` (POSIX) ou
-  `scripts/installer/uninstall.ps1` (PowerShell). Les deux demandent
-  confirmation avant de supprimer et refusent les cibles non sûres.
-- **Extension de la famille VS Code** — exécutez d'abord **Apothem: Uninstall**
-  depuis la palette de commandes pour supprimer les configurations
-  d'environnement, puis supprimez l'extension depuis la vue Extensions ou avec
-  `code --uninstall-extension ahmed-g-gad.apothem`. Par défaut, l'extension
-  exécute le moteur via `npx` ; l'entrée **npx** ci-dessus couvre donc le cache.
+- **npx (canal 2)** — rien à supprimer ; `npx` s'exécute depuis son cache.
+  Videz-le avec `npm cache clean --force` si vous voulez faire disparaître la
+  copie en cache.
+- **Installateur en une seule étape (canal 3)** — exécutez le script de
+  désinstallation correspondant depuis le checkout :
+  `scripts/installer/uninstall.sh` (POSIX) ou `scripts/installer/uninstall.ps1`
+  (PowerShell). Les deux demandent confirmation avant de supprimer et refusent
+  les cibles non sûres.
+- **Extension de la famille VS Code (canal 4)** — exécutez d'abord
+  **Apothem: Uninstall** depuis la palette de commandes pour supprimer les
+  configurations d'environnement, puis supprimez l'extension depuis la vue
+  Extensions ou avec `code --uninstall-extension ahmed-g-gad.apothem`. Par
+  défaut, l'extension exécute le moteur via `npx` ; l'entrée **npx** ci-dessus
+  couvre donc le cache.
 - **Amorçages en ligne de commande (canaux 5–7)** — supprimez l'extension ou le
   plugin avec son outil hôte une fois les configurations d'environnement
-  supprimées. L'amorçage ajoute seulement un contexte d'assistant (un fichier de
-  contexte, une commande ou un skill) qui appelle le moteur via `npx` ; il ne
-  reste donc rien d'autre. Les hôtes d'extensions des canaux 5 et 6 acceptent une
-  commande de désinstallation ; pour l'hôte de plugins du canal 7, désinstallez
-  `apothem` dans son navigateur de plugins.
+  supprimées. Les hôtes :
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  L'amorçage ajoute seulement un contexte d'assistant (un fichier de contexte,
+  une commande ou un skill) qui appelle le moteur via `npx` ; il ne reste donc
+  rien d'autre. Les hôtes d'extensions des canaux 5 et 6 acceptent une commande
+  de désinstallation ; pour l'hôte de plugins du canal 7, désinstallez `apothem`
+  dans son navigateur de plugins.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Moteur direct** — rien à désinstaller ; supprimez le clone une fois les
-  configurations d'environnement supprimées.
+- **Moteur direct (canal 8)** — rien à désinstaller ; supprimez le clone une
+  fois les configurations d'environnement supprimées.
 - **Sauvegardes et état** — les sauvegardes d'installation se trouvent sous
   `~/.apothem/backups/` et le journal d'installation sous `~/.apothem/state/`.
   Les deux restent bornés : après chaque installation, désinstallation et
@@ -82,6 +95,11 @@ La suppression dépend du canal d'installation que vous avez utilisé :
   entrées de liste que le journal d'installation consigne comme appartenant à
   Apothem (voir
   [Paramètres](/docs/reference/settings#fusion-dans-votre-propre-fichier-de-settings)).
+- Les magasins de données partagés sous `.apothem/` à la racine d'installation
+  (`memory/`, `contexts/`, `learning/`) restent en place tant qu'un autre
+  environnement installé à la même racine les utilise encore. La désinstallation
+  du dernier environnement à cette racine copie d'abord chaque magasin dans
+  `~/.apothem/backups/`, puis le supprime avec tout son contenu.
 - Les suites de planification sous `<project>/.apothem/plans/` (et l'ancien `<project>/.plans/`) ne sont pas affectées.
 
 ## Répertoires
@@ -96,5 +114,5 @@ supprimés.
 Pour nettoyer entièrement la racine d'un environnement, supprimez le chemin
 natif de l'environnement documenté sur les
 [pages de référence des environnements](/docs/harnesses) après avoir vérifié que
-vous avez sauvegardé toutes les règles, tous les utilitaires ou fichiers de
+vous avez sauvegardé toutes les règles, tous les auxiliaires ou fichiers de
 profil personnalisés que vous souhaitez conserver.

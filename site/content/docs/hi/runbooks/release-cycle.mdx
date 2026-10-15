@@ -1,8 +1,8 @@
 ---
 title: "रिलीज़-चक्र रनबुक"
-description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release और वैकल्पिक npm प्रकाशन डिस्पैच तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
+description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,10 +21,10 @@ sourceHash: "2373679e2d500c4a"
 `name@version` को कभी बदला नहीं जा सकता), और पिन किए गए इंस्टॉल टैगों पर निर्भर
 करते हैं।
 
-टैग पुश दो वर्कफ़्लो शुरू करता है। `.github/workflows/release.yml` GitHub
-Release को उसके पूर्ण आर्टिफ़ैक्ट सेट के साथ बिल्ड, हस्ताक्षरित, अटेस्ट और
-प्रकाशित करता है: sdist, wheel, CycloneDX SBOM, Sigstore cosign बंडल, SLSA-3
-प्रोवेनेंस, और प्लेटफ़ॉर्म रनटाइम आर्काइव। `publish-npm.yml` npm Trusted
+टैग पुश दो वर्कफ़्लो शुरू करता है। `.github/workflows/release.yml` GitHub Release
+को उसके पूर्ण आर्टिफ़ैक्ट सेट के साथ बिल्ड करता है, हस्ताक्षर करता है, अटेस्ट
+करता है और प्रकाशित करता है: sdist, wheel, CycloneDX SBOM, Sigstore cosign बंडल,
+SLSA-3 प्रोवेनेंस, और प्लेटफ़ॉर्म रनटाइम आर्काइव। `publish-npm.yml` npm Trusted
 Publishing के माध्यम से `@ahmed-g-gad/apothem` को npmjs.com पर प्रकाशित करता है।
 संस्करण-युक्त CHANGELOG अनुभाग रिलीज़ कमिट में उतरता है; ऑपरेटर दोनों वर्कफ़्लो
 पूरे होने के बाद इंस्टॉल-पथ स्मोक चलाता है।
@@ -145,14 +145,17 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 npm प्रकाशन की पुष्टि करें
 
-टैग पुश `publish-npm.yml` भी चलाता है। संकेत मिलने पर `release` एनवायरनमेंट
-डिप्लॉयमेंट को स्वीकृत करें। वर्कफ़्लो npm Trusted Publishing (OIDC) के माध्यम से
-`@ahmed-g-gad/apothem@X.Y.Z` को npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई
-रजिस्ट्री टोकन संग्रहीत नहीं है। फिर तैयारी की पुष्टि करें:
+टैग पुश `release.yml` के साथ-साथ `publish-npm.yml` भी चलाता है। npm वर्कफ़्लो
+रिलीज़ वर्कफ़्लो की प्रतीक्षा नहीं करता; `release` एनवायरनमेंट अनुमोदन ही गेट है।
+§2.3 का रिलीज़ वर्कफ़्लो पूरा हो जाने के बाद, तत्परता की पुष्टि करें:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+फिर संकेत मिलने पर `release` एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित करें। वर्कफ़्लो
+npm Trusted Publishing (OIDC) के माध्यम से `@ahmed-g-gad/apothem@X.Y.Z` को
+npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई रजिस्ट्री टोकन संग्रहीत नहीं है।
 
 किसी विफल रन के बाद फिर से प्रकाशित करने के लिए, उसी टैग के लिए वर्कफ़्लो डिस्पैच
 करें (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`)। जब संस्करण पहले से

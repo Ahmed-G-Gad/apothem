@@ -2,7 +2,7 @@
 title: "Apothem बनाम कच्चा Hermes कॉन्फ़िग"
 description: "Hermes कॉन्फ़िग को हाथ से अनुरक्षित करना बनाम उसे Apothem की साझा प्रोफ़ाइल के माध्यम से प्रबंधित करना।"
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,10 @@ Hermes उन स्किल को तभी लोड करता है ज
 2. पुनः उपयोग योग्य Hermes स्किल या कमांड प्रॉम्प्ट को साझा कॉर्पस में ले जाएँ।
 3. नेटिव कॉन्फ़िग और समर्थन स्किल डायरेक्टरी रेंडर करने के लिए
    `apothem install --harness hermes` चलाएँ।
-4. यह पुष्टि करने के लिए कि कॉन्फ़िग अपनी जगह पहुँच गया,
+4. `~/.hermes/.apothem/support/skills` को `config.yaml` में `skills.external_dirs`
+   में जोड़ें, ताकि Hermes इंस्टॉल किए गए स्किल लोड करे। `apothem update` वे कुंजियाँ
+   बनाए रखता है जो आप `config.yaml` में जोड़ते हैं।
+5. यह पुष्टि करने के लिए कि कॉन्फ़िग अपनी जगह पहुँच गया,
    `apothem verify --harness hermes` चलाएँ।
 
 ## आगे पढ़ें

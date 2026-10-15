@@ -2,7 +2,7 @@
 title: "Diagrama del pipeline de CI/CD"
 description: "Mapa visual y desglose por carriles de las etapas del flujo de trabajo de compilación, prueba, lint, seguridad y publicación que controlan cada cambio de código y cada lanzamiento."
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -72,12 +71,14 @@ flowchart LR
 
 - **Carril de análisis estático** — retroalimentación rápida. Ruff cubre el
   estilo de Python y un conjunto de reglas curado; mypy impone disciplina de
-  tipos en modo strict; markdownlint controla la superficie de documentación; el
-  validador de frontmatter controla el cumplimiento del esquema de artefactos
-  para reglas, skills, trabajadores delegados y comandos.
+  tipos en modo strict; el validador de frontmatter controla el cumplimiento del
+  esquema de artefactos para reglas, skills, trabajadores delegados y comandos.
+  markdownlint no forma parte de este carril: se ejecuta solo como hook de
+  pre-commit y CI no lo ejecuta (consulta
+  [Convenciones de Markdown](/docs/reference/markdown-conventions)).
 - **Carril de pruebas** — `pytest tests/hooks` ejercita el runtime de hooks
   contra la matriz completa de eventos; `validate_ecosystem.py` es la principal
-  compuerta estructural para la consistencia entre artefactos; `chaos_pass.py` y
+  puerta estructural para la consistencia entre artefactos; `chaos_pass.py` y
   la suite de benchmarks por clase bajo `src/apothem/benchmarks/` se activan en
   el carril de lanzamiento para detectar degradación bajo entradas degradadas y
   regresiones del presupuesto de runtime.
@@ -101,7 +102,7 @@ canónica que reflejará toda configuración futura.
 ## Referencias cruzadas autoritativas
 
 - `pyproject.toml` — fuente de verdad de la configuración de Ruff / mypy / pytest.
-- `scripts/dev/validate_ecosystem.py` — la principal compuerta entre artefactos.
+- `scripts/dev/validate_ecosystem.py` — la principal puerta entre artefactos.
 - `scripts/dev/validate_hooks.py` — validación estructural específica de hooks.
 - `scripts/dev/chaos_pass.py` — barrido adversarial de cada hook configurado.
 - `src/apothem/benchmarks/` — verificadores del presupuesto de runtime por clase.

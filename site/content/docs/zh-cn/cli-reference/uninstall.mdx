@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,11 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 移除由适配器管理的工具目标，然后在安装所创建的目录变为空之后移除这些目录（存放着任何属于你的内容的目录会被保留）。除非提供 `--yes`，否则会提示确认。当无法提示时——`--format json`（提示文本会破坏那单个 JSON 文档）或非交互式 shell（无 TTY）——除非提供 `--yes`，否则该命令会预先拒绝，并给出一个结构化的 `uninstall.confirmation_required` 错误（退出码 1）。如果所选工具未安装，该命令会成功（退出码 0），并给出“没有可移除的内容”提示。
 
+安装根目录下 `.apothem/` 中的共享数据存储（`memory/`、`contexts/`、`learning/`），只要同一根目录下仍有另一个已安装的工具在使用它们，就会保留。当你移除的工具是该根目录下的最后一个工具时，该命令会先将每个数据存储复制到 Apothem 备份根目录（`~/.apothem/backups/`），然后连同其中的全部内容一并移除。你保存在 `plans/` 中的任何内容绝不会被移除。
+
 `--harness all` 移除有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装期间跳过的工具——清理会触及先前范围更广的一次安装可能遗留下的状态。从未安装过的工具会报告“没有可移除的内容”。
 
-连续式别名 `apothem uninstalling` 解析到同一个处理程序。
+连续式别名 `apothem uninstalling`（也接受写作 `apothem Uninstalling`）解析到同一个处理程序。
 
 ## 选项
 

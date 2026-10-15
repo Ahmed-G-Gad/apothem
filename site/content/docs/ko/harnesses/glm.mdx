@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "구성 가능한 모델 백엔드인 GLM (Z.ai)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,11 +11,13 @@ sourceHash: "3e05b3a651ffe5da"
 **상태:** GA
 **네이티브 구성:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai)은 하니스가 아니라 **모델 백엔드**입니다. Z.ai는 자사 GLM 명령줄
-도구를 제공하지 않습니다. 대신 Anthropic 호환 또는 OpenAI 호환 프로토콜을
-사용하는 도구에 백엔드 기본 URL과 키를 설정하여 GLM을 가리키게 합니다. `glm`
-어댑터는 두 호환 표면을 모두 기록하는 프로바이더 구성 파일을 작성하므로,
-호환되는 어떤 도구든 GLM 모델 제품군에 연결할 수 있습니다.
+GLM (Z.ai)은 **모델 백엔드**이며, 그 자체로 코딩 도구는 아닙니다. Z.ai는 자사
+GLM 명령줄 도구를 제공하지 않습니다. 대신 Anthropic 호환 또는 OpenAI 호환
+프로토콜을 사용하는 도구에 백엔드 기본 URL과 키를 설정하여 GLM을 가리키게
+합니다. 그래도 Apothem은 GLM을 하니스 어댑터에 포함하므로, 다른 어댑터와 똑같이
+`--harness glm`으로 선택합니다. `glm` 어댑터는 두 호환 표면을 모두 기록하는
+프로바이더 구성 파일을 작성하므로, 호환되는 어떤 도구든 GLM 모델 제품군에
+연결할 수 있습니다.
 
 ## 설치
 
@@ -33,10 +35,11 @@ apothem install --harness glm --project /path/to/project
 프로바이더 파일은 두 백엔드를 기록합니다. Anthropic 호환 백엔드는 기본 URL
 `https://api.z.ai/api/anthropic`을 사용합니다. Anthropic 프로토콜을 사용하는
 도구는 `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, 그리고 선택적으로
-`API_TIMEOUT_MS`를 설정하여 GLM으로 라우팅합니다. 같은 env 테이블에는
+`API_TIMEOUT_MS`를 설정하여 GLM으로 라우팅합니다. 파일의
+`[backends.anthropic_compatible.env]` 테이블은 이 변수들을 나열하고,
 `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`,
-`ANTHROPIC_DEFAULT_HAIKU_MODEL`도 나열되며, 이 변수들은 도구의 opus, sonnet,
-haiku 역할을 GLM 모델에 매핑합니다. OpenAI 호환 백엔드는 기본 URL
+`ANTHROPIC_DEFAULT_HAIKU_MODEL`도 함께 나열하며, 이 변수들은 도구의 opus,
+sonnet, haiku 역할을 GLM 모델에 매핑합니다. OpenAI 호환 백엔드는 기본 URL
 `https://api.z.ai/api/coding/paas/v4`를 사용합니다. 인증 토큰은 여러분 자신의
 Z.ai 키로 교체하는 플레이스홀더입니다 — Apothem은 실제 시크릿을 절대 작성하지
 않습니다. 모델 ID는 버전에 따라 바뀌기 쉬우므로 Apothem은 어떤 모델 ID도
@@ -47,7 +50,7 @@ Z.ai 키로 교체하는 플레이스홀더입니다 — Apothem은 실제 시�
 
 ## 호환성 참고 사항
 
-GLM은 하니스가 아니라 백엔드이므로 규칙, 커맨드, 스킬, 훅을 위한 표면을
+GLM은 코딩 도구가 아니라 백엔드이므로 규칙, 커맨드, 스킬, 훅을 위한 표면을
 노출하지 않습니다 — 어댑터는 백엔드 프로바이더 파일만 작성하며 그 밖에는
 아무것도 작성하지 않습니다. 여러분의 Z.ai 키와 모델 ID 선택은 운영자 소유로
 남습니다. 어댑터가 의존하는 벤더 표면 규약은
@@ -76,12 +79,11 @@ verify 명령은 다음을 확인합니다.
 apothem update --harness glm --project /path/to/project
 ```
 
-프로바이더 파일은 일단 존재하면 여러분의 것입니다. `install`은
-`.apothem/providers/glm.toml`이 없을 때만 템플릿을 작성하며, 그 후에는
-`install`도 `update`도 이 파일을 절대 덮어쓰지 않으므로, 여러분의 키 참조와
-모델 선택은 다시 실행할 때마다 그대로 유지됩니다. 더 새로운 템플릿을 받으려면
-기존 파일을 다른 곳으로 옮기고, `update`를 실행한 다음, 여러분의 값을 새 파일에
-복사하세요.
+프로바이더 파일은 일단 존재하면 여러분의 것입니다. `install`과 `update`는 둘 다
+`.apothem/providers/glm.toml`이 없을 때에만 템플릿을 작성하며, 그 후에는 어느
+쪽도 이 파일을 절대 덮어쓰지 않으므로, 여러분의 키 참조와 모델 선택은 다시
+실행할 때마다 그대로 유지됩니다. 더 새로운 템플릿을 받으려면 기존 파일을 다른
+곳으로 옮기고, `update`를 실행한 다음, 여러분의 값을 새 파일에 복사하세요.
 
 ## 제거
 

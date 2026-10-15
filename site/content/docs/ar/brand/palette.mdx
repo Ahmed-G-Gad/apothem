@@ -1,20 +1,21 @@
 ---
 title: "لوحة العلامة"
-description: "ألوان علامة Apothem الأساسية وألوان علامة أُطُر العمل السبعة عشر. المصدر الوحيد للحقيقة بالنسبة إلى الألوان الأساسية هو رموز التصميم المرجعية في assets/design-tokens.css؛ ويعكس الموقع تلك القيم."
+description: "ألوان علامة Apothem الأساسية وألوان علامة أُطُر العمل الخمسة عشر، المُعرَّفة في صفحة «ألوان علامات أُطُر العمل». المصدر الوحيد للحقيقة بالنسبة إلى الألوان الأساسية هو رموز التصميم المرجعية في assets/design-tokens.css؛ ويعكس الموقع تلك القيم."
 machineTranslated: true
-sourceHash: "64e22fc5ac4c9da8"
+sourceHash: "7bb26cf570fc6357"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## اللوحة الأساسية
 
 تعود ملكية اللوحة المرجعية — مدرّج <bdi>slate</bdi> المحايد، ومدرّج التمييز <bdi>emerald</bdi>،
-والدرجات الدلالية — إلى رموز التصميم في
+والدرجات اللونية الدلالية — إلى رموز التصميم في
 [<bdi>`assets/design-tokens.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (ومرآتها <bdi>`assets/design-tokens.json`</bdi>). وتعكس سمة الموقع في
 [<bdi>`site/app/global.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
 قيم تلك الرموز في متغيّرات <bdi>CSS</bdi> التي تستهلكها سمة <bdi>Fumadocs</bdi>. وكل
-قيمة أدناه تعود إلى خطوة من مدرّج مرجعي.
+قيمة أدناه هي خطوة من مدرّج <bdi>slate</bdi> أو <bdi>emerald</bdi> في رموز التصميم تلك؛
+واسم الخطوة مثل <bdi>slate-600</bdi> يشير إلى قيمة ذلك المدرّج عند تلك الخطوة.
 
 | الدور | الرمز (<bdi>CSS</bdi>) | الوضع الفاتح | الوضع الداكن | الاستخدام |
 |---|---|---|---|---|
@@ -26,9 +27,11 @@ sourceHash: "64e22fc5ac4c9da8"
 
 ## لوحة أُطُر العمل
 
-تعيش ألوان أُطُر العمل في [ألوان علامات أُطُر العمل](/docs/brand/harness-colors). أمّا التعيين
-الهندسي على سداسي علامة <bdi>Apothem</bdi> — عُقدتها المركزية وعُقدتها الطرفية — فمطويٌّ
-ضمن قسم العلامة. وألوان أُطُر العمل مُعرَّفة في تلك الصفحة، لا في رموز التصميم ولا في
+تعيش ألوان أُطُر العمل في [ألوان علامات أُطُر العمل](/docs/brand/harness-colors). ولا تحمل
+علامة <bdi>Apothem</bdi> أي لون لإطار عمل؛ وسداسيّها وعُقدتها المركزية وعُقَدها الطرفية
+موصوفة في قسم العلامة من
+[<bdi>`assets/DESIGN-SYSTEM.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/assets/DESIGN-SYSTEM.md).
+وألوان أُطُر العمل مُعرَّفة في تلك الصفحة، لا في رموز التصميم ولا في
 [<bdi>`site/app/global.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)،
 وكلاهما لا يحمل إلا اللوحة الأساسية.
 
@@ -41,6 +44,6 @@ sourceHash: "64e22fc5ac4c9da8"
 ## التحديثات
 
 لا تُحدَّث اللوحة إلا عندما يتغيّر لون أساسي (<bdi>slate</bdi> / <bdi>emerald</bdi>) أو
-يصادق إطار عمل على تغيير في لون العلامة في المنبع. وتنتشر التغييرات الخاصة بكل إطار عمل
+يعتمد إطار عمل تغييرًا في لون العلامة في المنبع. وتنتشر التغييرات الخاصة بكل إطار عمل
 انتشارًا ذرّيًّا عبر [ألوان علامات أُطُر العمل](/docs/brand/harness-colors) وكل ملف
 <bdi>SVG</bdi> رئيسي متأثّر تحت <bdi>`assets/src/`</bdi>.

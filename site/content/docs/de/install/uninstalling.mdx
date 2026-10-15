@@ -2,7 +2,7 @@
 title: "Deinstallieren"
 description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,19 +25,20 @@ apothem uninstall --harness all --project /path/to/project --yes
 ## Die Engine entfernen
 
 Die Entfernung richtet sich nach dem Installationskanal, den Sie verwendet
-haben:
+haben. Die Kanalnummern sind die der
+[Tabelle der Installationskanäle](/docs/install#einen-kanal-wählen):
 
-- **Claude Code-Plugin** — entfernen Sie das Plugin innerhalb von Claude Code:
-  `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag lässt sich mit
-  `/plugin marketplace remove ahmed-g-gad/apothem` entfernen).
-- **npx** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren Sie ihn
-  mit `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie
+- **Claude Code-Plugin (Kanal 1)** — entfernen Sie das Plugin innerhalb von
+  Claude Code: `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag
+  lässt sich mit `/plugin marketplace remove ahmed-g-gad/apothem` entfernen).
+- **npx (Kanal 2)** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren
+  Sie ihn mit `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie
   entfernen möchten.
-- **Ein-Schritt-Installer** — führen Sie das passende Deinstallationsskript aus
-  dem Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
-  `scripts/installer/uninstall.ps1` (PowerShell). Beide fragen vor dem
-  Entfernen nach einer Bestätigung und verweigern unsichere Ziele.
-- **Erweiterung für die VS Code-Familie** — führen Sie zuerst
+- **Ein-Schritt-Installer (Kanal 3)** — führen Sie das passende
+  Deinstallationsskript aus dem Checkout aus: `scripts/installer/uninstall.sh`
+  (POSIX) oder `scripts/installer/uninstall.ps1` (PowerShell). Beide fragen vor
+  dem Entfernen nach einer Bestätigung und verweigern unsichere Ziele.
+- **Erweiterung für die VS Code-Familie (Kanal 4)** — führen Sie zuerst
   **Apothem: Uninstall** über die Befehlspalette aus, um die
   Harness-Konfigurationen zu entfernen, und entfernen Sie dann die Erweiterung
   in der Erweiterungsansicht oder mit
@@ -46,18 +47,26 @@ haben:
   Cache abdeckt.
 - **Kommandozeilen-Bootstraps (Kanäle 5–7)** — entfernen Sie die Erweiterung
   oder das Plugin mit dem zugehörigen Host-Tool, nachdem die
-  Harness-Konfigurationen entfernt sind. Der Bootstrap fügt nur
-  Assistenten-Kontext hinzu (eine Kontextdatei, einen Command oder einen Skill),
-  der die Engine über `npx` aufruft, sodass sonst nichts zurückbleibt. Die
-  Erweiterungs-Hosts der Kanäle 5 und 6 bieten einen Deinstallationsbefehl; beim
-  Plugin-Host von Kanal 7 deinstallieren Sie `apothem` in dessen Plugin-Browser.
+  Harness-Konfigurationen entfernt sind. Die Hosts:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  Der Bootstrap fügt nur Assistenten-Kontext hinzu (eine Kontextdatei, einen
+  Command oder einen Skill), der die Engine über `npx` aufruft, sodass sonst
+  nichts zurückbleibt. Die Erweiterungs-Hosts der Kanäle 5 und 6 bieten einen
+  Deinstallationsbefehl; beim Plugin-Host von Kanal 7 deinstallieren Sie
+  `apothem` in dessen Plugin-Browser.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Direkte Engine** — nichts zu deinstallieren; löschen Sie den Klon, sobald
-  die Harness-Konfigurationen entfernt sind.
+- **Direkte Engine (Kanal 8)** — nichts zu deinstallieren; löschen Sie den Klon,
+  sobald die Harness-Konfigurationen entfernt sind.
 - **Backups und Zustand** — Installations-Backups liegen unter
   `~/.apothem/backups/` und das Installations-Ledger unter `~/.apothem/state/`.
   Beide bleiben begrenzt: Nach jeder Installation, jeder Deinstallation und
@@ -84,6 +93,12 @@ haben:
   und Listeneinträge, die das Installations-Ledger als Apothems eigene erfasst
   (siehe
   [Einstellungen](/docs/reference/settings#zusammenführen-mit-ihrer-eigenen-settings-datei)).
+- Die gemeinsam genutzten Datenspeicher unter `.apothem/` an der
+  Installationswurzel (`memory/`, `contexts/`, `learning/`) bleiben bestehen,
+  solange ein anderer installierter Harness an derselben Wurzel sie noch
+  verwendet. Die Deinstallation des letzten Harness an dieser Wurzel kopiert
+  zuerst jeden Speicher nach `~/.apothem/backups/` und entfernt ihn dann
+  mitsamt seinem gesamten Inhalt.
 - Plan-Suiten unter `<project>/.apothem/plans/` (und dem veralteten `<project>/.plans/`) sind nicht betroffen.
 
 ## Verzeichnisse

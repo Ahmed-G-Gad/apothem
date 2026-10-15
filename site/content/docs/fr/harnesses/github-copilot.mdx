@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptateur d'environnement Apothem pour GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "7759dbb2505688c7"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ sourceHash: "7759dbb2505688c7"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-L'adaptateur dérive le fichier d'instructions du projet à partir de la surface
-partagée de règles et de gouvernance d'Apothem.
+L'adaptateur dérive le fichier d'instructions du projet à partir de votre profil
+partagé et de la surface partagée de règles et de gouvernance d'Apothem.
 
 **Fichiers écrits :** `<project>/.github/copilot-instructions.md`
 
@@ -46,11 +46,12 @@ d'instructions de portée projet documenté et laisse les paramètres utilisateu
 au niveau de l'IDE sous la propriété de l'opérateur.
 
 Dans le dépôt Apothem, `.github/copilot-instructions.md` est une voix parmi les
-surfaces d'instructions d'assistant du projet. Dans un checkout d'Apothem, le
+surfaces d'instructions d'assistant de ce dépôt. Dans un checkout de ce dépôt, le
 contrôle de cohérence multisurface du portail de conformité compare les
 affirmations partagées de `AGENTS.md`, `CLAUDE.md` et
-`.github/copilot-instructions.md`, et signale une affirmation que l'un de ces
-fichiers omet ou contredit. Le contrôle ne lit pas le fichier d'instructions
+`.github/copilot-instructions.md`. Il signale une affirmation partagée que l'un
+des trois fichiers omet, ainsi qu'un fichier qui contredit une affirmation
+formulée par `AGENTS.md`. Le contrôle ne lit pas le fichier d'instructions
 qu'Apothem écrit dans votre projet. Le portail est consultatif par défaut : il
 signale les constats et se termine avec le code `0`.
 
@@ -84,8 +85,11 @@ profil partagé.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime le bloc Apothem de `<project>/.github/copilot-instructions.md` et
+conserve tout texte situé en dehors de ce bloc. Le fichier n'est supprimé que
+lorsqu'il ne contient plus rien d'autre. Avant la modification, une copie
+horodatée du fichier est enregistrée sous `~/.apothem/backups/`. Le YAML du
+profil partagé et le moteur Apothem ne sont pas affectés.
 
 ## Portail de conformité
 

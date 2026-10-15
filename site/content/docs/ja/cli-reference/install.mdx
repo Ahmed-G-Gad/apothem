@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 共有プロファイルを読み込んで検証し、名前で指定されたアダプターまたはレジストリ全体の `all` セットを選択し、マテリアライズ計画を検証して、ハーネスネイティブの設定とサポートコホートを書き込みます。
 プロジェクトスコープのアダプターには `--project PATH` が必要です。
 
-進行形のエイリアス `apothem installing` は、同じハンドラーに解決されます。
+進行形のエイリアス `apothem installing`（`apothem Installing` としても受け付けられます）は、同じハンドラーに解決されます。
 
 ## プロファイルがない状態での初回実行
 
@@ -111,7 +111,7 @@ plain モードでは、これはハーネスごとに 1 つのグループ化�
 ```
 
 `--dry-run` の場合、何も書き込まれず、`results` にはインストールが書き込むはずのすべてのパスが列挙されます。
-各パスには、そうなるはずの結果（`created`、`updated`、または `unchanged`）と、あなた自身も編集するファイルについては `detail.diff` の unified diff が付きます。これは [`apothem diff`](/docs/cli-reference/diff) が表示するのと同じ計画です。
+各パスには、そうなるはずの結果（`created`、`updated`、または `unchanged`）と、あなた自身も編集するファイルについては `detail.diff` の統一差分が付きます。これは [`apothem diff`](/docs/cli-reference/diff) が表示するのと同じプランです。
 
 ```json
 {

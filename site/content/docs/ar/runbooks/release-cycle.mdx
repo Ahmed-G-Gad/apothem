@@ -1,8 +1,8 @@
 ---
 title: "دليل تشغيل دورة الإصدار"
-description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى التشغيل اليدوي الاختياري لنشر npm."
+description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -145,15 +145,17 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 تأكيد نشر <bdi>npm</bdi>
 
-يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi>. وافِق على عملية النشر إلى
-بيئة <bdi>`release`</bdi> عند المطالبة. ينشر سير العمل
-<bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق
-في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع.
-ثم تأكّد من الجاهزية:
+يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi> بجانب <bdi>`release.yml`</bdi>.
+ولا ينتظر سيرُ عمل <bdi>npm</bdi> سيرَ عمل الإصدار؛ فموافقة بيئة <bdi>`release`</bdi>
+هي البوابة. بعد أن ينتهي سير عمل الإصدار من القسم 2.3، تأكّد من الجاهزية:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+ثم وافِق على عملية النشر إلى بيئة <bdi>`release`</bdi> عند المطالبة. ينشر سير العمل
+<bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق
+في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع.
 
 لإعادة النشر بعد تشغيل فاشل، شغِّل سير العمل يدويًا للوسم نفسه
 (<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>). يتخطّى سير العمل
@@ -211,7 +213,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 المتوقّع: تُثبَّت الإضافة وتصبح أوامر <bdi>`apothem`</bdi> متاحة داخل
 <bdi>Claude Code</bdi>.
 
-### 5.2 <bdi>Node.js</bdi> (<bdi>npx</bdi>)
+### 5.2 <bdi>Node.js (npx)</bdi>
 
 ```bash
 npx @ahmed-g-gad/apothem@X.Y.Z --version

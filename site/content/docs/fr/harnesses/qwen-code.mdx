@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adaptateur d'environnement Apothem pour Qwen Code (bêta)."
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,11 +28,15 @@ Qwen.
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
+
+Le fichier `~/.qwen/apothem/rules/00-apothem-profile.md` est le document de
+profil. Il porte votre identité et vos préférences issues du profil partagé.
 
 ## Correspondance entre le profil et la configuration native
 
@@ -61,7 +65,10 @@ apothem verify --harness qwen-code
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -79,8 +86,18 @@ sous-assistants et l'arborescence de support Apothem.
 apothem uninstall --harness qwen-code
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime les entrées que l'adaptateur a ajoutées à `~/.qwen/settings.json` (vos
+propres clés, vos serveurs MCP et vos gestionnaires de hook restent en place, et
+le fichier n'est supprimé que si Apothem l'a créé et qu'il n'y reste plus rien
+qui vous appartienne). Supprime le bloc Apothem de `~/.qwen/QWEN.md` et du
+document de profil `~/.qwen/apothem/rules/00-apothem-profile.md` et conserve
+tout autre texte qu'ils contiennent ; chaque fichier n'est supprimé que si rien
+d'autre n'y subsiste. Supprime aussi les fichiers Apothem de
+`~/.qwen/commands/`, `~/.qwen/skills/`, `~/.qwen/agents/` et
+`~/.qwen/.apothem/support/` ; les autres fichiers de ces dossiers restent en
+place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant d'être
+modifié ou supprimé. Le YAML du profil partagé et le moteur Apothem ne sont pas
+affectés.
 
 ## Portail de conformité
 

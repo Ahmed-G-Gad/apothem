@@ -2,7 +2,7 @@
 title: "Pencopotan"
 description: "Hapus Apothem dan bersihkan konfigurasi harness."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,37 +23,46 @@ Berikan `--yes` untuk melewati prompt konfirmasi per harness.
 
 ## Hapus mesin
 
-Cara penghapusan mengikuti kanal instalasi yang Anda gunakan:
+Cara penghapusan mengikuti kanal instalasi yang Anda gunakan. Nomor kanal
+mengikuti [tabel kanal instalasi](/docs/install#pilih-kanal):
 
-- **Plugin Claude Code** — hapus plugin dari dalam Claude Code:
+- **Plugin Claude Code (kanal 1)** — hapus plugin dari dalam Claude Code:
   `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus
   dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya.
+- **npx (kanal 2)** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya.
   Bersihkan cache dengan `npm cache clean --force` jika Anda ingin salinan yang
   ter-cache dihapus.
-- **Pemasang satu langkah** — jalankan skrip pencopotan yang sesuai dari
-  checkout: `scripts/installer/uninstall.sh` (POSIX) atau
+- **Pemasang satu langkah (kanal 3)** — jalankan skrip pencopotan yang sesuai
+  dari checkout: `scripts/installer/uninstall.sh` (POSIX) atau
   `scripts/installer/uninstall.ps1` (PowerShell). Keduanya meminta konfirmasi
   sebelum menghapus dan menolak target yang tidak aman.
-- **Ekstensi keluarga VS Code** — jalankan **Apothem: Uninstall** dari palet
-  perintah terlebih dahulu untuk menghapus konfigurasi harness, lalu hapus
+- **Ekstensi keluarga VS Code (kanal 4)** — jalankan **Apothem: Uninstall** dari
+  palet perintah terlebih dahulu untuk menghapus konfigurasi harness, lalu hapus
   ekstensi dari tampilan Extensions atau dengan
   `code --uninstall-extension ahmed-g-gad.apothem`. Secara default ekstensi
   menjalankan mesin melalui `npx`, sehingga entri **npx** di atas mencakup
   cache-nya.
 - **Bootstrap baris perintah (kanal 5–7)** — hapus ekstensi atau plugin
-  dengan perkakas host-nya setelah konfigurasi harness dihapus. Bootstrap hanya
-  menambahkan konteks asisten (sebuah berkas konteks, sebuah command, atau
-  sebuah skill) yang memanggil mesin melalui `npx`, sehingga tidak ada yang
-  tersisa. Host ekstensi pada kanal 5 dan 6 menyediakan perintah pencopotan;
-  untuk host plugin pada kanal 7, copot `apothem` di peramban plugin-nya.
+  dengan perkakas host-nya setelah konfigurasi harness dihapus. Host-nya:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  Bootstrap hanya menambahkan konteks asisten (sebuah berkas konteks, sebuah
+  command, atau sebuah skill) yang memanggil mesin melalui `npx`, sehingga tidak
+  ada yang tersisa. Host ekstensi pada kanal 5 dan 6 menyediakan perintah
+  pencopotan; untuk host plugin pada kanal 7, copot `apothem` di peramban
+  plugin-nya.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Mesin langsung** — tidak ada yang perlu dicopot; hapus clone setelah
-  konfigurasi harness dihapus.
+- **Mesin langsung (kanal 8)** — tidak ada yang perlu dicopot; hapus clone
+  setelah konfigurasi harness dihapus.
 - **Cadangan dan state** — cadangan instalasi berada di bawah
   `~/.apothem/backups/` dan ledger instalasi di bawah `~/.apothem/state/`.
   Ukuran keduanya tetap terbatas: setelah setiap instalasi, pencopotan, dan
@@ -77,6 +86,11 @@ Cara penghapusan mengikuti kanal instalasi yang Anda gunakan:
   hanya menghapus kunci dan entri daftar yang dicatat oleh ledger instalasi
   sebagai milik Apothem (lihat
   [Pengaturan](/docs/reference/settings#menggabungkan-ke-dalam-berkas-pengaturan-anda-sendiri)).
+- Penyimpanan data bersama di bawah `.apothem/` pada akar instalasi (`memory/`,
+  `contexts/`, `learning/`) tetap ada selama harness lain yang terpasang pada
+  akar yang sama masih menggunakannya. Mencopot harness terakhir pada akar itu
+  menyalin setiap penyimpanan ke `~/.apothem/backups/` terlebih dahulu, lalu
+  menghapusnya beserta seluruh isinya.
 - Suite rencana di bawah `<project>/.apothem/plans/` (dan `<project>/.plans/` warisan) tidak terpengaruh.
 
 ## Direktori

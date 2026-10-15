@@ -1,14 +1,14 @@
 ---
 title: "Kimi Code"
-description: "محوّل إطار عمل Apothem لـ Kimi Code (إصدار عام)."
+description: "محوّل إطار عمل Apothem لـ Kimi Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Moonshot</bdi>
 **اسم التثبيت:** <bdi>`kimi-code`</bdi>
-**الحالة:** إصدار عام
+**الحالة:** إتاحة عامة
 **الإعداد الأصلي:** <bdi>`<project>/AGENTS.md`</bdi> إضافةً إلى <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>
 
 ## التثبيت
@@ -62,9 +62,11 @@ apothem install --harness kimi-code --project /path/to/project
 يقرأ <bdi>Kimi Code</bdi> تعليمات المشروع من <bdi>`AGENTS.md`</bdi> أو
 <bdi>`.kimi-code/AGENTS.md`</bdi> ويتعرّف على <bdi>`.kimi-code/mcp.json`</bdi> بوصفه
 سطح <bdi>MCP</bdi> الذي يملكه المُشغِّل؛ يُسمّي <bdi>Apothem</bdi> ذلك السطح لكنه لا
-يؤلّف فيه أي مُدخَلات. يقود سطح التعليمات المُجسَّد المشروعَ مباشرةً. لا يكشف
-<bdi>Kimi Code</bdi> عن سطح ملفات لشريط الحالة أو لأنماط الإخراج، لذا لا تُجسَّد
-تلك الحزم.
+يؤلّف فيه أي مُدخَلات. ومن ملفَّي التعليمات هذين، لا يكتب المحوّل سوى
+<bdi>`AGENTS.md`</bdi> في جذر المشروع، وهو الملف الذي يقرؤه <bdi>Kimi Code</bdi> بوصفه
+تعليمات المشروع؛ ولا تذكر وثائق <bdi>Kimi Code</bdi> أيّ الملفين له الأسبقية حين
+يوجدان معًا. لا يكشف <bdi>Kimi Code</bdi> عن سطح ملفات لشريط الحالة أو لأنماط
+الإخراج، لذا لا تُجسَّد تلك الحزم.
 
 يعمل <bdi>Kimi Code</bdi> على عائلة نماذج <bdi>Kimi</bdi> من <bdi>Moonshot</bdi>؛ راجع
 [مرجع إعداد المورّد](https://moonshotai.github.io/kimi-code/en/configuration/config-files)

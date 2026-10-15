@@ -2,7 +2,7 @@
 title: "Registro de mandatos transversais (CM-1–CM-28)"
 description: "Registro completo e definições dos mandatos transversais internos ao ecossistema (CM-1–CM-28) que regem todas as interações e operações do pipeline."
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ Este documento É o registro canônico de CM-N — é a fonte em que os tokens `
 
 ## Namespaces
 
-`CM-N` = mandato de configuração (definido aqui, ou em `src/apothem/rules/*.md` conforme a linha de regras dos registros de artefatos); `TM-N` = mandato de template (definido em `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = princípio central (definido no mesmo template, §6 "Core Principles", CP-1–27). O template da suíte de planejamento é o registro canônico de TM/CP — os comandos `/plan` resolvem as referências cruzadas por meio desse arquivo. Os artefatos auxiliares (regras, auxiliares, comandos, hooks) citam este registro por referência.
+`CM-N` = mandato de configuração (definido aqui, ou em `src/apothem/rules/*.md` conforme a tabela de regras em `site/content/docs/reference/rules.mdx`); `TM-N` = mandato de template (definido em `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = princípio central (definido no mesmo template, §6 "Core Principles", CP-1–27). O template da suíte de planejamento é o registro canônico de TM/CP — os comandos `/plan` resolvem as referências cruzadas por meio desse arquivo. Os artefatos auxiliares (regras, auxiliares, comandos, hooks) citam este registro por referência.
 
 ## Ativação
 
@@ -38,14 +38,14 @@ Os artefatos da base de código NUNCA devem conter referências internas aos pla
 
 ## CM-12 (Administração do contexto)
 
-Gestão enxuta do contexto o tempo todo — consulte a regra CM-24. Quatro subníveis estão enumerados na seção Convenção de subreferências, abaixo. A disciplina de compactação (CM-19) rege a ação; CM-12 rege a disciplina em regime permanente.
+Gestão enxuta do contexto o tempo todo — consulte a regra CM-24. Quatro subníveis estão enumerados na seção Convenção de subreferências, abaixo. A disciplina de compactação (CM-19) rege o ato de compactar; CM-12 rege a disciplina em regime permanente.
 
 ## CM-13 (Commits)
 
 - **A — Cadência por tarefa:** Por tarefa em SHARED+. Por fase em PERSONAL_USE. Opcional em EXPLORING.
 - **B — Commits de qualidade/remediação:** As correções de portões de qualidade e as mudanças de remediação recebem commit imediatamente, separadas do trabalho de funcionalidades.
 - **C — Portão de fim de fase:** Nenhuma mudança sem commit atravessa os limites de fase. O isolamento de CM-7 se aplica a todos os artefatos git. Em PUBLIC_LAUNCH: commits assinados com GPG (`git commit -S`) são obrigatórios.
-- **D — Autoria exclusivamente humana:** Toda superfície de autoria em todo artefato git (assunto do commit, corpo do commit, `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nome de branch, nome de tag, anotação de tag, nome de stash, corpo de git-notes, título de PR, descrição de PR) nomeia **somente contribuidores humanos**. O assistente nunca atribui a si mesmo, ao modelo de linguagem subjacente, ao runtime / harness / IDE / extensão / fornecedor, nem a qualquer outra ferramenta automatizada, a autoria de nenhuma dessas superfícies. Os padrões proibidos são enumerados e aplicados mecanicamente em `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), com o matcher em `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3 disparando a cada invocação Bash que escreve no git.
+- **D — Autoria exclusivamente humana:** Toda superfície de autoria em todo artefato git (assunto do commit, corpo do commit, `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nome de branch, nome de tag, anotação de tag, nome de stash, corpo de git-notes, título de PR, descrição de PR) nomeia **somente contribuidores humanos**. O assistente nunca se atribui, nem atribui o modelo de linguagem subjacente, o runtime / harness / IDE / extensão / fornecedor ou qualquer outra ferramenta automatizada, a nenhuma dessas superfícies. Os padrões proibidos são enumerados e aplicados mecanicamente em `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), com o matcher em `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3 disparando a cada invocação Bash que escreve no git.
 - **E — Disciplina de prefixo numérico nos destinos de git-mv / git-rm:** Os prefixos numéricos (`NN-`) em caminhos do sistema de arquivos transmitem ordenação e se aplicam somente onde a ordenação é intrínseca — sequências de pastas de fase, sequências de subfases, esquemas de nomenclatura ordinal descobertos pelo host. Singletons de nível raiz que não têm sequência irmã não levam prefixo numérico; adicionar um é decoração sem sentido que sinaliza erroneamente uma relação de ordenação que não existe. Especificação completa em `src/apothem/rules/canonical-layout.md` §2.1. Aplicada mecanicamente em `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 sobre `git mv` / `git rm` e sobre as referências a caminhos no corpo do commit.
 
 ## CM-14 (Protocolos de sessão)
@@ -54,7 +54,7 @@ Gestão enxuta do contexto o tempo todo — consulte a regra CM-24. Quatro subn�
 
 ## CM-15–21 (Pipeline)
 
-CM-15 e CM-16 são definidos em linha aqui (sem regra separada); CM-17–21 são delegados a regras conforme a tabela de regras dos registros de artefatos.
+CM-15 e CM-16 são definidos em linha aqui (sem regra separada); CM-17–21 são delegados a regras conforme a tabela de regras em `site/content/docs/reference/rules.mdx`. O título agrupa esses mandatos por tema; o escopo deles segue o parágrafo Ativação: CM-15, CM-16 e CM-20 se aplicam somente dentro do pipeline `/plan`, e CM-17–19 e CM-21 se aplicam universalmente.
 
 - **CM-15 Coerência coletiva:** Verificar se os artefatos do plano permanecem coerentes após uma modificação.
 - **CM-16 Execução autônoma:** Em SHARED+, nunca parar entre fases. Compactação obrigatória nas transições de fase (PERSONAL_USE+).
@@ -78,12 +78,12 @@ CM-15 e CM-16 são definidos em linha aqui (sem regra separada); CM-17–21 são
 
 ## Mandatos delegados a regras vs. definidos em linha
 
-- **Delegados a regras** (especificação completa em `src/apothem/rules/`): consulte a coluna "Implements" da tabela de regras dos registros de artefatos. Abrange CM-1–10, CM-12, CM-14, CM-17–28.
-- **Definidos em linha** (especificação completa aqui, sem regra separada): CM-11 (Integridade do plano), CM-13 (Commits), CM-15 (Coerência coletiva), CM-16 (Execução autônoma).
+- **Delegados a regras** (especificação completa em `src/apothem/rules/`): consulte a coluna "Implements" da tabela de regras em `site/content/docs/reference/rules.mdx`. Abrange CM-1–10, CM-12, CM-14, CM-17–28.
+- **Definidos em linha** (especificação completa aqui, sem regra separada): CM-11 (Integridade do plano), CM-13 (Commits; as subregras D e E citam arquivos de regras para sua especificação detalhada), CM-15 (Coerência coletiva), CM-16 (Execução autônoma).
 
 ## Convenção de subreferências
 
-Os comandos usam sufixos de letra para referenciar subseções específicas dentro dos mandatos. Padrão: `CM-N` + letra de sufixo = seção da regra. **Convenção de maiúsculas e minúsculas:** Os sufixos maiúsculos denotam subseções estruturais dentro de um mandato; os sufixos minúsculos denotam diretivas mais granulares dentro de um nível de administração. A tabela canônica de mapeamento de chaves de subreferência (definições internas ao registro) é preservada literalmente no bloco delimitado abaixo:
+Os comandos usam sufixos de letra para referenciar subseções específicas dentro dos mandatos. Padrão: `CM-N` + letra de sufixo = seção da regra. **Convenção de maiúsculas e minúsculas:** Os sufixos maiúsculos denotam subseções estruturais dentro de um mandato; os sufixos minúsculos denotam diretivas mais granulares dentro de um nível de administração. A tabela canônica de mapeamento de chaves de subreferência (definições internas ao registro) está no bloco delimitado abaixo:
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

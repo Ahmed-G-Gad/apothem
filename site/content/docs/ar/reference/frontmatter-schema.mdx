@@ -2,7 +2,7 @@
 title: "مخطط البيانات الأمامية"
 description: "دليل مرجعي لبنية كتلة البيانات الأمامية بصيغة YAML، والمفاتيح المطلوبة لكل صنف، وقواعد الإنفاذ لدى المدقّقات عبر أصناف المُنتَجات."
 machineTranslated: true
-sourceHash: "482f970f0b254769"
+sourceHash: "d6c49336e4d3abf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,13 +12,13 @@ sourceHash: "482f970f0b254769"
 
 ## 1. شكل كتلة البيانات الأمامية
 
-يحمل كل مُنتَج بيانات أمامية بصيغة <bdi>YAML</bdi> في رأسه، محدودة بسطرَي <bdi>`---`</bdi>. وفي ملفات عائلة <bdi>Markdown</bdi> تكون البيانات الأمامية أول محتوى في الملف، وتلي لافتةُ ترويسة التأليف المرجعية وفق [<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>](/docs/reference/authorship-header) الفاصلَ <bdi>`---`</bdi> الختامي.
+يحمل كل مُنتَج بيانات أمامية بصيغة <bdi>YAML</bdi> في رأسه، محدودة بسطرَي <bdi>`---`</bdi>. وفي ملفات عائلة <bdi>Markdown</bdi> تكون البيانات الأمامية أول محتوى في الملف، ويلي سطرُ ترويسة <bdi>SPDX</bdi> المرجعي وفق [<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>](/docs/reference/authorship-header) الفاصلَ <bdi>`---`</bdi> الختامي.
 
 تستخدم مفاتيح الأوامر صيغة <bdi>`kebab-case`</bdi>. وتستخدم مفاتيح المهارات صيغة <bdi>`kebab-case`</bdi> ما عدا <bdi>`userInvocable`</bdi>، وهي كتابة <bdi>camelCase</bdi> التي يستخدمها متن المصدر، ويُعيد تثبيت <bdi>Claude Code</bdi> تسميتها إلى <bdi>`user-invocable`</bdi>. أما مفاتيح القواعد والعمّال المُفوَّضين فهي بصيغة <bdi>camelCase</bdi>، كما يسرد جدول المفاتيح المطلوبة في القسم 2. والقيم المفردة إما مجرّدة وإما بين علامتَي اقتباس مزدوجتين؛ وتوضع بين علامتَي اقتباس القيم النصية التي تحتوي على نقطتين رأسيتين، أو علامات <bdi>#</bdi>، أو غيرها من المحارف ذات الدلالة في <bdi>YAML</bdi>.
 
 ## 2. الحقول المطلوبة لكل صنف
 
-تختلف مجموعة المفاتيح المطلوبة باختلاف صنف المُنتَج. ويفرض الشكلَ المعتمد <bdi>`scripts/dev/validate_ecosystem.py`</bdi> ومخططاتُ <bdi>JSON Schema</bdi> لكل صنف تحت الدليل <bdi>`src/apothem/schemas/`</bdi> (ملف مخطط واحد لكل صنف من أصناف المُنتَجات).
+تختلف مجموعة المفاتيح المطلوبة باختلاف صنف المُنتَج. ويفرض الشكلَ المعتمد <bdi>`scripts/dev/validate_ecosystem.py`</bdi> ومخططاتُ <bdi>JSON Schema</bdi> لكل صنف تحت الدليل <bdi>`src/apothem/schemas/`</bdi>. لكلٍّ من أصناف المساعِدين والمهارات والأوامر وأنماط الإخراج والخطط ملف مخطط واحد، مدرَج أدناه؛ أما صنفا <bdi>`CLAUDE.md`</bdi> والقواعد فلا مخطط لهما، ويفحص <bdi>`validate_ecosystem.py`</bdi> مفاتيحهما. ملفات الخطط ليست في الجدول أدناه؛ وتُسرَد مفاتيحها في [انضباط الخطط](/docs/reference/plans-discipline).
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | <bdi>`CLAUDE.md`</bdi> (إعداد الجذر) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`scope`</bdi>، <bdi>`portability`</bdi> |
 | القواعد (<bdi>`src/apothem/rules/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>، <bdi>`pathFilter`</bdi>، <bdi>`alwaysApply`</bdi> |
 | الأوامر (<bdi>`src/apothem/commands/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`argument-hint`</bdi>، <bdi>`disable-model-invocation`</bdi>، <bdi>`portability`</bdi>، <bdi>`allowed-tools`</bdi> |
-| العمّال المُفوَّضون (الدليل المرجعي مبيَّن أدناه) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`tools`</bdi>، <bdi>`disallowedTools`</bdi>، <bdi>`maxTurns`</bdi>، <bdi>`effort`</bdi> |
-| المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`archetype`</bdi>، <bdi>`userInvocable`</bdi>، <bdi>`disable-model-invocation`</bdi>، <bdi>`allowed-tools`</bdi>؛ ويُعيد تثبيت <bdi>Claude Code</bdi> وإضافته تسمية <bdi>`userInvocable`</bdi> إلى <bdi>`user-invocable`</bdi>، ويقبل المخطط تهجئة واحدة بالضبط من التهجئتين |
+| المساعِدون، ويُسمَّون أيضًا العمّال المُفوَّضين (<bdi>`src/apothem/agents/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`tools`</bdi>، <bdi>`disallowedTools`</bdi>، <bdi>`maxTurns`</bdi>، <bdi>`effort`</bdi> |
+| المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`archetype`</bdi>، <bdi>`userInvocable`</bdi>، <bdi>`disable-model-invocation`</bdi>، <bdi>`allowed-tools`</bdi>؛ ويُعيد تثبيت <bdi>Claude Code</bdi> وإضافته تسمية <bdi>`userInvocable`</bdi> إلى <bdi>`user-invocable`</bdi>، ويشترط المخطط أن تحمل كل مهارة تهجئة واحدة بالضبط من التهجئتين، لا الاثنتين معًا |
 | أنماط الإخراج (<bdi>`src/apothem/output-styles/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>؛ ويضبط كل نمط مشحون أيضًا <bdi>`keep-coding-instructions: true`</bdi> كي يحتفظ <bdi>Claude Code</bdi> بتعليماته الخاصة بهندسة البرمجيات |
 
 تحمل المخططات لكل صنف في [<bdi>`src/apothem/schemas/`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) مجموعة القيود الكاملة، بما فيها قيود النوع، والصيغة، والتعداد، والنمط، وحدود الطول: فحقل <bdi>`description`</bdi> في المهارة أو الأمر لا يتجاوز 1,024 محرفًا، وهو حدّ [<bdi>Agent Skills</bdi>](https://agentskills.io/specification).

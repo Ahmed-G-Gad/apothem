@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de entorno de Apothem para Codex (Beta)."
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,16 +52,16 @@ y las reglas/plantillas Markdown no nativas en `~/.config/apothem/` como
 material de soporte.
 
 Cada ayudante convertido establece `name`, `description` y
-`developer_instructions`. Un ayudante cuya concesión de herramientas, después de
-aplicar su lista de denegación, no incluye ninguna herramienta de edición de
-archivos (`Write`, `Edit`, `MultiEdit` o `NotebookEdit`) también establece
-`sandbox_mode = "read-only"`, la restricción de escritura propia de Codex.
-`Bash` no cuenta como herramienta de edición de archivos, así que un ayudante al
-que se concede `Bash` y ninguna de esas herramientas sigue siendo de solo
-lectura. No se establece ningún modelo ni esfuerzo de razonamiento, así que cada
-ayudante hereda las elecciones de la sesión. Codex no tiene lista de
-herramientas ni límite de turnos por ayudante, así que los `tools` y `maxTurns`
-de un ayudante no se trasladan.
+`developer_instructions`. Un ayudante cuya concesión de herramientas, una vez
+retiradas las herramientas de su propia lista `disallowedTools`, no incluye
+ninguna herramienta de edición de archivos (`Write`, `Edit`, `MultiEdit` o
+`NotebookEdit`) también establece `sandbox_mode = "read-only"`, la restricción
+de escritura propia de Codex. `Bash` no cuenta como herramienta de edición de
+archivos, así que un ayudante al que se concede `Bash` y ninguna de esas
+herramientas recibe igualmente ese ajuste. No se establece ningún modelo ni
+esfuerzo de razonamiento, así que cada ayudante hereda las elecciones de la
+sesión. Codex no tiene lista de herramientas ni límite de turnos por ayudante,
+así que los `tools` y `maxTurns` de un ayudante no se trasladan.
 
 ## Notas de compatibilidad
 
@@ -107,8 +107,16 @@ cohortes de soporte.
 apothem uninstall --harness codex
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador.
-El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+Elimina el bloque de Apothem de `~/.codex/AGENTS.md` y conserva cualquier texto
+fuera de él, y elimina las entradas de Apothem de `~/.codex/hooks.json` y
+conserva las tuyas. También elimina los archivos de Apothem en `~/.codex/hooks/`,
+`~/.codex/agents/`, `~/.agents/skills/` y `~/.config/apothem/{rules,templates}/`;
+los demás archivos de esas carpetas permanecen. Las skills eliminadas de
+`~/.agents/skills/` desaparecen también de las demás herramientas que cargan esa
+carpeta (consulta [Notas de compatibilidad](#notas-de-compatibilidad)). Cada
+archivo se respalda bajo `~/.apothem/backups/` antes de modificarse o
+eliminarse. El YAML del perfil compartido y el motor de Apothem no se ven
+afectados.
 
 ## Puerta de conformidad
 

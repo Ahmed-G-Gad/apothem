@@ -2,7 +2,7 @@
 title: "Contribuir a Apothem — Guía del desarrollador"
 description: "Mantén y extiende el ecosistema de Apothem creando reglas, comandos, ayudantes, skills y hooks con esquemas canónicos, requisitos de frontmatter y procedimientos de validación."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,12 @@ Apothem con estándares de calidad SOTA.
 
 ## Referencia rápida: tipos de artefacto
 
-El ecosistema de Apothem contiene cinco tipos de artefacto, cada uno con
-propósitos y requisitos de frontmatter específicos.
+Esta guía cubre cinco tipos de artefacto, cada uno con un propósito específico.
+Las reglas, los comandos, los ayudantes y las skills llevan frontmatter YAML; los
+hooks se registran en `hooks.json` y `settings.json` y no llevan ninguno. Los
+output-styles son otra clase de artefacto con dos claves de frontmatter
+obligatorias, `name` y `description`; consulta el
+[Esquema de frontmatter](/docs/reference/frontmatter-schema).
 
 | Artefacto | Ruta | Propósito | Cuándo crearlo |
 | -------- | ---- | ------- | -------------- |
@@ -72,11 +76,11 @@ evidentes en lugar de secretos o cuentas personales de apariencia real.
 
 ## Antes de escribir: el esquema canónico
 
-**El contrato legible por máquina y aplicado por la puerta son los esquemas JSON
-por clase bajo `src/apothem/schemas/*.schema.json` — `additionalProperties`
-rechaza las claves desconocidas, así que la puerta de conformidad tiene la
-última palabra.** Dos proyecciones legibles por humanos los siguen:
-`site/content/docs/reference/frontmatter-schema.mdx` (el índice de claves
+**El contrato legible por máquina y aplicado por la puerta lo constituyen los
+esquemas JSON por clase bajo `src/apothem/schemas/*.schema.json` —
+`additionalProperties` rechaza las claves desconocidas, así que la puerta de
+conformidad tiene la última palabra.** Dos proyecciones legibles por humanos los
+siguen: `site/content/docs/reference/frontmatter-schema.mdx` (el índice de claves
 requeridas) y `site/content/docs/reference/artifact-schema.mdx` (plantillas por
 clase y ejemplos desarrollados). Cuando una página discrepa de los esquemas
 JSON, prevalecen los esquemas.
@@ -134,12 +138,13 @@ Patrón: minúsculas, guiones entre palabras, sin espacios ni guiones bajos.
   así que la copia instalada no necesita un paquete `apothem` importable. El
   plugin de Claude Code registra en cambio los hooks en
   `src/apothem/hooks/hooks.json`, como comandos de shell que ejecutan
-  `hooks/lib/bootstrap.sh` mediante `bash`. Registra un hook nuevo en
-  `hooks.json` y en la plantilla `settings.json` de Claude Code. `dispatch.py`
-  enruta `SessionStart` a `session_start_bootstrap.main()` y todos los demás
-  eventos de la lista de permitidos a `emit_hook_context.main()`. Los únicos
-  stubs de shell permitidos bajo `src/apothem/hooks/` o `scripts/` son los seis
-  archivos de localizador y arranque (`find-python.{ps1,sh}`,
+  `hooks/lib/bootstrap.sh` mediante `bash`; ese stub localiza Python y ejecuta
+  `dispatch.py`, de modo que los manejadores siguen siendo de Python. Registra un
+  hook nuevo en `hooks.json` y en la plantilla `settings.json` de Claude Code.
+  `dispatch.py` enruta `SessionStart` a `session_start_bootstrap.main()` y todos
+  los demás eventos de la lista de permitidos a `emit_hook_context.main()`. Los
+  únicos stubs de shell permitidos bajo `src/apothem/hooks/` o `scripts/` son los
+  seis archivos de localizador y arranque (`find-python.{ps1,sh}`,
   `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); cualquier otro archivo `.ps1` /
   `.sh` no supera la comprobación de higiene de `scripts/dev/validate_hooks.py`.
 
@@ -157,10 +162,10 @@ Nunca uses rutas de archivo ni nombres truncados en la prosa.
 ## Portabilidad: Windows frente a Unix
 
 Cada comando DEBE declarar explícitamente su estado de portabilidad en el campo
-`portability`, y un ayudante PUEDE hacerlo. Las skills, las reglas y los
+`portability`. Un ayudante PUEDE declararlo. Las skills, las reglas y los
 output-styles no llevan ningún campo `portability`.
 
-### Universal (predeterminado)
+### Universal
 
 - Funciona de forma idéntica en Windows, macOS y Linux
 - Sin suposiciones sobre la shell
@@ -233,7 +238,7 @@ Ejemplos:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: corrección de una errata)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: se añadió una nueva sección opcional)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: se declaró estable el contrato)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: se declaró estable el contrato; los artefactos nuevos parten de `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: se eliminó un campo obligatorio de frontmatter)
 
 Incrementa `version` y `updated` a la vez en cada edición que cambie el
@@ -245,8 +250,8 @@ cambios de artefactos.
 
 ### Reglas
 
-- Trata la estructura Obligatorio/Opcional como portante — reestructurarla
-  repercute en cada artefacto dependiente.
+- Trata la estructura Obligatorio/Opcional como un pilar estructural —
+  reestructurarla repercute en cada artefacto dependiente.
 - Refina los Antipatrones, los ejemplos de Escalado por Seriedad y las citas a
   medida que se profundiza la comprensión.
 - Registra la justificación de cualquier cambio estructural en el archivo de
@@ -351,8 +356,9 @@ Los comandos son comandos de barra como `/plan-spec`, `/plan-execute`, `/securit
 
 ### 1. Determina el rol
 
-Los comandos **nunca** están pensados para que el entorno los llame de forma
-aislada. Son flujos de trabajo que dispara el usuario. Pregúntate:
+Los comandos son flujos de trabajo que dispara el usuario. El modelo ejecuta uno
+por iniciativa propia solo cuando su ajuste `disable-model-invocation` es `false`
+(paso 2). Pregúntate:
 
 - ¿Es este un flujo de trabajo en el que el usuario teclea `/command-name`?
 - ¿Orquesta varios pasos?
@@ -388,9 +394,9 @@ las etapas de las canalizaciones de planificación y de investigación usan
 valor de cada comando; añade una fila para un comando nuevo. Mantén
 `allowed-tools` en solo lectura: un entorno que lo respeta ejecuta esas
 herramientas sin preguntar. Concede una herramienta con efectos secundarios solo
-como regla acotada, como `Bash(git log *)`; el esquema rechaza `"*"` y los
-valores sin acotar `Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit` y
-`WebFetch`.
+como regla acotada, como `Bash(git log *)`; el esquema rechaza `"*"` y cualquiera
+de `Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit` o `WebFetch` escrito sin
+acotar.
 
 ### 3. Escribe el contenido
 
@@ -404,7 +410,7 @@ Estructura:
 
 ### 4. Actualiza el README y CHANGELOG.md
 
-Añade una fila a la tabla de comandos correspondiente de `src/apothem/commands/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
+Añade una fila a la tabla de la sección del comando en `src/apothem/commands/README.md`, además de la fila de la tabla de invocación del paso 2; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
 
 ### 5. Valida
 
@@ -533,7 +539,7 @@ Estructura del contenido:
 
 ### 4. Actualiza el README y CHANGELOG.md
 
-Añade una fila a las tablas Index y Folder contents de `src/apothem/skills/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
+Añade una fila a la tabla Index y una fila por cada archivo de la skill a la tabla Folder contents de `src/apothem/skills/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
 
 ### 5. Valida
 
@@ -550,7 +556,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] El campo `name` usa kebab-case
 - [ ] `version` (solo las clases versionadas; las reglas no llevan ninguna) es semántica (`MAJOR.MINOR.PATCH`) y se incrementó si cambió el comportamiento
 - [ ] `updated` coincide con la fecha de hoy en cualquier artefacto que hayas tocado y que lleve el campo
-- [ ] El campo `portability` está establecido y es válido (solo comandos y ayudantes)
+- [ ] El campo `portability` está establecido y es válido (obligatorio en los comandos, opcional en los ayudantes)
 - [ ] CHANGELOG.md recoge el cambio en la categoría adecuada bajo la sección del próximo lanzamiento
 - [ ] Sin referencias internas de planes (cumplimiento de CM-7)
 - [ ] Las referencias cruzadas son coherentes con los demás artefactos
@@ -705,8 +711,8 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 La suite bajo `evals/` mide el comportamiento en lugar de la forma: 64 casos de
 activación (cada comando y subagente invocable por el modelo se activa ante una
-solicitud de su dominio y no se activa ante un caso cercano que queda fuera de
-él), 32 casos de resultado (uno por etapa de plan, etapa de investigación y
+solicitud de su dominio y no se activa ante una solicitud cercana que queda fuera
+de él), 32 casos de resultado (uno por etapa de plan, etapa de investigación y
 dimensión de auditoría) y 6 pares de efecto de regla (el texto de una regla
 siempre activa, presente y ausente). Los casos son datos simples que
 `python -m pytest tests/unit/test_eval_suite.py` valida sin coste; ejecutarlos
@@ -718,9 +724,10 @@ una regla siempre activa que tiene un par, ejecuta
 
 ### Benchmarks
 
-`make benchmarks` ejecuta los drivers por clase bajo `src/apothem/benchmarks/`.
-Cada uno sale con `0` si pasa, `1` si supera el presupuesto, `2` si hay un error
-(la ejecución medida no se llevó a cabo) o `3` si no se midió.
+`make benchmarks` ejecuta los drivers por clase bajo `src/apothem/benchmarks/`,
+salvo `bench_agents.py`. Cada driver sale con `0` si pasa, `1` si supera el
+presupuesto, `2` si hay un error (la ejecución medida no se llevó a cabo) o `3`
+si no se midió.
 
 - `bench_hooks.py` ejecuta cada comando `shell: bash` que registra
   `hooks/hooks.json`, tal como está escrito, sobre una carga útil real por

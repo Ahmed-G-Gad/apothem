@@ -2,7 +2,7 @@
 title: "Mulai cepat"
 description: "Pasang Apothem, tulis profil, materialisasikan harness pertama Anda, dan verifikasi — tur salin-tempel dengan keluaran yang diharapkan."
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ inginkan.
 
 Pada akhirnya Anda akan memiliki konfigurasi harness yang berfungsi, yang
 dihasilkan dari profil yang Anda tulis — dan Anda akan mengetahui satu perintah
-yang mendorong perubahan profil kembali ke setiap alat.
+yang mendorong perubahan profil kembali ke satu alat atau ke semuanya.
 
 <Callout title="Ingin versi yang lambat dan bernarasi?">
   [Tutorial memulai](/docs/tutorials/getting-started) menempuh jalur yang sama
@@ -42,10 +42,14 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Pemasang memerlukan Python 3.10+ sistem dengan `click` dan `rich` yang dapat
-diimpor, ditambah `git` untuk bentuk jaringan. Pemasang memeriksa prasyarat,
-menempatkan mesin di bawah `~/.apothem`, dan mencetak pemanggilan mesin yang
-persis untuk shell Anda saat selesai:
+Pemasang memerlukan Python 3.10+ sistem, ditambah `git` untuk bentuk jaringan.
+Pemasang memeriksa prasyarat dan menempatkan mesin di bawah `~/.apothem`. Ketika
+`click` atau `rich` tidak ada, pemasang memasang paketnya dengan konfirmasi Anda,
+atau saat `--yes` (`-Yes` pada PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1`
+diberikan, dan jika tidak, berhenti dengan perintah pip yang harus dijalankan
+(lihat [Prasyarat sekilas](/docs/install#prasyarat-sekilas)). Setelah selesai,
+pemasang mencetak banner langkah berikutnya; pada POSIX, ketika direktori shim
+sudah ada di `PATH`, banner tampak seperti ini:
 
 ```text
 Installation complete.
@@ -67,9 +71,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="Perintah `apothem`">
-  Pemasang menempatkan shim `apothem` di `PATH` Anda, sehingga Anda menjalankan
-  mesin secara langsung sebagai `apothem <command>`. Jika direktori shim belum ada
-  di `PATH`, banner mencetak fallback mandiri —
+  Pemasang menulis shim `apothem` ke dalam `$HOME/.local/bin` (POSIX) atau
+  `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) dan tidak pernah menyunting
+  `PATH` Anda. Setelah direktori itu ada di `PATH`, Anda menjalankan mesin secara
+  langsung sebagai `apothem <command>`. Jika direktori itu belum ada di `PATH`,
+  banner mencetak fallback mandiri —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — yang tidak
   memerlukan shim; tambahkan prefiks persis yang dicetak banner Anda di depan
   setiap perintah.
@@ -84,8 +90,12 @@ native-alat lainnya; serta bentuk npx sesuai permintaan
 ## 2. Buat profil bersama
 
 `apothem profile init` menulis profil valid-skema terkecil ke
-`~/.config/apothem/profile.yaml`. Berikan `--profile PATH` saat Anda menyimpan
-profil khusus proyek atau khusus CI di tempat lain.
+`~/.config/apothem/profile.yaml`. Jika sebuah profil sudah ada di sana, seperti
+ketika pemasang pada Langkah 1 menyalin contoh, `init` berhenti dengan galat dan
+membiarkan berkas tidak berubah; berikan `--force` untuk menimpanya, atau
+pertahankan berkas itu dan sunting seperti ditunjukkan di bawah. Berikan
+`--profile PATH` saat Anda menyimpan profil khusus proyek atau khusus CI di
+tempat lain.
 
 ```bash
 apothem profile init
@@ -169,9 +179,9 @@ apothem verify --harness claude-code
 terkelola kosong, atau konfigurasi JSON atau YAML tidak dapat diurai. Tambahkan
 `--profile PATH` untuk juga gagal ketika berkas yang terpasang berbeda dari
 profil tersebut, sehingga `verify` berfungsi sebagai pemeriksaan penyimpangan;
-tanpanya, konfigurasi yang usang tetap lolos verifikasi. Dengan demikian ia dapat
-berfungsi sebagai gerbang dalam skrip penyiapan. Untuk pemeriksaan kesehatan
-seluruh mesin di setiap adapter terdaftar, jalankan:
+tanpanya, konfigurasi yang usang tetap lolos verifikasi. Kode keluar bukan-nol
+memungkinkan `verify` berfungsi sebagai gerbang dalam skrip penyiapan. Untuk
+pemeriksaan kesehatan seluruh mesin di setiap adapter terdaftar, jalankan:
 
 ```bash
 apothem doctor
@@ -180,21 +190,26 @@ apothem doctor
 `doctor` memeriksa setiap harness yang terpasang: harness itu harus lolos
 verifikasi, dan setiap perintah hook yang didaftarkan oleh instalasinya harus
 dapat dimulai. Harness yang belum Anda pasang tercantum tetapi tidak dihitung
-sebagai kegagalan, sehingga dengan satu harness yang sehat, `doctor` keluar
-dengan kode 0.
+sebagai kegagalan, sehingga `doctor` keluar dengan kode 0 ketika tidak ada
+pemeriksaan yang gagal, bahkan jika hanya satu harness yang terpasang.
 
 ## 5. Eksekusi pertama Anda
 
 Buka harness yang baru saja Anda konfigurasikan — Claude Code, dalam contoh ini —
-dan mulai sesi di proyek mana pun. Aturan dan preferensi yang Anda tulis ke profil
-di Langkah 2 kini menjadi bagian dari perilaku alat itu. Itulah eksekusi pertama
-yang berfungsi: satu profil, membentuk sesi nyata.
+dan mulai sesi di proyek mana pun. Profil yang Anda siapkan di Langkah 2 kini
+menjadi bagian dari perilaku alat itu. Itulah eksekusi pertama yang berfungsi:
+satu profil, membentuk sesi nyata.
 
 Saat Anda mengubah profil nanti, terapkan ulang tanpa memasang ulang:
 
 ```bash
 apothem update --harness claude-code
 ```
+
+Sebutkan adapter lain untuk menerapkan ulang profil ke alat itu (tambahkan
+`--project PATH` untuk adapter bercakupan proyek), atau berikan
+`--harness all --project .` untuk menerapkannya ulang ke setiap harness yang
+didukung.
 
 ## Langkah berikutnya
 

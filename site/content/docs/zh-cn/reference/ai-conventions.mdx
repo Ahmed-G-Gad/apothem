@@ -2,7 +2,7 @@
 title: "多表面工具约定"
 description: "关于多表面工具配置及其在聊天、IDE 补全和 PR 评审运行时之间一致性的规范性权威参考。"
 machineTranslated: true
-sourceHash: "d17a5f2f79af7cc9"
+sourceHash: "8b401418bac95c44"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ sourceHash: "d17a5f2f79af7cc9"
 
 缺失某个表面的代价是**机器生成代码中的无声漂移**——这是最糟糕的一类缺陷，因为它在无形中累积。每个机器生成的制品都会加剧分歧；等到人类评审者发现矛盾时，代码库已经承载了数周不一致的约定。
 
-就部署现实而言，工具运行时配置是复数的。已发布的生态系统必须（MUST）为聊天控制台运行时提供一份行为记忆文件，并且为 IDE 内补全运行时提供一份仓库范围的指令文件。这两个表面必须（MUST）相互一致——没有矛盾，没有漂移——并且必须（MUST）共同编码相同的纪律。
+就部署现实而言，工具运行时配置是复数的。已发布的生态系统必须（MUST）提供 §3 中的三个强制表面：`AGENTS.md`、一份面向聊天控制台运行时的行为记忆文件（`CLAUDE.md`），以及一份面向 IDE 内补全运行时的仓库范围指令文件。这些表面必须（MUST）相互一致——没有矛盾，没有漂移——并且必须（MUST）共同编码相同的纪律。
 
 ---
 
@@ -29,7 +29,7 @@ sourceHash: "d17a5f2f79af7cc9"
 
 `multi-surface-coherence` 校验器（§7）在每次 CI 运行和 pre-commit 时运行，以断言该契约。
 
-这两个（或更多）表面是表达同一个*规范*的不同*通道*。共享章节必须（MUST）在各表面之间匹配——在语义上匹配，并在可能时也在词面上匹配。表面专属章节不得（MUST NOT）与共享章节相矛盾。
+这些表面是表达同一个*规范*的不同*通道*。共享章节必须（MUST）在各表面之间匹配——在语义上匹配，并在可能时也在词面上匹配。表面专属章节不得（MUST NOT）与共享章节相矛盾。
 
 ---
 
@@ -39,12 +39,12 @@ sourceHash: "d17a5f2f79af7cc9"
 |---|---|---|---|
 | `AGENTS.md` | 仓库根目录（和/或 `.codex/AGENTS.md`） | **MUST** | 支持 AGENTS 的工具 |
 | `CLAUDE.md` | 仓库根目录（和/或 `.claude/CLAUDE.md`） | **MUST** | Claude Code |
-| 以 `.github/` 为根的指令文件 | 以 `.github/` 为根的指令文件 | **MUST** | IDE 内补全运行时 |
+| 以 `.github/` 为根的指令文件 | `.github/copilot-instructions.md` | **MUST** | IDE 内补全运行时 |
 | 以 `site/content/docs/architecture/` 为根的辅助器清单 | `site/content/docs/architecture/agents.mdx` | **MAY**（经由结构化询问通道选择启用） | 多辅助器编排平台 |
 | `.cursorrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内编辑器运行时 |
 | `.windsurfrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内伴侣运行时 |
 
-在本次协作中，操作者选择启用了由夹具记录的可选助手表面。未使用的厂商专属根配置是有意缺席的；只有当某个工具是本仓库的活跃编辑表面时，才会添加该工具专属的配置文件。
+对于本仓库，选择启用的表面是声明清单夹具（[`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)）在 `optional-in` 下列出的那些表面。未使用的厂商专属根配置是有意缺席的；只有当某个工具是本仓库的活跃编辑表面时，才会添加该工具专属的配置文件。
 
 ---
 
@@ -62,7 +62,7 @@ sourceHash: "d17a5f2f79af7cc9"
 6. **Forbidden Patterns**——明确的禁止事项：不用营销形容词，不用含糊的填充词，不留 console.log 调试残渣，不硬编码指向用户主目录的绝对路径，不提交机密，不提交 `.apothem/plans/`（或旧有的 `.plans/`）下的文件，不与规范的项目指令文件相矛盾。
 7. **Output Format**——生成的代码/文字符合统一的对话式输出约定：确定性、统一分节、密度、摘要纪律、引用。对于代码：公共表面有文档，在语言支持类型之处带类型，在存在测试脚手架之处经过测试。
 8. **Review Checklist**——评审者（人类，或处于 PR 评审模式的运行时）在批准之前必须（MUST）核实的内容：头部存在、命名合规、没有 `.apothem/plans/` 写入、与规范的项目指令文件没有矛盾、校验器在本地为绿色。
-9. **Pointers**——指向 `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、本约定文档、`schemas/` 和 `CONTRIBUTING.md` 的链接。
+9. **Pointers**——指向 `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、本约定文档、`src/apothem/schemas/` 和 `CONTRIBUTING.md` 的链接。
 
 该文件以规范的作者署名头 SPDX 行（Markdown 变体）开头，依据 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2——可见还是不可见，取决于项目所选的头部可见性策略。
 
@@ -116,7 +116,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 - 第一个断言 IDE 内指令文件存在、可解析、包含 §4 中列举的每个规范章节，并以规范的 `SPDX-License-Identifier: MIT` 行（Markdown 变体）开头。
 - 第二个解析每个表面的规范章节；断言共享章节在一个规范化比较器下相互一致（不区分大小写、容忍空白差异、允许词面改写，但要求在夹具定义的声明清单上语义等价）。
-- 第三个断言根目录的 LICENSE 带有一行可解析的 `Copyright (c) <name>`；逐文件头部不带作者名。
+- 第三个仅断言根目录的 LICENSE 带有一行可解析的 `Copyright (c) <name>`。它不读取逐文件头部，这些头部不带作者名。
 
 ---
 

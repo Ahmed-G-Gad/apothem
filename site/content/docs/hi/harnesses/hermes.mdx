@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,9 +52,9 @@ apothem install --harness hermes
 पहले की Apothem रिलीज़ उसे `auxiliary.mcp` के अंतर्गत लिखती थीं, जिसे Hermes MCP
 टूल डिस्पैच के लिए ऑक्ज़िलियरी मॉडल के रूप में पढ़ता है; `apothem update` और
 `apothem uninstall` दोनों उस ब्लॉक को तब हटाते हैं जब वह अब भी उससे मेल खाता है
-जो ऐसी कोई रिलीज़ आपकी साझा प्रोफ़ाइल से लिखती
-([अनइंस्टॉल करना](#अनइंस्टॉल-करना) देखें)। (Hermes का व्यवहार उसकी उपयोगकर्ता
-गाइड के
+जो ऐसी कोई रिलीज़ आपकी वर्तमान साझा प्रोफ़ाइल से लिखती
+(वह कब बना रहता है, इसके लिए [अनइंस्टॉल करना](#अनइंस्टॉल-करना) देखें)। (Hermes का
+व्यवहार उसकी उपयोगकर्ता गाइड के
 [स्किल](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 और [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)
 पृष्ठों के अनुसार, 2026-10-02 को पढ़ा गया।)
@@ -95,7 +95,7 @@ apothem uninstall --harness hermes
 दस्तावेज़, और समर्थन वृक्ष। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते
 हैं।
 
-किसी पुरानी रिलीज़ द्वारा किए गए इंस्टॉल का, जिसने प्रोफ़ाइल के सर्वर
+किसी पुरानी रिलीज़ द्वारा किए गए इंस्टॉल से, जिसने प्रोफ़ाइल के सर्वर
 `auxiliary.mcp` के अंतर्गत लिखे थे, वह ब्लॉक भी तब हटा दिया जाता है जब वह अब भी
 उससे मेल खाता है जो वह रिलीज़ आपकी वर्तमान साझा प्रोफ़ाइल से, जो
 `~/.config/apothem/profile.yaml` पर है, लिखती। यह वही नियम है जो `apothem update`

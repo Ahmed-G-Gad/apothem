@@ -99,7 +99,7 @@ graph LR
 
 ## Accessibility
 
-Each light-mode token keeps its brand color undistorted, so eight of them fall below WCAG 2.2 AA contrast against white text (≥4.5 : 1). The other light-mode tokens meet it. The eight, with their contrast against white:
+Each light-mode token on this page, core and harness alike, keeps its brand color undistorted, so eight of them fall below WCAG 2.2 AA contrast against white text (≥4.5 : 1). The other light-mode tokens meet it. The eight, with their contrast against white:
 
 ```text
 shared-profile   2.54 : 1
@@ -112,7 +112,7 @@ trae             3.86 : 1
 windsurf         2.77 : 1
 ```
 
-The dark-mode column is for dark backgrounds, and none of its tokens reaches 4.5 : 1 against white text. A diagram that needs WCAG AA text-on-color contrast on one of those eight fills MUST use dark text (`#0F172A`, which measures 4.63 : 1 to 8.31 : 1 on them) instead of white.
+The dark-mode column is for use on dark backgrounds, and none of its tokens reaches 4.5 : 1 against white text. The Mermaid example above sets white text on every fill, so its labels on those eight fills do not reach 4.5 : 1. A diagram that needs WCAG AA text-on-color contrast on one of those eight fills MUST use dark text (`#0F172A`, which measures 4.63 : 1 to 8.31 : 1 on them) instead of white.
 
 ## Updates
 

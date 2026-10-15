@@ -2,14 +2,14 @@
 title: "doctor"
 description: "Referensi CLI untuk perintah apothem doctor."
 machineTranslated: true
-sourceHash: "9f6e0ade5485e0a9"
+sourceHash: "d1627f4255de5db5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Memeriksa kesehatan apa yang terpasang. Sementara
-[`apothem verify`](/docs/cli-reference/verify) memeriksa satu harness yang
-disebutkan namanya, `doctor` memeriksa setiap harness yang terpasang dan profil
-bersama dalam satu kali jalan.
+[`apothem verify`](/docs/cli-reference/verify) memeriksa harness yang Anda
+pilih, `doctor` memeriksa setiap harness yang terpasang dan profil bersama dalam
+satu kali jalan.
 
 ## Ringkasan
 
@@ -39,7 +39,7 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   impor menggagalkan pemeriksaan.
 
 Setiap pemeriksaan yang gagal menyebutkan perbaikannya. Keluar dengan 0 ketika
-tidak ada pemeriksaan yang gagal dan 1 jika sebaliknya.
+tidak ada pemeriksaan yang gagal dan dengan 1 jika ada yang gagal.
 
 ## Keluaran JSON
 
@@ -109,4 +109,4 @@ stdout, cocok untuk disalurkan ke perkakas lain.
 ## Lihat juga
 
 - [apothem harnesses](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa harness yang terdaftar
-- [apothem verify](/docs/cli-reference/verify) — memeriksa pemasangan harness tertentu
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan adapter harness

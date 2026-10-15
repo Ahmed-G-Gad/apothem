@@ -2,7 +2,7 @@
 title: "ترويسة التأليف — سطر رخصة SPDX لكل ملف"
 description: "تعريف علامات مُعرِّف رخصة SPDX لكل ملف وفرضها باستخدام ترويسات مرجعية أحادية السطر بصيغة التعليق المناسبة لكل نوع ملف."
 machineTranslated: true
-sourceHash: "85913a76c08d9a66"
+sourceHash: "be2cac4bcbaa4744"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "85913a76c08d9a66"
 
 ## 1. سطر الترويسة المرجعي
 
-يجب أن يبدأ كل ملف منطبق في المنظومة بسطر واحد مرجعي لمُعرِّف رخصة <bdi>SPDX</bdi>، بصيغة التعليق الخاصة بعائلة نوع ملفه. هذا السطر هو علامة الرخصة المقروءة آليًا للملف؛ ووجوده غير قابل للتفاوض في الملفات غير المُعفاة، ويحكم محتواه مصدر حقيقة واحد، فلا يُرتجَل لكل ملف. ويعيش صكّ حقوق النشر الكامل مرة واحدة في ملف [<bdi>`LICENSE`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) في جذر المستودع — ولا يُكرَّر في كل ملف مصدري.
+يجب أن يبدأ كل ملف منطبق في المنظومة بسطر واحد مرجعي لمُعرِّف رخصة <bdi>SPDX</bdi>، بصيغة التعليق الخاصة بعائلة نوع ملفه؛ ولا يجوز أن يسبقه إلا سطر <bdi>shebang</bdi> أو، في ملفات <bdi>Markdown</bdi>، البيانات الأمامية <bdi>YAML</bdi> (§5). هذا السطر هو علامة الرخصة المقروءة آليًا للملف؛ ووجوده غير قابل للتفاوض في الملفات غير المُعفاة، ويحكم محتواه مصدر حقيقة واحد، فلا يُرتجَل لكل ملف. ويعيش صكّ حقوق النشر الكامل مرة واحدة في ملف [<bdi>`LICENSE`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) في جذر المستودع — ولا يُكرَّر في كل ملف مصدري.
 
 ### 1.1 المحتوى المعلوماتي (ثابت)
 
@@ -30,7 +30,7 @@ sourceHash: "85913a76c08d9a66"
 # SPDX-License-Identifier: MIT
 ```
 
-هذا النص هو المصدر المعتمد **الوحيد**. يعمل المدقّق <bdi>`file-header`</bdi> (§7) على هذه التجهيزة المطابقة بالبايت. وأي انحراف بين سطر ترويسة ملف وهذه التجهيزة (مع استبدال صيغة التعليق وفق §2) هو إخفاق في <bdi>CI</bdi>.
+هذا النص هو المصدر المعتمد **الوحيد**. يعمل المدقّق <bdi>`file-header`</bdi> (§8) على هذه التجهيزة المطابقة بالبايت. وأي انحراف بين سطر ترويسة ملف وهذه التجهيزة (مع استبدال صيغة التعليق وفق §2) هو إخفاق في <bdi>CI</bdi>.
 
 ---
 
@@ -40,12 +40,12 @@ sourceHash: "85913a76c08d9a66"
 
 | عائلة نوع الملف | صيغة التعليق | الشكل المعروض |
 |---|---|---|
-| عائلة <bdi>`#`</bdi> — <bdi>`.sh`</bdi>، <bdi>`.bash`</bdi>، <bdi>`.zsh`</bdi>، <bdi>`.py`</bdi>، <bdi>`.rb`</bdi>، <bdi>`.pl`</bdi>، <bdi>`.ps1`</bdi>، <bdi>`.yml`</bdi>، <bdi>`.yaml`</bdi>، <bdi>`.toml`</bdi>، <bdi>`.cff`</bdi>، <bdi>`.gitignore`</bdi>، <bdi>`.gitattributes`</bdi>، <bdi>`.editorconfig`</bdi>، <bdi>`.shellcheckrc`</bdi>، <bdi>`.env.example`</bdi>، <bdi>`Makefile`</bdi>، <bdi>`Dockerfile`</bdi>، <bdi>`Procfile`</bdi>، <bdi>`CODEOWNERS`</bdi>، <bdi>`PKGBUILD`</bdi>، ونقاط دخول الصدفة بلا امتداد مثل <bdi>`scripts/apothem`</bdi> | تعليق سطري <bdi>`#`</bdi> | <bdi>`# SPDX-License-Identifier: MIT`</bdi> |
-| عائلة <bdi>`//`</bdi> — <bdi>`.js`</bdi>، <bdi>`.jsx`</bdi>، <bdi>`.mjs`</bdi>، <bdi>`.cjs`</bdi>، <bdi>`.ts`</bdi>، <bdi>`.tsx`</bdi>، <bdi>`.go`</bdi>، <bdi>`.rs`</bdi>، <bdi>`.java`</bdi>، <bdi>`.kt`</bdi>، <bdi>`.swift`</bdi>، <bdi>`.c`</bdi>، <bdi>`.cc`</bdi>، <bdi>`.cpp`</bdi>، <bdi>`.h`</bdi>، <bdi>`.hpp`</bdi>، <bdi>`.cs`</bdi>، <bdi>`.scala`</bdi>، <bdi>`.dart`</bdi>، <bdi>`.jsonc`</bdi> | تعليق سطري <bdi>`//`</bdi> | <bdi>`// SPDX-License-Identifier: MIT`</bdi> |
+| عائلة <bdi>`#`</bdi> — <bdi>`.sh`</bdi>، <bdi>`.bash`</bdi>، <bdi>`.zsh`</bdi>، <bdi>`.py`</bdi>، <bdi>`.rb`</bdi>، <bdi>`.pl`</bdi>، <bdi>`.ps1`</bdi>، <bdi>`.yml`</bdi>، <bdi>`.yaml`</bdi>، <bdi>`.toml`</bdi>، <bdi>`.cff`</bdi>، <bdi>`.cfg`</bdi>، <bdi>`.gitignore`</bdi>، <bdi>`.gitattributes`</bdi>، <bdi>`.editorconfig`</bdi>، <bdi>`.shellcheckrc`</bdi>، <bdi>`.env.example`</bdi>، <bdi>`Makefile`</bdi>، <bdi>`Dockerfile`</bdi>، <bdi>`Procfile`</bdi>، <bdi>`CODEOWNERS`</bdi>، <bdi>`PKGBUILD`</bdi>، ونقاط دخول الصدفة بلا امتداد مثل <bdi>`scripts/apothem`</bdi> | تعليق سطري <bdi>`#`</bdi> | <bdi>`# SPDX-License-Identifier: MIT`</bdi> |
+| عائلة <bdi>`//`</bdi> — <bdi>`.js`</bdi>، <bdi>`.jsx`</bdi>، <bdi>`.mjs`</bdi>، <bdi>`.cjs`</bdi>، <bdi>`.ts`</bdi>، <bdi>`.tsx`</bdi>، <bdi>`.go`</bdi>، <bdi>`.rs`</bdi>، <bdi>`.java`</bdi>، <bdi>`.kt`</bdi>، <bdi>`.swift`</bdi>، <bdi>`.cs`</bdi>، <bdi>`.scala`</bdi>، <bdi>`.dart`</bdi>، <bdi>`.jsonc`</bdi> | تعليق سطري <bdi>`//`</bdi> | <bdi>`// SPDX-License-Identifier: MIT`</bdi> |
 | عائلة التعليق الكتلي — <bdi>`.html`</bdi>، <bdi>`.htm`</bdi>، <bdi>`.md`</bdi>، <bdi>`.markdown`</bdi>، <bdi>`.xml`</bdi>، <bdi>`.vue`</bdi> (منطقة القالب)، <bdi>`.php`</bdi> (منطقة القالب) | <bdi>`<!-- ... -->`</bdi> | <bdi>`<!-- SPDX-License-Identifier: MIT -->`</bdi> |
 | <bdi>MDX</bdi> (<bdi>`.mdx`</bdi>) | <bdi>`{/* ... */}`</bdi> (تعليق تعبير <bdi>JSX</bdi>) | <bdi>`{/* SPDX-License-Identifier: MIT */}`</bdi> |
-| عائلة كتلة <bdi>C</bdi> — <bdi>`.css`</bdi>، <bdi>`.scss`</bdi>، <bdi>`.less`</bdi>، <bdi>`.sql`</bdi> (<bdi>`/* */`</bdi>) | <bdi>`/* ... */`</bdi> | <bdi>`/* SPDX-License-Identifier: MIT */`</bdi> |
-| عائلة <bdi>`;`</bdi> — <bdi>`.ini`</bdi>، <bdi>`.cfg`</bdi>، بعض <bdi>`.lisp`</bdi>/<bdi>`.scm`</bdi> | تعليق سطري <bdi>`;`</bdi> | <bdi>`; SPDX-License-Identifier: MIT`</bdi> |
+| عائلة كتلة <bdi>C</bdi> — <bdi>`.c`</bdi>، <bdi>`.cc`</bdi>، <bdi>`.cpp`</bdi>، <bdi>`.h`</bdi>، <bdi>`.hpp`</bdi>، <bdi>`.css`</bdi>، <bdi>`.scss`</bdi>، <bdi>`.less`</bdi> (<bdi>`/* */`</bdi>) | <bdi>`/* ... */`</bdi> | <bdi>`/* SPDX-License-Identifier: MIT */`</bdi> |
+| عائلة <bdi>`;`</bdi> — <bdi>`.ini`</bdi>، بعض <bdi>`.lisp`</bdi>/<bdi>`.scm`</bdi> | تعليق سطري <bdi>`;`</bdi> | <bdi>`; SPDX-License-Identifier: MIT`</bdi> |
 | عائلة <bdi>`--`</bdi> — <bdi>`.sql`</bdi>، <bdi>`.lua`</bdi>، <bdi>`.hs`</bdi>، <bdi>`.elm`</bdi>، <bdi>`.ada`</bdi> | تعليق سطري <bdi>`--`</bdi> | <bdi>`-- SPDX-License-Identifier: MIT`</bdi> |
 | ملف القفل / مُولَّد / <bdi>JSON</bdi> | لا شيء / غير منطبق | **مُعفى.** انظر §3 قائمة الاستثناءات. |
 
@@ -65,7 +65,6 @@ sourceHash: "85913a76c08d9a66"
 
 - **<bdi>`LICENSE`</bdi>** — هو نفسه الصكّ القانوني؛ ويحمل سطر حقوق النشر المعتمد الذي يؤكّد المدقّق <bdi>`license-author-consistency`</bdi> وجوده.
 - **أصول <bdi>`*.svg`</bdi>** — تعليقات <bdi>XML</bdi> هشّة بالنسبة إلى علامات التعليق السطري، لذا يُحمَل منشأ <bdi>SVG</bdi> في <bdi>README</bdi> الخاص بالأصل وفي المخرجات النقطية المُولَّدة.
-- **<bdi>`CHANGELOG.md`</bdi>** — مستند ملاحظات إصدار مقيَّد بصيغته؛ يظهر سطر <bdi>SPDX</bdi> بوصفه تعليق <bdi>HTML</bdi> واحدًا فوق ترويسة سجلّ التغييرات، لا مُقحَمًا في الصيغة.
 - **ملفات <bdi>JSON</bdi> (<bdi>`.json`</bdi>)** — لا صيغة تعليق في <bdi>JSON</bdi>. وحيث يُشترط الإسناد لإعداد <bdi>JSON</bdi>، ضع ملفًا شقيقًا <bdi>`<file>.NOTICE.md`</bdi>.
 - **ملفات القفل** — <bdi>`package-lock.json`</bdi>، <bdi>`yarn.lock`</bdi>، <bdi>`pnpm-lock.yaml`</bdi>، <bdi>`Cargo.lock`</bdi>، <bdi>`Pipfile.lock`</bdi>، <bdi>`poetry.lock`</bdi>، <bdi>`go.sum`</bdi>، وغيرها (تُدار آليًا).
 - **الملفات المُولَّدة** — أي ملف يحمل علامة <bdi>`# Generated by ...`</bdi> أو <bdi>`// Generated by ...`</bdi>، أو يطابق <bdi>`.gitattributes`</bdi> <bdi>`linguist-generated=true`</bdi>.
@@ -96,8 +95,8 @@ sourceHash: "85913a76c08d9a66"
 
 ## 5. موضع الإدراج
 
-- سطر <bdi>SPDX</bdi> هو **أول محتوى** في الملف، مع استثناء واحد لا غير: سطر <bdi>shebang</bdi> (<bdi>`#!/usr/bin/env bash`</bdi>، <bdi>`#!/usr/bin/env python3`</bdi>، وغيرهما)، الذي يظل دائمًا السطر 1؛ ويبدأ سطر <bdi>SPDX</bdi> في السطر 2.
-- في ملفات <bdi>Markdown</bdi> / <bdi>MDX</bdi> ذات البيانات الأمامية <bdi>YAML</bdi>، تبقى البيانات الأمامية عند البايت 0 كي تتمكّن الأدوات من تحليلها، ويلي تعليقُ <bdi>SPDX</bdi> الفاصلَ <bdi>`---`</bdi> الختامي، ثم <bdi>H1</bdi> والمتن. ويضع <bdi>`scripts/inject-header.py`</bdi> التعليق على هذا النحو.
+- سطر <bdi>SPDX</bdi> هو **أول محتوى** في الملف، مع استثناءين. سطر <bdi>shebang</bdi> (<bdi>`#!/usr/bin/env bash`</bdi>، <bdi>`#!/usr/bin/env python3`</bdi>، وغيرهما) يظل دائمًا السطر 1، ويبدأ سطر <bdi>SPDX</bdi> في السطر 2. وفي ملفات <bdi>Markdown</bdi> / <bdi>MDX</bdi> ذات البيانات الأمامية <bdi>YAML</bdi> تأتي البيانات الأمامية أولًا (البند التالي).
+- في ملفات <bdi>Markdown</bdi> / <bdi>MDX</bdi> ذات البيانات الأمامية <bdi>YAML</bdi>، تبقى البيانات الأمامية عند البايت 0 كي تتمكّن الأدوات من تحليلها، ويلي تعليقُ <bdi>SPDX</bdi> الفاصلَ <bdi>`---`</bdi> الختامي، ثم المتن، الذي يبدأ بعنوان <bdi>H1</bdi> في الملفات التي تحمل واحدًا. ويضع <bdi>`scripts/inject-header.py`</bdi> التعليق على هذا النحو.
 - يفصل سطر فارغ واحد سطرَ <bdi>SPDX</bdi> عن المحتوى التالي (<bdi>H1</bdi>، والمتن، وغيرهما).
 
 ---
@@ -126,7 +125,7 @@ sourceHash: "85913a76c08d9a66"
 
 ## 8. المدقّق — <bdi>`file-header`</bdi> (<bdi>CI</bdi>)
 
-يوجد في [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). ولكل ملف في شجرة العمل، يستعلم المدقّق عن انطباقه (وفق §3) ويؤكّد، إن كان منطبقًا، أن سطر <bdi>SPDX</bdi> المرجعي موجود في رأس الملف — قبل كل محتوى آخر، والمحتوى الوحيد المسموح به قبل السطر هو سطر <bdi>shebang</bdi> (§5).
+يوجد في [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). ولكل ملف في شجرة العمل، يستعلم المدقّق عن انطباقه (وفق §3) ويؤكّد، إن كان منطبقًا، أن سطر <bdi>SPDX</bdi> المرجعي موجود في رأس الملف — قبل كل محتوى آخر، ولا يسمح قبل السطر بمحتوى سوى سطر <bdi>shebang</bdi> (§5). ولا يقرأ ما بعد البيانات الأمامية في ملفات <bdi>Markdown</bdi>.
 
 مدعوم بالتجهيزة المطابقة بالبايت في [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). يُبلِّغ عن <bdi>diff</bdi> لكل ملف ونسبة التغطية المئوية المجمَّعة في ملخّص <bdi>CI</bdi>. ويُفشِل البناء عند أي انحراف.
 
@@ -139,9 +138,9 @@ sourceHash: "85913a76c08d9a66"
 1. **<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>** — التجهيزة المرجعية المطابقة بالبايت؛ مصدر حقيقة واحد.
 2. **<bdi>`scripts/inject-header.{sh,py}`</bdi>** — الحاقن الميكانيكي (§7).
 3. **مدقّق <bdi>`file-header`</bdi> في <bdi>CI</bdi>** (§8) — يُفشِل البناء عند أي انحراف.
-4. **خطّاف <bdi>pre-commit</bdi>** — يُشغِّل المدقّق مع <bdi>`--fix`</bdi> على الملفات المُجهَّزة للإيداع، موصولًا بالحاقن.
+4. **خطّاف <bdi>pre-commit</bdi>** — يُشغِّل الخطّاف <bdi>`conformity-corpus-perwrite`</bdi> المدقّق <bdi>`file-header`</bdi> (§8) على الشجرة المتتبَّعة. وهو يفحص فقط؛ أما الحاقن (§7) فيعيد كتابة الملفات، عبر <bdi>`make headers-fix`</bdi>.
 5. **كتلة السلوك الإلزامي في <bdi>`CLAUDE.md`</bdi>** — تُوجِّه المساعد إلى حقن سطر <bdi>SPDX</bdi> المرجعي كلما أنشأ ملفًا منطبقًا.
-6. **ملف تعليمات إطار العمل المدعوم** في مسار <bdi>`.github/`</bdi> المرجعي — يُوجِّه إطار العمل إلى فعل الأمر نفسه عند توليد الملفات.
+6. **ملف تعليمات <bdi>GitHub Copilot</bdi>** في <bdi>`.github/copilot-instructions.md`</bdi> — يُوجِّه <bdi>Copilot</bdi> إلى فعل الأمر نفسه عند توليد الملفات.
 7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداتَي <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة كي يُحقَن سطر <bdi>SPDX</bdi> عند إنشاء الملف بدلًا من اكتشاف غيابه لاحقًا بوصفه إخفاقًا في <bdi>CI</bdi>.
 8. **خانة اختيار في قالب <bdi>PR</bdi>** — إقرار موجَّه إلى المساهم بأن كل ملف جديد يحمل سطر <bdi>SPDX</bdi> المرجعي.
 9. **هذا المستند** (<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>) — الشرح المعياري المرجعي.

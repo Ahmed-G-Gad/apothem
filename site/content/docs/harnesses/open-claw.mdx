@@ -84,8 +84,10 @@ Apothem package.
 apothem uninstall --harness open-claw
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes what the adapter added: the profile document and the support tree. Your
+own keys in `openclaw.json` stay, and the file is deleted only when Apothem
+created it and nothing of yours is left. The shared profile YAML and Apothem
+engine are unaffected.
 
 ## Conformity gate
 

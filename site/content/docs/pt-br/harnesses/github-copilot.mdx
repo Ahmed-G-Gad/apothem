@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptador de harness do Apothem para o GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "7759dbb2505688c7"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ sourceHash: "7759dbb2505688c7"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-O adaptador deriva o arquivo de instruções do projeto a partir das regras
-compartilhadas do Apothem e da superfície de governança.
+O adaptador deriva o arquivo de instruções do projeto a partir do seu perfil
+compartilhado e da superfície compartilhada de regras e governança do Apothem.
 
 **Arquivos gravados:** `<project>/.github/copilot-instructions.md`
 
@@ -46,13 +46,14 @@ instruções com escopo de projeto documentado e deixa as configurações de usu
 no nível da IDE sob a propriedade do operador.
 
 Dentro do repositório do Apothem, `.github/copilot-instructions.md` é uma voz
-entre as superfícies de instruções de assistente do projeto. Em um checkout do
-Apothem, a verificação de coerência multissuperfície do conformity gate compara
-as afirmações compartilhadas em `AGENTS.md`, `CLAUDE.md` e
-`.github/copilot-instructions.md`, e relata uma afirmação que um desses arquivos
-omite ou contradiz. A verificação não lê o arquivo de instruções que o Apothem
-grava no seu projeto. O gate é consultivo por padrão: ele relata os achados e
-encerra com `0`.
+entre as superfícies de instruções de assistente desse repositório. Em um
+checkout desse repositório, a verificação de coerência multissuperfície do
+conformity gate compara as afirmações compartilhadas em `AGENTS.md`, `CLAUDE.md`
+e `.github/copilot-instructions.md`. Ela relata uma afirmação compartilhada que
+um dos três arquivos omite e um arquivo que contradiz uma afirmação feita por
+`AGENTS.md`. A verificação não lê o arquivo de instruções que o Apothem grava no
+seu projeto. O gate é consultivo por padrão: ele relata os achados e encerra com
+`0`.
 
 ## Verificação
 
@@ -83,8 +84,11 @@ perfil compartilhado.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `<project>/.github/copilot-instructions.md` e mantém
+qualquer texto fora dele. O arquivo só é excluído quando nada mais resta nele.
+Antes da alteração, uma cópia do arquivo com carimbo de data e hora é salva sob
+`~/.apothem/backups/`. O YAML do perfil compartilhado e o motor do Apothem não
+são afetados.
 
 ## Conformity gate
 

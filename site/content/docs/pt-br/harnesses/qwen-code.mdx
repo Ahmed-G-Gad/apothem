@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adaptador de harness do Apothem para o Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,11 +28,15 @@ Qwen.
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
+
+O arquivo `~/.qwen/apothem/rules/00-apothem-profile.md` é o documento de perfil.
+Ele carrega a sua identidade e as suas preferências do perfil compartilhado.
 
 ## Mapeamento do perfil para a configuração nativa
 
@@ -61,7 +65,9 @@ apothem verify --harness qwen-code
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -79,8 +85,17 @@ subagentes e a árvore de suporte do Apothem.
 apothem uninstall --harness qwen-code
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove as entradas que o adaptador adicionou a `~/.qwen/settings.json` (as suas
+próprias chaves, os servidores MCP e os manipuladores de hook permanecem, e o
+arquivo é excluído somente quando o Apothem o criou e nada seu restou). Remove o
+bloco do Apothem de `~/.qwen/QWEN.md` e do documento de perfil
+`~/.qwen/apothem/rules/00-apothem-profile.md` e mantém qualquer outro texto
+neles; cada arquivo é excluído somente quando nada mais resta nele. Também
+remove os arquivos do Apothem em `~/.qwen/commands/`, `~/.qwen/skills/`,
+`~/.qwen/agents/` e `~/.qwen/.apothem/support/`; os demais arquivos dessas
+pastas permanecem. Cada arquivo recebe backup em `~/.apothem/backups/` antes de
+ser alterado ou removido. O YAML do perfil compartilhado e o motor do Apothem
+não são afetados.
 
 ## Conformity gate
 

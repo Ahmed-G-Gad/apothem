@@ -2,7 +2,7 @@
 title: "Header Kepengarangan — Baris Lisensi SPDX per Berkas"
 description: "Mendefinisikan dan menegakkan penanda pengidentifikasi lisensi SPDX per berkas menggunakan header satu baris kanonik dalam sintaks komentar yang sesuai untuk setiap tipe berkas."
 machineTranslated: true
-sourceHash: "85913a76c08d9a66"
+sourceHash: "be2cac4bcbaa4744"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "85913a76c08d9a66"
 
 ## 1. Baris Header Kanonik
 
-Setiap berkas yang berlaku dalam ekosistem HARUS diawali dengan satu baris pengidentifikasi lisensi SPDX kanonik, dalam sintaks komentar keluarga tipe berkasnya. Baris itu adalah penanda lisensi berkas yang terbaca mesin; keberadaannya tidak dapat ditawar untuk berkas yang tidak dikecualikan, dan isinya diatur oleh satu sumber kebenaran, tidak diimprovisasi per berkas. Instrumen hak cipta lengkap berada satu kali di berkas [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) di root repositori — instrumen itu tidak diduplikasi ke setiap berkas sumber.
+Setiap berkas yang berlaku dalam ekosistem HARUS diawali dengan satu baris pengidentifikasi lisensi SPDX kanonik, dalam sintaks komentar keluarga tipe berkasnya; hanya shebang atau, pada berkas Markdown, frontmatter YAML yang boleh mendahuluinya (§5). Baris itu adalah penanda lisensi berkas yang terbaca mesin; keberadaannya tidak dapat ditawar untuk berkas yang tidak dikecualikan, dan isinya diatur oleh satu sumber kebenaran, tidak diimprovisasi per berkas. Instrumen hak cipta lengkap berada satu kali di berkas [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) di root repositori — instrumen itu tidak diduplikasi ke setiap berkas sumber.
 
 ### 1.1 Isi Informasi (Invarian)
 
@@ -30,7 +30,7 @@ Teks kanonik — ditulis di sini dalam bentuk sintaks komentar `#` — adalah su
 # SPDX-License-Identifier: MIT
 ```
 
-Teks ini adalah **satu-satunya** sumber otoritatif. Validator `file-header` (§7) dijalankan terhadap fixture byte-persis ini. Setiap penyimpangan antara baris header sebuah berkas dan fixture ini (dengan substitusi sintaks sesuai §2) adalah kegagalan CI.
+Teks ini adalah **satu-satunya** sumber otoritatif. Validator `file-header` (§8) dijalankan terhadap fixture byte-persis ini. Setiap penyimpangan antara baris header sebuah berkas dan fixture ini (dengan substitusi sintaks sesuai §2) adalah kegagalan CI.
 
 ---
 
@@ -40,12 +40,12 @@ Teks ini adalah **satu-satunya** sumber otoritatif. Validator `file-header` (§7
 
 | Keluarga tipe berkas | Sintaks komentar | Rendering varian |
 |---|---|---|
-| Keluarga `#` — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, entrypoint shell tanpa ekstensi seperti `scripts/apothem` | komentar baris `#` | `# SPDX-License-Identifier: MIT` |
-| Keluarga `//` — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.cs`, `.scala`, `.dart`, `.jsonc` | komentar baris `//` | `// SPDX-License-Identifier: MIT` |
+| Keluarga `#` — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.cfg`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, entrypoint shell tanpa ekstensi seperti `scripts/apothem` | komentar baris `#` | `# SPDX-License-Identifier: MIT` |
+| Keluarga `//` — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.cs`, `.scala`, `.dart`, `.jsonc` | komentar baris `//` | `// SPDX-License-Identifier: MIT` |
 | Keluarga komentar blok — `.html`, `.htm`, `.md`, `.markdown`, `.xml`, `.vue` (bagian templat), `.php` (bagian templat) | `<!-- ... -->` | `<!-- SPDX-License-Identifier: MIT -->` |
 | MDX (`.mdx`) | `{/* ... */}` (komentar ekspresi JSX) | `{/* SPDX-License-Identifier: MIT */}` |
-| Keluarga blok-C — `.css`, `.scss`, `.less`, `.sql` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
-| Keluarga `;` — `.ini`, `.cfg`, sebagian `.lisp`/`.scm` | komentar baris `;` | `; SPDX-License-Identifier: MIT` |
+| Keluarga blok-C — `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.css`, `.scss`, `.less` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
+| Keluarga `;` — `.ini`, sebagian `.lisp`/`.scm` | komentar baris `;` | `; SPDX-License-Identifier: MIT` |
 | Keluarga `--` — `.sql`, `.lua`, `.hs`, `.elm`, `.ada` | komentar baris `--` | `-- SPDX-License-Identifier: MIT` |
 | Lockfile / hasil generasi / JSON | tidak ada / tidak berlaku | **Dikecualikan.** Lihat §3 Daftar Pengecualian. |
 
@@ -65,7 +65,6 @@ Kelas-kelas berikut **dikecualikan** dari baris header SPDX. Pemeriksaan keberla
 
 - **`LICENSE`** — instrumen hukum itu sendiri; membawa baris hak cipta otoritatif yang keberadaannya dikonfirmasi oleh validator `license-author-consistency`.
 - **Aset `*.svg`** — komentar XML rapuh untuk penanda komentar baris, sehingga provenance SVG dibawa oleh README aset dan keluaran raster yang dihasilkan.
-- **`CHANGELOG.md`** — dokumen catatan rilis yang terikat format; baris SPDX muncul sebagai satu komentar HTML di atas header changelog, tidak disisipkan ke dalam format.
 - **Berkas JSON (`.json`)** — JSON tidak memiliki sintaks komentar. Jika atribusi diperlukan untuk konfigurasi JSON, letakkan berkas `<file>.NOTICE.md` di sebelahnya.
 - **Lockfile** — `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `Pipfile.lock`, `poetry.lock`, `go.sum`, dsb. (dikelola mesin).
 - **Berkas hasil generasi** — apa pun dengan penanda `# Generated by ...` atau `// Generated by ...`, atau apa pun yang cocok dengan `linguist-generated=true` pada `.gitattributes`.
@@ -96,8 +95,8 @@ Baris SPDX mendeklarasikan lisensi proyek secara terbaca mesin; berkas LICENSE m
 
 ## 5. Posisi Penyisipan
 
-- Baris SPDX adalah **konten pertama** berkas, dengan satu dan hanya satu pengecualian: baris shebang (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, dsb.), yang selalu tetap berada di baris 1; baris SPDX dimulai di baris 2.
-- Untuk berkas Markdown / MDX dengan frontmatter YAML, frontmatter tetap berada di byte 0 agar perkakas dapat mengurainya, dan komentar SPDX mengikuti `---` penutup, lalu H1 dan isi. `scripts/inject-header.py` menempatkan komentar dengan cara ini.
+- Baris SPDX adalah **konten pertama** berkas, dengan dua pengecualian. Baris shebang (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, dsb.) selalu tetap berada di baris 1, dan baris SPDX dimulai di baris 2. Pada berkas Markdown / MDX dengan frontmatter YAML, frontmatter berada di urutan pertama (butir berikutnya).
+- Untuk berkas Markdown / MDX dengan frontmatter YAML, frontmatter tetap berada di byte 0 agar perkakas dapat mengurainya, dan komentar SPDX mengikuti `---` penutup, lalu isi berkas, yang dibuka dengan H1 pada berkas yang memilikinya. `scripts/inject-header.py` menempatkan komentar dengan cara ini.
 - Satu baris kosong memisahkan baris SPDX dari konten berikutnya (H1, isi, dsb.).
 
 ---
@@ -126,7 +125,7 @@ Injektor dipanggil oleh target `make headers-fix`, yang menjalankan `scripts/inj
 
 ## 8. Validator — `file-header` (CI)
 
-Berada di [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Untuk setiap berkas di working tree, validator mencari keberlakuannya (sesuai §3) dan, jika berlaku, menegaskan bahwa baris SPDX kanonik ada di kepala berkas — mendahului semua konten lain, dengan satu-satunya konten pra-baris yang diizinkan adalah shebang (§5).
+Berada di [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Untuk setiap berkas di working tree, validator mencari keberlakuannya (sesuai §3) dan, jika berlaku, menegaskan bahwa baris SPDX kanonik ada di kepala berkas — mendahului semua konten lain, dengan shebang sebagai satu-satunya konten pra-baris yang diizinkannya (§5). Validator tidak membaca melewati frontmatter Markdown.
 
 Didukung oleh fixture byte-persis di [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Melaporkan diff per berkas dan persentase cakupan agregat dalam ringkasan CI. Menggagalkan build pada setiap penyimpangan.
 
@@ -139,9 +138,9 @@ Disiplin ini harus bertahan melewati setiap sesi mendatang dan setiap kontributo
 1. **`src/apothem/schemas/authorship-header.txt`** — fixture kanonik byte-persis; satu sumber kebenaran.
 2. **`scripts/inject-header.{sh,py}`** — injektor mekanis (§7).
 3. **Validator CI `file-header`** (§8) — menggagalkan build pada setiap penyimpangan.
-4. **Hook pre-commit** — menjalankan validator dengan `--fix` pada berkas yang di-stage, dan terhubung ke injektor.
+4. **Hook pre-commit** — hook `conformity-corpus-perwrite` menjalankan validator `file-header` (§8) pada seluruh pohon yang dilacak. Hook ini hanya memeriksa; injektor (§7) yang menulis ulang berkas, melalui `make headers-fix`.
 5. **Blok perilaku wajib `CLAUDE.md`** — menginstruksikan asisten untuk menyuntikkan baris SPDX kanonik setiap kali membuat berkas yang berlaku.
-6. **Berkas instruksi harness yang didukung** pada jalur `.github/` kanonik — menginstruksikan harness untuk melakukan hal yang sama saat menghasilkan berkas.
+6. **Berkas instruksi GitHub Copilot** di `.github/copilot-instructions.md` — menginstruksikan Copilot untuk melakukan hal yang sama saat menghasilkan berkas.
 7. **Hook PreToolUse** di `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — mencegat pemanggilan tool Write/Edit pada jalur yang berlaku agar baris SPDX disuntikkan saat berkas dibuat, bukan baru ditemukan sebagai kegagalan CI di kemudian hari.
 8. **Kotak centang templat PR** — pernyataan yang ditujukan kepada kontributor bahwa setiap berkas baru membawa baris SPDX kanonik.
 9. **Dokumen ini** (`site/content/docs/reference/authorship-header.mdx`) — penjelasan normatif yang kanonik.

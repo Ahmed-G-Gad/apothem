@@ -2,7 +2,7 @@
 title: "安装器环境变量"
 description: "通过环境变量控制脚本安装器（目标位置、来源、工具、配置档案、验证）。"
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ sourceHash: "ac08049d8506b135"
 
 ## 信任模型
 
-在未设置 `APOTHEM_REF` 时，安装器会解析最新的已签名发布标签，并在物化任何配置之前用 `git verify-tag` 验证其签名；未签名或被篡改的标签会中止安装。对于维护者公钥不在本地密钥环中的已签名标签，安装器则会中止并给出密钥导入指引——导入该密钥，并将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对。使用 `APOTHEM_REF=<tag>` 固定一个已知的发布（同样会被验证；标签取自[发布页面](https://github.com/ahmed-g-gad/apothem/releases)），使用 `APOTHEM_REF=main` 选择不断前进的分支（不验证），或者设置 `APOTHEM_ALLOW_UNVERIFIED=1`，在验证失败时带着警告继续（适用于物理隔离网络、本地环境，或早于签名发布的版本）。
+在未设置 `APOTHEM_REF` 时，安装器会解析最新的已签名发布标签，并在物化任何配置之前用 `git verify-tag` 验证其签名；未签名或被篡改的标签会中止安装。对于维护者公钥不在本地密钥环中的已签名标签，安装器则会中止并给出密钥导入指引——导入该密钥，并将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对。使用 `APOTHEM_REF=<tag>` 固定一个已知的发布，标签取自[发布页面](https://github.com/ahmed-g-gad/apothem/releases)；被固定的标签以同样的方式验证。要选择会持续变动的分支，请使用 `APOTHEM_REF=main` 并同时设置 `APOTHEM_ALLOW_UNVERIFIED=1`；该安装未经验证，而单独设置 `main` 会中止，因为分支不是已签名的标签。单独设置 `APOTHEM_ALLOW_UNVERIFIED=1`，则会在验证失败时带着警告继续（适用于物理隔离网络、本地环境，或早于签名发布的版本）。
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
@@ -105,7 +105,7 @@ pwsh -NoProfile -File install.ps1
 apothem verify --harness cursor
 ```
 
-当配置档案尚不存在时，安装器会从示例创建一份，并在同一次运行中继续完成安装和验证。示例中的身份字段是占位值，因此安装会打印一条提示；编辑 `$APOTHEM_PROFILE`，然后运行 `apothem update --harness <name>` 以应用你的身份信息。在没有配置档案时运行 `--dry-run`，会以示例配置档案代替进行预览，且不写入任何内容。
+当配置档案尚不存在时，安装器会从示例创建一份，并在同一次运行中继续完成安装和验证。示例中的身份字段是占位值，因此安装会打印一条提示；编辑 `$APOTHEM_PROFILE`，然后运行 `apothem update --harness <name>` 以应用你的身份信息。在没有配置档案时运行 `--dry-run`，会使用示例配置档案进行预览，且不写入任何内容。
 
 ## 相关内容
 

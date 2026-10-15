@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referencia de la CLI para el comando apothem uninstall."
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,14 +26,21 @@ de la solicitud corrompería el único documento JSON) o una shell no interactiv
 proporcione `--yes`. Si un entorno seleccionado no está instalado, el comando
 tiene éxito (código de salida 0) con un aviso «nada que eliminar».
 
+Los almacenes de datos compartidos bajo `.apothem/` en la raíz de instalación
+(`memory/`, `contexts/`, `learning/`) se conservan mientras otro entorno
+instalado en la misma raíz siga usándolos. Cuando el entorno que eliminas es el
+último en esa raíz, el comando copia primero cada almacén en la raíz de copias de
+seguridad de Apothem (`~/.apothem/backups/`) y luego lo elimina con todo su
+contenido. Lo que conserves en `plans/` nunca se elimina.
+
 Una eliminación con `--harness all` es exhaustiva de forma deliberada: abarca
 cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
 durante la instalación — la limpieza alcanza el estado que una instalación
 anterior de mayor alcance pueda haber dejado atrás. Los entornos que nunca se
 instalaron informan «nada que eliminar».
 
-El alias en forma continua `apothem uninstalling` se resuelve en el mismo
-manejador.
+El alias en forma continua `apothem uninstalling` (también aceptado como
+`apothem Uninstalling`) se resuelve en el mismo manejador.
 
 ## Opciones
 

@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adapter harness Apothem untuk GLM (Z.ai) sebagai backend model yang dapat dikonfigurasi."
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,13 +11,15 @@ sourceHash: "3e05b3a651ffe5da"
 **Status:** GA
 **Konfigurasi native:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) adalah sebuah **backend model**, bukan harness. Z.ai tidak
+GLM (Z.ai) adalah **backend model**, bukan alat pengodean tersendiri. Z.ai tidak
 menyediakan antarmuka baris perintah GLM resmi miliknya sendiri; sebagai
 gantinya, alat yang menggunakan protokol yang kompatibel dengan Anthropic atau
 yang kompatibel dengan OpenAI diarahkan ke GLM dengan menyetel base URL backend
-dan sebuah kunci. Adapter `glm` menulis berkas konfigurasi penyedia yang
-mencatat kedua permukaan kompatibilitas tersebut sehingga alat kompatibel apa
-pun dapat disambungkan ke keluarga model GLM.
+dan sebuah kunci. Apothem tetap memasukkan GLM ke dalam adapter harness-nya,
+sehingga Anda memilihnya dengan `--harness glm` seperti adapter lain. Adapter
+`glm` menulis berkas konfigurasi penyedia yang mencatat kedua permukaan
+kompatibilitas tersebut sehingga alat kompatibel apa pun dapat disambungkan ke
+keluarga model GLM.
 
 ## Instalasi
 
@@ -35,8 +37,9 @@ backend GLM dan placeholder yang dapat dikonfigurasi operator.
 Berkas penyedia mencatat dua backend. Backend yang kompatibel dengan Anthropic
 menggunakan base URL `https://api.z.ai/api/anthropic`; alat yang menggunakan
 protokol Anthropic dirutekan ke GLM dengan menyetel `ANTHROPIC_BASE_URL`,
-`ANTHROPIC_AUTH_TOKEN`, dan secara opsional `API_TIMEOUT_MS`. Tabel env yang
-sama mencantumkan `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+`ANTHROPIC_AUTH_TOKEN`, dan secara opsional `API_TIMEOUT_MS`. Tabel
+`[backends.anthropic_compatible.env]` di dalam berkas mencantumkan variabel-variabel
+tersebut dan juga `ANTHROPIC_DEFAULT_OPUS_MODEL`,
 `ANTHROPIC_DEFAULT_SONNET_MODEL`, dan `ANTHROPIC_DEFAULT_HAIKU_MODEL`, yang
 memetakan peran opus, sonnet, dan haiku milik alat ke model GLM. Backend yang
 kompatibel dengan OpenAI menggunakan base URL
@@ -50,12 +53,12 @@ ini adalah templat tetap.
 
 ## Catatan kompatibilitas
 
-Karena GLM adalah backend dan bukan harness, GLM tidak mengekspos permukaan
-untuk aturan, command, skill, atau hook — adapter hanya menulis berkas penyedia
-backend dan tidak ada yang lain. Kunci Z.ai Anda dan pilihan ID model Anda
-tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi sandaran
-adapter dipatok di `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, yang
-di-snapshot terhadap dokumentasi Z.ai yang berlaku.
+Karena GLM adalah backend dan bukan alat pengodean, GLM tidak mengekspos
+permukaan untuk aturan, command, skill, atau hook — adapter hanya menulis berkas
+penyedia backend dan tidak ada yang lain. Kunci Z.ai Anda dan pilihan ID model
+Anda tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi
+sandaran adapter dipatok di `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`,
+yang di-snapshot terhadap dokumentasi Z.ai yang berlaku.
 
 GLM menjalankan keluarga model GLM dari Z.ai; lihat
 [referensi konfigurasi vendor](https://docs.z.ai/devpack/tool/claude) untuk
@@ -79,12 +82,12 @@ Perintah verify memastikan bahwa:
 apothem update --harness glm --project /path/to/project
 ```
 
-Berkas penyedia menjadi milik Anda begitu berkas itu ada. `install` menulis
-templat hanya ketika `.apothem/providers/glm.toml` tidak ada, dan baik
-`install` maupun `update` tidak pernah menimpanya setelah itu, sehingga
-referensi kunci dan pilihan model Anda bertahan pada setiap eksekusi ulang.
-Untuk mengambil templat yang lebih baru, pindahkan berkas Anda ke tempat lain,
-jalankan `update`, lalu salin nilai-nilai Anda ke berkas yang baru.
+Berkas penyedia menjadi milik Anda begitu berkas itu ada. `install` dan `update`
+sama-sama menulis templat hanya ketika `.apothem/providers/glm.toml` tidak ada,
+dan keduanya tidak pernah menimpanya setelah itu, sehingga referensi kunci dan
+pilihan model Anda bertahan pada setiap eksekusi ulang. Untuk mengambil templat
+yang lebih baru, pindahkan berkas Anda ke tempat lain, jalankan `update`, lalu
+salin nilai-nilai Anda ke berkas yang baru.
 
 ## Pencopotan
 

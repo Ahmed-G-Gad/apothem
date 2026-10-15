@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "f40933a9d485e4be"
+sourceHash: "0e9e61064d66a5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,8 +70,12 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+`<project>/.trae/rules/apothem-rules.md` से Apothem ब्लॉक, और उसके ऊपर Apothem
+द्वारा लिखा गया फ़्रंट मैटर, हटाता है और उसमें मौजूद अन्य सारा पाठ रखता है। फ़ाइल
+केवल तभी हटाई जाती है जब उसमें और कुछ शेष न रहे। बदलाव से पहले फ़ाइल की एक
+समय-मुद्रित प्रति `~/.apothem/backups/` के अंतर्गत सहेजी जाती है; प्रोजेक्ट में कोई
+बैकअप फ़ाइल नहीं छोड़ी जाती। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते
+हैं।
 
 ## अनुरूपता गेट
 

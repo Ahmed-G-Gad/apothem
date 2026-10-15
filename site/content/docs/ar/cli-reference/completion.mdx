@@ -2,7 +2,7 @@
 title: "completion"
 description: "مرجع واجهة سطر الأوامر لأمر apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,13 +29,16 @@ apothem completion bash|zsh|fish|powershell
 | <bdi>`fish`</bdi> | سكربت إكمال <bdi>fish</bdi> الأصلي في <bdi>Click</bdi>. |
 | <bdi>`powershell`</bdi> | سكربت <bdi>`Register-ArgumentCompleter`</bdi> يولّده صنف إكمال <bdi>PowerShell</bdi> الذي يسجّله <bdi>Apothem</bdi> لدى <bdi>Click</bdi> (إذ لا يشحن <bdi>Click</bdi> صنفًا كهذا أصليًا)، ويقود بروتوكول الإكمال نفسه الذي تستخدمه الأصداف الأخرى. |
 
-طلب أي صدفة أخرى يُخرج بالرمز <bdi>`64`</bdi> مع قائمة الأصداف المدعومة.
+طلب أي صدفة أخرى يُنهي الأمر بالرمز <bdi>`64`</bdi> مع قائمة الأصداف المدعومة.
 
 ## تفعيل الإكمال لكل صدفة
 
-يجب أولًا أن يكون الأمر <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك (تضعه هناك
-المُثبِّتات ذات الخطوة الواحدة). ثم فعّل الإكمال بإلحاق السكربت بملف الإكمال الخاص
-بالصدفة وإعادة تشغيل الصدفة:
+يجب أولًا أن يكون الأمر <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك. تكتب
+المُثبِّتات ذات الخطوة الواحدة غلاف <bdi>`apothem`</bdi> في
+<bdi>`$HOME/.local/bin`</bdi> (<bdi>POSIX</bdi>) أو
+<bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (<bdi>Windows</bdi>) ولا تحرّر
+<bdi>`PATH`</bdi> لديك أبدًا، لذا أضِف ذلك الدليل إن لم يكن مُدرَجًا فيه أصلًا. ثم
+فعّل الإكمال بإلحاق السكربت بملف الإكمال الخاص بالصدفة وإعادة تشغيل الصدفة:
 
 ```bash
 # bash — append to your bashrc

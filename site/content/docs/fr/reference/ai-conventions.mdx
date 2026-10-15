@@ -2,7 +2,7 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "d17a5f2f79af7cc9"
+sourceHash: "8b401418bac95c44"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,9 +14,9 @@ sourceHash: "d17a5f2f79af7cc9"
 
 Une surface d'ingénierie moderne est sollicitée par plusieurs environnements : consoles de chat, moteurs de complétion dans l'IDE, compagnons de programmation en binôme et réviseurs de pull requests. Chacun lit son propre fichier de configuration canonique. Si le projet ne livre qu'un seul de ces fichiers, les autres environnements d'exécution improvisent en silence face à des conventions non énoncées ; l'absence de mémoire interne au dépôt se fait sentir immédiatement.
 
-Le coût d'une surface manquante est une **dérive silencieuse du code généré par machine**, la pire catégorie de défaut, car elle s'accumule de façon invisible. Chaque artefact généré par machine aggrave la divergence ; le temps qu'un réviseur humain repère la contradiction, la base de code porte déjà des semaines de conventions incohérentes.
+Le coût d'une surface manquante est une **dérive silencieuse du code généré par machine** — la pire catégorie de défaut, car elle s'accumule de façon invisible. Chaque artefact généré par machine aggrave la divergence ; le temps qu'un réviseur humain repère la contradiction, la base de code porte déjà des semaines de conventions incohérentes.
 
-La configuration des environnements d'exécution est plurielle du fait de la réalité du déploiement. L'écosystème publié DOIT livrer un fichier de mémoire comportementale pour l'environnement d'exécution de console de chat ET un fichier d'instructions à portée de dépôt pour l'environnement d'exécution de complétion dans l'IDE. Les deux surfaces DOIVENT être mutuellement cohérentes (aucune contradiction, aucune dérive) et DOIVENT encoder conjointement les mêmes disciplines.
+La configuration des environnements d'exécution est plurielle du fait de la réalité du déploiement. L'écosystème publié DOIT livrer les trois surfaces obligatoires du §3 : `AGENTS.md`, un fichier de mémoire comportementale pour l'environnement d'exécution de console de chat (`CLAUDE.md`), et un fichier d'instructions à portée de dépôt pour l'environnement d'exécution de complétion dans l'IDE. Les surfaces DOIVENT être mutuellement cohérentes — aucune contradiction, aucune dérive — et DOIVENT encoder conjointement les mêmes disciplines.
 
 ---
 
@@ -29,7 +29,7 @@ Chaque surface de conventions dans le périmètre (§3) est un *canal* qui expri
 
 Le validateur `multi-surface-coherence` (§7) s'exécute à chaque exécution de la CI et en pre-commit, et vérifie le respect du contrat.
 
-Les deux surfaces (ou plus) sont des *canaux* différents qui expriment une seule *spécification*. Les sections partagées DOIVENT concorder d'une surface à l'autre, sémantiquement et, lorsque c'est possible, lexicalement. Les sections propres à une surface NE DOIVENT PAS contredire les sections partagées.
+Les surfaces sont des *canaux* différents qui expriment une seule *spécification*. Les sections partagées DOIVENT concorder d'une surface à l'autre, sémantiquement et, lorsque c'est possible, lexicalement. Les sections propres à une surface NE DOIVENT PAS contredire les sections partagées.
 
 ---
 
@@ -39,12 +39,12 @@ Les deux surfaces (ou plus) sont des *canaux* différents qui expriment une seul
 |---|---|---|---|
 | `AGENTS.md` | racine du dépôt (et/ou `.codex/AGENTS.md`) | **DOIT** | environnements compatibles AGENTS |
 | `CLAUDE.md` | racine du dépôt (et/ou `.claude/CLAUDE.md`) | **DOIT** | Claude Code |
-| fichier d'instructions situé sous `.github/` | fichier d'instructions situé sous `.github/` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
+| fichier d'instructions situé sous `.github/` | `.github/copilot-instructions.md` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
 | manifeste des assistants situé sous `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
 | `.cursorrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution d'éditeur dans l'IDE |
 | `.windsurfrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution compagnon dans l'IDE |
 
-Pour cette mission, l'opérateur a activé les surfaces d'assistant optionnelles consignées par la fixture. Les configurations racine propres à un fournisseur et inutilisées sont volontairement absentes ; un fichier de configuration propre à un outil n'est ajouté que lorsque cet outil est une surface d'édition active pour ce dépôt.
+Pour ce dépôt, les surfaces activées sur option sont celles que la fixture de la liste d'affirmations ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) énumère sous `optional-in`. Les configurations racine propres à un fournisseur et inutilisées sont volontairement absentes ; un fichier de configuration propre à un outil n'est ajouté que lorsque cet outil est une surface d'édition active pour ce dépôt.
 
 ---
 
@@ -62,7 +62,7 @@ Le fichier d'instructions à portée de dépôt situé sous `.github/` DOIT cont
 6. **Forbidden Patterns** — interdits explicites : aucun adjectif marketing, aucun remplissage évasif, aucun résidu de débogage console.log, aucun chemin absolu codé en dur vers le répertoire personnel de l'utilisateur, aucun commit de secrets, aucun commit de fichiers sous `.apothem/plans/` (ou sous l'ancien `.plans/`), aucune contradiction avec le fichier canonique d'instructions du projet.
 7. **Output Format** — le code et la prose générés se conforment aux conventions unifiées de sortie conversationnelle : caractère affirmatif, découpage uniforme en sections, densité, discipline des synthèses, citations. Pour le code : surface publique documentée, typée lorsque le langage prend en charge les types, testée lorsqu'une structure de tests existe.
 8. **Review Checklist** — ce qu'un réviseur (humain, ou environnement d'exécution en mode revue de PR) DOIT vérifier avant d'approuver : en-tête présent, nommage conforme, aucune écriture dans `.apothem/plans/`, aucune contradiction avec le fichier canonique d'instructions du projet, validateurs au vert en local.
-9. **Pointers** — liens vers `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, ce document de conventions, `schemas/` et `CONTRIBUTING.md`.
+9. **Pointers** — liens vers `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, ce document de conventions, `src/apothem/schemas/` et `CONTRIBUTING.md`.
 
 Le fichier commence par la ligne SPDX canonique de l'en-tête de paternité (variante Markdown), conformément à [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2, visible ou invisible selon la politique de visibilité des en-têtes retenue par le projet.
 
@@ -116,7 +116,7 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 
 - Le premier vérifie que le fichier d'instructions dans l'IDE existe, s'analyse, contient chaque section canonique énumérée au §4 et commence par la ligne canonique `SPDX-License-Identifier: MIT` (variante Markdown).
 - Le deuxième analyse les sections canoniques de chaque surface ; il vérifie que les sections partagées sont mutuellement cohérentes selon un comparateur normalisé (insensible à la casse, tolérant aux espaces, admettant la paraphrase lexicale mais exigeant l'équivalence sémantique sur la liste d'affirmations définie par la fixture).
-- Le troisième vérifie que le LICENSE racine porte une ligne `Copyright (c) <name>` analysable ; les en-têtes par fichier ne portent aucun nom d'auteur.
+- Le troisième vérifie uniquement que le LICENSE racine porte une ligne `Copyright (c) <name>` analysable. Il ne lit pas les en-têtes par fichier, qui ne portent aucun nom d'auteur.
 
 ---
 

@@ -2,7 +2,7 @@
 title: "بوابة المطابقة"
 description: "شغّل بوابة المطابقة في Apothem للتحقّق من سلامة المنظومة."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "882e6fbc7b8fa34c"
 من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (<bdi>M1-M15</bdi>) على كل مُنتَج
 يؤلّفه المُشغِّل.
 
-تفترض الأوامر في هذه الصفحة وجود نسخة مسحوبة من <bdi>Apothem</bdi>، لذا ابدأ كلًّا منها بـ <bdi>`PYTHONPATH=src`</bdi>. وبعد التثبيت بالسكربت، استخدم <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> بدلًا من <bdi>`src`</bdi>.
+تفترض الأوامر في هذه الصفحة وجود نسخة مسحوبة من <bdi>Apothem</bdi>، لذا ضَع
+<bdi>`PYTHONPATH=src`</bdi> قبل كل أمر تُشغِّله. وبعد التثبيت بالسكربت، استخدم
+<bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> بدلًا من <bdi>`PYTHONPATH=src`</bdi>.
 
 ## تشغيل البوابة
 
@@ -38,12 +40,12 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 تحقّق عن <bdi>`inspected`</bdi> — أي عدد الأهداف التي فحصتها — وينسخ
 <bdi>`--all`</bdi> ذلك العدد إلى كل مُدخَل في النتائج. وأداة التحقّق التي لم تفحص شيئًا
 تُبلِغ عن <bdi>`passed: false`</bdi>، لذا لا يمكن أن يجتاز دليل عمل خاطئ بصمت.
-أداتا التحقّق الخاصتان بحزم الخطّة هما الاستثناء: تعيش حزم الخطّة في الشجرة
-<bdi>`.apothem/plans/`</bdi> التي يتجاهلها <bdi>git</bdi>، لذا تُبلِغان عن
+أداتا التحقّق الخاصتان بحزم الخطّة هما إحدى حالات الاستثناء: تعيش حزم الخطّة في
+الشجرة <bdi>`.apothem/plans/`</bdi> التي يتجاهلها <bdi>git</bdi>، لذا تُبلِغان عن
 <bdi>`empty_scope_expected: true`</bdi> على نسخة مسحوبة نظيفة وتجتازان مع ذلك. وتفعل
 أدوات التحقّق الخاصة بسير العمل الشيء نفسه عندما لا يكون للمشروع دليل
 <bdi>`.github/workflows/`</bdi> بعد، وكذلك تفعل أداة التحقّق من عنوان الكوميت عندما لا
-يكون للدليل سجلّ كوميتات.
+يكون للجذر سجلّ كوميتات.
 
 ## أشرطة البوابة
 
@@ -86,10 +88,14 @@ PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 
 وضع الخطّاف **مقصور على مجموعة من الأدلة**. لا يُشغِّل سلسلة المطابِقات إلا على عمليات
 الكتابة التي يقع هدفها تحت أحدها؛ وعملية الكتابة الواقعة خارج كل النطاقات تنتهي فورًا
-باجتياز صامت. القيم الافتراضية هي جذور أُطُر العمل على نطاق المستخدم القادرة على
-الخطّافات التي يثبّت <bdi>Apothem</bdi> فيها — وتُسمّي صفحة كل إطار عمل تحت قسم
-«أُطُر العمل» جذرَه الخاص. اضبط <bdi>`APOTHEM_CONFORMITY_SCOPE`</bdi> على دليل
-لاستبدالها:
+باجتياز صامت. القيم الافتراضية جذران اثنان:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+اضبط <bdi>`APOTHEM_CONFORMITY_SCOPE`</bdi> على دليل لاستبدالهما:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead
@@ -101,4 +107,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## التكامل مع <bdi>CI</bdi>
 
-تُشغِّل مهمّة الجودة في <bdi>`.github/workflows/ci.yml`</bdi> البوابة في الوضع الصارم (<bdi>`python -m apothem.conformity.gate --all . --strict`</bdi>) عند الدفع إلى <bdi>`main`</bdi>، وعند طلبات الدمج إلى <bdi>`main`</bdi> التي تمسّ المسارات التي تراقبها تلك المهمّة. أما سير العمل المنفصل <bdi>`.github/workflows/conformity.yml`</bdi> فيُشغِّل مسح التركيبات الاختبارية (<bdi>`tests/conformity-scenarios/verify.py --strict`</bdi>).
+تُشغِّل مهمّة الجودة في <bdi>`.github/workflows/ci.yml`</bdi> البوابة في الوضع الصارم (<bdi>`python -m apothem.conformity.gate --all . --strict`</bdi>) عند الدفع إلى <bdi>`main`</bdi>، وعند طلبات السحب إلى <bdi>`main`</bdi> التي تمسّ المسارات التي تراقبها تلك المهمّة. أما سير العمل المنفصل <bdi>`.github/workflows/conformity.yml`</bdi> فيُشغِّل مسح تجهيزات الاختبار (<bdi>`tests/conformity-scenarios/verify.py --strict`</bdi>).

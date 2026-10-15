@@ -2,11 +2,11 @@
 title: "Convenciones de entorno multi-superficie"
 description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los tiempos de ejecución de chat, de autocompletado en el IDE y de revisión de pull requests."
 machineTranslated: true
-sourceHash: "d17a5f2f79af7cc9"
+sourceHash: "8b401418bac95c44"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referencia normativa canónica para colaboradores de aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en [ADR-0003](/docs/architecture).
+> **Referencia normativa canónica para los colaboradores que trabajan aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en [ADR-0003](/docs/architecture).
 
 ---
 
@@ -16,7 +16,7 @@ Una superficie de ingeniería moderna la tocan varios entornos: consolas de chat
 
 El costo de una superficie ausente es la **deriva silenciosa en el código generado por máquina**, la peor clase de defecto porque se acumula de forma invisible. Cada artefacto generado por máquina agrava la divergencia; para cuando un revisor humano detecta la contradicción, la base de código ya arrastra semanas de convenciones incoherentes.
 
-La configuración del tiempo de ejecución de los entornos es plural por la realidad del despliegue. El ecosistema publicado DEBE distribuir un archivo de memoria de comportamiento para el tiempo de ejecución de la consola de chat Y un archivo de instrucciones con alcance de repositorio para el tiempo de ejecución de autocompletado dentro del IDE. Las dos superficies DEBEN ser mutuamente coherentes —sin contradicción, sin deriva— y DEBEN codificar conjuntamente las mismas disciplinas.
+La configuración del tiempo de ejecución de los entornos es plural por la realidad del despliegue. El ecosistema publicado DEBE distribuir las tres superficies obligatorias de §3: `AGENTS.md`, un archivo de memoria de comportamiento para el tiempo de ejecución de la consola de chat (`CLAUDE.md`) y un archivo de instrucciones con alcance de repositorio para el tiempo de ejecución de autocompletado dentro del IDE. Las superficies DEBEN ser mutuamente coherentes —sin contradicción, sin deriva— y DEBEN codificar conjuntamente las mismas disciplinas.
 
 ---
 
@@ -29,7 +29,7 @@ Cada superficie de convenciones dentro del alcance (§3) es un *canal* que expre
 
 El validador `multi-surface-coherence` (§7) se ejecuta en cada ejecución de CI y en el pre-commit, y comprueba el contrato.
 
-Las dos (o más) superficies son *canales* distintos que expresan una sola *especificación*. Las secciones compartidas DEBEN coincidir —semánticamente y, donde sea posible, léxicamente— entre superficies. Las secciones específicas de cada superficie NO DEBEN contradecir las secciones compartidas.
+Las superficies son *canales* distintos que expresan una sola *especificación*. Las secciones compartidas DEBEN coincidir —semánticamente y, donde sea posible, léxicamente— entre superficies. Las secciones específicas de cada superficie NO DEBEN contradecir las secciones compartidas.
 
 ---
 
@@ -39,12 +39,12 @@ Las dos (o más) superficies son *canales* distintos que expresan una sola *espe
 |---|---|---|---|
 | `AGENTS.md` | raíz del repositorio (y/o `.codex/AGENTS.md`) | **DEBE** | entornos compatibles con AGENTS |
 | `CLAUDE.md` | raíz del repositorio (y/o `.claude/CLAUDE.md`) | **DEBE** | Claude Code |
-| archivo de instrucciones con raíz en `.github/` | archivo de instrucciones con raíz en `.github/` | **DEBE** | tiempo de ejecución de autocompletado dentro del IDE |
+| archivo de instrucciones con raíz en `.github/` | `.github/copilot-instructions.md` | **DEBE** | tiempo de ejecución de autocompletado dentro del IDE |
 | manifiesto de ayudantes con raíz en `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PUEDE** (activación opcional mediante el canal de indagación estructurada) | plataformas de orquestación de varios ayudantes |
 | `.cursorrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución de editor dentro del IDE |
 | `.windsurfrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución acompañante dentro del IDE |
 
-Para este encargo, el operador activó las superficies de asistente opcionales que registra el fixture. Las configuraciones raíz específicas de proveedor que no se usan están ausentes de forma intencional; un archivo de configuración específico de una herramienta se agrega solo cuando esa herramienta es una superficie de edición activa para este repositorio.
+Para este repositorio, las superficies de activación opcional son las que el fixture de la lista de afirmaciones ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) enumera bajo `optional-in`. Las configuraciones raíz específicas de proveedor que no se usan están ausentes de forma intencional; un archivo de configuración específico de una herramienta se agrega solo cuando esa herramienta es una superficie de edición activa para este repositorio.
 
 ---
 
@@ -62,7 +62,7 @@ El archivo de instrucciones con alcance de repositorio bajo `.github/` DEBE cont
 6. **Forbidden Patterns** — prohibiciones explícitas: sin adjetivos de marketing, sin relleno evasivo, sin restos de depuración con console.log, sin rutas absolutas codificadas de forma fija al directorio personal del usuario, sin hacer commit de secretos, sin hacer commit de archivos bajo `.apothem/plans/` (o el heredado `.plans/`), sin contradecir el archivo canónico de instrucciones del proyecto.
 7. **Output Format** — el código y la prosa generados se ajustan a las convenciones unificadas de salida conversacional: carácter definitivo, seccionado uniforme, densidad, disciplina de resumen, citas. Para el código: superficie pública documentada, con tipos donde el lenguaje admite tipos, con pruebas donde existe una estructura de pruebas.
 8. **Review Checklist** — lo que un revisor (humano o tiempo de ejecución en modo de revisión de pull requests) DEBE verificar antes de aprobar: encabezado presente, nomenclatura conforme, ninguna escritura en `.apothem/plans/`, ninguna contradicción con el archivo canónico de instrucciones del proyecto, validadores en verde localmente.
-9. **Pointers** — enlaces a `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, este documento de convenciones, `schemas/` y `CONTRIBUTING.md`.
+9. **Pointers** — enlaces a `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, este documento de convenciones, `src/apothem/schemas/` y `CONTRIBUTING.md`.
 
 El archivo comienza con la línea SPDX canónica del encabezado de autoría (variante Markdown) según [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2, visible o invisible según la política de visibilidad del encabezado que haya elegido el proyecto.
 
@@ -116,7 +116,7 @@ Tres validadores implementan conjuntamente el contrato de coherencia:
 
 - El primero verifica que el archivo de instrucciones dentro del IDE existe, se puede analizar, contiene cada sección canónica enumerada en §4 y comienza con la línea canónica `SPDX-License-Identifier: MIT` (variante Markdown).
 - El segundo analiza las secciones canónicas de cada superficie y verifica que las secciones compartidas son mutuamente coherentes según un comparador normalizado (insensible a mayúsculas y minúsculas, tolerante a los espacios en blanco, que admite la paráfrasis léxica pero exige equivalencia semántica en la lista de afirmaciones definida por el fixture).
-- El tercero verifica que el LICENSE de la raíz lleva una línea `Copyright (c) <name>` que se puede analizar; los encabezados por archivo no llevan nombre de autor.
+- El tercero verifica únicamente que el LICENSE de la raíz lleva una línea `Copyright (c) <name>` que se puede analizar. No lee los encabezados por archivo, que no llevan nombre de autor.
 
 ---
 

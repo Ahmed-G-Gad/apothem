@@ -2,7 +2,7 @@
 title: "Apothem против сырой конфигурации Hermes"
 description: "Ручное сопровождение конфигурации Hermes в сравнении с управлением ею через общий профиль Apothem."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,10 @@ YAML (проецируя перечень MCP из профиля в `mcp_server
 2. Перенесите переиспользуемые навыки или промпты команд Hermes в общий корпус.
 3. Выполните `apothem install --harness hermes`, чтобы отрендерить нативную
    конфигурацию и вспомогательный каталог навыков.
-4. Выполните `apothem verify --harness hermes`, чтобы подтвердить, что
+4. Добавьте `~/.hermes/.apothem/support/skills` в `skills.external_dirs` в
+   `config.yaml`, чтобы Hermes загружал установленные навыки. `apothem update`
+   сохраняет ключи, которые вы добавляете в `config.yaml`.
+5. Выполните `apothem verify --harness hermes`, чтобы подтвердить, что
    конфигурация на месте.
 
 ## Читать далее

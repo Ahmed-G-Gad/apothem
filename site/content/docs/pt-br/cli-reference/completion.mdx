@@ -2,7 +2,7 @@
 title: "completion"
 description: "Referência da CLI para o comando apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,9 +34,12 @@ Solicitar qualquer outro shell sai com `64` e a lista de shells suportados.
 
 ## Habilitar o autocompletar por shell
 
-Primeiro, o comando `apothem` precisa estar no seu `PATH` (os instaladores de
-uma única etapa o colocam lá). Em seguida, habilite o autocompletar anexando o
-script ao arquivo de autocompletar do shell e reiniciando o shell:
+O comando `apothem` precisa estar no seu `PATH` primeiro. Os instaladores de uma
+única etapa gravam um shim `apothem` em `$HOME/.local/bin` (POSIX) ou
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) e nunca editam o seu `PATH`;
+por isso, adicione esse diretório se ele ainda não estiver listado. Em seguida,
+habilite o autocompletar anexando o script ao arquivo de autocompletar do shell
+e reiniciando o shell:
 
 ```bash
 # bash — append to your bashrc

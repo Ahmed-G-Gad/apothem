@@ -2,7 +2,7 @@
 title: "Registri Mandat Lintas-Bidang (CM-1–CM-28)"
 description: "Registri dan definisi lengkap mandat lintas-bidang internal-ekosistem (CM-1–CM-28) yang mengatur semua interaksi dan operasi pipeline."
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ Dokumen ini ADALAH registri CM-N kanonik — inilah sumber tempat token `CM-1` h
 
 ## Namespace
 
-`CM-N` = config mandate (didefinisikan di sini, atau di `src/apothem/rules/*.md` sesuai baris aturan artifact-registries); `TM-N` = template mandate (didefinisikan di `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (didefinisikan di templat yang sama §6 "Core Principles", CP-1–27). Templat suite rencana adalah registri TM/CP kanonik — command `/plan` me-resolve rujukan silang melalui berkas tersebut. Artefak pembantu (aturan, pembantu, command, hook) mengutip registri ini melalui rujukan.
+`CM-N` = config mandate (didefinisikan di sini, atau di `src/apothem/rules/*.md` sesuai tabel aturan di `site/content/docs/reference/rules.mdx`); `TM-N` = template mandate (didefinisikan di `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (didefinisikan di templat yang sama §6 "Core Principles", CP-1–27). Templat suite rencana adalah registri TM/CP kanonik — command `/plan` me-resolve rujukan silang melalui berkas tersebut. Artefak pembantu (aturan, pembantu, command, hook) mengutip registri ini melalui rujukan.
 
 ## Aktivasi
 
@@ -38,7 +38,7 @@ Artefak basis kode TIDAK BOLEH PERNAH memuat rujukan internal-rencana. **Istilah
 
 ## CM-12 (Penatalayanan Konteks)
 
-Manajemen konteks yang ramping setiap saat — lihat aturan CM-24. Empat sub-tingkat dienumerasi di bagian Konvensi Sub-Rujukan di bawah. Disiplin kompaksi (CM-19) mengatur tindakannya; CM-12 mengatur disiplin keadaan-tunak.
+Manajemen konteks yang ramping setiap saat — lihat aturan CM-24. Empat sub-tingkat dienumerasi di bagian Konvensi Sub-Rujukan di bawah. Disiplin kompaksi (CM-19) mengatur tindakan melakukan kompaksi; CM-12 mengatur disiplin keadaan-tunak.
 
 ## CM-13 (Commit)
 
@@ -54,7 +54,7 @@ Manajemen konteks yang ramping setiap saat — lihat aturan CM-24. Empat sub-tin
 
 ## CM-15–21 (Pipeline)
 
-CM-15 dan CM-16 didefinisikan secara inline di sini (tanpa aturan terpisah); CM-17–21 didelegasikan ke aturan sesuai tabel aturan artifact-registries.
+CM-15 dan CM-16 didefinisikan secara inline di sini (tanpa aturan terpisah); CM-17–21 didelegasikan ke aturan sesuai tabel aturan di `site/content/docs/reference/rules.mdx`. Judul ini mengelompokkan mandat-mandat tersebut menurut topik; cakupannya mengikuti paragraf Aktivasi: CM-15, CM-16, dan CM-20 hanya berlaku di dalam pipeline `/plan`, sedangkan CM-17–19 dan CM-21 berlaku secara universal.
 
 - **CM-15 Koherensi Kolektif:** Verifikasi bahwa artefak rencana tetap koheren setelah modifikasi.
 - **CM-16 Eksekusi Otonom:** Pada SHARED+, jangan pernah berhenti di antara fase. Kompaksi wajib pada transisi fase (PERSONAL_USE+).
@@ -78,12 +78,12 @@ Jangkar satu baris untuk mandat yang didelegasikan ke aturan (spesifikasi lengka
 
 ## Mandat yang Didelegasikan ke Aturan vs. Didefinisikan Inline
 
-- **Didelegasikan ke aturan** (spesifikasi lengkap di `src/apothem/rules/`): lihat kolom "Implements" pada tabel aturan artifact-registries. Mencakup CM-1–10, CM-12, CM-14, CM-17–28.
-- **Didefinisikan inline** (spesifikasi lengkap di sini, tanpa aturan terpisah): CM-11 (Integritas Rencana), CM-13 (Commit), CM-15 (Koherensi Kolektif), CM-16 (Eksekusi Otonom).
+- **Didelegasikan ke aturan** (spesifikasi lengkap di `src/apothem/rules/`): lihat kolom "Implements" pada tabel aturan di `site/content/docs/reference/rules.mdx`. Mencakup CM-1–10, CM-12, CM-14, CM-17–28.
+- **Didefinisikan inline** (spesifikasi lengkap di sini, tanpa aturan terpisah): CM-11 (Integritas Rencana), CM-13 (Commit; sub-aturan D dan E mengutip berkas aturan untuk spesifikasi terperincinya), CM-15 (Koherensi Kolektif), CM-16 (Eksekusi Otonom).
 
 ## Konvensi Sub-Rujukan
 
-Command menggunakan akhiran huruf untuk merujuk subbagian tertentu di dalam mandat. Pola: `CM-N` + huruf akhiran = bagian aturan. **Konvensi kapitalisasi:** Akhiran huruf besar menandakan subbagian struktural di dalam sebuah mandat; akhiran huruf kecil menandakan direktif yang lebih rinci di dalam sebuah tingkat Penatalayanan. Tabel pemetaan kunci sub-rujukan kanonik (definisi internal-registri) dipertahankan apa adanya dalam blok berpagar di bawah:
+Command menggunakan akhiran huruf untuk merujuk subbagian tertentu di dalam mandat. Pola: `CM-N` + huruf akhiran = bagian aturan. **Konvensi kapitalisasi:** Akhiran huruf besar menandakan subbagian struktural di dalam sebuah mandat; akhiran huruf kecil menandakan direktif yang lebih rinci di dalam sebuah tingkat Penatalayanan. Tabel pemetaan kunci sub-rujukan kanonik (definisi internal-registri) berada di blok berpagar di bawah:
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

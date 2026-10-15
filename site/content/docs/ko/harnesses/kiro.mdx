@@ -1,12 +1,12 @@
 ---
 title: "Kiro"
-description: "Kiro(GA)를 위한 Apothem 하니스 어댑터."
+description: "Kiro(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "3c919d453670f9dc"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** AWS
+**벤더:** AWS
 **설치 이름:** `kiro`
 **상태:** GA
 **네이티브 구성:** `<project>/.kiro/steering/apothem-rules.md`
@@ -22,7 +22,7 @@ apothem install --harness kiro --project /path/to/project
 
 **작성되는 파일:** `<project>/.kiro/steering/apothem-rules.md`
 
-## 프로필에서 네이티브 구성으로의 매핑
+## 프로필-네이티브 구성 매핑
 
 어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
 실행마다 프로젝트 스티어링 파일을 렌더링합니다. 공유 프로필이 진실의
@@ -50,7 +50,9 @@ apothem verify --harness kiro --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -67,8 +69,12 @@ apothem update --harness kiro --project /path/to/project
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+`<project>/.kiro/steering/apothem-rules.md`에서 Apothem 블록과 그 위에 Apothem이
+작성한 프런트매터를 제거하고, 파일 안의 나머지 텍스트는 그대로 둡니다. 파일에
+다른 내용이 남아 있지 않을 때에만 파일을 삭제합니다. 변경하기 전에 파일의
+타임스탬프가 찍힌 사본이 `~/.apothem/backups/` 아래에 저장되며, 프로젝트에는
+백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지
+않습니다.
 
 ## 적합성 게이트
 
@@ -78,11 +84,11 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 해결 |
+| 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness kiro --project /path/to/project`를 다시 실행 |
-| 검증 실패 | `apothem update --harness kiro --project /path/to/project`를 실행한 다음 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness kiro --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness kiro --project /path/to/project`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness kiro --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브
 

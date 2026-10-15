@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "設定可能なモデルバックエンドとしての GLM (Z.ai) 向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,11 +11,10 @@ sourceHash: "3e05b3a651ffe5da"
 **ステータス：** GA
 **ネイティブ設定：** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) はハーネスではなく、**モデルバックエンド**です。Z.ai はファーストパーティの GLM
-コマンドラインを提供していません。代わりに、Anthropic 互換または OpenAI 互換のプロトコルを話す
-ツールを、バックエンドのベース URL とキーを設定することで GLM に向けます。`glm` アダプターは、
-両方の互換面を記録したプロバイダー設定ファイルを書き込むため、互換性のある任意のツールを GLM
-モデルファミリーに接続できます。
+GLM (Z.ai) は**モデルバックエンド**であり、独自のコーディングツールではありません。
+Z.ai はファーストパーティの GLM コマンドラインを提供していません。代わりに、Anthropic 互換または OpenAI 互換のプロトコルを話すツールを、バックエンドのベース URL とキーを設定することで GLM に向けます。
+それでも Apothem は GLM をハーネスアダプターの 1 つに数えているため、他のものと同様に `--harness glm` で選択します。
+`glm` アダプターは、両方の互換面を記録したプロバイダー設定ファイルを書き込むため、互換性のある任意のツールを GLM モデルファミリーに接続できます。
 
 ## インストール
 
@@ -23,37 +22,28 @@ GLM (Z.ai) はハーネスではなく、**モデルバックエンド**です�
 apothem install --harness glm --project /path/to/project
 ```
 
-アダプターは、GLM バックエンドのエンドポイントと、オペレーターが設定可能なプレースホルダーを
-記録した、プロジェクトスコープのプロバイダーファイルを 1 つ書き込みます。
+アダプターは、GLM バックエンドのエンドポイントと、オペレーターが設定可能なプレースホルダーを記録した、プロジェクトスコープのプロバイダーファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.apothem/providers/glm.toml`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-プロバイダーファイルは 2 つのバックエンドを記録します。Anthropic 互換バックエンドは、ベース URL
-`https://api.z.ai/api/anthropic` を使用します。Anthropic プロトコルを話すツールは、
-`ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、および任意で `API_TIMEOUT_MS` を設定することで
-GLM へルーティングされます。同じ env テーブルには `ANTHROPIC_DEFAULT_OPUS_MODEL`、
-`ANTHROPIC_DEFAULT_SONNET_MODEL`、`ANTHROPIC_DEFAULT_HAIKU_MODEL` も列挙されており、これらは
-ツールの opus、sonnet、haiku の役割を GLM のモデルに対応付けます。OpenAI 互換バックエンドは、
-ベース URL `https://api.z.ai/api/coding/paas/v4` を使用します。認証トークンは、あなた自身の
-Z.ai キーに置き換えるプレースホルダーです。Apothem が本物のシークレットを書き込むことは決して
-ありません。モデル ID はバージョンによって変わりやすいため、Apothem はどれもピン留めしません。
-ファイルには `<GLM_MODEL_ID>` プレースホルダーが含まれており、最新の
-[Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して埋めます。共有プロファイルの
-内容がこのファイルに入ることはありません。これは固定のテンプレートです。
+プロバイダーファイルは 2 つのバックエンドを記録します。
+Anthropic 互換バックエンドは、ベース URL `https://api.z.ai/api/anthropic` を使用します。Anthropic プロトコルを話すツールは、`ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、および任意で `API_TIMEOUT_MS` を設定することで GLM へルーティングされます。
+ファイル内の `[backends.anthropic_compatible.env]` テーブルには、これらの変数に加えて `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL`、`ANTHROPIC_DEFAULT_HAIKU_MODEL` も列挙されており、これらはツールの opus、sonnet、haiku の役割を GLM のモデルに対応付けます。
+OpenAI 互換バックエンドは、ベース URL `https://api.z.ai/api/coding/paas/v4` を使用します。
+認証トークンは、あなた自身の Z.ai キーに置き換えるプレースホルダーです。Apothem が本物のシークレットを書き込むことは決してありません。
+モデル ID はバージョンによって変わりやすいため、Apothem はどれもピン留めしません。ファイルには `<GLM_MODEL_ID>` プレースホルダーが含まれており、最新の [Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して埋めます。
+共有プロファイルの内容がこのファイルに入ることはありません。これは固定のテンプレートです。
 
 ## 互換性に関する注意
 
-GLM はハーネスではなくバックエンドであるため、ルール、コマンド、スキル、フックのための面を
-公開しません。アダプターはバックエンドのプロバイダーファイルのみを書き込み、それ以外は何も
-書き込みません。あなたの Z.ai キーとモデル ID の選択は、オペレーターの所有のままです。アダプターが
-依拠するベンダー面の規約は `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` にピン留め
-されており、公開中の Z.ai ドキュメントに対してスナップショットが取られています。
+GLM はコーディングツールではなくバックエンドであるため、ルール、コマンド、スキル、フックのための面を公開しません。アダプターはバックエンドのプロバイダーファイルのみを書き込み、それ以外は何も書き込みません。
+あなたの Z.ai キーとモデル ID の選択は、オペレーターの所有のままです。
+アダプターが依拠するベンダー面の規約は `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` にピン留めされており、公開中の Z.ai ドキュメントに対してスナップショットが取られています。
 
-GLM は Z.ai の GLM モデルファミリーを実行します。現在のバックエンド、モデル、Anthropic 互換の
-設定面については、[ベンダーの設定リファレンス](https://docs.z.ai/devpack/tool/claude)を参照して
-ください。
+GLM は Z.ai の GLM モデルファミリーを実行します。
+現在のバックエンド、モデル、Anthropic 互換の設定面については、[ベンダーの設定リファレンス](https://docs.z.ai/devpack/tool/claude)を参照してください。
 
 ## 検証
 
@@ -73,11 +63,9 @@ verify コマンドは次のことを確認します。
 apothem update --harness glm --project /path/to/project
 ```
 
-プロバイダーファイルは、いったん存在すればあなたのものです。`install` は
-`.apothem/providers/glm.toml` が存在しない場合にのみテンプレートを書き込み、その後は `install` も
-`update` も決してそれを上書きしないため、あなたのキー参照とモデルの選択はすべての再実行を経ても
-残ります。より新しいテンプレートを取り込むには、自分のファイルを別の場所へ移動し、`update` を
-実行してから、自分の値を新しいファイルにコピーしてください。
+プロバイダーファイルは、いったん存在すればあなたのものです。
+`install` と `update` はどちらも、`.apothem/providers/glm.toml` が存在しない場合にのみテンプレートを書き込み、その後はどちらもそれを決して上書きしないため、あなたのキー参照とモデルの選択はすべての再実行を経ても残ります。
+より新しいテンプレートを取り込むには、自分のファイルを別の場所へ移動し、`update` を実行してから、自分の値を新しいファイルにコピーしてください。
 
 ## アンインストール
 
@@ -85,10 +73,9 @@ apothem update --harness glm --project /path/to/project
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-プロバイダーファイルを削除するのは、Apothem がそれを作成し、かつ編集されていないテンプレートの
-ままである場合のみで、その際は先に Apothem のバックアップルート配下にバックアップします。あなたが
-作成または編集したファイルはそのまま残されます。共有プロファイルの YAML と Apothem エンジンには
-影響しません。
+プロバイダーファイルを削除するのは、Apothem がそれを作成し、かつ編集されていないテンプレートのままである場合のみで、その際は先に Apothem のバックアップルート配下にバックアップします。
+あなたが作成または編集したファイルはそのまま残されます。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート
 

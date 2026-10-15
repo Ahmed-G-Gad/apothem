@@ -2,7 +2,7 @@
 title: "Harness-Markenfarben"
 description: "Farbpalette je Harness, die auf der gesamten Apothem-Projektwebsite und in jedem Architekturdiagramm verwendet wird. Eine einzige Quelle der Wahrheit: eine Farbe je Harness, ein apothem-Hub."
 machineTranslated: true
-sourceHash: "8bd8ae0d07b55675"
+sourceHash: "1bade22f201192d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,8 @@ Die kanonischen Aufzählungen Markenname × Farbcode unten stehen in einem `text
 Fünfzehn der siebzehn Harnesses sind passend zu ihrer primären Markenidentität
 eingefärbt, sodass Leser die Werkzeuge in einem Diagramm auseinanderhalten
 können. Die Apothem-Bildmarke selbst verwendet nur die Farben Slate und Emerald
-auf der Seite [Markenpalette](/docs/brand/palette); sie trägt keine Harness-Farbe. Die
-verbleibenden zwei — `glm` und `kimi-code` — haben noch keine definierte
+auf der Seite [Markenpalette](/docs/brand/palette); sie trägt keine Harness-Farbe.
+Die verbleibenden zwei — `glm` und `kimi-code` — haben noch keine definierte
 Markenfarbe; ihre Zeilen werden hinzugefügt, sobald die vorgelagerte Markenfarbe
 festgelegt ist, gemäß dem Propagierungsschritt unter
 [Aktualisierungen](#aktualisierungen).
@@ -104,7 +104,7 @@ graph LR
 
 ## Barrierefreiheit
 
-Jedes Token für den hellen Modus behält seine Markenfarbe unverzerrt, daher liegen acht davon unter dem WCAG-2.2-AA-Kontrast gegenüber weißem Text (≥4,5 : 1). Die übrigen Token für den hellen Modus erreichen ihn. Die acht, mit ihrem Kontrast gegenüber Weiß:
+Jedes Token für den hellen Modus auf dieser Seite, Kern- wie Harness-Token gleichermaßen, behält seine Markenfarbe unverzerrt, daher liegen acht davon unter dem WCAG-2.2-AA-Kontrast gegenüber weißem Text (≥4,5 : 1). Die übrigen Token für den hellen Modus erreichen ihn. Die acht, mit ihrem Kontrast gegenüber Weiß:
 
 ```text
 shared-profile   2.54 : 1
@@ -117,7 +117,7 @@ trae             3.86 : 1
 windsurf         2.77 : 1
 ```
 
-Die Spalte für den dunklen Modus ist für dunkle Hintergründe gedacht, und keines ihrer Tokens erreicht gegenüber weißem Text 4,5 : 1. Ein Diagramm, das auf einer dieser acht Füllungen einen WCAG-AA-Kontrast für Text auf Farbe benötigt, MUSS statt weißem Text dunklen Text (`#0F172A`, der auf ihnen 4,63 : 1 bis 8,31 : 1 misst) verwenden.
+Die Spalte für den dunklen Modus ist zur Verwendung auf dunklen Hintergründen gedacht, und keines ihrer Tokens erreicht gegenüber weißem Text 4,5 : 1. Das Mermaid-Beispiel oben setzt auf jede Füllung weißen Text, daher erreichen seine Beschriftungen auf diesen acht Füllungen 4,5 : 1 nicht. Ein Diagramm, das auf einer dieser acht Füllungen einen WCAG-AA-Kontrast für Text auf Farbe benötigt, MUSS statt weißem Text dunklen Text (`#0F172A`, der auf ihnen 4,63 : 1 bis 8,31 : 1 misst) verwenden.
 
 ## Aktualisierungen
 

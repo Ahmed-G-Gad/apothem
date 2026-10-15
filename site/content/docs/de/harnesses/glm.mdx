@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Apothem-Harness-Adapter für GLM (Z.ai) als konfigurierbares Modell-Backend."
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,13 +11,14 @@ sourceHash: "3e05b3a651ffe5da"
 **Status:** GA
 **Native Konfiguration:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) ist ein **Modell-Backend**, kein Harness. Z.ai liefert keine eigene
-GLM-Kommandozeile aus; stattdessen wird ein Werkzeug, das das
-Anthropic-kompatible oder das OpenAI-kompatible Protokoll spricht, auf GLM
-ausgerichtet, indem eine Backend-Basis-URL und ein Schlüssel gesetzt werden.
-Der `glm`-Adapter schreibt eine Provider-Konfigurationsdatei, die beide
-Kompatibilitätsoberflächen festhält, sodass sich jedes kompatible Werkzeug mit
-der GLM-Modellfamilie verbinden lässt.
+GLM (Z.ai) ist ein **Modell-Backend**, kein eigenständiges Coding-Werkzeug.
+Z.ai liefert keine eigene GLM-Kommandozeile aus; stattdessen wird ein Werkzeug,
+das das Anthropic-kompatible oder das OpenAI-kompatible Protokoll spricht, auf
+GLM ausgerichtet, indem eine Backend-Basis-URL und ein Schlüssel gesetzt werden.
+Apothem zählt GLM dennoch zu seinen Harness-Adaptern, daher wählen Sie es wie
+jeden anderen mit `--harness glm` aus. Der `glm`-Adapter schreibt eine
+Provider-Konfigurationsdatei, die beide Kompatibilitätsoberflächen festhält,
+sodass sich jedes kompatible Werkzeug mit der GLM-Modellfamilie verbinden lässt.
 
 ## Installation
 
@@ -37,7 +38,8 @@ Die Provider-Datei hält zwei Backends fest. Das Anthropic-kompatible Backend
 verwendet die Basis-URL `https://api.z.ai/api/anthropic`; ein Werkzeug, das das
 Anthropic-Protokoll spricht, leitet seine Anfragen an GLM, indem es
 `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` und optional `API_TIMEOUT_MS`
-setzt. Dieselbe env-Tabelle listet `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+setzt. Die Tabelle `[backends.anthropic_compatible.env]` in der Datei listet
+diese Variablen und außerdem `ANTHROPIC_DEFAULT_OPUS_MODEL`,
 `ANTHROPIC_DEFAULT_SONNET_MODEL` und `ANTHROPIC_DEFAULT_HAIKU_MODEL` auf, die
 die Rollen opus, sonnet und haiku des Werkzeugs GLM-Modellen zuordnen. Das
 OpenAI-kompatible Backend verwendet die Basis-URL
@@ -51,8 +53,8 @@ gemeinsamen Profil fließt nichts in diese Datei; sie ist eine feste Vorlage.
 
 ## Kompatibilitätshinweise
 
-Weil GLM ein Backend und kein Harness ist, bietet es keine Oberfläche für
-Regeln, Commands, Skills oder Hooks — der Adapter schreibt nur die
+Weil GLM ein Backend und kein Coding-Werkzeug ist, bietet es keine Oberfläche
+für Regeln, Commands, Skills oder Hooks — der Adapter schreibt nur die
 Backend-Provider-Datei und nichts anderes. Ihr Z.ai-Schlüssel und Ihre Wahl der
 Modell-IDs bleiben im Besitz des Operators. Die Konventionen der
 Vendor-Oberfläche, auf die sich der Adapter stützt, sind in
@@ -81,10 +83,10 @@ Der Befehl verify bestätigt, dass:
 apothem update --harness glm --project /path/to/project
 ```
 
-Sobald die Provider-Datei existiert, gehört sie Ihnen. `install` schreibt die
-Vorlage nur, wenn `.apothem/providers/glm.toml` fehlt, und danach überschreiben
-weder `install` noch `update` sie jemals, sodass Ihr Schlüsselverweis und Ihre
-Modellwahl jeden erneuten Lauf überstehen. Um eine neuere Vorlage zu
+Sobald die Provider-Datei existiert, gehört sie Ihnen. `install` und `update`
+schreiben beide die Vorlage nur, wenn `.apothem/providers/glm.toml` fehlt, und
+keiner von beiden überschreibt sie danach jemals, sodass Ihr Schlüsselverweis
+und Ihre Modellwahl jeden erneuten Lauf überstehen. Um eine neuere Vorlage zu
 übernehmen, verschieben Sie Ihre Datei beiseite, führen `update` aus und
 kopieren Ihre Werte in die neue Datei.
 

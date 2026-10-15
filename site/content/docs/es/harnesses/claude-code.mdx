@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,7 +34,7 @@ ejecute `~/.claude/statuslines/render.py`.
 `.apothem/support/schemas/`, `.apothem/support/templates/`) bajo `~/.claude/`.
 Los archivos de comando se convierten en
 directorios de skill hijos. El despachador de hooks y la puerta de conformidad
-se ejecutan desde sus copias materializadas: las entradas de hook de
+se ejecutan desde sus copias materializadas — las entradas de hook de
 `settings.json` invocan `~/.claude/.apothem/support/hooks/dispatch.py` y
 `~/.claude/.apothem/support/conformity/gate.py` por ruta absoluta, por lo que no
 se necesita ningún paquete `apothem` importable en el host.
@@ -42,14 +42,14 @@ se necesita ningún paquete `apothem` importable en el host.
 `~/.claude/CLAUDE.md` sigue siendo propiedad del operador. El adaptador escribe
 en él un único bloque de Apothem delimitado por centinelas, que contiene la
 proyección del perfil (identidad, preferencias, reglas, nivel de seriedad y
-comportamientos activados por elección) y una sección de archivos de soporte de
-Apothem, y conserva textualmente cada línea fuera de los centinelas. La sección
-de archivos de soporte nombra el directorio absoluto contra el que se resuelve
-cada cita con estilo de repositorio de las reglas, skills y agentes instalados:
-`rules/<name>.md` bajo `~/.claude/rules/`, y `templates/...`, `schemas/...`,
-`hooks/...` y `conformity/...` bajo `~/.claude/.apothem/support/`. El resto de
-la superficie de gobernanza de Apothem llega a Claude Code a través del árbol
-`rules/` propagado y del hook SessionStart. OpenCode también carga
+comportamientos activados de forma voluntaria) y una sección de archivos de
+soporte de Apothem, y conserva textualmente cada línea fuera de los centinelas.
+La sección de archivos de soporte nombra el directorio absoluto contra el que se
+resuelve cada cita con estilo de repositorio de las reglas, skills y agentes
+instalados: `rules/<name>.md` bajo `~/.claude/rules/`, y `templates/...`,
+`schemas/...`, `hooks/...` y `conformity/...` bajo `~/.claude/.apothem/support/`.
+El resto de la superficie de gobernanza de Apothem llega a Claude Code a través
+del árbol `rules/` propagado y del hook SessionStart. OpenCode también carga
 `~/.claude/CLAUDE.md` cuando no existe `~/.config/opencode/AGENTS.md`, así que
 el bloque no nombra ninguna herramienta concreta como su lector.
 
@@ -76,11 +76,11 @@ instrucciones de ingeniería de software integradas de Claude Code.
 Los prompts de comando se convierten en directorios de skill; los agentes, las
 reglas, las skills y los estilos de salida se copian tal cual. La instalación
 valida que el perfil esté bien formado y que todos los enlaces de hook de
-settings.json sean resolubles. El adaptador no crea ninguna entrada de servidor
-MCP: registra los servidores con `claude mcp add` (consulta
+settings.json se puedan resolver. El adaptador no crea ninguna entrada de
+servidor MCP: registra los servidores con `claude mcp add` (consulta
 [Servidores MCP](/docs/reference/mcp)).
 
-Claude Code aplica todos los enlaces de hook de settings.json en cada inicio de sesión. Cada adaptador se verifica frente a su propio entorno nativo: no existe un entorno «de referencia» privilegiado.
+Claude Code aplica todos los enlaces de hook de settings.json en cada inicio de sesión. Cada adaptador se verifica frente a su propio entorno nativo — no existe un entorno «de referencia» privilegiado.
 
 ### Límites de las reglas de permisos
 
@@ -93,8 +93,8 @@ aplica la denegación a una búsqueda que lee archivos sin nombrarlos, como
 ([referencia de permisos](https://code.claude.com/docs/en/permissions)). En
 macOS, Linux y WSL, Claude Code deja las herramientas `Glob` y `Grep` fuera del
 conjunto de herramientas predeterminado y busca a través de Bash en su lugar,
-así que las entradas `Glob` y `Grep` de la lista de permitidos de la plantilla
-solo surten efecto donde esas herramientas están presentes. Para impedir que cualquier
+así que las entradas de permiso `Glob` y `Grep` de la plantilla solo surten
+efecto donde esas herramientas están presentes. Para impedir que cualquier
 proceso lea una ruta, activa el sandbox de Claude Code.
 
 Las skills y las definiciones de ayudantes que nombran `TodoWrite` también
@@ -110,7 +110,10 @@ apothem verify --harness claude-code
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Cada destino gestionado existe; los archivos gestionados no están vacíos y las configuraciones JSON o YAML se analizan correctamente. Añade `--profile PATH` para confirmar también que los archivos instalados coinciden con ese perfil.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y
+   las configuraciones JSON o YAML se analizan correctamente. Añade
+   `--profile PATH` para confirmar también que los archivos instalados coinciden
+   con ese perfil.
 3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
@@ -122,8 +125,8 @@ apothem update --harness claude-code
 Vuelve a derivar la configuración nativa a partir del perfil compartido actual.
 Ejecútalo después de actualizar el paquete `apothem` instalado, para que la
 superficie de convenciones propagada (agentes, reglas, skills, líneas de estado,
-estilos de salida) refleje la nueva versión. En `CLAUDE.md`, update reescribe solo
-el bloque de Apothem entre sus centinelas.
+estilos de salida) refleje la nueva versión. En `CLAUDE.md`, update reescribe
+solo el bloque de Apothem entre sus centinelas.
 
 ## Desinstalación
 
@@ -131,8 +134,16 @@ el bloque de Apothem entre sus centinelas.
 apothem uninstall --harness claude-code
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador y quita
-el bloque de Apothem de `CLAUDE.md`, dejando tu propio texto en su lugar.
+Elimina el bloque de Apothem de `~/.claude/CLAUDE.md` y conserva cualquier otro
+texto que haya en él. El archivo se elimina solo cuando no queda nada más en él.
+Elimina las entradas que el adaptador agregó a `~/.claude/settings.json` (tus
+propias reglas de permisos, claves y manejadores de hooks permanecen, y el
+archivo se elimina solo cuando Apothem lo creó y no queda nada tuyo). También
+elimina los archivos de Apothem en `~/.claude/agents/`, `~/.claude/rules/`,
+`~/.claude/skills/`, `~/.claude/statuslines/`, `~/.claude/output-styles/` y
+`~/.claude/.apothem/support/`; los demás archivos de esas carpetas permanecen.
+Cada archivo se respalda bajo `~/.apothem/backups/` antes de modificarse o
+eliminarse.
 El paquete `apothem` instalado y el repositorio de origen no se ven afectados.
 
 ## Puerta de conformidad

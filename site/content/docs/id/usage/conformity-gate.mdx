@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) terhadap setiap artefak
 yang ditulis operator.
 
 Perintah pada halaman ini mengasumsikan checkout Apothem, sehingga awali setiap
-perintah dengan `PYTHONPATH=src`. Setelah pemasangan skrip, gunakan
-`PYTHONPATH="$HOME/.apothem/src"` sebagai pengganti `src`.
+perintah yang Anda jalankan dengan `PYTHONPATH=src`. Setelah pemasangan skrip,
+gunakan `PYTHONPATH="$HOME/.apothem/src"` sebagai pengganti `PYTHONPATH=src`.
 
 ## Menjalankan gerbang
 
@@ -43,12 +43,12 @@ Setiap validator melaporkan `inspected` — berapa banyak target yang
 diperiksanya — dan `--all` menyalin hitungan tersebut ke setiap entri hasil.
 Validator yang tidak memeriksa apa pun melaporkan `passed: false`, sehingga
 direktori kerja yang salah tidak dapat lolos diam-diam. Dua validator suite
-rencana adalah pengecualiannya: suite rencana berada di pohon `.apothem/plans/`
-yang di-gitignore, sehingga keduanya melaporkan `empty_scope_expected: true`
-pada checkout yang bersih dan tetap lolos. Validator alur kerja melakukan hal
-yang sama ketika proyek belum memiliki direktori `.github/workflows/`, dan
-validator subjek commit melakukannya ketika direktori tidak memiliki riwayat
-commit.
+rencana merupakan salah satu pengecualian: suite rencana berada di pohon
+`.apothem/plans/` yang di-gitignore, sehingga keduanya melaporkan
+`empty_scope_expected: true` pada checkout yang bersih dan tetap lolos.
+Validator alur kerja melakukan hal yang sama ketika proyek belum memiliki
+direktori `.github/workflows/`, dan validator subjek commit melakukannya ketika
+root tidak memiliki riwayat commit.
 
 ## Bar gerbang
 
@@ -92,10 +92,15 @@ Anda jarang memanggilnya secara manual.
 Mode hook **dibatasi pada sekumpulan direktori**. Mode ini menjalankan rantai
 matcher hanya pada penulisan yang targetnya berada di bawah salah satu
 direktori tersebut; penulisan di luar setiap cakupan langsung dihentikan
-sebagai lolos tanpa pesan. Default-nya adalah root harness cakupan-pengguna
-yang mendukung hook tempat Apothem memasang — halaman setiap harness di bagian
-Adaptor harness menyebutkan root-nya sendiri. Setel `APOTHEM_CONFORMITY_SCOPE`
-ke sebuah direktori untuk menggantikannya:
+sebagai lolos tanpa pesan. Default-nya ada dua root:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Setel `APOTHEM_CONFORMITY_SCOPE` ke sebuah direktori untuk menggantikan
+keduanya:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

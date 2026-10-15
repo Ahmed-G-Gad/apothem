@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration Hermes brute"
 description: "Maintenir à la main la configuration de Hermes plutôt que la gérer via le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,10 @@ skills qu'après que vous avez ajouté `~/.hermes/.apothem/support/skills` à
    corpus partagé.
 3. Exécutez `apothem install --harness hermes` pour générer la configuration
    native et le répertoire de skills de support.
-4. Exécutez `apothem verify --harness hermes` pour confirmer que la
+4. Ajoutez `~/.hermes/.apothem/support/skills` à `skills.external_dirs` dans
+   `config.yaml` afin que Hermes charge les skills installés. `apothem update`
+   conserve les clés que vous ajoutez à `config.yaml`.
+5. Exécutez `apothem verify --harness hermes` pour confirmer que la
    configuration est bien en place.
 
 ## À lire ensuite

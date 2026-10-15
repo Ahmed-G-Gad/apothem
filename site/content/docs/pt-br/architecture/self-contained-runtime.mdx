@@ -2,7 +2,7 @@
 title: "Runtime autocontido"
 description: "Como o motor do Apothem roda a partir de qualquer checkout — dependências internalizadas, o modelo de invocação PYTHONPATH=src e o bootstrap da árvore do plugin."
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,7 +83,7 @@ checkout ao `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Esta é exatamente a invocação que o instalador de passo único imprime ao
+Esta é exatamente a invocação que o instalador de uma única etapa imprime ao
 concluir.
 
 ## Bootstrap da árvore do plugin
@@ -121,13 +121,14 @@ de disco.
 
 ## Como o runtime encontra o Python
 
-Os instaladores de passo único e o shim do npx localizam um interpretador da
-mesma maneira: sondam `python3`, `python`, os nomes versionados (`python3.14`
-até `python3.10`) e `py -3` no Windows; rejeitam os shims do lançador da
-Microsoft Store; e aceitam o primeiro candidato que informar a versão 3.10 ou
-mais recente. Quando executados a partir de uma árvore de código-fonte, os
-instaladores reutilizam o localizador empacotado `hooks/lib/find-python`, que
-aplica o mesmo piso.
+Os instaladores de uma única etapa e o shim do npx sondam nomes diferentes e
+aplicam as mesmas regras. Os instaladores sondam `python3`, `python` e os nomes
+versionados (`python3.14` até `python3.10`). O shim do npx sonda `APOTHEM_PYTHON`
+quando ele está definido e, em seguida, `python3`, `python` e `py -3`; ele não
+tem nomes versionados. Ambos rejeitam os shims do lançador da Microsoft Store e
+aceitam o primeiro candidato que informar a versão 3.10 ou mais recente. Quando
+executados a partir de uma árvore de código-fonte, os instaladores reutilizam o
+localizador empacotado `hooks/lib/find-python`, que aplica o mesmo piso.
 
 ## Próximo passo recomendado
 

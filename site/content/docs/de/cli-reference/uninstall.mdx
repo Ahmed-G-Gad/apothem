@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "CLI-Referenz für den Befehl apothem uninstall."
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,14 +27,22 @@ vornherein mit einem strukturierten Fehler `uninstall.confirmation_required`
 nicht installiert ist, ist der Befehl erfolgreich (Exit-Code 0) und gibt einen
 Hinweis „nothing to remove“ aus.
 
+Die gemeinsamen Datenspeicher unter `.apothem/` an der Installationswurzel
+(`memory/`, `contexts/`, `learning/`) bleiben bestehen, solange ein anderer
+installierter Harness an derselben Wurzel sie noch verwendet. Ist der Harness,
+den Sie entfernen, der letzte an dieser Wurzel, kopiert der Befehl zuerst jeden
+Datenspeicher in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) und
+entfernt ihn dann samt allem, was er enthält. Alles, was Sie in `plans/`
+aufbewahren, wird niemals entfernt.
+
 Eine Entfernung mit `--harness all` ist bewusst erschöpfend: Sie umfasst jeden
 registrierten Harness, einschließlich derer, die `exclude_harnesses` im Profil
 bei der Installation überspringt — die Bereinigung erreicht Zustand, den eine
 früher umfassendere Installation hinterlassen haben könnte. Harnesses, die nie
 installiert wurden, melden „nothing to remove“.
 
-Der Alias in Verlaufsform `apothem uninstalling` wird auf denselben Handler
-aufgelöst.
+Der Alias in Verlaufsform `apothem uninstalling` (auch als
+`apothem Uninstalling` akzeptiert) wird auf denselben Handler aufgelöst.
 
 ## Optionen
 

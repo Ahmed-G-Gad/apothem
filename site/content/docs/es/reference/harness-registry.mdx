@@ -2,7 +2,7 @@
 title: "Registro de entornos"
 description: "Referencia técnica del registro de los adaptadores de entorno integrados de Apothem."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,9 +84,10 @@ salida.
 Algunos destinos de instalación los cargan entornos distintos del que los
 escribe. El registro anota cada una de esas rutas en `SHARED_ROOTS` con un único
 propietario (el único adaptador que la escribe) y los lectores cuya
-documentación de proveedor la carga por defecto, con las páginas del proveedor
-como evidencia. Instalar el propietario pone el contenido de Apothem delante de
-cada lector, y desinstalar el propietario lo elimina de cada lector.
+documentación de proveedor la carga por defecto, además de las páginas del
+proveedor que lo muestran y la fecha en que se consultaron. Instalar el
+propietario pone el contenido de Apothem delante de cada lector, y desinstalar
+el propietario lo elimina de cada lector.
 
 | Ruta | Propietario | Lectores |
 | --- | --- | --- |
@@ -100,10 +101,11 @@ cada lector, y desinstalar el propietario lo elimina de cada lector.
 
 El bloque de Apothem que un propietario escribe en un archivo de instrucciones
 compartido no nombra ninguna herramienta concreta como su lectora.
-`tests/unit/test_shared_roots.py` falla cuando dos adaptadores escriben un
-destino del registro, o cuando un destino tiene el nombre de un archivo de
+`tests/unit/test_shared_roots.py` falla cuando dos adaptadores escriben el mismo
+destino del registro, y cuando un destino del registro con nombre de archivo de
 instrucciones entre herramientas (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`), sin un propietario declarado.
+`copilot-instructions.md`) no tiene un propietario declarado. La única excepción
+es `~/.codex/AGENTS.md`, cuya carga no documenta ningún otro entorno registrado.
 
 ## Hooks de validación
 
@@ -111,7 +113,7 @@ El registro se mantiene sincronizado mediante estas comprobaciones:
 
 | Comprobación | Propósito |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tiene un anclaje de convención de menos de 90 días de antigüedad que cita al menos una URL del proveedor y no tiene ningún destino de descubrimiento vencido. La CI lo ejecuta en cada pull request, cada semana y antes de un lanzamiento. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tiene un anclaje de convención de 90 días de antigüedad como máximo, que cita al menos una URL del proveedor y que no tiene ningún destino de descubrimiento vencido. La CI lo ejecuta en cada pull request, cada semana y antes de un lanzamiento. |
 | `python scripts/dev/check_vendor_urls.py` | Descarga cada URL de proveedor que citan los anclajes y las plantillas de los entornos, y falla ante una página movida o inexistente, incluido un nombre de host que ya no se resuelve o un certificado que no supera la verificación; un tiempo de espera agotado, una conexión rechazada o restablecida, o un error de servidor 5xx se informa como inaccesible y no lo hace fallar. El monitor semanal de convenciones lo ejecuta. |
 | `python -m apothem.conformity.gate --all .` | Ejecuta las comprobaciones de conformidad de la documentación y de la implementación. |
 | `python -m pytest` | Ejercita las pruebas de fixtures del registro y las pruebas de contrato de los adaptadores. |

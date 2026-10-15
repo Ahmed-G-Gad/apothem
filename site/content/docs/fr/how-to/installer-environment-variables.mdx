@@ -2,7 +2,7 @@
 title: "Variables d'environnement de l'installateur"
 description: "Piloter l'installateur par script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,13 +27,13 @@ définissant des variables d'environnement avant de l'exécuter.
 | `APOTHEM_REPO` | Dépôt Git distant à cloner | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Ref Git à extraire ; non définie, elle résout la dernière étiquette signée `vMAJOR.MINOR.PATCH`, une valeur d'étiquette l'épingle, `main` sélectionne la branche mouvante. Une ref qui n'est pas une étiquette, comme `main`, interrompt l'opération sauf si `APOTHEM_ALLOW_UNVERIFIED=1`. | non définie (dernière étiquette signée) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Lorsqu'elle vaut `1`, rétrograde un échec de vérification de la signature de l'étiquette d'un arrêt fatal à un avertissement | `0` (vérification, échec fermé) |
-| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de son éditeur) | `signature` |
+| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de la personne qui l'a publiée) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de téléchargement pour le mode checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non définie (clonage) |
 | `APOTHEM_HARNESS` | Environnement à installer | `claude-code` |
 | `APOTHEM_PROFILE` | Chemin vers le YAML du profil partagé | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Lorsqu'elle vaut `1`, ignore l'étape de vérification post-installation | `0` (la vérification s'exécute) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | Lorsqu'elle vaut `1`, installe automatiquement les prérequis `click` / `rich` manquants, sans demande de confirmation | `0` (demande, ou refus dans un pipe non interactif) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | Lorsqu'elle vaut `1`, installe automatiquement les prérequis `click` / `rich` manquants, sans demande de confirmation | `0` (demande de confirmation, ou refus dans un pipe non interactif) |
 | `APOTHEM_BIN_DIR` | Répertoire du shim de commande `apothem` mis en place | `$HOME/.local/bin` (POSIX) ; `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
 | `NO_COLOR` | Désactive la sortie en couleur lorsqu'elle est définie, quelle que soit sa valeur ([no-color.org](https://no-color.org/)) ; la couleur est aussi désactivée chaque fois que la sortie n'est pas un terminal (un pipe, un fichier, un journal de CI) | non définie (couleur uniquement dans un terminal interactif) |
 
@@ -58,13 +58,16 @@ mainteneur est absente du trousseau local interrompt plutôt l'installation avec
 des indications pour importer la clé : importez la clé et comparez son
 empreinte avec la valeur publiée dans
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Épinglez une publication connue avec `APOTHEM_REF=<tag>` (également vérifiée ;
-une étiquette issue de la
-[page des publications](https://github.com/ahmed-g-gad/apothem/releases)),
-sélectionnez la branche mouvante avec `APOTHEM_REF=main` (non vérifiée), ou
-définissez `APOTHEM_ALLOW_UNVERIFIED=1` pour passer outre un échec de
-vérification avec un avertissement (usage isolé du réseau, local, ou antérieur
-aux publications signées).
+Épinglez une publication connue avec `APOTHEM_REF=<tag>`, en prenant l'étiquette
+sur la
+[page des publications](https://github.com/ahmed-g-gad/apothem/releases) ; une
+étiquette épinglée est vérifiée de la même manière. Sélectionnez la branche
+mouvante avec `APOTHEM_REF=main` plus `APOTHEM_ALLOW_UNVERIFIED=1` ; cette
+installation n'est pas vérifiée, et `main` seule interrompt l'installation,
+car une branche n'est pas une étiquette signée. Définissez
+`APOTHEM_ALLOW_UNVERIFIED=1` seule pour passer outre un échec de vérification
+avec un avertissement (usage isolé du réseau, local, ou antérieur aux
+publications signées).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

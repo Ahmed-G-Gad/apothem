@@ -2,7 +2,7 @@
 title: "横切强制规定登记册（CM-1–CM-28）"
 description: "治理所有交互与流水线操作的生态系统内部横切强制规定（CM-1–CM-28）的完整登记册与定义。"
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "4e3a5448c3273d05"
 
 ## 命名空间
 
-`CM-N` = 配置强制规定（在此处定义，或按工件登记册的规则行在 `src/apothem/rules/*.md` 中定义）；`TM-N` = 模板强制规定（在 `src/apothem/skills/plan-suite/master-template.md` §4 “General Mandates” 中定义，TM-1–28）；`CP-N` = 核心原则（在同一模板的 §6 “Core Principles” 中定义，CP-1–27）。计划套件模板是规范的 TM/CP 登记册——`/plan` 命令通过该文件解析交叉引用。辅助器工件（规则、辅助器、命令、钩子）以引用方式援引本登记册。
+`CM-N` = 配置强制规定（在此处定义，或按 `site/content/docs/reference/rules.mdx` 中的规则表在 `src/apothem/rules/*.md` 中定义）；`TM-N` = 模板强制规定（在 `src/apothem/skills/plan-suite/master-template.md` §4 “General Mandates” 中定义，TM-1–28）；`CP-N` = 核心原则（在同一模板的 §6 “Core Principles” 中定义，CP-1–27）。计划套件模板是规范的 TM/CP 登记册——`/plan` 命令通过该文件解析交叉引用。辅助器工件（规则、辅助器、命令、钩子）以引用方式援引本登记册。
 
 ## 激活
 
@@ -38,7 +38,7 @@ CM-1–10 + 认知身份治理所有交互。CM-11、CM-13（子规则 A 至 C�
 
 ## CM-12（上下文管理）
 
-始终进行精简的上下文管理——见 CM-24 规则。四个子层级在下文子引用约定一节中列举。压缩纪律（CM-19）治理动作；CM-12 治理稳态纪律。
+始终进行精简的上下文管理——见 CM-24 规则。四个子层级在下文子引用约定一节中列举。压缩纪律（CM-19）治理压缩这一行为；CM-12 治理稳态纪律。
 
 ## CM-13（提交）
 
@@ -54,7 +54,7 @@ CM-1–10 + 认知身份治理所有交互。CM-11、CM-13（子规则 A 至 C�
 
 ## CM-15–21（流水线）
 
-CM-15 和 CM-16 在此处内联定义（没有单独的规则）；CM-17–21 按工件登记册规则表委托给相应规则。
+CM-15 和 CM-16 在此处内联定义（没有单独的规则）；CM-17–21 按 `site/content/docs/reference/rules.mdx` 中的规则表委托给相应规则。该标题按主题对这些强制规定分组；它们的适用范围以激活一节的段落为准：CM-15、CM-16 和 CM-20 仅在 `/plan` 流水线内适用，CM-17–19 和 CM-21 普遍适用。
 
 - **CM-15 集体连贯性：** 验证计划工件在修改后仍保持连贯。
 - **CM-16 自主执行：** 在 SHARED+ 级别，绝不在阶段之间停止。阶段转换时必须压缩（PERSONAL_USE+）。
@@ -78,12 +78,12 @@ CM-15 和 CM-16 在此处内联定义（没有单独的规则）；CM-17–21 �
 
 ## 规则委托式与内联定义式强制规定
 
-- **规则委托式**（完整规范位于 `src/apothem/rules/`）：见工件登记册规则表的“Implements”列。涵盖 CM-1–10、CM-12、CM-14、CM-17–28。
-- **内联定义式**（完整规范在此处，没有单独的规则）：CM-11（计划完整性）、CM-13（提交）、CM-15（集体连贯性）、CM-16（自主执行）。
+- **规则委托式**（完整规范位于 `src/apothem/rules/`）：见 `site/content/docs/reference/rules.mdx` 中规则表的“实现”列。涵盖 CM-1–10、CM-12、CM-14、CM-17–28。
+- **内联定义式**（完整规范在此处，没有单独的规则）：CM-11（计划完整性）、CM-13（提交；子规则 D 和 E 引用规则文件作为其详细规范）、CM-15（集体连贯性）、CM-16（自主执行）。
 
 ## 子引用约定
 
-命令使用字母后缀来引用强制规定中的特定子章节。模式：`CM-N` + 后缀字母 = 规则章节。**大小写约定：** 大写后缀表示强制规定内部的结构性子章节；小写后缀表示某个管理层级内部更细粒度的指令。规范的子引用键映射表（登记册内部定义）在下方的围栏代码块中逐字保留：
+命令使用字母后缀来引用强制规定中的特定子章节。模式：`CM-N` + 后缀字母 = 规则章节。**大小写约定：** 大写后缀表示强制规定内部的结构性子章节；小写后缀表示某个上下文管理层级内部更细粒度的指令。规范的子引用键映射表（登记册内部定义）在下方的围栏代码块中：
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

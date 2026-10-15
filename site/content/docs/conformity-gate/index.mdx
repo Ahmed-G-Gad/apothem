@@ -24,9 +24,11 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 | 14 | M14 | Systemicity (declares upstream / downstream / peers / enforcers) | Reasoned | Declare; index in registries |
 | 15 | M15 | Production-Ready (tests + docs + CHANGELOG + conformant commit + CI green + semver-stability) | Mechanical + reasoned | Add missing surfaces |
 
+The gate runs only machine-checkable validators. The reasoned judgment that the Reasoned bars call for, and the reasoned half of each Mechanical + reasoned bar, is evaluated in review.
+
 ## Severity ladder
 
-The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all-perwrite`) exits `2` when a blocking matcher fails; advisory matchers are reported only. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
+The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all` or `--all-perwrite`) exits `2` when a blocking validator or matcher fails; advisory findings are reported only. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
 
 ## Validators
 
@@ -106,7 +108,10 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 On an installed harness the gate runs automatically: Claude Code's
 `settings.json` wires it as a `PreToolUse` hook that invokes the
 materialized copy at `~/.claude/.apothem/support/conformity/gate.py` before every
-Write/Edit. From a source checkout, the module form drives the same code. The
+Write/Edit. The gate then checks only writes under its hook scope, and a write
+outside the scope passes silently; [Running the conformity gate](/docs/usage/conformity-gate)
+lists the scope. From a source checkout, the module form drives the same code;
+prefix each `python` command below with `PYTHONPATH=src`. The
 gate is advisory by default: it reports findings and exits `0`. Add `--strict`
 to exit `2` on a blocking finding. An unknown validator name exits `3`.
 

@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,8 +18,7 @@ sourceHash: "5c4311df7cdf88b7"
 apothem install --harness antigravity
 ```
 
-アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、
-Apothem のサポートコホートを Antigravity CLI プラグインとしてインストールします。
+アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、Apothem のサポートコホートを Antigravity CLI プラグインとしてインストールします。
 
 **書き込まれるファイル：** `~/.gemini/GEMINI.md`、
 `~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
@@ -29,48 +28,35 @@ Apothem のサポートコホートを Antigravity CLI プラグインとして�
 `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`、および
 `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`。
 
-`~/.gemini/GEMINI.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで
-終わります。このセクションは、リポジトリ形式の各参照が解決される先の絶対ディレクトリを
-示します。`rules/<name>.md` はプラグインの `rules/` 配下に、`templates/...` と `hooks/...` は
-プラグインの `.apothem/support/` 配下に解決されます。
+`~/.gemini/GEMINI.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` はプラグインの `rules/` 配下に、`templates/...` と `hooks/...` はプラグインの `.apothem/support/` 配下に解決されます。
 
-**プラグインのルール。** Antigravity は、プラグインの `rules/` ディレクトリ内のファイルのうち、
-有効な `trigger` で始まらないものをすべて破棄します
-（[Antigravity のルールに関するドキュメント](https://antigravity.google/docs/rules)）。そのため、
-Apothem の各ルールはインストール時に変換されます。常に適用されるルールには `trigger: always_on` が、
-パスにスコープされたルールには同じパターンを `globs` に持つ `trigger: glob` が、それ以外のルールには
-`trigger: model_decision` が付与されます。すべてのルールは自身の `description` を保持します。
-Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きい
-ルールをオンデマンドのポインターに変えます。
+**プラグインのルール。** Antigravity は、プラグインの `rules/` ディレクトリ内のファイルのうち、有効な `trigger` で始まらないものをすべて破棄します（[Antigravity のルールに関するドキュメント](https://antigravity.google/docs/rules)）。
+そのため、Apothem の各ルールはインストール時に変換されます。
+常に適用されるルールには `trigger: always_on` が、パスにスコープされたルールには同じパターンを `globs` に持つ `trigger: glob` が、それ以外のルールには `trigger: model_decision` が付与されます。
+すべてのルールは自身の `description` を保持します。
+Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きいルールをオンデマンドのポインターに変えます。
 
-**プラグインマニフェスト。** `plugin.json` は、Antigravity のプラグインスキーマが認める 2 つの
-キーである `name` と `description` のみを持ちます。
+**プラグインマニフェスト。** `plugin.json` は、Antigravity のプラグインスキーマが認める 2 つのキーである `name` と `description` のみを持ちます。
 
-**プラグインのヘルパー。** プラグインの `agents/` ディレクトリ内のヘルパー定義は `name` と
-`description` を持ちます。Antigravity の `tools` リストは独自のツール名を使用し、ドキュメントは
-未知の名前がサブエージェントをハングさせる可能性があると警告しています。そのため、ツールリストは
-出力されず、ヘルパーは親のツールを継承します。Antigravity には読み取り専用の制限を強制する仕組みが
-何もないため、それらのヘルパーの説明からは「読み取り専用」というラベルが外されます。
+**プラグインのヘルパー。** プラグインの `agents/` ディレクトリ内のヘルパー定義は、`name` と `description` を持ちます。
+Antigravity の `tools` リストは独自のツール名を使用し、ドキュメントは、未知の名前がサブエージェントをハングさせる可能性があると警告しています。
+そのため、ツールリストは出力されず、ヘルパーは親のツールを継承します。
+Antigravity には読み取り専用の制限を強制する仕組みが何もないため、それらのヘルパーの説明からは「読み取り専用」というラベルが外されます。
 
-**共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は、Gemini ファミリーのツールにおけるユーザー
-スコープのアンカーでもあります。Antigravity アダプターは追加の Apothem 素材を
-`~/.gemini/antigravity-cli/plugins/` 配下の `apothem` プラグイン内に保持するため、汎用的な
-Gemini CLI のプロジェクトディレクトリを占有しません。`~/.gemini/GEMINI.md` を読み込むツールは
-1 つではないため、そこにある Apothem ブロックは、単一のツールを読み手として名指ししない
-グローバルなガイダンスとして書かれます。
+**共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は、Gemini ファミリーのツールにとってのユーザースコープのアンカーでもあります。
+Antigravity アダプターは追加の Apothem 素材を `~/.gemini/antigravity-cli/plugins/` 配下の `apothem` プラグイン内に保持するため、汎用的な Gemini CLI のプロジェクトディレクトリを占有しません。
+`~/.gemini/GEMINI.md` を読み込むツールは 1 つではないため、そこにある Apothem ブロックは、単一のツールを読み手として名指ししないグローバルなガイダンスとして書かれます。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
-実行するたびに、命令アンカーとサポートコホートをレンダリングします。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、命令アンカーとサポートコホートをレンダリングします。
 
 ## 互換性に関する注意
 
-プレビュー版のアダプターです。`GEMINI.md` アンカーはアクティブな命令コンテンツです。
-Antigravity プラグインは、変換されたコマンドスキル、再利用可能なスキル、ローカルヘルパー定義、
-ルール、テンプレート、フックのサポート素材を、明確な Apothem 所有の名前空間に保持します。
-フックファイルは、アダプターが Antigravity の `hooks.json` 向けのスキーマ変換レイヤーを持つまで、
-アクティブな Antigravity フックイベントとして登録されません。
+プレビュー版のアダプターです。
+`GEMINI.md` アンカーはアクティブな命令コンテンツです。Antigravity プラグインは、変換されたコマンドスキル、再利用可能なスキル、ローカルヘルパー定義、ルール、テンプレート、フックのサポート素材を、明確な Apothem 所有の名前空間に保持します。
+フックファイルは、アダプターが Antigravity の `hooks.json` 向けのスキーマ変換レイヤーを持つまで、アクティブな Antigravity フックイベントとして登録されません。
 
 ## 検証
 
@@ -81,7 +67,8 @@ apothem verify --harness antigravity
 verify コマンドは次のことを確認します。
 
 1. ネイティブのコンテキストファイルが想定されたパスに存在すること。
-2. プラグインのマニフェスト `plugin.json` が存在し、空ではなく、JSON として解析できること。検証はプラグイン名を確認しません。名前を変更したあとは、そのフィールドを自分で確認してください。
+2. プラグインのマニフェスト `plugin.json` が存在し、空ではなく、JSON として解析できること。
+   verify はプラグイン名を確認しません。名前を変更した後は、そのフィールドを自分で確認してください。
 
 ## 更新
 
@@ -90,8 +77,7 @@ apothem update --harness antigravity
 ```
 
 現在の共有プロファイルの状態からネイティブ設定を再導出します。
-`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
-パッケージをアップグレードした後に実行してください。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
 
@@ -99,7 +85,11 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+`~/.gemini/GEMINI.md` から Apothem ブロックを取り除き、その中にある他のテキストはそのまま残します。
+ファイルが削除されるのは、中に他に何も残っていない場合のみです。
+また、プラグインフォルダー `~/.gemini/antigravity-cli/plugins/apothem/` 内の `plugin.json` から Apothem のキーを取り除き、あなた自身のキーは残します。
+さらに、そのフォルダーの `skills/`、`rules/`、`agents/`、`.apothem/support/` の各サブフォルダー内にある Apothem のファイルを取り除きます。そこにある他のファイルはそのまま残ります。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

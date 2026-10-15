@@ -2,7 +2,7 @@
 title: "Resolución de problemas"
 description: "Soluciones para los fallos de instalación habituales de Apothem y los problemas en tiempo de ejecución en las rutas del plugin, npx y el instalador."
 machineTranslated: true
-sourceHash: "7deb3ca475c3bc89"
+sourceHash: "bc3e1102685c3e6e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,12 +12,15 @@ Soluciones para los problemas habituales de instalación y de tiempo de ejecuci�
 
 ### No se encuentra Python 3.10+
 
-Los instaladores y el shim de npx prueban `python3`, `python`, los nombres
-versionados (`python3.14` a `python3.10`) y `py -3` en Windows —rechazando
-los shims del lanzador de Microsoft Store— y se detienen con `No Python >= 3.10 found in
-PATH` cuando ningún candidato cumple el mínimo de 3.10. Instala CPython 3.10 o más reciente
-desde python.org o el repositorio de paquetes de tu sistema operativo, confirma que `python3 --version`
-(o `py -3 --version` en Windows) informa de al menos la versión 3.10 y vuelve a ejecutar.
+Los instaladores prueban `python3`, `python` y los nombres versionados
+(`python3.14` a `python3.10`) —rechazando los shims del lanzador de Microsoft
+Store— y se detienen con `No Python >= 3.10 found in PATH` cuando ningún
+candidato cumple el mínimo de 3.10. El shim de npx prueba `APOTHEM_PYTHON`
+cuando está definida, después `python3`, `python` y `py -3`, y termina con código
+1 y con su propio mensaje cuando ninguno cumple. Instala CPython 3.10 o más
+reciente desde python.org o el repositorio de paquetes de tu sistema operativo,
+confirma que `python3 --version` (o `py -3 --version` en Windows) informa de al
+menos la versión 3.10 y vuelve a ejecutar.
 
 ### Faltan dependencias en tiempo de ejecución: click, rich
 
@@ -27,20 +30,26 @@ instalador selecciona. Cuando falta alguno de ellos, el instalador lo nombra y s
 ofrece a instalarlo por ti:
 
 ```text
-! Missing runtime dependencies: click rich
+! Missing Python prerequisites under <python>: click rich
+  Install click rich under <python> now? [y/N]
 ```
 
 Acepta la solicitud para que el instalador ejecute `pip install` bajo ese
 intérprete. Para omitir la solicitud, pasa `--yes` (`-Yes` en PowerShell) o
-define `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar automáticamente. Si rechazas
-—o `pip` no está disponible, o prefieres el gestor de paquetes de tu sistema
-operativo— instala los paquetes indicados tú mismo (por ejemplo `python3-click`
-y `python3-rich` en sistemas de la familia Debian, o `pip install click rich`)
-y vuelve a ejecutar.
+define `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar automáticamente. Si la
+rechazas —o `pip` no está disponible, o prefieres el gestor de paquetes de tu
+sistema operativo— instala tú mismo los paquetes indicados (por ejemplo
+`python3-click` y `python3-rich` en sistemas de la familia Debian, o
+`pip install click rich`) y vuelve a ejecutar.
 
 ### No se encuentra `apothem` tras ejecutar el instalador
 
-El instalador coloca el árbol de código fuente en `~/.apothem` y escribe un shim `apothem` en `~/.local/bin` por defecto (POSIX) o en `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). No modifica tu `PATH`. Si `apothem` no se encuentra, ese directorio no está en `PATH`: añádelo, o usa la forma con `PYTHONPATH` que aparece más abajo hasta que lo hagas. Ejecuta el motor mediante la invocación que el instalador imprime al terminar:
+El instalador coloca el árbol de código fuente en `~/.apothem` y escribe un shim
+`apothem` en `~/.local/bin` por defecto (POSIX) o en
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). No modifica tu `PATH`. Si
+`apothem` no se encuentra, ese directorio no está en `PATH`: añádelo, o usa la
+forma con `PYTHONPATH` que aparece más abajo hasta que lo hagas. Ejecuta el motor
+mediante la invocación que el instalador imprime al terminar:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
@@ -82,21 +91,24 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install no encuentra ningún entorno
 
-Ejecuta apothem doctor para listar los directorios de entorno detectados. Si no se encuentra ninguno, asegúrate de que tu
-herramienta está instalada y se ha iniciado al menos una vez.
+Ejecuta apothem doctor para listar los directorios de entorno detectados. Si no
+se encuentra ninguno, asegúrate de que tu entorno está instalado y se ha iniciado
+al menos una vez.
 
-### apothem verify informa de un adaptador con errores
+### apothem verify informa de un adaptador que falla
 
-Vuelve a ejecutar apothem install para re-materializar el adaptador. Si el problema persiste, consulta la
-página específica del adaptador en [Adaptadores de entorno](/docs/harnesses).
+Vuelve a ejecutar apothem install para volver a materializar el adaptador. Si el
+problema persiste, consulta la página específica del adaptador en
+[Adaptadores de entorno](/docs/harnesses).
 
 ### Los hooks no se disparan en Claude Code
 
-Confirma que Apothem está conectado comprobando que ~/.claude/settings.json contiene las entradas de los hooks.
-Si al archivo le faltan los hooks, vuelve a ejecutar apothem install.
+Confirma que Apothem está conectado comprobando que ~/.claude/settings.json
+contiene las entradas de los hooks. Si al archivo le faltan los hooks, vuelve a
+ejecutar apothem install.
 
 ## Cómo obtener ayuda
 
-- [Incidencias en GitHub](https://github.com/ahmed-g-gad/apothem/issues) -- informes de errores
-- [Debates en GitHub](https://github.com/ahmed-g-gad/apothem/discussions) -- preguntas
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- informes de errores
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- preguntas
 - [Preguntas frecuentes](/docs/faq) -- preguntas frecuentes

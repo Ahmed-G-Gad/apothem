@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,11 @@ L'adaptateur écrit l'inventaire MCP du profil sous la clé de premier niveau
 `mcp_servers`, où Hermes lit les serveurs MCP. Les publications antérieures
 d'Apothem l'écrivaient sous `auxiliary.mcp`, que Hermes lit comme le modèle
 auxiliaire chargé de répartir les appels d'outils MCP ; `apothem update` comme
-`apothem uninstall` retirent ce bloc tant qu'il correspond encore à ce qu'une
-telle publication écrirait à partir de votre profil partagé (voir
-[Désinstallation](#désinstallation)). (Comportement de Hermes d'après les pages
-de son guide utilisateur consacrées aux
+`apothem uninstall` retirent ce bloc lorsqu'il correspond encore à ce qu'une
+telle publication écrirait à partir de votre profil partagé actuel (voir
+[Désinstallation](#désinstallation) pour les cas où il reste en place).
+(Comportement de Hermes d'après les pages de son guide utilisateur consacrées
+aux
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 et au [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 consultées le 2026-10-02.)

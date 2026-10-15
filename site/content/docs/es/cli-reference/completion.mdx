@@ -2,7 +2,7 @@
 title: "completion"
 description: "Referencia de la CLI para el comando apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,9 +34,12 @@ Solicitar cualquier otra shell sale con `64` y la lista de shells admitidas.
 
 ## Habilitar el autocompletado por shell
 
-Primero, el comando `apothem` debe estar en tu `PATH` (los instaladores de un
-solo paso lo colocan ahí). Luego habilita el autocompletado agregando el script
-al archivo de autocompletado de la shell y reiniciando la shell:
+El comando `apothem` debe estar primero en tu `PATH`. Los instaladores de un
+solo paso escriben un shim `apothem` en `$HOME/.local/bin` (POSIX) o en
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) y nunca editan tu `PATH`, así
+que agrega ese directorio si todavía no figura en la lista. Luego habilita el
+autocompletado agregando el script al archivo de autocompletado de la shell y
+reiniciando la shell:
 
 ```bash
 # bash — append to your bashrc

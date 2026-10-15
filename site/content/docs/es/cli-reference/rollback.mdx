@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "96531a4a5fa4a15e"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,11 +34,12 @@ libro mayor, empezando por el cambio más reciente, el comando:
 
 Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
 de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede
-a su vez deshacerse a mano. Después agrega un registro `rollback` al libro mayor
-del entorno. Revertir una instalación anterior restaura o elimina solo los
-destinos que esa instalación anterior registró, y descarta cada instalación
-posterior del registro activo de esa misma raíz. Los archivos que una
-instalación posterior agregó fuera de esos destinos se mantienen en su lugar.
+a su vez deshacerse a mano. A continuación, rollback agrega un registro
+`rollback` al libro mayor del entorno. Revertir una instalación anterior
+restaura o elimina solo los destinos que esa instalación anterior registró, y
+descarta cada instalación posterior de las instalaciones activas del libro mayor
+en esa misma raíz. Los archivos que una instalación posterior agregó fuera de
+esos destinos se mantienen en su lugar.
 
 El libro mayor conserva los 10 registros de instalación más recientes por raíz
 de instalación (con las copias de seguridad a las que hacen referencia); una
@@ -64,9 +65,10 @@ entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
 durante la instalación — restaurar el estado previo a la instalación es una
 operación de limpieza, así que alcanza los registros que una instalación
 anterior de mayor alcance pueda haber dejado. Un entorno sin ninguna instalación
-registrada falla con `rollback.no_record` (una fila `"outcome": "error"` en
-`results`), y la ejecución continúa con los demás entornos. Después el comando
-termina con el código 1, o con el 2 cuando se revirtió algún otro entorno.
+registrada falla como una fila `"outcome": "error"` en `results` (consulta la
+salida JSON), y la ejecución continúa con los demás entornos. Después el comando
+termina con el código 1, o con el 2 cuando se revirtió al menos un destino de
+otro entorno.
 
 ## Opciones
 
@@ -109,8 +111,10 @@ Cada destino restaurado o eliminado aparece en `results` con
 restauración fallida (por ejemplo, una copia de seguridad que se borró) es
 `"outcome": "error"`. Una instalación que no registró cambios se informa con
 `"outcome": "skipped"`. Cuando no existe ningún registro de instalación
-coincidente, el comando informa un error `rollback.no_record` con
-`"status": "error"`.
+coincidente para un único entorno indicado por su nombre, el comando informa un
+error `rollback.no_record` con `"status": "error"`. Con `--harness all`, en
+cambio, un entorno sin ningún registro coincidente es una fila
+`"outcome": "error"` en `results`.
 
 ## Ejemplos
 
@@ -126,7 +130,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | Revertido correctamente, o nada que revertir (la instalación no registró cambios) |
 | 1 | Error esperado: no hay registro de instalación, selectores en conflicto, entorno desconocido, raíz del proyecto ausente, o confirmación rechazada o no disponible (modo no interactivo o JSON sin `--yes`) |
-| 2 | Restauración parcial después de que se revirtiera al menos un destino |
+| 2 | Resultado parcial: se revirtió al menos un destino y también se registró un fallo (una restauración fallida o, con `--harness all`, un entorno sin registro de instalación) |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también

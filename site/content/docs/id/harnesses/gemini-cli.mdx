@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adapter harness Apothem untuk Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,9 @@ apothem verify --harness gemini-cli --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
@@ -93,8 +95,14 @@ yang terpasang, dan pohon pendukung `.gemini/.apothem/support/`.
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `<project>/GEMINI.md` dan mempertahankan teks lain
+di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
+Juga menghapus berkas Apothem di `<project>/.gemini/commands/`,
+`<project>/.gemini/skills/`, `<project>/.gemini/agents/`, dan
+`<project>/.gemini/.apothem/support/`; berkas lain di folder-folder tersebut
+tetap ada. Sebelum perubahan dilakukan, salinan setiap berkas dengan cap waktu
+disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang
+tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

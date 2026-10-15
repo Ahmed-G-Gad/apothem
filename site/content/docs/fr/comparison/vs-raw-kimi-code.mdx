@@ -1,21 +1,22 @@
 ---
-title: "Apothem vs raw Kimi Code config"
-description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
+title: "Apothem face à la configuration manuelle de Kimi Code"
+description: "Maintenir à la main le fichier AGENTS.md à la racine du projet et les fichiers de support .kimi-code/ de Kimi Code face à leur rendu depuis le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "3973fe015cf877a5"
+sourceHash: "95d0fa19ca3ddd46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Kimi Code reads project-root `AGENTS.md` as its instruction file and keeps
-project configuration under `<project>/.kimi-code/`, including the
-operator-owned `.kimi-code/mcp.json` MCP surface. You can author that
-instruction file and its supporting cohorts by hand, per project, forever.
-Apothem's kimi-code adapter renders the governance surface into `AGENTS.md` as a
-managed block from the shared profile and keeps it consistent across every
-harness and every project. This page contrasts hand-maintaining that config
-against managing it with Apothem.
+Kimi Code lit le fichier `AGENTS.md` à la racine du projet comme son fichier
+d'instructions et conserve la configuration du projet sous
+`<project>/.kimi-code/`, y compris la surface MCP `.kimi-code/mcp.json`, qui
+appartient à l'opérateur. Vous pouvez rédiger ce fichier d'instructions et ses
+cohortes de support à la main, projet par projet, indéfiniment. L'adaptateur
+kimi-code d'Apothem rend la surface de gouvernance dans `AGENTS.md` sous la forme
+d'un bloc géré, à partir du profil partagé, et la garde cohérente entre tous les
+environnements et tous les projets. Cette page oppose la maintenance manuelle de
+cette configuration à sa gestion avec Apothem.
 
-## Effort comparison
+## Comparaison de l'effort
 
 | Tâche | Configuration manuelle | Géré par Apothem |
 | ---- | --------------- | --------------- |
@@ -25,16 +26,20 @@ against managing it with Apothem.
 | Garder les règles alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
 | Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness kimi-code --project <path>` |
 
-## What Apothem manages
+## Ce qu'Apothem gère
 
-The kimi-code adapter renders the shared rules and governance surface into the
-project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
-agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
-instruction surface drives the project directly. Every change to the shared
-rules re-renders the files on the next `apothem update`.
+L'adaptateur kimi-code rend les règles partagées et la surface de gouvernance dans
+le bloc géré du fichier `AGENTS.md` à la racine du projet, et installe les
+cohortes de commandes, de skills, de hooks, d'agents, de règles et de templates
+sous `.kimi-code/.apothem/support/`. Il ne rédige pas `.kimi-code/mcp.json` ; la
+surface MCP reste la propriété de l'opérateur. Kimi Code lit les instructions du
+projet depuis `AGENTS.md` ou `.kimi-code/AGENTS.md` ; l'adaptateur n'écrit que le
+fichier `AGENTS.md` à la racine du projet, et la documentation de Kimi Code ne
+précise pas lequel des deux fichiers l'emporte lorsque les deux existent. Chaque
+changement des règles partagées rend de nouveau les fichiers lors du prochain
+`apothem update`.
 
-## Migration path
+## Chemin de migration
 
 1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne l'avez pas encore fait.
 2. Déplacez les règles de votre `AGENTS.md` existant vers le corpus partagé.
@@ -42,7 +47,7 @@ rules re-renders the files on the next `apothem update`.
 4. Exécutez `apothem verify --harness kimi-code --project <path>` pour confirmer que la configuration est bien en place.
 5. Utilisez `apothem update --harness kimi-code --project <path>` pour chaque modification ultérieure.
 
-## Read next
+## À lire ensuite
 
-- [Kimi Code adapter reference](/docs/harnesses/kimi-code)
-- [Comparison overview](/docs/comparison)
+- [Référence de l'adaptateur Kimi Code](/docs/harnesses/kimi-code)
+- [Aperçu de la comparaison](/docs/comparison)

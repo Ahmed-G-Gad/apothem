@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "محوّل إطار عمل Apothem لـ Qwen Code (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,11 +27,15 @@ apothem install --harness qwen-code
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
+
+الملف <bdi>`~/.qwen/apothem/rules/00-apothem-profile.md`</bdi> هو وثيقة الملف التعريفي.
+وهو يحمل هويتك وتفضيلاتك من الملف التعريفي المشترك.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -76,8 +80,17 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل المُدخَلات التي أضافها المحوّل إلى <bdi>`~/.qwen/settings.json`</bdi> (تبقى
+مفاتيحك الخاصة وخوادم <bdi>MCP</bdi> ومعالِجات الخطّافات الخاصة بك، ولا يُحذَف الملف
+إلا إذا كان <bdi>Apothem</bdi> هو من أنشأه ولم يتبقَّ فيه شيء يخصّك). ويُزيل كتلة
+<bdi>Apothem</bdi> من <bdi>`~/.qwen/QWEN.md`</bdi> ومن وثيقة الملف التعريفي
+<bdi>`~/.qwen/apothem/rules/00-apothem-profile.md`</bdi> ويُبقي أي نص آخر فيهما؛
+ولا يُحذَف كل ملف منهما إلا حين لا يتبقى فيه شيء آخر. ويُزيل كذلك ملفات
+<bdi>Apothem</bdi> في <bdi>`~/.qwen/commands/`</bdi> و<bdi>`~/.qwen/skills/`</bdi>
+و<bdi>`~/.qwen/agents/`</bdi> و<bdi>`~/.qwen/.apothem/support/`</bdi>؛ وتبقى الملفات
+الأخرى في تلك المجلّدات. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi>
+قبل تغييره أو إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا
+محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

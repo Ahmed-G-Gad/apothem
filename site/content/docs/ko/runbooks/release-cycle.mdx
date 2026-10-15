@@ -1,14 +1,14 @@
 ---
 title: "릴리스 주기 런북"
-description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 선택적 npm 게시 디스패치에 이르는 완전한 릴리스 워크플로입니다."
+description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 npm 게시에 이르는 완전한 릴리스 워크플로입니다."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 이 런북은 `apothem`의 `vX.Y.Z` 릴리스를 깨끗한 작업 트리에서 검증된 배포
 표면까지 이끕니다. 이 절차는 `gh`, `git`, 그리고 릴리스 등급 셸을 다루는
-메인테이너를 위해 작성되었으며, 검증된 Release 페이지, 정리된 CHANGELOG,
+메인테이너를 위해 작성되었으며, 검증된 Release 페이지, 기록된 CHANGELOG,
 그리고 사용자 대상의 각 표면이 정식 설치 명령에 응답하는지 확인하는 설치 경로
 스모크 테스트로 끝납니다.
 
@@ -55,7 +55,7 @@ GitHub Release, npm 버전은 어느 것도 제거되지 않습니다. 프로젝
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG 항목 스테이징.** 릴리스 항목이 Keep-a-Changelog 헤딩의
+- **CHANGELOG 항목 스테이징.** 릴리스 항목이 Keep-a-Changelog 헤딩 형식으로
   `## [Unreleased]` 아래에 있습니다. §2.1이 태그를 안착시키는 커밋에서 이
   항목들을 날짜가 표기된 버전 섹션으로 바꿉니다.
 
@@ -139,18 +139,21 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 npm 게시 확인
 
-태그 푸시는 `publish-npm.yml`도 실행합니다. 프롬프트가 표시되면 `release` 환경
-배포를 승인하세요. 워크플로는 npm Trusted Publishing(OIDC)을 통해
-`@ahmed-g-gad/apothem@X.Y.Z`를 npmjs.com에 게시하며, 저장소에는 레지스트리
-토큰이 저장되지 않습니다. 그런 다음 준비 상태를 확인합니다.
+태그 푸시는 `release.yml`과 나란히 `publish-npm.yml`도 실행합니다. npm
+워크플로는 릴리스 워크플로를 기다리지 않으며, `release` 환경 승인이 게이트입니다.
+§2.3의 릴리스 워크플로가 끝나면 준비 상태를 확인합니다.
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
 
+그런 다음 프롬프트가 표시되면 `release` 환경 배포를 승인하세요. 워크플로는 npm
+Trusted Publishing(OIDC)을 통해 `@ahmed-g-gad/apothem@X.Y.Z`를 npmjs.com에
+게시하며, 저장소에는 레지스트리 토큰이 저장되지 않습니다.
+
 실패한 실행 후 다시 게시하려면 같은 태그에 대해 워크플로를 디스패치합니다
-(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). 버전이 이미 레지스트리에
-있으면 워크플로는 게시를 건너뜁니다. npm 버전은 변경할 수 없기 때문입니다.
+(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). npm 버전은 변경할 수
+없기 때문에, 버전이 이미 레지스트리에 있으면 워크플로는 게시를 건너뜁니다.
 
 ## 3. 배포 표면
 

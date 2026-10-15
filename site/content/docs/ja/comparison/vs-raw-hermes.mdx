@@ -2,7 +2,7 @@
 title: "Apothem と素の Hermes 設定の比較"
 description: "Hermes の設定を手作業で保守する方法と、Apothem の共有プロファイルを通じて管理する方法の比較。"
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ Hermes 自身の `skills.config` はレジストリパッケージのリスト�
 
 ## 労力の比較
 
-| タスク | 素の手作業設定 | Apothem による管理 |
+| タスク | 素の手作業設定 | Apothem 管理 |
 | ---- | --------------- | --------------- |
 | 再利用可能なスキルを作成する | 設定とスキルディレクトリを手作業で編集 | 共有コーパスに一度だけ書く |
 | コホートを他のハーネスと揃えておく | ツールごとに手動 | `apothem update` で自動 |
@@ -33,9 +33,9 @@ Hermes がそれらのスキルを読み込むのは、`~/.hermes/.apothem/suppo
 
 1. まだ作成していない場合は、`apothem profile init` を実行して共有プロファイルを作成します。
 2. 再利用可能な Hermes のスキルやコマンドプロンプトを共有コーパスへ移します。
-3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキルディレクトリを
-   レンダリングします。
-4. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
+3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキルディレクトリをレンダリングします。
+4. インストールされたスキルを Hermes が読み込むように、`~/.hermes/.apothem/support/skills` を `config.yaml` の `skills.external_dirs` に追加します。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
+5. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
 
 ## 次に読む
 

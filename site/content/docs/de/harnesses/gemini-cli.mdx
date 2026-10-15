@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Apothem-Harness-Adapter für Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,10 +74,13 @@ Gemini-Profil verwenden. Der Gemini CLI-Adapter schreibt nur in das über
 apothem verify --harness gemini-cli --project /path/to/project
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -96,8 +99,15 @@ Helferdefinitionen, die installierten Skills und den Unterstützungsbaum
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block aus `<project>/GEMINI.md` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig
+ist. Entfernt außerdem die Apothem-Dateien in `<project>/.gemini/commands/`,
+`<project>/.gemini/skills/`, `<project>/.gemini/agents/` und
+`<project>/.gemini/.apothem/support/`; andere Dateien in diesen Ordnern bleiben
+bestehen. Vor der Änderung wird von jeder Datei eine mit Zeitstempel versehene
+Kopie unter `~/.apothem/backups/` gespeichert; im Projekt bleibt keine
+Sicherungsdatei zurück. Die YAML-Datei des gemeinsamen Profils und die
+Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,7 +108,9 @@ apothem verify --harness claude-code
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
@@ -129,9 +131,16 @@ blok Apothem di antara sentinelnya.
 apothem uninstall --harness claude-code
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter dan mencabut blok
-Apothem dari `CLAUDE.md`, dengan membiarkan prosa Anda sendiri tetap di
-tempatnya.
+Menghapus blok Apothem dari `~/.claude/CLAUDE.md` dan mempertahankan teks lain
+di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
+Menghapus entri yang ditambahkan adapter ke `~/.claude/settings.json` (aturan
+izin, kunci, dan handler hook milik Anda tetap ada, dan berkas itu dihapus
+hanya jika Apothem yang membuatnya dan tidak ada lagi milik Anda yang
+tersisa). Juga menghapus berkas Apothem di `~/.claude/agents/`,
+`~/.claude/rules/`, `~/.claude/skills/`, `~/.claude/statuslines/`,
+`~/.claude/output-styles/`, dan `~/.claude/.apothem/support/`; berkas lain di
+folder-folder tersebut tetap ada. Setiap berkas dicadangkan di bawah
+`~/.apothem/backups/` sebelum diubah atau dihapus.
 Paket `apothem` yang terpasang dan repositori sumber tidak terpengaruh.
 
 ## Gerbang konformitas

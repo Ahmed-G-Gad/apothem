@@ -2,7 +2,7 @@
 title: "Variabel lingkungan pemasang"
 description: "Kendalikan pemasang skrip (tujuan, sumber, harness, profil, verifikasi) dengan variabel lingkungan."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,15 +54,17 @@ terbaru dan memverifikasi tanda tangannya dengan `git verify-tag` sebelum
 mematerialisasikan konfigurasi apa pun; tag yang tidak bertanda tangan atau telah
 dirusak membatalkan instalasi. Tag bertanda tangan yang kunci publik pemeliharanya
 tidak ada di keyring lokal justru membatalkan instalasi dengan panduan impor
-kunci — impor kunci tersebut dan periksa sidik jarinya terhadap nilai yang
+kunci - impor kunci tersebut dan periksa sidik jarinya terhadap nilai yang
 dipublikasikan di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Patok rilis yang diketahui dengan `APOTHEM_REF=<tag>` (juga diverifikasi; sebuah
-tag dari [halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih
-branch yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
-`APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan melewati kegagalan verifikasi
-dengan peringatan (penggunaan air-gapped, lokal, atau rilis
-pra-penandatanganan).
+Patok rilis yang diketahui dengan `APOTHEM_REF=<tag>`, dengan mengambil tag dari
+[halaman rilis](https://github.com/ahmed-g-gad/apothem/releases); tag yang
+dipatok diverifikasi dengan cara yang sama. Pilih branch yang bergerak dengan
+`APOTHEM_REF=main` ditambah `APOTHEM_ALLOW_UNVERIFIED=1`; instalasi itu tidak
+diverifikasi, dan `main` saja membatalkan proses karena branch bukan tag
+bertanda tangan. Setel `APOTHEM_ALLOW_UNVERIFIED=1` secara tersendiri untuk
+melanjutkan melewati kegagalan verifikasi dengan peringatan (penggunaan
+air-gapped, lokal, atau rilis pra-penandatanganan).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

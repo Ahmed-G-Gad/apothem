@@ -1,12 +1,12 @@
 ---
 title: "Markdown-Konventionen"
-description: "Markdown-Variante, Überschriftenstruktur, Sprachdeklarationen von Codeblöcken, Formate interner Links, Autorschafts-Banner und die Durchsetzung durch Validatoren vereinheitlichen."
+description: "Markdown-Variante, Überschriftenstruktur, Sprachdeklarationen von Codeblöcken, Formate interner Links, Autorschafts-Header und die Durchsetzung durch Validatoren vereinheitlichen."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonische Referenz für Form und Formatierung von Markdown in jedem verfassten `.md`-Artefakt.** Die Zusammenfassung im Abschnitt „Conventions“ von [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+> **Kanonische Referenz für Form und Formatierung von Markdown in jedem verfassten `.md`- und `.mdx`-Artefakt.** Die Zusammenfassung im Abschnitt „Conventions“ von [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown (GFM) ist die Host-Variante. Jedes Artefakt wird in der
 
 ## 2. Überschriftenhierarchie
 
-Ein H1 pro Datei. Nachfolgende Überschriften steigen monoton ab (H2 → H3 → H4), ohne Ebenen zu überspringen. Überschriften in Satzschreibung; keine GROSSBUCHSTABEN, kein Title Case Für Jedes Einzelne Wort. Das H1 trägt den Haupttitel des Dokuments und IST der Anker des Dokuments in der Navigation der Dokumentationssite.
+Ein H1 pro Datei. Nachfolgende Überschriften steigen monoton ab (H2 → H3 → H4), ohne Ebenen zu überspringen. Überschriften in Satzschreibung; keine GROSSBUCHSTABEN, kein Title Case Für Jedes Einzelne Wort. Das H1 trägt den Haupttitel des Dokuments. Auf einer Seite der Dokumentationssite wird der Frontmatter-Wert `title` als H1 gerendert und ist der Anker der Seite in der Navigation der Dokumentationssite; der Seitentext beginnt daher bei H2.
 
 ## 3. Codeblöcke
 
@@ -30,9 +30,9 @@ Diese `/docs/...`-Pfade ab der Site-Wurzel — und die Form `/<locale>/docs/...`
 
 Externe Links auf veränderliche Refs (`main`, `master`, `latest`, `HEAD`) werden auf Commit-SHAs oder Release-Tags festgelegt, wann immer die Stabilität des verlinkten Inhalts wichtig ist; volatile Verweise werden mit einem angrenzenden `{/* volatile */}`-Kommentar als solche dokumentiert.
 
-## 5. Autorschafts-Banner
+## 5. Autorschafts-Header
 
-Jedes Markdown-Artefakt (mit den unter [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt das kanonische Autorschafts-Header-Banner in der HTML-Kommentar-Variante gemäß [Autorschafts-Header](/docs/reference/authorship-header). Ohne Frontmatter ist das Banner Zeile 1. Mit YAML-Frontmatter bleibt das Frontmatter bei Byte 0, und das Banner folgt auf das schließende `---`.
+Jedes Markdown-Artefakt (mit den unter [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt den kanonischen Autorschafts-Header, die einzelne Zeile `SPDX-License-Identifier: MIT`, in der Kommentarvariante seines Dateityps gemäß [Autorschafts-Header](/docs/reference/authorship-header): ein HTML-Kommentar bei `.md`-Dateien und ein `{/* ... */}`-Kommentar bei `.mdx`-Dateien. Ohne Frontmatter ist die Header-Zeile Zeile 1. Mit YAML-Frontmatter bleibt das Frontmatter bei Byte 0, und die Header-Zeile folgt auf das schließende `---`.
 
 ## 6. Validatoren
 

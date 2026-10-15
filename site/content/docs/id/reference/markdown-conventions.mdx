@@ -1,12 +1,12 @@
 ---
 title: "Konvensi Markdown"
-description: "Menstandarkan varian Markdown, struktur heading, deklarasi pagar kode, format tautan internal, banner kepengarangan, dan penegakan oleh validator."
+description: "Menstandarkan varian Markdown, struktur heading, deklarasi pagar kode, format tautan internal, header kepengarangan, dan penegakan oleh validator."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi kanonik untuk bentuk dan format Markdown di seluruh artefak `.md` yang ditulis.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) bagian Conventions adalah deklarasi inline; halaman ini adalah referensi mandiri yang dikutip kontributor hilir.
+> **Referensi kanonik untuk bentuk dan format Markdown di seluruh artefak `.md` dan `.mdx` yang ditulis.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) bagian Conventions adalah deklarasi inline; halaman ini adalah referensi mandiri yang dikutip kontributor hilir.
 
 ---
 
@@ -14,15 +14,15 @@ sourceHash: "940c41973c1d1e98"
 
 GitHub-Flavored Markdown (GFM) adalah varian host. Setiap artefak dirender dengan benar di UI web GitHub, di situs dokumentasi Fumadocs, dan di editor standar yang mengenali Markdown.
 
-## 2. Hierarki Heading
+## 2. Hierarki heading
 
-Satu H1 per berkas. Heading berikutnya turun secara monoton (H2 → H3 → H4) tanpa melewati level. Heading menggunakan huruf kapital gaya kalimat (sentence case); tanpa HURUF KAPITAL SEMUA, tanpa Huruf Kapital Di Awal Setiap Kata. H1 membawa judul utama dokumen dan MERUPAKAN anchor dokumen di navigasi situs dokumentasi.
+Satu H1 per berkas. Heading berikutnya turun secara monoton (H2 → H3 → H4) tanpa melewati level. Heading menggunakan huruf kapital gaya kalimat (sentence case); tanpa HURUF KAPITAL SEMUA, tanpa Huruf Kapital Di Awal Setiap Kata. H1 membawa judul utama dokumen. Pada halaman situs dokumentasi, `title` di frontmatter dirender sebagai H1 dan menjadi anchor halaman di navigasi situs dokumentasi, sehingga isi halaman dimulai dari H2.
 
-## 3. Blok Kode
+## 3. Blok kode
 
 Blok kode berpagar mendeklarasikan bahasanya (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blok tanpa tag menonaktifkan penyorotan sintaks dan menandakan penyimpangan penulisan; aturan markdownlint MD040, yang dikonfigurasi di [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), menegakkan tag bahasa.
 
-## 4. Tautan Internal
+## 4. Tautan internal
 
 Referensi silang internal menggunakan **jalur root situs** (mis., `[Authorship header](/docs/reference/authorship-header)`). Jalur relatif repositori polos dengan ekstensi `.md`/`.mdx` (`/docs/foo.md`) dan URL lengkap ke repo yang sama (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) dihindari untuk tautan di dalam situs karena menyulitkan penggantian nama halaman dan reorganisasi bagian.
 
@@ -30,9 +30,9 @@ Jalur root situs `/docs/...` ini — dan bentuk `/<locale>/docs/...` untuk local
 
 Tautan eksternal ke ref yang dapat berubah (`main`, `master`, `latest`, `HEAD`) dipatok ke SHA commit atau tag rilis setiap kali stabilitas konten yang ditautkan itu penting; referensi yang volatil didokumentasikan sebagai volatil dengan komentar `{/* volatile */}` di sebelahnya.
 
-## 5. Banner Kepengarangan
+## 5. Header kepengarangan
 
-Setiap artefak Markdown (dengan pengecualian yang dicantumkan di [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) membawa banner header kepengarangan kanonik dalam varian komentar HTML sesuai [Header kepengarangan](/docs/reference/authorship-header). Tanpa frontmatter, banner berada di baris 1. Dengan frontmatter YAML, frontmatter tetap berada di byte 0 dan banner mengikuti `---` penutup.
+Setiap artefak Markdown (dengan pengecualian yang dicantumkan di [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) membawa header kepengarangan kanonik, yaitu satu baris `SPDX-License-Identifier: MIT`, dalam varian komentar sesuai tipe berkasnya menurut [Header kepengarangan](/docs/reference/authorship-header): komentar HTML pada berkas `.md` dan komentar `{/* ... */}` pada berkas `.mdx`. Tanpa frontmatter, baris header berada di baris 1. Dengan frontmatter YAML, frontmatter tetap berada di byte 0 dan baris header mengikuti `---` penutup.
 
 ## 6. Validator
 

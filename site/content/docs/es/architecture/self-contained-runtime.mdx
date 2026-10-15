@@ -2,7 +2,7 @@
 title: "Tiempo de ejecución autónomo"
 description: "Cómo el motor de Apothem se ejecuta desde cualquier checkout — dependencias incorporadas, el modelo de invocación PYTHONPATH=src y el arranque del árbol del plugin."
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -124,13 +124,15 @@ frente a un uso mínimo del disco.
 
 ## Cómo encuentra Python el tiempo de ejecución
 
-Los instaladores de un solo paso y el shim de npx localizan un intérprete de la
-misma manera: prueban `python3`, `python`, los nombres con versión
-(`python3.14` hasta `python3.10`) y `py -3` en Windows; rechazan los shims del
-lanzador de Microsoft Store; y aceptan el primer candidato que informe la
-versión 3.10 o posterior. Cuando se ejecutan desde un árbol de código fuente,
-los instaladores reutilizan el localizador incluido `hooks/lib/find-python`,
-que aplica la misma versión mínima.
+Los instaladores de un solo paso y el shim de npx prueban nombres distintos y
+aplican las mismas reglas. Los instaladores prueban `python3`, `python` y los
+nombres con versión (`python3.14` hasta `python3.10`). El shim de npx prueba
+`APOTHEM_PYTHON` cuando está definida, luego `python3`, `python` y `py -3`; no
+tiene nombres con versión. Ambos rechazan los shims del lanzador de Microsoft
+Store y aceptan el primer candidato que informe la versión 3.10 o posterior.
+Cuando se ejecutan desde un árbol de código fuente, los instaladores reutilizan
+el localizador incluido `hooks/lib/find-python`, que aplica la misma versión
+mínima.
 
 ## Próximo paso recomendado
 

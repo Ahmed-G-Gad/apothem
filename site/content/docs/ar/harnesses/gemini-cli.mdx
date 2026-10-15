@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "محوّل إطار عمل Apothem لـ Gemini CLI (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,7 +76,9 @@ apothem verify --harness gemini-cli --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -94,8 +96,14 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`<project>/GEMINI.md`</bdi> ويُبقي أي نص آخر
+فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل كذلك ملفات
+<bdi>Apothem</bdi> في <bdi>`<project>/.gemini/commands/`</bdi>،
+و<bdi>`<project>/.gemini/skills/`</bdi>، و<bdi>`<project>/.gemini/agents/`</bdi>،
+و<bdi>`<project>/.gemini/.apothem/support/`</bdi>؛ وتبقى الملفات الأخرى في تلك
+المجلدات. قبل التغيير، تُحفَظ نسخة مختومة بالوقت من كل ملف تحت
+<bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترَك أي ملف نسخة احتياطية في المشروع. لا يتأثّر
+ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

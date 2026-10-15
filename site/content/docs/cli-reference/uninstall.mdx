@@ -24,12 +24,20 @@ TTY) — the command refuses up front with a structured
 If a selected harness is not installed, the command succeeds (exit 0) with a
 "nothing to remove" notice.
 
+The shared data stores under `.apothem/` at the install root (`memory/`,
+`contexts/`, `learning/`) stay while another installed harness at the same
+root still uses them. When the harness you remove is the last one at that
+root, the command copies each store into the Apothem backup root
+(`~/.apothem/backups/`) first, then removes it with everything in it.
+Anything you keep in `plans/` is never removed.
+
 A `--harness all` removal is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips
 during install — cleanup reaches state a previously broader install may have
 left behind. Harnesses that were never installed report "nothing to remove".
 
-The continuous-form alias `apothem uninstalling` resolves to the same handler.
+The continuous-form alias `apothem uninstalling` (also accepted as
+`apothem Uninstalling`) resolves to the same handler.
 
 ## Options
 

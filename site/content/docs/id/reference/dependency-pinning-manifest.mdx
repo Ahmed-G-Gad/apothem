@@ -2,7 +2,7 @@
 title: "Manifes Penyematan Dependensi"
 description: "Kebijakan deklarasi dependensi yang mencakup rentang runtime Python, perkakas pengembangan, berkas kunci perkakas rilis, dan batas bawah versi yang diratifikasi untuk setiap permukaan build."
 machineTranslated: true
-sourceHash: "6a526875e42d6686"
+sourceHash: "bde46b3dc263b56e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,7 @@ SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Renovate.
 |---|---|---|
 | Dependensi runtime Python | `[project.dependencies]` di `pyproject.toml` | Rentang batas bawah; tanpa kunci runtime Python yang di-commit |
 | Perkakas pengembangan / keamanan | extras `[project.optional-dependencies]` | Rentang batas bawah; CI memasang versi yang cocok saat ini |
-| Perkakas rilis | `scripts/release/requirements-build-linux.txt` | Dikunci hash untuk alur kerja rilis; dihasilkan dari penutupan perkakas rilis |
+| Perkakas rilis | `scripts/release/requirements-build-linux.txt` untuk alur kerja rilis; extra `release` di `[project.optional-dependencies]` untuk build lokal | Dikunci hash untuk alur kerja rilis; dihasilkan dari penutupan perkakas rilis. Extra `release` adalah rentang batas bawah |
 | Perkakas khusus CI | `.github/workflows/*.yml` | Perkakas pip khusus alur kerja menggunakan penyematan eksak (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
 | Situs dokumentasi | `site/package.json` | `site/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
 | GitHub Actions | Referensi `uses:` yang disematkan SHA dengan komentar versi | Renovate mengusulkan pembaruan; pengecualian membawa penanda `action-pinning-exempt:` |
@@ -38,14 +38,14 @@ SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Renovate.
 | Perkakas rilis | Penutupan yang dikunci hash berada di `scripts/release/requirements-build-linux.txt` | Alur kerja rilis memasang dengan `--require-hashes`; skrip lokal mensyaratkan `build` sudah ada alih-alih diam-diam memasang dependensi yang bergerak |
 | Perkakas dokumentasi | Rentang saat ini berada di `site/package.json`; resolusi eksak berada di `site/package-lock.json` | `npm outdated` tidak mengembalikan dependensi dokumentasi yang usang setelah penyegaran berkas kunci |
 | GitHub Actions | Penyematan SHA yang ada dipertahankan untuk rilis saat ini; alur kerja SLSA yang dapat dipakai ulang tetap menjadi pengecualian yang didokumentasikan dan disematkan tag | Eksekusi ulang CI publik hijau; peningkatan versi mayor action yang luas sengaja diserahkan ke pull request otomasi dependensi untuk menghindari gejolak permukaan rilis |
-| Pengemasan npm | Alur kerja `publish-npm.yml` berjalan pada push tag `v*.*.*`, dengan `workflow_dispatch` sebagai jalur cadangan | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi berjalan setelah kesiapan rilis lolos |
+| Pengemasan npm | Alur kerja `publish-npm.yml` berjalan pada push tag `v*.*.*`, dengan `workflow_dispatch` sebagai jalur cadangan | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi menunggu persetujuan operator atas environment `release`, yang diberikan setelah `scripts/release/check-release-ready.sh` lolos |
 
 ## Penguncian
 
 Berkas kunci Python dihasilkan sesuai permintaan oleh kontributor. Berkas
 tersebut tidak di-commit karena penutupan runtime Apothem kecil, CLI mendukung
-beberapa versi minor Python, dan CI sengaja melatih versi perkakas yang cocok
-terbaru.
+beberapa versi minor Python, dan CI sengaja menguji dengan versi perkakas yang
+cocok terbaru.
 
 ```sh
 # Astral uv:

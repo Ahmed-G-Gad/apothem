@@ -2,7 +2,7 @@
 title: "Spesifikasi Skema Artefak"
 description: "Skema frontmatter YAML kanonik dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan templat per-kelas dan aturan validasi."
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Dokumen ini mendefinisikan skema kanonik untuk setiap tipe.
 **Aturan Universal:**
 
 - Frontmatter mematuhi YAML 1.2
-- Semua nilai string menggunakan tanda kutip ganda kecuali kosong
+- Semua nilai string menggunakan tanda kutip ganda, dan string kosong ditulis `""`
 - Urutan field: field wajib lebih dulu, field opsional dikelompokkan menurut relevansi
 - Komentar dalam frontmatter menggunakan `#` dengan spasi: `# comment`
 - Nilai jalur harus relatif (tanpa `/` di awal) dan menggunakan garis miring maju (`/`) untuk kompatibilitas lintas platform
@@ -150,8 +150,8 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Tujuan:** Definisi pembantu persisten untuk eksplorasi paralel, audit, dan
-gerbang kualitas.
+**Tujuan:** Definisi pembantu persisten (disebut juga pekerja terdelegasi)
+untuk eksplorasi paralel, audit, dan gerbang kualitas.
 
 ### Field Wajib
 
@@ -314,7 +314,7 @@ Bentuk `-m apothem.hooks.dispatch` diperuntukkan bagi pengembangan dari checkout
 
 ### Peristiwa Wajib
 
-Templat Claude Code mendaftarkan SessionStart, PreToolUse, PostToolUse, dan Stop. PreCompact dan PostCompact tidak didaftarkan pada Claude Code ([referensi hook](/docs/reference/hooks)), dan `scripts/dev/validate_hooks.py` melaporkan masing-masing sebagai peringatan karena hilang. Tabel berikut mencantumkan lima peristiwa yang diperiksa oleh `validate_hooks.py`:
+Templat Claude Code mendaftarkan empat peristiwa: SessionStart, PreToolUse, PostToolUse, dan Stop. `scripts/dev/validate_hooks.py` memeriksa `settings.json` untuk lima peristiwa pada tabel di bawah, yang merupakan kumpulan yang berbeda, dan melaporkan setiap peristiwa yang tidak ditemukannya sebagai peringatan, bukan kegagalan. PostToolUse terdaftar tetapi bukan salah satu dari kelima peristiwa itu. PreCompact dan PostCompact termasuk di antara kelima peristiwa itu tetapi tidak didaftarkan pada Claude Code ([referensi hook](/docs/reference/hooks)), sehingga pemeriksa memberi peringatan untuk keduanya di sana.
 
 > **Nilai timeout mencerminkan anggaran peristiwa hook kanonik** — tabel di
 > bawah mereproduksinya demi kemudahan pembaca; sumber kanonik yang berlaku.
@@ -347,7 +347,7 @@ Setiap perintah hook dirutekan melalui dispatcher Python yang sama:
 
 `scripts/dev/validate_hooks.py` menegakkan kontrak hook:
 
-- `settings.json` dapat diurai sebagai JSON dan mendeklarasikan setiap peristiwa wajib.
+- `settings.json` dapat diurai sebagai JSON dan mendeklarasikan masing-masing dari lima peristiwa pada tabel; peristiwa yang hilang adalah peringatan, bukan kegagalan.
 - Ketiga skrip Python ada dan dapat diurai sebagai Python yang valid.
 - Semua berkas pesan yang dirujuk oleh argumen `--context-file` ada.
 - Tidak ada jalur pengguna absolut yang di-hardcode (`C:\Users\...` dsb.) yang muncul di `src/apothem/hooks/**.py`.
@@ -398,7 +398,7 @@ Setiap artefak harus memenuhi pemeriksaan berikut:
 
 ### Validasi Konten
 
-- [ ] Konten dimulai pada baris baru setelah `---` penutup; pada berkas keluarga Markdown, banner header kepengarangan adalah konten pertama setelahnya
+- [ ] Konten dimulai pada baris baru setelah `---` penutup; pada berkas keluarga Markdown, baris header SPDX kanonik adalah konten pertama setelahnya
 - [ ] Tidak ada rujukan internal rencana (kepatuhan CM-7)
 - [ ] Rujukan silang dapat di-resolve (jika mencantumkan artefak lain)
 - [ ] Tautan menggunakan jalur relatif dengan garis miring maju

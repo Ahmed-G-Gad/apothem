@@ -2,7 +2,7 @@
 title: "빠른 시작"
 description: "Apothem을 설치하고, 프로필을 작성하고, 첫 하니스를 머티리얼라이즈한 다음 검증합니다 — 예상 출력이 함께 담긴 복사·붙여넣기 투어입니다."
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,8 @@ sourceHash: "56906098563144c2"
 2분 이내에 끝납니다. 프로필 편집만이 원하는 만큼 시간이 걸리는 유일한 부분입니다.
 
 이 페이지를 마치면 직접 작성한 프로필에서 생성된, 동작하는 하니스 구성을 갖게
-되며, 프로필 변경 사항을 모든 도구에 다시 내보내는 단 하나의 명령도 알게 됩니다.
+되며, 프로필 변경 사항을 한 도구 또는 모든 도구에 다시 내보내는 단 하나의 명령도
+알게 됩니다.
 
 <Callout title="설명이 곁들여진 느긋한 버전을 원하시나요?">
   [시작하기 튜토리얼](/docs/tutorials/getting-started)은 같은 과정을 다루면서 각
@@ -39,10 +40,13 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-설치 프로그램에는 `click`과 `rich`를 임포트할 수 있는 시스템 Python 3.10+가
-필요하며, 네트워크 형식에는 `git`도 필요합니다. 설치 프로그램은 사전 요건을
-확인하고, 엔진을 `~/.apothem` 아래에 배치하며, 완료되면 사용 중인 셸에 맞는 정확한
-엔진 호출을 출력합니다.
+설치 프로그램에는 시스템 Python 3.10+가 필요하며, 네트워크 형식에는 `git`도
+필요합니다. 설치 프로그램은 사전 요건을 확인하고 엔진을 `~/.apothem` 아래에
+배치합니다. `click` 또는 `rich`가 없으면, 사용자가 확인하거나 `--yes`(PowerShell에서는
+`-Yes`) 또는 `APOTHEM_AUTO_INSTALL_DEPS=1`이 주어질 때 해당 패키지를 설치하고, 그렇지
+않으면 실행할 pip 명령을 안내하며 중단합니다([사전 요건 한눈에](/docs/install#사전-요건-한눈에)
+참조). 완료되면 다음 단계 안내 배너를 출력합니다. POSIX에서 심(shim)의 디렉터리가
+이미 `PATH`에 있으면 배너는 다음과 같습니다.
 
 ```text
 Installation complete.
@@ -63,9 +67,10 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="`apothem` 명령">
-  설치 프로그램은 `PATH`에 `apothem` 심(shim)을 배치하므로, 엔진을
-  `apothem <command>`로 직접 실행합니다. 심의 디렉터리가 아직 `PATH`에 없다면,
-  배너는 심이 필요 없는 자체 완결형 대체 명령인
+  설치 프로그램은 `apothem` 심을 `$HOME/.local/bin`(POSIX) 또는
+  `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows)에 쓰며, `PATH`는 절대 수정하지
+  않습니다. 그 디렉터리가 `PATH`에 있으면 엔진을 `apothem <command>`로 직접
+  실행합니다. 아직 `PATH`에 없다면 배너는 심이 필요 없는 자체 완결형 대체 명령인
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`를 출력합니다.
   배너가 출력한 정확한 접두사를 각 명령 앞에 붙이세요.
 </Callout>
@@ -79,8 +84,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ## 2. 공유 프로필 만들기
 
 `apothem profile init`은 스키마상 유효한 가장 작은 프로필을
-`~/.config/apothem/profile.yaml`에 씁니다. 프로젝트용 또는 CI 전용 프로필을 다른
-곳에 둘 때는 `--profile PATH`를 전달하세요.
+`~/.config/apothem/profile.yaml`에 씁니다. 1단계에서 설치 프로그램이 예시를 복사한
+경우처럼 이미 그 위치에 프로필이 있으면, `init`은 오류를 내며 중단하고 파일을
+그대로 둡니다. 덮어쓰려면 `--force`를 전달하고, 아니면 파일을 그대로 두고 아래에
+나온 대로 편집하세요. 프로젝트용 또는 CI 전용 프로필을 다른 곳에 둘 때는
+`--profile PATH`를 전달하세요.
 
 ```bash
 apothem profile init
@@ -161,9 +169,9 @@ apothem verify --harness claude-code
 `verify`는 관리 대상이 없거나, 관리 파일이 비어 있거나, JSON 또는 YAML 구성이
 파싱되지 않으면 0이 아닌 코드로 종료합니다. `--profile PATH`를 추가하면 설치된
 파일이 그 프로필과 다를 때도 실패하므로, `verify`가 드리프트 검사 역할을 합니다. 이
-옵션이 없으면 오래된 구성도 검증을 통과합니다. 이 덕분에 설정 스크립트에서 게이트
-역할을 할 수 있습니다. 등록된 모든 어댑터에 걸친 머신 전체 상태 점검은 다음을
-실행하세요.
+옵션이 없으면 오래된 구성도 검증을 통과합니다. 0이 아닌 종료 코드 덕분에 `verify`는
+설정 스크립트에서 게이트 역할을 할 수 있습니다. 등록된 모든 어댑터에 걸친 머신
+전체 상태 점검은 다음을 실행하세요.
 
 ```bash
 apothem doctor
@@ -171,19 +179,24 @@ apothem doctor
 
 `doctor`는 설치된 모든 하니스를 점검합니다. 각 하니스는 검증을 통과해야 하며, 그
 설치가 등록한 각 훅 명령이 시작되어야 합니다. 설치하지 않은 하니스는 목록에
-표시되지만 실패가 아니므로, 정상 하니스가 하나 있으면 `doctor`는 0으로 종료합니다.
+표시되지만 실패가 아니므로, 어떤 점검도 실패하지 않으면 설치된 하니스가 하나뿐이어도
+`doctor`는 0으로 종료합니다.
 
 ## 5. 첫 실행
 
 방금 구성한 하니스(이 예에서는 Claude Code)를 열고 아무 프로젝트에서나 세션을
-시작하세요. 2단계에서 프로필에 작성한 규칙과 선호 설정이 이제 그 도구 동작의
-일부입니다. 이것이 동작하는 첫 실행입니다. 하나의 프로필이 실제 세션을 형성합니다.
+시작하세요. 2단계에서 설정한 프로필이 이제 그 도구 동작의 일부입니다. 이것이
+동작하는 첫 실행입니다. 하나의 프로필이 실제 세션을 형성합니다.
 
 나중에 프로필을 변경하면, 재설치하지 않고 다시 적용하세요.
 
 ```bash
 apothem update --harness claude-code
 ```
+
+다른 어댑터 이름을 지정하면 그 도구에 프로필을 다시 적용합니다(프로젝트 범위
+어댑터에는 `--project PATH`를 추가하세요). 지원되는 모든 하니스에 다시 적용하려면
+`--harness all --project .`를 전달하세요.
 
 ## 다음 단계
 

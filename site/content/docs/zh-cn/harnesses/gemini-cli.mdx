@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "适用于 Gemini CLI（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,8 +68,7 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-移除适配器写入的原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `<project>/GEMINI.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。同时移除 `<project>/.gemini/commands/`、`<project>/.gemini/skills/`、`<project>/.gemini/agents/` 和 `<project>/.gemini/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。在更改之前，会将每个文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

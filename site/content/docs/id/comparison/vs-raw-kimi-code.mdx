@@ -1,48 +1,55 @@
 ---
-title: "Apothem vs raw Kimi Code config"
-description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
+title: "Apothem versus konfigurasi manual Kimi Code"
+description: "Memelihara AGENTS.md akar proyek dan berkas pendukung .kimi-code/ milik Kimi Code dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "3973fe015cf877a5"
+sourceHash: "95d0fa19ca3ddd46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Kimi Code reads project-root `AGENTS.md` as its instruction file and keeps
-project configuration under `<project>/.kimi-code/`, including the
-operator-owned `.kimi-code/mcp.json` MCP surface. You can author that
-instruction file and its supporting cohorts by hand, per project, forever.
-Apothem's kimi-code adapter renders the governance surface into `AGENTS.md` as a
-managed block from the shared profile and keeps it consistent across every
-harness and every project. This page contrasts hand-maintaining that config
-against managing it with Apothem.
+Kimi Code membaca `AGENTS.md` di akar proyek sebagai berkas instruksinya dan
+menyimpan konfigurasi proyek di bawah `<project>/.kimi-code/`, termasuk
+permukaan MCP `.kimi-code/mcp.json` yang dimiliki operator. Anda dapat menulis
+berkas instruksi itu beserta kohor pendukungnya dengan tangan, per proyek,
+selamanya. Adapter kimi-code dari Apothem merender permukaan tata kelola ke
+dalam `AGENTS.md` sebagai blok terkelola dari profil bersama dan menjaganya
+tetap konsisten di setiap harness dan setiap proyek. Halaman ini membandingkan
+memelihara konfigurasi tersebut dengan tangan terhadap mengelolanya dengan
+Apothem.
 
-## Effort comparison
+## Perbandingan upaya
 
 | Tugas | Konfigurasi manual | Dikelola Apothem |
 | ---- | --------------- | --------------- |
-| Menulis permukaan instruksi `AGENTS.md` | Tulis dengan tangan dan sinkronkan ulang per proyek | Satu blok terkelola yang dirender dari profil bersama |
+| Menulis permukaan instruksi `AGENTS.md` | Menulis dengan tangan dan menyinkronkan ulang per proyek | Satu blok terkelola yang dirender dari profil bersama |
 | Menjaga aturan, command, skill, agen tetap tersinkron | Salin manual per proyek | Dimaterialisasi di bawah `<project>/.kimi-code/.apothem/support/` pada setiap pemasangan |
 | Mempertahankan prosa operator saat penyegaran | Penggabungan manual | Blok dibatasi sentinel; prosa operator di luarnya dipertahankan |
 | Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kimi-code --project <path>` |
 
-## What Apothem manages
+## Apa yang dikelola Apothem
 
-The kimi-code adapter renders the shared rules and governance surface into the
-project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
-agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
-instruction surface drives the project directly. Every change to the shared
-rules re-renders the files on the next `apothem update`.
+Adapter kimi-code merender aturan bersama dan permukaan tata kelola ke dalam
+blok terkelola `AGENTS.md` di akar proyek, dan memasang kohor command, skill,
+hook, agen, aturan, dan templat di bawah `.kimi-code/.apothem/support/`. Adapter
+ini tidak menulis `.kimi-code/mcp.json`; permukaan MCP tetap dimiliki operator.
+Kimi Code membaca instruksi proyek dari `AGENTS.md` atau
+`.kimi-code/AGENTS.md`; adapter hanya menulis `AGENTS.md` di akar proyek, dan
+dokumentasi Kimi Code tidak menyebutkan berkas mana dari keduanya yang
+diutamakan ketika keduanya ada. Setiap perubahan pada aturan bersama merender
+ulang berkas pada `apothem update` berikutnya.
 
-## Migration path
+## Jalur migrasi
 
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
 2. Pindahkan aturan dari `AGENTS.md` yang sudah ada ke korpus bersama.
-3. Jalankan `apothem install --harness kimi-code --project <path>` untuk merender permukaan instruksi `AGENTS.md` dan subtree pendukung `.kimi-code/.apothem/support/`.
-4. Jalankan `apothem verify --harness kimi-code --project <path>` untuk memastikan konfigurasi sudah terpasang.
-5. Gunakan `apothem update --harness kimi-code --project <path>` untuk setiap perubahan berikutnya.
+3. Jalankan `apothem install --harness kimi-code --project <path>` untuk merender
+   permukaan instruksi `AGENTS.md` dan pohon pendukung `.kimi-code/.apothem/support/`.
+4. Jalankan `apothem verify --harness kimi-code --project <path>` untuk memastikan konfigurasi
+   sudah terpasang.
+5. Gunakan `apothem update --harness kimi-code --project <path>` untuk setiap perubahan
+   berikutnya.
 
-## Read next
+## Baca berikutnya
 
-- [Kimi Code adapter reference](/docs/harnesses/kimi-code)
-- [Comparison overview](/docs/comparison)
+- [Referensi adapter Kimi Code](/docs/harnesses/kimi-code)
+- [Ikhtisar perbandingan](/docs/comparison)

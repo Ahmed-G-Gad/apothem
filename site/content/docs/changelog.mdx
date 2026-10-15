@@ -494,6 +494,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and say the semver-stability validator runs on its own, not through the
   gate. The uninstall page now covers the VS Code-family extension, the
   command-line bootstraps and the direct engine.
+- **Docs pages say what each uninstall removes, and fix 132 more
+  statements.** Translators of two further rounds sent 570 reports, which
+  merge into 171 distinct statements. Each was checked against the code.
+  113 are fixed, 50 read two ways but lead no reader to act wrongly, so
+  their wording stays, 3 were already correct, and 5 wait on a maintainer
+  decision. Checking turned up 19 more, all fixed, so 132 statements are
+  corrected on 55 pages. Uninstall no longer "removes the native config
+  files" on every harness page: each page says what is removed, what stays
+  and what is backed up under `~/.apothem/backups/` first. Adapters that
+  merge into a shared file strip only their managed block or their own
+  keys. Uninstalling the last harness at an install root also backs up and
+  removes the `memory/`, `contexts/` and `learning/` stores, and never
+  touches `plans/`. `apothem verify` takes `--harness all`, the installers
+  write the `apothem` shim into a directory and never edit `PATH`, and the
+  npm shim and the installers probe for Python with different lists. The
+  cognitive-identity page says Filters 1 and 5 always run and Filters 2 to
+  4 apply to non-trivial decisions. CI does not run markdownlint. These
+  pages are translated again from their current English text in all eleven
+  languages.
 
 ### Security
 

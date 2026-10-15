@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,11 @@ dengan standar kualitas SOTA.
 
 ## Rujukan Cepat: Jenis Artefak
 
-Ekosistem Apothem berisi lima jenis artefak, masing-masing dengan tujuan dan
-persyaratan frontmatter yang spesifik.
+Panduan ini mencakup lima jenis artefak, masing-masing dengan tujuan yang
+spesifik. Aturan, command, helper, dan skill membawa frontmatter YAML; hook
+didaftarkan di `hooks.json` dan `settings.json` dan tidak membawa frontmatter.
+Output-style adalah kelas artefak tambahan dengan dua kunci frontmatter wajib,
+`name` dan `description`; lihat [Skema Frontmatter](/docs/reference/frontmatter-schema).
 
 | Artefak | Jalur | Tujuan | Kapan Dibuat |
 | -------- | ---- | ------- | -------------- |
@@ -132,9 +135,10 @@ Pola: huruf kecil, tanda hubung di antara kata, tanpa spasi atau garis bawah.
   absolut, sehingga salinan yang terpasang tidak memerlukan paket `apothem`
   yang dapat diimpor. Plugin Claude Code mendaftarkan hook di
   `src/apothem/hooks/hooks.json` sebagai gantinya, berupa command shell yang
-  menjalankan `hooks/lib/bootstrap.sh` melalui `bash`. Daftarkan hook baru di
-  `hooks.json` dan di templat `settings.json` Claude Code. `dispatch.py`
-  merutekan `SessionStart` ke
+  menjalankan `hooks/lib/bootstrap.sh` melalui `bash`; stub itu menemukan Python
+  dan menjalankan `dispatch.py`, sehingga penangan tetap berupa Python. Daftarkan
+  hook baru di `hooks.json` dan di templat `settings.json` Claude Code.
+  `dispatch.py` merutekan `SessionStart` ke
   `session_start_bootstrap.main()` dan
   setiap peristiwa lain yang masuk daftar izin ke `emit_hook_context.main()`.
   Satu-satunya stub shell yang diizinkan di bawah `src/apothem/hooks/` atau
@@ -157,10 +161,10 @@ Jangan pernah menggunakan jalur berkas atau nama yang terpotong di dalam prosa.
 ## Portabilitas: Windows vs. Unix
 
 Setiap command HARUS mendeklarasikan status portabilitasnya secara eksplisit
-dalam bidang `portability`, dan sebuah helper BOLEH melakukannya. Skill, aturan,
-dan output-style tidak membawa bidang `portability`.
+dalam bidang `portability`. Sebuah helper BOLEH mendeklarasikannya. Skill,
+aturan, dan output-style tidak membawa bidang `portability`.
 
-### Universal (Default)
+### Universal
 
 - Bekerja secara identik di Windows, macOS, dan Linux
 - Tanpa asumsi shell
@@ -223,7 +227,7 @@ sebuah berkas cocok dengan filter tersebut, aturan menjadi aktif.
 
 Setiap artefak berversi membawa versi semantiknya sendiri (`MAJOR.MINOR.PATCH`).
 Command dan skill mewajibkannya, helper dan output-style BOLEH membawanya, dan
-aturan tidak membawanya sama sekali:
+aturan tidak membawanya:
 
 - **PATCH** — perbaikan salah ketik, pemformatan, penyegaran tautan, suntingan yang hanya menyentuh komentar. Perilaku tidak berubah.
 - **MINOR** — perubahan aditif yang tidak merusak: bagian opsional baru, bidang frontmatter opsional baru, contoh baru. Konsumen yang sudah ada tetap berfungsi tanpa perubahan.
@@ -233,7 +237,7 @@ Contoh:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: perbaikan salah ketik)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: menambahkan bagian opsional baru)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: menyatakan kontrak stabil)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: menyatakan kontrak stabil; artefak baru dimulai pada `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: menghapus bidang frontmatter wajib)
 
 Naikkan `version` dan `updated` bersama-sama pada setiap suntingan yang mengubah
@@ -348,8 +352,9 @@ Command adalah slash command seperti `/plan-spec`, `/plan-execute`, `/security-a
 
 ### 1. Tentukan Peran
 
-Command **tidak pernah** dimaksudkan untuk dipanggil oleh harness secara terisolasi. Command
-adalah alur kerja yang dipicu oleh pengguna. Tanyakan:
+Command adalah alur kerja yang dipicu oleh pengguna. Model menjalankannya
+sendiri hanya ketika setelan `disable-model-invocation` miliknya bernilai
+`false` (langkah 2). Tanyakan:
 
 - Apakah ini alur kerja yang dijalankan pengguna dengan mengetik `/command-name`?
 - Apakah alur kerja ini mengorkestrasi beberapa langkah?
@@ -384,8 +389,9 @@ di `src/apothem/commands/README.md` mencantumkan setelan setiap command;
 tambahkan satu baris untuk command baru. Jaga
 `allowed-tools` tetap hanya-baca: harness yang mematuhinya menjalankan alat-alat
 tersebut tanpa bertanya. Berikan alat yang berefek samping hanya sebagai aturan
-bercakupan, seperti `Bash(git log *)`; skema menolak `"*"` dan bentuk polos
-`Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit`, serta `WebFetch`.
+bercakupan, seperti `Bash(git log *)`; skema menolak `"*"` dan salah satu dari
+`Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit`, atau `WebFetch` yang
+ditulis tanpa cakupan.
 
 ### 3. Tulis Konten
 
@@ -399,7 +405,7 @@ Struktur:
 
 ### 4. Perbarui README dan CHANGELOG.md
 
-Tambahkan satu baris ke tabel command yang sesuai di `src/apothem/commands/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
+Tambahkan satu baris ke tabel untuk bagian command tersebut di `src/apothem/commands/README.md`, selain baris tabel pemanggilan dari langkah 2; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
 
 ### 5. Validasi
 
@@ -527,7 +533,7 @@ Struktur konten:
 
 ### 4. Perbarui README dan CHANGELOG.md
 
-Tambahkan satu baris ke tabel Index dan tabel Folder contents di `src/apothem/skills/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
+Tambahkan satu baris ke tabel Index dan satu baris untuk setiap berkas skill tersebut ke tabel Folder contents di `src/apothem/skills/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
 
 ### 5. Validasi
 
@@ -544,7 +550,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Bidang `name` menggunakan kebab-case
 - [ ] `version` (hanya kelas berversi; aturan tidak membawanya) bersifat semantik (`MAJOR.MINOR.PATCH`) dan telah dinaikkan jika perilaku berubah
 - [ ] `updated` cocok dengan tanggal hari ini untuk setiap artefak yang Anda sentuh dan yang membawa bidang tersebut
-- [ ] Bidang `portability` disetel dan valid (hanya command dan helper)
+- [ ] Bidang `portability` disetel dan valid (wajib pada command, opsional pada helper)
 - [ ] CHANGELOG.md memuat perubahan dalam kategori yang sesuai di bawah bagian rilis berikutnya
 - [ ] Tidak ada rujukan internal rencana (kepatuhan CM-7)
 - [ ] Rujukan silang konsisten dengan artefak lain
@@ -616,9 +622,8 @@ python -m pytest tests/property       # Hypothesis properties (profile loader, f
 
 Suite ini hermetis: suite lolos ketika checkout berada di bawah `$TMPDIR` dan
 ketika `python` di `PATH` tidak memiliki prasyarat CLI, karena pengujian
-integrasi menjalankan interpreter yang menjalankan pytest dan mengganti jalur
-sementara dan jalur sumber yang bersarang dengan token, dimulai dari yang
-terpanjang.
+integrasi menjalankan interpreter yang menjalankan pytest dan mentokenisasi jalur
+sementara dan jalur sumber yang bersarang, dimulai dari yang terpanjang.
 
 ### Cakupan pengujian per paket
 
@@ -712,9 +717,9 @@ aktif yang memiliki pasangan, jalankan `python scripts/dev/sync_eval_rule_cases.
 
 ### Benchmark
 
-`make benchmarks` menjalankan driver per kelas di bawah `src/apothem/benchmarks/`.
-Masing-masing keluar dengan `0` lolos, `1` melebihi anggaran, `2` galat (eksekusi
-yang diukur tidak berjalan), atau `3` tidak diukur.
+`make benchmarks` menjalankan driver per kelas di bawah `src/apothem/benchmarks/`,
+kecuali `bench_agents.py`. Setiap driver keluar dengan `0` lolos, `1` melebihi
+anggaran, `2` galat (eksekusi yang diukur tidak berjalan), atau `3` tidak diukur.
 
 - `bench_hooks.py` menjalankan setiap command `shell: bash` yang didaftarkan oleh
   `hooks/hooks.json`, sebagaimana tertulis, pada payload nyata per peristiwa dan

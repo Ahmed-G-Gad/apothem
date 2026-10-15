@@ -1,6 +1,6 @@
 ---
 title: "Release-cycle runbook"
-description: "Complete release workflow from local gates through the signed GitHub Release to the optional npm publish dispatch."
+description: "Complete release workflow from local gates through the signed GitHub Release to the npm publish."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -141,14 +141,18 @@ log for the asset-upload confirmations.
 
 ### 2.4 Confirm the npm publish
 
-The tag push also runs `publish-npm.yml`. Approve the `release` environment
-deployment when prompted. The workflow publishes `@ahmed-g-gad/apothem@X.Y.Z`
-to npmjs.com through npm trusted publishing (OIDC); no registry token is
-stored in the repository. Then confirm readiness:
+The tag push also runs `publish-npm.yml` beside `release.yml`. The npm
+workflow does not wait for the release workflow; the `release` environment
+approval is the gate. Once the release workflow from §2.3 has finished,
+confirm readiness:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Then approve the `release` environment deployment when prompted. The workflow
+publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com through npm trusted
+publishing (OIDC); no registry token is stored in the repository.
 
 To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
