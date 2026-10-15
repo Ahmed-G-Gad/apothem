@@ -58,6 +58,10 @@ package name, not the maintainer account name.
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
+   The check needs `GH_TOKEN` set and the published `sbom.cdx.json` in
+   `dist/release-assets/`. The [release-cycle runbook](/docs/runbooks/release-cycle),
+   §2.4, gives the token scope and the download command.
+
 9. Approve the `release` environment deployment for the `Publish npm`
    (`publish-npm.yml`) run that the tag push starts. If that run did not start,
    dispatch the workflow from the GitHub Actions tab with `tag=<release-tag>`.

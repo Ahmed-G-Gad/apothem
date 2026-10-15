@@ -220,13 +220,16 @@ Each versioned artifact carries its own semantic version (`MAJOR.MINOR.PATCH`).
 Commands and skills require it, helpers and output styles MAY carry it, and
 rules carry none:
 
-- **PATCH** — typo fixes, formatting, link refresh, comment-only edits. Behavior unchanged.
+- **PATCH** — a behavioral change that corrects an existing directive without breaking the contract.
 - **MINOR** — additive non-breaking changes: new optional sections, new optional frontmatter fields, new examples. Existing consumers continue to work without change.
 - **MAJOR** — breaking schema or contract changes: removed sections, renamed fields, altered behavior of an existing directive, changes that require downstream artifacts to adapt.
 
+Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave the version unchanged. Only a behavioral change bumps it. Such an edit still updates the artifact's `updated` date.
+
 Examples:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: typo fix)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: a corrected directive that changes behavior)
+- `vX.Y.Z` → `vX.Y.Z` (no bump: typo or link fix; `updated` changes)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: added a new optional section)
 - `v0.Y.Z` → `v(0+1).0.0` (MAJOR: declared contract stable; new artifacts seed at `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: removed mandatory frontmatter field)

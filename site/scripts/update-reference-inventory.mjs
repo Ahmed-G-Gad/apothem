@@ -769,6 +769,7 @@ function commandPage(command) {
 		`description: ${yamlString(`Reference for the /${name} command: invocation, arguments, inputs and outputs.`)}`,
 		'---',
 		'{/* SPDX-License-Identifier: MIT */}',
+		'',
 		GENERATED_PAGE,
 		'',
 		START,

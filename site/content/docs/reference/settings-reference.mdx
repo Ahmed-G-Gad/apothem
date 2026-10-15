@@ -63,9 +63,12 @@ Read-only tools are pre-approved; write operations (`Write`, `Edit`, `NotebookEd
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | New Claude Code session | 30 seconds | Initialize context, read memory, check plan state | CM-14 |
 | **PreToolUse** | Before Write/Edit/NotebookEdit/Bash | 10 seconds | Validate CM-7 compliance + frontmatter | CM-7, CM-22 |
-| **PreCompact** | Before context compaction | 30 seconds | Externalize unexternalized state | CM-24 §2.3 |
-| **PostCompact** | After context compaction | 30 seconds | Re-bootstrap from externalized state | CM-24 §6.2 |
+| **PostToolUse** | After every tool call (matcher `*`) | 10 seconds | Proactive-compaction advisory | Context management (proactive compaction) |
 | **Stop** | Session exit | 60 seconds | Session-end externalization | CM-14/CM-22/CM-24/CM-26 |
+
+This template registers four events. It does not register `PreCompact` or
+`PostCompact`; the Codex and Qwen Code templates do, and the
+[hooks reference](/docs/reference/hooks) lists them per harness.
 
 `dispatch.py` additionally accepts `UserPromptSubmit` and `Notification` on its event
 whitelist. Neither is wired in the shipped templates; add a matcher block with the same
