@@ -14,7 +14,7 @@ The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewe
 |---|---|---|
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Zero executable binaries tracked in source; generated distribution archives stay in `dist/`. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` is protected before public release promotion; force-pushes and deletions are blocked after the fresh release commit lands. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest matrix, ruff, mypy, CodeQL, Trivy, docs build, and packaging smoke checks. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest matrix, ruff, mypy, Trivy, docs build, and packaging smoke checks. |
 | **CII-Best-Practices** | OpenSSF Best Practices registration | Requires maintainer-side registration at the OpenSSF Best Practices site; this cannot be completed by repository files alone. |
 | **Code-Review** | Branch protection + CODEOWNERS | Pull requests are required for `main` for everyone except repository admins, and branch protection requires 0 approving reviews while the project has one maintainer (see [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); Scorecard history remains limited until reviewed PRs exist. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | A new solo-maintainer project cannot manufacture multi-organization contribution history; this improves naturally as contributors join. |

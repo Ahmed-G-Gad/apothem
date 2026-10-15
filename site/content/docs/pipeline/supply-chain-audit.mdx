@@ -18,7 +18,7 @@ Supply-chain audit against SLSA + Sigstore + SBOM standards.
 With arguments:
 
 ```bash
-/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/supply-chain-audit [path/to/repo/] [--focus AXIS] [--dry-run]
 ```
 
 ## Inputs
@@ -27,7 +27,7 @@ Host repository release pipeline
 
 ## Outputs
 
-Supply-chain findings + REPORT.md
+Supply-chain findings in `_inputs/supply-chain-audit-findings.md`
 
 ## Downstream
 
@@ -35,14 +35,7 @@ The supply-chain-audit stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate result recorded.
+The command runs five audit phases: input ingest, per-axis walk, per-finding triage, findings emission, and the validation gate.
 
 ## Failure modes
 
@@ -50,7 +43,7 @@ The command follows the standard `/plan` pipeline workflow:
 |---------|-------|----------|
 | Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Target refused | Target lacks a release surface | Pass a repository root with .github/workflows/, a release script, or a build manifest |
 
 ## Examples
 
@@ -58,8 +51,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /supply-chain-audit --dry-run
 
-# Execute against a named plan suite
-/supply-chain-audit path/to/plan-suite/
+# Execute against a host repository
+/supply-chain-audit path/to/repo/
 ```
 
 ## Cross-references

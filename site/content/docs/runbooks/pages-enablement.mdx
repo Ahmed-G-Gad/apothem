@@ -165,7 +165,7 @@ restart (toggle the custom domain off and on via the API).
 ### 2.6 Verify deep links
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Expected output:
@@ -310,7 +310,7 @@ The Pages-enablement procedure has four documented failure modes:
 
 | Failure | Diagnostic | Recovery |
 |---|---|---|
-| `gh api .../pages` returns 404 | Pages is not enabled on the repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` then retry §2.1 |
+| `gh api .../pages` returns 404 | Pages is not enabled on the repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow` then retry §2.1 |
 | `dig` returns empty after 30 minutes | DNS record not committed at provider | Return to the matching provider appendix; verify the record is saved (not draft / pending); inspect the panel for a `Save` step missed |
 | `https_certificate.state: errored` | Pages cannot issue a certificate | Toggle the custom domain off and on at Pages settings; this re-triggers issuance. Wait up to 24 hours for the new attempt |
 | Deep-link 404 after build | Static-site build did not include the page | `gh workflow run publish-static-site.yml`; on completion verify `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` returns `success` |

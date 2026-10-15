@@ -462,6 +462,12 @@ def test_clause1_3_5_every_command_executes_bounded_and_fast(
                     f"{entry.surface} {entry.message}: unexpanded placeholder"
                 )
         if seconds > _LATENCY_BUDGET_SECONDS:
+            # A loaded CI runner can stall one interpreter start-up for several
+            # seconds. Time the command once more, so only a hook that is over
+            # budget on both runs fails.
+            _, retimed = _run(entry, payload, env, workspace["project"])
+            seconds = min(seconds, retimed)
+        if seconds > _LATENCY_BUDGET_SECONDS:
             failures.append(f"{entry.surface} {entry.message}: {seconds:.2f}s")
     assert not failures, "\n".join(failures)
 

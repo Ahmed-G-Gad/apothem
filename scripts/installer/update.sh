@@ -127,12 +127,21 @@ is_apothem_source() {
     [ -d "$1/src/apothem" ] && { [ -f "$1/pyproject.toml" ] || [ -d "$1/.claude-plugin" ]; }
 }
 
-# Resolve a Python interpreter >= 3.10.
+# Resolve a Python interpreter >= 3.10, rejecting Microsoft Store launcher shims.
 PY=""
 for _cand in python3 python python3.14 python3.13 python3.12 python3.11 python3.10; do
-    command -v "$_cand" >/dev/null 2>&1 || continue
-    if "$_cand" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 10) else 1)' >/dev/null 2>&1; then
-        PY="$_cand"
+    # Probe the path PATH resolves the name to, so a shim can be recognised
+    # before it is run. Running a Store alias opens the Store page instead
+    # of Python, so a candidate under a WindowsApps directory is skipped.
+    # The prefix-strip test is the one find-python.sh uses; update.ps1
+    # skips the same directory.
+    _cand_path="$(command -v "$_cand" 2>/dev/null)" || continue
+    [ -n "$_cand_path" ] || continue
+    if [ "${_cand_path#*WindowsApps}" != "$_cand_path" ]; then
+        continue
+    fi
+    if "$_cand_path" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 10) else 1)' >/dev/null 2>&1; then
+        PY="$_cand_path"
         break
     fi
 done

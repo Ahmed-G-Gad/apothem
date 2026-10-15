@@ -36,13 +36,13 @@ git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
 cd "$HOME/.apothem"
 
 # (POSIX path) Run scripts/installer/install.sh dry-run first
-bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+bash scripts/installer/install.sh --dry-run                                    # exit 0; prints Dry-run complete — no changes were made.
 
 # (POSIX path) Run scripts/installer/install.sh for real
 bash scripts/installer/install.sh                                               # exit 0; idempotent
 
 # (Windows path) PowerShell parallel
-pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; prints Dry-run complete - no changes were made.
 pwsh -File scripts/installer/install.ps1                                        # exit 0
 ```
 
@@ -65,8 +65,8 @@ pwsh -File scripts/installer/install.ps1                                        
 ### 3.2 Prerequisite-Checked
 
 ```bash
-# Temporarily move git out of PATH.
-PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+# Run from a copy outside any checkout, with git not on PATH.
+d="$(mktemp -d)" && cp scripts/installer/install.sh "$d/" && PATH=<directory holding python3, click, rich and coreutils, but no git> /bin/sh "$d/install.sh"                            # POSIX (no git)
 ```
 
 **Expected:** Installer refuses to run; emits explicit "git not found" diagnostic; exit non-zero.
@@ -101,7 +101,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff + mypy
+make lint                                                     # ruff check + ruff format --check
 make test                                                     # exit 0, no failures
 ```
 
@@ -112,15 +112,15 @@ make test                                                     # exit 0, no failu
 ```bash
 # POSIX path — interactive uninstall
 bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
-apothem verify --harness claude-code                          # reports the harness as not installed
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 
-# Re-install from clone, then uninstall non-interactively
-git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
+# Re-install from the kept checkout, then uninstall non-interactively
+bash scripts/installer/install.sh
 bash scripts/installer/uninstall.sh --yes
-apothem verify --harness claude-code                          # reports the harness as not installed
+PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave the Claude Code configuration root free of Apothem-materialized files; companion shell-profile env-var references are cleaned up.
+**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave the Claude Code configuration root free of Apothem-materialized files; the `apothem` shim is removed (`~/.local/bin/apothem` on POSIX, `apothem.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps` on Windows).
 
 ## 6. Safety-Guard Verification
 
@@ -140,13 +140,12 @@ APOTHEM_HOME=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --y
 **Expected:** Uninstaller refuses; emits `No apothem source found at /tmp/not-an-apothem-install — nothing to uninstall`; exit non-zero. The path was NOT touched.
 
 ```bash
-# Run uninstall against $HOME, /, and an empty path.
+# Run uninstall against $HOME and /.
 APOTHEM_HOME=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 APOTHEM_HOME=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-APOTHEM_HOME='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 ```
 
-**Expected:** Each refuses with the same `No apothem source found at …` diagnostic, because none of the three holds the source-tree shape; none touch the filesystem.
+**Expected:** `APOTHEM_HOME=$HOME` and `APOTHEM_HOME=/` each refuse with the `No apothem source found at …` diagnostic, and neither touches the filesystem. An empty `APOTHEM_HOME` is left out on purpose: it falls back to `~/.apothem`, where a real install can sit.
 
 ```bash
 # An explicit APOTHEM_SOURCE that is not a source tree is rejected separately.

@@ -54,7 +54,7 @@ invocation surfaces instead:
 | Surface | Invocation | Context |
 | ------- | ---------- | ------- |
 | Engine CLI | `python -m apothem <command>` | A source tree with `src/` on `PYTHONPATH` (checkout, npx cache, plugin tree) |
-| Hook runtime | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The materialized copy under the harness root's shared `.apothem/support/` tree, by absolute path |
+| Hook runtime | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The Claude Code materialization: the copy under the harness root's shared `.apothem/support/` tree, by absolute path |
 
 - `python -m apothem` runs `src/apothem/__main__.py`, which puts
   `src/apothem/_vendor` on `sys.path`, checks that `click` and `rich` are
@@ -79,7 +79,7 @@ The package directory becomes importable by prepending the checkout's
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-This is exactly the invocation the one-shot installer prints at completion.
+When the `apothem` launcher is not on PATH, the one-shot installer prints this form at completion, with the vendored directory ahead of `src/` and the CPython it resolved in place of `python`.
 
 ## Plugin-tree bootstrap
 

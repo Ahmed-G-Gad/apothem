@@ -18,7 +18,7 @@ Architectural-integrity review against the design artifact at `_inputs/design.md
 With arguments:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## Inputs
@@ -27,7 +27,7 @@ Host repository + `_inputs/design.md`
 
 ## Outputs
 
-Architecture findings + REPORT.md
+Architecture findings at `_inputs/architecture-review-findings.md`
 
 ## Downstream
 
@@ -35,22 +35,14 @@ The architecture-review stage of the Audit Review Sequence
 
 ## Workflow phases
 
-The command follows the standard `/plan` pipeline workflow:
-
-1. **Load context** — Read plan suite, rules, and Resumption Contract.
-2. **Verify prerequisites** — Confirm dependency phases complete.
-3. **Execute tasks** — Perform the command mission.
-4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
-5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
-6. **Emit REPORT.md** — Pre-emission gate result recorded.
+The command runs five audit phases: input ingest, design-to-code traceability walk, layer-boundary integrity audit, cross-package coupling sweep, and findings emission with the validation gate.
 
 ## Failure modes
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
-| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+| Missing input file | Design artifact `_inputs/design.md` absent | Run `/plan-design` to create it |
 
 ## Examples
 
@@ -58,8 +50,8 @@ The command follows the standard `/plan` pipeline workflow:
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## Cross-references

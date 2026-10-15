@@ -23,7 +23,7 @@ With arguments:
 
 ## Inputs
 
-The authored `_spec/spec.md` + `_inputs/handoff-manifest.yml` from `/plan-spec` (or operator-supplied prose).
+The authored `_spec/spec.md` + `_inputs/handoff-manifest.yml` from `/plan-spec` (prose alone is refused: run `/plan-spec` to author `_spec/spec.md`; `--override` bypasses the gate and records a PLAN-NOTES.md finding).
 
 ## Outputs
 
@@ -31,7 +31,7 @@ The authored `_spec/spec.md` + `_inputs/handoff-manifest.yml` from `/plan-spec` 
 
 ## Downstream
 
-/plan-review or /plan-execute (downstream)
+/plan-review (downstream); `/plan-execute` only after review scorecards exist (or with `--override`)
 
 ## Workflow phases
 
