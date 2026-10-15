@@ -4,7 +4,7 @@ description: "Canonical normative reference for multi-surface harness configurat
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Multi-Surface Harness Conventions sections (Spec §0.6 + §2.8 + §4.7); it is the standalone reference that ships with the published repo. The architectural rationale is recorded at [ADR-0003](/docs/architecture).
+> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Multi-Surface Harness Conventions sections (Spec §0.6 + §2.8 + §4.7); it is the standalone reference that ships with the published repo. The architectural rationale is recorded in ADR-0003.
 
 ---
 
@@ -37,8 +37,8 @@ The surfaces are different *channels* expressing one *specification*. Shared sec
 |---|---|---|---|
 | `AGENTS.md` | repo root (and/or `.codex/AGENTS.md`) | **MUST** | AGENTS-aware harnesses |
 | `CLAUDE.md` | repo root (and/or `.claude/CLAUDE.md`) | **MUST** | Claude Code |
-| `.github/`-rooted instructions file | `.github/copilot-instructions.md` | **MUST** | in-IDE completion runtime |
-| `site/content/docs/architecture/`-rooted helpers manifest | `site/content/docs/architecture/agents.mdx` | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
+| In-IDE instructions file | `.github/copilot-instructions.md` | **MUST** | in-IDE completion runtime |
+| Helpers manifest | `site/content/docs/architecture/agents.mdx` | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
 | `.cursorrules` | repo root | **MAY** (opt-in) | in-IDE editor runtime |
 | `.windsurfrules` | repo root | **MAY** (opt-in) | in-IDE companion runtime |
 
@@ -128,7 +128,7 @@ Three validators co-implement the coherence contract:
 
 ## See Also
 
-- [ADR-0003](/docs/architecture) — architectural rationale, alternatives considered.
+- ADR-0003 — architectural rationale, alternatives considered.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — the canonical claim list fixture.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — the canonical project voice.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — the Claude Code mirror.

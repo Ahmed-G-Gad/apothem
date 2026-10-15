@@ -89,6 +89,14 @@ unaffected.
 python -m apothem.conformity.gate --all .
 ```
 
+The `--all` run covers the standalone validators. It does not run the
+multi-surface coherence check described under Compatibility notes. To run that
+check by name in a checkout:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+```
+
 ## Troubleshooting
 
 | Symptom | Fix |

@@ -8,8 +8,9 @@ description: "Canonical YAML frontmatter schema and required fields for all arti
 
 > **Source of truth.** The machine-readable, gate-enforced contract is the
 > per-class JSON Schemas under [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
-> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), each
-> declaring `additionalProperties` so the conformity gate rejects unknown keys.
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …). The skill and
+> command schemas declare `additionalProperties: false`, so they reject unknown keys; the
+> agent, output-style, and plan schemas declare `additionalProperties: true`.
 > This page and [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
 > are the two human-readable projections of those schemas — this page carries
 > the per-class **templates and worked examples**, frontmatter-schema the terse

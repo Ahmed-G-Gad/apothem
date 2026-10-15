@@ -59,7 +59,8 @@ during install — restoring pre-install state is a cleanup operation, so it
 reaches records a previously broader install may have left. A harness with no
 recorded install fails as an `"outcome": "error"` row in `results` (see JSON
 output), and the run continues with the remaining harnesses. The command then
-exits 1, or 2 when at least one target of another harness was rolled back.
+exits 1 when nothing was rolled back, or 2 (partial result) when at least one
+target was rolled back and a failure was also recorded.
 
 ## Options
 
@@ -78,6 +79,10 @@ exits 1, or 2 when at least one target of another harness was rolled back.
 | `-h`, `--help` | Show help and exit. |
 
 ## JSON output
+
+The example is the envelope for a single named harness. Under `--harness all`,
+`harness` is `all`, `output_path` is `null`, and `results` carries the rows of
+every selected harness.
 
 ```json
 {
