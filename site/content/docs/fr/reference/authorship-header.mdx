@@ -2,7 +2,7 @@
 title: "En-tête de paternité — Ligne de licence SPDX par fichier"
 description: "Définir et faire respecter des marqueurs d'identifiant de licence SPDX par fichier à l'aide d'en-têtes canoniques d'une seule ligne, dans la syntaxe de commentaire appropriée à chaque type de fichier."
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Le texte canonique — écrit ici sous sa forme de syntaxe de commentaire `#` �
 # SPDX-License-Identifier: MIT
 ```
 
-Ce texte est la **seule** source faisant autorité. Le validateur `file-header` (§8) vérifie les fichiers par rapport à cette fixture exacte à l'octet près. Toute divergence entre la ligne d'en-tête d'un fichier et cette fixture (sous substitution de syntaxe selon le §2) est signalée comme constat. Le validateur est consultatif : un constat ne fait donc pas échouer la compilation (§8).
+Ce texte est la **seule** source faisant autorité. Le validateur `file-header` (§8) vérifie les fichiers par rapport à cette fixture exacte à l'octet près. Toute divergence entre la ligne d'en-tête d'un fichier et cette fixture (sous substitution de syntaxe selon le §2) est signalée comme constat. Le validateur est bloquant : sous `--strict`, tel qu'exécuté par la CI et le hook de pre-commit, un constat fait échouer l'exécution (§8).
 
 ---
 
@@ -70,8 +70,9 @@ Les classes suivantes sont **exemptées** de la ligne d'en-tête SPDX. Le valida
 - **Lockfiles** — chaque fichier `*.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` et `go.sum`. Ces fichiers sont gérés par machine.
 - **Fichiers générés et minifiés** — tout fichier situé sous un répertoire `generated/`, et les bundles minifiés (`*.min.js`, `*.min.css`).
 - **Contenu tiers vendorisé** — fichiers sous `_vendor/`, `vendor/`, `third_party/` et `node_modules/`. Ils portent la licence ou la notice propre à l'amont. Injecter notre marqueur par-dessus l'attribution amont constitue une violation de licence.
-- **État d'audit, de planification et d'environnement** — tout ce qui se trouve sous `.audit/` et `.apothem/`, qui contient les plans, la mémoire, les données d'apprentissage et les contextes. Également `projects/` et `memory/` à la racine de l'arbre de travail, qui appartiennent à l'environnement. Ces arborescences sont ignorées par git ou détenues par l'opérateur, et hors du périmètre de l'arbre publié. Les fichiers de plan sont suivis en provenance par leur frontmatter (voir [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
+- **État d'audit, de planification et d'environnement** — tout ce qui se trouve sous `.audit/` et `.apothem/`, qui contient les plans, la mémoire, les données d'apprentissage et les contextes. Également `projects/` et `memory/` à la racine de l'arbre de travail, qui appartiennent à l'environnement. Ces arborescences sont ignorées par git ou détenues par l'opérateur, et hors du périmètre de l'arbre publié. La provenance des fichiers de plan est suivie par leur frontmatter (voir [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
 - **Jeux de données de test** — fichiers `.yaml`, `.yml`, `.txt` et `.json` sous `tests/fixtures/`. Les fichiers source de test de cette arborescence portent toujours l'en-tête.
+- **Entrées de test de fumée de l'injecteur** — les fichiers situés sous `tests/conformity-scenarios/fixtures/F-13-injector-smoke/`. Ils restent sans en-tête, car le test de l'injecteur vérifie que celui-ci y ajoute l'en-tête.
 - **Fichiers de packaging et marqueurs vides** — `.SRCINFO`, que l'analyseur de packaging lit strictement, et les marqueurs de zéro octet `.keep`, `.gitkeep` et `py.typed`.
 - **Fichiers binaires** — les suffixes d'image, de police, d'archive, de média et d'objet compilé listés dans la fixture. Un suffixe que la table de variantes du validateur ne couvre pas est exempté par défaut.
 
@@ -129,7 +130,7 @@ L'injecteur est invoqué par la cible `make headers-fix`, qui exécute `scripts/
 
 Se trouve dans [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Pour chaque fichier de l'arbre de travail, le validateur détermine son applicabilité (selon le §3) et, si elle s'applique, vérifie que la ligne SPDX canonique est présente au point d'insertion. Pour la plupart des familles, ce point est la tête du fichier, après un éventuel shebang. Pour les fichiers Markdown et MDX, un bloc frontmatter YAML est d'abord ignoré : la ligne canonique peut donc suivre la clôture, comme l'exige le §5. Les fichiers MDX se résolvent sur la forme `{/* */}` (§2) et sont vérifiés selon celle-ci. Le validateur et l'injecteur placent le bloc canonique au même index.
 
-S'appuie sur la fixture exacte à l'octet près située dans [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). L'exécution sur le corpus rapporte, pour ce matcher, un nombre de constats et un échantillon de fichiers signalés. Elle n'affiche ni diff par fichier ni pourcentage de couverture. Le matcher est consultatif : ses constats sont rapportés et ne font pas échouer la compilation, avec `--strict` ou sans cette option.
+S'appuie sur la fixture exacte à l'octet près située dans [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). L'exécution sur le corpus rapporte, pour ce matcher, un nombre de constats et un échantillon de fichiers signalés. Elle n'affiche ni diff par fichier ni pourcentage de couverture. Le matcher est bloquant : sous `--strict`, utilisé par la CI et le hook de pre-commit, un constat fait échouer l'exécution. Sans `--strict`, le portail signale le constat et se termine avec le code `0`.
 
 ---
 
@@ -139,11 +140,11 @@ La discipline doit survivre à chaque session future et à chaque contributeur f
 
 1. **`src/apothem/schemas/authorship-header.txt`** — la fixture canonique exacte à l'octet près ; une source de vérité unique.
 2. **`scripts/inject-header.{sh,py}`** — l'injecteur mécanique (§7).
-3. **Validateur `file-header`** (§8) — signale les divergences sous forme de constats consultatifs ; il ne fait pas échouer la compilation.
-4. **Hook de pre-commit** — le hook `conformity-corpus-perwrite` exécute chaque matcher par écriture, y compris le validateur `file-header` (§8), sur l'arbre suivi, avec `--strict`. Le matcher `file-header` est consultatif : ses constats sont rapportés et ne bloquent pas un commit. Le hook se contente de vérifier. Il n'a pas de mode de correction et n'exécute jamais l'injecteur (§7), qui s'exécute via `make headers-fix`.
+3. **Validateur `file-header`** (§8) — signale les divergences sous forme de constat bloquant, qui fait échouer une exécution `--strict`.
+4. **Hook de pre-commit** — le hook `conformity-corpus-perwrite` exécute chaque matcher par écriture, y compris le validateur `file-header` (§8), sur l'arbre suivi, avec `--strict`. Le matcher `file-header` est bloquant : un constat bloque donc le commit. Le hook se contente de vérifier. Il n'a pas de mode de correction et n'exécute jamais l'injecteur (§7), qui s'exécute via `make headers-fix`.
 5. **Bloc de comportement obligatoire de `CLAUDE.md`** — demande à l'assistant d'injecter la ligne SPDX canonique chaque fois qu'il crée un fichier applicable.
 6. **Le fichier d'instructions de GitHub Copilot** situé dans `.github/copilot-instructions.md` — demande à Copilot de faire de même lors de la génération de fichiers.
-7. **Hooks PreToolUse** situés dans `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptent les appels d'outils Write/Edit sur les chemins applicables, afin que la ligne SPDX soit injectée à la création du fichier plutôt que relevée plus tard comme un constat du validateur.
+7. **Hooks PreToolUse** situés dans `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptent les appels d'outils Write/Edit sur les chemins applicables, afin que la ligne SPDX soit injectée à la création du fichier plutôt que relevée plus tard comme constat du validateur.
 8. **Case à cocher du modèle de PR** — affirmation, à l'attention du contributeur, que chaque nouveau fichier porte la ligne SPDX canonique.
 9. **Ce document** (`site/content/docs/reference/authorship-header.mdx`) — l'explicatif canonique et normatif.
 

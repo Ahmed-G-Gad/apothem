@@ -2,7 +2,7 @@
 title: "作者署名头——逐文件 SPDX 许可行"
 description: "使用规范的单行头部，以每种文件类型相应的注释语法，定义并强制执行逐文件的 SPDX 许可标识符标记。"
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ sourceHash: "5fb79aeb88568559"
 # SPDX-License-Identifier: MIT
 ```
 
-本文本是**唯一**权威来源。`file-header` 校验器（§8）会针对这一字节精确的夹具进行校验。文件头部行与此夹具之间的任何偏差（在按 §2 进行语法替换的前提下），都会作为一项发现项被报告。该校验器为建议性质，因此一项发现项不会导致构建失败（§8）。
+本文本是**唯一**权威来源。`file-header` 校验器（§8）会对照这一字节精确的夹具检查文件。文件头部行与本夹具之间的任何偏差（在按 §2 进行语法替换的情况下）都会作为发现项报告。该校验器属于阻断性质：在 `--strict` 下（CI 与 pre-commit 钩子即如此运行），发现项会导致运行失败（§8）。
 
 ---
 
@@ -63,15 +63,16 @@ HTML 注释（或 MDX 的 `{/* */}`）包装器以不可见方式渲染，因此
 
 以下类别**豁免**于 SPDX 头部行。`file-header` 校验器会直接放行这些文件而不作检查。下列类别与 `header-exceptions.txt` 中的通配符列表相匹配：
 
-- **法律与版本文件**——`LICENSE`、`LICENSE.md`、`LICENSE.txt`、`NOTICE` 与 `VERSION`。`LICENSE` 承载权威版权行，`license-author-consistency` 校验器会确认其存在。
-- **规范夹具**——`schemas/authorship-header.txt`。将头部注入夹具会产生一个“头部的头部”。
+- **法律与版本文件**——`LICENSE`、`LICENSE.md`、`LICENSE.txt`、`NOTICE` 与 `VERSION`。`LICENSE` 承载权威版权行，`license-author-consistency` 校验器会确认该行存在。
+- **规范夹具**——`schemas/authorship-header.txt`。将头部注入夹具会产生“头部的头部”。
 - **`*.svg` 资源**——XML 注释对行注释标记而言很脆弱，因此 SVG 溯源由资源 README 与生成的栅格输出承载。
 - **JSON 文件（`.json`）**——JSON 没有注释语法。当 JSON 配置需要署名时，请放置一个同级的 `<file>.NOTICE.md`。
 - **锁文件**——每个 `*.lock` 文件、`package-lock.json`、`yarn.lock`、`pnpm-lock.yaml` 与 `go.sum`。这些文件由机器管理。
 - **生成与压缩文件**——`generated/` 目录下的任何文件，以及压缩后的捆绑包（`*.min.js`、`*.min.css`）。
-- **内置（vendored）第三方内容**——`_vendor/`、`vendor/`、`third_party/` 与 `node_modules/` 下的文件。它们携带上游自身的许可证或声明；在上游署名之上注入我们的标记属于许可违规。
-- **审计、规划与工具状态**——`.audit/` 与 `.apothem/` 下的全部内容，其中保存计划、记忆、学习数据与上下文。另有工作树根目录下由工具所有的 `projects/` 与 `memory/`。这些目录要么被 gitignore，要么归操作者所有，不在已发布树的范围之内。计划文件的溯源由其 frontmatter 追踪（见 [`plans-discipline.md`](/docs/reference/plans-discipline) §3）。
-- **测试数据夹具**——该目录（`tests/fixtures/`）下的 `.yaml`、`.yml`、`.txt` 与 `.json` 文件。该树中的测试源文件仍须携带头部。
+- **内置（vendored）第三方内容**——`_vendor/`、`vendor/`、`third_party/` 与 `node_modules/` 下的文件。它们携带上游自身的许可证或声明。在上游署名之上注入我们的标记属于许可违规。
+- **审计、规划与工具状态**——`.audit/` 与 `.apothem/` 下的全部内容，其中保存计划、记忆、学习数据与上下文。另外，工作树根目录下由工具所有的 `projects/` 与 `memory/` 也在此列。这些目录要么被 gitignore，要么归操作者所有，不在已发布树的范围之内。计划文件的溯源由其 frontmatter 追踪（见 [`plans-discipline.md`](/docs/reference/plans-discipline) §3）。
+- **测试数据夹具**——`tests/fixtures/` 下的 `.yaml`、`.yml`、`.txt` 与 `.json` 文件。该树中的测试源文件仍须携带头部。
+- **注入器冒烟测试输入**——`tests/conformity-scenarios/fixtures/F-13-injector-smoke/` 下的文件。它们保持无头部状态，因为注入器测试会检查注入器是否为它们添加了头部。
 - **打包与空标记**——`.SRCINFO`（打包解析器会严格读取它），以及零字节标记 `.keep`、`.gitkeep` 与 `py.typed`。
 - **二进制文件**——夹具中列出的图像、字体、归档、媒体与已编译对象后缀。校验器变体表未映射的后缀默认豁免。
 
@@ -129,7 +130,7 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 位于 [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)。对于工作树中的每个文件，校验器都会查询其适用性（依 §3）；若适用，则断言规范 SPDX 行存在于插入位置。对大多数类别而言，该位置是文件头部，位于可选的 shebang 之后。对 Markdown 与 MDX 文件，会先跳过 YAML frontmatter 块，因此规范行可位于结束围栏之后，如 §5 所要求的那样。MDX 文件解析为 `{/* */}` 形式（§2），并依其进行检查。校验器与注入器将规范块放在同一索引处。
 
-由位于 [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) 的字节精确夹具支撑。针对此匹配器，语料库运行会报告发现项的数量，以及被标记文件的样本。它不输出逐文件 diff，也不输出覆盖率百分比。该匹配器属于建议性质：其发现项会被报告，但无论是否使用 `--strict`，都不会导致构建失败。
+由字节精确的夹具 [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) 支撑。针对此匹配器，语料库运行会报告发现项的数量，以及被标记文件的样本。它不输出逐文件差异，也不输出覆盖率百分比。该匹配器属于阻断性质：在 CI 与 pre-commit 钩子所使用的 `--strict` 下，发现项会导致运行失败。若不使用 `--strict`，闸门会报告该发现项并以 `0` 退出。
 
 ---
 
@@ -139,13 +140,13 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 1. **`src/apothem/schemas/authorship-header.txt`**——字节精确的规范夹具；唯一事实来源。
 2. **`scripts/inject-header.{sh,py}`**——机械注入器（§7）。
-3. **`file-header` 校验器**（§8）——以建议性发现项的形式报告偏差；它不会导致构建失败。
-4. **Pre-commit 钩子**——`conformity-corpus-perwrite` 钩子会以 `--strict` 对已跟踪的树运行每个逐写入（per-Write）匹配器，包括 `file-header` 校验器（§8）。`file-header` 匹配器属于建议性质，因此其发现项会被报告，但不会阻止提交。该钩子只做检查，没有修复模式，也从不运行注入器（§7）；注入器通过 `make headers-fix` 运行。
+3. **`file-header` 校验器**（§8）——以阻断性发现项的形式报告偏差，该发现项会使 `--strict` 运行失败。
+4. **Pre-commit 钩子**——`conformity-corpus-perwrite` 钩子会以 `--strict` 对已跟踪的树运行每个逐写入（per-Write）匹配器，包括 `file-header` 校验器（§8）。`file-header` 匹配器属于阻断性质，因此其发现项会阻止提交。该钩子只做检查，没有修复模式，也从不运行注入器（§7）；注入器通过 `make headers-fix` 运行。
 5. **`CLAUDE.md` 强制行为块**——指示助手在创建适用文件时注入规范 SPDX 行。
 6. 位于 `.github/copilot-instructions.md` 的 **GitHub Copilot 指令文件**——指示 Copilot 在生成文件时同样照做。
 7. 位于 `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` 的 **PreToolUse 钩子**——拦截适用路径上的 Write/Edit 工具调用，使 SPDX 行在文件创建时即被注入，而不是之后才以校验器发现项的形式暴露。
 8. **PR 模板复选框**——面向贡献者的断言：每个新文件都带有规范 SPDX 行。
-9. **本文档**（`site/content/docs/reference/authorship-header.mdx`）——规范的、规范性的说明文。
+9. **本文档**（`site/content/docs/reference/authorship-header.mdx`）——规范的、具有规范效力的说明文。
 
 ---
 

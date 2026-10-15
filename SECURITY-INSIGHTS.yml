@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-#
+
 # OpenSSF Security Insights — machine-readable security metadata for Apothem.
 # Specification: https://security-insights.openssf.org/ (schema v2.2.0).
 # Refresh header.last-updated / header.last-reviewed whenever the security

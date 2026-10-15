@@ -81,6 +81,13 @@ tests/fixtures/**.yml
 tests/fixtures/**.txt
 tests/fixtures/**.json
 
+# --- Injector smoke-test inputs ------------------------------------------------
+# Header-less on purpose: the injector smoke test copies these inputs and
+# checks that the injector adds the header. A header in the inputs would make
+# the test meaningless. Added with the maintainer's approval on 2026-10-15,
+# when the file-header check became blocking.
+tests/conformity-scenarios/fixtures/F-13-injector-smoke/**
+
 # --- Empty-marker files -------------------------------------------------------
 # Semantically zero-byte; banner would defeat their purpose.
 **/.keep
