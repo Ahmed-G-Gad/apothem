@@ -382,3 +382,19 @@ claims:
       - verifiable
       - Recommended Next Step
       - attestation
+
+  # --- Synced Unit ---------------------------------------------------------
+
+  - id: synced-unit.cohorts
+    claim: "The synced unit is the set of cohorts the propagation manifest declares: rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in: []
+    semantic-equivalence-tokens:
+      - subagents
+      - statuslines
+      - conformity validators
+      - per-harness instruction templates
+      - settings template
