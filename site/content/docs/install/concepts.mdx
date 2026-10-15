@@ -39,8 +39,9 @@ today; adapters for harnesses without a hook mechanism simply omit it.
 
 ## Conformity gate
 
-The mechanical fraction of the fifteen-bar pre-emission gate (M1-M15) — the standalone validators
-that must pass before any artifact is emitted. The pre-emission gate is the quality floor; the
+The mechanical fraction of the fifteen-bar pre-emission gate (M1-M15) — the machine-checkable
+validators that run before an artifact is emitted; advisory by default, blocking
+under `--strict`. The pre-emission gate is the quality floor; the
 conformity gate runs its machine-checkable bars, and hooks enforce individual bars in real-time.
 
 ## Plan suite
