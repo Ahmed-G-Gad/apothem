@@ -39,6 +39,7 @@ bootstrap stubs still consume the shell locators on the no-substitution path.
 
 from __future__ import annotations
 
+import ctypes
 import os
 import subprocess
 import sys
@@ -247,3 +248,42 @@ def resolve_python_bin() -> Path:
         "no real CPython >= 3.10 interpreter found for hook wiring; "
         "sys.executable is unusable and no PATH candidate satisfies the floor"
     )
+
+
+def _short_path_name(long_path: str) -> str | None:
+    """Return ``GetShortPathNameW`` of *long_path*, or None when the call fails.
+
+    Windows only. The API is called twice, as its contract requires: first with
+    no buffer to learn the length it needs, then with a buffer of that length.
+    ``ctypes.WinDLL`` exists only on Windows, so the ignore below covers mypy on
+    POSIX hosts and the ``unused-ignore`` code covers mypy on Windows.
+    """
+    kernel32 = ctypes.WinDLL("kernel32")  # type: ignore[attr-defined, unused-ignore]
+    get_short_path = kernel32.GetShortPathNameW
+    get_short_path.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
+    get_short_path.restype = ctypes.c_uint32
+    needed = get_short_path(long_path, None, 0)
+    if needed == 0:
+        return None
+    buffer = ctypes.create_unicode_buffer(needed)
+    written = get_short_path(long_path, buffer, needed)
+    if written == 0 or written >= needed:
+        return None
+    return str(buffer.value)
+
+
+def windows_short_path(path: Path) -> Path:
+    """Return the Windows 8.3 short form of *path*, or *path* unchanged.
+
+    A short form has no space, so it survives an unquoted command word. The
+    API returns *path* itself when short-name generation is disabled on the
+    volume, and returns 0 on failure; both leave *path* as given. Off Windows,
+    and when the API cannot be reached, *path* is returned unchanged.
+    """
+    if not _is_windows():
+        return path
+    try:
+        short = _short_path_name(str(path))
+    except (AttributeError, OSError):
+        return path
+    return Path(short) if short else path
