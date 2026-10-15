@@ -26,6 +26,13 @@ skills.
 user-invoked skills, and support files under
 `~/.config/apothem/{rules,templates}/`.
 
+**Hook interpreter.** Before it writes anything, the install resolves a CPython
+3.10+ interpreter. On Windows, each hook's `commandWindows` entry in
+`hooks.json` runs that interpreter's absolute path instead of the `py -3`
+launcher; the POSIX `command` entries keep `python3`. Re-run
+`apothem update --harness codex` after the interpreter moves or is removed. If
+no CPython 3.10+ is found, the install stops before it writes any file.
+
 The Apothem block in `AGENTS.md` ends with an Apothem support files section
 that names the absolute directory each repository-style citation in the
 installed skills and rules resolves against: `rules/<name>.md` and

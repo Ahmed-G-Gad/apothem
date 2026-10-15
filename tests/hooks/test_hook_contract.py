@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
 import stat
@@ -628,8 +629,9 @@ def test_clause8_single_registration_per_surface(workspace: dict[str, Path]) -> 
 def test_codex_windows_command_mirrors_the_command(workspace: dict[str, Path]) -> None:
     """Codex runs ``commandWindows`` on Windows; it makes the same dispatcher call.
 
-    The clauses above run ``command``. Each override must be that command with
-    only the interpreter launcher swapped, so a clean run covers both strings.
+    The clauses above run ``command``. Each override must be the install-resolved
+    interpreter, quoted, followed by that same command with its ``python3``
+    launcher removed, so a clean run covers both strings.
     """
     config = workspace["home"] / ".codex" / "hooks.json"
     data = json.loads(config.read_text(encoding="utf-8"))
@@ -640,11 +642,16 @@ def test_codex_windows_command_mirrors_the_command(workspace: dict[str, Path]) -
         for hook in group["hooks"]
     ]
 
+    windows_prefix = re.compile(r'^"(?P<python>[^"]+)" (?P<rest>.*)$')
     assert hooks
     for hook in hooks:
         command = hook["command"]
         assert command.startswith("python3 "), command
-        assert hook.get("commandWindows") == "py -3 " + command.removeprefix("python3 ")
+        windows = hook.get("commandWindows", "")
+        match = windows_prefix.match(windows)
+        assert match is not None, windows
+        assert Path(match.group("python")).is_absolute(), windows
+        assert match.group("rest") == command.removeprefix("python3 "), windows
 
 
 def test_shell_guards_cover_the_powershell_tool(workspace: dict[str, Path]) -> None:
