@@ -34,8 +34,9 @@ each type.
 
 **Versioning Convention (versioned artifact classes — commands, helpers, skills, CLAUDE.md):**
 
-- `version` is **semantic** (`MAJOR.MINOR.PATCH`). Bump MAJOR for breaking schema or contract changes; MINOR for additive non-breaking changes (new optional fields, additional sections, additional anti-patterns); PATCH for clarifications, formatting fixes, or doc-only edits without behavior change.
-- `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump and may be updated independently for non-version-bumping link refreshes.
+- `version` is **semantic** (`MAJOR.MINOR.PATCH`). Bump MAJOR for breaking schema or contract changes; MINOR for additive non-breaking changes (new optional fields, additional sections, additional anti-patterns); PATCH for a behavioral change that corrects an existing directive without breaking the contract.
+- Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave `version` unchanged. Only a behavioral change bumps it.
+- `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump, and it changes on a non-version-bumping typo or link fix as well.
 - New artifacts seed at `v0.Y.Z`. Promotion to `vX.Y.Z` indicates the artifact's contract is stable enough to be a public commitment.
 
 ---
@@ -417,4 +418,4 @@ Every artifact must satisfy these checks:
   constraints explicitly — better to document a caveat than ship a silent bug.
 - **Kebab-case for Names:** Easy to use in URLs, scripts, and command-line
   contexts. Avoid spaces, underscores, and camelCase for names.
-- **Version Bump Hygiene:** Every behavior-changing edit must bump `version` and `updated` together. Pure formatting or typo fixes bump PATCH; new optional sections or anti-patterns bump MINOR; structural reorganization or contract changes bump MAJOR.
+- **Version Bump Hygiene:** Every behavior-changing edit must bump `version` and `updated` together. Typo fixes, link fixes, and formatting changes leave the version unchanged; new optional sections or anti-patterns bump MINOR; structural reorganization or contract changes bump MAJOR.
