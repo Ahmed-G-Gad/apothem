@@ -21,7 +21,7 @@ sourceHash: "7bdb8c8995e9fbe3"
 يبدأ دفعُ الوسم سيرَي عمل. يبني <bdi>`.github/workflows/release.yml`</bdi> إصدار
 <bdi>GitHub</bdi> ويوقّعه ويُصدِر شهاداته وينشره مع مجموعة مُنتَجاته الكاملة:
 <bdi>sdist</bdi>، و<bdi>wheel</bdi>، و<bdi>CycloneDX SBOM</bdi>، وحِزم
-<bdi>Sigstore cosign</bdi>، وإثبات المنشأ <bdi>SLSA-3</bdi>، وأرشيفات بيئة التشغيل
+<bdi>Sigstore cosign</bdi>، والمنشأ <bdi>SLSA-3</bdi>، وأرشيفات بيئة التشغيل
 الخاصة بالمنصّات. وينشر <bdi>`publish-npm.yml`</bdi> الحزمة
 <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في
 <bdi>npm</bdi>. يصل قسم <bdi>CHANGELOG</bdi> المُرقَّم بالنسخة في كوميت الإصدار؛
@@ -134,8 +134,7 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 ```
 
 يُشغِّل سير العمل البناء (<bdi>sdist + wheel</bdi>، ثم <bdi>CycloneDX SBOM</bdi>
-لتلك التوزيعات يُكتَب بجانبها)، وتوقيع <bdi>cosign</bdi> بلا مفاتيح، وتوليد إثبات
-المنشأ <bdi>SLSA-3</bdi> والتحقّق منه، وبناء أرشيفات المنصّات
+لتلك التوزيعات يُكتَب بجانبها)، وتوقيع <bdi>cosign</bdi> بلا مفاتيح، وتوليد المنشأ <bdi>SLSA-3</bdi> والتحقّق منه، وبناء أرشيفات المنصّات
 (<bdi>darwin / linux / windows</bdi>)، وتوقيع الأرشيفات مع بيان
 <bdi>`SHA256SUMS`</bdi> مُجمَّع، والنشر النهائي لإصدار <bdi>GitHub</bdi>. يفحص
 المشرف سجلّ مهمة <bdi>`publish GitHub Release`</bdi> بحثًا عن تأكيدات رفع الأصول.
@@ -175,7 +174,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 | 1 | إصدار <bdi>GitHub</bdi> (توزيعات <bdi>Python</bdi>) | <bdi>`apothem-X.Y.Z.tar.gz`</bdi> (<bdi>sdist</bdi>) + <bdi>`apothem-X.Y.Z-py3-none-any.whl`</bdi> | يتضمّن خرج <bdi>`gh release view vX.Y.Z --json assets --jq '.assets[].name'`</bdi> اسمَي الملفّين كليهما |
 | 2 | إصدار <bdi>GitHub</bdi> (<bdi>SBOM</bdi>) | <bdi>`sbom.cdx.json`</bdi> + <bdi>`sbom.cdx.json.cosign.bundle`</bdi> | تتضمّن قائمة الأصول كليهما؛ وقيمة <bdi>`metadata.component.purl`</bdi> في الـ <bdi>SBOM</bdi> هي <bdi>`pkg:pypi/apothem@X.Y.Z`</bdi>، وتتضمّن مكوّناته كل حزمة في <bdi>`src/apothem/_vendor/vendor.txt`</bdi> |
 | 3 | إصدار <bdi>GitHub</bdi> (التوقيعات) | ملف <bdi>`<asset>.cosign.bundle`</bdi> واحد لكلٍّ من الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وامتداد <bdi>VS Code</bdi> وكل أرشيف منصّة و<bdi>`SHA256SUMS`</bdi> (تُسمّي الإصدارات السابقة حِزم الأرشيفات و<bdi>`SHA256SUMS`</bdi> بالاسم <bdi>`<asset>.sig`</bdi>) | يخرج <bdi>`cosign verify-blob`</bdi> بالقيمة 0 مع الهوية الدقيقة الواردة في القسم 5.5 |
-| 4 | إصدار <bdi>GitHub</bdi> (إثبات المنشأ) | <bdi>`provenance.intoto.jsonl`</bdi> | يخرج <bdi>`bash scripts/release/verify-provenance.sh <download-dir>`</bdi> بالقيمة 0 (القسم 5.5) |
+| 4 | إصدار <bdi>GitHub</bdi> (المنشأ) | <bdi>`provenance.intoto.jsonl`</bdi> | يخرج <bdi>`bash scripts/release/verify-provenance.sh <download-dir>`</bdi> بالقيمة 0 (القسم 5.5) |
 | 5 | إصدار <bdi>GitHub</bdi> (أرشيفات المنصّات) | <bdi>`apothem-vX.Y.Z-darwin.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-linux.tar.gz`</bdi>، <bdi>`apothem-vX.Y.Z-windows.zip`</bdi> | تتضمّن قائمة الأصول كل أرشيف إضافةً إلى <bdi>`SHA256SUMS`</bdi>. أرشيفا <bdi>darwin</bdi> و<bdi>linux</bdi> هما البايتات نفسها تحت اسمين (بيئة التشغيل محايدة تجاه المنصّة؛ ولا يختار <bdi>`--platform`</bdi> إلا بين <bdi>tar.gz</bdi> و<bdi>zip</bdi>)، لذا تُظهر سطورهما في <bdi>`SHA256SUMS`</bdi> بصمةً واحدة مرّتين |
 | 6 | إصدار <bdi>GitHub</bdi> (امتداد <bdi>VS Code</bdi>) | <bdi>`apothem.vsix`</bdi> + <bdi>`apothem.vsix.cosign.bundle`</bdi> | تتضمّن قائمة الأصول كليهما؛ ويُثبّته <bdi>`code --install-extension apothem.vsix`</bdi>. الإصدارات التي سبقت تحزيم سير عمل الإصدار للامتداد لا تحمل أيًّا منهما |
 | 7 | <bdi>npmjs.com</bdi> | <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> | يُرجِع <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> القيمة <bdi>`X.Y.Z`</bdi>؛ ويطبع <bdi>`npx @ahmed-g-gad/apothem@X.Y.Z --version`</bdi> النص <bdi>`Apothem, version X.Y.Z`</bdi> |
@@ -270,7 +269,7 @@ bash ../scripts/release/verify-provenance.sh .
 
 المتوقّع: <bdi>`Verified OK`</bdi>، و<bdi>`PASSED: SLSA verification passed`</bdi>،
 و<bdi>`verify-provenance: chain OK (3 of 3 layers verified)`</bdi>. يفحص السكربت
-<bdi>`SHA256SUMS`</bdi>، وكل حزمة توقيع، وإثبات المنشأ في تشغيل واحد؛ ويستنتج
+<bdi>`SHA256SUMS`</bdi>، وكل حزمة توقيع، والمنشأ في تشغيل واحد؛ ويستنتج
 الوسم من اسم الـ <bdi>wheel</bdi> (ويتجاوزه <bdi>`--tag vX.Y.Z`</bdi>).
 
 يُنتِج اختبار الدخان صفًّا من سطر واحد <bdi>PASS / FAIL</bdi> لكل سطح؛ سجِّل الصفوف
@@ -285,7 +284,7 @@ bash ../scripts/release/verify-provenance.sh .
 | رُفِض دفع الوسم (فشل التوقيع) | يُرجِع <bdi>`git push origin vX.Y.Z`</bdi> الخطأ <bdi>`error: failed to push some refs`</bdi> مع رسالة متعلّقة بـ <bdi>GPG</bdi> | تحقّق من أن مفتاح <bdi>GPG</bdi> الفرعي مُحمَّل (<bdi>`gpg --list-secret-keys --keyid-format=long`</bdi>)؛ أعِد وضع الوسم محليًا باستخدام <bdi>`-s`</bdi> بعد إصلاح حلقة المفاتيح؛ أعِد الدفع |
 | يتوقّف بناء الإصدار عند <bdi>`Check the plugin version changed with the plugin`</bdi> | يُسمّي سجلّ مهمة البناء الإضافةَ والوسمَ السابق؛ لم يُبنَ أي أصل ولم يُنشَر | تغيّرت حزمة الإضافة منذ الإصدار السابق لكن نسختها لم تتغيّر. احذف الوسم (<bdi>`git push --delete origin vX.Y.Z`</bdi>، <bdi>`git tag -d vX.Y.Z`</bdi>)، وشغِّل <bdi>`python scripts/release/bump_version.py X.Y.Z`</bdi>، وأنشئ الكوميت، ثم وقِّع الوسم وادفعه مجددًا (القسم 2.2). يعمل الفحص نفسه على كل طلب سحب بوصفه تعليقًا تحذيريًا، لذا يظهر هذا عادةً قبل وضع الوسم |
 | تفشل مهمة في <bdi>`release.yml`</bdi> في مرحلة واحدة | يُسمّي <bdi>`gh run view <run-id> --log`</bdi> المهمة الفاشلة (<bdi>build</bdi>، التي تكتب الـ <bdi>SBOM</bdi> أيضًا / <bdi>sign</bdi> / <bdi>provenance</bdi> / <bdi>archive</bdi> / <bdi>publish</bdi>) | أعِد تشغيل المهمة الفاشلة وحدها عبر <bdi>`gh run rerun <run-id> --failed`</bdi>؛ وإذا تكرّر الفشل، أصلِح مُدخَل المهمة عند مصدره قبل إعادة وضع الوسم |
-| يفشل التحقّق من إثبات المنشأ <bdi>SLSA</bdi> | تخرج مهمة <bdi>`verify SLSA provenance artifact`</bdi> بقيمة غير صفرية | افحص مُنتَج إثبات المنشأ بحثًا عن عدم تطابق بصمة الموضوع؛ أعِد البناء من الوسم نفسه — يرتبط إثبات المنشأ ببصمات المُنتَجات الدقيقة، لذا تتطلّب أي إعادة توليد لمُنتَج إعادة تشغيل كاملة لسير العمل |
+| يفشل التحقّق من المنشأ <bdi>SLSA</bdi> | تخرج مهمة <bdi>`verify SLSA provenance artifact`</bdi> بقيمة غير صفرية | افحص مُنتَج المنشأ بحثًا عن عدم تطابق بصمة الموضوع؛ أعِد البناء من الوسم نفسه — يرتبط المنشأ ببصمات المُنتَجات الدقيقة، لذا تتطلّب أي إعادة توليد لمُنتَج إعادة تشغيل كاملة لسير العمل |
 | رُفِض النشر على <bdi>npmjs.com</bdi> | تخرج مهمة <bdi>npm</bdi> بقيمة غير صفرية أثناء <bdi>`npm publish`</bdi>؛ والخطأ <bdi>`404`</bdi> من السجلّ أثناء <bdi>`PUT`</bdi> هو عدم تطابق في التفويض / الناشر الموثوق، لا دليل على أن شيفرة الحزمة مفقودة | تحقّق من أن <bdi>npm Trusted Publishing</bdi> للحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> يُسمّي المالك <bdi>`ahmed-g-gad`</bdi>، والمستودع <bdi>`apothem`</bdi>، وسير العمل <bdi>`publish-npm.yml`</bdi>، والإجراء المسموح به <bdi>`npm publish`</bdi>؛ وتأكّد من أن المهمة تعمل بنسخة <bdi>Node</bdi> وبالحدّ الأدنى لدعم <bdi>OIDC</bdi> في <bdi>npm CLI</bdi>، المُثبَّتين في سير العمل |
 | الوسم ظاهر لكن الأصول مفقودة | يُرجِع <bdi>`gh release view vX.Y.Z`</bdi> إصدارًا هيكليًا فارغًا | أعِد تشغيل مهمة النشر في سير عمل الإصدار؛ فهي تُعدِّل الإصدار الموجود وتُعيد رفع كل الأصول. لا تحذف الوسم وتُعِد وضعه إلا عندما لا يكون أي شيء من الوسم قد وصل إلى المستخدمين (لا أصول، ولا نسخة <bdi>npm</bdi>)؛ وإلا فأصلِح إلى الأمام بالإصدار التصحيحي التالي ([دليل تشغيل استرداد الإصدار](/docs/runbooks/release-recovery)، القسم 2) |
 

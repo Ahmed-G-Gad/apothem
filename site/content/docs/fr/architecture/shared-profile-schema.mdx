@@ -11,7 +11,7 @@ Le profil partagé d'Apothem est un fichier YAML situé à
 C'est la source sémantique de vérité pour l'identité, les préférences, les
 règles partagées, les surcharges par environnement et les exclusions
 d'environnements. Les adaptateurs dérivent les fichiers natifs de chaque
-environnement à partir de ce profil et des cohorts de charge utile empaquetés
+environnement à partir de ce profil et des cohortes de charge utile empaquetées
 d'Apothem.
 
 Le modèle d'exécution est `src/apothem/lib/profile.py` ; le JSON Schema est
@@ -100,10 +100,10 @@ YAML peut remodeler chaque environnement installé.
 
 Un champ de profil porte une intention sémantique, et non un extrait de
 configuration littéral. `identity.name` est « qui est l'opérateur », pas une
-ligne de JSON. Les cohorts de charge utile empaquetés (`commands`, `rules`,
+ligne de JSON. Les cohortes de charge utile empaquetées (`commands`, `rules`,
 `skills`, `hooks`, `templates`, `statuslines`, `output-styles`, `agents`)
 portent un contenu comportemental dans le format neutre propre à Apothem. Ni le
-champ ni le cohort ne savent à quoi ressemble la configuration d'un
+champ ni la cohorte ne savent à quoi ressemble la configuration d'un
 environnement — cette connaissance n'appartient qu'aux adaptateurs.
 
 Lorsque vous exécutez `apothem update`, le flux est :
@@ -113,15 +113,14 @@ Lorsque vous exécutez `apothem update`, le flux est :
    n'installe jamais à moitié.
 2. **Résoudre les adaptateurs** pour l'environnement sélectionné (ou `all`,
    moins tout `exclude_harnesses`) via le registre central.
-3. **Matérialiser** — chaque adaptateur lit le même profil et les mêmes cohorts,
+3. **Matérialiser** — chaque adaptateur lit le même profil et les mêmes cohortes,
    puis les traduit dans le dialecte de son environnement. Un champ comme
    `preferences.style` devient une valeur de configuration native dans un
    environnement et un contexte d'instruction rendu dans un autre ; une règle
    dans `rules[]` devient un fichier `.mdc` pour Cursor, une section
    d'instructions à l'échelle du dépôt pour Copilot, ou une entrée d'arbre de
    support là où l'environnement n'a pas de surface de règles native.
-4. **Écrire** les fichiers natifs — une unique configuration rendue, un cohort
-   converti, ou un sous-arbre de support référencé depuis l'ancre native de
+4. **Écrire** les fichiers natifs — une unique configuration rendue, une cohorte convertie, ou une sous-arborescence de support référencée depuis l'ancre native de
    l'environnement.
 
 Le même profil pilote chaque environnement, de sorte que les matérialisations ne

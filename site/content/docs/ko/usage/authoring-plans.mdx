@@ -1,6 +1,6 @@
 ---
 title: "계획 작성"
-description: "/plan 파이프라인으로 계획 스위트를 작성합니다."
+description: "/plan 파이프라인으로 플랜 스위트를 작성합니다."
 machineTranslated: true
 sourceHash: "b426b7f278207ec2"
 ---
@@ -13,7 +13,7 @@ sourceHash: "b426b7f278207ec2"
 이 파이프라인은 여덟 개의 일급 `/plan-<stage>` 명령으로 제공됩니다. 일상적인 흐름에서는 그중 다섯 개를 실행합니다:
 
 1. `/plan-spec` — 산문을 사양 등급의 `_spec/spec.md`로 정련
-2. `/plan-generate` — 완전한 계획 스위트 골격을 생성
+2. `/plan-generate` — 완전한 플랜 스위트 골격을 생성
 3. `/plan-review` — 생성된 계획의 포렌식 감사
 4. `/plan-execute` — 페이즈를 한 번에 하나씩 실행
 5. `/plan-status` — 언제든지 진행 상황을 검사
@@ -27,7 +27,7 @@ sourceHash: "b426b7f278207ec2"
 /plan-spec --quick my-feature
 ```
 
-## 완전한 계획 스위트
+## 완전한 플랜 스위트
 
 ```bash
 # Step 1 — write your requirements to prose.md, then:

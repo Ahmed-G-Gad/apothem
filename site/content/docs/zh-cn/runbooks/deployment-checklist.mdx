@@ -14,7 +14,7 @@ sourceHash: "09dbc1fde38d4135"
 ## 1. YAML 有效性
 
 - [ ] 所有规则文件均无 YAML 错误地解析——frontmatter 块以 `---` 开头、以 `---` 结尾，且块外无孤立内容
-- [ ] 所有受托工作者文件均无 YAML 错误地解析
+- [ ] 所有委派工作者文件均无 YAML 错误地解析
 - [ ] 所有命令文件均无 YAML 错误地解析
 - [ ] 所有技能 `SKILL.md` 文件均无 YAML 错误地解析
 
@@ -45,7 +45,7 @@ frontmatter，并标记 YAML 错误和缺失的必填字段。如需临时
 - [ ] `disable-model-invocation` 存在且有意为之（对于仅供指引的命令为 `true`）
 - [ ] 在存在的情况下审查 `effort`、`portability`（按 schema 为可选）
 
-### 受托工作者
+### 委派工作者
 
 路径：
 
@@ -69,7 +69,7 @@ src/apothem/agents/*.md
 
 ## 3. 安全性
 
-- [ ] **没有任何受托工作者使用 `permissionMode: "bypassPermissions"`**——这会绕过对 Write/Bash 操作的交互式确认
+- [ ] **没有任何委派工作者使用 `permissionMode: "bypassPermissions"`**——这会绕过对 Write/Bash 操作的交互式确认
 - [ ] 工作者的 `tools` 列表保持最小化——只包含工作者确实需要的工具
 - [ ] 具有 `Bash` 访问权限的工作者有正当理由，并设有 maxTurns 限制
 - [ ] 任何制品中均无硬编码的路径、令牌或密钥
@@ -81,7 +81,7 @@ src/apothem/agents/*.md
 
 - [ ] `src/apothem/rules/` 表中列出的每条规则都按所述路径存在于磁盘上
 - [ ] `src/apothem/commands/` 表中列出的每条命令都存在于磁盘上
-- [ ] `src/apothem/agents/` 注册表中列出的每个受托工作者都存在于磁盘上
+- [ ] `src/apothem/agents/` 注册表中列出的每个委派工作者都存在于磁盘上
 - [ ] `src/apothem/skills/` 表中列出的每项技能都存在于磁盘上
 - [ ] `src/apothem/hooks/` 表中的每个钩子在 `settings.json` 中都有对应的条目
 - [ ] CLAUDE.md `Implements` 列引用的所有 `src/apothem/rules/*.md` 文件均存在

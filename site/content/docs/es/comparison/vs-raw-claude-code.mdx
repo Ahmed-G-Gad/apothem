@@ -16,7 +16,7 @@ contrasta mantener la configuración a mano frente a gestionarla con Apothem.
 | Tarea | Configuración manual | Gestionada por Apothem |
 | ---- | --------------- | --------------- |
 | Escribir reglas, agentes, comandos, skills | Editar cada superficie en `~/.claude/` a mano | Escribir una vez en el corpus compartido |
-| Mantener output-styles y statuslines | Editar a mano por superficie | Propagados desde el corpus compartido |
+| Mantener output-styles y líneas de estado | Editar a mano por superficie | Propagados desde el corpus compartido |
 | Configurar hooks | Editar a mano las entradas de hook de `settings.json` | Propagados (PreToolUse/PostToolUse/Stop/SessionStart) |
 | Mantener la configuración alineada con otros entornos | Manual, por herramienta | Automático en `apothem update` |
 | Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness claude-code` |
@@ -24,7 +24,7 @@ contrasta mantener la configuración a mano frente a gestionarla con Apothem.
 ## Qué gestiona Apothem
 
 El adaptador propaga reglas, agentes, comandos, skills, output-styles,
-statuslines y `settings.json` a `~/.claude/`. Los hooks nativos PreToolUse,
+líneas de estado y `settings.json` a `~/.claude/`. Los hooks nativos PreToolUse,
 PostToolUse, Stop y SessionStart se configuran desde el corpus compartido.
 
 Apothem escribe un único bloque gestionado delimitado por centinelas en tu `~/.claude/CLAUDE.md` de ámbito de usuario. `apothem update` reescribe solo ese bloque y conserva tu texto fuera de él. Los `CLAUDE.md` de proyecto no se tocan. Apothem gobierna las superficies propagadas que lo rodean.

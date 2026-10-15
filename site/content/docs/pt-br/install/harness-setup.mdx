@@ -6,13 +6,13 @@ sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-## Instalar um adaptador de ferramenta
+## Instalar um adaptador de harness
 
 ```bash
 apothem install --harness <name>
 ```
 
-Consulte a [lista de ferramentas suportadas](/docs/harnesses) para os nomes disponíveis.
+Consulte a [lista de harnesses suportados](/docs/harnesses) para os nomes disponíveis.
 Adaptadores com escopo de projeto exigem o caminho do projeto:
 
 ```bash
@@ -22,7 +22,7 @@ apothem install --harness github-copilot --project /path/to/project
 apothem install --harness windsurf --project /path/to/project
 ```
 
-## Instalar várias ferramentas
+## Instalar vários harnesses
 
 Use o seletor abrangente do registro quando você quiser todos os adaptadores suportados. Como
 o conjunto registrado inclui adaptadores com escopo de projeto, passe a raiz do projeto.
@@ -33,7 +33,7 @@ apothem install --harness cursor --project /path/to/project
 apothem install --harness all --project /path/to/project
 ```
 
-## Verificar a configuração de ferramenta
+## Verificar a configuração de harness
 
 ```bash
 apothem verify --harness <name>
@@ -42,7 +42,7 @@ apothem verify --harness all --project /path/to/project
 
 Para verificar todos os adaptadores registrados de uma só vez, execute `apothem doctor`. Ele imprime uma tabela de status de instalação por harness e sai com código diferente de zero somente quando alguma verificação falha, como um harness instalado que não passa na verificação, um comando de hook que não consegue iniciar ou um perfil presente que não é válido. Um harness que não está instalado aparece na lista, mas não faz o `doctor` falhar.
 
-## Ver ferramentas instaladas
+## Ver harnesses instalados
 
 ```bash
 apothem harnesses list

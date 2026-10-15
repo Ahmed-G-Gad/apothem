@@ -27,7 +27,7 @@ flowchart TD
 执行 `apothem update --harness X` 时：
 
 1. 加载并验证 `~/.config/apothem/profile.yaml` 或 `--profile PATH`。
-2. 通过中央注册表解析所选 harness 或 `all`。
+2. 通过中央注册表解析所选工具或 `all`。
 3. 在首次写入之前验证完整的物化计划。
 4. 调用 `Adapter.update(profile, project=...)`。
 5. 报告已创建、已更新、未更改、已跳过、警告和错误的结果。

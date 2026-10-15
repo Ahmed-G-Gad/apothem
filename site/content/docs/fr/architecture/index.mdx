@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-description: "Vue d'ensemble de l'architecture d'Apothem — le profil partagé, l'abstraction de l'adaptateur de harness et l'organisation de l'arborescence des sources."
+description: "Vue d'ensemble de l'architecture d'Apothem — le profil partagé, l'abstraction de l'adaptateur d'environnement et l'organisation de l'arborescence des sources."
 machineTranslated: true
 sourceHash: "66ba79aa992abb62"
 ---
@@ -9,16 +9,16 @@ sourceHash: "66ba79aa992abb62"
 Apothem s'articule autour d'une seule idée : un profil de gouvernance partagé,
 matérialisé dans le format de configuration natif de chaque environnement
 d'exécution d'assistant par un adaptateur propre à chaque
-harness. Cette section explique les pièces structurelles — le protocole de
+environnement. Cette section explique les pièces structurelles — le protocole de
 l'adaptateur, le schéma du profil, l'organisation de l'arborescence des sources
 et le flux d'installation qui les relie.
 
 ## Vue d'ensemble du système
 
 En un coup d'œil, Apothem est un seul pipeline : un unique profil partagé
-alimente le registre de harness, qui résout chaque adaptateur propre à un
-harness ; chaque adaptateur matérialise la surface de configuration native de
-son harness, et un contrôle de conformité permanent vérifie chaque surface
+alimente le registre d'environnement, qui résout chaque adaptateur propre à un
+environnement ; chaque adaptateur matérialise la surface de configuration native de
+son environnement, et un contrôle de conformité permanent vérifie chaque surface
 matérialisée.
 
 ```mermaid
@@ -44,7 +44,7 @@ flowchart TD
 
 | Page | Description |
 |------|-------------|
-| [Abstraction de l'adaptateur de harness](/docs/architecture/harness-adapter-abstraction) | Le protocole `HarnessAdapter` — comment les adaptateurs traduisent le profil partagé en configuration native de la plateforme. |
+| [Abstraction de l'adaptateur d'environnement](/docs/architecture/harness-adapter-abstraction) | Le protocole `HarnessAdapter` — comment les adaptateurs traduisent le profil partagé en configuration native de la plateforme. |
 | [Schéma du profil partagé](/docs/architecture/shared-profile-schema) | Le profil YAML adossé à un schéma dans `~/.config/apothem/profile.yaml` ou `--profile PATH`. |
 | [Organisation des sources](/docs/architecture/source-layout) | Pourquoi Apothem utilise une organisation `src/` et comment l'arborescence est structurée. |
 | [Flux d'installation](/docs/architecture/installation-workflow) | Comment `apothem install`, `update` et `uninstall` fonctionnent de bout en bout. |

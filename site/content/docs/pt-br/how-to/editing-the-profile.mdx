@@ -1,13 +1,13 @@
 ---
 title: "Editar o perfil"
-description: "Altere o perfil compartilhado e rematerialize todas as ferramentas instaladas."
+description: "Altere o perfil compartilhado e rematerialize todos os harnesses instalados."
 machineTranslated: true
 sourceHash: "24dfc028806d15cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Objetivo: alterar um valor no perfil compartilhado e propagá-lo para todas as ferramentas que você
-tem instaladas.
+Objetivo: alterar um valor no perfil compartilhado e propagá-lo para todos os harnesses que você
+tem instalados.
 
 ## Pré-requisitos
 
@@ -25,13 +25,13 @@ O perfil é um único documento YAML. Suas chaves de nível superior:
   `github`.
 - `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
   `formatter`, `test_framework`.
-- `rules` — uma lista de strings de regras adicionais compartilhadas com ferramentas capazes.
+- `rules` — uma lista de strings de regras adicionais compartilhadas com harnesses capazes.
 - `seriousness` — um de `EXPLORING`, `PERSONAL_USE`, `SHARED`,
   `PUBLIC_LAUNCH`.
 - `enforcement` — alternadores opcionais (`sprints`, `agent_teams`, `multitasking`,
   `continuous_execution`, `learning_loop`), cada flag desligada por padrão.
-- `harnesses` — sobrescritas por ferramenta indexadas pelo id da ferramenta.
-- `exclude_harnesses` — ids de ferramentas ignorados por comandos em lote (`--harness all`).
+- `harnesses` — sobrescritas por harness indexadas pelo id do harness.
+- `exclude_harnesses` — ids de harnesses ignorados por comandos em lote (`--harness all`).
 
 ## Passos
 
@@ -91,7 +91,7 @@ Para uma visão do sistema inteiro que tolera harnesses que você não instalou,
 
 ## Relacionado
 
-- [Adicionar uma ferramenta](/docs/how-to/adding-a-harness) para colocar uma nova ferramenta sob
+- [Adicionar um harness](/docs/how-to/adding-a-harness) para colocar um novo harness sob
   o controle do perfil antes de rematerializar.
 - [Atualização](/docs/install/updating) cobre a atualização do mecanismo junto com a
   etapa de rematerialização.

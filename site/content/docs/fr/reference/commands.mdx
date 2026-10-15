@@ -1,14 +1,13 @@
 ---
 title: "Commandes"
-description: "Définitions de commandes slash mettant en œuvre le pipeline de suite de plan, ainsi que des audits pour la revue du code, de l'architecture, de la sécurité, des dépendances et de la documentation."
+description: "Définitions de commandes slash mettant en œuvre le pipeline de suite de planification, ainsi que des audits pour la revue du code, de l'architecture, de la sécurité, des dépendances et de la documentation."
 machineTranslated: true
 sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Les définitions de commandes slash vivent sous forme de fichiers `.md` plats sous
-`src/apothem/commands/`. L'ensemble canonique est mené par le pipeline de suite
-de plan sensible à l'architecture, livré sous forme de sept commandes de premier
+`src/apothem/commands/`. L'ensemble canonique est mené par le pipeline de suite de planification sensible à l'architecture, livré sous forme de sept commandes de premier
 rang — une par étape, chacune invocable directement en tant que
 `/plan-<stage>`. Il n'existe aucun répartiteur monolithique ; chaque étape est
 son propre fichier de commande enregistré à
@@ -17,7 +16,7 @@ son propre fichier de commande enregistré à
 | Invocation | Fichier de commande | Description |
 |------------|--------------|-------------|
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Affine un contenu non structuré en prose de qualité spécification |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Matérialise une suite de plan à partir de prose / d'exigences |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Matérialise une suite de planification à partir de prose / d'exigences |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensique avec tableaux de score |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Émet `_inputs/design.md` pour les suites porteuses d'architecture |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | Exécute une phase avec des portails de qualité |

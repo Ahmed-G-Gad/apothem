@@ -7,7 +7,7 @@ sourceHash: "f83dad93ea1dbe9c"
 {/* SPDX-License-Identifier: MIT */}
 
 > **Alcance.** Este documento describe el archivo de cableado de hooks
-> (`settings.json`) del **adaptador de Claude Code**. Otros harness
+> (`settings.json`) del **adaptador de Claude Code**. Otros entornos
 > usan sus propias superficies de ajustes nativas — consulta
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) para conocer el
 > punto de entrada de configuración equivalente de cada adaptador.
@@ -31,7 +31,7 @@ Cada hook configurado usa la forma de comando exec de Claude Code. La plantilla 
 }
 ```
 
-`apothem install` renderiza el token a la ruta absoluta de la raíz del harness
+`apothem install` renderiza el token a la ruta absoluta de la raíz del entorno
 (forma con barra diagonal, válida en Windows, macOS y Linux), de modo que el
 `settings.json` instalado invoca directamente el despachador materializado en
 `~/.claude/.apothem/support/hooks/dispatch.py`. El despachador y la
@@ -125,7 +125,7 @@ instala un CPython 3.10+ real y asegúrate de que esté en el PATH o sea descubr
 
 ### Cada Write/Edit queda bloqueado
 
-`PreToolUse` está marcando términos internos de plan en contenido que se escribe fuera de la raíz de instalación del harness (`~/.claude/` para el adaptador de Claude Code).
+`PreToolUse` está marcando términos internos de plan en contenido que se escribe fuera de la raíz de instalación del entorno (`~/.claude/` para el adaptador de Claude Code).
 Revisa el contenido en busca de violaciones de CM-7 (ver
 `src/apothem/rules/persistent-conventions-vigilance.md`). Solo lenguaje de dominio para
 los artefactos del código base.
@@ -133,7 +133,7 @@ los artefactos del código base.
 ### settings.json no se carga
 
 Claude Code lee `~/.claude/settings.json`. Verifica que Apothem se instaló en la
-raíz del harness esperada y reinicia la sesión después de cambiar el archivo.
+raíz del entorno esperada y reinicia la sesión después de cambiar el archivo.
 
 ### Los hooks no hacen nada en silencio
 
@@ -156,7 +156,7 @@ orden creciente de precedencia:
 Los valores de nivel superior anulan los de nivel inferior **a nivel de clave hoja** — cuando
 tanto la capa de proyecto como la local de usuario declaran una entrada `permissions.allow`, se toma la
 unión; cuando ambas declaran un escalar como `theme`, gana el valor local de usuario. La semántica
-exacta de fusión por clave es propiedad del harness de Claude Code.
+exacta de fusión por clave es propiedad del entorno de Claude Code.
 
 ### Crear una anulación local de usuario
 

@@ -18,7 +18,7 @@ Las claves de los comandos usan `kebab-case`. Las claves de las skills usan `keb
 
 ## 2. Campos obligatorios por clase
 
-El conjunto de claves obligatorias varía según la clase de artefacto. La estructura autoritativa la aplican `scripts/dev/validate_ecosystem.py` y los JSON Schemas por clase bajo el directorio `src/apothem/schemas/`. Las clases de auxiliares, skills, comandos, estilos de salida y planes tienen cada una un archivo de esquema, que se lista a continuación; las clases de `CLAUDE.md` y de reglas no tienen ninguno, y `validate_ecosystem.py` comprueba sus claves. Los archivos de plan no figuran en la tabla siguiente; sus claves se enumeran en [Disciplina de planes](/docs/reference/plans-discipline).
+El conjunto de claves obligatorias varía según la clase de artefacto. La estructura autoritativa la aplican `scripts/dev/validate_ecosystem.py` y los JSON Schemas por clase bajo el directorio `src/apothem/schemas/`. Las clases de auxiliares, skills, comandos, output-styles y planes tienen cada una un archivo de esquema, que se lista a continuación; las clases de `CLAUDE.md` y de reglas no tienen ninguno, y `validate_ecosystem.py` comprueba sus claves. Los archivos de plan no figuran en la tabla siguiente; sus claves se enumeran en [Disciplina de planes](/docs/reference/plans-discipline).
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -35,7 +35,7 @@ src/apothem/schemas/plan.schema.json
 | Comandos (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | Auxiliares, también llamados trabajadores delegados (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
 | Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; la instalación y el plugin de Claude Code renombran `userInvocable` a `user-invocable`, y el esquema exige que cada skill lleve exactamente una de las dos grafías, nunca ambas |
-| Estilos de salida (`src/apothem/output-styles/*.md`) | `name`, `description`; cada estilo distribuido también establece `keep-coding-instructions: true` para que Claude Code conserve sus instrucciones de ingeniería de software |
+| Output-styles (`src/apothem/output-styles/*.md`) | `name`, `description`; cada estilo distribuido también establece `keep-coding-instructions: true` para que Claude Code conserve sus instrucciones de ingeniería de software |
 
 Los esquemas por clase en [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) llevan el conjunto completo de restricciones, incluidas las de tipo, formato, enum y patrón, y los límites de longitud: la `description` de una skill o de un comando tiene como máximo 1024 caracteres, el límite de [Agent Skills](https://agentskills.io/specification).
 

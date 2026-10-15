@@ -38,10 +38,10 @@ Pläne gehen ADRs voraus. Wenn ein Plan zu einer dauerhaften Entscheidung konver
 ## 2. Speicherort, Sichtbarkeit & Benennung
 
 - **Pfad.** `<project-root>/.apothem/plans/` ist das einzige kanonische Zuhause. Ein Legacy-`<project-root>/.plans/`-Baum ist nicht mehr kanonisch — aktualisieren Sie ihn mit `apothem migrate-workspace` (§5). **Kein** Harness-Konfigurationsverzeichnis (zum Beispiel `~/.claude/plans/`, `~/.claude/.plans/` oder `~/.codex/.plans/`). **Kein** Desktop-Notizordner. **Nicht** `~/notes/`. **Nicht** `tmp/plans/`.
-- **Sichtbarkeit.** Der Ordner wird gemäß dem kanonischen Snippet in §6 in der `.gitignore` des Projekts registriert. Die Laufzeitumgebung des Harnesses **MUSS** vor jedem Schreibvorgang verifizieren, dass dieser Eintrag vorhanden ist; falls er fehlt, hängt sie den Eintrag mit einem einzeiligen Header-Kommentar und dem Link zu diesem Dokument an.
+- **Sichtbarkeit.** Der Ordner wird gemäß dem kanonischen Snippet in §6 in der `.gitignore` des Projekts registriert. Die Laufzeit des Harnesses **MUSS** vor jedem Schreibvorgang verifizieren, dass dieser Eintrag vorhanden ist; falls er fehlt, hängt sie den Eintrag mit einem einzeiligen Header-Kommentar und dem Link zu diesem Dokument an.
 - **Dateinamenskonvention.** `YYYY-MM-DD--<kebab-case-slug>.md`. Für größere Arbeitsbereiche unterkategorisieren Sie unter `.apothem/plans/<area>/YYYY-MM-DD--<slug>.md`.
   - Beispiele: `.apothem/plans/2026-04-30--auth-refactor-strategy.md`, `.apothem/plans/api/2026-04-30--rate-limit-rollout.md`.
-- **Index.** Eine optionale `.apothem/plans/INDEX.md` (ebenfalls gitignored) kann Links und Status aggregieren; falls vorhanden, pflegt die Laufzeitumgebung des Harnesses sie bei jedem Plan-Schreibvorgang.
+- **Index.** Eine optionale `.apothem/plans/INDEX.md` (ebenfalls gitignored) kann Links und Status aggregieren; falls vorhanden, pflegt die Laufzeit des Harnesses sie bei jedem Plan-Schreibvorgang.
 - **Archivierung.** Konvergierte oder aufgegebene Pläne werden nach `.apothem/plans/_archive/` verschoben. Niemals ohne ausdrückliche Bestätigung per strukturierter Rückfrage gelöscht.
 - **Autorschafts-Header bei Plänen.** Pläne sind von der SPDX-Zeile des Autorschafts-Headers **ausgenommen** (gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §Ausnahmeliste). Sie sind gitignored-Ephemera; einen permanenten Herkunftsmarker auf flüchtigen Arbeitsspeicher anzuwenden, ist ein Kategorienfehler. Das Frontmatter (§3) trägt die Herkunft des Plans.
 

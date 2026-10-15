@@ -1,6 +1,6 @@
 ---
 title: "/plan-execute"
-description: "/plan-execute — Executa uma fase específica de uma Suite de Plano Mestre com verificação de conformidade."
+description: "/plan-execute — Executa uma fase específica de uma Suíte de Planejamento Mestra com verificação de conformidade."
 machineTranslated: true
 sourceHash: "83dae82d475df6e2"
 ---
@@ -9,7 +9,7 @@ sourceHash: "83dae82d475df6e2"
 **Papel:** Executor
 **Posição no pipeline:** terminal
 
-Executa uma fase específica de uma Suite de Plano Mestre com verificação de conformidade.
+Executa uma fase específica de uma Suíte de Planejamento Mestra com verificação de conformidade.
 
 ## Invocação canônica
 
@@ -25,7 +25,7 @@ Com argumentos:
 
 ## Entradas
 
-Suite de plano gerada + revisada; `_inputs/handoff-manifest.yml` revisado
+Suíte de planejamento gerada + revisada; `_inputs/handoff-manifest.yml` revisado
 
 ## Saídas
 
@@ -39,7 +39,7 @@ Arquivos REPORT.md por fase, artefatos da base de código, COMPLETION.md
 
 O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
 
-1. **Carregar contexto** — Lê a suíte de plano, as regras e o Contrato de Retomada.
+1. **Carregar contexto** — Lê a suíte de planejamento, as regras e o Contrato de Retomada.
 2. **Verificar pré-requisitos** — Confirma que as fases de dependência estão concluídas.
 3. **Executar tarefas** — Cumpre a missão do comando.
 4. **Verificar saídas** — Confirma que todas as saídas declaradas existem e passam pelos portões de qualidade.
@@ -52,7 +52,7 @@ O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
 |---------|-------|----------|
 | Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
 | Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
-| Falta um arquivo de entrada | Arquivo da suite de plano ausente | Execute `/plan-generate` para criá-lo |
+| Falta um arquivo de entrada | Arquivo da suíte de planejamento ausente | Execute `/plan-generate` para criá-lo |
 
 ## Exemplos
 

@@ -7,7 +7,7 @@ sourceHash: "f83dad93ea1dbe9c"
 {/* SPDX-License-Identifier: MIT */}
 
 > **범위.** 이 문서는 **Claude Code 어댑터** 의 훅
-> 배선 파일(`settings.json`)을 설명합니다. 다른 harness 는
+> 배선 파일(`settings.json`)을 설명합니다. 다른 하니스 는
 > 각자의 네이티브 설정 표면을 사용합니다 — 각 어댑터의 등가
 > 구성 진입점은
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 를 참조하세요.
@@ -31,10 +31,10 @@ sourceHash: "f83dad93ea1dbe9c"
 }
 ```
 
-`apothem install` 은 이 토큰을 harness 루트의 절대 경로
+`apothem install` 은 이 토큰을 하니스 루트의 절대 경로
 (슬래시 형식, Windows·macOS·Linux 에서 유효)로 렌더링하므로, 설치된
 `settings.json` 은 `~/.claude/.apothem/support/hooks/dispatch.py` 에
-구체화된 디스패처를 직접 호출합니다. 디스패처와
+머티리얼라이즈된 디스패처를 직접 호출합니다. 디스패처와
 컨포미티 게이트(`~/.claude/.apothem/support/conformity/gate.py`, 그 옆 `~/.claude/.apothem/support/schemas/`
 에 schema 픽스처가 있음)는 모두 독립형 표준 라이브러리
 스크립트입니다 — 호스트에 임포트 가능한 `apothem` 패키지가 필요하지 않으며, 하나의
@@ -125,7 +125,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### 모든 Write/Edit 가 차단됨
 
-`PreToolUse` 가 harness 설치 루트(Claude Code 어댑터의 경우 `~/.claude/`) 외부에 작성되는 내용 속 플랜 내부 용어를 플래그하고 있습니다.
+`PreToolUse` 가 하니스 설치 루트(Claude Code 어댑터의 경우 `~/.claude/`) 외부에 작성되는 내용 속 플랜 내부 용어를 플래그하고 있습니다.
 내용에 CM-7 위반이 없는지 검토하세요(
 `src/apothem/rules/persistent-conventions-vigilance.md` 참조). 코드베이스 산출물에는
 도메인 언어만 사용합니다.
@@ -133,7 +133,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 ### settings.json 이 로드되지 않음
 
 Claude Code 는 `~/.claude/settings.json` 을 읽습니다. Apothem 이 기대되는
-harness 루트에 설치되었는지 확인하고 파일 변경 후 세션을 재시작하세요.
+하니스 루트에 설치되었는지 확인하고 파일 변경 후 세션을 재시작하세요.
 
 ### 훅이 조용히 아무 동작도 하지 않음
 
@@ -156,7 +156,7 @@ Claude Code 는 우선순위가 증가하는 순서로 세 계층을 합성하�
 상위 계층 값은 **리프 키 수준에서** 하위 계층 값을 오버라이드합니다 — 프로젝트
 계층과 사용자 로컬 계층 모두 `permissions.allow` 항목을 선언하면 합집합이
 취해지고, 둘 다 `theme` 같은 스칼라를 선언하면 사용자 로컬 값이 이깁니다. 정확한
-키별 병합 시맨틱은 Claude Code harness 가 소유합니다.
+키별 병합 시맨틱은 Claude Code 하니스 가 소유합니다.
 
 ### 사용자 로컬 오버라이드 만들기
 

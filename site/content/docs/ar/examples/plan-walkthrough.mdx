@@ -25,7 +25,7 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-يُشغِّل هذا <bdi>Forge</bdi> ذا الأطوار الستّة، فيطرح أسئلة استيضاح، ويُنتِج <bdi>`.apothem/plans/apothem-status-command/_spec/spec.md`</bdi>.
+يُشغِّل هذا <bdi>Forge</bdi> ذا المراحل الست، فيطرح أسئلة استيضاح، ويُنتِج <bdi>`.apothem/plans/apothem-status-command/_spec/spec.md`</bdi>.
 
 ## الخطوة 3: ولِّد الخطّة
 
@@ -33,7 +33,7 @@ human-readable by default.
 /plan-generate
 ```
 
-يُنتِج <bdi>PREAMBLE.md</bdi> و<bdi>MASTER-PLAN.md</bdi> و<bdi>PROGRESS.md</bdi> و<bdi>PLAN-NOTES.md</bdi>، وملفات <bdi>PHASE.md</bdi> لكلّ طور، تحت <bdi>`.apothem/plans/apothem-status-command/phases/`</bdi>.
+يُنتِج <bdi>PREAMBLE.md</bdi> و<bdi>MASTER-PLAN.md</bdi> و<bdi>PROGRESS.md</bdi> و<bdi>PLAN-NOTES.md</bdi>، وملفات <bdi>PHASE.md</bdi> لكلّ مرحلة، تحت <bdi>`.apothem/plans/apothem-status-command/phases/`</bdi>.
 
 ## الخطوة 4: راجِع الخطّة
 
@@ -43,7 +43,7 @@ human-readable by default.
 
 تدقيقٌ جنائي بدرجات الوفاء للنثر والاتّساق والجودة. أصلِح أيّ نتيجة <bdi>FAIL</bdi> قبل المتابعة.
 
-## الخطوة 5: نفِّذ الأطوار
+## الخطوة 5: نفِّذ المراحل
 
 ```bash
 /plan-execute    # executes the first phase, then pauses
@@ -57,4 +57,4 @@ human-readable by default.
 /plan-status
 ```
 
-يُبلِّغ عن الطور الحالي، والمُخرَجات المُتحقَّق منها، والإجراء التالي.
+يُبلِّغ عن المرحلة الحالية، والمُخرَجات المُتحقَّق منها، والإجراء التالي.

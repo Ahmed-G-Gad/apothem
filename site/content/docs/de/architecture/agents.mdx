@@ -1,6 +1,6 @@
 ---
 title: "Repository-bezogene Konventionen für Harnesses"
-description: "Wie Apothem repository-bezogene Betriebskonventionen — Regeln, Skills und Definitionen delegierter Arbeiter — in die native Anweisungsoberfläche jedes Harness materialisiert (AGENTS.md und seine werkzeugspezifischen Entsprechungen)."
+description: "Wie Apothem repository-bezogene Betriebskonventionen — Regeln, Skills und Definitionen delegierter Worker — in die native Anweisungsoberfläche jedes Harness materialisiert (AGENTS.md und seine werkzeugspezifischen Entsprechungen)."
 machineTranslated: true
 sourceHash: "e139310dc56fef79"
 ---
@@ -26,7 +26,7 @@ eines Harness beherbergt: delegierte Worker,
 Slash-Befehle, Skills, Hooks, Output-Styles, eine Statuszeile, MCP-Integration,
 Einstellungen, JSON-Schemata, Validatoren, Tests und Dokumentation. Es wird von
 einem einzelnen Autor gepflegt. Das Layout auf der Festplatte spiegelt das
-Laufzeit-Layout exakt wider. Delegierte Arbeiter in diesem Repository speichern
+Laufzeit-Layout exakt wider. Delegierte Worker in diesem Repository speichern
 keinen Zustand außerhalb des veröffentlichten Baums; der veröffentlichte Baum ist
 das kanonische Artefakt.
 
@@ -34,7 +34,7 @@ das kanonische Artefakt.
 
 Ein Lauf mit mehreren Workern in diesem Repository folgt drei Konventionen:
 
-- **Rollen sind benannt.** Jeder delegierte Arbeiter in einem Lauf mit mehreren
+- **Rollen sind benannt.** Jeder delegierte Worker in einem Lauf mit mehreren
   Workern trägt einen Rollen-Identifikator (kebab-case, beschreibend:
   `codebase-explorer`, `convention-auditor`, `quality-gate`,
   `memory-auditor`). Generische Rollennamen (`worker`, `helper`) sind verboten.
@@ -42,7 +42,7 @@ Ein Lauf mit mehreren Workern in diesem Repository folgt drei Konventionen:
   Rückgabeform an — strukturierte Zusammenfassung, maximales Token-Budget,
   erforderliche Felder, Formulierung des Fehlermodus. Der Dispatcher lehnt
   fehlerhafte Rückgaben ab, anstatt stillschweigend erneut anzufordern.
-- **Geteilter Zustand ist das Dateisystem.** Delegierte Arbeiter teilen keinen
+- **Geteilter Zustand ist das Dateisystem.** Delegierte Worker teilen keinen
   Speicher über die Dispatch-Grenze hinweg. Zustand, den zwei Worker benötigen,
   fließt durch eine benannte Datei unter dem veröffentlichten Baum (oder das
   `.apothem/plans/`-Verzeichnis des Projekts für den laufenden Arbeitszustand
@@ -130,7 +130,7 @@ Chat-Transkript oder eine Commit-Nachricht.
 Wenn der Assistent über einen Wert unsicher ist, den er andernfalls erfinden
 müsste, **DARF ER** ihn **NICHT** stillschweigend fabrizieren. Die Antwort des
 Assistenten trägt entweder einen strukturierten Frage-an-den-Operator-Dispatch
-zurück an den Menschen (wo die Laufzeitumgebung dies unterstützt) oder einen klar
+zurück an den Menschen (wo die Laufzeit dies unterstützt) oder einen klar
 markierten `# TODO(clarify): ...`-Kommentar im generierten Artefakt. Beide sind
 die Multi-Worker-Oberflächen-Entsprechung des strukturierten Abfragekanals: ein
 überprüfbarer, niemals stiller Datensatz, dass eine Annahme an den Menschen
@@ -170,7 +170,7 @@ verboten:
   Disziplin mit `AGENTS.md` überschneidet, sind die beiden semantisch
   äquivalent. Eine oberflächenspezifische Überschreibung erfordert einen
   Inline-Marker `<!-- coherence-override: <claim-id> -->`, gekoppelt mit einem
-  Architecture Decision Record (ADR), das im Design-Register des Projekts
+  Architecture Decision Record (ADR), das in der Design-Registry des Projekts
   nachverfolgt wird. Die ADR-Katalogoberfläche ist in Vorbereitung; bis sie
   vorliegt, zitieren Überschreibungen den Inline-Marker plus die Begründung im
   Frontmatter des Assistenten.

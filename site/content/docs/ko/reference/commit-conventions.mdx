@@ -18,7 +18,7 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. 작성자 규율(사람 전용)
 
-모든 git 아티팩트의 모든 작성자 표면(커밋 제목, 커밋 본문, `Author:` 필드, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)은 **사람 기여자만** 명명합니다. 하니스 런타임은 자기 자신, 기반 언어 모델, 런타임 / 환경 / IDE / 확장 / 공급업체, 또는 그 밖의 어떤 자동화 도구도 이러한 표면 중 어느 것에도 절대 귀속시키지 않습니다. 금지된 패턴에는 `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, `generated with X` 또는 `co-authored by an automated helper` 같은 본문 서술, 그리고 사람이 아닌 작성자를 나타내는 모든 제목 행 마커가 포함됩니다. 전체 명세는 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6에 있습니다. 기계적 적용은 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3에 있습니다.
+모든 git 아티팩트의 모든 작성자 표면(커밋 제목, 커밋 본문, `Author:` 필드, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)은 **사람 기여자만** 명명합니다. 하니스 런타임은 자기 자신, 기반 언어 모델, 런타임 / 하니스 / IDE / 확장 / 공급업체, 또는 그 밖의 어떤 자동화 도구도 이러한 표면 중 어느 것에도 절대 귀속시키지 않습니다. 금지된 패턴에는 `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, `generated with X` 또는 `co-authored by an automated helper` 같은 본문 서술, 그리고 사람이 아닌 작성자를 나타내는 모든 제목 행 마커가 포함됩니다. 전체 명세는 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6에 있습니다. 기계적 적용은 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3에 있습니다.
 
 ## 3. 릴리스 태그(시맨틱 버저닝)
 

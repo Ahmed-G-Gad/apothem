@@ -10,7 +10,7 @@ Profil bersama Apothem adalah berkas YAML di
 `~/.config/apothem/profile.yaml`, atau di jalur yang diberikan dengan
 `--profile PATH`. Ia adalah sumber kebenaran semantik untuk identitas,
 preferensi, aturan bersama, penggantian per-harness, dan pengecualian harness.
-Adapter menurunkan berkas asli-harness dari profil ini dan dari cohort muatan
+Adapter menurunkan berkas asli-harness dari profil ini dan dari kohor muatan
 Apothem yang dikemas.
 
 Model runtime-nya adalah `src/apothem/lib/profile.py`; JSON Schema-nya adalah
@@ -100,9 +100,9 @@ membentuk ulang setiap harness yang terpasang.
 
 Sebuah bidang profil membawa maksud semantik, bukan cuplikan konfigurasi
 harfiah. `identity.name` adalah "siapa operatornya", bukan satu baris JSON.
-Cohort muatan yang dikemas (`commands`, `rules`, `skills`, `hooks`, `templates`,
+Kohor muatan yang dikemas (`commands`, `rules`, `skills`, `hooks`, `templates`,
 `statuslines`, `output-styles`, `agents`) membawa konten perilaku dalam format
-netral milik Apothem sendiri. Baik bidang maupun cohort tidak tahu seperti apa
+netral milik Apothem sendiri. Baik bidang maupun kohor tidak tahu seperti apa
 konfigurasi harness mana pun — pengetahuan itu hanya milik adapter.
 
 Saat Anda menjalankan `apothem update`, alurnya adalah:
@@ -112,15 +112,15 @@ Saat Anda menjalankan `apothem update`, alurnya adalah:
    memasang setengah jadi.
 2. **Selesaikan adapter** untuk harness yang dipilih (atau `all`, dikurangi
    `exclude_harnesses` apa pun) melalui registri pusat.
-3. **Materialisasikan** — setiap adapter membaca profil yang sama dan cohort
+3. **Materialisasikan** — setiap adapter membaca profil yang sama dan kohor
    yang sama, lalu menerjemahkannya ke dialek harness-nya. Sebuah bidang seperti
    `preferences.style` menjadi nilai konfigurasi asli pada satu harness dan
    konteks instruksi yang dirender pada harness lain; sebuah aturan dalam
    `rules[]` menjadi berkas `.mdc` untuk Cursor, sebuah bagian instruksi
-   seluruh-repositori untuk Copilot, atau sebuah entri pohon dukungan di tempat
+   seluruh-repositori untuk Copilot, atau sebuah entri pohon pendukung di tempat
    harness tidak memiliki permukaan aturan asli.
 4. **Tulis** berkas-berkas asli — sebuah konfigurasi tunggal yang dirender,
-   sebuah cohort yang dikonversi, atau sebuah subpohon dukungan yang dirujuk
+   sebuah kohor yang dikonversi, atau sebuah pohon pendukung yang dirujuk
    dari jangkar asli harness.
 
 Profil yang sama menggerakkan setiap harness, sehingga materialisasi tidak dapat

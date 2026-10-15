@@ -1,12 +1,12 @@
 ---
-title: "Estilos de salida"
+title: "Output-styles"
 description: "Perfiles de tono de operador (Arquitecto sénior, Ingeniero conciso, Auditor forense) que se activan por sesión mediante el comando /output-style."
 machineTranslated: true
 sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Los perfiles de estilo de salida residen bajo `src/apothem/output-styles/` y
+Los perfiles de output-style residen bajo `src/apothem/output-styles/` y
 llevan la guía de tono de operador de cada estilo. El entorno anfitrión activa
 un estilo por sesión mediante `/output-style <name>`.
 
@@ -24,10 +24,10 @@ un estilo por sesión mediante `/output-style <name>`.
 `apothem install --harness claude-code` copia los estilos a
 `~/.claude/output-styles/`. El plugin de Claude Code distribuye los mismos
 archivos en su carpeta `output-styles/`, que Claude Code examina en busca de
-estilos de salida de plugins
+output-styles de plugins
 ([referencia de plugins](https://code.claude.com/docs/en/plugins-reference)), de
 modo que los estilos se pueden seleccionar con solo el plugin instalado. Ningún
-otro entorno tiene una superficie de estilos de salida, así que ninguna otra
+otro entorno tiene una superficie de output-styles, así que ninguna otra
 instalación los distribuye.
 
 ## Contrato de frontmatter
@@ -42,12 +42,12 @@ keep-coding-instructions: true
 
 `name` y `description` son obligatorios. Cada estilo distribuido también
 establece `keep-coding-instructions: true`. Claude Code deja fuera de cualquier
-estilo de salida personalizado sus instrucciones integradas de ingeniería de
+output-style personalizado sus instrucciones integradas de ingeniería de
 software (cómo acotar los cambios, escribir comentarios y verificar el trabajo),
 salvo que esta clave sea `true`; su valor predeterminado es `false`. Los estilos
 de Apothem cambian cómo se presenta el trabajo, no cómo se hace, por lo que
 conservan esas instrucciones. Consulta la
-[referencia de estilos de salida de Claude Code](https://code.claude.com/docs/en/output-styles).
+[referencia de output-styles de Claude Code](https://code.claude.com/docs/en/output-styles).
 
 ## Crear un perfil nuevo
 

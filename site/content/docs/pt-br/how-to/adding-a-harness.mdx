@@ -1,13 +1,13 @@
 ---
-title: "Adicionar uma ferramenta"
-description: "Habilite um adaptador de ferramenta para que sua configuração nativa seja materializada a partir do perfil compartilhado."
+title: "Adicionar um harness"
+description: "Habilite um adaptador de harness para que sua configuração nativa seja materializada a partir do perfil compartilhado."
 machineTranslated: true
 sourceHash: "86a3b203d53e58ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Objetivo: habilitar mais uma ferramenta para que o Apothem materialize a configuração
-nativa dessa ferramenta a partir do seu perfil compartilhado.
+Objetivo: habilitar mais um harness para que o Apothem materialize a configuração
+nativa desse harness a partir do seu perfil compartilhado.
 
 ## Pré-requisitos
 
@@ -20,18 +20,18 @@ nativa dessa ferramenta a partir do seu perfil compartilhado.
 
 ## Passos
 
-1. Liste as ferramentas registradas e veja quais já estão instaladas:
+1. Liste os harnesses registrados e veja quais já estão instalados:
 
    ```bash
    apothem harnesses list
    ```
 
    `apothem harnesses list` imprime cada id suportado; o mesmo conjunto está na
-   [lista de ferramentas](/docs/harnesses) e no
-   [registro de ferramentas](/docs/reference/harness-registry) gerado a partir do código-fonte. Escolha o id da sua ferramenta
+   [lista de harnesses](/docs/harnesses) e no
+   [registro de harnesses](/docs/reference/harness-registry) gerado a partir do código-fonte. Escolha o id da sua ferramenta
    em vez de fixar a lista aqui — ela cresce conforme adaptadores são adicionados.
 
-2. Inspecione a ferramenta-alvo para confirmar seu escopo e caminho de saída:
+2. Inspecione o harness-alvo para confirmar seu escopo e caminho de saída:
 
    ```bash
    apothem harnesses show cursor
@@ -59,7 +59,7 @@ nativa dessa ferramenta a partir do seu perfil compartilhado.
    apothem install --harness cursor --project /path/to/project
    ```
 
-   Instale todas as ferramentas suportadas de uma vez com `--harness all` (ferramentas de escopo
+   Instale todos os harnesses suportados de uma vez com `--harness all` (harnesses de escopo
    de projeto ainda precisam de `--project`; ids listados em `exclude_harnesses` no
    perfil são ignorados).
 
@@ -70,7 +70,7 @@ apothem verify --harness cursor
 ```
 
 Uma linha `✓ <harness-id> is verified` confirma que os alvos gerenciados existem e são interpretáveis.
-`apothem doctor` fornece a visão do sistema inteiro em todas as ferramentas.
+`apothem doctor` fornece a visão do sistema inteiro em todos os harnesses.
 
 ## Relacionado
 

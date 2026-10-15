@@ -1,12 +1,12 @@
 ---
 title: "Registros de artefactos"
-description: "Enumeración completa de los artefactos del ecosistema Apothem: comandos, reglas, trabajadores delegados, hooks, habilidades, estilos de salida, disciplina de evolución de artefactos y declaraciones de clases de artefacto vacías."
+description: "Enumeración completa de los artefactos del ecosistema Apothem: comandos, reglas, trabajadores delegados, hooks, skills, output-styles, disciplina de evolución de artefactos y declaraciones de clases de artefacto vacías."
 machineTranslated: true
 sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registro canónico de las cohortes de artefactos.** Este documento contiene las enumeraciones completas de comandos, reglas, trabajadores delegados, hooks, habilidades, estilos de salida, disciplina de evolución de artefactos y declaraciones de clases de artefacto vacías; las tablas sustantivas viven aquí. El esquema de la fuente del proyecto proporciona la vista condensada y siempre activa.
+> **Registro canónico de las cohortes de artefactos.** Este documento contiene las enumeraciones completas de comandos, reglas, trabajadores delegados, hooks, skills, output-styles, disciplina de evolución de artefactos y declaraciones de clases de artefacto vacías; las tablas sustantivas viven aquí. El esquema de la fuente del proyecto proporciona la vista condensada y siempre activa.
 
 ## 1. Comandos
 
@@ -21,12 +21,12 @@ Se registran treinta comandos desde `src/apothem/commands/*.md` (no recursivo). 
 | `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | Auditoría por dependencia (directa + transitiva) en los archivos de manifiesto del repositorio |
 | `/docs-review` | `src/apothem/commands/docs-review.md` | Revisión de documentación de cada página Markdown bajo la superficie de documentación del host |
 | `/elevate` | `src/apothem/commands/elevate.md` | Eleva cada superficie del proyecto al SOTA actual mediante trabajadores de crítica independientes, y luego entrega a `/freshify` |
-| `/eval` | `src/apothem/commands/eval.md` | Campaña de evaluación de modelos de lenguaje agnóstica de modelo construida sobre la habilidad eval-harness |
-| `/freshify` | `src/apothem/commands/freshify.md` | Renderiza un proyecto fresco, sin rastros y listo para producción; cada paso destructivo con compuerta de confirmación |
+| `/eval` | `src/apothem/commands/eval.md` | Campaña de evaluación de modelos de lenguaje agnóstica de modelo construida sobre la skill eval-harness |
+| `/freshify` | `src/apothem/commands/freshify.md` | Renderiza un proyecto fresco, sin rastros y listo para producción; cada paso destructivo con puerta de confirmación |
 | `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Especialización para GitHub de `/freshify` que produce un único lanzamiento de primera versión fresco en `origin/main` |
 | `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Ejecuta un ciclo completo de siguiente lanzamiento de extremo a extremo en la superficie de lanzamiento de GitHub |
 | `/perf-audit` | `src/apothem/commands/perf-audit.md` | Auditoría contra los presupuestos de rendimiento por clase en `src/apothem/rules/performance-discipline.md` |
-| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Barrido de compuerta previa al lanzamiento: matriz de calidad, riesgo de dependencias y comprobaciones de ingeniería de lanzamiento |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Barrido de puerta previa al lanzamiento: matriz de calidad, riesgo de dependencias y comprobaciones de ingeniería de lanzamiento |
 | `/research` | `src/apothem/commands/research.md` | Trabajo de investigación multifuente con descubrimiento y extracción de fuentes en paralelo |
 | `/security-audit` | `src/apothem/commands/security-audit.md` | Auditoría de la postura de seguridad contra OWASP ASVS, OWASP Top 10 y CWE Top 25 |
 | `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | Auditoría de la cadena de suministro contra los estándares SLSA, Sigstore y SBOM |
@@ -43,21 +43,21 @@ La canalización de plan se entrega como ocho comandos de primera clase — uno 
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma libre en un `_spec/spec.md` de grado de especificación; cada pregunta abierta se enruta por el canal de consulta estructurada en lugar de aplicar valores por defecto en silencio; `--quick` escribe un único archivo de plan ligero bajo `<project-root>/.apothem/plans/` (`.plans/` sigue siendo un respaldo de retrocompatibilidad admitido) |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Genera una Suite de Plan Maestro completa a partir de prosa/requisitos redactados |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoría forense de una suite existente — fidelidad de la prosa, consistencia interna, análisis de brechas — refinada mediante preguntas y respuestas interactivas |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | Produce un artefacto de diseño arquitectónico en el `_inputs/design.md` de la suite, validado por la compuerta de pre-emisión de quince barras antes de la promoción |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Produce un artefacto de diseño arquitectónico en el `_inputs/design.md` de la suite, validado por la puerta de pre-emisión de quince barras antes de la promoción |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | Auditoría y remediación en bucle cerrado a lo largo del ciclo completo spec → generate → review, iterando hasta que no queden hallazgos o se alcance un límite de iteraciones con un retroceso definido |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Ejecuta una fase con comprobación de conformidad y compuertas de calidad — esfuerzo `medium` por defecto, anulable por fase mediante un campo `effort:` en el frontmatter de `PHASE.md`; se detiene en cada límite de fase por defecto, con `--no-pause` (o la bandera `enforcement.continuous_execution` del perfil) optando por el avance continuo de fase a fase |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Ejecuta una fase con comprobación de conformidad y puertas de calidad — esfuerzo `medium` por defecto, anulable por fase mediante un campo `effort:` en el frontmatter de `PHASE.md`; se detiene en cada límite de fase por defecto, con `--no-pause` (o la bandera `enforcement.continuous_execution` del perfil) optando por el avance continuo de fase a fase |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Informe de progreso de solo lectura sobre las dimensiones de tarea, fase y artefacto |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | Enmienda, extiende, refina o revierte una suite existente sin destruir las decisiones previas ya resueltas; vuelve a derivar solo los artefactos descendentes afectados |
 
 ### Comandos de flujo de trabajo del operador y de orquestación
 
-Tres comandos entran en un procedimiento profundo en lugar de llevar lógica de etapa propia: dos puntos de entrada de flujo de trabajo del operador (cada uno respaldado por una habilidad hermana del mismo nombre) más el orquestador delgado de la canalización de plan.
+Tres comandos entran en un procedimiento profundo en lugar de llevar lógica de etapa propia: dos puntos de entrada de flujo de trabajo del operador (cada uno respaldado por una skill hermana del mismo nombre) más el orquestador delgado de la canalización de plan.
 
 | Comando | Archivo | Descripción |
 | ------- | ---- | ----------- |
-| `/workflow` | `src/apothem/commands/workflow.md` | Punto de entrada de aprovechamiento de flujo de trabajo de propósito general (`/goal <<mission>>`): impulsa flujos de trabajo dinámicos multiagente genuinamente independientes bajo contratos de retorno nombrados, verificación por refutación-por-defecto antes de que cualquier hallazgo sobreviva, remediación más allá de la misión revelada según el libro mayor de cambios, y salida determinista; el despacho multiagente y la autoejecución son de tipo opt-in / con compuerta de confirmación. Respaldado por la habilidad `workflow` |
-| `/projectify` | `src/apothem/commands/projectify.md` | Elevación de Proyectos de aplicaciones de chat: redacta los entregables de Description / Instruction / Files de conocimiento de un Claude Project, Custom GPT o Gem a las convenciones SOTA actuales, dentro de un presupuesto de contexto medible por plataforma; salida determinista, autonomía opt-in. Respaldado por la habilidad `projectify` |
-| `/plan` | `src/apothem/commands/plan.md` | Orquestador delgado que encadena las etapas de plan de primera clase (`plan-spec → plan-generate → plan-review → plan-design (condicional) → plan-execute`), reanudando cada una desde el Manifiesto de Traspaso de la etapa anterior; no lleva lógica de etapa — el encadenamiento es opt-in / con compuerta de confirmación (`--auto` encadena de forma continua) |
+| `/workflow` | `src/apothem/commands/workflow.md` | Punto de entrada de aprovechamiento de flujo de trabajo de propósito general (`/goal <<mission>>`): impulsa flujos de trabajo dinámicos multiagente genuinamente independientes bajo contratos de retorno nombrados, verificación por refutación-por-defecto antes de que cualquier hallazgo sobreviva, remediación más allá de la misión revelada según el libro mayor de cambios, y salida determinista; el despacho multiagente y la autoejecución son de tipo opt-in / con puerta de confirmación. Respaldado por la skill `workflow` |
+| `/projectify` | `src/apothem/commands/projectify.md` | Elevación de Proyectos de aplicaciones de chat: redacta los entregables de Description / Instruction / Files de conocimiento de un Claude Project, Custom GPT o Gem a las convenciones SOTA actuales, dentro de un presupuesto de contexto medible por plataforma; salida determinista, autonomía opt-in. Respaldado por la skill `projectify` |
+| `/plan` | `src/apothem/commands/plan.md` | Orquestador delgado que encadena las etapas de plan de primera clase (`plan-spec → plan-generate → plan-review → plan-design (condicional) → plan-execute`), reanudando cada una desde el Manifiesto de Traspaso de la etapa anterior; no lleva lógica de etapa — el encadenamiento es opt-in / con puerta de confirmación (`--auto` encadena de forma continua) |
 
 ## 2. Reglas
 
@@ -117,16 +117,16 @@ dentro de un único archivo en lugar de diferenciando plantillas pareadas.
 Las nuevas entradas de permisos, eventos de hook, timeouts y mensajes de estado
 aterrizan en ese archivo de forma atómica.
 
-## 5. Habilidades
+## 5. Skills
 
-Las habilidades reutilizables viven bajo `src/apothem/skills/`, una carpeta por habilidad.
+Las skills reutilizables viven bajo `src/apothem/skills/`, una carpeta por skill.
 
-| Habilidad | Ruta | Invocable por el usuario | Propósito |
+| Skill | Ruta | Invocable por el usuario | Propósito |
 | ----- | ---- | -------------- | ------- |
-| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Sí | Actualizaciones de dependencias revisadas por changelog, con versión fijada y verificadas por compuerta |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Sí | Actualizaciones de dependencias revisadas por changelog, con versión fijada y verificadas por puerta |
 | Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Sí | Bucles de ingeniería disciplinados — depuración estructurada, rojo-verde-refactor con pruebas primero, descomposición en cortes verticales, desglose de requisito a incidencia |
 | Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Sí | Canalización escribir → validar → renderizar → exportar para diagramas declarativos y visualizaciones de datos (SVG / PNG / PDF) |
-| Document Authoring | `src/apothem/skills/document-authoring/` | Sí | Escritura de documentos de formato largo con compuerta de aprobación (esquema → borrador → revisión) con citas verificadas y una compilación de composición tipográfica determinista |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Sí | Escritura de documentos de formato largo con puerta de aprobación (esquema → borrador → revisión) con citas verificadas y una compilación de composición tipográfica determinista |
 | Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Sí | Auditoría a ciegas del árbol de configuración de Apothem |
 | Eval Harness | `src/apothem/skills/eval-harness/` | Sí | Marcos reproducibles de evaluación de modelos de lenguaje con criterios de aprobación explícitos |
 | Incident Runbook | `src/apothem/skills/incident-runbook/` | Sí | Escritura de runbooks como Trigger → Diagnosis → Action → Verification → Rollback |
@@ -142,11 +142,11 @@ Las habilidades reutilizables viven bajo `src/apothem/skills/`, una carpeta por 
 | Vuln Triage | `src/apothem/skills/vuln-triage/` | Sí | Clasifica por severidad los avisos de seguridad y enruta la remediación |
 | Workflow | `src/apothem/skills/workflow/` | Sí | Aprovechamiento de flujos de trabajo multiagente de propósito general con verificación adversarial por refutación-por-defecto y remediación más allá de la misión revelada |
 
-> **Convención.** La **Ruta** de cada fila es una carpeta; el punto de entrada es el archivo `SKILL.md` dentro de ella — p. ej. `src/apothem/skills/plan-suite/SKILL.md` — según la convención de habilidad de carpeta-con-`SKILL.md` declarada en el esquema de la fuente del proyecto.
+> **Convención.** La **Ruta** de cada fila es una carpeta; el punto de entrada es el archivo `SKILL.md` dentro de ella — p. ej. `src/apothem/skills/plan-suite/SKILL.md` — según la convención de skill de carpeta-con-`SKILL.md` declarada en el esquema de la fuente del proyecto.
 
-## 6. Estilos de salida
+## 6. Output-styles
 
-Cuatro estilos de salida viven bajo `src/apothem/output-styles/`.
+Cuatro output-styles viven bajo `src/apothem/output-styles/`.
 
 | Estilo | Archivo | Propósito |
 | ----- | ---- | ------- |
@@ -157,7 +157,7 @@ Cuatro estilos de salida viven bajo `src/apothem/output-styles/`.
 
 ## 7. Evolución de artefactos
 
-**Obligatorio.** Cuando un patrón, corrección o técnica reutilizable recurre (2+ instancias en una sesión, o anotado en memoria como recurrente), el ecosistema debe evolucionar. El ciclo tiene cuatro pasos: **Detect** el patrón durante cualquier interacción; **Search** las habilidades, reglas, comandos, hooks y memoria existentes en busca de solapamiento; **Act** evolucionando el artefacto coincidente en su lugar (actualizar procedimiento, antipatrones, alcance) o creando uno nuevo cuando la preocupación es genuinamente ortogonal; **Validate** que las referencias cruzadas aún se resuelven y los artefactos dependientes permanecen consistentes. Prefiere el refinamiento sobre la creación — los artefactos nuevos acumulan superficie de mantenimiento. Consulta `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 para el protocolo completo, incluido el catálogo cerrado de disparadores de detección de brechas en cada clase de artefacto.
+**Obligatorio.** Cuando un patrón, corrección o técnica reutilizable recurre (2+ instancias en una sesión, o anotado en memoria como recurrente), el ecosistema debe evolucionar. El ciclo tiene cuatro pasos: **Detect** el patrón durante cualquier interacción; **Search** las skills, reglas, comandos, hooks y memoria existentes en busca de solapamiento; **Act** evolucionando el artefacto coincidente en su lugar (actualizar procedimiento, antipatrones, alcance) o creando uno nuevo cuando la preocupación es genuinamente ortogonal; **Validate** que las referencias cruzadas aún se resuelven y los artefactos dependientes permanecen consistentes. Prefiere el refinamiento sobre la creación — los artefactos nuevos acumulan superficie de mantenimiento. Consulta `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 para el protocolo completo, incluido el catálogo cerrado de disparadores de detección de brechas en cada clase de artefacto.
 
 ## 8. Clases de artefacto vacías
 

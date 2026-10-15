@@ -18,7 +18,7 @@ apothem install --harness claude-code
 ```
 
 O adaptador `claude-code` instala o corpus compartilhado do Apothem na árvore de
-descoberta nativa do Claude Code. Agentes em Markdown, regras, skills, output styles e
+descoberta nativa do Claude Code. Agentes em Markdown, regras, skills, output-styles e
 configurações são instalados em seus locais nativos; os prompts de comando são
 convertidos em skills para que os fluxos de trabalho reutilizáveis continuem visíveis
 pela superfície de skills atual do Claude Code. O renderizador de statusline é copiado
@@ -69,14 +69,14 @@ As skills instaladas, e as skills empacotadas no plugin do Claude Code, carregam
 `user-invocable` em vez do `userInvocable` do corpus de origem, porque o Claude
 Code lê apenas a chave hifenizada. Os dois contêineres de templates
 (`plan-suite`, `research-suite`) a definem como `false`, de modo que ficam fora
-do menu `/`. Todo output style define `keep-coding-instructions: true`, de modo
+do menu `/`. Todo output-style define `keep-coding-instructions: true`, de modo
 que selecionar um deles mantém as instruções de engenharia de software
 integradas do Claude Code.
 
 ## Notas de compatibilidade
 
 Os prompts de comando são convertidos em diretórios de skill; agentes, regras,
-skills e output styles são copiados como estão. A instalação valida que o perfil
+skills e output-styles são copiados como estão. A instalação valida que o perfil
 está bem formado e que todas as vinculações de hook em settings.json são
 resolvíveis. O adaptador não cria nenhuma entrada de servidor MCP: registre os
 servidores com `claude mcp add` (consulte

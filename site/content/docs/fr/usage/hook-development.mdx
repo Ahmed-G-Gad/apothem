@@ -6,9 +6,8 @@ sourceHash: "3f0b73e4a7f319cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les hooks sont des commandes shell qui se déclenchent sur les événements du
-harness. Ils appliquent la conformité, injectent du contexte et exécutent des
-portes de qualité sans intervention de l'opérateur.
+Les hooks sont des commandes shell qui se déclenchent sur les événements de l'environnement. Ils appliquent la conformité, injectent du contexte et exécutent des
+portails de qualité sans intervention de l'opérateur.
 
 ## Événements de hook
 
@@ -53,4 +52,4 @@ Ajoutez la commande du hook à `settings.json` :
 
 Tous les hooks transitent par `src/apothem/hooks/dispatch.py`, qui convertit
 toute erreur de hook en une enveloppe fail-open afin que les hooks ne bloquent
-jamais le harness.
+jamais l'environnement.

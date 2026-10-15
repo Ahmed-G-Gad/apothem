@@ -18,7 +18,7 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. 作者規律（人間のみ）
 
-すべての git 制果物のすべての作者面（コミット件名、コミット本文、`Author:` フィールド、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、stash 名、git-notes 本文、PR タイトル、PR 説明）は、**人間のコントリビューターのみ**を記載します。ハーネスは、自分自身、基盤となる言語モデル、ランタイム / 環境 / IDE / 拡張機能 / ベンダー、あるいはその他のいかなる自動化ツールも、これらの面のいずれにも決して帰属させません。禁止されるパターンには、`Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、`generated with X` や `co-authored by an automated helper` のような本文の記述、そして人間でない作者を示すあらゆる件名行のマーカーが含まれます。完全な仕様は [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 にあります。機械的な強制は [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3 にあります。
+すべての git 制果物のすべての作者面（コミット件名、コミット本文、`Author:` フィールド、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、stash 名、git-notes 本文、PR タイトル、PR 説明）は、**人間のコントリビューターのみ**を記載します。ハーネスは、自分自身、基盤となる言語モデル、ランタイム / ハーネス / IDE / 拡張機能 / ベンダー、あるいはその他のいかなる自動化ツールも、これらの面のいずれにも決して帰属させません。禁止されるパターンには、`Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、`generated with X` や `co-authored by an automated helper` のような本文の記述、そして人間でない作者を示すあらゆる件名行のマーカーが含まれます。完全な仕様は [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 にあります。機械的な強制は [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3 にあります。
 
 ## 3. リリースタグ（セマンティックバージョニング）
 
@@ -26,7 +26,7 @@ sourceHash: "b14f720edd93a318"
 
 ## 4. タスクごとのケイデンス
 
-コミットは SHARED+ の真剣度ではタスクごと、PERSONAL_USE ではフェーズごとに行われ、EXPLORING では任意です。タスクのコミットは、そのタスクの検証ゲートが通過した直後に行われます。先延ばしにしたコミットはコンテキストを蓄積し、スコープを失うリスクがあります。完全な規律は [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13 にあります。
+コミットは SHARED+ のシリアスネスではタスクごと、PERSONAL_USE ではフェーズごとに行われ、EXPLORING では任意です。タスクのコミットは、そのタスクの検証ゲートが通過した直後に行われます。先延ばしにしたコミットはコンテキストを蓄積し、スコープを失うリスクがあります。完全な規律は [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13 にあります。
 
 ## 5. バリデーター
 

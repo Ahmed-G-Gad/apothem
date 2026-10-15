@@ -43,7 +43,7 @@ Schlanke Kontextverwaltung zu jeder Zeit — siehe die Regel zu CM-24. Vier Unte
 ## CM-13 (Commits)
 
 - **A — Rhythmus je Aufgabe:** Je Aufgabe ab SHARED+. Je Phase bei PERSONAL_USE. Optional bei EXPLORING.
-- **B — Qualitäts-/Behebungs-Commits:** Korrekturen für Qualitäts-Gates und Behebungsänderungen werden sofort committet, getrennt von der Feature-Arbeit.
+- **B — Qualitäts-/Behebungs-Commits:** Korrekturen für Qualitätstore und Behebungsänderungen werden sofort committet, getrennt von der Feature-Arbeit.
 - **C — Gate am Phasenende:** Keine nicht committeten Änderungen überschreiten Phasengrenzen. Die CM-7-Isolation gilt für alle git-Artefakte. Bei PUBLIC_LAUNCH: GPG-signierte Commits (`git commit -S`) erforderlich.
 - **D — Ausschließlich menschliche Urheberschaft:** Jede Urheberschaftsoberfläche in jedem git-Artefakt (Commit-Betreff, Commit-Nachrichtentext, `Author:`, `Co-Authored-By:`-Trailer, `Signed-off-by:`-Trailer, Branch-Name, Tag-Name, Tag-Annotation, Stash-Name, Inhalt von git-notes, PR-Titel, PR-Beschreibung) nennt **ausschließlich menschliche Mitwirkende**. Der Assistent schreibt niemals sich selbst, das zugrunde liegende Sprachmodell, die Laufzeit / den Harness / die IDE / die Erweiterung / den Anbieter oder ein sonstiges automatisiertes Werkzeug einer dieser Oberflächen zu. Verbotene Muster sind in `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship) aufgezählt und werden dort mechanisch durchgesetzt; der Matcher in `src/apothem/hooks/messages/pretooluse-bash.md`, Scan 3, greift bei jedem git-schreibenden Bash-Aufruf.
 - **E — Disziplin bei numerischen Präfixen für git-mv- / git-rm-Ziele:** Numerische Präfixe (`NN-`) auf Dateisystempfaden vermitteln eine Reihenfolge und gelten nur dort, wo die Reihenfolge intrinsisch ist — Sequenzen von Phasenordnern, Sequenzen von Unterphasen, vom Host erkannte ordinale Benennungsschemata. Einzelstücke auf Wurzelebene ohne gleichrangige Sequenz tragen kein numerisches Präfix; eines hinzuzufügen, ist bedeutungslose Dekoration, die fälschlich eine Reihenfolgebeziehung signalisiert, die nicht existiert. Vollständige Spezifikation in `src/apothem/rules/canonical-layout.md` §2.1. Mechanisch durchgesetzt in `src/apothem/hooks/messages/pretooluse-bash.md`, Scan 2, bei `git mv` / `git rm` und bei Pfadverweisen im Commit-Nachrichtentext.
@@ -62,7 +62,7 @@ CM-15 und CM-16 sind hier inline definiert (keine separate Regel); CM-17–21 de
 - **CM-18 Fehlerbehebung:** Sechs allgemeine Klassen (CM-24 §8); Klassen der Planausführung in TM-18. Nach 3 Fehlschlägen eskalieren.
 - **CM-19 Kompaktierungsdisziplin:** Proaktive Auslöser für die Kompaktierung — siehe CM-24 §3.
 - **CM-20 Pipeline-Orchestrierung:** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN). Review-Techniken: `src/apothem/rules/planning-techniques.md`.
-- **CM-21 Kreative Qualität:** Kognitive Filter sind Qualitäts-Gates, keine Dekoration. Skalierung gemäß der Regel zur kognitiven Identität, §2.
+- **CM-21 Kreative Qualität:** Kognitive Filter sind Qualitätstore, keine Dekoration. Skalierung gemäß der Regel zur kognitiven Identität, §2.
 
 ## CM-22–28 (An Regeln delegiert)
 

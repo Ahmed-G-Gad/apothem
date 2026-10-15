@@ -1,6 +1,6 @@
 ---
 title: "Apothem مقابل تهيئة Codex اليدوية"
-description: "صيانة AGENTS.md وخطّافات Codex ومهاراته ووكلائه يدويًّا، مقابل تثبيتها من ملف التعريف المشترك لـ Apothem."
+description: "صيانة AGENTS.md وخطّافات Codex ومهاراته ووكلائه يدويًّا، مقابل تثبيتها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
 sourceHash: "43f2a072e1737f93"
 ---
@@ -9,7 +9,7 @@ sourceHash: "43f2a072e1737f93"
 يقرأ <bdi>Codex</bdi> تعليمات المستخدم من <bdi>`AGENTS.md`</bdi>، ويحمّل الخطّافات من
 <bdi>`hooks.json`</bdi> أو <bdi>`config.toml`</bdi>، ويكتشف الوكلاء المخصّصين تحت
 <bdi>`agents/`</bdi>، ويكتشف المهارات من جذر مهارات <bdi>Codex</bdi> المشترك. ويثبّت
-محوِّل <bdi>codex</bdi> في <bdi>Apothem</bdi> تلك الأسطح من ملف التعريف المشترك مع ترك
+محوِّل <bdi>codex</bdi> في <bdi>Apothem</bdi> تلك الأسطح من الملف التعريفي المشترك مع ترك
 إعدادات <bdi>`config.toml`</bdi> المملوكة للمشغّل دون مساس.
 
 ## مقارنة الجهد
@@ -20,7 +20,7 @@ sourceHash: "43f2a072e1737f93"
 | كتابة الخطّافات | كتابة <bdi>`hooks.json`</bdi> أو جداول خطّافات <bdi>TOML</bdi> يدويًّا | مثبَّت في <bdi>`~/.codex/hooks.json`</bdi> مع مساعِدات خطّافات <bdi>Apothem</bdi> تحت <bdi>`~/.codex/hooks/`</bdi> |
 | كتابة الوكلاء المخصّصين | كتابة ملفات <bdi>TOML</bdi> تحت <bdi>`~/.codex/agents/`</bdi> يدويًّا | محوَّلة من وكلاء <bdi>Markdown</bdi> في <bdi>Apothem</bdi> |
 | كتابة أوامر قابلة لإعادة الاستخدام | بناء المهارات يدويًّا، دليلًا تلو الآخر | مغلّفة بصيغة <bdi>`~/.agents/skills/*/SKILL.md`</bdi> |
-| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| إبقاء القواعد متوائمة مع أُطُر العمل الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
 | التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness codex`</bdi> |
 
 ## ما الذي يديره Apothem
@@ -32,7 +32,7 @@ sourceHash: "43f2a072e1737f93"
 
 ## مسار الترحيل
 
-1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت
    بعد.
 2. انقل القواعد من <bdi>`AGENTS.md`</bdi> القائم لديك إلى المتن المشترك.
 3. أبقِ إعدادات وقت التشغيل القائمة في <bdi>`config.toml`</bdi> ضمن <bdi>Codex</bdi> ما لم

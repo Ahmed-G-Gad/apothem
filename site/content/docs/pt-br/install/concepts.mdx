@@ -1,6 +1,6 @@
 ---
 title: "Conceitos"
-description: "Glossário que define perfis compartilhados, adaptadores de harness, regras, hooks, portões de conformidade, skills e trabalhadores delegados no Apothem."
+description: "Glossário que define perfis compartilhados, adaptadores de harness, regras, hooks, conformity gates, skills e trabalhadores delegados no Apothem."
 machineTranslated: true
 sourceHash: "629015f2d24e58a5"
 ---
@@ -36,12 +36,12 @@ harness deve se comportar.
 
 Um script Python registrado na configuração de hooks de um harness (settings.json no Claude Code) que dispara em eventos do ciclo de vida, como PreToolUse, PostToolUse, SessionStart e Stop; alguns adaptadores também registram PreCompact e PostCompact. Os hooks impõem mandatos de conformidade em tempo real antes que a saída chegue ao disco. Adaptadores para harnesses sem mecanismo de hook o omitem.
 
-## Portão de conformidade
+## Conformity gate
 
 A fração mecânica do portão de pré-emissão de quinze barras (M1-M15) — os validadores verificáveis por máquina
 que são executados antes de um artefato ser emitido; consultivos por padrão, bloqueantes
 sob `--strict`. O portão de pré-emissão é o piso de qualidade; o
-portão de conformidade executa suas barras verificáveis por máquina, e os hooks impõem barras individuais em tempo real.
+conformity gate executa suas barras verificáveis por máquina, e os hooks impõem barras individuais em tempo real.
 
 ## Suíte de planejamento
 

@@ -1,6 +1,6 @@
 ---
 title: "Postura agnóstica de host"
-description: "Como o Apothem alcança uma postura agnóstica de host via o perfil compartilhado e os adaptadores de ferramenta."
+description: "Como o Apothem alcança uma postura agnóstica de host via o perfil compartilhado e os adaptadores de harness."
 machineTranslated: true
 sourceHash: "dc0e6903e3076aa0"
 ---
@@ -10,9 +10,9 @@ O Apothem é projetado em torno de um único princípio: sua configuração de g
 deve sobreviver a qualquer runtime individual de assistente. O perfil compartilhado do Apothem
 é um arquivo YAML validado por schema em `~/.config/apothem/profile.yaml` ou
 `--profile PATH`; os cohorts empacotados do Apothem fornecem comandos, regras, skills,
-hooks, templates, statuslines, output styles e definições de delegação.
-Adaptadores por ferramenta sob `src/apothem/harnesses/<harness>/` traduzem essas entradas para o formato
-que cada ferramenta suportada requer:
+hooks, templates, statuslines, output-styles e definições de delegação.
+Adaptadores por harness sob `src/apothem/harnesses/<harness>/` traduzem essas entradas para o formato
+que cada harness suportado requer:
 
 ```text
 Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
@@ -23,21 +23,21 @@ CodeBuddy, Kiro, Trae, Zed
 ## A ideia central
 
 A agnosticidade de host significa que sua *intenção* — quem você é, como você quer que os assistentes se
-comportem, as regras que eles devem seguir — vive em um único lugar que nenhuma ferramenta
-individual possui. As ferramentas são consumidoras intercambiáveis dessa intenção. Quando um novo
+comportem, as regras que eles devem seguir — vive em um único lugar que nenhum harness
+individual possui. Os harnesses são consumidores intercambiáveis dessa intenção. Quando um novo
 assistente chega, você o adota adicionando um adaptador, não reescrevendo sua
 configuração. Quando um assistente que você usava cai em desuso, você o descarta
-sem perder a governança que construiu. O perfil é o ativo; a ferramenta
-é um alvo de renderização. Uma ferramenta pode ser usada para programar, conversar, trabalhar em conjunto, pesquisar ou escrever — o perfil é agnóstico quanto à finalidade da ferramenta.
+sem perder a governança que construiu. O perfil é o ativo; o harness
+é um alvo de renderização. Um harness pode ser usado para programar, conversar, trabalhar em conjunto, pesquisar ou escrever — o perfil é agnóstico quanto à finalidade do harness.
 
 Esta é uma inversão deliberada. O caminho comum é configurar cada ferramenta
 diretamente, o que torna seu investimento refém da longevidade e do formato daquela
-ferramenta. O Apothem trata a configuração como capital portátil e a ferramenta como um
+ferramenta. O Apothem trata a configuração como capital portátil e o harness como um
 terminal descartável.
 
 ## O problema
 
-Toda ferramenta tem seu próprio formato de configuração:
+Todo harness tem seu próprio formato de configuração:
 
 ```text
 Claude Code:    CLAUDE.md + settings.json
@@ -76,7 +76,7 @@ Você edita o perfil compartilhado uma vez e, em seguida, executa `apothem updat
 O nome codifica a arquitetura. Em geometria, um *apótema* é a perpendicular
 do **centro** de um polígono regular ao **ponto médio de um de seus lados** — a
 única distância do núcleo até cada aresta, idêntica em todas as direções. Esse
-é o design: um perfil compartilhado no centro, dezessete ferramentas equidistantes no
+é o design: um perfil compartilhado no centro, dezessete harnesses equidistantes no
 perímetro, cada materialização à mesma distância da fonte da verdade. O
 núcleo não muda quando uma aresta muda; as arestas compartilham uma única relação com
 o núcleo. A divergência é estruturalmente impossível.

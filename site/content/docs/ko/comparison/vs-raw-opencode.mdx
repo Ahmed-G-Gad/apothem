@@ -1,6 +1,6 @@
 ---
 title: "Apothem 대 수동 OpenCode 구성"
-description: "OpenCode의 구성, 명령, 스킬, 에이전트를 손으로 유지하는 것과 Apothem의 공유 프로파일에서 렌더링하는 것의 비교."
+description: "OpenCode의 구성, 명령, 스킬, 에이전트를 손으로 유지하는 것과 Apothem의 공유 프로필에서 렌더링하는 것의 비교."
 machineTranslated: true
 sourceHash: "c166739452bbe88a"
 ---
@@ -14,9 +14,9 @@ OpenCode가 지원하는 곳에서는 공유 코퍼스를 네이티브 디렉터
 
 | 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
-| 규칙 작성 | 구성과 지원 프롬프트를 손으로 편집 | 공유 프로파일에서 렌더링 또는 참조 |
+| 규칙 작성 | 구성과 지원 프롬프트를 손으로 편집 | 공유 프로필에서 렌더링 또는 참조 |
 | 명령, 스킬, 에이전트 작성 | 각 OpenCode 디렉터리를 손으로 유지 | 공유 Apothem 코퍼스에서 변환 |
-| 코퍼스를 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 코퍼스를 다른 하니스와 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
 | 표면 설치 / 제거 | 수동 | `apothem install` / `apothem uninstall` |
 | 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness opencode` |
 
@@ -29,7 +29,7 @@ Markdown 서브에이전트로 적응시킵니다. 규칙, 템플릿, 훅 프롬
 
 ## 마이그레이션 경로
 
-1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+1. 공유 프로필을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
 2. 기존 OpenCode 규칙, 명령, 스킬, 에이전트를 공유 코퍼스로 옮깁니다.
 3. `apothem install --harness opencode`를 실행해 네이티브 구성과 발견 디렉터리를 렌더링합니다.
 4. `apothem verify --harness opencode`를 실행해 구성이 안착했는지 확인합니다.

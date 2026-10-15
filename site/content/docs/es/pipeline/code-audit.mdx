@@ -7,7 +7,7 @@ sourceHash: "ed923c7bf0779bab"
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Auditor
-**Posición en el pipeline:** fortaleza
+**Posición en la canalización:** fortaleza
 
 Auditoría forense de código entre archivos a escala del corpus del repositorio.
 
@@ -44,7 +44,7 @@ El comando ejecuta seis fases forenses: ingesta de entradas, recorrido de depend
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
-| Falta un archivo de entrada | No hay ejecución de la puerta de CI ni línea base de cobertura de pruebas en SHARED+ | Ejecuta primero el pipeline de CI del anfitrión y luego vuelve a ejecutar el comando |
+| Falta un archivo de entrada | No hay ejecución de la puerta de CI ni línea base de cobertura de pruebas en SHARED+ | Ejecuta primero la canalización de CI del anfitrión y luego vuelve a ejecutar el comando |
 
 ## Ejemplos
 
@@ -58,5 +58,5 @@ El comando ejecuta seis fases forenses: ingesta de entradas, recorrido de depend
 
 ## Referencias cruzadas
 
-- [Visión general del pipeline](/docs/pipeline)
+- [Visión general de la canalización](/docs/pipeline)
 - [Plantilla de Suite de Plan Maestra](/docs/reference/commands)

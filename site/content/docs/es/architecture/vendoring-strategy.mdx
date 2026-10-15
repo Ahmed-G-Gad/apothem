@@ -10,7 +10,7 @@ sourceHash: "8fea8e796680538f"
 
 ## Política
 
-El [runtime autocontenido](/docs/architecture/self-contained-runtime) de
+El [tiempo de ejecución autónomo](/docs/architecture/self-contained-runtime) de
 Apothem requiere que las dependencias de terceros del motor sean importables
 desde el propio árbol de código. Por eso, cada dependencia de runtime se maneja
 de una de tres maneras:
@@ -87,10 +87,10 @@ Para actualizar un paquete internalizado a una versión original más reciente:
    actualiza el bloque `[[annotations]]` del paquete en el `REUSE.toml` raíz si
    su licencia o copyright originales cambiaron. Ambos son obligatorios en el
    **mismo conjunto de cambios** que la copia (el mandato de dependencias vivas);
-   los auditores de la cadena de suministro y el gate de `reuse lint` los leen.
+   los auditores de la cadena de suministro y la puerta de `reuse lint` los leen.
 4. Deja intactas las rutas de import — los consumidores importan los nombres
    canónicos y la precedencia de `sys.path` del bootstrap hace el resto.
-5. Ejecuta la suite de pruebas y el gate de conformidad; el comportamiento de la
+5. Ejecuta la suite de pruebas y la puerta de conformidad; el comportamiento de la
    pila de validación está cubierto por las pruebas de validación del profile y
    del esquema.
 
@@ -101,6 +101,6 @@ cuando aparece un nuevo punto de llamada.
 
 ## Próximo paso recomendado
 
-**Lee la página del [runtime autocontenido](/docs/architecture/self-contained-runtime)**
+**Lee la página del [tiempo de ejecución autónomo](/docs/architecture/self-contained-runtime)**
 para ver cómo el árbol internalizado, el modelo de invocación `PYTHONPATH=src` y
 el bootstrap del árbol del plugin encajan en tiempo de ejecución.

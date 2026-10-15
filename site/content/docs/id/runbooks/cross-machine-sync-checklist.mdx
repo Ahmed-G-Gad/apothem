@@ -8,7 +8,7 @@ sourceHash: "fe0bc745cce7932a"
 
 > **Cakupan.** Daftar periksa ini memverifikasi lapisan portabilitas instalasi / penghapusan **adapter Claude Code** pada host kedua yang baru. Harness lain memiliki resep verifikasi per-host tersendiri yang didokumentasikan di [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses).
 
-> **Dua jalur, dua peran.** Pisahkan keduanya saat membaca daftar periksa ini. `$HOME/.apothem` adalah **engine home** — tempat pohon sumber dikloning dan tempat pemasang membaca, dapat ditimpa dengan `APOTHEM_HOME`. `~/.claude/` adalah **akar konfigurasi Claude Code** — permukaan keluaran adapter, tempat `settings.json` yang dimaterialisasi dan subpohon dukungan ditempatkan. Mesin tidak pernah dipasang ke dalam `~/.claude/`; ganti dengan path keluaran native adapter saat memvalidasi harness yang berbeda.
+> **Dua jalur, dua peran.** Pisahkan keduanya saat membaca daftar periksa ini. `$HOME/.apothem` adalah **engine home** — tempat pohon sumber dikloning dan tempat pemasang membaca, dapat ditimpa dengan `APOTHEM_HOME`. `~/.claude/` adalah **akar konfigurasi Claude Code** — permukaan keluaran adapter, tempat `settings.json` yang dimaterialisasi dan pohon pendukung ditempatkan. Mesin tidak pernah dipasang ke dalam `~/.claude/`; ganti dengan path keluaran native adapter saat memvalidasi harness yang berbeda.
 
 > **Verifikasi yang digerakkan operator atas lapisan portabilitas instalasi / penghapusan pada host kedua yang baru.** Tingkat publikasi (`vX.Y.Z`) disusun pada satu host Windows; klaim portabilitas (`CLAUDE.md` `portability: universal`) memerlukan latihan ujung-ke-ujung pada host kedua sebelum invarian multi-host memiliki bobot. Daftar periksa ini adalah resep verifikasi host kedua yang kanonis (adapter Claude Code).
 

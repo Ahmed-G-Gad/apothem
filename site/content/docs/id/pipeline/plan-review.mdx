@@ -1,6 +1,6 @@
 ---
 title: "/plan-review"
-description: "/plan-review — Audit forensik suite plan yang ada — fidelitas prosa, konsistensi, kualitas."
+description: "/plan-review — Audit forensik suite rencana yang ada — fidelitas prosa, konsistensi, kualitas."
 machineTranslated: true
 sourceHash: "99e28c1ca30d0b73"
 ---
@@ -9,7 +9,7 @@ sourceHash: "99e28c1ca30d0b73"
 **Peran:** Auditor
 **Posisi pipeline:** tengah
 
-Audit forensik suite plan yang ada — fidelitas prosa, konsistensi, kualitas.
+Audit forensik suite rencana yang ada — fidelitas prosa, konsistensi, kualitas.
 
 ## Pemanggilan kanonik
 
@@ -25,7 +25,7 @@ Dengan argumen:
 
 ## Masukan
 
-Suite plan yang dihasilkan + `_inputs/handoff-manifest.yml` dari `/plan-generate`.
+Suite rencana yang dihasilkan + `_inputs/handoff-manifest.yml` dari `/plan-generate`.
 
 ## Keluaran
 
@@ -39,7 +39,7 @@ Kartu Skor Tinjauan di `PLAN-NOTES.md` (`## Review Scorecards`), sebuah Ringkasa
 
 Perintah ini menjalankan audit forensik, buta, baris demi baris lalu menyempurnakan melalui tanya-jawab interaktif:
 
-1. **Memuat konteks** — Membaca setiap berkas suite plan (`phases/**/PHASE.md`, berkas infrastruktur, laporan) dan Manifes Serah-Terima hulu; menolak dengan `Blocked: run /plan-generate first` ketika suite tidak ada.
+1. **Memuat konteks** — Membaca setiap berkas suite rencana (`phases/**/PHASE.md`, berkas infrastruktur, laporan) dan Manifes Serah-Terima hulu; menolak dengan `Blocked: run /plan-generate first` ketika suite tidak ada.
 2. **Audit** — Menyapu dimensi (fidelitas prosa, konsistensi internal, kelengkapan, kualitas, risiko, standar, domain, arsitektur, kualitas kreatif) di bawah Mandat Tinjauan Buta.
 3. **Pilah temuan** — Mendisposisikan setiap temuan (terima · revisi · tolak · tunda) melalui kanal kueri terstruktur dengan jumlah keparahan per-temuan.
 4. **Jalankan gerbang pra-emisi** — Menjalankan gerbang lima belas batang terhadap laporan tinjauan dan kartu skor yang diperbarui; kegagalan memblokir promosi.
