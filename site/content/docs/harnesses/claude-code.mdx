@@ -23,7 +23,11 @@ Claude Code skill surface. The statusline renderer is copied to
 `~/.claude/statuslines/` but not wired: Claude Code reads its status line from
 the `statusLine` setting, which the adapter leaves unset. To turn it on, add a
 `statusLine` entry of `"type": "command"` that runs
-`~/.claude/statuslines/render.py` to `settings.json`.
+`~/.claude/statuslines/render.py` to `settings.json`. The snippet's
+`commandWindows` value runs on Windows and names the interpreter unquoted. When
+the interpreter path contains a space, the install writes its Windows 8.3 short
+form in that value when the volume has one. The hook entries in `settings.json`
+keep the full path.
 
 **Files written:** `settings.json`, the Apothem block in `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/`, and the `.apothem/support/` support subtree

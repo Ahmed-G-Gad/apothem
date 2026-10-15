@@ -8,7 +8,9 @@ Protocol-conformance and install-smoke tests for the adapter.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -286,3 +288,74 @@ def test_frontmatter_names_task_tools_beside_todowrite() -> None:
             if "TodoWrite" in denied and not set(_TASK_WRITE_TOOLS) <= denied:
                 stale.append(f"{path.relative_to(_SRC_ROOT)}:disallowedTools")
     assert not stale, stale
+
+
+class TestStatuslineInterpreter:
+    """The interpreter the unquoted statusline command runs on Windows.
+
+    A path with a space is written as its 8.3 short form; any other path is kept.
+    The end-to-end install check proves the hook entries keep the full path.
+    """
+
+    def test_path_without_space_is_unchanged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from apothem.harnesses.claude_code import install as install_mod
+
+        def _no_lookup(_path: Path) -> Path:
+            raise AssertionError("no short-name lookup for a path without a space")
+
+        monkeypatch.setattr(install_mod, "windows_short_path", _no_lookup)
+        python = Path("C:/Users/Gad/AppData/Local/Programs/Python/Python314/python.exe")
+
+        assert install_mod._statusline_interpreter(python) == python
+
+    def test_spaced_path_uses_short_form_when_available(
+        self, windows_short_names: Callable[[dict[str, str | None]], Any]
+    ) -> None:
+        from apothem.harnesses.claude_code import install as install_mod
+
+        python = Path("C:/Program Files/Python314/python.exe")
+        short = Path("C:/PROGRA~1/PYTHON~1/python.exe")
+        windows_short_names({str(python): str(short)})
+
+        assert install_mod._statusline_interpreter(python) == short
+
+    def test_spaced_path_without_short_form_is_unchanged(
+        self, windows_short_names: Callable[[dict[str, str | None]], Any]
+    ) -> None:
+        from apothem.harnesses.claude_code import install as install_mod
+
+        python = Path("C:/Program Files/Python314/python.exe")
+        windows_short_names({})
+
+        assert install_mod._statusline_interpreter(python) == python
+
+    def test_install_gives_statusline_the_short_form_and_hooks_the_full_path(
+        self,
+        adapter: ClaudeCodeAdapter,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        windows_short_names: Callable[[dict[str, str | None]], Any],
+    ) -> None:
+        from apothem.harnesses.claude_code import install as install_mod
+
+        python = tmp_path / "Program Files" / "Python314" / "python.exe"
+        short = tmp_path / "PROGRA~1" / "PYTHON~1" / "python.exe"
+        windows_short_names({str(python): str(short)})
+        monkeypatch.setattr(install_mod, "resolve_python_bin", lambda: python)
+        target = tmp_path / "settings.json"
+        monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+
+        adapter.install({})
+
+        root_posix = tmp_path.resolve().as_posix()
+        statusline = json.loads(
+            (tmp_path / "statuslines" / "conformity.json").read_text(encoding="utf-8")
+        )
+        assert statusline["commandWindows"] == (
+            f'{short.as_posix()} "{root_posix}/statuslines/render.py"'
+        )
+        settings = json.loads((tmp_path / "settings.json").read_text(encoding="utf-8"))
+        hook = settings["hooks"]["SessionStart"][0]["hooks"][0]
+        assert hook["command"] == python.as_posix()
