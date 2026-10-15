@@ -3,7 +3,7 @@ name: "plan-audit"
 version: "0.1.1"
 updated: "2026-10-15"
 description: "Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than only reporting them, looping until zero findings remain or an iteration cap with a defined retreat is hit. Implicitly encompasses the pipeline from /plan-spec: it brings a suite at any stage to a reviewed, zero-finding whole, routes deferred or incomplete work to a sibling *-maintenance suite, and persists a bounded audit report to _outputs/."
-argument-hint: "[suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]"
+argument-hint: "[suite-path] [--cap N] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"

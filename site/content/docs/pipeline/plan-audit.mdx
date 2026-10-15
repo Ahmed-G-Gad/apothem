@@ -18,7 +18,7 @@ Closed-loop guardian of the `/plan` pipeline. Where `/plan-review` reports and r
 With arguments:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## Inputs
@@ -58,7 +58,7 @@ A persistent, bounded report at `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`;
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## Cross-references

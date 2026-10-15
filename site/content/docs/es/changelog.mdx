@@ -26,7 +26,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`/plan-audit` runs on a suite that has only a spec.** Its Sequence Gate
   required a generated suite, while its own steps delegate a missing suite to
   `/plan-generate`. It now refuses only when neither an authored spec nor a
-  generated suite exists, and then points at `/plan-spec`.
+  generated suite exists, and then points at `/plan-spec`. Its argument hint
+  and page no longer offer `--from`, `--remediate` and `--maintenance`, which
+  the command never defined; `--cap N` and `--dry-run` remain.
 
 ### Fixed
 
