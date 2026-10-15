@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,8 +47,9 @@ YAML 구성을 렌더링합니다. 프로필의 신원, 선호, 규칙은 프로
 인벤토리를 Hermes가 MCP 서버를 읽는 최상위 `mcp_servers` 키 아래에 작성합니다.
 이전 Apothem 릴리스는 이를 `auxiliary.mcp` 아래에 작성했는데, Hermes는 이 키를
 MCP 도구 디스패치용 보조 모델로 읽습니다. `apothem update`와
-`apothem uninstall`은 모두, 그 블록이 해당 릴리스가 여러분의 공유 프로필로부터
-작성했을 내용과 여전히 일치하는 한 그 블록을 제거합니다([제거](#제거) 참조).
+`apothem uninstall`은 모두, 그 블록이 그러한 릴리스가 여러분의 현재 공유
+프로필로부터 작성했을 내용과 여전히 일치할 때 그 블록을 제거합니다(블록이 남는
+경우는 [제거](#제거) 참조).
 (Hermes 동작은
 [스킬](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)과
 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)에
@@ -89,8 +90,8 @@ apothem uninstall --harness hermes
 남아 있지 않을 때만 삭제됨), 프로필 문서, 지원 트리입니다. 공유 프로필 YAML과
 Apothem 엔진은 영향을 받지 않습니다.
 
-프로필의 서버를 `auxiliary.mcp` 아래에 작성한 이전 릴리스의 설치에서도, 그
-블록이 해당 릴리스가 `~/.config/apothem/profile.yaml`의 여러분의 현재 공유
+프로필의 서버를 `auxiliary.mcp` 아래에 작성한 이전 릴리스로 수행한 설치에서도,
+그 블록이 해당 릴리스가 `~/.config/apothem/profile.yaml`의 여러분의 현재 공유
 프로필로부터 작성했을 내용과 여전히 일치하면 그 블록이 제거됩니다. 이는
 `apothem update`가 적용하는 것과 같은 규칙이므로, 먼저 업데이트하지 않고
 제거해도 프로필의 MCP 서버가 바뀌지 않은 한 오래된 블록이 남지 않습니다. 여러분이

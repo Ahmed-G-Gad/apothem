@@ -1,12 +1,12 @@
 ---
 title: "Markdown 규약"
-description: "Markdown 방언, 헤딩 구조, 코드 펜스 선언, 내부 링크 형식, 작성자 배너, 검증기 강제를 표준화합니다."
+description: "Markdown 방언, 헤딩 구조, 코드 펜스 선언, 내부 링크 형식, 작성자 헤더, 검증기 강제를 표준화합니다."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **직접 작성하는 모든 `.md` 아티팩트의 Markdown 형태와 서식에 관한 표준 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)의 Conventions 요약은 인라인 선언이고, 이 페이지는 다운스트림 기여자가 인용하는 독립형 참조입니다.
+> **직접 작성하는 모든 `.md` 및 `.mdx` 아티팩트에 걸친 Markdown 형태와 서식의 표준 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)의 Conventions 요약은 인라인 선언이고, 이 페이지는 다운스트림 기여자가 인용하는 독립형 참조입니다.
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown(GFM)이 호스트 방언입니다. 모든 아티팩트�
 
 ## 2. 헤딩 계층
 
-파일당 H1은 하나입니다. 이후의 헤딩은 수준을 건너뛰지 않고 단조롭게 내려갑니다(H2 → H3 → H4). 헤딩은 문장형 대소문자 표기를 따르며, ALL-CAPS도, Title Case Across Every Word도 쓰지 않습니다. H1은 문서의 주 제목을 담으며, 문서 사이트 내비게이션에서 바로 그 문서의 앵커입니다.
+파일당 H1은 하나입니다. 이후의 헤딩은 수준을 건너뛰지 않고 단조롭게 내려갑니다(H2 → H3 → H4). 헤딩은 문장형 대소문자 표기를 따르며, ALL-CAPS도, Title Case Across Every Word도 쓰지 않습니다. H1은 문서의 주 제목을 담습니다. 문서 사이트 페이지에서는 프런트매터의 `title`이 H1으로 렌더링되고 문서 사이트 내비게이션에서 해당 페이지의 앵커가 되므로, 페이지 본문은 H2에서 시작합니다.
 
 ## 3. 코드 블록
 
@@ -30,9 +30,9 @@ GitHub-Flavored Markdown(GFM)이 호스트 방언입니다. 모든 아티팩트�
 
 변경 가능한 ref(`main`, `master`, `latest`, `HEAD`)를 가리키는 외부 링크는 링크된 콘텐츠의 안정성이 중요할 때마다 커밋 SHA나 릴리스 태그로 고정합니다. 변동성 있는 참조는 인접한 `{/* volatile */}` 주석으로 그러함을 문서화합니다.
 
-## 5. 작성자 배너
+## 5. 작성자 헤더
 
-모든 Markdown 아티팩트([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)에 열거된 예외 제외)는 [작성자 헤더](/docs/reference/authorship-header)에 따라 HTML 주석 변형으로 된 표준 작성자 헤더 배너를 둡니다. 프런트매터가 없으면 배너가 1번째 줄입니다. YAML 프런트매터가 있으면 프런트매터가 바이트 0에 남고, 배너는 닫는 `---` 뒤에 옵니다.
+모든 Markdown 아티팩트([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)에 열거된 예외 제외)는 [작성자 헤더](/docs/reference/authorship-header)에 따라 파일 형식에 맞는 주석 변형으로 된 표준 작성자 헤더, 즉 `SPDX-License-Identifier: MIT` 한 줄을 둡니다. `.md` 파일에서는 HTML 주석, `.mdx` 파일에서는 `{/* ... */}` 주석입니다. 프런트매터가 없으면 헤더 줄이 1번째 줄입니다. YAML 프런트매터가 있으면 프런트매터가 바이트 0에 남고, 헤더 줄은 닫는 `---` 뒤에 옵니다.
 
 ## 6. 검증기
 

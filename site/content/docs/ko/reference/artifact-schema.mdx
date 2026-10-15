@@ -2,7 +2,7 @@
 title: "아티팩트 스키마 명세"
 description: "Apothem 소스 트리의 모든 아티팩트 타입에 대한 정식 YAML 프런트매터 스키마와 필수 필드, 그리고 클래스별 템플릿과 검증 규칙입니다."
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,7 @@ Apothem 소스 트리(`src/apothem/` 아래와 루트 구성 표면)의 모든 �
 **공통 규칙:**
 
 - 프런트매터는 YAML 1.2를 준수합니다
-- 비어 있는 경우를 제외하고 모든 문자열 값은 큰따옴표를 사용합니다
+- 모든 문자열 값은 큰따옴표를 사용하며, 빈 문자열은 `""`로 씁니다
 - 필드 순서: 필수 필드를 먼저 두고, 선택 필드는 관련성에 따라 묶습니다
 - 프런트매터의 주석은 뒤에 공백이 오는 `#`를 사용합니다: `# comment`
 - 경로 값은 상대 경로여야 하며(앞에 `/` 없음), 크로스 플랫폼 호환성을 위해 슬래시(`/`)를 사용해야 합니다
@@ -149,7 +149,7 @@ src/apothem/agents/*.md
 ```
 
 **목적:** 병렬 탐색, 감사, 품질 게이트를 위한 영속적인 헬퍼
-정의.
+정의(위임 작업자라고도 함).
 
 ### 필수 필드
 
@@ -311,7 +311,7 @@ Python 구현.
 
 ### 필수 이벤트
 
-Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트를 등록합니다. PreCompact와 PostCompact는 Claude Code에 등록되지 않으며([훅 참조](/docs/reference/hooks)), `scripts/dev/validate_hooks.py`는 각각이 누락되었음을 경고로 보고합니다. 아래 표는 `validate_hooks.py`가 확인하는 다섯 개 이벤트를 나열합니다:
+Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop의 네 가지 이벤트를 등록합니다. `scripts/dev/validate_hooks.py`는 `settings.json`에서 아래 표의 다섯 가지 이벤트(앞의 네 가지와는 다른 집합)를 확인하고, 찾지 못한 각 이벤트를 실패가 아니라 경고로 보고합니다. PostToolUse는 등록되어 있지만 이 다섯 가지에 속하지 않습니다. PreCompact와 PostCompact는 이 다섯 가지에 속하지만 Claude Code에는 등록되어 있지 않으므로([훅 참조](/docs/reference/hooks)), 검사기는 Claude Code에서 이 둘에 대해 경고합니다.
 
 > **타임아웃 값은 정식 훅 이벤트 예산을 그대로 따릅니다** — 아래 표는 독자의
 > 편의를 위해 이를 재현한 것이며, 정식 출처가 우선합니다.
@@ -344,7 +344,7 @@ Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트�
 
 `scripts/dev/validate_hooks.py`는 훅 계약을 강제합니다.
 
-- `settings.json`이 JSON으로 파싱되고 모든 필수 이벤트를 선언합니다.
+- `settings.json`이 JSON으로 파싱되고 표의 다섯 가지 이벤트를 각각 선언합니다. 누락된 이벤트는 실패가 아니라 경고입니다.
 - 세 Python 스크립트가 모두 존재하고 유효한 Python으로 파싱됩니다.
 - `--context-file` 인수가 참조하는 모든 메시지 파일이 존재합니다.
 - 하드코딩된 절대 사용자 경로(`C:\Users\...` 등)가 `src/apothem/hooks/**.py`에 나타나지 않습니다.
@@ -395,7 +395,7 @@ portability: "project-local"
 
 ### 콘텐츠 검증
 
-- [ ] 콘텐츠가 닫는 `---` 뒤의 새 줄에서 시작하며, Markdown 계열 파일에서는 작성자 헤더 배너가 그 뒤의 첫 콘텐츠임
+- [ ] 콘텐츠가 닫는 `---` 뒤의 새 줄에서 시작하며, Markdown 계열 파일에서는 정식 SPDX 헤더 줄이 그 뒤의 첫 콘텐츠임
 - [ ] 플랜 내부 참조가 없음(CM-7 준수)
 - [ ] 상호 참조가 해석됨(다른 아티팩트를 나열하는 경우)
 - [ ] 링크가 슬래시를 쓰는 상대 경로를 사용함
