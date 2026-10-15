@@ -2,7 +2,7 @@
 title: "اصطلاحات التسمية"
 description: "تحدّد أسماء الملفات بصيغة kebab-case، وتنسيق مفاتيح frontmatter، وتسمية الفروع بادئات النوع، ودلالات البادئات الرقمية لتسلسلات المُخرَجات المُرتَّبة."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "a918d7ecd9f0ef65"
 
 ## 2. مفاتيح frontmatter
 
-تستخدم مفاتيح <bdi>YAML frontmatter</bdi> صيغة <bdi>`kebab-case`</bdi> (مثل <bdi>`argument-hint`</bdi>، و<bdi>`disable-model-invocation`</bdi>). تنطبق قاعدة <bdi>kebab-case</bdi> بشكل موحّد عبر القواعد والأوامر والعمّال المُفوَّضين والمهارات و<bdi>`CLAUDE.md`</bdi> نفسه.
+تستخدم مفاتيح <bdi>frontmatter</bdi> الخاصة بالأوامر صيغة <bdi>`kebab-case`</bdi> (مثل <bdi>`argument-hint`</bdi>، و<bdi>`disable-model-invocation`</bdi>، و<bdi>`allowed-tools`</bdi>). وتستخدم مفاتيح المهارات صيغة <bdi>`kebab-case`</bdi> ما عدا <bdi>`userInvocable`</bdi>، وهي كتابة <bdi>camelCase</bdi> التي يستخدمها متن المصدر؛ ويُعيد تثبيت <bdi>Claude Code</bdi> تسميتها إلى <bdi>`user-invocable`</bdi>. وأما مفاتيح القواعد والعمّال المُفوَّضين فبصيغة <bdi>camelCase</bdi> (مثل <bdi>`pathFilter`</bdi>، و<bdi>`alwaysApply`</bdi>، و<bdi>`maxTurns`</bdi>، و<bdi>`disallowedTools`</bdi>). ويسرد جدول المفاتيح المطلوبة في [مخطط frontmatter](/docs/reference/frontmatter-schema) المفاتيح لكل صنف.
 
 ## 3. أسماء الفروع
 

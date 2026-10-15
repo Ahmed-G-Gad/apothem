@@ -2,83 +2,110 @@
 title: "Perbandingan"
 description: "Cara mengevaluasi Apothem dibandingkan konfigurasi harness yang dipelihara secara manual dan pendekatan konfigurasi lainnya, dengan matriks fitur dan halaman per harness."
 machineTranslated: true
-sourceHash: "feb753ba49e3a2c5"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem adalah pengelola konfigurasi AI-harness yang tidak bergantung pada
-host. Satu profil bersama di `~/.config/apothem/profile.yaml` dimaterialisasikan
-ke tujuh belas permukaan konfigurasi native-harness. Bagian ini membingkai cara
-mengevaluasi Apothem dibandingkan alternatif yang sudah Anda gunakan.
+host. Satu profil bersama di `~/.config/apothem/profile.yaml`
+dimaterialisasikan menjadi tujuh belas permukaan konfigurasi native-harness.
+Bagian ini membingkai cara mengevaluasi Apothem dibandingkan alternatif yang
+sudah Anda gunakan.
 
 ## Bagaimana Apothem dibandingkan
 
-Alat lain menyelesaikan bagian-bagian berdekatan dari masalah ini. Pengelola
-konfigurasi berbasis berkas seperti **chezmoi** dan **GNU Stow** menempatkan atau
-membuat templat berkas tetapi tidak pernah menerjemahkan satu sumber ke
-konfigurasi *native* setiap harness. CLI sinkronisasi aturan antaralat
-seperti **rulesync** memang menghasilkan berkas native per alat di lebih banyak
-alat daripada tujuh belas milik Apothem, dan unit yang disinkronkan pun setara
-luasnya. Pembeda Apothem adalah **disiplin tata kelola dan siklus hidup yang
-didistribusikan di sekitar sinkronisasi** — gerbang kesesuaian mekanis, alur
-deterministik, benteng audit, dan siklus hidup yang dapat dibalik dan
-terverifikasi.
+Fakta tentang alat sejawat di halaman ini berlaku per **2026-10-02**, dibaca
+dari README atau dokumentasi milik masing-masing proyek (lihat
+[Sumber](#sumber)); periksa ulang fakta tersebut pada setiap rilis minor.
 
-| Kemampuan | Apothem | Pengelola konfig. berkas (chezmoi, Stow) | Sinkronisasi aturan antaralat (rulesync) | Konfig. native per alat |
-| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
-| Satu sumber ke skema native banyak alat | Ya — tujuh belas adapter harness | Tidak — salin / tautan simbolik, tanpa terjemahan | Ya | Tidak — satu alat |
-| Unit yang disinkronkan | aturan, skill, hook, perintah slash, MCP | berkas sembarang | aturan, ignore, MCP, perintah, subagen, skill, hook, izin | — |
-| Korpus tata kelola (aturan perilaku plus gerbang kesesuaian mekanis) | Ya — `python -m apothem.conformity.gate` | Tidak | Tidak | Tidak |
-| Alur perencanaan dan riset deterministik | Ya — dari `/plan-spec` ke `/plan-execute`, `/research` tiga belas tahap | Tidak | Tidak | Tidak |
-| Benteng audit yang mendeteksi dan memperbaiki | Ya — sapuan sebelas perintah, loop audit-ulang `/fortress` | Tidak | Tidak | Tidak |
-| Rilis yang diperkuat terhadap rantai pasok | Ya — SBOM, Sigstore, SLSA, target Scorecard | Tidak | bervariasi | Tidak |
-| Siklus hidup yang dapat dibalik dan terverifikasi | Ya — cadangan, `apothem verify --json`, pencopotan tanpa yatim | bervariasi | bervariasi | — |
+Alat lain menyelesaikan bagian-bagian yang berdekatan dari masalah ini.
+Pengelola konfigurasi berbasis berkas seperti **chezmoi** dan **GNU Stow**
+menempatkan, menautkan, atau membuat templat berkas, tetapi tidak pernah
+menerjemahkan satu sumber ke dalam skema konfigurasi *native* setiap harness.
+CLI sinkronisasi lintas-alat menghasilkan berkas per alat dari satu sumber:
+**rulesync** menghasilkan konfigurasi native untuk 60 alat pengodean dan dua
+standar terbuka, dengan unit tersinkron yang lebih luas daripada milik
+Apothem; **ruler** mendistribusikan satu direktori `.ruler/` ke 33 target,
+menggabungkan aturan ke dalam berkas instruksi setiap alat dan menerjemahkan
+server MCP, skill, dan subagen ke dalam konfigurasi native. Pembeda Apothem
+adalah **disiplin tata kelola dan siklus hidup yang disertakan di sekitar
+sinkronisasi**: gerbang konformitas yang dimekanisasi, pipeline deterministik,
+benteng audit, serta siklus hidup terverifikasi yang dapat dibalik.
 
-Di mana pesaing lebih kuat, ia disebut namanya: **rulesync** menjangkau lebih
-banyak alat dan membawa unit sinkronisasi yang setara luasnya, dan beberapa alat
-sinkronisasi mematerialisasikan skema native. Apothem menukar jumlah alat mentah
-dengan disiplin tata kelola, audit, dan siklus hidup yang didistribusikan di
-sekitar sinkronisasi — gerbang kesesuaian, alur deterministik `/plan` dan
-`/research`, benteng audit sebelas perintah, memori tahan lama, dan siklus hidup
-yang dapat dibalik dan terverifikasi — yang tidak dibawa oleh alat sinkronisasi
-aturan.
+| Kemampuan | Apothem | Pengelola konfigurasi berkas (chezmoi, Stow) | rulesync | ruler |
+| ---------- | :-----: | :----------------------------------: | :------: | :---: |
+| Satu sumber ke skema native banyak alat | Ya — tujuh belas adapter harness | Tidak — salin, symlink, atau templat, tanpa terjemahan | Ya — 60 alat ditambah standar AGENTS.md dan Agent Skills | Sebagian — aturan digabungkan ke dalam berkas instruksi setiap alat; MCP, skill, dan subagen ditulis dalam bentuk native |
+| Unit tersinkron | aturan, skill, subagen, hook, slash-command, output-style, pengaturan, MCP | berkas sembarang | aturan, ignore, MCP, command, subagen, skill, hook, izin, checks (instruksi pemeriksaan tinjauan kode) | aturan, MCP, skill, subagen |
+| Korpus tata kelola (aturan perilaku ditambah gerbang konformitas mekanis) | Ya — `python -m apothem.conformity.gate` | Tidak | Tidak — fitur `checks` miliknya menyinkronkan pemeriksaan tinjauan kode ke alat; tidak ada gerbang konformitas atas aturan | Tidak |
+| Pipeline rencana dan riset yang deterministik | Ya — `/plan-spec` hingga `/plan-execute`, `/research` tiga belas tahap | Tidak | Tidak | Tidak |
+| Benteng audit yang mendeteksi dan memperbaiki | Ya — sapuan sebelas perintah, loop audit ulang `/fortress` | Tidak | Tidak | Tidak |
+| Rilis yang diperkeras rantai pasoknya | Ya — SBOM, Sigstore, SLSA, target Scorecard | Tidak dibandingkan | Tidak dinyatakan dalam README-nya | Tidak dinyatakan dalam README-nya |
+| Siklus hidup terverifikasi yang dapat dibalik | Ya — cadangan, `apothem verify --json`, pencopotan tanpa berkas yatim | chezmoi: `chezmoi verify` memeriksa setiap target; Stow: hanya symlink | Tidak dinyatakan dalam README-nya | Cadangan `.bak` dan `ruler revert`; tidak ada perintah verify dalam README-nya |
+
+Ketika sebuah alat sejawat lebih kuat, alat itu disebutkan namanya:
+**rulesync** menjangkau lebih dari tiga kali lipat jumlah alat dan
+menyinkronkan unit yang lebih luas (termasuk izin dan pemeriksaan tinjauan),
+dan **ruler** menjangkau hampir dua kali lipat jumlah alat dengan perintah
+revert miliknya sendiri. Apothem menukar jumlah alat mentah dengan disiplin
+tata kelola, audit, dan siklus hidup yang disertakan di sekitar sinkronisasi —
+gerbang konformitas, pipeline rencana dan riset yang deterministik, benteng
+audit sebelas perintah, memori tahan lama, serta siklus hidup terverifikasi
+yang dapat dibalik — yang tidak dibawa oleh satu pun dari kedua alat
+sinkronisasi tersebut.
+
+### Sumber
+
+Semuanya diambil pada 2026-10-02, terhadap rilis terbaru setiap proyek pada
+tanggal tersebut.
+
+- rulesync (npm `rulesync`): [README](https://github.com/dyoshikawa/rulesync#readme)
+  (tabel alat yang didukung: 60 alat pengodean dan dua standar terbuka) dan
+  [referensi format berkas](https://github.com/dyoshikawa/rulesync/blob/main/docs/reference/file-formats.md)
+  (fitur `checks`).
+- ruler (npm `@intellectronica/ruler`): [README](https://github.com/intellectronica/ruler#readme)
+  (tabel agen yang didukung, `--backup`, `revert`).
+- chezmoi: [halaman beranda](https://www.chezmoi.io/) dan
+  [`chezmoi verify`](https://www.chezmoi.io/reference/commands/verify/).
+- GNU Stow: [halaman proyek](https://www.gnu.org/software/stow/)
+  ("sebuah pengelola kumpulan symlink").
 
 ## Cara membandingkan
 
 Bandingkan di sepanjang tiga sumbu:
 
-1. **Sumber kebenaran.** Di mana aturan, pekerja terdelegasi, perintah, dan pengaturan Anda
-   tinggal? Apothem memelihara satu korpus bersama dan merender format native
+1. **Sumber kebenaran.** Di mana aturan, agen, command, dan pengaturan Anda
+   berada? Apothem menyimpan satu korpus bersama dan merender format native
    setiap harness darinya. Konfigurasi yang dipelihara manual menyimpan satu
    salinan per alat.
-2. **Biaya penyimpangan.** Apa yang terjadi saat Anda mengubah satu aturan?
-   Apothem menyebarkan perubahan ke setiap harness terpasang saat menjalankan
-   `apothem update`. Konfigurasi yang dipelihara manual menuntut penyuntingan
-   berkas native setiap alat secara terpisah dan menjaganya selaras dari ingatan.
-3. **Verifikasi.** Bagaimana Anda tahu setiap harness terkonfigurasi dengan
-   benar? Apothem menyertakan `apothem verify --harness <name>` dan
-   `apothem doctor`. Konfigurasi yang dipelihara manual tidak punya verifikasi
-   bawaan.
+2. **Biaya penyimpangan.** Apa yang terjadi ketika Anda mengubah sebuah
+   aturan? Apothem menyebarkan perubahan itu ke setiap harness yang terpasang
+   saat `apothem update`. Konfigurasi yang dipelihara manual mengharuskan Anda
+   menyunting berkas native setiap alat secara terpisah dan menjaganya tetap
+   selaras berdasarkan ingatan.
+3. **Verifikasi.** Bagaimana Anda tahu bahwa setiap harness dikonfigurasi
+   dengan benar? Apothem menyertakan `apothem verify --harness <name>` dan
+   `apothem doctor`. Konfigurasi yang dipelihara manual tidak memiliki
+   verifikasi bawaan.
 
 ## Matriks fitur
 
-Matriks ini mempertentangkan Apothem dengan dua alternatif yang pertama kali
-diandalkan operator: memelihara secara manual konfigurasi native setiap harness
-dan mengelola berkas-berkas itu melalui pengelola dotfiles serbaguna.
+Matriks ini mempertentangkan Apothem dengan dua alternatif yang paling dulu
+dipilih operator: memelihara konfigurasi native setiap harness secara manual,
+dan mengelola berkas-berkas itu melalui pengelola dotfile serbaguna.
 
-| Kemampuan | Konfig. dipelihara manual | Pengelola dotfiles | Apothem |
+| Kemampuan | Konfigurasi yang dipelihara manual | Pengelola dotfile | Apothem |
 | ---------- | ---------------------- | --------------- | ------- |
 | Satu sumber kebenaran bersama | Tidak (satu salinan per alat) | Tidak (melacak berkas, bukan profil) | Ya (satu profil) |
 | Merender format native-harness | Manual | Tidak | Ya (materializer per adapter) |
 | Pencegahan penyimpangan lintas-harness | Penyelarasan manual | Hanya sinkronisasi berkas | Ya (`apothem update`) |
-| Instalasi/pencopotan per harness | Manual | Sebagian (tautan/salin) | Ya (`install` / `uninstall`) |
+| Pemasangan/pencopotan per harness | Manual | Sebagian (symlink/salin) | Ya (`install` / `uninstall`) |
 | Verifikasi bawaan | Tidak ada | Tidak ada | Ya (`verify` / `doctor`) |
 | Terjemahan format per alat | Tidak ada | Tidak ada | Ya (`.mdc`, `.toml`, `.md` tersemat) |
 | Tujuh belas harness dari satu masukan | Tidak | Tidak | Ya |
 
 ## Halaman perbandingan
 
-- [Apothem dibandingkan framework harness lainnya](/docs/comparison/vs-other-harness-frameworks)
+- [Apothem vs framework harness lainnya](/docs/comparison/vs-other-harness-frameworks)
 - [vs antigravity mentah](/docs/comparison/vs-raw-antigravity)
 - [vs claude-code mentah](/docs/comparison/vs-raw-claude-code)
 - [vs codebuddy mentah](/docs/comparison/vs-raw-codebuddy)

@@ -2,7 +2,7 @@
 title: "Соглашения об именовании"
 description: "Предписывает имена файлов в kebab-case, формат ключей frontmatter, именование веток с префиксами типа и семантику числовых префиксов для упорядоченных последовательностей артефактов."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "a918d7ecd9f0ef65"
 
 ## 2. Ключи frontmatter
 
-Ключи YAML-frontmatter используют `kebab-case` (например, `argument-hint`, `disable-model-invocation`). Правило kebab-case применяется единообразно к правилам, командам, делегированным работникам, навыкам и самому `CLAUDE.md`.
+Ключи frontmatter команд записываются в `kebab-case` (например, `argument-hint`, `disable-model-invocation`, `allowed-tools`). Ключи навыков записываются в `kebab-case`, за исключением `userInvocable` — написания в camelCase, которое использует исходный корпус; установка Claude Code переименовывает его в `user-invocable`. Ключи правил и делегированных исполнителей записываются в camelCase (например, `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). В таблице обязательных ключей на [странице схемы frontmatter](/docs/reference/frontmatter-schema) перечислены ключи для каждого класса.
 
 ## 3. Имена веток
 

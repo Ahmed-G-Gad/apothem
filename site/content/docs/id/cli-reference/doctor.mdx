@@ -2,54 +2,111 @@
 title: "doctor"
 description: "Referensi CLI untuk perintah apothem doctor."
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "d1627f4255de5db5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Menjalankan diagnostik sistem untuk pemasangan Apothem.
+Memeriksa kesehatan apa yang terpasang. Sementara
+[`apothem verify`](/docs/cli-reference/verify) memeriksa harness yang Anda
+pilih, `doctor` memeriksa setiap harness yang terpasang dan profil bersama dalam
+satu kali jalan.
 
-## Sinopsis
+## Ringkasan
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-Memeriksa pemasangan Apothem dan melaporkan status setiap adapter harness yang
-terdaftar. Ketika profil bersama tersedia, profil tersebut divalidasi terhadap
-skema bawaan paket — bukan sekadar diperiksa keberadaannya — sehingga profil yang
-rusak ditampilkan sebagai kegagalan diagnostik alih-alih "ditemukan" berwarna
-hijau. Keluaran JSON membawa bidang `profile_valid` (`true` / `false`, atau `null`
-ketika tidak ada profil) dan bidang `profile_error` ketika validasi gagal. Keluar
-dengan 0 ketika semua pemeriksaan lulus, dan dengan 1 ketika satu atau lebih
-harness tidak terpasang atau ketika profil yang tersedia gagal validasi skema.
+## Apa yang diperiksa
+
+- **Profil bersama.** Profil yang ada divalidasi terhadap skema yang dipaket;
+  profil yang salah bentuk gagal dengan kode diagnostiknya. Profil yang tidak
+  ada dilaporkan, bukan digagalkan (`install` membuatnya).
+- **Hanya harness yang terpasang.** Harness yang tidak terpasang dilaporkan
+  sebagai `not_installed` dan bukan merupakan kegagalan, sehingga mesin dengan
+  satu harness yang sehat tetap lolos. Harness berlingkup-proyek diperiksa
+  ketika `--project` menyebutkan root-nya; tanpa opsi itu, harness tersebut
+  dilaporkan sebagai `needs_project`.
+- **Verifikasi.** Setiap harness yang terpasang harus lolos pemeriksaan yang
+  sama dengan [`verify`](/docs/cli-reference/verify).
+- **Runtime hook.** Untuk setiap harness yang terverifikasi, doctor membaca
+  berkas yang ditulis oleh pemasangan terbarunya, menemukan perintah hook yang
+  didaftarkan Apothem di sana, lalu memulai setiap interpreter dan skrip hook
+  satu kali dengan payload no-op (argumen yang terdaftar ditambah `--help`, `{}`
+  pada stdin, direktori kerja sementara, dan `PYTHONPATH` dihapus). Tidak ada
+  yang ditulis. Interpreter yang hilang, skrip yang hilang, atau crash pada saat
+  impor menggagalkan pemeriksaan.
+
+Setiap pemeriksaan yang gagal menyebutkan perbaikannya. Keluar dengan 0 ketika
+tidak ada pemeriksaan yang gagal dan dengan 1 jika ada yang gagal.
+
+## Keluaran JSON
+
+`--json` mempertahankan bidang-bidang sebelumnya (`version`, `python`, `platform`,
+`profile_path`, `profile_exists`, `profile_valid`, `harnesses`, `all_ok`,
+dan `profile_error` ketika profil tidak valid) dan menambahkan:
+
+- `profile_error_code` — kode diagnostik profil, ketika profil tidak valid.
+- `project` — root `--project` yang telah di-resolve, atau `null`.
+- `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
+  `verify_failed`, `hook_failed`, atau `error`; ditambah `verified` dan `hooks`
+  (`{"probed": N, "failed": [...]}`, atau `null` ketika tidak ada catatan
+  pemasangan).
+- `checks` — satu catatan per pemeriksaan: `code` (misalnya
+  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable`, atau kode
+  `profile.*`), `status` (`pass`, `fail`, atau `info`), `harness`, `message`,
+  dan `fix`.
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--quiet`, `-q` | Menekan keluaran informatif; hanya kesalahan yang dikeluarkan. |
-| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
-| `--format plain\|json` | Format keluaran (bawaan: `plain`). |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek; tanpa opsi ini, harness tersebut dilaporkan sebagai `needs_project`. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
-| `--no-color` | Menonaktifkan kode warna ANSI pada keluaran. |
-| `-h`, `--help` | Menampilkan bantuan lalu keluar. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ## Contoh
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+Format default `plain` mencetak diagnostik yang dapat dibaca manusia; `--json`
+(setara dengan `--format json`) memancarkan dokumen yang dapat dibaca mesin pada
+stdout, cocok untuk disalurkan ke perkakas lain.
 
 ## Kode keluar
 
 | Kode | Arti |
 |---|---|
-| 0 | Semua pemeriksaan lulus |
-| 1 | Sebuah harness tidak terpasang, atau profil yang tersedia gagal validasi skema |
+| 0 | Semua pemeriksaan lulus (juga ketika belum ada harness yang terpasang) |
+| 1 | Harness yang terpasang tidak lolos verifikasi, perintah hook yang terdaftar tidak dapat dimulai, adapter tidak dapat dimuat atau diperiksa, atau profil yang ada gagal validasi skema |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem harnesses](/docs/cli-reference/harnesses) — mendaftar dan memeriksa harness yang terdaftar
-- [apothem verify](/docs/cli-reference/verify) — memeriksa pemasangan harness tertentu
+- [apothem harnesses](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa harness yang terdaftar
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan adapter harness

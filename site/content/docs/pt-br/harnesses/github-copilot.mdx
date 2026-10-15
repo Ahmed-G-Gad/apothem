@@ -1,8 +1,8 @@
 ---
 title: "GitHub Copilot"
-description: "Adaptador de ferramenta do Apothem para o GitHub Copilot (GA)."
+description: "Adaptador de harness do Apothem para o GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "65affe4b2cf2a340"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,32 +17,43 @@ sourceHash: "65affe4b2cf2a340"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-O adaptador deriva o arquivo de instruções do projeto a partir das regras
-compartilhadas do Apothem e da superfície de governança.
+O adaptador deriva o arquivo de instruções do projeto a partir do seu perfil
+compartilhado e da superfície compartilhada de regras e governança do Apothem.
 
-**Arquivos escritos:** `<project>/.github/copilot-instructions.md`
+**Arquivos gravados:** `<project>/.github/copilot-instructions.md`
 
-## Mapeamento de perfil para configuração nativa
+## Mapeamento do perfil para a configuração nativa
 
-O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de instruções
-do Copilot para todo o repositório a cada execução de `apothem install` ou `apothem
-update`. O perfil compartilhado é a fonte da verdade; edições locais do projeto no
-arquivo gerado são salvas em backup antes que a próxima sincronização substitua o
-conteúdo gerenciado pelo Apothem.
+O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de
+instruções do Copilot para todo o repositório a cada execução de
+`apothem install` ou `apothem update`. O perfil compartilhado é a fonte da
+verdade; as edições locais do projeto no arquivo gerado recebem backup antes que
+a próxima sincronização substitua o conteúdo gerenciado pelo Apothem.
+
+Dentro do bloco do Apothem, a seção renderizada a partir do seu perfil
+(operador, preferências, regras personalizadas, comportamentos ativados por
+opção, nomes de servidores MCP) vem primeiro, antes do texto de governança
+compartilhado. O GitHub observa que arquivos de instruções mais curtos têm mais
+probabilidade de ser processados por inteiro pela revisão de código
+([Personalização da revisão de código](https://docs.github.com/en/copilot/tutorials/customize-code-review)),
+então a parte específica para você abre o arquivo.
 
 ## Notas de compatibilidade
 
-O GitHub Copilot não expõe um caminho de instruções globais do usuário baseado em
-arquivos para este adaptador gerenciar. O Apothem mira o arquivo de instruções de
-escopo de projeto documentado e deixa as configurações de usuário em nível de IDE
-sob propriedade do operador.
+O GitHub Copilot não expõe um caminho de instruções globais do usuário baseado
+em arquivos para que este adaptador gerencie. O Apothem mira o arquivo de
+instruções com escopo de projeto documentado e deixa as configurações de usuário
+no nível da IDE sob a propriedade do operador.
 
-O Apothem trata o `copilot-instructions.md` como uma voz entre as superfícies de
-instruções de assistente do projeto: a verificação de coerência multissuperfície do
-portão de conformidade confirma que suas afirmações compartilhadas permaneçam
-semanticamente alinhadas com os demais arquivos de instruções do projeto, de modo que
-o Copilot nunca receba orientações que contradigam o que o restante da cadeia de
-ferramentas lê.
+Dentro do repositório do Apothem, `.github/copilot-instructions.md` é uma voz
+entre as superfícies de instruções de assistente desse repositório. Em um
+checkout desse repositório, a verificação de coerência multissuperfície do
+conformity gate compara as afirmações compartilhadas em `AGENTS.md`, `CLAUDE.md`
+e `.github/copilot-instructions.md`. Ela relata uma afirmação compartilhada que
+um dos três arquivos omite e um arquivo que contradiz uma afirmação feita por
+`AGENTS.md`. A verificação não lê o arquivo de instruções que o Apothem grava no
+seu projeto. O gate é consultivo por padrão: ele relata os achados e encerra com
+`0`.
 
 ## Verificação
 
@@ -53,8 +64,10 @@ apothem verify --harness github-copilot --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
-3. A rotina de verificação específica do adaptador relata sucesso.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
+3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -62,8 +75,8 @@ O comando verify confirma que:
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-Rederiva o arquivo de instruções do projeto a partir do estado atual do perfil
-compartilhado.
+Deriva novamente o arquivo de instruções do projeto a partir do estado atual do
+perfil compartilhado.
 
 ## Desinstalação
 
@@ -71,10 +84,13 @@ compartilhado.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa escritos pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `<project>/.github/copilot-instructions.md` e mantém
+qualquer texto fora dele. O arquivo só é excluído quando nada mais resta nele.
+Antes da alteração, uma cópia do arquivo com carimbo de data e hora é salva sob
+`~/.apothem/backups/`. O YAML do perfil compartilhado e o motor do Apothem não
+são afetados.
 
-## Portão de conformidade
+## Conformity gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -85,11 +101,17 @@ python -m apothem.conformity.gate --all .
 | Sintoma | Correção |
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness github-copilot --project /path/to/project` |
-| Verificação falhou | Execute `apothem update --harness github-copilot --project /path/to/project` e verifique novamente |
-| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois execute novamente `apothem update --harness github-copilot --project /path/to/project` |
+| Falha na verificação | Execute `apothem update --harness github-copilot --project /path/to/project` e depois verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness github-copilot --project /path/to/project` |
 
 ## Ajustes de configuração
 
-| Flag | Padrão | Descrição |
+| Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
-| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |
+| `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
+
+## Veja também
+
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

@@ -2,7 +2,7 @@
 title: "ハーネスアダプターの作成"
 description: "新しい Apothem ハーネスアダプターをゼロから作成するためのステップバイステップガイド。"
 machineTranslated: true
-sourceHash: "c24c9b0721f6cd1d"
+sourceHash: "6a5252c560462438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,10 +28,6 @@ cd apothem-myadapter
 name = "apothem-myadapter"
 version = "X.Y.Z"
 requires-python = ">=3.10"
-dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
-
-[project.entry-points."apothem.harnesses"]
-my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
 ```
 
 ## ステップ 2：アダプターを実装する
@@ -87,10 +83,11 @@ class MyHarnessAdapter(HarnessAdapter):
         return "\n\n".join(str(rule) for rule in rules)
 ```
 
+Apothem はサードパーティ製のアダプターを検出しません。まず Apothem のチェックアウトで、`src/apothem/lib/harness_registry.py` の静的レジストリにアダプターを追加してください。それまでは、`apothem install --harness my-harness` が ID を拒否します。
+
 ## ステップ 3：インストールしてテストする
 
 ```bash
-pip install -e .
 apothem install --harness my-harness
 apothem verify --harness my-harness
 ```

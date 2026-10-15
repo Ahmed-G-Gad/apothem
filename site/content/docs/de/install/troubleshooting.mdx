@@ -2,7 +2,7 @@
 title: "Fehlerbehebung"
 description: "Lösungen für häufige Apothem-Installationsfehler und Laufzeitprobleme über die Plugin-, npx- und Installer-Pfade hinweg."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "bc3e1102685c3e6e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,22 +12,27 @@ Lösungen für häufige Apothem-Installations- und Laufzeitprobleme.
 
 ### Kein Python 3.10+ gefunden
 
-Die Installer und der npx-Shim prüfen `python3`, `python`, die versionierten
-Namen (`python3.14` bis `python3.10`) und `py -3` unter Windows — wobei sie
-Microsoft-Store-Launcher-Shims zurückweisen — und brechen mit `No Python >= 3.10 found in
-PATH` ab, wenn kein Kandidat die Untergrenze von 3.10 erfüllt. Installieren Sie CPython 3.10 oder neuer
-von python.org oder aus dem Paket-Repository Ihres Betriebssystems, bestätigen Sie, dass `python3 --version`
-(oder `py -3 --version` unter Windows) mindestens 3.10 meldet, und führen Sie den Vorgang dann erneut aus.
+Die Installer prüfen `python3`, `python` und die versionierten Namen
+(`python3.14` bis `python3.10`) — wobei sie Launcher-Shims des Microsoft Store
+zurückweisen — und brechen mit `No Python >= 3.10 found in PATH` ab, wenn kein
+Kandidat die Untergrenze von 3.10 erfüllt. Der npx-Shim prüft `APOTHEM_PYTHON`,
+wenn es gesetzt ist, danach `python3`, `python` und `py -3` und endet mit
+Exit-Code 1 und einer eigenen Meldung, wenn keiner die Anforderung erfüllt.
+Installieren Sie CPython 3.10 oder neuer von python.org oder aus dem
+Paket-Repository Ihres Betriebssystems, bestätigen Sie, dass
+`python3 --version` (oder `py -3 --version` unter Windows) mindestens 3.10
+meldet, und führen Sie den Vorgang dann erneut aus.
 
 ### Fehlende Laufzeitabhängigkeiten: click, rich
 
-Die Engine bündelt die meisten ihrer Drittanbieter-Abhängigkeiten innerhalb des Quell-
-baums, aber `click` und `rich` müssen unter dem vom Installer ausgewählten Interpreter
-importierbar sein. Wenn eines davon fehlt, benennt der Installer es und bietet an,
-es für Sie zu installieren:
+Die Engine bündelt die meisten ihrer Drittanbieter-Abhängigkeiten innerhalb des
+Quellbaums, aber `click` und `rich` müssen unter dem vom Installer
+ausgewählten Interpreter importierbar sein. Fehlt eines davon, benennt der
+Installer es und bietet an, es für Sie zu installieren:
 
 ```text
-! Missing runtime dependencies: click rich
+! Missing Python prerequisites under <python>: click rich
+  Install click rich under <python> now? [y/N]
 ```
 
 Bestätigen Sie die Abfrage, damit der Installer `pip install` unter diesem
@@ -41,9 +46,13 @@ erneut aus.
 
 ### `apothem` nach Ausführung des Installers nicht gefunden
 
-Der Installer legt den Quellbaum unter `~/.apothem` ab und fügt Ihrem `PATH` keine
-ausführbare `apothem`-Datei hinzu. Führen Sie die Engine über den Aufruf aus,
-den der Installer am Ende ausgibt:
+Der Installer legt den Quellbaum unter `~/.apothem` ab und schreibt standardmäßig
+einen `apothem`-Shim nach `~/.local/bin` (POSIX) bzw. nach
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Er ändert Ihren `PATH` nicht.
+Wird `apothem` nicht gefunden, ist dieses Verzeichnis nicht im `PATH` enthalten;
+nehmen Sie es auf oder verwenden Sie bis dahin die `PYTHONPATH`-Form weiter
+unten. Führen Sie die Engine über den Aufruf aus, den der Installer am Ende
+ausgibt:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
@@ -54,18 +63,18 @@ oder verwenden Sie die npx-Form (`npx @ahmed-g-gad/apothem <command>`), die kein
 
 ### `/plugin marketplace add` schlägt fehl
 
-`/plugin marketplace add ahmed-g-gad/apothem` ruft den Marketplace-
-Eintrag von GitHub ab. Wenn dies fehlschlägt, vergewissern Sie sich, dass der Rechner
-`https://github.com/ahmed-g-gad/apothem` erreichen kann (Netzwerk-, Proxy- oder Firewall-
-Regeln), und versuchen Sie es erneut. Wenn der Marketplace zuvor unter einem unvollständigen
-Abruf hinzugefügt wurde, entfernen Sie ihn und fügen Sie ihn erneut hinzu, bevor Sie
-`/plugin install apothem@apothem` ausführen.
+`/plugin marketplace add ahmed-g-gad/apothem` ruft den Marketplace-Eintrag von
+GitHub ab. Wenn dies fehlschlägt, vergewissern Sie sich, dass der Rechner
+`https://github.com/ahmed-g-gad/apothem` erreichen kann (Netzwerk-, Proxy- oder
+Firewall-Regeln), und versuchen Sie es erneut. Wenn der Marketplace zuvor unter
+einem unvollständigen Abruf hinzugefügt wurde, entfernen Sie ihn und fügen Sie
+ihn erneut hinzu, bevor Sie `/plugin install apothem@apothem` ausführen.
 
 ### npx liefert eine veraltete Version
 
-`npx` speichert heruntergeladene Pakete zwischen. Wenn `npx @ahmed-g-gad/apothem --version`
-eine ältere Version als das aktuelle Release meldet, leeren Sie den Cache oder fixieren Sie
-den dist-Tag:
+`npx` speichert heruntergeladene Pakete zwischen. Wenn
+`npx @ahmed-g-gad/apothem --version` eine ältere Version als das aktuelle
+Release meldet, leeren Sie den Cache oder fixieren Sie den dist-Tag:
 
 ```bash
 npx clear-npx-cache
@@ -85,18 +94,21 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install findet keine Harnesses
 
-Führen Sie apothem doctor aus, um erkannte Harness-Verzeichnisse aufzulisten. Wenn keine gefunden werden, stellen Sie sicher, dass Ihr
-Werkzeug installiert und mindestens einmal gestartet wurde.
+Führen Sie apothem doctor aus, um erkannte Harness-Verzeichnisse aufzulisten.
+Wenn keine gefunden werden, stellen Sie sicher, dass Ihr Harness installiert und
+mindestens einmal gestartet wurde.
 
 ### apothem verify meldet einen fehlerhaften Adapter
 
-Führen Sie apothem install erneut aus, um den Adapter neu zu materialisieren. Wenn das Problem weiterhin besteht, prüfen Sie die
-adapterspezifische Seite unter [Harness-Adapter](/docs/harnesses).
+Führen Sie apothem install erneut aus, um den Adapter neu zu materialisieren.
+Wenn das Problem weiterhin besteht, prüfen Sie die adapterspezifische Seite
+unter [Harness-Adapter](/docs/harnesses).
 
 ### Hooks werden in Claude Code nicht ausgelöst
 
-Vergewissern Sie sich, dass Apothem korrekt eingebunden ist, indem Sie ~/.claude/settings.json auf die Hook-Einträge prüfen.
-Wenn die Hooks in der Datei fehlen, führen Sie apothem install erneut aus.
+Vergewissern Sie sich, dass Apothem eingebunden ist, indem Sie
+~/.claude/settings.json auf die Hook-Einträge prüfen. Fehlen die Hooks in der
+Datei, führen Sie apothem install erneut aus.
 
 ## Hilfe erhalten
 

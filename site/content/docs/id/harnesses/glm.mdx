@@ -1,113 +1,128 @@
 ---
 title: "GLM (Z.ai)"
-description: "Apothem harness adapter for GLM (Z.ai) as a configurable model backend."
+description: "Adapter harness Apothem untuk GLM (Z.ai) sebagai backend model yang dapat dikonfigurasi."
 machineTranslated: true
-sourceHash: "c2f9dc937ca0e8cc"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Z.ai
-**Install name:** `glm`
+**Nama instalasi:** `glm`
 **Status:** GA
-**Native config:** `<project>/.apothem/providers/glm.toml`
+**Konfigurasi native:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+GLM (Z.ai) adalah **backend model**, bukan alat pengodean tersendiri. Z.ai tidak
+menyediakan antarmuka baris perintah GLM resmi miliknya sendiri; sebagai
+gantinya, alat yang menggunakan protokol yang kompatibel dengan Anthropic atau
+yang kompatibel dengan OpenAI diarahkan ke GLM dengan menyetel base URL backend
+dan sebuah kunci. Apothem tetap memasukkan GLM ke dalam adapter harness-nya,
+sehingga Anda memilihnya dengan `--harness glm` seperti adapter lain. Adapter
+`glm` menulis berkas konfigurasi penyedia yang mencatat kedua permukaan
+kompatibilitas tersebut sehingga alat kompatibel apa pun dapat disambungkan ke
+keluarga model GLM.
 
-## Installation
+## Instalasi
 
 ```bash
 apothem install --harness glm --project /path/to/project
 ```
 
-The adapter writes one project-scope provider file recording the GLM backend
-endpoints and operator-configurable placeholders.
+Adapter menulis satu berkas penyedia berlingkup proyek yang mencatat endpoint
+backend GLM dan placeholder yang dapat dikonfigurasi operator.
 
-**Files written:** `<project>/.apothem/providers/glm.toml`
+**Berkas yang ditulis:** `<project>/.apothem/providers/glm.toml`
 
-## Profile-to-native-config mapping
+## Pemetaan profil ke konfigurasi native
 
-The provider file records two backends. The Anthropic-compatible backend uses
-the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
-protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+Berkas penyedia mencatat dua backend. Backend yang kompatibel dengan Anthropic
+menggunakan base URL `https://api.z.ai/api/anthropic`; alat yang menggunakan
+protokol Anthropic dirutekan ke GLM dengan menyetel `ANTHROPIC_BASE_URL`,
+`ANTHROPIC_AUTH_TOKEN`, dan secara opsional `API_TIMEOUT_MS`. Tabel
+`[backends.anthropic_compatible.env]` di dalam berkas mencantumkan variabel-variabel
+tersebut dan juga `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+`ANTHROPIC_DEFAULT_SONNET_MODEL`, dan `ANTHROPIC_DEFAULT_HAIKU_MODEL`, yang
+memetakan peran opus, sonnet, dan haiku milik alat ke model GLM. Backend yang
+kompatibel dengan OpenAI menggunakan base URL
+`https://api.z.ai/api/coding/paas/v4`. Token autentikasi adalah placeholder
+yang Anda ganti dengan kunci Z.ai Anda sendiri — Apothem tidak pernah menulis
+rahasia sungguhan. ID model mudah berubah antarversi, sehingga Apothem tidak
+mematok satu pun; berkas tersebut membawa placeholder `<GLM_MODEL_ID>` yang
+Anda isi dari [dokumentasi Z.ai](https://docs.z.ai/devpack/tool/claude) yang
+terkini. Tidak ada apa pun dari profil bersama yang masuk ke berkas ini; berkas
+ini adalah templat tetap.
 
-## Compatibility notes
+## Catatan kompatibilitas
 
-Because GLM is a backend rather than a harness, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+Karena GLM adalah backend dan bukan alat pengodean, GLM tidak mengekspos
+permukaan untuk aturan, command, skill, atau hook — adapter hanya menulis berkas
+penyedia backend dan tidak ada yang lain. Kunci Z.ai Anda dan pilihan ID model
+Anda tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi
+sandaran adapter dipatok di `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`,
+yang di-snapshot terhadap dokumentasi Z.ai yang berlaku.
 
-GLM runs the GLM model family from Z.ai; see the
-[vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
-current backend, model, and Anthropic-compatible configuration surface.
+GLM menjalankan keluarga model GLM dari Z.ai; lihat
+[referensi konfigurasi vendor](https://docs.z.ai/devpack/tool/claude) untuk
+permukaan konfigurasi backend, model, dan kompatibel-Anthropic yang terkini.
 
-## Verification
+## Verifikasi
 
 ```bash
 apothem verify --harness glm --project /path/to/project
 ```
 
-The verify command confirms that:
+Perintah verify memastikan bahwa:
 
-1. The native config exists at the expected path.
-2. The provider file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Berkas penyedia ada dan tidak kosong.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Updating
+## Pembaruan
 
 ```bash
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+Berkas penyedia menjadi milik Anda begitu berkas itu ada. `install` dan `update`
+sama-sama menulis templat hanya ketika `.apothem/providers/glm.toml` tidak ada,
+dan keduanya tidak pernah menimpanya setelah itu, sehingga referensi kunci dan
+pilihan model Anda bertahan pada setiap eksekusi ulang. Untuk mengambil templat
+yang lebih baru, pindahkan berkas Anda ke tempat lain, jalankan `update`, lalu
+salin nilai-nilai Anda ke berkas yang baru.
 
-## Uninstalling
+## Pencopotan
 
 ```bash
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+Menghapus berkas penyedia hanya ketika Apothem yang membuatnya dan berkas itu
+masih berupa templat yang belum disunting, dengan terlebih dahulu
+mencadangkannya di bawah akar cadangan Apothem. Berkas yang Anda buat atau
+sunting dibiarkan di tempatnya. YAML profil bersama dan mesin Apothem tidak
+terpengaruh.
 
-## Conformity gate
+## Gerbang konformitas
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## Pemecahan masalah
 
-| Symptom | Fix |
+| Gejala | Perbaikan |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness glm --project /path/to/project` |
+| Verifikasi gagal | Berkas penyedia hilang atau kosong. Jika berkas hilang, jalankan `apothem update --harness glm --project /path/to/project`. Jika berkas kosong, pindahkan `.apothem/providers/glm.toml` ke tempat lain terlebih dahulu, lalu jalankan `update` dan verifikasi lagi |
+| Konten konfigurasi tidak terduga | Sunting `.apothem/providers/glm.toml` secara langsung; Apothem tidak pernah menulis ulang berkas yang sudah ada, dan profil bersama tidak menambahkan apa pun ke dalamnya. Untuk templat yang baru, pindahkan berkas ke tempat lain lalu jalankan `apothem update --harness glm --project /path/to/project` |
 
-## Configuration knobs
+## Tombol konfigurasi
 
-| Flag | Default | Description |
+| Flag | Default | Deskripsi |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
 
-## See also
+## Lihat juga
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

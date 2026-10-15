@@ -1,8 +1,8 @@
 ---
 title: "Antigravity"
-description: "Antigravity (पूर्वावलोकन) के लिए Apothem टूल अडैप्टर।"
+description: "Antigravity (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "b5740666d67c3796"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,35 +18,65 @@ sourceHash: "b5740666d67c3796"
 apothem install --harness antigravity
 ```
 
-अडैप्टर साझा प्रोफ़ाइल को `~/.gemini/GEMINI.md` पर रेंडर करता है और Apothem
-सहायता समुच्चयों को एक Antigravity CLI प्लगइन के रूप में इंस्टॉल करता है।
+अडैप्टर साझा प्रोफ़ाइल को `~/.gemini/GEMINI.md` में रेंडर करता है और Apothem
+समर्थन समूहों को एक Antigravity CLI प्लगइन के रूप में इंस्टॉल करता है।
 
 **लिखी गई फ़ाइलें:** `~/.gemini/GEMINI.md`,
 `~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
 `~/.gemini/antigravity-cli/plugins/apothem/skills/`,
 `~/.gemini/antigravity-cli/plugins/apothem/rules/`,
 प्लगइन के भीतर परिवर्तित स्थानीय सहायक परिभाषाएँ,
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, और
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, और
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`।
 
-**साझा उपयोक्ता एंकर।** `~/.gemini/GEMINI.md` Gemini-परिवार के टूल्स के लिए
-उपयोक्ता-स्तरीय एंकर भी है। Antigravity अडैप्टर अपनी अतिरिक्त Apothem सामग्री को
-`~/.gemini/antigravity-cli/plugins/` के अंतर्गत `apothem` प्लगइन के भीतर रखता है,
-ताकि वह सामान्य Gemini CLI प्रोजेक्ट डायरेक्टरियों पर दावा न करे।
+`~/.gemini/GEMINI.md` में Apothem ब्लॉक एक Apothem समर्थन फ़ाइल अनुभाग के साथ
+समाप्त होता है, जो प्रत्येक रिपॉज़िटरी-शैली उद्धरण के लिए वह निरपेक्ष डायरेक्टरी
+बताता है जिसके सापेक्ष वह उद्धरण हल होता है: `rules/<name>.md` प्लगइन की
+`rules/` के अंतर्गत, और `templates/...` तथा `hooks/...` प्लगइन की
+`.apothem/support/` के अंतर्गत।
 
-## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+**प्लगइन नियम।** Antigravity किसी प्लगइन की `rules/` डायरेक्टरी में ऐसी हर
+फ़ाइल को त्याग देता है जो किसी मान्य `trigger` से शुरू नहीं होती
+([Antigravity नियम दस्तावेज़](https://antigravity.google/docs/rules)), इसलिए
+प्रत्येक Apothem नियम इंस्टॉल के समय परिवर्तित किया जाता है। जो नियम हमेशा लागू
+होता है उसे `trigger: always_on` मिलता है; पथों तक सीमित नियम को `globs` में
+उन्हीं पैटर्नों के साथ `trigger: glob` मिलता है; किसी भी अन्य नियम को
+`trigger: model_decision` मिलता है। हर नियम अपना `description` बनाए रखता है।
+Antigravity हमेशा-चालू नियमों के बीच 20,000-टोकन का एक बजट साझा करता है और उस
+सीमा के पार सबसे बड़े नियमों को माँग-पर पॉइंटरों में बदल देता है।
+
+**प्लगइन मैनिफ़ेस्ट।** `plugin.json` केवल `name` और `description` रखता है, यानी
+वे दो कुंजियाँ जिन्हें Antigravity का प्लगइन स्कीमा स्वीकार करता है।
+
+**प्लगइन सहायक।** प्लगइन की `agents/` डायरेक्टरी में सहायक परिभाषाएँ `name` और
+`description` रखती हैं। Antigravity की `tools` सूची उसके अपने टूल नामों का उपयोग
+करती है, और उसके दस्तावेज़ चेतावनी देते हैं कि कोई अज्ञात नाम सबएजेंट को अटका
+सकता है, इसलिए कोई टूल सूची उत्सर्जित नहीं की जाती और सहायक पैरेंट के टूल
+विरासत में लेते हैं। चूँकि Antigravity पर कुछ भी केवल-पठन सीमा लागू नहीं करता,
+उन सहायकों के विवरणों से "केवल-पठन" लेबल हटा दिया जाता है।
+
+**साझा उपयोगकर्ता एंकर।** `~/.gemini/GEMINI.md` Gemini-परिवार के टूलिंग के लिए
+उपयोगकर्ता-स्कोप एंकर भी है। Antigravity अडैप्टर अपनी अतिरिक्त Apothem सामग्री
+को `~/.gemini/antigravity-cli/plugins/` के अंतर्गत `apothem` प्लगइन के भीतर रखता
+है, ताकि वह सामान्य Gemini CLI प्रोजेक्ट डायरेक्टरियों पर दावा न करे। चूँकि एक
+से अधिक टूल `~/.gemini/GEMINI.md` लोड करते हैं, इसलिए वहाँ का Apothem ब्लॉक
+वैश्विक मार्गदर्शन के रूप में लिखा जाता है, जो किसी एक टूल को अपने पाठक के रूप
+में नामित नहीं करता।
+
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
 अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
-`apothem update` रन पर निर्देश एंकर के साथ सहायता समुच्चय रेंडर करता है।
+`apothem update` रन पर निर्देश एंकर के साथ समर्थन समूह रेंडर करता है।
 
 ## संगतता टिप्पणियाँ
 
 पूर्वावलोकन अडैप्टर। `GEMINI.md` एंकर सक्रिय निर्देश सामग्री है; Antigravity
-प्लगइन परिवर्तित कमांड कौशल, पुन: प्रयोज्य कौशल, स्थानीय सहायक परिभाषाएँ, नियम,
-टेम्पलेट और हुक सहायता सामग्री को एक स्पष्ट, Apothem-स्वामित्व वाले नेमस्पेस में
-संरक्षित रखता है।
-जब तक अडैप्टर के पास Antigravity के `hooks.json` के लिए एक स्कीमा अनुवाद परत नहीं
-हो जाती, तब तक हुक फ़ाइलें सक्रिय Antigravity हुक इवेंट के रूप में पंजीकृत नहीं होतीं।
+प्लगइन परिवर्तित कमांड स्किल, पुनः प्रयोज्य स्किल, स्थानीय सहायक परिभाषाएँ,
+नियम, टेम्पलेट, और हुक समर्थन सामग्री को एक स्पष्ट Apothem-स्वामित्व वाले
+नेमस्पेस में संरक्षित रखता है।
+जब तक अडैप्टर Antigravity `hooks.json` के लिए एक स्कीमा अनुवाद परत का स्वामी
+नहीं बन जाता, तब तक हुक फ़ाइलें सक्रिय Antigravity हुक इवेंट के रूप में पंजीकृत
+नहीं की जातीं।
 
 ## सत्यापन
 
@@ -57,8 +87,8 @@ apothem verify --harness antigravity
 verify कमांड पुष्टि करता है कि:
 
 1. नेटिव संदर्भ फ़ाइल अपेक्षित पथ पर मौजूद है।
-2. Apothem Antigravity CLI प्लगइन मेटाडेटा मौजूद है और `apothem` प्लगइन नाम घोषित
-   करता है।
+2. प्लगइन मैनिफ़ेस्ट `plugin.json` मौजूद है, खाली नहीं है, और JSON के रूप में पार्स होती है।
+   सत्यापन प्लगइन के नाम की जाँच नहीं करता; उसे बदलने के बाद वह फ़ील्ड आप स्वयं जाँचें।
 
 ## अपडेट करना
 
@@ -67,8 +97,8 @@ apothem update --harness antigravity
 ```
 
 वर्तमान साझा प्रोफ़ाइल स्थिति से नेटिव कॉन्फ़िग को पुनः व्युत्पन्न करता है।
-`~/.config/apothem/profile.yaml` को संपादित करने के बाद या इंस्टॉल किए गए Apothem
-पैकेज को अपग्रेड करने के बाद चलाएँ।
+`~/.config/apothem/profile.yaml` संपादित करने या इंस्टॉल किए गए Apothem पैकेज को
+अपग्रेड करने के बाद चलाएँ।
 
 ## अनइंस्टॉल करना
 
@@ -76,10 +106,16 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+`~/.gemini/GEMINI.md` से Apothem ब्लॉक हटाता है और उसमें मौजूद बाकी सारा पाठ रहने
+देता है। फ़ाइल तभी हटाई जाती है जब उसमें और कुछ शेष न बचे। साथ ही प्लगइन फ़ोल्डर
+`~/.gemini/antigravity-cli/plugins/apothem/` में `plugin.json` से Apothem की
+कुंजियाँ हटाता है और आपकी कुंजियाँ रहने देता है, और उस फ़ोल्डर के `skills/`,
+`rules/`, `agents/` तथा `.apothem/support/` उप-फ़ोल्डरों में मौजूद Apothem फ़ाइलें
+हटाता है; वहाँ की अन्य फ़ाइलें बनी रहती हैं। प्रत्येक फ़ाइल को बदले या हटाए जाने से
+पहले `~/.apothem/backups/` के अंतर्गत उसका बैकअप लिया जाता है। साझा प्रोफ़ाइल YAML
+और Apothem इंजन अप्रभावित रहते हैं।
 
-## अनुरूपता द्वार
+## अनुरूपता गेट
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -89,12 +125,18 @@ python -m apothem.conformity.gate --all .
 
 | लक्षण | समाधान |
 |---------|-----|
-| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness antigravity` पुनः चलाएँ |
-| सत्यापन विफल रहा | `apothem update --harness antigravity` चलाएँ, फिर पुनः सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness antigravity` पुनः चलाएँ |
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness antigravity` फिर से चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness antigravity` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness antigravity` फिर से चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 
 | फ़्लैग | डिफ़ॉल्ट | विवरण |
 |------|---------|-------------|
-| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
+
+## यह भी देखें
+
+- [सभी हार्नेस](/docs/harnesses) — समर्थित टूल्स का पूरा कैटलॉग
+- [इंस्टॉल गाइड](/docs/install) — इस हार्नेस में Apothem इंस्टॉल करें
+- [`apothem harnesses` संदर्भ](/docs/cli-reference/harnesses) — CLI से अडैप्टरों को सूचीबद्ध करें और उनका निरीक्षण करें

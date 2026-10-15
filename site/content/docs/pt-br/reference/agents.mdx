@@ -1,31 +1,33 @@
 ---
-title: "Trabalhadores delegados"
-description: "Trabalhadores delegados persistentes para pesquisa, auditoria, qualidade e orquestração, com contratos de frontmatter e protocolos de isolamento de implantação."
+title: "Auxiliares"
+description: "Agentes auxiliares persistentes para pesquisa, auditoria, qualidade e orquestração, com contratos de frontmatter e protocolos de isolamento de implantação."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "18a785a98f21c750"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Os trabalhadores delegados persistentes vivem como arquivos planos dentro do
-diretório canônico de trabalhadores delegados com o sufixo `<name>.md`. O caminho
-canônico é:
+Os auxiliares persistentes ficam como arquivos planos no diretório canônico de
+auxiliares, com o sufixo `<name>.md`. O caminho canônico é:
 
 ```text
 src/apothem/agents/
 ```
 
-Cada trabalhador delegado é um papel de pesquisa, auditoria, qualidade ou
-orquestração, com suas próprias restrições de ferramentas e seu próprio prompt de
-sistema.
+Cada auxiliar é um papel específico, como pesquisa, auditoria, qualidade,
+refatoração ou criação de esqueletos, com suas próprias restrições de
+ferramentas e seu próprio prompt de sistema.
 
-| Trabalhador delegado | Arquivo | Padrão | Política de modelo |
+A tabela e a lista de caminhos abaixo mostram quatro dos auxiliares. O
+inventário gerado no final desta página lista todas as definições de auxiliares.
+
+| Auxiliar | Arquivo | Padrão | Política de modelo |
 |-------|------|---------|--------------|
 | Codebase Explorer | veja o caminho do manifesto abaixo | Pesquisa | selecionado pelo host |
 | Convention Auditor | veja o caminho do manifesto abaixo | Auditoria | selecionado pelo host |
 | Quality Gate | veja o caminho do manifesto abaixo | Qualidade | selecionado pelo host |
 | Memory Auditor | veja o caminho do manifesto abaixo | Auditoria | selecionado pelo host |
 
-Caminhos canônicos do manifesto:
+Caminhos canônicos dos manifestos:
 
 ```text
 src/apothem/agents/codebase-explorer.md
@@ -48,11 +50,30 @@ maxTurns: <integer>
 ---
 ```
 
+## Conversão por harness
+
+Um auxiliar cuja concessão `tools`, depois de aplicado `disallowedTools`, não
+inclui nenhuma ferramenta de edição de arquivos (`Write`, `Edit`, `MultiEdit` ou
+`NotebookEdit`) é somente leitura. Cada harness que converte auxiliares aplica
+esse limite nativamente ou remove o rótulo de somente leitura:
+
+| Harness | Limite de ferramentas | Limite de turnos | Modelo e esforço |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` conforme escritos | `maxTurns` | herdado (não definido) |
+| Codex | `sandbox_mode = "read-only"` para auxiliares somente leitura | não disponível | herdado (não definido) |
+| Gemini CLI | lista de permissões `tools` com nomes de ferramentas do Gemini | `max_turns` | herdado (não definido) |
+| Qwen Code | `tools` / `disallowedTools` com nomes de ferramentas do Qwen | não mapeado | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` por ferramenta) | não mapeado | herdado (não definido) |
+| Antigravity | nenhum emitido; a descrição remove "somente leitura" | não disponível | herdado (não definido) |
+
+Hermes, Open-Claw e Kimi Code recebem os arquivos de auxiliares como material de
+suporte, não como auxiliares nativos.
+
 ## Orquestração
 
-A implantação de trabalhadores delegados, o protocolo de lançamento em paralelo, a
-aplicação do contrato de retorno e a disciplina de isolamento vivem na regra de
-orquestração. A árvore de despacho por trabalhador vive na regra de padrões de
+A implantação de auxiliares, o protocolo de disparo em paralelo, a aplicação do
+contrato de retorno e a disciplina de isolamento ficam na regra de
+orquestração. A árvore de despacho por trabalhador fica na regra de padrões de
 orquestração, §Decision Tree. Caminhos canônicos:
 
 ```text
@@ -60,7 +81,7 @@ src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## Inventário de trabalhadores delegados gerado
+## Inventário de agentes gerado
 
 {/* apothem:generated-reference:start */}
 

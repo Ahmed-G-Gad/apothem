@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "7d64ffd668c14134"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,28 +17,29 @@ sourceHash: "7d64ffd668c14134"
 apothem install --harness hermes
 ```
 
-アダプターは共有プロファイルを Hermes Agent のユーザーグローバル設定ファイルへ
-変換し、ハーネスルート配下に Apothem のサポートコホートをインストールします。
+アダプターは共有プロファイルを Hermes Agent のユーザーグローバル設定ファイルへ変換し、Apothem のサポートコホートをハーネスルート配下にインストールします。
 
-**書き込まれるファイル：** `~/.hermes/config.yaml` および `~/.hermes/.apothem/support/`
-配下のサポートファイル
+**書き込まれるファイル：** `~/.hermes/config.yaml`、プロファイルドキュメント
+`~/.hermes/apothem/rules/00-apothem-profile.md`、および
+`~/.hermes/.apothem/support/` 配下のサポートファイル
+
+プロファイルドキュメントは、Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.hermes/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、ネイティブの YAML 設定を
-レンダリングします。Hermes 自身のスキル面は `skills.config` —— Hermes が動的な
-スラッシュコマンドとして自動的に公開する、インストール可能なレジストリ
-パッケージ —— であり、Apothem はこれを記述しません。代わりに Apothem は、共有の
-コマンドおよびスキルの内容を `~/.hermes/.apothem/support/` 配下のサポート資料として
-提供し、ネイティブの指示アンカーから参照します。ヘルパー定義、ルール、
-テンプレート、フックプロンプトも同様に `~/.hermes/.apothem/support/` 配下のサポート資料
-として残ります。
+アダプターは Apothem の共有プロファイルを読み取り、プロファイルの MCP インベントリを含むネイティブの YAML 設定をレンダリングします。
+プロファイルのアイデンティティ、プリファレンス、ルールはプロファイルドキュメントに入ります。
+共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、フックプロンプトは、サポート素材として `~/.hermes/.apothem/support/` 配下に配置されます。
 
 ## 互換性に関する注意
 
-プレビューアダプター。ネイティブの YAML 設定がアクティブな Hermes 面です。
-Apothem はスキルに対して文書化された外部スキルディレクトリフックを使用し、
-その他のコホートはインストール済みガイダンスの参照資料として保持します。
+プレビュー版のアダプターです。
+Hermes は、サポートツリーもプロファイルドキュメントも自ら読み込みません。`config.yaml` 内のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルール、スキル、フックなしで動作します。
+Hermes は `~/.hermes/skills/` と、`config.yaml` の `skills.external_dirs` 配下に列挙されたすべてのフォルダーからスキルを読み取ります。Apothem のスキルを使うには、`~/.hermes/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
+アダプターはプロファイルの MCP インベントリを、Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
+以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と `apothem uninstall` はどちらも、そのブロックが、そうしたリリースがあなたの現在の共有プロファイルから書き込むであろう内容と一致している場合は、そのブロックを削除します（そのブロックが残る場合については[アンインストール](#アンインストール)を参照）。
+（Hermes の振る舞いは、Hermes のユーザーガイドの[スキル](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) に関するページに基づき、2026-10-02 に参照したものです。）
 
 ## 検証
 
@@ -46,11 +47,11 @@ Apothem はスキルに対して文書化された外部スキルディレクト
 apothem verify --harness hermes
 ```
 
-verify コマンドは次を確認します：
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が予期されたパスに存在する。
-2. 共有プロファイルからのすべての必須フィールドが存在する。
-3. アダプター固有の検証ルーチンが成功を報告する。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
+3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
 
@@ -59,8 +60,7 @@ apothem update --harness hermes
 ```
 
 現在の共有プロファイルの状態からネイティブ設定を再導出します。
-`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの
-Apothem パッケージをアップグレードした後に実行してください。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
 
@@ -68,10 +68,14 @@ Apothem パッケージをアップグレードした後に実行してくださ
 apothem uninstall --harness hermes
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+アダプターが追加したものを削除します。対象は、インストールが `config.yaml` に記録した `mcp_servers` のエントリ（あなた自身のキーは残り、ファイルが削除されるのは Apothem がそれを作成し、かつあなたのものが何も残っていない場合のみです）、プロファイルドキュメント、およびサポートツリーです。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+以前のリリースが作成したインストール（プロファイルのサーバーを `auxiliary.mcp` の下に書き込んでいたもの）でも、そのブロックは、`~/.config/apothem/profile.yaml` にあるあなたの現在の共有プロファイルから、そのリリースが書き込むであろう内容と一致している場合に削除されます。
+これは `apothem update` が適用するのと同じルールであるため、先に更新せずにアンインストールしても、プロファイルの MCP サーバーが変わっていない間は、古いブロックは残りません。
+あなたが編集したブロック、あなたの現在のプロファイルの MCP サーバーとはもはや一致しないブロック、または比較対象となる読み取り可能な共有プロファイルがないブロックはそのまま残り、`auxiliary` のそれ以外の設定は常に残ります。
+
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -79,14 +83,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness hermes` を再実行する |
-| 検証に失敗 | `apothem update --harness hermes` を実行し、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness hermes` を再実行する |
+| 検証が失敗した | `apothem update --harness hermes` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness hermes` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
-| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューします。 |
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

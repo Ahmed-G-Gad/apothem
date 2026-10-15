@@ -15,8 +15,8 @@ description: "Apothem harness adapter for GitHub Copilot (GA)."
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-The adapter derives the project instructions file from the shared Apothem rules
-and governance surface.
+The adapter derives the project instructions file from your shared profile and
+the shared Apothem rules and governance surface.
 
 **Files written:** `<project>/.github/copilot-instructions.md`
 
@@ -40,11 +40,14 @@ GitHub Copilot does not expose a file-based user-global instructions path for
 this adapter to manage. Apothem targets the documented project-scope
 instructions file and leaves IDE-level user settings operator-owned.
 
-Apothem treats `copilot-instructions.md` as one voice among the project's
-assistant instruction surfaces: the conformity gate's multi-surface
-coherence check verifies its shared claims stay semantically aligned with
-the project's other instruction files, so Copilot never receives guidance
-that contradicts what the rest of the toolchain reads.
+Within the Apothem repository, `.github/copilot-instructions.md` is one voice
+among that repository's assistant instruction surfaces. In a checkout of that
+repository, the conformity gate's multi-surface coherence check compares the
+shared claims in `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
+It reports a shared claim that one of the three files leaves out, and a file that
+contradicts a claim `AGENTS.md` makes. The check does not read the
+instructions file Apothem writes into your project. The gate is advisory by
+default: it reports findings and exits `0`.
 
 ## Verification
 
@@ -55,7 +58,9 @@ apothem verify --harness github-copilot --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -72,8 +77,11 @@ Re-derives the project instructions file from the current shared profile state.
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block from `<project>/.github/copilot-instructions.md` and
+keeps any text outside it. The file is deleted only when nothing else remains in
+it. Before the change, a timestamped copy of the file is saved under
+`~/.apothem/backups/`. The shared profile YAML and Apothem engine are
+unaffected.
 
 ## Conformity gate
 

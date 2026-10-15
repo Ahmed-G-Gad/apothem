@@ -28,7 +28,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-Create and inspect the profile:
+Create the profile if it does not exist yet, then inspect it. The one-shot
+installers and `apothem install` already write a starter profile on a first run,
+and `profile init` stops with an error and leaves an existing file unchanged
+unless you pass `--force`.
 
 ```bash
 apothem profile init
@@ -63,10 +66,16 @@ plan suite under `<project-root>/.apothem/plans/{suite}/`. See the
 
 ## Conformity gate
 
-Run from the repository root:
+From an Apothem checkout, run:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+After a script install, run:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Runs all mechanical conformity checks and reports pass/fail per bar.

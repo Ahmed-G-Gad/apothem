@@ -2,7 +2,7 @@
 title: "更新"
 description: "更新 Apothem 与各工具适配器。"
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-更新脚本会将位于 `APOTHEM_HOME`（默认为 `~/.apothem`）的源代码树重新检出到 `APOTHEM_REF`——未设置时解析为最新的已签名 `vMAJOR.MINOR.PATCH` 发布标签，指定标签值则锁定到该标签，而 `main` 则选择持续变动的分支。它会在重新生成之前使用 `git verify-tag` 验证标签签名；未签名或被篡改的标签会中止操作，除非 `APOTHEM_ALLOW_UNVERIFIED=1` 将中止降级为警告。随后它会通过在刷新后的代码树中运行 `apothem update`，重新生成由 `APOTHEM_HARNESS` 指定的工具（默认值见[安装脚本环境变量](/docs/how-to/installer-environment-variables)表）。该操作要求事先已完成安装：当 `APOTHEM_HOME` 处不存在代码树且 `APOTHEM_SOURCE` 未设置时，它会退出并提示你先运行安装脚本。
+更新脚本会将 `APOTHEM_HOME`（默认为 `~/.apothem`）处的源码树重新检出到 `APOTHEM_REF`。未设置时，它会解析最新的已签名 `vMAJOR.MINOR.PATCH` 发布标签；设置为某个标签值时则固定到该标签；只有同时设置了 `APOTHEM_ALLOW_UNVERIFIED=1` 时，`main` 才会选择会持续变动的分支。若没有该覆盖项，更新会先检出该引用，然后在重新物化之前中止，因为分支不是已签名的发布标签。在重新物化之前，它会用 `git verify-tag` 验证标签签名；未签名或被篡改的标签会导致中止，除非 `APOTHEM_ALLOW_UNVERIFIED=1` 将中止降级为警告。如果签名标签的维护者公钥不在本地密钥环中，更新会中止，并给出导入密钥的指引，指向 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的指纹。随后，它会在刷新后的源码树中运行 `apothem update`，重新物化由 `APOTHEM_HARNESS` 指定的工具（默认工具见[安装程序环境变量](/docs/how-to/installer-environment-variables)表）。该操作要求事先已完成安装：当 `APOTHEM_HOME` 处不存在源码树且未设置 `APOTHEM_SOURCE` 时，它会退出并提示你先运行安装程序。
 
 ## 重新生成工具输出
 

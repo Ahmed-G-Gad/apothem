@@ -2,80 +2,123 @@
 title: "セキュリティ"
 description: "Apothem のセキュリティ姿勢 — OpenSSF Scorecard 目標、脆弱性報告、堅牢化の表面。"
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem のセキュリティ姿勢は、サプライチェーンの堅牢化、脆弱性対応、ブランチ保護、リリース署名、継続的セキュリティ分析という 5 つの柱に基づいています。本セクションでは各表面を記録します。
+Apothem のセキュリティ姿勢は、サプライチェーンの堅牢化、脆弱性対応、ブランチ保護、リリース署名、継続的なセキュリティ分析という 5 つの柱の上に築かれています。このセクションでは、各表面を文書化します。
 
 ## 脅威モデル
 
-Apothem は設定の物質化器です。共有プロファイルを読み取り、各ハーネス
-が読み取るディレクトリへ、ハーネス固有の設定ファイル
-を書き込みます。この単一の機能が、何を信頼し何を信頼しないかを規定します。
+Apothem は設定のマテリアライザーです。
+共有プロファイルを読み取り、各ハーネスが読み取るディレクトリに、ハーネスネイティブの設定ファイルを書き込みます。
+この単一の機能が、何を信頼し、何を信頼しないかの範囲を定めます。
 
-- **Apothem が信頼するもの。** あなたが記述する共有プロファイルと、インス
-  トーラーが配置する同梱のソースツリーです。プロファイルはあなたが宣言した
-  意図であり、エンジンはスキーマ検証の後にそれを権威ある入力として扱います。
-- **Apothem が信頼しないもの。** プロファイルの内容は検証を経てから初めて
-  ファイルシステムに到達します。スキーマの失敗、未知のハーネス ID、安全でない
-  プロジェクトパス、欠落したマニフェストソース、ターゲットのトラバーサル、
-  シンボリックリンクの横断はいずれも、いかなる書き込みよりも前に停止し、
-  `files_written: []` を伴う構造化された診断を返します。
-- **物質化された出力が決して運ばないもの。** いかなる機密も含みません。
-  プロファイルの診断は、平文出力・JSON・ログ・ドキュメントの抜粋・テストに
-  到達する前に、機密らしきキーやトークン状の値を編集して伏せ、公開例には
-  架空のプレースホルダー的な身元とドメインを使用します。物質化された設定は
-  コミットして共有されることを意図しており、認証情報を運びません。
-- **普遍的な拒否の下限。** Apothem が物質化するルールは、ハーネスごとの
-  許可リストにかかわらず交渉の余地のない拒否の下限を備えています — 機密の
-  パス（`.env*`、`~/.ssh/**`、認証情報ストア）、破壊的なシェル操作（`rm -rf`、
-  `sudo`、保護されたブランチへの強制プッシュ）、信頼できない入力の実行です。
-  いかなる許可リストもこの下限を黙って広げることはありません。
-- **影響範囲。** 書き込みはハーネスのディレクトリと Apothem 所有のサポート
-  サブツリーに限定されます。既存の管理対象ターゲットは置換前にバックアップ
-  され、共有のディスカバリーディレクトリは子ごとにマージされるため、無関係な
-  オペレーター作成のファイルはそのまま残ります。
+- **Apothem が信頼するもの。** あなたが作成する共有プロファイルと、インストーラーが配置する同梱のソースツリーです。
+  プロファイルはあなたが宣言した意図であり、エンジンはスキーマ検証の後、それを権威ある入力として扱います。
+- **Apothem が信頼しないもの。** プロファイルの内容は、検証を経て初めてファイルシステムに到達します。
+  スキーマの失敗、未知のハーネス ID、安全でないプロジェクトパス、欠落したマニフェストソース、ターゲットのトラバーサル、シンボリックリンクの横断はいずれも、あらゆる書き込みの前に停止し、`files_written: []` を伴う構造化された診断を返します。
+- **マテリアライズされた出力が決して含まないもの。** シークレットは含まれません。
+  プロファイルの診断は、プレーンな出力、JSON、ログ、ドキュメントのスニペット、テストに到達する前に、シークレットらしきキーとトークン形式の値を伏せ字にします。公開されている例には、架空のプレースホルダーのアイデンティティとドメインを使用します。
+  マテリアライズされた設定はコミットして共有することを意図しており、認証情報を含みません。
+- **普遍的な拒否の下限。** Apothem がマテリアライズするルールは、ハーネスごとの許可リストにかかわらず、交渉の余地のない拒否の下限を備えています —
+  シークレットのパス（`.env*`、`~/.ssh/**`、認証情報ストア）、破壊的なシェル操作（`rm -rf`、`sudo`、保護されたブランチへの強制プッシュ）、信頼できない入力の実行です。
+  いかなる許可リストも、この下限を暗黙のうちに広げることはありません。
+- **影響範囲。** 書き込みは、ハーネスのディレクトリと Apothem 所有のサポートサブツリーに限定されます。
+  既存の管理対象ターゲットは置き換えの前にバックアップされ、共有のディスカバリーディレクトリは子要素ごとにマージされるため、無関係なオペレーター作成のファイルはそのまま残ります。
 
-## ランタイム安全姿勢
+## ランタイムの安全姿勢
 
-ハーネスのライフサイクルおよびプロファイル書き込みコマンドは、書き込み前に
-検証します。プロファイルのスキーマ失敗、未知のハーネス ID、安全でない
-プロジェクトパス、欠落したマニフェストソース、ターゲットのトラバーサル、
-シンボリックリンクの横断は、ファイルシステムへの書き込みよりも前に停止し、
-`files_written: []` を伴う構造化された診断を返します。
+ハーネスのライフサイクルコマンドとプロファイル書き込みコマンドは、書き込みの前に検証を行います。
+プロファイルのスキーマの失敗、未知のハーネス ID、安全でないプロジェクトパス、欠落したマニフェストソース、ターゲットのトラバーサル、シンボリックリンクの横断は、ファイルシステムへの書き込みの前に停止し、`files_written: []` を伴う構造化された診断を返します。
 
-インストールおよび更新操作は、既存の管理対象ターゲットを置換前にバックアップ
-することで保持します。共有のディスカバリーディレクトリは子ごとにマージされる
-ため、無関係なオペレーター作成のファイルはそのまま残ります。`--dry-run` は
-同じ検証を実行し、ディレクトリやファイルを作成せずに計画された結果を報告
-します。
+インストール操作と更新操作は、既存の管理対象ターゲットを置き換えの前にバックアップすることで保全します。
+共有のディスカバリーディレクトリは子要素ごとにマージされるため、無関係なオペレーター作成のファイルはそのまま残ります。
+`--dry-run` は同じ検証を実行し、ディレクトリやファイルを作成せずに、計画された結果を報告します。
 
-プロファイルの診断は、平文出力・JSON 出力・ログ・ドキュメントの抜粋・テスト
-に到達する前に、機密らしきキーやトークン状の値を編集して伏せます。公開例には
-架空のプレースホルダー的な身元とドメインを使用します。
+プロファイルの診断は、プレーンな出力、JSON 出力、ログ、ドキュメントのスニペット、テストに到達する前に、シークレットらしきキーとトークン形式の値を伏せ字にします。
+公開されている例には、架空のプレースホルダーのアイデンティティとドメインを使用します。
 
 ## クイックリンク
 
-- [**OpenSSF Scorecard の姿勢**](/docs/security/openssf-scorecard-target) — チェックごとの証拠と既知のプラットフォーム上の限界
-- [**Webhooks 監査**](/docs/security/webhooks-audit) — webhook シークレットの衛生に関する証拠
-- [**ブランチ保護**](/docs/security/branch-protection-ruleset) — レビューゲート、ステータスチェック、プッシュ制限
-- [**バイナリ成果物スイープ**](/docs/security/binary-artifacts-sweep) — ソースにバイナリゼロのリリース証明
-- [セキュリティポリシー](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — 脆弱性報告とサポート対象バージョン
-- [OpenSSF Scorecard バッジ](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — リアルタイムのスコア
+- [**OpenSSF Scorecard の姿勢**](/docs/security/openssf-scorecard-target) — チェックごとの証拠と、既知のプラットフォームの制約
+- [**Webhook 監査**](/docs/security/webhooks-audit) — webhook シークレットの衛生管理に関する証拠
+- [**ブランチ保護**](/docs/security/branch-protection-ruleset) — プルリクエストの必須化、必須ステータスチェック、強制プッシュと削除のブロック
+- [**バイナリ成果物スイープ**](/docs/security/binary-artifacts-sweep) — ソースにバイナリがゼロであることのリリース証明
+- [セキュリティポリシー](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — 脆弱性の報告とサポート対象バージョン
+- [OpenSSF Scorecard バッジ](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — 現在のスコア
 
 ## 脆弱性の報告
 
-リポジトリの Security タブにある [プライベート脆弱性報告](https://github.com/ahmed-g-gad/apothem/security) を使用してください。完全なポリシー、サポート対象バージョンのマトリクス、応答のタイムラインは [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) にあります。
+リポジトリの Security タブにある[プライベート脆弱性報告](https://github.com/ahmed-g-gad/apothem/security)を使用してください。ポリシーの全文、サポート対象バージョンマトリクス、対応タイムラインは [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) にあります。
 
 ## サプライチェーンのリリース証明
 
-すべてのリリース成果物には以下が同梱されます。
+すべてのリリース成果物には、以下が付属します。
 
-- **SLSA-3 ビルド由来証明**、[`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) 経由
-- **Sigstore 署名**、[`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) 経由
-- **CycloneDX SBOM**、[`anchore/sbom-action`](https://github.com/anchore/sbom-action) 経由
-- **npm 由来証明ステートメント**、`@ahmed-g-gad/apothem` 上の Trusted Publishing OIDC 経由
+- **SLSA-3 ビルド来歴**（[`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) による）
+- **Sigstore 署名**（[`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) による）
+- **CycloneDX SBOM**: 出荷される wheel と sdist の SBOM で、`scripts/release/generate_sbom.py` によって書き出されます。apothem パッケージ、`apothem/_vendor` 配下にベンダリングされたすべてのパッケージとそのライセンス、宣言されたランタイム要件、各ディストリビューションの SHA-256 を含みます。SBOM はディストリビューションと同様に署名され、ビルド来歴の対象に含まれます
+- **npm 来歴ステートメント**（`@ahmed-g-gad/apothem` における Trusted Publishing OIDC による）
 - **GPG 署名付き git タグ**（EDDSA 鍵 `70396FED9C634163`）
 
-検証手順は [リリースサイクル](/docs/runbooks/release-cycle) と [リリース復旧](/docs/runbooks/release-recovery) にインラインで記録されています。専用のリリース検証ランブックは近日提供予定です。
+## リリースを検証する
+
+リリースのすべてのアセットを空のディレクトリにダウンロードしてから、署名とビルド来歴をチェックします。
+`vX.Y.Z` と `X.Y.Z` は、ダウンロードしたリリースに置き換えてください。
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` は `Verified OK` を出力し、`slsa-verifier` は `PASSED: SLSA
+verification passed` を出力します。
+その他のアセットについては、それぞれの `<asset>.cosign.bundle` を使って `cosign` コマンドを繰り返します（以前のリリースでは、プラットフォームアーカイブと `SHA256SUMS` のバンドルの名前は `<asset>.sig` です）。
+darwin と linux のアーカイブは 2 つの名前を持つ同一のバイト列であるため、`SHA256SUMS` には 1 つのダイジェストが 2 回記載されます。
+クローンからは、`bash scripts/release/verify-provenance.sh <download-dir>` が、`SHA256SUMS` マニフェストを含む 3 つのチェックすべてを 1 回で実行します。
+
+検証に意味があるかどうかは、次の 2 つの点で決まります。
+
+- **オーナーの大文字と小文字。** アイデンティティのチェックは大文字と小文字を区別し、
+  証明書には GitHub が報告するとおりのオーナー `Ahmed-G-Gad` が記載されています。
+  小文字のオーナーでは、どちらのツールでも失敗します。
+- **正確なアイデンティティ。** 上記の完全なサブジェクトを指定した `--certificate-identity` を優先してください。
+  任意のリリースタグを受け入れるには、パターンを両端でアンカーします。
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  `github.com/Ahmed-G-Gad/apothem` のようなアンカーのないパターンは、
+  そのテキストを含むだけの偽造されたサブジェクト、たとえばこのリポジトリにちなんだ名前のブランチ上にある、別のリポジトリのワークフローにも一致してしまいます。
+
+[リリースサイクルランブック](/docs/runbooks/release-cycle)は、同じコマンドをメンテナーのリリース後チェックとして記録しています。
+
+### リリースを再ビルドして比較する
+
+wheel と sdist は再現可能です。リリースのツールチェーンでタグを再ビルドすると、公開されている SHA-256 ダイジェストが得られます。
+リリースと同じく、Linux 上の Python 3.12 を使用してください。
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+ダイジェストを、公開されている wheel および sdist と比較します。
+ビルドは `pyproject.toml` が固定しているハッシュロックされた setuptools を使用し、`normalize_sdist.py` は sdist からビルド時刻、ファイルの所有者、チェックアウトのタイムスタンプを取り除きます。

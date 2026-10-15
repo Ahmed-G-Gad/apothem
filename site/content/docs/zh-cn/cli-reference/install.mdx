@@ -2,48 +2,78 @@
 title: "install"
 description: "apothem install 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "71088e5120c4f3ba"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-从共享配置文件安装某个harness适配器配置。
+从共享配置档案安装一个工具适配器配置。
 
 ## 概要
 
 ```
 apothem install --harness NAME|all [--profile PATH] [--dry-run]
-                 [--project PATH]
+                 [--clean|--fresh] [--yes] [--project PATH]
                  [--quiet|-q] [--verbose|-v]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-加载并校验共享配置文件，选择某个具名适配器或注册表范围内的 `all` 集合，校验物化计划，并写入harness原生配置以及支持队列。项目范围的适配器需要 `--project PATH`。
+加载并校验共享配置档案，选择一个具名适配器或覆盖整个注册表的 `all` 集合，校验物化计划，然后写入工具原生配置以及支持集合。项目作用域的适配器需要 `--project PATH`。
 
-连续式别名 `apothem installing` 解析到同一处理程序。
+连续式别名 `apothem installing`（也接受 `apothem Installing`）解析到同一个处理程序。
+
+## 没有配置档案时的首次运行
+
+当省略 `--profile` 且默认路径（`~/.config/apothem/profile.yaml`）下不存在配置档案时，`install` 会先在该处写入起始配置档案，打印 `Created a starter profile at <path>`，然后继续执行。起始配置档案带有占位身份字段，因此安装还会打印占位身份说明；先将配置档案个性化，然后运行 [`update`](/docs/cli-reference/update) 以应用它。在 `--json` 下，这次创建会作为一个带有 `"operation": "profile_created"` 的 `warnings` 条目报告。
+
+- `--dry-run` 绝不会写入配置档案：预览使用内存中的起始配置档案，并报告 `"operation": "profile_scaffold_preview"`。
+- 显式指定但不存在的 `--profile PATH` 绝不会被创建；该命令以退出码 1 退出，并给出 `profile.not_found`。
 
 ## 影响范围预览
 
-`install --harness all` 会扇出到混合范围：项目范围的适配器写入所提供的 `--project` 根目录之下，而用户范围的适配器写入你的主目录之下——也就是该根目录之外。在写入任何文件之前，该命令会打印分组在两个标题下的具体目标：位于项目根目录内的目标，以及位于你主目录下的目标。
+`install --harness all` 会扇出到混合的作用域：项目作用域的适配器写入所提供的 `--project` 根目录之下，而用户作用域的适配器写入你的主目录之下——也就是该根目录之外。在写入任何文件之前，该命令会打印具体的目标，并按两个标题分组：位于项目根目录内的目标，以及位于你主目录下的目标。
 
-当所选内容会写入项目根目录之外时，一个交互式确认会守护这些以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自会在不提示的情况下继续；`--dry-run` 和 `--format json` 不写入任何内容。拒绝该提示会在写入任何文件之前中止。
+当所选内容写入项目根目录之外时，交互式确认会把守以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自都会在不提示的情况下继续。只有 `--dry-run` 不写入任何内容；`--format json` 会跳过预览和确认提示，但仍会执行写入。拒绝主目录提示会在安装写入之前中止。使用 `--clean` 时，清理步骤会先运行，并且有自己针对每个目标的确认：它会在 `~/.apothem/backups` 下写入备份，并删除它所确认的目标。拒绝安装提示后，这些删除操作和备份仍然保留。
 
 ## 能力说明
 
-每个适配器只投射其harness原生支持的能力；没有原生表面的能力会被报告，而不是被静默丢弃。在 plain 模式下，这是每个harness一条分组说明（例如 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）；在 `--verbose` 下，每项能力都会打印自己的理由行。无论详细程度如何，`--format json` 信封始终携带完整的 `warnings` 数组。
+每个适配器只投射其工具原生支持的能力；没有原生表面的能力会被报告，而不是被无声地丢弃。在纯文本模式下，这表现为每个工具一条分组说明（例如 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）；在 `--verbose` 下，每项能力都会打印自己的理由行。在纯文本模式下，任何其他适配器警告同样会打印在单独的 `Warning:` 行上，例如 Zed 的那条警告，它会指出被新的 `.rules` 遮蔽的指令文件。无论详细程度如何，`--format json` 信封始终携带完整的 `warnings` 数组。
+
+安装和更新还会以 `Note:` 行的形式打印建议性提示。建议性提示绝不会改变安装所写入的内容。当一次安装写入一个共享根目录（一个其他工具也会加载的路径，例如技能文件夹 `~/.agents/skills/`）时，该说明会指出那些工具。当一次安装的目标工具已经从另一次安装的共享根目录加载 Apothem 内容时，该说明会指出那次安装。在 `--format json` 信封中，每条建议性提示都是一个带有 `"outcome": "advisory"` 和 `"operation": "shared_root"` 的 `warnings` 条目。
+
+配置档案中的 MCP 服务器会得到三条建议性提示，每条都会指出相应的配置档案字段：
+
+| 操作 | 条件 | 修复 |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse`（MCP 规范已弃用 HTTP+SSE） | 当服务器支持时，使用 `streamable-http`。 |
+| `mcp_plain_http` | 一个指向非回环主机的 `http://` URL | 使用 `https://` URL。 |
+| `mcp_literal_credential` | 一个形似令牌的 `headers` 或 `env` 值（`ghp_`、`github_pat_`、`sk-`、`xox*-`，或带有长令牌的 `Bearer`） | 将机密保存在环境变量中，并写成 `${GITHUB_TOKEN}` 形式的引用。 |
+
+凭据提示绝不会打印它所发现的值。包含 `${...}` 引用的值绝不会被标记。
+
+## 带注释的操作者配置
+
+某些工具配置是你也会编辑的文件，例如 `settings.json`、`opencode.json`（可能是 JSONC）、`openclaw.json`（JSON5）和 `config.yaml`。安装会将自己的键合并到这些文件中，并保留你添加的每个键。
+
+合并会将文件重写为纯 JSON 或 YAML，这会丢弃注释、尾随逗号和 JSON5 语法。因此：
+
+- 当合并不会改变任何值时（例如，你已经自己添加了 Apothem 的键），该文件会逐字节保持原样。
+- 当合并必须更改一个带有注释或 JSON5 语法的文件中的值，或一个根本无法解析的文件中的值时，安装不会为该工具写入任何内容，并以退出码 1 退出，错误码为 `config.unparseable`。`fix` 字段会指出安装将要添加的键，因此你可以将该文件转换为纯 JSON 或 YAML，或者手动添加这些键后重新运行。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要安装的harness适配器，或用 `all` 表示注册表范围的集合（必填）。运行 `apothem harnesses list` 查看已注册的名称。 |
-| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--harness NAME` | 要安装的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。运行 `apothem harnesses list` 查看已注册的名称。 |
+| `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
 | `--dry-run` | 预览安装而不写入文件。 |
-| `--project PATH` | 项目范围harness的项目根目录。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 打印每个未投射能力的理由，而不是分组的每harness说明。 |
+| `--clean`, `--fresh` | 需主动选择的全新安装：在安装之前，备份并移除先前按工具划分的安装状态。 |
+| `--yes` | 在全新安装的移除阶段跳过逐目标确认（非交互式 `--clean` 运行时必填）。 |
+| `--project PATH` | 项目作用域工具的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 打印每项未投射能力的理由，而不是按工具分组的说明。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
@@ -52,6 +82,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -66,10 +97,11 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-对于 `--dry-run`：
+对于 `--dry-run`，不会写入任何内容，`results` 会列出安装将要写入的每个路径，每个路径都带有它将得到的结果（`created`、`updated` 或 `unchanged`），对于你也会编辑的文件，还会在 `detail.diff` 中带有统一差异——与 [`apothem diff`](/docs/cli-reference/diff) 所显示的计划相同：
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -81,10 +113,32 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-预期的校验错误使用同一信封并包含一个 error 对象：
+当提供 `--clean` 时，信封还会额外携带一个描述移除阶段的 `clean` 对象——逐目标的处置列表、本次运行是否为预览，以及带时间戳的备份目录（试运行中为 `null`）：
 
 ```json
 {
+  "clean": {
+    "dry_run": true,
+    "backup_dir": null,
+    "targets": [
+      {
+        "path": "C:\\Users\\Example\\.claude",
+        "present": true,
+        "removed": false,
+        "skipped_reason": null
+      }
+    ]
+  }
+}
+```
+
+一次全新安装的试运行会在一个文档中预览两个阶段：`clean` 下的移除预览，以及 `results` 下的全新写入预览。
+
+预期内的校验错误使用相同的信封，并包含一个错误对象：
+
+```json
+{
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",
@@ -92,7 +146,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
   "error": {
     "code": "project.required",
     "field": "project",
-    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
     "fix": "Pass --project PATH or select only user-scope harnesses."
   }
 }
@@ -111,15 +165,16 @@ apothem installing --harness claude-code   # lowercase variant
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
-| 0 | 适配器成功安装，或 dry-run 干净地完成规划 |
-| 1 | 预期的校验、配置文件、harness、项目或适配器错误 |
-| 2 | 至少一次写入之后的部分批量物化 |
+| 0 | 适配器安装成功，或试运行已顺利完成规划 |
+| 1 | 预期内的校验、配置档案、工具、项目或适配器错误 |
+| 2 | 在至少一次写入之后发生的部分批量物化 |
+| 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- `apothem installing` — 此命令的连续式别名（此处有文档说明；CLI 接受两种形式）
-- [apothem update](/docs/cli-reference/update) — 将当前配置文件重新应用到某个harness
-- [apothem verify](/docs/cli-reference/verify) — 确认适配器已生效
-- [快速上手](/docs/install) — 完整安装指南
+- `apothem installing`——此命令的连续式别名（在此处记录；CLI 接受两种形式）
+- [apothem update](/docs/cli-reference/update)——将当前配置档案重新应用到一个工具
+- [apothem verify](/docs/cli-reference/verify)——确认适配器已生效
+- [入门](/docs/install)——完整安装指南

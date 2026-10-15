@@ -2,7 +2,7 @@
 title: "Pemutakhiran"
 description: "Mutakhirkan Apothem dan adaptor harness."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,18 +41,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-Skrip pemutakhiran me-checkout-ulang pohon sumber di `APOTHEM_HOME` (default
-`~/.apothem`) ke `APOTHEM_REF` — jika tidak diatur, ia me-resolve tag rilis
-`vMAJOR.MINOR.PATCH` bertanda tangan terkini, sebuah nilai tag menyematkannya, dan `main` memilih
-cabang yang bergerak. Ia memverifikasi tanda tangan tag dengan `git verify-tag` sebelum
-materialisasi-ulang; tag yang tidak ditandatangani atau dirusak akan membatalkan kecuali
-`APOTHEM_ALLOW_UNVERIFIED=1` menurunkan pembatalan menjadi peringatan. Ia kemudian
-memateri-ulang harness yang dinamai oleh `APOTHEM_HARNESS` dengan menjalankan
-`apothem update` dari pohon yang disegarkan (harness ini default sesuai tabel
-[variabel lingkungan installer](/docs/how-to/installer-environment-variables)).
-Ia memerlukan instalasi sebelumnya: saat
-tidak ada pohon di `APOTHEM_HOME` dan `APOTHEM_SOURCE` tidak diatur, ia keluar dengan
-pesan yang mengarahkan Anda ke installer terlebih dahulu.
+Skrip pemutakhiran men-checkout ulang pohon sumber di `APOTHEM_HOME` (bawaan `~/.apothem`) ke `APOTHEM_REF`: jika tidak disetel, ia me-resolve tag rilis `vMAJOR.MINOR.PATCH` bertanda tangan terbaru; sebuah nilai tag mematoknya; dan `main` memilih cabang yang bergerak hanya ketika `APOTHEM_ALLOW_UNVERIFIED=1` juga disetel. Tanpa penggantian tersebut, pemutakhiran men-checkout ref lalu membatalkan proses sebelum mematerialisasi ulang, karena cabang bukan tag rilis yang ditandatangani. Ia memverifikasi tanda tangan tag dengan `git verify-tag` sebelum mematerialisasi ulang; tag yang tidak ditandatangani atau telah diubah membatalkan proses, kecuali `APOTHEM_ALLOW_UNVERIFIED=1` menurunkan pembatalan tersebut menjadi peringatan. Tag bertanda tangan yang kunci publik maintainer-nya tidak ada di keyring lokal membatalkan proses dengan panduan impor kunci yang mengarah ke fingerprint yang dipublikasikan di [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). Kemudian ia mematerialisasi ulang harness yang dinamai oleh `APOTHEM_HARNESS` dengan menjalankan `apothem update` dari pohon yang disegarkan (harness bawaannya mengikuti tabel [variabel lingkungan installer](/docs/how-to/installer-environment-variables)). Ia memerlukan pemasangan sebelumnya: ketika tidak ada pohon di `APOTHEM_HOME` dan `APOTHEM_SOURCE` tidak disetel, ia keluar dengan pesan yang mengarahkan Anda ke installer terlebih dahulu.
 
 ## Materialisasi-ulang keluaran harness
 

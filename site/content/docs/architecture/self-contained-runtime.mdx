@@ -113,10 +113,12 @@ the current layout favours a simple, verifiable update over minimal disk.
 
 ## How the runtime finds Python
 
-The one-shot installers and the npx shim locate an interpreter the same
-way: probe `python3`, `python`, the versioned names (`python3.14` through
-`python3.10`), and `py -3` on Windows; reject Microsoft Store launcher
-shims; and accept the first candidate reporting version 3.10 or newer.
+The one-shot installers and the npx shim probe different names and apply the
+same rules. The installers probe `python3`, `python`, and the versioned names
+(`python3.14` through `python3.10`). The npx shim probes `APOTHEM_PYTHON` when
+it is set, then `python3`, `python`, and `py -3`; it has no versioned names.
+Both reject Microsoft Store launcher shims and accept the first candidate
+reporting version 3.10 or newer.
 When run from a source tree, the installers reuse the bundled
 `hooks/lib/find-python` locator, which applies the same floor.
 

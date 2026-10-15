@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "CLI-Referenz für den Befehl apothem uninstall."
 machineTranslated: true
-sourceHash: "702473c5586ee896"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,37 +16,82 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-Entfernt die vom Adapter verwalteten Harness-Ziele. Fragt nach Bestätigung, sofern `--yes` nicht angegeben ist. Wenn ein ausgewählter Harness nicht installiert ist, wird der Befehl erfolgreich abgeschlossen (Exit 0) mit einem Hinweis „nothing to remove“.
+Entfernt die vom Adapter verwalteten Harness-Ziele und danach die Verzeichnisse,
+die die Installation angelegt hat, sobald sie leer sind (ein Verzeichnis, das
+irgendetwas von Ihnen enthält, bleibt bestehen). Fragt nach Bestätigung, sofern
+nicht `--yes` angegeben ist. Wenn keine Abfrage möglich ist — `--format json`
+(Abfragetext würde das einzelne JSON-Dokument verfälschen) oder eine nicht
+interaktive Shell (kein TTY) —, verweigert der Befehl die Ausführung von
+vornherein mit einem strukturierten Fehler `uninstall.confirmation_required`
+(Exit-Code 1), sofern nicht `--yes` angegeben ist. Wenn ein ausgewählter Harness
+nicht installiert ist, ist der Befehl erfolgreich (Exit-Code 0) und gibt einen
+Hinweis „nothing to remove“ aus.
 
-Der Alias in Verlaufsform `apothem uninstalling` wird auf denselben Handler aufgelöst.
+Die gemeinsamen Datenspeicher unter `.apothem/` an der Installationswurzel
+(`memory/`, `contexts/`, `learning/`) bleiben bestehen, solange ein anderer
+installierter Harness an derselben Wurzel sie noch verwendet. Ist der Harness,
+den Sie entfernen, der letzte an dieser Wurzel, kopiert der Befehl zuerst jeden
+Datenspeicher in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) und
+entfernt ihn dann samt allem, was er enthält. Alles, was Sie in `plans/`
+aufbewahren, wird niemals entfernt.
+
+Eine Entfernung mit `--harness all` ist bewusst erschöpfend: Sie umfasst jeden
+registrierten Harness, einschließlich derer, die `exclude_harnesses` im Profil
+bei der Installation überspringt — die Bereinigung erreicht Zustand, den eine
+früher umfassendere Installation hinterlassen haben könnte. Harnesses, die nie
+installiert wurden, melden „nothing to remove“.
+
+Der Alias in Verlaufsform `apothem uninstalling` (auch als
+`apothem Uninstalling` akzeptiert) wird auf denselben Handler aufgelöst.
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zu entfernender Harness-Adapter oder `all` für das registry-weite Set (erforderlich). |
+| `--harness NAME` | Zu entfernender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
 | `--yes` | Überspringt die Bestätigungsabfrage. |
-| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
 | `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
 
-Wenn der Adapter installiert und erfolgreich entfernt wurde:
+Wenn der Adapter installiert ist und erfolgreich entfernt wurde:
 
 ```json
-{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Wenn der Adapter nicht installiert war:
-
-```json
-{"status": "not_installed", "harness": "claude-code"}
-```
+Wenn der Adapter nicht installiert war, endet der Befehl mit dem Exit-Code `0`.
+In der JSON-Ausgabe hat der Umschlag `"status": "success"` und
+`"action": "uninstalled"`, und die Ergebniszeile hat `"outcome": "skipped"` mit
+der Meldung `"not installed; no files
+removed"`. Das Feld `status` ist niemals `"not_installed"`.
 
 ## Beispiele
 
@@ -63,7 +108,9 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 | Code | Bedeutung |
 |---|---|
 | 0 | Adapter deinstalliert oder war nicht installiert |
-| 1 | Harness nicht gefunden oder Benutzer hat die Bestätigungsabfrage abgebrochen |
+| 1 | Harness nicht gefunden, Bestätigung abgelehnt oder nicht verfügbar (nicht interaktiver Modus oder JSON-Modus ohne `--yes`) oder jede Entfernung fehlgeschlagen |
+| 2 | Teilweise Entfernung — mindestens ein Harness wurde vor einem Fehlschlag entfernt |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 

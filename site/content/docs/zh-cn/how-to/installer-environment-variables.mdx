@@ -1,54 +1,53 @@
 ---
 title: "安装器环境变量"
-description: "用环境变量控制脚本安装器（目标位置、来源、工具、配置文件、验证）。"
+description: "通过环境变量控制脚本安装器（目标位置、来源、工具、配置档案、验证）。"
 machineTranslated: true
-sourceHash: "d68d326f61c80d62"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-目标：在不编辑脚本的情况下，通过在运行前设置环境变量来驱动
-`install.sh` / `install.ps1`。
+目标：在运行 `install.sh` / `install.ps1` 之前设置环境变量，从而在不编辑脚本的情况下驱动它们。
 
 ## 前置条件
 
-- 一个 POSIX shell（`bash`）或 PowerShell 5.1+。
-- 这些变量在安装器开头被读取一次，因此请在同一条命令中设置它们
-  （或先导出它们），然后运行安装器。
+- 一个 POSIX shell（`bash`）或 PowerShell 5.1+。下面的 PowerShell 示例运行的是 `pwsh`（PowerShell 7+）。在 Windows PowerShell 5.1 下，请改为运行 `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`。
+- 这些变量只在安装器开头被读取一次，因此请在同一条命令中设置它们（或者先导出它们），然后运行安装器。
 
 ## 安装器变量
 
-| 变量 | 控制项 | 默认值 |
+| 变量 | 控制内容 | 默认值 |
 | --- | --- | --- |
 | `APOTHEM_HOME` | 克隆的源码树的安装目标位置 | `$HOME/.apothem` |
-| `APOTHEM_REPO` | 要克隆的 Git 远端 | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | 要检出的 Git ref；未设置时解析为最新的签名 `vMAJOR.MINOR.PATCH` 标签，标签值将其固定，`main` 选择移动分支 | 未设置（最新签名标签） |
+| `APOTHEM_REPO` | 要克隆的 Git 远程仓库 | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | 要检出的 Git ref；未设置时解析最新的已签名 `vMAJOR.MINOR.PATCH` 标签，设置为某个标签值则将其固定，设置为 `main` 则选择会持续变动的分支。`main` 这类非标签 ref 会中止，除非设置 `APOTHEM_ALLOW_UNVERIFIED=1`。 | 未设置（最新的已签名标签） |
 | `APOTHEM_ALLOW_UNVERIFIED` | 设置为 `1` 时，将标签签名验证失败从致命中止降级为警告 | `0`（验证，失败即关闭） |
-| `APOTHEM_SOURCE` | 要使用的显式本地源码树，以替代克隆 | 未设置（克隆） |
+| `APOTHEM_VERIFY` | `signature` 验证发布标签的 GPG 签名；`checksum` 先将该发布的平台归档的 SHA-256 与该发布的 `SHA256SUMS` 核对，然后安装该归档（这保证完整性，但不能证明是谁发布的） | `signature` |
+| `APOTHEM_RELEASE_BASE` | 校验和模式的下载基址 | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_SOURCE` | 用于替代克隆的显式本地源码树 | 未设置（克隆） |
 | `APOTHEM_HARNESS` | 要安装的工具 | `claude-code` |
-| `APOTHEM_PROFILE` | 共享配置文件 YAML 的路径 | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_PROFILE` | 共享配置档案 YAML 的路径 | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | 设置为 `1` 时跳过安装后的验证步骤 | `0`（运行验证） |
-| `APOTHEM_AUTO_INSTALL_DEPS` | 设为 `1` 时，自动安装缺失的前置依赖 `click` / `rich`，不再询问 | `0`（询问；在非交互式管道中则拒绝） |
-| `APOTHEM_BIN_DIR` | 放置 `apothem` 命令 shim 的目录 | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+| `APOTHEM_AUTO_INSTALL_DEPS` | 设置为 `1` 时，自动安装缺失的 `click` / `rich` 前置依赖，不进行提示 | `0`（提示；在非交互式管道中则拒绝） |
+| `APOTHEM_BIN_DIR` | 放置 `apothem` 命令垫片的目录 | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+| `NO_COLOR` | 设置为任意值时关闭彩色输出（[no-color.org](https://no-color.org/)）；只要输出不是终端（管道、文件、CI 日志），颜色也会关闭 | 未设置（仅在交互式终端上显示颜色） |
 
-`APOTHEM_SOURCE` 优先于克隆：当其设置为一个包含 `src/apothem` 的检出时，
-安装器直接使用它，从不触及 `APOTHEM_REPO` / `APOTHEM_REF`，并跳过标签
-解析与签名验证（没有任何内容被抓取以供验证）。
+`APOTHEM_SOURCE` 优先于克隆：当它被设置为一个包含 `src/apothem` 的检出时，安装器直接使用它，绝不触及 `APOTHEM_REPO` / `APOTHEM_REF`，并跳过标签解析和签名验证（没有任何内容被获取，因而无需验证）。
+
+当 `APOTHEM_HOME` 指向一个已存在且不是 git 克隆的目录时，安装器会拒绝删除它：请将其移到别处、将 `APOTHEM_HOME` 指向其他位置，或者传入 `--yes`（Windows 上为 `-Yes`）以授权替换。陈旧的空目录无需该标志即会被替换。
 
 ## 信任模型
 
-在未设置 `APOTHEM_REF` 的情况下，安装器会解析最新的签名发布标签，并在
-物化任何配置之前用 `git verify-tag` 验证其签名；未签名或被篡改的标签将
-中止安装。用 `APOTHEM_REF=<tag>` 固定一个已知发布（同样会被验证；标签
-来自[发布页面](https://github.com/ahmed-g-gad/apothem/releases)），用
-`APOTHEM_REF=main` 选择移动分支（不验证），或设置
-`APOTHEM_ALLOW_UNVERIFIED=1` 以在验证失败后带警告继续（用于隔离网络、
-本地或预签名发布的场景）。
+在未设置 `APOTHEM_REF` 时，安装器会解析最新的已签名发布标签，并在物化任何配置之前用 `git verify-tag` 验证其签名；未签名或被篡改的标签会中止安装。对于维护者公钥不在本地密钥环中的已签名标签，安装器则会中止并给出密钥导入指引——导入该密钥，并将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对。使用 `APOTHEM_REF=<tag>` 固定一个已知的发布，标签取自[发布页面](https://github.com/ahmed-g-gad/apothem/releases)；被固定的标签以同样的方式验证。要选择会持续变动的分支，请使用 `APOTHEM_REF=main` 并同时设置 `APOTHEM_ALLOW_UNVERIFIED=1`；该安装未经验证，而单独设置 `main` 会中止，因为分支不是已签名的标签。单独设置 `APOTHEM_ALLOW_UNVERIFIED=1`，则会在验证失败时带着警告继续（适用于物理隔离网络、本地环境，或早于签名发布的版本）。
 
-```bash title="固定、已验证的安装"
+```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="不经验证继续（临时 / 隔离网络）"
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
+```
+
+```bash title="Proceed without verification (interim / air-gapped)"
 APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
@@ -60,13 +59,13 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. 固定源 ref 与安装目标位置：
+2. 固定安装目标位置，并选择会持续变动的 `main` 分支。分支不是已签名的标签，因此安装器还需要 `APOTHEM_ALLOW_UNVERIFIED=1`：
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
-3. 使用本地检出与自定义配置文件，并跳过验证：
+3. 使用本地检出和自定义配置档案，并跳过验证：
 
    ```bash
    APOTHEM_SOURCE=/work/apothem \
@@ -85,6 +84,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1
@@ -99,18 +99,15 @@ pwsh -NoProfile -File install.ps1
 
 ## 验证
 
-安装器会打印 `✓ Harness <name> installed`，然后（除非
-`APOTHEM_SKIP_VERIFY=1`）打印 `✓ verify passed`。独立确认：
+安装器会打印 `✓ Harness <name> installed`，然后（除非设置了 `APOTHEM_SKIP_VERIFY=1`）打印 `✓ verify passed`。独立确认：
 
 ```bash
 apothem verify --harness cursor
 ```
 
-当配置文件尚不存在时，安装器会从示例创建一份并提前退出 —— 请编辑
-`$APOTHEM_PROFILE`，然后重新运行。
+当配置档案尚不存在时，安装器会从示例创建一份，并在同一次运行中继续完成安装和验证。示例中的身份字段是占位值，因此安装会打印一条提示；编辑 `$APOTHEM_PROFILE`，然后运行 `apothem update --harness <name>` 以应用你的身份信息。在没有配置档案时运行 `--dry-run`，会使用示例配置档案进行预览，且不写入任何内容。
 
-## 相关
+## 相关内容
 
-- [安装](/docs/install) 涵盖一键网络安装。
-- [添加工具](/docs/how-to/adding-a-harness)，用于在首次安装之后通过 CLI
-  添加工具。
+- [安装](/docs/install)介绍一次性的网络安装。
+- [添加工具](/docs/how-to/adding-a-harness)介绍在首次安装之后通过 CLI 添加工具。

@@ -2,55 +2,114 @@
 title: "doctor"
 description: "CLI-Referenz für den Befehl apothem doctor."
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "d1627f4255de5db5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Führt Systemdiagnosen für die Apothem-Installation aus.
+Prüft den Zustand dessen, was installiert ist. Während
+[`apothem verify`](/docs/cli-reference/verify) die Harnesses prüft, die Sie
+auswählen, prüft `doctor` jeden installierten Harness und das gemeinsame Profil
+in einem Durchlauf.
 
 ## Übersicht
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-Prüft die Apothem-Installation und meldet den Status jedes registrierten
-Harness-Adapters. Ist ein gemeinsames Profil vorhanden, wird es gegen das
-mitgelieferte Schema validiert — nicht bloß auf Existenz geprüft —, sodass ein
-fehlerhaftes Profil als Diagnosefehler gemeldet wird statt als grünes „gefunden".
-Die JSON-Ausgabe enthält ein Feld `profile_valid` (`true` / `false` oder `null`,
-wenn kein Profil vorhanden ist) und ein Feld `profile_error`, wenn die
-Validierung fehlschlägt. Beendet mit 0, wenn alle Prüfungen bestehen, und mit 1,
-wenn ein oder mehrere Harnesses nicht installiert sind oder das vorhandene Profil
-die Schema-Validierung nicht besteht.
+## Was geprüft wird
+
+- **Gemeinsames Profil.** Ein vorhandenes Profil wird gegen das mitgelieferte
+  Schema validiert; ein fehlerhaftes schlägt mit seinem Diagnosecode fehl. Ein
+  fehlendes Profil wird gemeldet, gilt aber nicht als Fehlschlag (`install`
+  legt eines an).
+- **Nur installierte Harnesses.** Ein nicht installierter Harness wird als
+  `not_installed` gemeldet und gilt nicht als Fehlschlag, sodass ein Rechner mit
+  einem intakten Harness die Prüfung besteht. Harnesses mit
+  Projektgeltungsbereich werden geprüft, wenn `--project` ihre Wurzel benennt;
+  ohne diese Option werden sie als `needs_project` gemeldet.
+- **Verifizierung.** Jeder installierte Harness muss dieselbe Prüfung bestehen
+  wie [`verify`](/docs/cli-reference/verify).
+- **Hook-Laufzeit.** Für jeden verifizierten Harness liest doctor die Dateien,
+  die seine letzte Installation geschrieben hat, findet die Hook-Befehle, die
+  Apothem dort registriert hat, und startet jeden Interpreter und jedes
+  Hook-Skript einmal mit einer wirkungslosen Nutzlast (die registrierten
+  Argumente plus `--help`, `{}` auf stdin, ein temporäres Arbeitsverzeichnis und
+  entferntes `PYTHONPATH`). Es wird nichts geschrieben. Ein fehlender
+  Interpreter, ein fehlendes Skript oder ein Absturz beim Import lässt die
+  Prüfung fehlschlagen.
+
+Jede fehlgeschlagene Prüfung nennt eine Korrektur. Beendet sich mit 0, wenn
+keine Prüfung fehlschlägt, andernfalls mit 1.
+
+## JSON-Ausgabe
+
+`--json` behält die früheren Felder bei (`version`, `python`, `platform`,
+`profile_path`, `profile_exists`, `profile_valid`, `harnesses`, `all_ok`
+sowie `profile_error`, wenn das Profil ungültig ist) und fügt hinzu:
+
+- `profile_error_code` — der Profil-Diagnosecode, wenn das Profil ungültig
+  ist.
+- `project` — die aufgelöste `--project`-Wurzel oder `null`.
+- `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
+  `verify_failed`, `hook_failed` oder `error`; dazu `verified` und `hooks`
+  (`{"probed": N, "failed": [...]}` oder `null`, wenn kein
+  Installationsdatensatz existiert).
+- `checks` — ein Datensatz pro Prüfung: `code` (zum Beispiel
+  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` oder ein
+  `profile.*`-Code), `status` (`pass`, `fail` oder `info`), `harness`,
+  `message` und `fix`.
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--quiet`, `-q` | Unterdrückt informative Ausgabe; nur Fehler werden ausgegeben. |
-| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgabe aus. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich; ohne diese Option werden sie als `needs_project` gemeldet. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## Beispiele
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+Das Standardformat `plain` gibt menschenlesbare Diagnosen aus; `--json`
+(gleichwertig zu `--format json`) gibt ein maschinenlesbares Dokument auf stdout
+aus, das sich für die Weiterleitung per Pipe an andere Werkzeuge eignet.
 
 ## Exit-Codes
 
 | Code | Bedeutung |
 |---|---|
-| 0 | Alle Prüfungen bestanden |
-| 1 | Ein Harness ist nicht installiert oder ein vorhandenes Profil hat die Schema-Validierung nicht bestanden |
+| 0 | Alle Prüfungen bestanden (auch wenn noch kein Harness installiert ist) |
+| 1 | Ein installierter Harness besteht die Verifizierung nicht, ein registrierter Hook-Befehl kann nicht starten, ein Adapter konnte nicht geladen oder sondiert werden, oder ein vorhandenes Profil hat die Schemavalidierung nicht bestanden |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
 - [apothem harnesses](/docs/cli-reference/harnesses) — registrierte Harnesses auflisten und inspizieren
-- [apothem verify](/docs/cli-reference/verify) — eine bestimmte Harness-Installation prüfen
+- [apothem verify](/docs/cli-reference/verify) — die Installation eines Harness-Adapters verifizieren

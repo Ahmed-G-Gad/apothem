@@ -1,31 +1,84 @@
 ---
 title: "Referensi CLI"
-description: "Referensi CLI Apothem — sinopsis per-perintah, opsi, dan kode keluar untuk antarmuka baris perintah apothem."
+description: "Referensi CLI Apothem — sinopsis, opsi, dan kode keluar per perintah untuk antarmuka baris perintah apothem."
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Antarmuka baris perintah `apothem` mengelola konfigurasi adapter asisten-pengkodean dari profil bersama. Setiap halaman di bawah mendokumentasikan satu subperintah: sinopsisnya, opsinya, perilakunya, dan kode keluarnya.
+Antarmuka baris perintah `apothem` mengelola konfigurasi adapter harness dari
+profil bersama. Setiap halaman di bawah mendokumentasikan satu subperintah:
+sinopsisnya, opsinya, perilakunya, dan kode keluarnya.
 
-Masing-masing dari `install`, `update`, dan `uninstall` juga menerima alias bentuk-kontinu (`installing`, `updating`, `uninstalling`) yang identik dalam flag dan perilaku dengan perintah dasarnya. Memperbarui dan mencopot pemasangan melalui kanal pemasangan — plugin Claude Code, `npx`, dan skrip pemasang satu-langkah — didokumentasikan dalam panduan pemasangan [Memperbarui](/docs/install/updating) dan [Mencopot pemasangan](/docs/install/uninstalling), bukan oleh alias itu sendiri.
+Masing-masing dari `install`, `update`, dan `uninstall` juga menerima alias
+bentuk-kontinu (`installing`, `updating`, `uninstalling`) yang identik dalam
+flag dan perilaku dengan perintah dasarnya. Memperbarui dan mencopot pemasangan
+melalui kanal pemasangan — plugin Claude Code, `npx`, dan skrip pemasang
+sekali-jalan — didokumentasikan dalam panduan pemasangan
+[Memperbarui](/docs/install/updating) dan
+[Mencopot pemasangan](/docs/install/uninstalling), bukan oleh alias itu sendiri.
 
 ## Perintah
 
 | Perintah | Deskripsi |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | Pengoperasian pertama terpandu: memastikan adanya profil, mempratinjau penulisan, lalu memasang. |
-| [install](/docs/cli-reference/install) | Memasang konfigurasi adapter asisten-pengkodean dari profil bersama (alias: `installing`). |
-| [update](/docs/cli-reference/update) | Memasang ulang konfigurasi adapter asisten-pengkodean dari profil bersama saat ini (alias: `updating`). |
-| [uninstall](/docs/cli-reference/uninstall) | Menghapus konfigurasi adapter asisten-pengkodean (alias: `uninstalling`). |
-| [rollback](/docs/cli-reference/rollback) | Memulihkan asisten-pengkodean ke keadaan sebelum pemasangan tercatatnya. |
-| [verify](/docs/cli-reference/verify) | Memverifikasi pemasangan adapter asisten-pengkodean. |
-| [status](/docs/cli-reference/status) | Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap asisten-pengkodean yang terdaftar. |
-| [diff](/docs/cli-reference/diff) | Mempratinjau perubahan konfigurasi yang tertunda untuk satu asisten-pengkodean. |
-| [harnesses](/docs/cli-reference/harnesses) | Mendaftar dan memeriksa adapter asisten-pengkodean yang terdaftar. |
+| [quickstart](/docs/cli-reference/quickstart) | Eksekusi pertama terpandu: memastikan ada profil, mempratinjau penulisan, lalu memasang. |
+| [install](/docs/cli-reference/install) | Memasang konfigurasi adapter harness dari profil bersama (alias: `installing`). |
+| [update](/docs/cli-reference/update) | Memasang ulang konfigurasi adapter harness dari profil bersama saat ini (alias: `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | Menghapus konfigurasi adapter harness (alias: `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | Memulihkan harness ke keadaan sebelum pemasangannya yang tercatat. |
+| [backups](/docs/cli-reference/backups) | Memangkas cadangan pemasangan dan riwayat ledger yang disimpan Apothem (`backups prune`). |
+| [verify](/docs/cli-reference/verify) | Memverifikasi pemasangan adapter harness. |
+| [status](/docs/cli-reference/status) | Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap harness yang terdaftar. |
+| [diff](/docs/cli-reference/diff) | Mempratinjau perubahan konfigurasi yang tertunda untuk satu harness. |
+| [harnesses](/docs/cli-reference/harnesses) | Mendaftar dan memeriksa adapter harness yang terdaftar. |
 | [profile](/docs/cli-reference/profile) | Mengelola profil bersama Apothem. |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | Memigrasikan workspace per-harness warisan ke tata letak `.apothem` bersama. |
 | [doctor](/docs/cli-reference/doctor) | Menjalankan diagnostik sistem untuk pemasangan Apothem. |
-| [completion](/docs/cli-reference/completion) | Memancarkan skrip pelengkapan-otomatis shell yang dapat di-source (bash, zsh, fish, powershell). |
+| [completion](/docs/cli-reference/completion) | Memancarkan skrip pelengkapan shell yang dapat di-source (bash, zsh, fish, powershell). |
 
-Untuk perintah slash dan ikhtisar CLI tingkat-lebih-tinggi, lihat halaman referensi
-[Ikhtisar CLI](/docs/reference/cli) dan [Perintah slash](/docs/reference/commands).
+## Kontrak keluaran JSON
+
+Setiap perintah menerima `--json` (singkatan untuk `--format json`) lalu
+menulis tepat satu dokumen JSON ke stdout. Setiap dokumen diawali dengan kunci
+tingkat atas `schema_version`, sebuah bilangan bulat yang saat ini bernilai `1`:
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **Stabilitas.** Dalam satu `schema_version`, perubahan bersifat aditif: kunci
+  baru dapat muncul, tetapi tidak ada kunci yang diganti namanya atau dihapus
+  dan tidak ada nilai yang berubah tipe. Perubahan lain apa pun menaikkan
+  `schema_version`.
+- **Artefak berversi.** `profile show --json` memancarkan profil itu sendiri,
+  sehingga `schema_version`-nya adalah versi skema profil (juga `1` saat ini).
+- **Satu pengecualian.** `harnesses list --json` memancarkan larik JSON (satu
+  objek per harness), seperti yang selalu dilakukannya, sehingga ia tidak
+  memiliki kunci tingkat atas untuk membawa versi. Membungkusnya dalam sebuah
+  objek akan merusak parser yang ada; sampai sebuah kenaikan versi melakukannya,
+  perlakukan bentuknya sebagai `schema_version` `1`.
+- **Galat.** Kegagalan yang diharapkan menggunakan bentuk dokumen yang sama
+  dengan `"status": "error"` dan objek `error` yang membawa `code`, `field`,
+  `reason`, dan `fix`.
+
+## Kode keluar
+
+Setiap perintah menggunakan kumpulan kecil kode keluar yang sama; setiap
+halaman mencantumkan kode yang dapat dikembalikannya.
+
+| Kode | Arti |
+|---|---|
+| 0 | Berhasil |
+| 1 | Kegagalan yang diharapkan: galat validasi, profil, harness, proyek, atau adapter |
+| 2 | Hasil parsial: sebuah batch menulis atau menghapus sesuatu sebelum terjadi kegagalan (hanya perintah yang halamannya mencantumkannya) |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, opsi wajib yang tidak ada, atau nilai opsi yang tidak valid |
+
+Galat penggunaan tidak pernah menyentuh sistem berkas. Di bawah `--json` (atau
+`--format json`) galat ini mencetak satu dokumen galat dengan
+`"code": "cli.usage"` alih-alih teks penggunaan biasa, sehingga otomatisasi
+dapat membedakan flag yang salah ketik dari penulisan parsial.
+
+Untuk perintah slash dan ikhtisar CLI tingkat lebih tinggi, lihat halaman
+referensi [Ikhtisar CLI](/docs/reference/cli) dan
+[Perintah slash](/docs/reference/commands).

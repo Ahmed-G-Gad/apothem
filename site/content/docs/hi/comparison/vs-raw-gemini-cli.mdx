@@ -2,7 +2,7 @@
 title: "Apothem बनाम मैनुअल Gemini CLI कॉन्फ़िगरेशन"
 description: "Gemini CLI की GEMINI.md नियम फ़ाइल को हाथ से बनाए रखना बनाम उसे Apothem की साझा प्रोफ़ाइल से रेंडर करना।"
 machineTranslated: true
-sourceHash: "c50d2b16083b08a0"
+sourceHash: "1571985a6318fd28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,27 +12,24 @@ Gemini CLI एक एकल `GEMINI.md` नियम फ़ाइल पढ़�
 
 ## प्रयास की तुलना
 
-| टास्क | मैनुअल कॉन्फ़िगरेशन | Apothem द्वारा प्रबंधित |
+| कार्य | हस्तचालित कॉन्फ़िग | Apothem-प्रबंधित |
 | ---- | --------------- | --------------- |
-| नियम लिखना | एक `GEMINI.md` को हाथ से संपादित करना | रेंडर किया गया: साझा नियम `GEMINI.md` में एम्बेड किए गए |
-| नियमों को अन्य परिवेशों के साथ संरेखित रखना | मैनुअल, प्रति-उपकरण | `apothem update` पर स्वचालित |
-| कॉन्फ़िगरेशन इंस्टॉल / हटाना | `GEMINI.md` को हाथ से लिखना और हटाना | `apothem install` / `apothem uninstall` |
-| कॉन्फ़िगरेशन सही है यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness gemini-cli` |
+| नियम लिखना | एक `GEMINI.md` को हाथ से संपादित करें | रेंडर किया गया: प्रोजेक्ट-व्यापी मार्गदर्शन `GEMINI.md` में; नियम `.gemini/.apothem/support/` में |
+| नियमों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िग इंस्टॉल / हटाना | `GEMINI.md` को हाथ से लिखें और हटाएँ | `apothem install` / `apothem uninstall` |
+| कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness gemini-cli --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
-gemini-cli अडैप्टर साझा नियमों को एक एकल `GEMINI.md` में एम्बेड करता है। Gemini CLI
-में कोई PreToolUse हुक नहीं है, इसलिए गार्डरेल का अभिप्राय किसी टूल-कॉल अवरोधन बिंदु
-के बजाय नियम के पाठ में व्यक्त होता है। साझा नियमों में हर परिवर्तन अगले
-`apothem update` पर `GEMINI.md` को फिर से रेंडर करता है।
+gemini-cli अडैप्टर `<project>/GEMINI.md` में एक सेंटिनल-सीमांकित Apothem ब्लॉक लिखता है, जिसमें प्रोजेक्ट-व्यापी मार्गदर्शन होता है और Apothem की सामग्री की ओर संकेत होता है। नियम, टेम्पलेट और हुक `<project>/.gemini/.apothem/support/` के अंतर्गत समर्थन फ़ाइलों के रूप में आते हैं, और कमांड, स्किल और एजेंट `<project>/.gemini/` के अंतर्गत आते हैं। Gemini CLI में कोई PreToolUse हुक नहीं है, इसलिए गार्डरेल का अभिप्राय किसी टूल-कॉल अवरोधन बिंदु के बजाय नियम के पाठ में व्यक्त होता है। साझा नियमों में हर परिवर्तन अगले `apothem update` पर `GEMINI.md` को फिर से रेंडर करता है।
 
 ## माइग्रेशन पथ
 
-1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो उसे बनाने के लिए `apothem profile init` चलाएँ।
-2. अपनी मौजूदा `GEMINI.md` के नियमों को साझा कॉर्पस में स्थानांतरित करें।
-3. `GEMINI.md` को रेंडर और लिखने के लिए `apothem install --harness gemini-cli` चलाएँ।
-4. कॉन्फ़िगरेशन सही जगह पहुँची यह पुष्टि करने के लिए `apothem verify --harness gemini-cli` चलाएँ।
-5. हर बाद के परिवर्तन के लिए `apothem update --harness gemini-cli` का उपयोग करें।
+1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
+2. अपनी मौजूदा `GEMINI.md` के नियमों को साझा कॉर्पस में ले जाएँ।
+3. `GEMINI.md` को रेंडर करके लिखने के लिए `apothem install --harness gemini-cli --project <path>` चलाएँ।
+4. कॉन्फ़िग सही जगह पहुँची है, इसकी पुष्टि के लिए `apothem verify --harness gemini-cli --project <path>` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness gemini-cli --project <path>` का उपयोग करें।
 
 ## आगे पढ़ें
 

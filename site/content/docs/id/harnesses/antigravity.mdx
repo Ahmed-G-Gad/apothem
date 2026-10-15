@@ -1,15 +1,15 @@
 ---
 title: "Antigravity"
-description: "Adaptor alat Apothem untuk Antigravity (Pratinjau)."
+description: "Adapter harness Apothem untuk Antigravity (Pratinjau)."
 machineTranslated: true
-sourceHash: "b5740666d67c3796"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Antigravity
 **Nama instalasi:** `antigravity`
 **Status:** Pratinjau
-**Konfigurasi native:** `~/.gemini/GEMINI.md` plus
+**Konfigurasi native:** `~/.gemini/GEMINI.md` ditambah
 `~/.gemini/antigravity-cli/plugins/apothem/`
 
 ## Instalasi
@@ -18,36 +18,65 @@ sourceHash: "b5740666d67c3796"
 apothem install --harness antigravity
 ```
 
-Adaptor merender profil bersama ke `~/.gemini/GEMINI.md` dan memasang kumpulan
-dukungan Apothem sebagai plugin CLI Antigravity.
+Adapter merender profil bersama ke `~/.gemini/GEMINI.md` dan memasang kohor
+pendukung Apothem sebagai plugin Antigravity CLI.
 
 **Berkas yang ditulis:** `~/.gemini/GEMINI.md`,
 `~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
 `~/.gemini/antigravity-cli/plugins/apothem/skills/`,
 `~/.gemini/antigravity-cli/plugins/apothem/rules/`,
-definisi asisten lokal yang telah dikonversi di dalam plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, dan
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+definisi helper lokal yang telah dikonversi di dalam plugin,
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, dan
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+
+Blok Apothem di `~/.gemini/GEMINI.md` diakhiri dengan bagian berkas pendukung
+Apothem yang menyebutkan direktori absolut tempat setiap kutipan bergaya
+repositori di-resolve: `rules/<name>.md` di bawah `rules/` milik plugin, serta
+`templates/...` dan `hooks/...` di bawah `.apothem/support/` milik plugin.
+
+**Aturan plugin.** Antigravity membuang setiap berkas di direktori `rules/`
+sebuah plugin yang tidak diawali dengan `trigger` yang valid
+([dokumentasi aturan Antigravity](https://antigravity.google/docs/rules)),
+sehingga setiap aturan Apothem dikonversi saat instalasi. Aturan yang selalu
+berlaku mendapat `trigger: always_on`; aturan yang dibatasi pada jalur tertentu
+mendapat `trigger: glob` dengan pola yang sama di `globs`; aturan lainnya
+mendapat `trigger: model_decision`. Setiap aturan mempertahankan `description`
+miliknya. Antigravity membagi satu anggaran 20.000 token di antara aturan
+always-on dan, begitu anggaran itu terlampaui, mengubah aturan yang terbesar
+menjadi penunjuk sesuai permintaan.
+
+**Manifest plugin.** `plugin.json` hanya membawa `name` dan `description`, dua
+kunci yang diterima oleh skema plugin Antigravity.
+
+**Helper plugin.** Definisi helper di direktori `agents/` milik plugin membawa
+`name` dan `description`. Daftar `tools` Antigravity menggunakan nama alatnya
+sendiri, dan dokumentasinya memperingatkan bahwa nama yang tidak dikenal dapat
+membuat subagen macet, sehingga tidak ada daftar alat yang dipancarkan dan
+helper mewarisi alat milik induknya. Karena tidak ada apa pun di Antigravity
+yang memberlakukan batas read-only, deskripsi helper tersebut menghilangkan
+label "read-only".
 
 **Jangkar pengguna bersama.** `~/.gemini/GEMINI.md` juga merupakan jangkar
-lingkup pengguna untuk perkakas keluarga Gemini. Adaptor Antigravity menyimpan
-material Apothem tambahannya di dalam plugin `apothem` di bawah
-`~/.gemini/antigravity-cli/plugins/`, sehingga tidak mengklaim direktori proyek
-Gemini CLI yang generik.
+lingkup pengguna untuk perkakas keluarga Gemini. Adapter Antigravity menyimpan
+materi Apothem tambahannya di dalam plugin `apothem` di bawah
+`~/.gemini/antigravity-cli/plugins/` sehingga tidak mengklaim direktori proyek
+Gemini CLI yang generik. Karena lebih dari satu alat memuat
+`~/.gemini/GEMINI.md`, blok Apothem di sana ditulis sebagai panduan global yang
+tidak menyebut satu alat pun sebagai pembacanya.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender jangkar instruksi plus
-kumpulan dukungan pada setiap jalannya `apothem install` atau `apothem update`.
+Adapter membaca profil bersama Apothem dan merender jangkar instruksi beserta
+kohor pendukung pada setiap eksekusi `apothem install` atau `apothem update`.
 
 ## Catatan kompatibilitas
 
-Adaptor pratinjau. Jangkar `GEMINI.md` adalah konten instruksi aktif; plugin
-Antigravity menjaga keterampilan perintah yang dikonversi, keterampilan yang dapat
-digunakan kembali, definisi asisten lokal, aturan, templat, dan material dukungan
+Adapter pratinjau. Jangkar `GEMINI.md` adalah konten instruksi aktif; plugin
+Antigravity menyimpan skill command yang telah dikonversi, skill yang dapat
+digunakan ulang, definisi helper lokal, aturan, templat, dan materi pendukung
 hook dalam namespace milik Apothem yang jelas.
-Berkas hook tidak terdaftar sebagai peristiwa hook Antigravity aktif sampai adaptor
-memiliki lapisan terjemahan skema untuk `hooks.json` Antigravity.
+Berkas hook tidak didaftarkan sebagai peristiwa hook Antigravity aktif sampai
+adapter memiliki lapisan translasi skema untuk `hooks.json` Antigravity.
 
 ## Verifikasi
 
@@ -58,8 +87,9 @@ apothem verify --harness antigravity
 Perintah verify memastikan bahwa:
 
 1. Berkas konteks native ada di jalur yang diharapkan.
-2. Metadata plugin CLI Antigravity Apothem ada dan mendeklarasikan nama plugin
-   `apothem`.
+2. Manifest plugin `plugin.json` ada, tidak kosong, dan dapat diurai sebagai
+   JSON. Verifikasi tidak memeriksa nama plugin; periksa sendiri bidang
+   tersebut setelah mengubahnya.
 
 ## Pembaruan
 
@@ -67,9 +97,9 @@ Perintah verify memastikan bahwa:
 apothem update --harness antigravity
 ```
 
-Menurunkan ulang konfigurasi native dari status profil bersama saat ini. Jalankan
-setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan paket
-Apothem yang terpasang.
+Menurunkan ulang konfigurasi native dari status profil bersama saat ini.
+Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
+paket Apothem yang terpasang.
 
 ## Pencopotan
 
@@ -77,8 +107,14 @@ Apothem yang terpasang.
 apothem uninstall --harness antigravity
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `~/.gemini/GEMINI.md` dan mempertahankan teks lain
+di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
+Juga menghapus kunci milik Apothem dari `plugin.json` di folder plugin
+`~/.gemini/antigravity-cli/plugins/apothem/` dan mempertahankan kunci milik
+Anda, serta menghapus berkas Apothem di subfolder `skills/`, `rules/`,
+`agents/`, dan `.apothem/support/` milik folder itu; berkas lain di sana tetap
+ada. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah
+atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -92,10 +128,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness antigravity` |
 | Verifikasi gagal | Jalankan `apothem update --harness antigravity`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness antigravity` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness antigravity` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

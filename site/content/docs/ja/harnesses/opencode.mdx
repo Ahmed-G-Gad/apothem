@@ -1,15 +1,15 @@
 ---
 title: "OpenCode"
-description: "OpenCode（ベータ版）向けの Apothem ツールアダプター。"
+description: "OpenCode（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** OpenCode
 **インストール名：** `opencode`
 **ステータス：** ベータ版
-**ネイティブ構成：** `~/.config/opencode/`
+**ネイティブ設定：** `~/.config/opencode/`
 
 ## インストール
 
@@ -17,34 +17,39 @@ sourceHash: "4469c3fbcf489bd8"
 apothem install --harness opencode
 ```
 
-このアダプターは OpenCode の JSON 構成を書き込み、Apothem のスキルを OpenCode の
-スキルサーフェスにインストールし、コマンドプロンプトを OpenCode の Markdown
-コマンドファイルに変換し、Apothem のヘルパー定義を OpenCode のサブヘルパーとして
-正規化します。
+アダプターは OpenCode の JSON 設定を書き込み、Apothem のスキルを OpenCode のスキル面にインストールし、コマンドプロンプトを OpenCode の Markdown コマンドファイルに変換し、Apothem のヘルパー定義を OpenCode のサブヘルパーとして正規化します。
 
 **書き込まれるファイル：**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
-## プロファイルからネイティブ構成へのマッピング
+## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、Apothem のインストール済みルールを指す `instructions` ファイル
-リストを伴って `opencode.json` をレンダリングし、その後、共有された各 Apothem
-套組を OpenCode のネイティブサーフェスまたは Apothem 所有のサポートサブツリーの
-いずれかに伝播します。既存の一致する Apothem 管理の子要素は、置き換える前に
-バックアップされます。
+アダプターは、あなたのプロファイルドキュメントと Apothem の常時適用ルールを指定する `instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーのいずれかへ伝播します。
+既存の、一致する Apothem 管理の子要素は、置き換えの前にバックアップされます。
 
 ## 互換性に関する注意
 
-ルールはネイティブの `instructions` リストを通じて参照されます。テンプレートと
-フックプロンプトは `~/.config/opencode/.apothem/support/` 下の参照素材です。コマンド、
-スキル、ヘルパー定義はネイティブの検出場所を使用します。
+OpenCode は、`instructions` リストが指定するすべてのファイルを、すべてのセッションに結合します（[OpenCode のルール](https://opencode.ai/docs/rules/)）。
+そのため、このリストは最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` であるルールのみを、それぞれ 1 つの明示的な `~/.config/opencode/.apothem/support/rules/<name>.md` パスとして指定します。
+OpenCode は先頭の `~/` をあなたのホームディレクトリに展開します。
+パスでフィルタリングされるルール、テンプレート、フックプロンプトは、`~/.config/opencode/.apothem/support/` 配下に参照素材としてインストールされたまま残り、それを参照するルール、スキル、コマンドがオンデマンドで読み込みます。
+コマンド、スキル、ヘルパー定義はネイティブの検出場所を使用します。
+
+プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` は、共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持し、Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.config/opencode/.apothem/support/` 配下の絶対ディレクトリを示します。
+このドキュメントは最初の `instructions` エントリであるため、OpenCode はすべてのセッションでこれを読み込みます。
+
+以前のリリースが書き込んだ `opencode.json` には、すべてのルールを読み込む単一のグロブ `~/.config/opencode/.apothem/support/rules/*.md` が記載されています。
+`apothem install` と `apothem update` はそれを常時適用のリストに置き換え、`apothem uninstall` は両方の形式を削除します。
+あなた自身の `instructions` エントリは、いずれの場合も保持されます。
 
 ## 検証
 
@@ -54,8 +59,8 @@ apothem verify --harness opencode
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定パスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -64,8 +69,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness opencode
 ```
 
-`opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、および Apothem
-サポートツリーを更新します。
+`opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、Apothem サポートツリーを更新します。
 
 ## アンインストール
 
@@ -73,10 +77,13 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+アダプターが `~/.config/opencode/opencode.json` に追加したエントリを削除します（あなた自身のキー、MCP サーバー、`instructions` エントリは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます）。
+プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` から Apothem のブロックを削除し、その中の他のテキストは残します。このファイルは、その中に他に何も残っていない場合にのみ削除されます。
+また、`~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/`、`~/.config/opencode/.apothem/support/` 内の Apothem のファイルも削除します。これらのフォルダー内のその他のファイルは残ります。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -84,14 +91,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness opencode` を再実行する |
-| 検証が失敗した | `apothem update --harness opencode` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness opencode` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness opencode` を再実行する |
+| 検証が失敗した | `apothem update --harness opencode` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness opencode` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

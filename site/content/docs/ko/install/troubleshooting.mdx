@@ -2,7 +2,7 @@
 title: "문제 해결"
 description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "bc3e1102685c3e6e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,21 +12,22 @@ sourceHash: "5dad4c6e337cead2"
 
 ### Python 3.10+를 찾을 수 없음
 
-설치 프로그램과 npx 심(shim)은 `python3`, `python`, 버전이 지정된 이름(`python3.14`부터 `python3.10`까지), 그리고 Windows에서 `py -3`를 탐색하며 — Microsoft Store 런처 심은 거부합니다 — 3.10 하한선을 충족하는 후보가 없으면 `No Python >= 3.10 found in PATH`로 중단합니다. python.org 또는 OS 패키지 저장소에서 CPython 3.10 이상을 설치하고, `python3 --version`(또는 Windows에서 `py -3 --version`)이 최소 3.10을 보고하는지 확인한 다음, 다시 실행하세요.
+설치 프로그램은 `python3`, `python`, 그리고 버전이 지정된 이름(`python3.14`부터 `python3.10`까지)을 탐색하며 — Microsoft Store 런처 심은 거부합니다 — 3.10 하한선을 충족하는 후보가 없으면 `No Python >= 3.10 found in PATH`라는 메시지와 함께 중단합니다. npx 심은 `APOTHEM_PYTHON`이 설정되어 있으면 이를 먼저 탐색하고, 그다음 `python3`, `python`, `py -3`을 탐색하며, 조건을 충족하는 후보가 없으면 자체 메시지를 출력하고 종료 코드 1로 종료합니다. python.org 또는 OS 패키지 저장소에서 CPython 3.10 이상을 설치하고, `python3 --version`(또는 Windows에서 `py -3 --version`)이 최소 3.10을 보고하는지 확인한 다음, 다시 실행하세요.
 
 ### 런타임 종속성 누락: click, rich
 
 엔진은 대부분의 서드파티 종속성을 소스 트리 내부에 벤더링하지만, `click`과 `rich`는 설치 프로그램이 선택한 인터프리터에서 임포트 가능해야 합니다. 둘 중 하나가 누락되면 설치 프로그램은 그것의 이름을 알려 주고 사용자를 대신해 설치하겠다고 제안합니다.
 
 ```text
-! Missing runtime dependencies: click rich
+! Missing Python prerequisites under <python>: click rich
+  Install click rich under <python> now? [y/N]
 ```
 
 프롬프트를 수락하면 설치 프로그램이 해당 인터프리터에서 `pip install`을 실행합니다. 프롬프트를 건너뛰려면 `--yes`(PowerShell에서는 `-Yes`)를 전달하거나 `APOTHEM_AUTO_INSTALL_DEPS=1`을 설정하여 자동으로 설치하세요. 거부하거나 — `pip`을 사용할 수 없거나, OS 패키지 관리자를 선호하는 경우 — 명명된 패키지를 직접 설치한 다음(예: Debian 계열 호스트에서 `python3-click` 및 `python3-rich`, 또는 `pip install click rich`) 다시 실행하세요.
 
 ### 설치 프로그램 실행 후 `apothem`을 찾을 수 없음
 
-설치 프로그램은 소스 트리를 `~/.apothem`에 배치하며 `apothem` 실행 파일을 `PATH`에 추가하지 않습니다. 설치 프로그램이 완료 시 출력하는 호출 방법을 통해 엔진을 실행하세요.
+설치 프로그램은 소스 트리를 `~/.apothem`에 배치하고, 기본적으로 `apothem` 심을 `~/.local/bin`(POSIX) 또는 `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows)에 씁니다. `PATH`는 수정하지 않습니다. `apothem`을 찾을 수 없다면 그 디렉터리가 `PATH`에 없는 것입니다. 디렉터리를 추가하거나, 그렇게 할 때까지 아래의 `PYTHONPATH` 형식을 사용하세요. 설치 프로그램이 완료될 때 출력하는 호출 방식으로 엔진을 실행하세요.
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
@@ -64,7 +65,7 @@ apothem doctor를 실행하여 감지된 하니스 디렉터리를 나열하세�
 
 ### apothem verify가 실패한 어댑터를 보고함
 
-apothem install을 다시 실행하여 어댑터를 재구체화하세요. 문제가 지속되면 [하니스 어댑터](/docs/harnesses) 아래의 어댑터별 페이지를 확인하세요.
+apothem install을 다시 실행하여 어댑터를 다시 머티리얼라이즈하세요. 문제가 지속되면 [하니스 어댑터](/docs/harnesses) 아래의 어댑터별 페이지를 확인하세요.
 
 ### Claude Code에서 훅이 실행되지 않음
 

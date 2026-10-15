@@ -1,26 +1,31 @@
 ---
 title: "Receitas práticas"
-description: "Receitas focadas em tarefas para adicionar uma ferramenta, editar o perfil e operar o instalador por script."
+description: "Receitas focadas em tarefas para adicionar um harness, editar o perfil e conduzir o instalador por script."
 machineTranslated: true
-sourceHash: "292cace941b329fb"
+sourceHash: "5b07c2fad50f95db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Cada receita enuncia um objetivo concreto e os passos ordenados que o alcançam.
-Os passos são executáveis por copiar e colar e mapeiam para um fluxo de trabalho real e suportado.
+Cada receita declara um objetivo concreto e as etapas ordenadas que o alcançam.
+As etapas podem ser copiadas, coladas e executadas, e correspondem a um fluxo de
+trabalho real e suportado.
 
 ## Receitas
 
-- [Adicionar uma ferramenta](/docs/how-to/adding-a-harness) — habilite um adaptador de ferramenta para que
-  sua configuração nativa seja materializada a partir do perfil compartilhado.
+- [Adicionar um harness](/docs/how-to/adding-a-harness) — habilite um adaptador
+  de harness para que a configuração nativa dele seja materializada a partir do
+  perfil compartilhado.
 - [Editar o perfil](/docs/how-to/editing-the-profile) — altere o perfil
-  compartilhado e rematerialize todas as ferramentas instaladas.
+  compartilhado e materialize novamente todos os harnesses instalados.
 - [Variáveis de ambiente do instalador](/docs/how-to/installer-environment-variables)
-  — controle o instalador por script (destino, origem, ferramenta, perfil,
+  — controle o instalador por script (destino, origem, harness, perfil,
   verificação) sem editar o script.
+- [Executar as avaliações comportamentais](/docs/how-to/evals) — meça se os
+  comandos e os subagentes disparam nas solicitações certas e se cada estágio do
+  pipeline produz o seu artefato, com uma execução de custo limitado.
 
 ## Guias relacionados
 
 - [Instalação](/docs/install) e [Atualização](/docs/install/updating) cobrem
-  a instalação inicial e o caminho de atualização.
-- A seção de [uso](/docs/usage) cobre os comandos diários da CLI.
+  a instalação da primeira execução e o caminho de atualização.
+- A seção de [uso](/docs/usage) cobre os comandos da CLI do dia a dia.

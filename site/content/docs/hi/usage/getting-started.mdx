@@ -2,7 +2,7 @@
 title: "मुख्य वर्कफ़्लो"
 description: "Apothem के चार मुख्य वर्कफ़्लो — प्रोफ़ाइल, नियम, योजनाएँ, और अनुरूपता गेट।"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-प्रोफ़ाइल बनाएँ और निरीक्षण करें:
+यदि प्रोफ़ाइल अभी मौजूद नहीं है तो उसे बनाएँ, फिर उसका निरीक्षण करें। एक-चरण
+इंस्टॉलर और `apothem install` पहली बार चलने पर ही एक स्टार्टर प्रोफ़ाइल लिख देते
+हैं, और `profile init` त्रुटि के साथ रुक जाता है तथा किसी मौजूदा फ़ाइल को
+अपरिवर्तित छोड़ देता है, जब तक आप `--force` पास न करें।
 
 ```bash
 apothem profile init
@@ -64,10 +67,16 @@ apothem verify --harness claude-code
 
 ## अनुरूपता गेट
 
-रिपॉज़िटरी रूट से चलाएँ:
+Apothem चेकआउट से, चलाएँ:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+स्क्रिप्ट इंस्टॉल के बाद, चलाएँ:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 सभी यांत्रिक अनुरूपता जाँचें चलाता है और प्रति बार पास/फ़ेल की रिपोर्ट करता है।

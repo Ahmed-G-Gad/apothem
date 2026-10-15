@@ -1,8 +1,8 @@
 ---
 title: "Qwen Code"
-description: "Adaptor alat Apothem untuk Qwen Code (Beta)."
+description: "Adapter harness Apothem untuk Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "0ba705985aed7ff1"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,33 +17,41 @@ sourceHash: "0ba705985aed7ff1"
 apothem install --harness qwen-code
 ```
 
-Adaptor menulis pengaturan Qwen Code, memasang jangkar konteks `QWEN.md`,
-mendaftarkan dispatcher hook Apothem, mengonversi perintah Apothem menjadi berkas
-perintah Markdown Qwen, memasang keterampilan sebagai direktori SKILL.md, dan
-menyesuaikan definisi asisten sebagai subagen Qwen.
+Adapter menulis pengaturan Qwen Code, memasang jangkar konteks `QWEN.md`,
+mendaftarkan dispatcher hook Apothem, mengonversi command Apothem menjadi berkas
+command Markdown Qwen, memasang skill sebagai direktori SKILL.md, dan
+mengadaptasi definisi helper sebagai subagen Qwen.
 
 **Berkas yang ditulis:**
 
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Berkas `~/.qwen/apothem/rules/00-apothem-profile.md` adalah dokumen profil.
+Berkas ini membawa identitas dan preferensi Anda dari profil bersama.
+
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor merender kunci `settings.json` yang terdokumentasi untuk konteks dan hook,
-menulis `QWEN.md`, serta menjalin perintah, keterampilan, dan definisi asisten
-Apothem melalui direktori penemuan native Qwen Code. Aturan, templat, dan material
-sumber hook tetap menjadi material dukungan di bawah `~/.qwen/.apothem/support/`.
+Adapter merender kunci `settings.json` yang terdokumentasi untuk konteks dan
+hook, menulis `QWEN.md`, serta menjalin command, skill, dan definisi helper
+Apothem melalui direktori penemuan native Qwen Code. Aturan, templat, dan materi
+sumber hook tetap menjadi materi dukungan di bawah `~/.qwen/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
-`~/.qwen/.apothem/support/` adalah material dukungan yang dirujuk oleh `QWEN.md` dan perintah
-hook pada pengaturan; ini bukan namespace penemuan milik vendor.
+`~/.qwen/.apothem/support/` adalah materi dukungan yang dirujuk oleh `QWEN.md`
+dan command hook pada pengaturan; ini bukan namespace penemuan milik vendor.
+Blok Apothem di `QWEN.md` diakhiri dengan bagian berkas dukungan Apothem yang
+menyebutkan direktori absolut di bawah `~/.qwen/.apothem/support/` yang menjadi
+acuan resolusi setiap sitasi bergaya repositori (`rules/<name>.md`,
+`templates/...`, `hooks/...`).
 
 ## Verifikasi
 
@@ -54,8 +62,10 @@ apothem verify --harness qwen-code
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -63,7 +73,7 @@ Perintah verify memastikan bahwa:
 apothem update --harness qwen-code
 ```
 
-Menyegarkan `settings.json`, `QWEN.md`, perintah native, keterampilan, subagen, dan
+Menyegarkan `settings.json`, `QWEN.md`, command native, skill, subagen, dan
 pohon dukungan Apothem.
 
 ## Pencopotan
@@ -72,8 +82,17 @@ pohon dukungan Apothem.
 apothem uninstall --harness qwen-code
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus entri yang ditambahkan adapter ke `~/.qwen/settings.json` (kunci Anda
+sendiri, server MCP, dan handler hook tetap ada, dan berkas itu dihapus hanya
+ketika Apothem yang membuatnya dan tidak ada lagi yang tersisa milik Anda).
+Menghapus blok Apothem dari `~/.qwen/QWEN.md` dan dari dokumen profil
+`~/.qwen/apothem/rules/00-apothem-profile.md` dan mempertahankan teks lain di
+dalamnya; setiap berkas dihapus hanya ketika tidak ada lagi yang tersisa di
+dalamnya. Juga menghapus berkas Apothem di `~/.qwen/commands/`,
+`~/.qwen/skills/`, `~/.qwen/agents/`, dan `~/.qwen/.apothem/support/`; berkas
+lain di folder-folder tersebut tetap ada. Setiap berkas dicadangkan di bawah
+`~/.apothem/backups/` sebelum diubah atau dihapus. YAML profil bersama dan mesin
+Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -87,10 +106,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness qwen-code` |
 | Verifikasi gagal | Jalankan `apothem update --harness qwen-code`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness qwen-code` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness qwen-code` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adapter dari CLI

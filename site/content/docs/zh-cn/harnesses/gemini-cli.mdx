@@ -2,14 +2,14 @@
 title: "Gemini CLI"
 description: "适用于 Gemini CLI（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "eed143307202f636"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Google
 **安装名称：** `gemini-cli`
 **状态：** GA
-**平台原生配置：** 项目本地的 `GEMINI.md` 和 `.gemini/`
+**原生配置：** 项目本地的 `GEMINI.md` 和 `.gemini/`
 
 ## 安装
 
@@ -17,9 +17,7 @@ sourceHash: "eed143307202f636"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-该适配器是项目级的。它安装项目 `GEMINI.md`，将 Apothem 命令转换为
-Gemini TOML 斜杠命令，规范化本地辅助工具定义，并将非原生支持套组放置在
-`.gemini/.apothem/support/` 下。
+该适配器是项目级的。它安装项目的 `GEMINI.md`，将 Apothem 命令转换为 Gemini TOML 斜杠命令，规范化本地辅助程序定义，并将非原生的支持集合放置在 `.gemini/.apothem/support/` 下。其他编码工具也会读取项目的 `GEMINI.md`，因此其中的 Apothem 区块被写成项目范围的指引，不把任何单一工具指定为其读者。
 
 **写入的文件：**
 
@@ -31,16 +29,18 @@ GEMINI.md
 .gemini/.apothem/support/
 ```
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享套组，并将每一个套组通过 Gemini 兼容的界面进行路由。
-Markdown 规则、模板和钩子素材保留在 `.gemini/.apothem/support/` 下，因为它们是支持素材，
-而非 Gemini 原生的规则目录。
+适配器读取 Apothem 的共享集合，并将每个集合经由一个与 Gemini 兼容的表面进行路由。Markdown 规则、模板和钩子材料保留在 `.gemini/.apothem/support/` 下，因为它们是支持材料，而不是 Gemini 原生的规则目录。
+`GEMINI.md` 中的 Apothem 区块以一个 Apothem 支持文件小节结尾，该小节以相对于项目根目录的形式，写明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的 `.gemini/.apothem/support/` 下的目录。这些路径是相对路径，因此已提交的 `GEMINI.md` 不携带任何特定于机器的路径。
+
+`.gemini/commands/` 中每个转换后的命令都包含一个 `description` 和一个 `prompt`。提示词只包含该命令的指令；源文件顶部的 Apothem 元数据（版本、工具列表及类似字段）被省略，因此模型绝不会将其当作指令读取。Gemini 只有在你输入自定义命令时才会运行它。
+
+`.gemini/agents/` 中的辅助程序定义保留其工具限制和轮次限制：源文件中的 `tools` 授权减去 `disallowedTools` 后，成为一个由 Gemini 工具名称组成的 Gemini `tools` 允许列表，`maxTurns` 则变为 `max_turns`。因此，只读的辅助程序不会获得 `write_file` 或 `replace` 工具。不设置任何模型，因此每个辅助程序都继承会话模型。
 
 ## 兼容性说明
 
-对于使用全局 Gemini 配置档案的工具来说，`~/.gemini/` 仍然属于用户级领域。
-Gemini CLI 适配器只写入通过 `--project` 传入的项目。
+对于使用全局 Gemini 配置档案的工具，`~/.gemini/` 仍属于用户级范围。Gemini CLI 适配器只写入通过 `--project` 传入的项目。
 
 ## 验证
 
@@ -50,9 +50,9 @@ apothem verify --harness gemini-cli --project /path/to/project
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必填字段都已存在。
-3. 适配器特定的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
+3. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -60,8 +60,7 @@ verify 命令确认：
 apothem update --harness gemini-cli --project /path/to/project
 ```
 
-刷新 `GEMINI.md`、已转换的命令、本地辅助工具定义、已安装的技能，以及
-`.gemini/.apothem/support/` 支持树。
+刷新 `GEMINI.md`、已转换的命令、本地辅助程序定义、已安装的技能，以及 `.gemini/.apothem/support/` 支持树。
 
 ## 卸载
 
@@ -69,10 +68,9 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `<project>/GEMINI.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。同时移除 `<project>/.gemini/commands/`、`<project>/.gemini/skills/`、`<project>/.gemini/agents/` 和 `<project>/.gemini/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。在更改之前，会将每个文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -91,3 +89,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

@@ -2,48 +2,67 @@
 title: "status"
 description: "Referência da CLI para o comando apothem status."
 machineTranslated: true
-sourceHash: "a4669e50e0d90f9f"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Relata o estado de instalação, verificação e desvio de cada harness registrado.
+Relata o estado de instalação, de verificação e de desvio de cada harness
+registrado.
 
 ## Sinopse
 
 ```
-apothem status [--project PATH]
+apothem status [--profile PATH] [--project PATH]
                [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-`status` é um comando de inspeção somente leitura. Ele itera cada adaptador de harness registrado e relata três fatos por assistente: se está instalado, se seus alvos gerenciados são verificados e se a configuração instalada se desviou do perfil compartilhado. Não escreve nada em disco.
+`status` é um comando de inspeção somente leitura. Ele percorre cada adaptador
+de harness registrado e relata três fatos por harness: se ele está instalado, se
+os seus alvos gerenciados passam na verificação e se a configuração instalada se
+desviou do perfil compartilhado. Ele não grava nada em disco.
 
 Para cada harness, `status` relata:
 
 | Coluna | Significado |
 |---|---|
-| `installed` | A configuração gerenciada do adaptador existe em seu caminho de destino. |
-| `verified` | Os alvos gerenciados do adaptador estão presentes e válidos. |
-| `drift` | O veredito de fidelidade do perfil (veja abaixo). |
+| `installed` | A configuração gerenciada do adaptador existe no seu caminho de destino. |
+| `verified` | Os alvos gerenciados do adaptador estão presentes e são válidos. |
+| `drift` | O veredito de fidelidade ao perfil (veja abaixo). |
 
 O valor de `drift` é um dos seguintes:
 
 | Valor | Significado |
 |---|---|
-| `in-sync` | A configuração instalada carrega textualmente o perfil compartilhado recém-projetado. |
-| `drift` | O harness está instalado, mas seu conteúdo de perfil projetado não corresponde mais ao perfil compartilhado atual. Execute `apothem install` novamente para reprojetar. |
+| `in-sync` | A configuração instalada carrega, textualmente, o perfil compartilhado recém-projetado. |
+| `drift` | O harness está instalado, mas o conteúdo de perfil projetado nele não corresponde mais ao perfil compartilhado atual. Execute `apothem install` novamente para refazer a projeção. |
 | `absent` | O harness não está instalado, portanto não há nada a comparar. |
-| `needs-project` | Um harness com escopo de projeto foi relatado sem `--project`, então seu destino não pode ser resolvido. Passe `--project PATH` para inspecioná-lo. |
+| `needs-project` | Um harness com escopo de projeto foi relatado sem `--project`, então o seu alvo não pode ser resolvido. Passe `--project PATH` para inspecioná-lo. |
+| `unknown` | O perfil padrão não pôde ser carregado, então um harness instalado não tem nenhuma linha de base com a qual ser comparado. Corrija o perfil para restaurar o veredito de desvio. |
 
-O desvio é relatado, nunca tratado como erro: `status` sai com 0 mesmo quando um ou mais harness relatam `drift`. O desvio é um fato sobre a sua configuração, não uma falha do comando.
+O desvio é relatado, nunca tratado como erro: `status` sai com 0 mesmo quando um
+ou mais harnesses relatam `drift`. O desvio é um fato sobre a sua configuração,
+não uma falha do comando.
 
-Se o perfil compartilhado não puder ser carregado, o desvio é rebaixado para `absent` nos harness instalados (os fatos installed/verified ainda são relatados) em vez de abortar a varredura.
+Se o perfil compartilhado padrão não puder ser carregado, o desvio é rebaixado
+para `unknown` nos harnesses instalados (os fatos de instalação e de verificação
+continuam sendo relatados), em vez de abortar a varredura. Um `--profile`
+explícito que não pode ser carregado é um erro do usuário e, em vez disso,
+aborta com um erro estruturado.
+
+O rebaixamento é sempre relatado: `status` imprime um aviso que nomeia o perfil
+e a correção, e o envelope `--json` carrega uma entrada
+`drift_baseline_unavailable` correspondente em `warnings`. Isso importa mais
+quando nenhum harness está instalado — todas as linhas então mostram `absent` e
+não existe nenhuma célula `unknown`, de modo que o aviso é o único sinal de que a
+linha de base nunca foi carregada.
 
 ## Opções
 
 | Opção | Descrição |
 |---|---|
-| `--project PATH` | Raiz do projeto para os harness com escopo de projeto. Sem ela, os harness com escopo de projeto relatam `needs-project`. |
+| `--profile PATH` | YAML do perfil compartilhado que seleciona a linha de base do desvio. Sem ele, é usado o perfil padrão (`~/.config/apothem/profile.yaml`). |
+| `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. Sem ela, os harnesses com escopo de projeto relatam `needs-project`. |
 | `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
 | `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
@@ -53,10 +72,15 @@ Se o perfil compartilhado não puder ser carregado, o desvio é rebaixado para `
 
 ## Saída JSON
 
-O envelope `--json` carrega uma linha de resultado por harness registrado. Cada linha carrega as chaves documentadas `harness`, `installed`, `verified` e `drift`.
+O envelope `--json` carrega uma linha de resultado por harness registrado. Cada
+linha carrega as chaves documentadas `harness`, `installed`, `verified` e
+`drift`. `warnings` fica vazio em uma varredura limpa; quando o perfil padrão
+não pôde ser carregado, ele carrega uma entrada `drift_baseline_unavailable` com
+`path`, `code`, `reason` e `fix`.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "status",
   "action": "status",
@@ -81,7 +105,10 @@ O envelope `--json` carrega uma linha de resultado por harness registrado. Cada 
 }
 ```
 
-Isolamento de falha por adaptador: se um único adaptador lançar uma exceção ao relatar seu estado, a linha desse harness carrega `outcome: "error"` e uma `message`, os assistentes restantes ainda relatam normalmente, e o processo sai com o código 2.
+Isolamento de falhas por adaptador: se um único adaptador lançar uma exceção ao
+relatar o seu status, a linha desse harness carrega `outcome: "error"` e uma
+`message`, os harnesses restantes continuam relatando normalmente, e o processo
+sai com o código 2.
 
 ## Exemplos
 
@@ -95,11 +122,13 @@ apothem status --json
 
 | Código | Significado |
 |---|---|
-| 0 | Estado relatado (o desvio é relatado, não é erro) |
-| 2 | Pelo menos um adaptador falhou ao relatar seu estado |
+| 0 | Status relatado (o desvio é relatado, não é um erro) |
+| 1 | Erro de validação esperado (`--profile` inválido, ou um caminho de `--project` que não existe) |
+| 2 | Pelo menos um adaptador falhou ao relatar o seu status |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 
-- [apothem verify](/docs/cli-reference/verify) — verifica a instalação de um único harness
-- [apothem diff](/docs/cli-reference/diff) — previsualiza as alterações pendentes de um harness
-- [apothem harnesses](/docs/cli-reference/harnesses) — lista e inspeciona os harness registrados
+- [apothem verify](/docs/cli-reference/verify) — verifica a instalação de um adaptador de harness
+- [apothem diff](/docs/cli-reference/diff) — mostra uma prévia das alterações pendentes de um harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — lista e inspeciona os harnesses registrados

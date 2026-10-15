@@ -2,7 +2,7 @@
 title: "CLI 参考"
 description: "Apothem CLI 参考——全部子命令与标志。"
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ sourceHash: "37bca5003b78dc78"
 从共享配置档案安装某个工具适配器。
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | 选项 | 说明 |
@@ -31,6 +31,8 @@ apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-ru
 | `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
 | `--project PATH` | 项目作用域工具的项目根目录。 |
 | `--dry-run` | 预览安装而不写入文件。 |
+| `--clean`, `--fresh` | 需主动选择的全新状态：在安装之前，备份并移除先前的安装状态（`~/.claude`、`~/.codex`、`~/.agents`、`~/.config/apothem`）。 |
+| `--yes` | 在全新状态的移除阶段跳过逐目标确认（非交互式 `--clean` 运行时必填）。 |
 
 规范的 `--harness` 取值：
 
@@ -42,7 +44,9 @@ codex
 cursor
 gemini-cli
 github-copilot
+glm
 hermes
+kimi-code
 kiro
 open-claw
 opencode
@@ -87,18 +91,45 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 
 ### `apothem verify`
 
-验证某个工具适配器是否已安装且其输出路径存在。
+验证某个工具适配器的受管目标存在且有效。
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | 选项 | 说明 |
 |--------|-------------|
 | `--harness <name>` | 工具适配器名称或 `all`。必填。 |
+| `--profile PATH` | 用于检查保真度的共享配置档案 YAML。未提供时，该检查纯粹是结构性的。 |
 | `--project PATH` | 项目作用域工具的项目根目录。 |
 
-当适配器已安装时退出码为 `0`，未安装时为 `1`。
+未提供 `--profile` 时，该检查是结构性的：每个受管目标都必须存在且有效。提供 `--profile` 时，它还要求保真度，因此一个存在但已偏离该配置档案的安装无法通过验证——用它来确认某个特定的配置档案已被忠实安装。
+
+当工具通过验证（并且在提供 `--profile` 时忠实于该配置档案）时，退出码为 `0`；当某个目标缺失或无效时，或者当提供了 `--profile` 且安装已漂移时，退出码为 `1`。
+
+### `apothem status`
+
+报告每个已注册工具的安装、验证和漂移状态。
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| 选项 | 说明 |
+|--------|-------------|
+| `--profile PATH` | 用作漂移基线的共享配置档案。无法读取的默认配置档案会使漂移降级为 `unknown`，而不是中止整个扫查。 |
+| `--project PATH` | 项目作用域工具的项目根目录。未提供时，这些工具报告 `needs-project`。 |
+
+每一行都将一个 `installed` 标志与一个 `verified` 标志配对，两者组合成漂移状态：
+
+| 状态 | 含义 |
+|-------|---------|
+| `absent` | Apothem 尚未安装到此工具中。 |
+| `in-sync` | 已安装，且与配置档案基线一致。 |
+| `drift` | 已安装，但已不再一致——使用 `apothem update` 进行修复。 |
+| `unknown` | 已安装，但无法读取基线配置档案。 |
+
+`installed` 回答的是“Apothem 是否在此处安装过？”，而不是“此工具是否存在于这台机器上？”。它以 Apothem 自己的工件为依据——指令锚点内的受管区块，以及 Apothem 自有的 `.apothem/` 子树下的内容——绝不以工具为自身写入的、归厂商所有的文件为依据。一个配置目录存在但 Apothem 从未触及过的工具会报告 `absent`；一个已被卸载的工具即使其已清空的目录仍然存在，也会报告 `absent`。
 
 ### `apothem profile`
 
@@ -114,8 +145,8 @@ apothem profile edit [--profile PATH]
 | 子命令 | 说明 |
 |------------|-------------|
 | `profile init` | 创建一个符合 schema 的最小配置档案脚手架。 |
-| `profile show` | 将解析后的配置档案（YAML）打印到 stdout。 |
-| `profile set <key> <value>` | 设置某个配置档案字段。该值会按 YAML 解析（字符串、数字、布尔值、列表与映射均被接受）。 |
+| `profile show` | 将解析后的配置档案以 JSON 打印到 stdout。使用 `--json` 时，文档以 `schema_version` 开头。 |
+| `profile set <key> <value>` | 设置一个配置档案字段。该值以字面字符串存储——裸词不会被强制转换，因此 `no` 仍为 `"no"`，`1.0` 仍为字符串——但 `true`/`false` 以及显式的 `[...]` / `{...}` 列表与映射输入除外。组装后的配置档案在写入之前会经过 schema 校验。 |
 | `profile edit` | 在 `$EDITOR` 中打开配置档案（回退到平台默认编辑器）。 |
 
 `--profile PATH` 选项可让每个子命令指向另一个配置档案文件。默认为 `~/.config/apothem/profile.yaml`。
@@ -142,7 +173,7 @@ apothem harnesses show <name>
 apothem doctor
 ```
 
-打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及一张每工具安装状态表。当每个已注册的适配器都报告为已安装时退出码为 `0`，否则为 `1`。
+打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及按工具划分的安装状态表。当任一检查失败时，退出码为 `1`：包括配置档案无效、已安装的工具无法通过验证、已注册的钩子命令无法启动、适配器无法加载或无法探测，或账本不可读。未安装的工具会被报告，但不算失败；提示性说明不会改变退出码。
 
 ## 生成的命令与标志参考
 

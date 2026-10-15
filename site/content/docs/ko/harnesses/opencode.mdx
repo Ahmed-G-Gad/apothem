@@ -1,12 +1,12 @@
 ---
 title: "OpenCode"
-description: "OpenCode(베타)용 Apothem 도구 어댑터."
+description: "OpenCode(베타)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** OpenCode
+**벤더:** OpenCode
 **설치 이름:** `opencode`
 **상태:** 베타
 **네이티브 구성:** `~/.config/opencode/`
@@ -18,13 +18,14 @@ apothem install --harness opencode
 ```
 
 어댑터는 OpenCode의 JSON 구성을 작성하고, Apothem 스킬을 OpenCode 스킬 표면에
-설치하며, 명령 프롬프트를 OpenCode Markdown 명령 파일로 변환하고, Apothem 도우미
-정의를 OpenCode 하위 도우미로 정규화합니다.
+설치하며, 커맨드 프롬프트를 OpenCode Markdown 커맨드 파일로 변환하고, Apothem
+도우미 정의를 OpenCode 하위 도우미로 정규화합니다.
 
 **작성되는 파일:**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -33,16 +34,35 @@ apothem install --harness opencode
 
 ## 프로필에서 네이티브 구성으로의 매핑
 
-어댑터는 Apothem의 설치된 규칙을 가리키는 `instructions` 파일 목록과 함께
-`opencode.json`을 렌더링한 다음, 공유된 각 Apothem 세트를 OpenCode 네이티브 표면
-또는 Apothem 소유의 지원 하위 트리로 전파합니다. 이미 일치하는 Apothem 관리 하위
-항목은 교체 전에 백업됩니다.
+어댑터는 여러분의 프로필 문서와 Apothem의 상시 적용 규칙을 명시하는
+`instructions` 파일 목록과 함께 `opencode.json`을 렌더링한 다음, 공유된 각
+Apothem 코호트를 OpenCode 네이티브 표면 또는 Apothem 소유 지원 하위 트리로
+전파합니다. 일치하는 기존 Apothem 관리 하위 항목은 교체 전에 백업됩니다.
 
 ## 호환성 참고 사항
 
-규칙은 네이티브 `instructions` 목록을 통해 참조됩니다. 템플릿과 후크 프롬프트는
-`~/.config/opencode/.apothem/support/` 아래의 참조 자료입니다. 명령, 스킬, 도우미 정의는
-네이티브 검색 위치를 사용합니다.
+OpenCode는 `instructions` 목록이 명시하는 모든 파일을 모든 세션에 결합합니다
+([OpenCode 규칙](https://opencode.ai/docs/rules/)). 따라서 이 목록은 여러분의
+프로필 문서를 먼저 명시하고, 그다음 `alwaysApply`가 `true`인 규칙만 규칙마다
+하나의 명시적 `~/.config/opencode/.apothem/support/rules/<name>.md` 경로로
+명시합니다. OpenCode는 앞에 오는 `~/`를 여러분의 홈 디렉터리 기준으로
+확장합니다. 경로로 필터링되는 규칙, 템플릿, 훅 프롬프트는
+`~/.config/opencode/.apothem/support/` 아래에 참조 자료로 설치된 채 남으며, 그중
+하나를 인용하는 규칙, 스킬, 또는 커맨드가 필요할 때 이를 읽습니다. 커맨드, 스킬,
+도우미 정의는 네이티브 디스커버리 위치를 사용합니다.
+
+프로필 문서 `~/.config/opencode/apothem/rules/00-apothem-profile.md`는 공유
+프로필에서 가져온 여러분의 신원과 선호를 담고, Apothem 지원 파일 섹션으로
+끝납니다. 이 섹션은 저장소 스타일의 각 인용(`rules/<name>.md`, `templates/...`,
+`hooks/...`)이 해석되는 기준인 `~/.config/opencode/.apothem/support/` 아래의 절대
+디렉터리를 명시합니다. 이 문서는 첫 번째 `instructions` 항목이므로 OpenCode는
+모든 세션에서 이 문서를 로드합니다.
+
+이전 릴리스가 작성한 `opencode.json`은 모든 규칙을 로드하는 단일 glob
+`~/.config/opencode/.apothem/support/rules/*.md`를 나열합니다.
+`apothem install`과 `apothem update`는 이를 상시 적용 목록으로 교체하며,
+`apothem uninstall`은 두 형태를 모두 제거합니다. 여러분이 직접 작성한
+`instructions` 항목은 어떤 경우에도 유지됩니다.
 
 ## 검증
 
@@ -50,11 +70,13 @@ apothem install --harness opencode
 apothem verify --harness opencode
 ```
 
-verify 명령은 다음을 확인합니다:
+verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
-3. 어댑터 고유의 검증 루틴이 성공을 보고합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
 
@@ -62,7 +84,7 @@ verify 명령은 다음을 확인합니다:
 apothem update --harness opencode
 ```
 
-`opencode.json`, 네이티브 명령, 스킬, 도우미 정의, 그리고 Apothem 지원 트리를
+`opencode.json`, 네이티브 커맨드, 스킬, 도우미 정의, 그리고 Apothem 지원 트리를
 새로 고칩니다.
 
 ## 제거
@@ -71,8 +93,17 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+어댑터가 `~/.config/opencode/opencode.json`에 추가한 항목을 제거합니다(여러분의
+키, MCP 서버, `instructions` 항목은 그대로 남으며, 이 파일은 Apothem이 직접
+만들었고 여러분의 항목이 하나도 남아 있지 않은 경우에만 삭제됩니다). 프로필 문서
+`~/.config/opencode/apothem/rules/00-apothem-profile.md`에서 Apothem 블록을
+제거하고 그 안의 다른 텍스트는 유지하며, 이 파일은 그 안에 다른 내용이 남아 있지
+않은 경우에만 삭제됩니다. 또한 `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/`,
+`~/.config/opencode/.apothem/support/`에 있는 Apothem 파일을 제거하며, 그
+폴더들의 다른 파일은 그대로 남습니다. 각 파일은 변경하거나 제거하기 전에
+`~/.apothem/backups/` 아래에 백업됩니다. 공유 프로필 YAML과 Apothem 엔진은 영향을
+받지 않습니다.
 
 ## 적합성 게이트
 
@@ -82,14 +113,20 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 수정 |
+| 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness opencode`를 다시 실행 |
-| 검증 실패 | `apothem update --harness opencode`를 실행한 후 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness opencode`를 다시 실행 |
+| 검증 실패 | `apothem update --harness opencode`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness opencode`를 다시 실행 |
 
 ## 구성 노브
 
 | 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
+
+## 함께 보기
+
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

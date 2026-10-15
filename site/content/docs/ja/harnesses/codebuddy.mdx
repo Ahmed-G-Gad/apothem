@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "b2ad522fd661cc14"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,35 +17,36 @@ sourceHash: "b2ad522fd661cc14"
 apothem install --harness codebuddy --project /path/to/project
 ```
 
-アダプターは、共有された Apothem のルールおよびガバナンス面から、プロジェクト
-スコープのルールファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトスコープのルールファイルを
+1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.codebuddy/rules/apothem-rules.md`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の実行のたびにプロジェクトルールファイルをレンダリングします。
-CodeBuddy は、`.codebuddy/rules/` 配下のすべての `*.md` ファイルを、任意の YAML
-フロントマター（`alwaysApply`、`paths`、`enabled`）付きの Markdown として読み取り
-ます。詳細は
-[CodeBuddy Rules ドキュメント](https://www.codebuddy.ai/docs/ide/Rules) を参照して
-ください。Apothem のファイルは `alwaysApply: true` を携えているため、ガバナンス面は
-すべてのやり取りで適用されます。共有プロファイルが真実の源です。生成されたファイルへ
-のプロジェクトローカルな編集は、次回の同期が Apothem 管理下のコンテンツを置き換える
-前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
+実行するたびにプロジェクトのルールファイルをレンダリングします。
+[CodeBuddy のルールに関するドキュメント](https://www.codebuddy.ai/docs/ide/Rules)のとおり、
+CodeBuddy は `.codebuddy/rules/` 配下のすべての `*.md` ファイルを、任意の YAML フロントマター
+（`alwaysApply`、`paths`、`enabled`）を持つ Markdown として読み取ります。
+Apothem のファイルは `alwaysApply: true` を持つため、ガバナンス面はすべてのやり取りで適用されます。
+フロントマターはファイルの最初のコンテンツであり、Apothem が管理するブロックがその後に続きます。
+ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。信頼できる情報源は共有
+プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の
+管理するコンテンツを置き換える前にバックアップされます。
 
 ## 互換性に関する注意
 
-CodeBuddy のルール面は `.codebuddy/rules/` 配下でプロジェクトスコープになっています。
-アダプターは専用の `apothem-rules.md` ファイルを書き込み、これは同じディレクトリで
-オペレーターが作成した任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクト
-メモリファイルと `.codebuddy/settings.json`（権限、MCP）はオペレーターの所有物であり、
-Apothem はそれらを書き込みません。スキル、コマンド、エージェント、フックは、ルール
-ファイル内で規律として参照されます。CodeBuddy はそれらのためのアダプター所有のファイル
-面を公開しません。アダプターが依拠するベンダー面の規約は、
-`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` にピン留めされており、
-最新の CodeBuddy ドキュメントに対してスナップショットされています。
+CodeBuddy のルール面は、`.codebuddy/rules/` 配下のプロジェクトスコープです。アダプターは専用の
+`apothem-rules.md` ファイルを書き込み、このファイルは同じディレクトリでオペレーターが作成する
+任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクトメモリファイル、
+`.codebuddy/settings.json`、プロジェクトの `.mcp.json`（MCP サーバー）はオペレーターの所有であり、
+Apothem はそれらを書き込みません。CodeBuddy はスキル、コマンド、サブエージェント、フックも
+文書化していますが、アダプターはそのいずれも書き込まず、代わりにルールファイル内で規律を参照します。
+プロジェクトに `CODEBUDDY.md` がない場合、CodeBuddy Code は `AGENTS.md` をプロジェクトメモリとして
+読み取るため、別のアダプターが書き込む `AGENTS.md` も CodeBuddy に届きます。アダプターが依拠する
+ベンダー面の規約は `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` にピン留めされて
+おり、公開中の CodeBuddy ドキュメントに対してスナップショットが取られています。
 
 ## 検証
 
@@ -53,9 +54,9 @@ Apothem はそれらを書き込みません。スキル、コマンド、エー
 apothem verify --harness codebuddy --project /path/to/project
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 管理対象のルールファイルが存在し、空でないこと。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -65,9 +66,9 @@ verify コマンドは、次のことを確認します。
 apothem update --harness codebuddy --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクトルールファイルを再導出します。`install`
-と `update` は冪等です。再実行すると、管理対象ファイルが最新のレンダリング済みコンテ
-ンツで上書きされます。
+現在の共有プロファイルの状態からプロジェクトのルールファイルを再導出します。
+`install` と `update` は冪等です。再実行すると、管理対象のファイルが最新のレンダリング済み
+コンテンツで上書きされます。
 
 ## アンインストール
 
@@ -75,11 +76,9 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除し、管理対象のルールファイル
-をタイムスタンプ付きのバックアップにリネームします。共有プロファイルの YAML と Apothem
-エンジンは影響を受けません。
+`apothem-rules.md` から Apothem のブロックを削除し、そこにあるほかの文章は残します。ファイルは、ほかに何も残っていない場合にのみ削除されます。変更の前に、ファイルのタイムスタンプ付きのコピーが `~/.apothem/backups/` の下に保存されます。プロジェクトにバックアップファイルは残りません。共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -90,11 +89,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness codebuddy --project /path/to/project` を再実行する |
-| 検証に失敗した | `apothem update --harness codebuddy --project /path/to/project` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness codebuddy --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness codebuddy --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness codebuddy --project /path/to/project` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

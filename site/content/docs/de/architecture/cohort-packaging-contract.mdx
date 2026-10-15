@@ -1,114 +1,122 @@
 ---
-title: "Cohort-Packaging-Vertrag"
-description: "Der stabile, downstream-konsumierbare Vertrag für Cohort-Packaging und Plugin-Manifeste — Cohorts aufzählen und ihre harness-spezifischen nativen Ziele auflösen, ohne die Zuordnung neu abzuleiten."
+title: "Vertrag zur Kohorten-Paketierung"
+description: "Der stabile, nachgelagert nutzbare Vertrag für die Kohorten-Paketierung und Plugin-Manifeste — Kohorten aufzählen und ihre harness-spezifischen nativen Ziele auflösen, ohne die Zuordnung neu abzuleiten."
 machineTranslated: true
-sourceHash: "da87b3596b66d733"
+sourceHash: "ef3a145a60ec6690"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-# Cohort-Packaging-Vertrag
+# Vertrag zur Kohorten-Paketierung
 
-Dieses Dokument spezifiziert den stabilen, downstream-konsumierbaren Vertrag für
-Cohort-Packaging und Plugin-Manifeste. Ein Konsument liest diesen Vertrag, um
-Cohorts aufzuzählen und ihre harness-spezifischen nativen Ziele aufzulösen, **ohne
-die Zuordnung neu abzuleiten**.
+Dieses Dokument spezifiziert den stabilen, nachgelagert nutzbaren Vertrag für die
+Kohorten-Paketierung und Plugin-Manifeste. Ein Konsument liest diesen Vertrag, um
+Kohorten aufzuzählen und ihre harness-spezifischen nativen Ziele aufzulösen,
+**ohne die Zuordnung neu abzuleiten**.
 
 ## Artefakte
 
 | Artefakt | Rolle |
 | -------- | ---- |
-| `src/apothem/schemas/cohort.schema.json` | JSON-Schema für ein Cohort-Manifest-Dokument. |
-| `src/apothem/schemas/cohort-manifest.yaml` | Die Cohort-Manifest-Instanz — alle sechs Cohorts (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) mit ihren Mengen an Mitgliedern befüllt; `full` ist die Vereinigung der anderen fünf. |
-| `src/apothem/schemas/plugin.schema.json` | JSON-Schema für ein Plugin-Manifest pro Bundle (`plugin.json`). |
-| `src/apothem/lib/propagation-manifest.yaml` | **Quelle der Wahrheit** für die harness-spezifischen nativen Ziele. |
+| `src/apothem/schemas/cohort.schema.json` | JSON-Schema für ein Kohorten-Manifest-Dokument. |
+| `src/apothem/schemas/cohort-manifest.yaml` | Die Instanz des Kohorten-Manifests — alle sechs Kohorten (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`), befüllt mit ihren Mitgliedermengen; `full` ist die Vereinigung der anderen fünf. |
+| `src/apothem/schemas/plugin.schema.json` | JSON-Schema für ein Plugin-Manifest je Bundle (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Maßgebliche Quelle** für die harness-spezifischen nativen Ziele. |
 
-## Form des Cohort-Manifests
+## Form des Kohorten-Manifests
 
-Das Cohort-Manifest ist ein Objekt auf oberster Ebene mit drei Schlüsseln:
+Das Kohorten-Manifest ist ein Objekt auf oberster Ebene mit drei Schlüsseln:
 
 - `version` — SemVer-Zeichenkette des Manifests.
-- `cohorts[]` — ein Eintrag pro Cohort. Jeder Eintrag hat `id` (aus der
-  geschlossenen Menge `core | developer | security | research | ai-engineering |
-  full`), `name`, `description` und `members` (ein Objekt, das die
-  Mitglieder-Bezeichner nach Katalogtyp gruppiert: `skills` / `agents` /
-  `commands` / `rules` / `hooks`).
+- `cohorts[]` — ein Eintrag je Kohorte. Jeder Eintrag hat `id` (aus der
+  geschlossenen Menge `core | developer | security | research | ai-engineering | full`),
+  `name`, `description` und `members` (ein Objekt, das die
+  Mitgliedsbezeichner nach Katalogtyp gruppiert:
+  `skills` / `agents` / `commands` / `rules` / `hooks`).
 - `per_harness_targets` — der Auflösungsvertrag (siehe unten).
 
-Jeder Mitglieder-Bezeichner ist ein stabiler kebab-case-Name, der einem realen
+Jeder Mitgliedsbezeichner ist ein stabiler Name in Kebab-Case, der einem realen
 Artefakt unter `src/apothem/` entspricht (`skills/<name>/`, `agents/<name>.md`,
-`commands/<name>.md`, `rules/<name>.md` oder einem `hooks/`-Eintrag).
+`commands/<name>.md`, `rules/<name>.md` oder einem Hooks-Eintrag — entweder ein
+ausführbares `hooks/<name>.py` oder ein beratender Nachrichtenkontext unter
+`hooks/messages/<name>.md`, der über den Dispatcher ausgeliefert wird).
 
-## Cohorts aufzählen
+## Kohorten aufzählen
 
 Ein Konsument lädt `cohort-manifest.yaml`, validiert es gegen
-`cohort.schema.json` und iteriert dann über `cohorts[]`. Für jede Cohort liest er
-`members.<type>`, um die Mitglieder-Bezeichner jedes Katalogtyps zu erhalten.
+`cohort.schema.json` und iteriert dann über `cohorts[]`. Für jede Kohorte liest
+er `members.<type>`, um die Mitgliedsbezeichner jedes Katalogtyps zu erhalten.
 
-## Auflösung der harness-spezifischen nativen Ziele (ohne Neuableitung)
+## Harness-spezifische native Ziele auflösen (ohne Neuableitung)
 
-Das Cohort-Manifest wiederholt die Harness-Zuordnung **nicht**. Stattdessen zeigt
-`per_harness_targets.source` auf `lib/propagation-manifest.yaml`, die einzige
-Quelle der Wahrheit. Die Auflösungsregel:
+Das Kohorten-Manifest wiederholt die Harness-Zuordnung **nicht**. Stattdessen
+zeigt `per_harness_targets.source` auf `lib/propagation-manifest.yaml`, die
+einzige maßgebliche Quelle. Die Auflösungsregel:
 
-> Für ein Cohort-Mitglied des Katalogtyps `T` (eines von `skills`, `agents`,
+> Für ein Kohortenmitglied des Katalogtyps `T` (einer von `skills`, `agents`,
 > `commands`, `rules`, `hooks`) und einen Ziel-Harness `H` (einer der in
 > `per_harness_targets.harnesses` aufgeführten) ist das native Plugin-Ziel das
 > Feld `target` des Eintrags in `lib/propagation-manifest.yaml` unter
 > `harnesses.H.install`, dessen `source` mit `T/` übereinstimmt.
 
-Beispielsweise wird eine Skill der `core`-Cohort, die für `claude_code`
-installiert wird, über den `harnesses.claude_code.install`-Eintrag mit
-`source: "skills/"` zu `target: "${HARNESS_ROOT}/skills/"` aufgelöst. Dieselbe
-Skill wird für `opencode` zu `${HARNESS_ROOT}/skills/` aufgelöst; für `gemini_cli`
-zu `${PROJECT_ROOT}/.gemini/skills/`. Konsumenten erfinden niemals Harness-Ziele
-— sie schlagen sie nach.
+Zum Beispiel wird ein Skill der Kohorte `core`, der für `claude_code`
+installiert wird, über den Eintrag `harnesses.claude_code.install` mit
+`source: "skills/"` zu `target: "${HARNESS_ROOT}/skills/"` aufgelöst. Derselbe
+Skill wird für `opencode` zu `${HARNESS_ROOT}/skills/` aufgelöst, für
+`gemini_cli` zu `${PROJECT_ROOT}/.gemini/skills/`. Konsumenten erfinden niemals
+Harness-Ziele — sie schlagen sie nach.
 
-Die Platzhalter `${HARNESS_ROOT}` / `${PROJECT_ROOT}` werden zur Installationszeit
-von jedem Harness-Adapter aufgelöst; Cohort-Konsumenten übernehmen das aufgelöste
-`target` wörtlich.
+Die Platzhalter `${HARNESS_ROOT}` / `${PROJECT_ROOT}` werden zur
+Installationszeit von jedem Harness-Adapter aufgelöst; Kohorten-Konsumenten
+übernehmen das aufgelöste `target` wörtlich.
 
 ## Rolle des Plugin-Manifests
 
 `plugin.schema.json` beschreibt ein `plugin.json` — ein selbstbeschreibendes
-Bundle von Katalogmitgliedern (`skills` / `commands` / `agents` / `hooks` /
-`rules`) mit einem erforderlichen `name`, einer SemVer-`version` und einer
-`description`. Ein Plugin-Manifest ist die Einheit, die ein Harness-Adapter in
-seine native Plugin-Oberfläche materialisiert; Cohorts wählen aus, welche
-Mitglieder ein Plugin trägt, und das Propagation-Manifest löst auf, wo diese
-Mitglieder pro Harness landen.
+Bundle von Katalogmitgliedern (`skills` / `commands` / `agents` / `hooks` / `rules`)
+mit den erforderlichen Feldern `name`, `version` (SemVer) und
+`description`. Optionale Metadaten umfassen `displayName` (der Name, der
+anstelle von `name` angezeigt wird) und die Felder für den Eintrag im
+Plugin-Verzeichnis: `documentationUrl`, `supportUrl`, `privacyPolicyUrl` und
+`termsOfServiceUrl`, jeweils eine `https://`-URL, sowie einen `icon`-Pfad
+innerhalb des Plugins. Das generierte Claude Code-Paket setzt `displayName`,
+`documentationUrl` und `supportUrl`. Ein Plugin-Manifest ist die Einheit, die
+ein Harness-Adapter in seine native Plugin-Oberfläche materialisiert; Kohorten
+wählen aus, welche Mitglieder ein Plugin trägt, und das Propagation-Manifest
+löst auf, wo diese Mitglieder je Harness landen.
 
-## Packaging-Entscheidung — ein Dach-Bundle, logische Cohorts
+## Paketierungsentscheidung — ein Dach-Bundle, logische Kohorten
 
-Cohorts sind eine **logische Auswahlschicht** (dieses Manifest), kein Satz
+Kohorten sind eine **logische Auswahlschicht** (dieses Manifest), keine Menge
 separater, unabhängig installierbarer Bundles. Apothem liefert **ein
-Dach-Bundle** aus, das den vollständigen Katalog trägt; das Cohort-Manifest lässt
-einen Konsumenten eine kohärente Teilmenge auswählen, und das Propagation-Manifest
-löst auf, wo jedes ausgewählte Mitglied pro Harness landet.
+Dach-Bundle** aus, das den vollständigen Katalog trägt; das Kohorten-Manifest
+lässt einen Konsumenten eine kohärente Teilmenge auswählen, und das
+Propagation-Manifest löst auf, wo jedes ausgewählte Mitglied je Harness landet.
 
-Das Aufteilen des Katalogs in separate Bundles pro Cohort (z. B. ein Bundle pro
-Familie `developer` / `security` / `research`) ist **ohne Duplizierung auf
-Repository-Ebene erreichbar** über das von der primären Verteilungsoberfläche
-dokumentierte **Meta-Plugin-Symlink-Muster**: ein Marketplace-Katalog listet
-mehrere Cohort-Plugins, und jedes Cohort-Plugin-Verzeichnis enthält **Symlinks**
-in den geteilten Katalog mit einer einzigen Quelle statt Kopien. Wenn eine Cohort
-installiert wird, dereferenziert der Harness jeden Symlink innerhalb des
-Marketplace — kopiert den Inhalt des Ziels in den *Cache* dieser Cohort — sodass
-die installierte Cohort eigenständig ist, während das **Repository eine einzige
-Quelle der Wahrheit behält, die per Symlinks verdrahtet ist** (Verdrahtung statt
-Redundanz, genau wie es die Deduplizierungs-Disziplin bevorzugt). Die frühere
-Auffassung, dass Cohort-Bundles den Katalog „mechanisch duplizieren", verwechselte
-die Duplizierung des *Caches zur Installationszeit* (die normale Kopie des
-Harness pro Plugin) mit der Duplizierung des *Repositorys*; das Symlink-Muster
-vermeidet Letzteres.
+Den Katalog in separate Bundles je Kohorte aufzuteilen (z. B. ein Bundle je
+Familie `developer` / `security` / `research`), ist **ohne Duplizierung auf
+Repository-Ebene erreichbar**, und zwar über das dokumentierte
+**Meta-Plugin-Symlink-Muster** der primären Distributionsoberfläche: Ein
+Marketplace-Katalog listet mehrere Kohorten-Plugins, und jedes
+Kohorten-Plugin-Verzeichnis enthält **Symlinks** in den gemeinsamen Katalog aus
+einer einzigen Quelle statt Kopien. Wenn eine Kohorte installiert wird,
+dereferenziert der Harness jeden Symlink innerhalb des Marketplace — er kopiert
+den Inhalt des Ziels in den *Cache* dieser Kohorte —, sodass die installierte
+Kohorte eigenständig ist, während das **Repository eine einzige maßgebliche
+Quelle behält, die über Symlinks verdrahtet ist** (Verdrahtung statt Redundanz,
+genau wie es die Deduplizierungsdisziplin bevorzugt). Die frühere Lesart, dass
+Kohorten-Bundles den Katalog „mechanisch duplizieren“, verwechselte die
+Duplizierung im *Cache zur Installationszeit* (die normale Kopie je Plugin durch
+den Harness) mit der Duplizierung im *Repository*; das Symlink-Muster vermeidet
+Letztere.
 
 Apothem liefert derzeit **ein Dach-Bundle** aus, weil das die einfachste
-Verteilungsoberfläche ist, nicht weil Cohorts mechanisch unmöglich wären. Die
-Form pro Cohort zu übernehmen ist ein echter **UX- und Wartungs-Trade-off**, kein
-Deduplizierungsverstoß: der Vorteil ist eine feinere „nur diese Familie
-installieren"-Erfahrung; die Kosten sind die Pflege von N
-Cohort-Symlink-Verzeichnissen samt ihrer Marketplace-Einträge, einer größeren
-Konformitäts- / Test- / Golden-Oberfläche und Cache-Kopien zur Installationszeit
-pro Cohort. Die obige logische Cohort-Schicht liefert das *Auswahl*-Ergebnis „nur
-installieren, was du brauchst" bereits aus dem einzelnen Bundle; das *Packaging*
-pro Cohort ist der nächste Schritt, sobald die feinere Installations-UX gewünscht
-ist.
+Distributionsoberfläche ist, nicht weil Kohorten mechanisch unmöglich wären. Die
+Form je Kohorte zu übernehmen, ist eine echte **Abwägung zwischen UX und
+Wartung**, kein Verstoß gegen die Deduplizierung: Der Vorteil ist ein feineres
+Erlebnis im Sinne von „nur diese Familie installieren“; die Kosten sind die
+Pflege von N Kohorten-Symlink-Verzeichnissen samt ihren Marketplace-Einträgen,
+eine größere Konformitäts- / Test- / Golden-Oberfläche und Cache-Kopien je
+Kohorte zur Installationszeit. Die obige logische Kohortenschicht liefert das
+*Auswahl*-Ergebnis „nur installieren, was Sie brauchen“ bereits aus dem
+einzelnen Bundle; die *Paketierung* je Kohorte ist der nächste Schritt, sobald
+die feinere Installations-UX gewünscht ist.

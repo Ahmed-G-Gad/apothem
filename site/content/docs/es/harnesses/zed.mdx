@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptador de entorno de Apothem para Zed (GA)."
 machineTranslated: true
-sourceHash: "490d423446686f01"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,28 +17,52 @@ sourceHash: "490d423446686f01"
 apothem install --harness zed --project /path/to/project
 ```
 
-El adaptador escribe un archivo de instrucciones de Zed con alcance de proyecto a
-partir de la superficie compartida de reglas y gobernanza de Apothem. Zed lee un
-único archivo plano `.rules` en la raíz del proyecto (junto a la familia
-`AGENTS.md` / `CLAUDE.md`) como instrucciones; no hay un directorio de reglas por
-herramienta, por lo que toda la superficie de Apothem cae en este único archivo.
+El adaptador escribe un archivo de instrucciones de Zed con alcance de proyecto
+a partir de la superficie compartida de reglas y gobernanza de Apothem. Zed lee
+un único archivo de instrucciones del proyecto, la primera coincidencia de esta
+lista:
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+No hay un directorio de reglas por herramienta, así que toda la superficie de
+Apothem llega al archivo plano `.rules` que encabeza esa lista.
 
 **Archivos escritos:** `<project>/.rules`
 
-## Mapeo de perfil a configuración nativa
+## Asignación del perfil a la configuración nativa
 
 El adaptador lee el perfil compartido de Apothem y renderiza el archivo `.rules`
-del proyecto en cada ejecución de `apothem install` o `apothem update`. El perfil
-compartido es la fuente de verdad; cualquier `.rules` preexistente (o las ediciones
-locales del proyecto sobre el archivo generado) se respalda antes de que la
-siguiente sincronización reemplace el contenido gestionado por Apothem.
+del proyecto en cada ejecución de `apothem install` o `apothem update`. El
+perfil compartido es la fuente de verdad; cualquier `.rules` preexistente (o las
+ediciones locales del proyecto sobre el archivo generado) se respalda antes de
+que la siguiente sincronización reemplace el contenido gestionado por Apothem.
 
 ## Notas de compatibilidad
 
-La superficie de instrucciones actual de Zed es el archivo plano `.rules` en la
-raíz del proyecto. El archivo de instrucciones global `~/.config/zed/AGENTS.md` y el
-bloque de servidores de contexto MCP (`context_servers` en `.zed/settings.json`)
-son propiedad del operador; Apothem no los escribe.
+Zed designa `AGENTS.md` como su archivo de instrucciones principal y mantiene el
+`.rules` del proyecto como un archivo de compatibilidad admitido
+([instrucciones de Zed](https://zed.dev/docs/ai/instructions)). Como Zed lee
+solo la primera coincidencia, un `.rules` nuevo oculta un `AGENTS.md`, un
+`CLAUDE.md` o cualquier otro archivo situado más abajo en la lista del que el
+proyecto ya dependa. La instalación nunca edita esos archivos. Cuando `.rules`
+contiene solo el bloque de Apothem y un archivo de menor prioridad contiene tu
+texto, install y update imprimen una advertencia que nombra el archivo oculto;
+copia las instrucciones que necesites en `.rules`, fuera del bloque de Apothem,
+para conservarlas en Zed.
+
+El archivo de instrucciones global `~/.config/zed/AGENTS.md` y el bloque de
+servidores de contexto MCP (`.zed/settings.json` `context_servers`) son
+propiedad del operador; Apothem no los escribe.
 
 ## Verificación
 
@@ -49,8 +73,8 @@ apothem verify --harness zed --project /path/to/project
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Todos los campos obligatorios del perfil compartido están presentes.
-3. La rutina de verificación específica del adaptador informa éxito.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y las configuraciones JSON o YAML se analizan correctamente. Añade `--profile PATH` para confirmar también que los archivos instalados coinciden con ese perfil.
+3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
 
@@ -67,9 +91,7 @@ perfil compartido.
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-Elimina el archivo de configuración nativa escrito por el adaptador, renombrándolo
-primero a un respaldo con marca de tiempo. El YAML del perfil compartido y el motor
-de Apothem no se ven afectados.
+Elimina el bloque gestionado de Apothem del archivo de configuración nativa `.rules` y conserva tu propio texto. El archivo solo se borra cuando no queda nada más en él. Antes del cambio, se guarda una copia con marca de tiempo del archivo en `~/.apothem/backups/`; no queda ningún archivo de copia de seguridad en el proyecto. El YAML del perfil compartido y el motor de Apothem no se ven afectados.
 
 ## Puerta de conformidad
 
@@ -77,16 +99,22 @@ de Apothem no se ven afectados.
 python -m apothem.conformity.gate --all .
 ```
 
-## Resolución de problemas
+## Solución de problemas
 
 | Síntoma | Solución |
 |---------|-----|
 | No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness zed --project /path/to/project` |
-| La verificación falló | Ejecuta `apothem update --harness zed --project /path/to/project` y vuelve a verificar |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, y vuelve a ejecutar `apothem update --harness zed --project /path/to/project` |
+| La verificación falló | Ejecuta `apothem update --harness zed --project /path/to/project` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness zed --project /path/to/project` |
 
-## Parámetros de configuración
+## Opciones de configuración
 
-| Flag | Predeterminado | Descripción |
+| Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI

@@ -1,50 +1,54 @@
 ---
 title: "الأوامر"
-description: "تعريفات أوامر الشَّرطة المائلة التي تُنفِّذ خطّ أنابيب مجموعة الخطّة بالإضافة إلى عمليات تدقيق للشيفرة والمعمارية والأمان والاعتماديات ومراجعة التوثيق."
+description: "تعريفات أوامر الشَّرطة المائلة التي تُنفِّذ خطّ أنابيب حزمة الخطّة، إضافةً إلى عمليات تدقيق للشيفرة والمعمارية والأمان والاعتماديات ومراجعة التوثيق."
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تعيش تعريفات أوامر الشَّرطة المائلة كملفات `.md` مسطَّحة تحت <bdi>`src/apothem/commands/`</bdi>.
-تتصدّر المجموعةَ الكنسيةَ خطُّ أنابيبِ مجموعةِ الخطّة المُدرِكُ للمعمارية، الذي يُشحَن
-بوصفه سبعة أوامر من الدرجة الأولى — أمرٌ لكلّ مرحلة، كلٌّ منها قابل للاستدعاء مباشرةً بصيغة
-<bdi>`/plan-<stage>`</bdi>. لا يوجد مُوزِّع أحادي ضخم؛ فكلّ مرحلة هي ملف أمرها المُسجَّل الخاصّ
-عند <bdi>`src/apothem/commands/plan-<stage>.md`</bdi>.
+تعيش تعريفات أوامر الشَّرطة المائلة ملفاتِ <bdi>`.md`</bdi> مسطّحةً تحت <bdi>`src/apothem/commands/`</bdi>.
+تتصدّر المجموعةَ المرجعية خطُّ أنابيب حزمة الخطّة المُدرِكُ للمعمارية، الذي يُشحَن
+في صورة سبعة أوامر من الدرجة الأولى — أمرٌ لكل مرحلة، يمكن استدعاء كلٍّ منها مباشرةً
+بالصيغة <bdi>`/plan-<stage>`</bdi>. لا يوجد مُوزِّع أحادي؛ فكل مرحلة ملفُّ أمرٍ
+مُسجَّل قائم بذاته في <bdi>`src/apothem/commands/plan-<stage>.md`</bdi>.
 
 | الاستدعاء | ملف الأمر | الوصف |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | صقل المحتوى غير المُهيكل ليُصبح نصًّا بمستوى المواصفة |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | تجسيد مجموعة خطّة من النصّ / المتطلّبات |
-| `/plan-review` | `src/apothem/commands/plan-review.md` | تدقيق جنائي مع بطاقات تقييم |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | إصدار <bdi>`_inputs/design.md`</bdi> للمجموعات الحاملة للمعمارية |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | تنفيذ مرحلة عبر بوّابات الجودة |
-| `/plan-status` | `src/apothem/commands/plan-status.md` | تقرير تقدّم للقراءة فقط |
-| `/plan-amend` | `src/apothem/commands/plan-amend.md` | تعديل أو توسيع أو صقل أو إرجاع مجموعة قائمة دون فقدان القرارات المحسومة |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | لفُّ المواصفة → التوليد → المراجعة في حلقة مغلقة مع معالجة فعّالة (متعامد، قبل التنفيذ) |
+| <bdi>`/plan-spec`</bdi> | <bdi>`src/apothem/commands/plan-spec.md`</bdi> | صقل المحتوى غير المُهيكَل إلى نصٍّ بمستوى المواصفة |
+| <bdi>`/plan-generate`</bdi> | <bdi>`src/apothem/commands/plan-generate.md`</bdi> | تجسيد حزمة خطّة من النص / المتطلّبات |
+| <bdi>`/plan-review`</bdi> | <bdi>`src/apothem/commands/plan-review.md`</bdi> | تدقيق جنائي مع بطاقات تقييم |
+| <bdi>`/plan-design`</bdi> | <bdi>`src/apothem/commands/plan-design.md`</bdi> | إصدار <bdi>`_inputs/design.md`</bdi> للحزم الحاملة للمعمارية |
+| <bdi>`/plan-execute`</bdi> | <bdi>`src/apothem/commands/plan-execute.md`</bdi> | تنفيذ مرحلة مع بوابات الجودة |
+| <bdi>`/plan-status`</bdi> | <bdi>`src/apothem/commands/plan-status.md`</bdi> | تقرير تقدّم للقراءة فقط |
+| <bdi>`/plan-amend`</bdi> | <bdi>`src/apothem/commands/plan-amend.md`</bdi> | تعديل حزمة قائمة أو توسيعها أو صقلها أو إرجاعها دون فقدان القرارات المحسومة |
+| <bdi>`/plan-audit`</bdi> | <bdi>`src/apothem/commands/plan-audit.md`</bdi> | تغليف بحلقة مغلقة لمسار المواصفة → التوليد → المراجعة مع معالجة فعّالة (متعامد، قبل التنفيذ) |
 
-إلى جانب خطّ أنابيب الخطّة، تُشحَن معه أوامر لإطار العمل على مستوى المشروع كاملًا —
+إلى جانب خطّ أنابيب الخطّة، تُشحَن معه أوامر إطار عمل على مستوى المشروع كله —
 <bdi>`/freshify`</bdi> و<bdi>`/github-deploy-fresh`</bdi> و<bdi>`/github-deploy-next`</bdi>
-و<bdi>`/elevate`</bdi> للتحديث والإصدار؛ و<bdi>`/audit`</bdi> و<bdi>`/fortress`</bdi>
-و<bdi>`/workflow`</bdi> للمراجعة والتنسيق متعدّد الوكلاء؛ و<bdi>`/projectify`</bdi>
-لرفع مشاريع تطبيقات المحادثة — إضافةً إلى عمليات التدقيق/المراجعة الإحدى عشرة
-وخطّ أنابيب <bdi>`/research`</bdi>:
+و<bdi>`/elevate`</bdi> للتجديد والإصدار؛ و<bdi>`/audit`</bdi> و<bdi>`/fortress`</bdi>
+و<bdi>`/workflow`</bdi> للمراجعة والتنسيق متعدّدَي العوامل؛ و<bdi>`/projectify`</bdi>
+للارتقاء بـ«المشروع» (<bdi>Project</bdi>) في تطبيقات المحادثة — إضافةً إلى تمريرات
+التدقيق/المراجعة الإحدى عشرة (<bdi>code-review</bdi>، و<bdi>code-audit</bdi>،
+و<bdi>architecture-review</bdi>، و<bdi>docs-review</bdi>، و<bdi>security-audit</bdi>،
+و<bdi>dependency-audit</bdi>، و<bdi>supply-chain-audit</bdi>،
+و<bdi>threat-model-audit</bdi>، و<bdi>perf-audit</bdi>، و<bdi>a11y-audit</bdi>،
+و<bdi>ux-review</bdi>) وخطّ أنابيب <bdi>`/research`</bdi>:
 
 | الاستدعاء | ملف الأمر | الوصف |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | جعل المشروع طازجًا وخاليًا من الآثار وجاهزًا للإنتاج؛ كلّ خطوة هدّامة محكومة بتأكيد |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | تخصيص GitHub لـ <bdi>`/freshify`</bdi> الذي يُنتج إصدارًا أوّلَ واحدًا طازجًا |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | تشغيل دورة إصدار تالية كاملة على سطح إصدار GitHub |
-| `/elevate` | `src/apothem/commands/elevate.md` | رفع كلّ سطح من المشروع إلى أحدث ما توصّلت إليه التقنية عبر وكلاء نقد مستقلّين، ثمّ التسليم إلى <bdi>`/freshify`</bdi> |
+| <bdi>`/freshify`</bdi> | <bdi>`src/apothem/commands/freshify.md`</bdi> | جعل المشروع طازجًا وخاليًا من الآثار وجاهزًا للإنتاج؛ وكل خطوة هدّامة محكومة بتأكيد |
+| <bdi>`/github-deploy-fresh`</bdi> | <bdi>`src/apothem/commands/github-deploy-fresh.md`</bdi> | تخصيص <bdi>GitHub</bdi> لـ <bdi>`/freshify`</bdi> الذي يُنتِج إصدارًا أوّلَ واحدًا طازجًا |
+| <bdi>`/github-deploy-next`</bdi> | <bdi>`src/apothem/commands/github-deploy-next.md`</bdi> | تشغيل دورة إصدار تالية كاملة واحدة على سطح إصدارات <bdi>GitHub</bdi> |
+| <bdi>`/elevate`</bdi> | <bdi>`src/apothem/commands/elevate.md`</bdi> | الارتقاء بكل سطح من أسطح المشروع إلى أحدث ما وصلت إليه التقنية (<bdi>SOTA</bdi>) عبر عوامل نقد مستقلة، ثم التسليم إلى <bdi>`/freshify`</bdi> |
 
-مجموعة الأوامر الكاملة المصدرُ المرجعيّ للحقيقة — بما في ذلك تسلسل التدقيق والمراجعة —
+مجموعة الأوامر الكاملة التي هي مصدر الحقيقة — بما فيها كل تمريرة تدقيق ومراجعة —
 هي الجرد المُولَّد في أسفل هذه الصفحة.
 
 ## عقد البيانات الأمامية
 
-يحمل كلُّ ملف أمر البياناتِ الأماميةَ الكنسيةَ المكوّنة من ثمانية مفاتيح. العقدُ
-المقروءُ آليًّا هو [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
-(`additionalProperties: false`)؛ وتعكسه هذه الكتلة:
+يحمل كل ملف أمر البياناتِ الأماميةَ المرجعية ذات المفاتيح الثمانية. والعقد المقروء
+آليًا هو [<bdi>`command.schema.json`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
+(<bdi>`additionalProperties: false`</bdi>)؛ وتعكسه هذه الكتلة:
 
 ```yaml
 ---
@@ -59,16 +63,23 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-يتحقّق فحص <bdi>`frontmatter-cohort`</bdi> الخاصّ بالمُدقّق (فرع الأمر) من العقد
-على كلّ ملف أمر.
+يتحقّق فحص <bdi>`frontmatter-cohort`</bdi> في أداة التحقّق (فرع الأوامر) من العقد في
+كل ملف أمر. ويسرد <bdi>`allowed-tools`</bdi> الأدوات التي يجوز لإطار العمل تشغيلها دون
+أن يسأل ما دام الأمر نشطًا، لذا يبقى للقراءة فقط افتراضيًا: لا تظهر الأداة ذات الآثار
+الجانبية (<bdi>Bash</bdi>، و<bdi>PowerShell</bdi>، و<bdi>Write</bdi>، و<bdi>Edit</bdi>،
+و<bdi>NotebookEdit</bdi>، و<bdi>WebFetch</bdi>) إلا في صورة قاعدة مُقيَّدة النطاق مثل
+<bdi>`Bash(git log *)`</bdi>، ويرفض المخطط حرف البدل المجرّد <bdi>`"*"`</bdi>.
+والأوامر ذات الآثار الجانبية التي لا رجعة فيها (<bdi>`freshify`</bdi>،
+و<bdi>`github-deploy-fresh`</bdi>، و<bdi>`github-deploy-next`</bdi>) تضبط
+<bdi>`disable-model-invocation: true`</bdi>، فلا يبدؤها إلا المُشغِّل.
 
 ## انضباط التأليف
 
-- **سَيْر عمل مكتفٍ بذاته.** يُدرِج جسم كلّ أمر سَيْرَ العمل بوصفه خطواتٍ
-  مُرقَّمة كي يتمكّن المساعد من التنفيذ انطلاقًا من بداية باردة.
-- **كتلة الروابط.** ينتهي كلّ أمر بكتلة الروابط الكنسية ذات الاتجاهات
-  الخمسة.
-- **لغة النطاق فقط.** لا إشارات داخلية للخطّة في الأجسام.
+- **سير عمل مكتفٍ بذاته.** يسرد متن كل أمر سيرَ العمل خطواتٍ مُرقَّمةً كي يتمكّن
+  المساعد من التنفيذ انطلاقًا من بداية باردة.
+- **كتلة الارتباطات (<bdi>Bindings</bdi>).** ينتهي كل أمر بكتلة الارتباطات
+  (<bdi>Bindings</bdi>) المرجعية ذات الاتجاهات الخمسة.
+- **لغة النطاق فقط.** لا إشارات داخلية للخطة في المتون.
 
 ## جرد الأوامر المُولَّد
 

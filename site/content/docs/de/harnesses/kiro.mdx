@@ -1,8 +1,8 @@
 ---
 title: "Kiro"
-description: "Apothem-Werkzeugadapter für Kiro (GA)."
+description: "Apothem-Harness-Adapter für Kiro (GA)."
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,27 +17,32 @@ sourceHash: "409a9949239d4b5f"
 apothem install --harness kiro --project /path/to/project
 ```
 
-Der Adapter schreibt aus den gemeinsamen Apothem-Regeln und der
-Governance-Oberfläche eine projektgebundene Kiro-Steering-Datei.
+Der Adapter schreibt aus der gemeinsamen Regel- und Governance-Oberfläche von
+Apothem eine Kiro-Steering-Datei mit Projektgeltungsbereich.
 
 **Geschriebene Dateien:** `<project>/.kiro/steering/apothem-rules.md`
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter liest Apothems gemeinsames Profil und rendert die Steering-Datei des
-Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das gemeinsame
-Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der generierten
-Datei werden gesichert, bevor die nächste Synchronisierung den von Apothem
-verwalteten Inhalt ersetzt.
+Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das
+gemeinsame Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der
+generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
+Apothem verwalteten Inhalt ersetzt.
+
+Die Datei beginnt mit ihrem Frontmatter `inclusion: always`, weil Kiro verlangt,
+dass die Inclusion-Konfiguration der erste Inhalt der Datei ist. Der von Apothem
+verwaltete Block folgt darauf; Text, den Sie nach dem Block hinzufügen, bleibt
+bei jeder Synchronisierung erhalten.
 
 ## Kompatibilitätshinweise
 
-Kiros Steering-Oberfläche ist projektgebunden unter `.kiro/steering/`. Der Adapter
-schreibt eine eigene Steering-Datei `apothem-rules.md` mit dem Front Matter
-`inclusion: always` und überschreibt niemals die vom Operator verfassten
-Grundlagendateien von Kiro (`product.md`, `tech.md`, `structure.md`).
-Kiro-Spezifikationen (`.kiro/specs/`) und Assistenten-Hooks gehören dem Operator;
-Apothem schreibt sie nicht.
+Kiros Steering-Oberfläche hat Projektgeltungsbereich unter `.kiro/steering/`.
+Der Adapter schreibt eine eigene Steering-Datei `apothem-rules.md` mit dem
+Frontmatter `inclusion: always` und überschreibt niemals Kiros vom Operator
+verfasste Grundlagendateien (`product.md`, `tech.md`, `structure.md`).
+Kiro-Specs (`.kiro/specs/`) und Agent-Hooks gehören dem Operator; Apothem
+schreibt sie nicht.
 
 ## Verifizierung
 
@@ -45,11 +50,14 @@ Apothem schreibt sie nicht.
 apothem verify --harness kiro --project /path/to/project
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -66,10 +74,15 @@ Profils neu ab.
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Entfernt den Apothem-Block und das Frontmatter, das Apothem darüber geschrieben
+hat, aus `<project>/.kiro/steering/apothem-rules.md` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin sonst nichts mehr steht. Vor
+der Änderung wird eine mit Zeitstempel versehene Kopie der Datei unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -79,12 +92,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness kiro --project /path/to/project` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness kiro --project /path/to/project` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness kiro --project /path/to/project` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness kiro --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness kiro --project /path/to/project` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness kiro --project /path/to/project` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

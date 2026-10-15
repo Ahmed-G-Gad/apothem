@@ -9,8 +9,8 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 | Bar | ID | Mandate | Check class | Failure → action |
 |---|---|---|---|---|
 | 1 | M1 | Host-Project Agnosticism | Reasoned | Revise to match host conventions |
-| 2 | M2 | Editorial Discipline (disclosure ledger) | Mechanical | Add disclosure markers |
-| 3 | M3 | Ten Quality Dimensions | Reasoned | Revise on failing dimensions |
+| 2 | M2 | Editorial Discipline (disclosure ledger) | Reasoned | Add disclosure markers |
+| 3 | M3 | Ten Quality Dimensions | Mechanical + reasoned | Revise on failing dimensions |
 | 4 | M4 | Self-Application (gate signed record present) | Mechanical | Record signed-record block |
 | 5 | M5 | Authority Principle (no fabricated identity / endpoint / secret) | Mechanical | Route to inquiry |
 | 6 | M6 | Expertise Incorporation (surfaced gaps) | Reasoned | Surface gaps; cite refinements |
@@ -19,53 +19,31 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 | 9 | M9 | Visual Leverage (structural subjects carry diagrams) | Reasoned | Author / refresh diagram |
 | 10 | M10 | Bidirectional Binding (reciprocal back-pointers closed) | Mechanical | Close half-edges |
 | 11 | M11 | Agile Sprints (Goal / Backlog / DoR / DoD / Review / Retrospective) | Reasoned | Restructure as sprints |
-| 12 | M12 | Phase Reporting & Canonical Layout | Mechanical | Author rollup; relocate to canonical layout |
+| 12 | M12 | Phase Reporting & Canonical Layout | Mechanical + reasoned | Author rollup; relocate to canonical layout |
 | 13 | M13 | Code Craft (lint / format / type-check; magic-number; bare-except) | Mechanical | Apply per-language code-craft rules |
 | 14 | M14 | Systemicity (declares upstream / downstream / peers / enforcers) | Reasoned | Declare; index in registries |
-| 15 | M15 | Production-Ready (tests + docs + CHANGELOG + conformant commit + CI green + semver-stability) | Mechanical | Add missing surfaces |
+| 15 | M15 | Production-Ready (tests + docs + CHANGELOG + conformant commit + CI green + semver-stability) | Mechanical + reasoned | Add missing surfaces |
+
+The gate runs only machine-checkable validators. The reasoned judgment that the Reasoned bars call for, and the reasoned half of each Mechanical + reasoned bar, is evaluated in review.
 
 ## Severity ladder
 
-| Severity | Effect on gate |
-|---|---|
-| **Critical** | Gate FAIL — emission blocked unconditionally |
-| **Important** | Gate FAIL when 2+ Important bars fail simultaneously |
-| **Advisory** | Gate WARN — logged in the signed record; does not block emission |
-
-Most mechanical-fraction matchers default to **Important**. M5 (authority — secrets, fabricated endpoints) and M12 (orphan outputs) are **Critical**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all` or `--all-perwrite`) exits `2` when a blocking validator or matcher fails; advisory findings are reported only. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
 
 ## Validators
 
 The mechanical fraction lives at [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrated by [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-The gate runs each validator in one of three ways:
+Each validator runs in one of three ways:
 
 - **per-write**: on every pending write (`--hook`), or on every tracked file with `--all-perwrite`.
 - **standalone**: across the whole repository with `--all`, or one at a time with `--check <name>`.
-- **change-set**: against a staged diff, outside the gate's sweeps.
+- **change-set**: against a staged diff, run directly as `python -m apothem.conformity.semver_stability_grep --staged`, not through the gate.
 
 The table below is generated from the validator modules.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -130,7 +108,10 @@ The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
 On an installed harness the gate runs automatically: Claude Code's
 `settings.json` wires it as a `PreToolUse` hook that invokes the
 materialized copy at `~/.claude/.apothem/support/conformity/gate.py` before every
-Write/Edit. From a source checkout, the module form drives the same code. The
+Write/Edit. The gate then checks only writes under its hook scope, and a write
+outside the scope passes silently; [Running the conformity gate](/docs/usage/conformity-gate)
+lists the scope. From a source checkout, the module form drives the same code;
+prefix each `python` command below with `PYTHONPATH=src`. The
 gate is advisory by default: it reports findings and exits `0`. Add `--strict`
 to exit `2` on a blocking finding. An unknown validator name exits `3`.
 

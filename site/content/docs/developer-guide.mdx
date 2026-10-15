@@ -9,8 +9,11 @@ SOTA quality standards.
 
 ## Quick Reference: Artifact Types
 
-The Apothem ecosystem contains five artifact types, each with specific
-purposes and frontmatter requirements.
+This guide covers five artifact types, each with a specific purpose. Rules,
+commands, helpers, and skills carry YAML frontmatter; hooks are registered in
+`hooks.json` and `settings.json` and carry none. Output styles are a further
+artifact class with two required frontmatter keys, `name` and `description`;
+see the [Frontmatter Schema](/docs/reference/frontmatter-schema).
 
 | Artifact | Path | Purpose | When to Create |
 | -------- | ---- | ------- | -------------- |
@@ -18,7 +21,7 @@ purposes and frontmatter requirements.
 | **Command** | `src/apothem/commands/*.md` | Slash command (`/command-name`) for complex workflows | New multi-step user workflow |
 | **Helper** | `src/apothem/agents/*.md` | Persistent delegated-worker definition for parallel tasks | New recurring specialized task (audit, explore, quality-check) |
 | **Skill** | `src/apothem/skills/{name}/SKILL.md` | Reusable technique with detection signal | New detectable, reusable technique pattern |
-| **Hook** | `src/apothem/hooks/` + `settings.json` | Event-triggered validation or state management | New lifecycle event or validation need |
+| **Hook** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | Event-triggered validation or state management | New lifecycle event or validation need |
 
 ## Harness Adapter Contract
 
@@ -83,7 +86,9 @@ Schemas, the schemas win.
 
 ## Frontmatter Quick-Check
 
-Every artifact frontmatter must pass these checks:
+Every artifact frontmatter must pass these checks. Apply the `version`,
+`updated`, and `portability` checks only to a class that carries the key: rules
+carry none of them, and skills carry no `portability`.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -116,13 +121,21 @@ Pattern: lowercase, hyphens between words, no spaces or underscores.
 - **Helpers:** `{name}.md`
 - **Skills:** Inside folder `src/apothem/skills/{name}/SKILL.md` (exact case: `SKILL.md`)
 - **Hooks:** Inside folder `src/apothem/hooks/`. All event handlers are Python. Every
-  `settings.json` hook command uses exec form (`python` plus `args`) to invoke
-  `-m apothem.hooks.dispatch <event> [<message-name>]` or
-  `-m apothem.conformity.gate --hook`. `dispatch.py` routes `SessionStart` to
+  hook command in the Claude Code `settings.json` template uses exec form: `command`
+  is the interpreter placeholder `${PYTHON_BIN}`, resolved at install time, and
+  `args` holds the script path and its arguments. That template runs
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` and
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` by absolute path, so
+  the installed copy needs no importable `apothem` package. The Claude Code plugin
+  registers hooks in `src/apothem/hooks/hooks.json` instead, as shell commands that
+  run `hooks/lib/bootstrap.sh` through `bash`; that stub locates Python and runs
+  `dispatch.py`, so the handlers stay Python. Register a new hook in `hooks.json`
+  and in the Claude Code `settings.json` template. `dispatch.py` routes
+  `SessionStart` to
   `session_start_bootstrap.main()` and
   every other whitelisted event to `emit_hook_context.main()`. The only shell
-  stubs permitted under `src/apothem/hooks/` or `scripts/` are the four locator + bootstrap
-  files (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); any other `.ps1` /
+  stubs permitted under `src/apothem/hooks/` or `scripts/` are the six locator and bootstrap
+  files (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); any other `.ps1` /
   `.sh` file fails the `scripts/dev/validate_hooks.py` hygiene check.
 
 ### Cross-References
@@ -138,9 +151,11 @@ Never use file paths or truncated names in prose.
 
 ## Portability: Windows vs. Unix
 
-Every artifact must explicitly declare its portability status.
+Every command MUST explicitly declare its portability status in the
+`portability` field. A helper MAY declare it. Skills, rules, and output styles
+carry no `portability` field.
 
-### Universal (Default)
+### Universal
 
 - Works identically on Windows, macOS, and Linux
 - No shell assumptions
@@ -174,7 +189,7 @@ Document the caveat in a note immediately after the title.
 portability: "unix-only"
 ```
 
-Document the reason in the rule's first section.
+Document the reason in the artifact's first section.
 
 ## Scope: Always-On vs. Path-Filtered
 
@@ -183,7 +198,8 @@ Document the reason in the rule's first section.
 Rule applies everywhere.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### Path-Filtered
@@ -191,8 +207,8 @@ scope: "always-on"
 Rule applies conditionally based on file path.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 The `pathFilter` uses glob patterns (same format as `.gitignore`). When a file
@@ -200,20 +216,26 @@ matches the filter, the rule activates.
 
 ## Version Semantics
 
-Every artifact carries its own semantic version (`MAJOR.MINOR.PATCH`):
+Each versioned artifact carries its own semantic version (`MAJOR.MINOR.PATCH`).
+Commands and skills require it, helpers and output styles MAY carry it, and
+rules carry none:
 
-- **PATCH** — typo fixes, formatting, link refresh, comment-only edits. Behavior unchanged.
-- **MINOR** — additive non-breaking changes: new optional sections, additional anti-patterns, new optional frontmatter fields, new examples. Existing consumers continue to work without change.
+- **PATCH** — a behavioral change that corrects an existing directive without breaking the contract.
+- **MINOR** — additive non-breaking changes: new optional sections, new optional frontmatter fields, new examples. Existing consumers continue to work without change.
 - **MAJOR** — breaking schema or contract changes: removed sections, renamed fields, altered behavior of an existing directive, changes that require downstream artifacts to adapt.
+
+Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave the version unchanged. Only a behavioral change bumps it. Such an edit still updates the artifact's `updated` date.
 
 Examples:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: typo fix)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: added new Anti-Patterns entry)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: declared contract stable)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: a corrected directive that changes behavior)
+- `vX.Y.Z` → `vX.Y.Z` (no bump: typo or link fix; `updated` changes)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: added a new optional section)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: declared contract stable; new artifacts seed at `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: removed mandatory frontmatter field)
 
-Bump `version` and `updated` together on every behavior-changing edit. Append a
+Bump `version` and `updated` together on every behavior-changing edit to an
+artifact that carries them. Append a
 matching row to the ecosystem-level `CHANGELOG.md` for releases that bundle
 artifact changes.
 
@@ -222,9 +244,9 @@ artifact changes.
 ### Rules
 
 - Treat the Mandatory/Optional structure as load-bearing — restructuring it
-  ripples through every dependent artifact (MAJOR bump required).
+  ripples through every dependent artifact.
 - Refine Anti-Patterns, Seriousness Scaling examples, and citations as
-  understanding deepens (MINOR bump).
+  understanding deepens.
 - Capture the rationale for any structural change in the relevant memory
   topic file.
 
@@ -292,15 +314,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. Update CLAUDE.md
+### 4. Update the Rules README
 
-Add entry to `§7.2 Rules` registry table:
+Add a row to the table for the rule's family in the Rule families section of
+`src/apothem/rules/README.md`:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Maintain alphabetical order within the table.
+Pick the family table whose concern matches the rule.
 
 ### 5. Append to CHANGELOG.md
 
@@ -322,8 +345,8 @@ Commands are slash commands like `/plan-spec`, `/plan-execute`, `/security-audit
 
 ### 1. Determine Role
 
-Commands are **never** meant to be called by the harness in isolation. They are
-user-triggered workflows. Ask:
+Commands are user-triggered workflows. The model runs one on its own only when
+its `disable-model-invocation` setting is `false` (step 2). Ask:
 
 - Is this a workflow the user types `/command-name`?
 - Does it orchestrate multiple steps?
@@ -357,8 +380,8 @@ The invocation table in `src/apothem/commands/README.md` lists every
 command's setting; add a row for a new command. Keep
 `allowed-tools` read-only: a harness that honors it runs those tools without
 asking. Grant a side-effecting tool only as a scoped rule, such as
-`Bash(git log *)`; the schema rejects `"*"` and bare `Bash`, `PowerShell`,
-`Write`, `Edit`, `NotebookEdit`, and `WebFetch`.
+`Bash(git log *)`; the schema rejects `"*"` and any of `Bash`, `PowerShell`,
+`Write`, `Edit`, `NotebookEdit`, or `WebFetch` written without a scope.
 
 ### 3. Write Content
 
@@ -370,9 +393,9 @@ Structure:
 - Workflow section with steps
 - Return contract / output format
 
-### 4. Update CLAUDE.md and CHANGELOG.md
+### 4. Update the README and CHANGELOG.md
 
-Registry row in `§7.1 Commands`; CHANGELOG row under the next release's `### Added` section.
+Add a row to the table for the command's section in `src/apothem/commands/README.md`, in addition to the invocation-table row from step 2; add a CHANGELOG row under the next release's `### Added` section.
 
 ### 5. Validate
 
@@ -432,9 +455,9 @@ Sections:
 - Workflow (numbered steps)
 - Return Contract (max tokens, structure, required fields)
 
-### 4. Update CLAUDE.md and CHANGELOG.md
+### 4. Update the README and CHANGELOG.md
 
-Registry row in `§7.3 Helpers`; CHANGELOG row under the next release's `### Added` section.
+Add a row to the Index table in `src/apothem/agents/README.md`; add a CHANGELOG row under the next release's `### Added` section.
 
 ### 5. Test
 
@@ -462,8 +485,8 @@ If all three are yes, write a skill.
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -498,9 +521,9 @@ Content structure:
 - Common Mistakes
 - Examples
 
-### 4. Update CLAUDE.md and CHANGELOG.md
+### 4. Update the README and CHANGELOG.md
 
-Registry row in `§7.5 Skills`; CHANGELOG row under the next release's `### Added` section.
+Add a row to the Index table and a row for each of the skill's files to the Folder contents table in `src/apothem/skills/README.md`; add a CHANGELOG row under the next release's `### Added` section.
 
 ### 5. Validate
 
@@ -515,13 +538,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Frontmatter passes YAML syntax check
 - [ ] All mandatory fields present per schema
 - [ ] `name` field uses kebab-case
-- [ ] `version` is semantic (`MAJOR.MINOR.PATCH`) and was bumped if behavior changed
-- [ ] `updated` matches today's date for any artifact you touched
-- [ ] `portability` field set and valid
+- [ ] `version` (versioned classes only; rules carry none) is semantic (`MAJOR.MINOR.PATCH`) and was bumped if behavior changed
+- [ ] `updated` matches today's date for any artifact you touched that carries the field
+- [ ] `portability` field set and valid (required on commands, optional on helpers)
 - [ ] CHANGELOG.md carries the change in the appropriate category under the next release's section
 - [ ] No plan-internal references (CM-7 compliance)
 - [ ] Cross-references are consistent with other artifacts
-- [ ] New artifact registered in CLAUDE.md registry
+- [ ] New artifact registered in its folder README index
 - [ ] Artifact tested (if applicable)
 - [ ] `ecosystem-audit` skill runs with no errors
 - [ ] Content follows structural conventions (title format, sections, etc.)
@@ -561,8 +584,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### Reference CLAUDE.md Sections
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## Linting and Format
@@ -680,9 +703,9 @@ that has a pair, run `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmarks
 
-`make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`.
-Each exits `0` pass, `1` over budget, `2` error (the measured run did not
-execute), or `3` not measured.
+`make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`,
+except `bench_agents.py`. Each driver exits `0` pass, `1` over budget, `2` error
+(the measured run did not execute), or `3` not measured.
 
 - `bench_hooks.py` runs every `shell: bash` command that `hooks/hooks.json`
   registers, as written, on a real payload per event and matcher, and reports

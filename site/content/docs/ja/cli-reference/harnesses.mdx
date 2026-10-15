@@ -2,13 +2,13 @@
 title: "harnesses"
 description: "apothem harnesses コマンドグループの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "e2eac8d28543091e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-登録されたハーネスアダプターを一覧表示し、検査します。
+登録済みのハーネスアダプターを一覧表示し、検査します。
 
-`harnesses` は、2 つのサブコマンドを持つコマンドグループです：`list` と `show`。
+`harnesses` は、`list` と `show` の 2 つのサブコマンドを持つコマンドグループです。
 
 ## 構文
 
@@ -24,29 +24,29 @@ apothem harnesses show NAME
 
 ### `harnesses list`
 
-登録されたすべてのハーネスアダプターを一覧表示します。
+登録済みのすべてのハーネスアダプターを一覧表示します。
 
 | オプション | 説明 |
 |---|---|
-| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
 | `--verbose`, `-v` | 追加の診断出力を出力します。 |
-| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
-| `--json` | `--format json` の省略形。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形です。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
 ### `harnesses show NAME`
 
-特定のハーネスアダプターの詳細を表示します。`NAME` は kebab-case の
-ハーネス識別子です。利用可能な識別子を確認するには `apothem harnesses list` を実行してください。
+特定のハーネスアダプターの詳細を表示します。
+`NAME` は kebab-case のハーネス識別子です。利用可能な識別子を確認するには、`apothem harnesses list` を実行します。
 
 | オプション | 説明 |
 |---|---|
 | `NAME` | 検査するハーネスアダプター（必須の位置引数）。 |
-| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
 | `--verbose`, `-v` | 追加の診断出力を出力します。 |
-| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
-| `--json` | `--format json` の省略形。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形です。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
@@ -59,7 +59,7 @@ apothem harnesses show claude-code
 apothem harnesses show claude-code --json
 ```
 
-登録されたハーネス ID は次のとおりです。
+登録済みのハーネス ID は次のとおりです。
 
 ```text
 antigravity
@@ -86,9 +86,11 @@ zed
 | コード | 意味 |
 |---|---|
 | 0 | 成功 |
-| 1 | ハーネスが見つかりません（不明な `NAME` を指定した `harnesses show`） |
+| 1 | ハーネスが見つからない（不明な `NAME` を指定した `harnesses show`）、またはすべてのアダプターが読み込みまたは報告に失敗した（`harnesses list`） |
+| 2 | 少なくとも 1 つのアダプターが一覧表示されたが、少なくとも 1 つが報告に失敗した（`harnesses list`） |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` の下では、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 
-- [apothem doctor](/docs/cli-reference/doctor) — システム全体のインストール診断を実行します
-- [apothem verify](/docs/cli-reference/verify) — 特定のハーネスのインストールを確認します
+- [apothem doctor](/docs/cli-reference/doctor) — システム全体のインストール診断を実行する
+- [apothem verify](/docs/cli-reference/verify) — ハーネスアダプターのインストールを検証する

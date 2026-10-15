@@ -20,7 +20,7 @@ version comments and are bumped by Renovate.
 |---|---|---|
 | Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges; no committed Python runtime lock |
 | Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs current matching versions |
-| Release tooling | `scripts/release/requirements-build-linux.txt` | Hash-locked for release workflows; generated from the release tooling closure |
+| Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
 | CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
 | GitHub Actions | SHA-pinned `uses:` refs with version comments | Renovate proposes updates; exceptions carry `action-pinning-exempt:` markers |
@@ -35,7 +35,7 @@ version comments and are bumped by Renovate.
 | Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
 | Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
 | GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
-| npm packaging | Manual-only `publish-npm.yml` workflow; no automatic release trigger | The single public npm package is `@ahmed-g-gad/apothem`; publication runs after release readiness passes |
+| npm packaging | `publish-npm.yml` workflow runs on the `v*.*.*` tag push, with `workflow_dispatch` as the fallback | The single public npm package is `@ahmed-g-gad/apothem`; publication waits for the operator's approval of the `release` environment, given after `scripts/release/check-release-ready.sh` passes |
 
 ## Locking
 

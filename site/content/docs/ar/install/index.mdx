@@ -1,22 +1,26 @@
 ---
 title: "التثبيت"
-description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمثبِّتات من خطوة واحدة، وملحق عائلة VS Code، ومداخل سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
+description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "cd736673edf581f0"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يمكن تثبيت <bdi>Apothem</bdi> في أقل من دقيقتين، وهو يعمل جنبًا إلى جنب مع تهيئة
-إطار عملك القائمة. تشغّل كل القنوات المحرّك المكتفي ذاتيًا نفسه — تحمل شجرة
-الشفرة المصدرية اعتماديّاتها المُضمَّنة وتعمل من نسخة مسحوبة على <bdi>Python</bdi>
-3.10 أو أحدث الخاص بالنظام (راجع
+يُثبَّت <bdi>Apothem</bdi> في أقل من دقيقتين ويعمل جنبًا إلى جنب مع تهيئة إطار العمل
+القائمة لديك. يشغّل كل مسار المحرّكَ المكتفي ذاتيًا نفسه — تحمل شجرة المصدر
+اعتماديّاتها المُضمَّنة وتعمل من نسخة مسحوبة على <bdi>Python</bdi> النظام
+بالنسخة 3.10 أو أحدث (راجع
 [زمن التشغيل المكتفي ذاتيًا](/docs/architecture/self-contained-runtime)).
 
-**متطلّبان مُسبقان تتشاركهما كل القنوات:** وجود **<bdi>Python</bdi> 3.10 أو أحدث**
-على `PATH` الخاص بالنظام، مع إمكانية استيراد حزمتَي `click` و`rich` تحته. وتحتاج
-قناتا غلاف npm ومداخل الأدوات إضافةً إلى ذلك إلى **<bdi>Node.js</bdi> 18 أو أحدث**
-لتشغيل `npx`. ويكرّر قسم كل قناة أدناه متطلّباتها المُسبقة بالضبط، وأمرًا واحدًا
-جاهزًا للنسخ، وخطوة تحقّق.
+**متطلّبان مُسبقان يشترك فيهما كل مسار:** **<bdi>Python 3.10</bdi> أو أحدث**
+المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>، مع إمكانية استيراد الحزمتين
+<bdi>`click`</bdi> و<bdi>`rich`</bdi> تحته. ويحتاج غلاف <bdi>npm</bdi> (القناة 2)،
+وامتداد عائلة <bdi>VS Code</bdi> (القناة 4)، ومداخل سطر الأوامر التمهيدية
+(القنوات 5–7) كذلك إلى **<bdi>Node.js 18</bdi> أو أحدث** لتشغيل <bdi>`npx`</bdi>.
+تجاوزت <bdi>Python 3.10</bdi> و<bdi>Node.js 18</bdi> و20 نهاية عمرها لدى المصدر
+الأصلي؛ وهي لا تزال مدعومة ومُختبَرة، لكن النسخ الأحدث مُفضَّلة (راجع
+[المتطلّبات المُسبقة بلمحة](#المتطلّبات-المُسبقة-بلمحة)). يكرّر قسم كل قناة أدناه
+متطلّباتها المُسبقة بالضبط، وأمرًا واحدًا جاهزًا للنسخ، وخطوة تحقّق.
 
 ## اختر قناة
 
@@ -24,30 +28,31 @@ sourceHash: "cd736673edf581f0"
 
 | # | القناة | ما تُقدّمه | المتطلّبات المُسبقة |
 |---|---------|----------|---------------|
-| 1 | [إضافة Claude Code](#1-claude-code-plugin) | إطار العمل الكامل في Claude Code | Claude Code · Python 3.10+ |
-| 2 | [غلاف npm (`npx`)](#2-npm-shim-npx) | إطار العمل الكامل، لأي أداة | Node 18+ · Python 3.10+ |
-| 3 | [المثبِّتات من خطوة واحدة](#3-one-shot-installers) | إطار العمل الكامل + أمر `apothem` | Python 3.10+ (و`git` للتثبيت الشبكي) |
-| 4 | [ملحق عائلة VS Code](#4-vs-code-family-extension) | إطار العمل الكامل من المحرِّر | VS Code · Node 18+ · Python 3.10+ |
-| 5 | [مدخل سطر الأوامر التمهيدي (مضيف الامتدادات)](#5-command-line-bootstrap-extension-host) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · Node 18+ · Python 3.10+ |
-| 6 | [مدخل سطر الأوامر التمهيدي (مضيف `qwen-code`)](#6-command-line-bootstrap-qwen-code-host) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · Node 18+ · Python 3.10+ |
-| 7 | [مدخل سطر الأوامر التمهيدي (مضيف الإضافات)](#7-command-line-bootstrap-plugin-host) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · Node 18+ · Python 3.10+ |
-| 8 | [المحرّك المباشر (`python -m apothem`)](#8-direct-engine-python--m-apothem) | إطار العمل الكامل من نسخة مسحوبة | Python 3.10+ (و`click` و`rich`) |
+| 1 | [إضافة <bdi>Claude Code</bdi>](#1-إضافة-claude-code) | إطار العمل الكامل في <bdi>Claude Code</bdi> | <bdi>Claude Code</bdi> · <bdi>Python 3.10+</bdi> |
+| 2 | [غلاف <bdi>npm</bdi> (<bdi>`npx`</bdi>)](#2-غلاف-npm-npx) | إطار العمل الكامل، لأي أداة | <bdi>Node 18+</bdi> · <bdi>Python 3.10+</bdi> |
+| 3 | [المُثبِّتات بخطوة واحدة](#3-المُثبِّتات-بخطوة-واحدة) | إطار العمل الكامل + أمر <bdi>`apothem`</bdi> | <bdi>Python 3.10+</bdi> (<bdi>`git`</bdi> للتثبيت الشبكي) |
+| 4 | [امتداد عائلة <bdi>VS Code</bdi>](#4-امتداد-عائلة-vs-code) | إطار العمل الكامل من المحرِّر | <bdi>VS Code</bdi> · <bdi>Node 18+</bdi> · <bdi>Python 3.10+</bdi> |
+| 5 | [مدخل سطر الأوامر التمهيدي (مضيف الامتدادات)](#5-مدخل-سطر-الأوامر-التمهيدي-مضيف-الامتدادات) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · <bdi>Node 18+</bdi> · <bdi>Python 3.10+</bdi> |
+| 6 | [مدخل سطر الأوامر التمهيدي (مضيف <bdi>`qwen-code`</bdi>)](#6-مدخل-سطر-الأوامر-التمهيدي-مضيف-qwen-code) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · <bdi>Node 18+</bdi> · <bdi>Python 3.10+</bdi> |
+| 7 | [مدخل سطر الأوامر التمهيدي (مضيف الإضافات)](#7-مدخل-سطر-الأوامر-التمهيدي-مضيف-الإضافات) | مدخل تمهيدي يشغّل المحرّك | أداته المضيفة · <bdi>Node 18+</bdi> · <bdi>Python 3.10+</bdi> |
+| 8 | [المحرّك المباشر (<bdi>`python -m apothem`</bdi>)](#8-المحرّك-المباشر-python--m-apothem) | إطار العمل الكامل من نسخة مسحوبة | <bdi>Python 3.10+</bdi> (<bdi>`click`</bdi>، <bdi>`rich`</bdi>) |
 
 <Callout title="أيّ القنوات تُقدّم إطار العمل الكامل">
-  يُجسِّد غلاف npm (2)، والمثبِّتات من خطوة واحدة (3)، والمحرّك المباشر (8)
-  الوحدةَ المُزامَنة كاملةً لأي إطار عمل بمفردها. أما مداخل سطر الأوامر الثلاثة
-  (5–7) فتثبّت **مدخلًا تمهيديًّا** صغيرًا يستدعي المحرّك خارجيًّا
-  (`npx @ahmed-g-gad/apothem install`) لتجسيد إطار العمل الكامل — فهي نقطة الدخول،
-  لا التسليم الكامل بمفردها. وتحمل إضافة Claude Code (1) وملحق عائلة VS Code (4)
-  المحرّكَ وتشغّلانه مباشرةً.
+  يُجسِّد غلاف <bdi>npm</bdi> (2)، والمُثبِّتات بخطوة واحدة (3)، والمحرّك المباشر (8)
+  الوحدةَ المُزامَنة كاملةً لأي إطار عمل بمفردها. أما امتدادات سطر الأوامر الثلاثة
+  (5–7) فتثبّت **مدخلًا تمهيديًا** صغيرًا يستدعي المحرّك عبر الصدفة
+  (<bdi>`npx @ahmed-g-gad/apothem install`</bdi>) لتجسيد إطار العمل الكامل — فهي
+  نقطة الدخول، لا التسليم الكامل بمفردها. وتحمل إضافة <bdi>Claude Code</bdi> (1)
+  المحرّكَ وتشغّله مباشرةً. أما امتداد عائلة <bdi>VS Code</bdi> (4) فلا يحمل محرّكًا
+  خاصًّا به: تشغّل أوامره المحرّكَ عبر غلاف <bdi>npm</bdi> افتراضيًا.
 </Callout>
 
-كل مسار عديم الأثر: إعادة التشغيل آمنة وتتقارب إلى الحالة نفسها.
+كل مسار متساوي الأثر عند التكرار: إعادة التشغيل آمنة وتتقارب إلى الحالة نفسها.
 
-## 1. إضافة Claude Code
+## 1. إضافة <bdi>Claude Code</bdi>
 
-**المتطلّبات المُسبقة:** <bdi>Claude Code</bdi>، و<bdi>Python</bdi> 3.10+ على
-`PATH` الخاص بالنظام.
+**المتطلّبات المُسبقة:** <bdi>Claude Code</bdi>، و<bdi>Python 3.10+</bdi> المُثبَّت
+على النظام والموجود على <bdi>`PATH`</bdi>.
 
 يعمل مسار الإضافة بالكامل داخل <bdi>Claude Code</bdi>. فهو يحزم محرّك
 <bdi>Apothem</bdi> مع أوامر الشرطة المائلة الخاصة به، والعمّال المُفوَّضين،
@@ -59,39 +64,66 @@ sourceHash: "cd736673edf581f0"
 /plugin install apothem@apothem
 ```
 
-بعد التثبيت، تصبح مجموعة أوامر <bdi>Apothem</bdi> (`/plan-spec`، و`/code-review`،
-و`/security-audit`، وغيرها)، والعمّال المُفوَّضون المرفقون، والمهارات، متاحةً في
-كل جلسة من جلسات <bdi>Claude Code</bdi>. للاطّلاع على الكتالوج الكامل للأوامر،
-راجع [أوامر الشرطة المائلة](/docs/reference/commands).
+بعد التثبيت، تصبح مجموعة أوامر <bdi>Apothem</bdi>، والعمّال المُفوَّضون المرفقون،
+والمهارات، و[أنماط الإخراج](/docs/reference/output-styles) الأربعة (اختر أحدها عبر
+<bdi>`/output-style`</bdi> أو من <bdi>`/config`</bdi>) متاحةً في كل جلسة
+<bdi>Claude Code</bdi>. تحمل أوامر الإضافة بادئة الإضافة:
+<bdi>`/apothem:plan-spec`</bdi>، و<bdi>`/apothem:security-audit`</bdi>، وسائرها.
+ويقبل <bdi>Claude Code</bdi> أيضًا الصيغة المختصرة (<bdi>`/plan-spec`</bdi>) ما دام
+لا يستخدم أي أمر آخر ذلك الاسم. واسمان يحجزهما <bdi>Claude Code</bdi> نفسه:
+<bdi>`/plan`</bdi> يدخل وضع التخطيط، و<bdi>`/code-review`</bdi> يشغّل المراجعة
+المرفقة، لذا اكتب <bdi>`/apothem:plan`</bdi> و<bdi>`/apothem:code-review`</bdi>
+لأوامر <bdi>Apothem</bdi>. وعندما يتولّى محرّك <bdi>Apothem</bdi> التثبيت في
+<bdi>Claude Code</bdi> بدلًا من الإضافة، تصبح الأوامر مهارات شخصية تحت
+<bdi>`~/.claude/skills/`</bdi> بلا بادئة، وتحلّ مهارة <bdi>`code-review`</bdi>
+شخصية محلّ <bdi>`/code-review`</bdi> المرفق (ويظلّ اسمه البديل <bdi>`/review`</bdi>
+يشغّل الأمر المرفق). واسمان، <bdi>`projectify`</bdi> و<bdi>`workflow`</bdi>،
+يُشحَنان أمرًا ومهارةً معًا؛ ويشغّل <bdi>Claude Code</bdi> المهارة عند وجود
+الاثنين، لذا تشغّل الإضافة المهارة، ولا يكتب تثبيت المحرّك في
+<bdi>`~/.claude/skills/<name>/`</bdi> سوى المهارة، لا مهارةً مشتقّة من الأمر.
+راجع [أوامر الشرطة المائلة](/docs/reference/commands) للاطّلاع على الكتالوج الكامل
+للأوامر.
 
-**التحقّق:** شغِّل `/plugin` داخل <bdi>Claude Code</bdi> وتأكَّد من ظهور
-**apothem** بوصفه مُثبَّتًا، أو تحقَّق من تقرير الانحراف من الطرفية:
+**التحقّق:** شغِّل <bdi>`/plugin`</bdi> داخل <bdi>Claude Code</bdi> وتأكّد من أن
+**<bdi>apothem</bdi>** مُدرَج بوصفه مُثبَّتًا، أو افحص تقرير الانحراف من طرفية:
 
 ```bash title="Verify"
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-## 2. غلاف npm (`npx`)
+## 2. غلاف <bdi>npm</bdi> (<bdi>`npx`</bdi>)
 
-**المتطلّبات المُسبقة:** <bdi>Node.js</bdi> 18+ (لأجل `npx`) و<bdi>Python</bdi>
-3.10+ على `PATH` الخاص بالنظام. يحدّد الغلاف المُفسِّر ويوجّه كل أمر <bdi>CLI</bdi>
-إلى المحرّك المرفق — ولا يوضع شيء دائمًا على نظامك.
+**المتطلّبات المُسبقة:** <bdi>Node.js 18+</bdi> (لأجل <bdi>`npx`</bdi>)
+و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
+يحدّد الغلاف موقع المُفسِّر ويمرّر كل أمر من أوامر <bdi>CLI</bdi> إلى المحرّك
+المرفق — ولا يُوضَع شيء بصفة دائمة على نظامك. يجرّب <bdi>`python3`</bdi>، ثم
+<bdi>`python`</bdi>، ثم <bdi>`py -3`</bdi> بهذا الترتيب؛ اضبط
+**<bdi>`APOTHEM_PYTHON`</bdi>** على مسار مُفسِّر ليجرّبه الغلاف أولًا، وهذا ما
+تحتاج إليه حين يكون <bdi>Python</bdi> مُثبَّتًا لكنه ليس على <bdi>`PATH`</bdi>، أو
+حين تكون عدّة نسخ منه مُثبَّتة وتريد نسخة بعينها. ويظلّ على المُفسِّر الذي تُسمّيه
+أن يجتاز فحص <bdi>Python 3.10+</bdi>؛ وحين لا يجتازه يعود الغلاف إلى
+<bdi>`python3`</bdi>، ثم <bdi>`python`</bdi>، ثم <bdi>`py -3`</bdi>.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
 ```
 
-كما يعمل مباشرةً من المستودع:
+على جهاز لا ملف تعريفي فيه، يُنشئ هذا الأمر <bdi>`install`</bdi> الأول الملفَ
+التعريفي الأوّلي في <bdi>`~/.config/apothem/profile.yaml`</bdi> ويُعلِمك بذلك. حقول
+الهوية فيه قيم نائبة: خصِّصها (<bdi>`npx @ahmed-g-gad/apothem profile edit`</bdi>)،
+ثم أعِد تشغيل الأمر مع <bdi>`update`</bdi> بدلًا من <bdi>`install`</bdi> لتطبيقها.
+
+ويعمل أيضًا مباشرةً من المستودع:
 
 ```bash title="npx from the repository"
 npx github:ahmed-g-gad/apothem install --harness claude-code
 ```
 
-يعمل كل أمر في [مرجع CLI](/docs/cli-reference) بهذا الشكل؛ استبدل `apothem` بـ
-`npx @ahmed-g-gad/apothem`. وهذا أيضًا مسار التثبيت لـ <bdi>OpenCode</bdi> وكل
-أداة أخرى لا تكشف سجلًّا منفصلًا للإضافات أو الملحقات — يزامنها <bdi>Apothem</bdi>
-مباشرةً إلى دليل تهيئتها الأصلي
-(`npx @ahmed-g-gad/apothem install --harness opencode`).
+يعمل كل أمر في [مرجع <bdi>CLI</bdi>](/docs/cli-reference) بهذه الصيغة؛ ضع
+<bdi>`npx @ahmed-g-gad/apothem`</bdi> مكان <bdi>`apothem`</bdi>. وهذا أيضًا مسار
+التثبيت لـ <bdi>OpenCode</bdi> ولكل أداة أخرى لا تكشف سجلًّا منفصلًا للإضافات أو
+الامتدادات — يُزامِن <bdi>Apothem</bdi> تلك الأدوات مباشرةً في دليل تهيئتها الأصلي
+(<bdi>`npx @ahmed-g-gad/apothem install --harness opencode`</bdi>).
 
 **التحقّق:**
 
@@ -100,17 +132,20 @@ npx @ahmed-g-gad/apothem --version
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-## 3. المثبِّتات من خطوة واحدة
+## 3. المُثبِّتات بخطوة واحدة
 
-**المتطلّبات المُسبقة:** <bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام (يعرض
-المثبِّت تثبيت متطلّبَي `click` / `rich` نيابةً عنك)؛ ولا يلزم `git` إلا للتثبيت
-الشبكي الذي يستنسخ الشفرة المصدرية.
+**المتطلّبات المُسبقة:** <bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على
+<bdi>`PATH`</bdi> (يعرض المُثبِّت إضافة المتطلّبين المُسبقين <bdi>`click`</bdi> /
+<bdi>`rich`</bdi> نيابةً عنك)؛ ولا يلزم <bdi>`git`</bdi> إلا لتثبيت شبكي يستنسخ
+المصدر.
 
-تحلّ البرامج النصية للمثبِّت أحدث وسم إصدار موقَّع، وتتحقّق من توقيعه، وتضع شجرة
-الشفرة المصدرية لـ <bdi>Apothem</bdi> عند ذلك الوسم في `~/.apothem`، وتنشئ ملف
-تعريف أوّليًا إن لم يكن موجودًا، ثم تحوِّل أول إطار عمل وتتحقّق من النتيجة. إعادة
-التشغيل عديمة الأثر: تُحدَّث الشجرة القائمة إلى الوسم المُحلّ من جديد، ويُعاد
-إطار العمل إلى التحويل. التثبيت المُتحقَّق منه والمُثبَّت على الوسم هو المسار
+تحدّد سكربتات المُثبِّت أحدث وسم إصدار موقَّع، وتتحقّق من توقيعه، وتضع شجرة
+مصدر <bdi>Apothem</bdi> في <bdi>`~/.apothem`</bdi> عند ذلك الوسم،
+وتُنشئ ملفًا تعريفيًا أوّليًا حين لا يوجد أي ملف تعريفي، وتُجسِّد إطار عملك الأول،
+وتتحقّق من النتيجة، كل ذلك في تشغيل واحد. يحمل الملف التعريفي الأوّلي حقول هوية
+نائبة: حرِّره، ثم شغِّل <bdi>`apothem update --harness <name>`</bdi> لتطبيق هويتك.
+إعادة التشغيل متساوية الأثر: تُسحَب الشجرة الموجودة من جديد عند الوسم المُحدَّد،
+ويُعاد تجسيد إطار العمل. التثبيت المُتحقَّق منه والمُثبَّت على وسم هو المسار
 الافتراضي والموصى به.
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
@@ -121,9 +156,10 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-تُشحَن البرامج النصية نفسها في النسخة المسحوبة تحت `scripts/installer/` — بصيغ
-`install` و`uninstall` و`update` في أشكال `.sh` و`.ps1` و`.bat` — فيمكنك تشغيلها
-مباشرةً بعد الاستنساخ:
+تُشحَن السكربتات نفسها في النسخة المسحوبة تحت <bdi>`scripts/installer/`</bdi> —
+<bdi>`install`</bdi> و<bdi>`uninstall`</bdi> و<bdi>`update`</bdi> بصيغ
+<bdi>`.sh`</bdi> و<bdi>`.ps1`</bdi> و<bdi>`.bat`</bdi> — فيمكنك تشغيلها مباشرةً بعد
+الاستنساخ:
 
 ```bash title="From a checkout"
 APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
@@ -132,46 +168,68 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### نموذج الثقة
 
-إن لم تُعرِّف `APOTHEM_REF`، يحلّ المثبِّت أعلى وسم إصدار من نوع
-`vMAJOR.MINOR.PATCH` ويُنزِّل *ذلك* — لا فرع `main` المتغيّر باستمرار. وقبل تحويل
-أي تهيئة، يُتحقَّق من توقيع الوسم المُنزَّل بـ `git verify-tag`؛ أما الوسم غير
-الموقَّع، أو المُتلاعَب به، أو غير القابل للتحقّق، فيُجهِض التثبيت قبل كتابة أي
-شيء. ولتثبيت إصدار بعينه، استخدم `APOTHEM_REF`:
+حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يحدّد المُثبِّت أعلى وسم إصدار
+<bdi>`vMAJOR.MINOR.PATCH`</bdi> ويسحب *ذلك الوسم* — ولا يسحب أبدًا فرع
+<bdi>`main`</bdi> المتحرّك. وقبل تجسيد أي تهيئة، يُتحقَّق من توقيع الوسم المجلوب عبر
+<bdi>`git verify-tag`</bdi>؛ والوسم غير الموقَّع، أو المُتلاعَب به، أو غير القابل
+للتحقّق يُجهِض التثبيت قبل كتابة أي شيء. أما الوسم الموقَّع الذي لم يدخل المفتاحُ
+العام لمشرفه حلقةَ المفاتيح المحلية بعد، فيُجهِض التثبيت مع إرشادات لاستيراد
+المفتاح بدلًا من ذلك: استورِد المفتاح، وطابِق بصمته مع القيمة المنشورة في
+[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)،
+ثم أعِد التشغيل. ثبِّت إصدارًا بعينه عبر <bdi>`APOTHEM_REF`</bdi>:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
 ```
 
-استبدل `vMAJOR.MINOR.PATCH` بوسم من
-[صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases).
+استبدل <bdi>`vMAJOR.MINOR.PATCH`</bdi> بوسم من
+[صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases). أقدم وسم إصدار
+وسمٌ خفيف لا يحمل توقيعًا خاصًّا به، لذا يُجهِض فحص الوسم عنده رغم أن الكوميت الخاص
+به موقَّع؛ وكل وسم إصدار لاحق مُعلَّق وموقَّع. يسرد قسم توقيع الإصدارات في
+[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+كل وسم وكيفية التحقّق منه.
 
-يُرخي تجاوزان صريحان السلوك الافتراضي: `APOTHEM_REF=main` يُنزِّل الفرع المتغيّر
-(دون تحقّق)، و`APOTHEM_ALLOW_UNVERIFIED=1` يخفّض فشل التحقّق إلى تحذير ويتابع —
-لِلاستخدام دون اتصال، أو محليًا، أو مع إصدارات مُوقَّعة مسبقًا. أما الفحص المحلي
-عبر `APOTHEM_SOURCE` فلا يُنزِّل شيئًا ويتخطّى التحقّق.
+تُرخي التجاوزات الصريحة السلوك الافتراضي. فـ<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>
+يخفّض فشل التحقّق إلى تحذير ويتابع، وذلك للاستخدام المعزول عن الشبكة، أو المحلي،
+أو مع الإصدارات السابقة لاعتماد التوقيع. أما <bdi>`APOTHEM_REF=main`</bdi> فيسحب
+الفرع المتحرّك دون تحقّق، ولكن فقط مع <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>.
+ومع <bdi>`APOTHEM_REF=main`</bdi> وحده، يجلب المُثبِّت الفرع <bdi>`main`</bdi> إلى
+<bdi>`APOTHEM_HOME`</bdi> ثم يُجهِض قبل تجسيد أي تهيئة، لأن الفرع ليس وسم إصدار
+موقَّعًا. وأما النسخة المسحوبة المحلية عبر <bdi>`APOTHEM_SOURCE`</bdi> فلا تجلب
+شيئًا وتتخطّى التحقّق.
 
-يعمل المحرّك بعد ذلك مباشرةً من الشجرة المُوضوعة بوصفه زمن تشغيل مكتفيًا ذاتيًا —
-اعتماداته من الطرف الثالث مُضمَّنة داخل شجرة الشفرة المصدرية، فلا دخل لأي سجلّ
-حِزَم في الأمر:
+<bdi>`APOTHEM_VERIFY=checksum`</bdi> هو الطريق الوسط لمضيف لا يحمل المفتاح العام
+للمشرف بعد: بدلًا من الاستنساخ، ينزّل المُثبِّت أرشيف المنصّة الخاص بالإصدار وملف
+<bdi>`SHA256SUMS`</bdi> الخاص به، ويُجهِض عند عدم تطابق البصمة قبل استخراج أي شيء،
+وينبّه إلى أن البصمة المطابقة تُثبت أن الأرشيف هو الذي يسرده الإصدار، لا هويةَ من
+نشره.
+
+ثم يعمل المحرّك مباشرةً من الشجرة الموضوعة. كل اعتمادية من طرف ثالث باستثناء
+<bdi>`click`</bdi> و<bdi>`rich`</bdi> مُضمَّنة داخل شجرة المصدر، وتضع نقطة
+الدخول دليل الاعتماديات المُضمَّنة ذاك على <bdi>`sys.path`</bdi> بنفسها:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-يقرأ كلا البرنامجين النصيين متغيرات بيئة التهيئة نفسها (`APOTHEM_HOME`،
-و`APOTHEM_REPO`، و`APOTHEM_REF`، و`APOTHEM_ALLOW_UNVERIFIED`، و`APOTHEM_SOURCE`،
-و`APOTHEM_HARNESS`، و`APOTHEM_PROFILE`، و`APOTHEM_SKIP_VERIFY`،
-و`APOTHEM_AUTO_INSTALL_DEPS`)؛ راجع
-[متغيرات بيئة المثبِّت](/docs/how-to/installer-environment-variables)
-للجدول الكامل و
-[زمن التشغيل المكتفي ذاتيًا](/docs/architecture/self-contained-runtime) لمعرفة
-كيفية عمل نموذج الاستدعاء `python -m`.
+يقرأ كلا السكربتين متغيّرات بيئة التهيئة نفسها (<bdi>`APOTHEM_HOME`</bdi>،
+و<bdi>`APOTHEM_REPO`</bdi>، و<bdi>`APOTHEM_REF`</bdi>،
+و<bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi>، و<bdi>`APOTHEM_VERIFY`</bdi>،
+و<bdi>`APOTHEM_RELEASE_BASE`</bdi>، و<bdi>`APOTHEM_SOURCE`</bdi>،
+و<bdi>`APOTHEM_HARNESS`</bdi>، و<bdi>`APOTHEM_PROFILE`</bdi>،
+و<bdi>`APOTHEM_SKIP_VERIFY`</bdi>، و<bdi>`APOTHEM_AUTO_INSTALL_DEPS`</bdi>،
+و<bdi>`APOTHEM_BIN_DIR`</bdi>)؛ راجع
+[متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables) للجدول
+الكامل، و[زمن التشغيل المكتفي ذاتيًا](/docs/architecture/self-contained-runtime)
+لمعرفة كيف يعمل نموذج الاستدعاء <bdi>`python -m`</bdi>.
 
-**أمر `apothem`.** بعد تثبيت ناجح، يكتب المثبِّت غلاف `apothem` يوجّه إلى المحرّك
-المرفق — على POSIX داخل `$HOME/.local/bin`، وعلى Windows داخل
-`%LOCALAPPDATA%\Microsoft\WindowsApps` (وهو دليل مستخدم موجود أصلًا على `PATH`
-الافتراضي لـ Windows). ولا يحرّر المثبِّت `PATH` الخاص بك أبدًا. وبمجرّد وجود
-الدليل على `PATH` تشغّل `apothem <command>` مباشرةً، دون `PYTHONPATH` يدوي.
+**الأمر <bdi>`apothem`</bdi>.** بعد تثبيت ناجح، يكتب المُثبِّت غلاف
+<bdi>`apothem`</bdi> يمرّر الأوامر إلى المحرّك المرفق — على <bdi>POSIX</bdi> في
+<bdi>`$HOME/.local/bin`</bdi>، وعلى <bdi>Windows</bdi> في
+<bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (وهو دليل مستخدم موجود أصلًا على
+<bdi>`PATH`</bdi> الافتراضي في <bdi>Windows</bdi>). لا يحرّر المُثبِّت
+<bdi>`PATH`</bdi> الخاص بك أبدًا. وبمجرّد أن يصبح الدليل على <bdi>`PATH`</bdi>
+تشغّل <bdi>`apothem <command>`</bdi> مباشرةً، دون <bdi>`PYTHONPATH`</bdi> يدوي.
 
 **التحقّق:**
 
@@ -182,32 +240,36 @@ apothem verify --harness claude-code
 PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 ```
 
-## 4. ملحق عائلة VS Code
+## 4. امتداد عائلة <bdi>VS Code</bdi>
 
-**المتطلّبات المُسبقة:** <bdi>VS Code</bdi>، و<bdi>Node.js</bdi> 18+،
-و<bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام.
+**المتطلّبات المُسبقة:** <bdi>VS Code</bdi>، و<bdi>Node.js 18+</bdi>،
+و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
 
-يُثبَّت ملحق **Apothem** من حزمة `apothem.vsix`:
-`code --install-extension apothem.vsix`، أو أمر *Install from VSIX…* في المحرِّر.
-يوقّع سير عمل الإصدار الحزمةَ ويرفقها بكل إصدار على <bdi>GitHub Releases</bdi>.
-الإصدارات المنشورة قبل أن يبدأ سير العمل بتحزيم الملحق لا تحمل أي حزمة؛ وعندما
-يفتقر إليها أحدث إصدار، ابنِ الحزمة من نسخة مسحوبة باستخدام إصدار <bdi>vsce</bdi>
-المقفل في `.github/vsce/`، والذي يتطلّب <bdi>Node.js</bdi> 22 أو أحدث: شغِّل
-`npm ci --prefix .github/vsce --ignore-scripts`، ثم
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-لم تُنشَر بعدُ صفحة للملحق في
-[سوق Visual Studio](https://marketplace.visualstudio.com/). ملحق واحد يغطّي
-<bdi>VS Code</bdi> وسطح المساعد المرافق داخل المحرِّر. تشغّل أوامره في لوحة الأوامر
-(`Apothem: Install`، و`Verify`، و`Update`، و`Uninstall`، و`Doctor`) المحرّكَ
-نفسه عبر المُشغِّل المُهيَّأ (`npx @ahmed-g-gad/apothem@<extension version>`
-افتراضيًا، فيشغّل الملحق إصدار المحرّك الذي شُحن معه؛ وجّه إعداد المستخدم
-`apothem.runner` إلى نسخة مسحوبة محلّية للتشغيل من الشفرة المصدرية). تسأل الأوامر
-`Install` و`Verify` و`Update` و`Uninstall` عن إطار العمل الذي تعمل عليه، وتعرض
-إطار عمل المحرِّر نفسه أولًا؛ و`all` خيار متاح، لكنه ليس الافتراضي أبدًا. إعداد
-`apothem.runner` على نطاق الجهاز، فلا تستطيع مساحة العمل تغييره، ولا يعمل الملحق
-إلا في مساحة عمل موثوقة.
+يُثبَّت امتداد **<bdi>Apothem</bdi>** من حزمة <bdi>`apothem.vsix`</bdi>:
+<bdi>`code --install-extension apothem.vsix`</bdi>، أو أمر
+*<bdi>Install from VSIX…</bdi>* في المحرِّر. يوقّع سير عمل الإصدار الحزمةَ ويرفقها
+بكل إصدار <bdi>GitHub</bdi>. الإصدارات المنشورة قبل أن يحزّم سير العمل الامتداد لا
+تحمل أي ملف <bdi>`.vsix`</bdi>؛ وحين يخلو منه أحدث إصدار، ابنِ الحزمة من نسخة
+مسحوبة باستخدام إصدار <bdi>vsce</bdi> المقفل في <bdi>`.github/vsce/`</bdi>
+(يتطلّب إصدار <bdi>vsce</bdi> هذا <bdi>Node.js</bdi> 22 أو أحدث):
+شغِّل <bdi>`npm ci --prefix .github/vsce --ignore-scripts`</bdi>، ثم
+<bdi>`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`</bdi>.
+لم تُنشَر بعدُ صفحة إدراج في
+[<bdi>Visual Studio Marketplace</bdi>](https://marketplace.visualstudio.com/).
+يغطّي امتداد واحد محرِّرات عائلة <bdi>VS Code</bdi>. تشغّل أوامره في
+لوحة الأوامر (<bdi>`Apothem: Install`</bdi>، و<bdi>`Verify`</bdi>،
+و<bdi>`Update`</bdi>، و<bdi>`Uninstall`</bdi>، و<bdi>`Doctor`</bdi>) المحرّكَ نفسه
+عبر المُشغِّل المُهيَّأ (<bdi>`npx @ahmed-g-gad/apothem@<extension version>`</bdi>
+افتراضيًا، فيشغّل الامتداد نسخة المحرّك التي شُحن معها؛ وجِّه إعداد المستخدم
+<bdi>`apothem.runner`</bdi> إلى نسخة مسحوبة محلية للتشغيل من المصدر).
+تسأل الأوامر <bdi>Install</bdi> و<bdi>Verify</bdi> و<bdi>Update</bdi>
+و<bdi>Uninstall</bdi> عن إطار العمل الذي تعمل عليه، وتعرض إطار عمل المحرِّر نفسه
+أولًا؛ و<bdi>`all`</bdi> أحد الخيارات، ولا يكون الافتراضي أبدًا. إعداد
+<bdi>`apothem.runner`</bdi> على نطاق الجهاز، فلا تستطيع مساحة عمل تغييره، ولا يعمل
+الامتداد إلا في مساحة عمل موثوقة.
 
-**التحقّق:** شغِّل أمر **Apothem: Verify** من لوحة أوامر المحرِّر، أو من الطرفية:
+**التحقّق:** شغِّل الأمر **<bdi>Apothem: Verify</bdi>** من لوحة أوامر المحرِّر، أو
+من طرفية:
 
 ```bash title="Verify"
 npx @ahmed-g-gad/apothem verify --harness claude-code
@@ -215,19 +277,20 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 5. مدخل سطر الأوامر التمهيدي (مضيف الامتدادات)
 
-**المتطلّبات المُسبقة:** أداته المضيفة على سطر الأوامر، و<bdi>Node.js</bdi> 18+،
-و<bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام.
+**المتطلّبات المُسبقة:** أداة سطر الأوامر المضيفة له، و<bdi>Node.js 18+</bdi>،
+و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
 
-ثبِّت <bdi>Apothem</bdi> بوصفه امتدادًا مباشرةً من المستودع — يحمل الأمر المضيف
-الدقيق ومُعرِّف البيئة:
+ثبِّت <bdi>Apothem</bdi> بوصفه امتدادًا مباشرةً من المستودع — يحمل الأمر المضيفَ
+ومُعرِّفَ إطار العمل الدقيقين:
 
 ```bash title="Install the extension"
 gemini extensions install https://github.com/ahmed-g-gad/apothem
 ```
 
 هذا الامتداد **مدخل تمهيدي**، لا التثبيت الكامل بمفرده: فهو يحمّل ملف سياق
-<bdi>Apothem</bdi> ويضيف أمر `/apothem` يستدعي المحرّك خارجيًّا
-(`npx @ahmed-g-gad/apothem`). جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
+<bdi>Apothem</bdi> ويضيف أمر <bdi>`/apothem`</bdi> يستدعي المحرّك عبر الصدفة
+(<bdi>`npx @ahmed-g-gad/apothem`</bdi>). جسِّد إطار العمل الكامل بتشغيل التثبيت
+عبره:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
@@ -239,19 +302,20 @@ npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
 npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
 ```
 
-## 6. مدخل سطر الأوامر التمهيدي (مضيف `qwen-code`)
+## 6. مدخل سطر الأوامر التمهيدي (مضيف <bdi>`qwen-code`</bdi>)
 
-**المتطلّبات المُسبقة:** أداته المضيفة على سطر الأوامر، و<bdi>Node.js</bdi> 18+،
-و<bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام.
+**المتطلّبات المُسبقة:** أداة سطر الأوامر المضيفة له، و<bdi>Node.js 18+</bdi>،
+و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
 
-ثبِّت <bdi>Apothem</bdi> بوصفه امتداد `--harness qwen-code` مباشرةً من المستودع:
+ثبِّت <bdi>Apothem</bdi> بوصفه امتداد <bdi>`--harness qwen-code`</bdi> مباشرةً من
+المستودع:
 
 ```bash title="Install the extension"
 qwen extensions install ahmed-g-gad/apothem
 ```
 
 مثل امتداد القناة 5، هذا **مدخل تمهيدي**: يحمّل ملف سياق <bdi>Apothem</bdi>
-ويستدعي المحرّك خارجيًّا. جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
+ويستدعي المحرّك عبر الصدفة. جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness qwen-code
@@ -265,19 +329,19 @@ npx @ahmed-g-gad/apothem verify --harness qwen-code
 
 ## 7. مدخل سطر الأوامر التمهيدي (مضيف الإضافات)
 
-**المتطلّبات المُسبقة:** أداته المضيفة على سطر الأوامر، و<bdi>Node.js</bdi> 18+،
-و<bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام.
+**المتطلّبات المُسبقة:** أداة سطر الأوامر المضيفة له، و<bdi>Node.js 18+</bdi>،
+و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
 
-أضِف المستودع بوصفه سوق إضافات، ثم ثبِّت الإضافة — يحمل الأمر المضيف الدقيق
-ومُعرِّف البيئة:
+أضِف المستودع بوصفه سوق إضافات، ثم ثبِّت الإضافة — يحمل الأمر المضيفَ ومُعرِّفَ
+إطار العمل الدقيقين:
 
 ```bash title="Install the plugin"
 codex plugin marketplace add ahmed-g-gad/apothem
 codex plugin add apothem@apothem
 ```
 
-مثل امتدادَي القناة 5 والقناة 6، هذا **مدخل تمهيدي** يستدعي المحرّك خارجيًّا.
-جسِّد إطار العمل الكامل بتشغيل التثبيت عبره:
+مثل امتدادَي القناتين 5 و6، هذا **مدخل تمهيدي** يستدعي المحرّك عبر الصدفة. جسِّد
+إطار العمل الكامل بتشغيل التثبيت عبره:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex
@@ -289,19 +353,25 @@ npx @ahmed-g-gad/apothem install --harness codex
 npx @ahmed-g-gad/apothem verify --harness codex
 ```
 
-## 8. المحرّك المباشر (`python -m apothem`)
+## 8. المحرّك المباشر (<bdi>`python -m apothem`</bdi>)
 
-**المتطلّبات المُسبقة:** <bdi>Python</bdi> 3.10+ مع إمكانية استيراد حزمتَي
-`click` و`rich`، إضافةً إلى نسخة مسحوبة من المستودع. لا يلزم <bdi>Node.js</bdi>.
+**المتطلّبات المُسبقة:** <bdi>Python 3.10+</bdi> المُثبَّت على النظام مع إمكانية
+استيراد الحزمتين <bdi>`click`</bdi> و<bdi>`rich`</bdi>، إضافةً إلى نسخة مسحوبة من
+المستودع. لا يلزم <bdi>Node.js</bdi>.
 
-شغِّل المحرّك المكتفي ذاتيًا مباشرةً من نسخة مستنسَخة — تحمل شجرة الشفرة المصدرية
-اعتماديّاتها المُضمَّنة، فيكون `PYTHONPATH=src` هو الإعداد كله:
+شغِّل المحرّك مباشرةً من نسخة مستنسَخة. تضع نقطة الدخول الاعتماديات المُضمَّنة
+(<bdi>`src/apothem/_vendor`</bdi>) على <bdi>`sys.path`</bdi>، فمع إمكانية استيراد
+<bdi>`click`</bdi> و<bdi>`rich`</bdi>، يكون <bdi>`PYTHONPATH=src`</bdi> هو الإعداد
+كله:
 
 ```bash title="Direct engine"
 git clone https://github.com/ahmed-g-gad/apothem
 cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
+
+كما في غلاف <bdi>npm</bdi>، يُنشئ أول <bdi>`install`</bdi> على جهاز لا ملف تعريفي
+فيه الملفَ التعريفي الأوّلي في <bdi>`~/.config/apothem/profile.yaml`</bdi> ويتابع.
 
 **التحقّق:**
 
@@ -321,25 +391,48 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-استبدل اسم إطار العمل بالمحوِّل الذي ثبَّته؛ راجع [قائمة أُطُر العمل](/docs/harnesses)
-لكل الأسماء المدعومة. وللتأكُّد من كل محوِّل مُسجَّل دفعةً واحدة، شغِّل
-`apothem doctor` (أو `npx @ahmed-g-gad/apothem doctor`) بالصيغة نفسها. في مسار
-الإضافة، شغِّل `/plugin` داخل <bdi>Claude Code</bdi> وتأكَّد من ظهور **apothem**
-بوصفه مُثبَّتًا.
+استبدل اسم إطار العمل بأيّ محوّل ثبّتَّه؛ راجع [قائمة أُطُر العمل](/docs/harnesses)
+لكل الأسماء المدعومة. ولفحص كل محوّل مُثبَّت دفعةً واحدة (أمر التحقّق الخاص به
+وأوامر خطّافاته)، شغِّل <bdi>`doctor`</bdi> بدلًا من
+<bdi>`verify --harness NAME`</bdi>، بأيّ صيغة استخدمتها أعلاه:
+<bdi>`apothem doctor`</bdi>، أو
+<bdi>`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`</bdi>، أو
+<bdi>`npx @ahmed-g-gad/apothem doctor`</bdi>. وفي مسار الإضافة، شغِّل
+<bdi>`/plugin`</bdi> داخل <bdi>Claude Code</bdi> وتأكّد من أن **<bdi>apothem</bdi>**
+مُدرَج بوصفه مُثبَّتًا.
 
 ## المتطلّبات المُسبقة بلمحة
 
-- **Python 3.10 أو أحدث** — يبحث عنه كل مسار يشغّل المحرّك (`python3`،
-  و`python`، والأسماء المُلحَقة بالإصدار، و`py -3` على <bdi>Windows</bdi>).
-- إمكانية استيراد **`click` و`rich`** تحت ذلك المُفسِّر — وهما الاعتمادان
-  الطرفيان اللذان لا يدمجهما المحرّك. يفحص المثبِّت كليهما، ويُسمّي أيّ اعتماد
-  مفقود، ويعرض تثبيته نيابةً عنك — بتأكيدك، أو تلقائيًا عبر `--yes`
-  (`-Yes` على PowerShell) أو `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **Node.js 18 أو أحدث** — لمسارَي غلاف npm ومداخل الأدوات فقط.
-- **Git** — لمسار المثبِّت فقط، وللصيغة الشبكية فحسب (يستنسخ البرنامج النصي
-  الشفرة المصدرية؛ لا تحتاج النسخة المسحوبة المحلّية إلى استنساخ).
-- **Claude Code** — لمسار الإضافة فقط. أما **VS Code** والأداة المضيفة لكل مدخل
-  سطر أوامر تمهيدي فلا تلزم إلا لقناته الخاصة (4–7).
+- **<bdi>Python</bdi> 3.10 أو أحدث** — المسارات التي تحدّد موقعه تفعل ذلك بالاسم،
+  وتختلف الأسماء من مسار إلى آخر. يجرّب غلاف <bdi>npm</bdi> الأسماء
+  <bdi>`python3`</bdi>، ثم <bdi>`python`</bdi>، ثم <bdi>`py -3`</bdi>. وتجرّب
+  المُثبِّتات <bdi>`python3`</bdi>، و<bdi>`python`</bdi>، والأسماء المقرونة برقم
+  النسخة من <bdi>`python3.14`</bdi> نزولًا إلى <bdi>`python3.10`</bdi>.
+- **إمكانية استيراد <bdi>`click`</bdi> و<bdi>`rich`</bdi>** تحت ذلك المُفسِّر — وهما
+  الاعتماديتان المواجهتان للطرفية اللتان لا يُضمِّنهما المحرّك. تفحص المُثبِّتات
+  كلتيهما، وتُسمّي أي ناقص منهما، وتعرض تثبيته نيابةً عنك — بتأكيد منك، أو
+  تلقائيًا عبر <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> في <bdi>PowerShell</bdi>) أو
+  <bdi>`APOTHEM_AUTO_INSTALL_DEPS=1`</bdi>. وفي كل قناة أخرى، تُوقِف الحزمة الناقصة
+  المحرّكَ بخطأ (رمز الخروج 1) يُسمّي الأمر الدقيق للمُفسِّر الذي وجده، مع قيود
+  النسخ التي يُختبَر <bdi>Apothem</bdi> عليها
+  (<bdi>`<interpreter> -m pip install "click==…" "rich>=…"`</bdi>)؛ ومع
+  <bdi>`--json`</bdi> يصل الخطأ نفسه بوصفه مُغلَّف <bdi>JSON</bdi> بالرمز
+  <bdi>`runtime.dependency_missing`</bdi>.
+- **<bdi>Node.js</bdi> 18 أو أحدث** — فقط المسارات التي تشغّل <bdi>`npx`</bdi>:
+  غلاف <bdi>npm</bdi> (2)، وامتداد عائلة <bdi>VS Code</bdi> (4)، ومداخل سطر الأوامر
+  التمهيدية (5–7).
+- **بيئات التشغيل المنتهية العمر.** بلغ <bdi>Python</bdi> 3.10 نهاية عمره لدى
+  المصدر الأصلي في 2026-10-01، وبلغها <bdi>Node.js</bdi> 18 و20 في 2025-04-30
+  و2026-04-30. لا يزال <bdi>Apothem</bdi> يدعمها بوصفها حدوده الدنيا المُعلَنة
+  ويختبر كلًّا منها في <bdi>CI</bdi>، لكنها لم تعد تتلقّى إصلاحات أمنية من المصدر
+  الأصلي، لذا فضِّل <bdi>Python</bdi> 3.11 أو أحدث و<bdi>Node.js</bdi> 22 أو أحدث.
+  تشرح
+  [سياسة الحدود الدنيا لبيئة التشغيل](/docs/governance/release-engineering-policy#الحدود-الدنيا-لبيئة-التشغيل)
+  كيف يُرفَع حدّ أدنى.
+- **<bdi>Git</bdi>** — لمسار المُثبِّت فقط، وللصيغة الشبكية فقط (يستنسخ السكربت
+  المصدر؛ ولا تحتاج النسخة المسحوبة المحلية إلى استنساخ).
+- **<bdi>Claude Code</bdi>** — لمسار الإضافة فقط. أما **<bdi>VS Code</bdi>** والأداة
+  المضيفة الخاصة بكل مدخل تمهيدي لسطر الأوامر فلا تلزم إلا لقناتها الخاصة (4–7).
 
 ## الأدلّة التالية
 
@@ -349,4 +442,4 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 | إضافة إطار عمل | [إعداد إطار العمل](/docs/install/harness-setup) |
 | التحديث | [التحديث](/docs/install/updating) |
 | إلغاء التثبيت | [إلغاء التثبيت](/docs/install/uninstalling) |
-| إخفاق شيء ما | [استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting) |
+| فشل شيء ما | [استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting) |

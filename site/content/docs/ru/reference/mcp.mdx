@@ -1,29 +1,59 @@
 ---
 title: "Серверы MCP"
-description: "Конфигурация серверов Model Context Protocol — принадлежат оператору и регистрируются через нативный механизм MCP каждого инструмента; Apothem синхронизирует инвентарь из общего профиля, но не создаёт записи серверов."
+description: "Конфигурация серверов Model Context Protocol — серверы принадлежат оператору и регистрируются через нативный механизм MCP каждого инструмента; несколько адаптеров проецируют инвентарь MCP из общего профиля, остальные не создают записей серверов."
 machineTranslated: true
-sourceHash: "47fd8ec2c4c5bef7"
+sourceHash: "493b667087182d32"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Серверы Model Context Protocol (MCP) **принадлежат оператору**. Apothem ведёт
-инвентарь MCP в общем профиле и проецирует его в нативную MCP-поверхность каждого
-инструмента, но не создаёт собственных записей серверов — поверхность остаётся
-под вашим управлением.
+Серверы Model Context Protocol (MCP) **принадлежат оператору**. Apothem хранит
+инвентарь MCP в общем профиле (`mcp_servers`). Адаптер, инструмент которого
+хранит свои серверы MCP в файле конфигурации, уже записываемом Apothem,
+проецирует этот инвентарь в этот файл; все остальные адаптеры не создают
+записей серверов, и регистрировать серверы через инструмент по-прежнему вам.
+
+## Какие адаптеры проецируют инвентарь
+
+Таблица ниже сгенерирована из ячейки возможности `mcp_servers` реестра
+окружений для каждого адаптера.
+
+{/* apothem:generated-reference:start */}
+
+| Harness | MCP inventory | Note |
+| --- | --- | --- |
+| Antigravity (`antigravity`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Claude Code (`claude-code`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| CodeBuddy (`codebuddy`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Codex (`codex`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Cursor (`cursor`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Gemini CLI (`gemini-cli`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| GitHub Copilot (`github-copilot`) | Not projected (unsupported) | Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them. |
+| GLM (Z.ai) (`glm`) | Not projected (unsupported) | GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface. |
+| Hermes (`hermes`) | Projected: written into the tool's MCP config | — |
+| Kimi Code (`kimi-code`) | Not projected (discovery-pending) | `.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries. |
+| Kiro (`kiro`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Open-Claw (`open-claw`) | Not projected (unsupported) | Open-Claw MCP lives in the mcp.servers config block managed via the openclaw mcp CLI; the adapter authors no entries. |
+| OpenCode (`opencode`) | Projected: written into the tool's MCP config | — |
+| Qwen Code (`qwen-code`) | Projected: written into the tool's MCP config | — |
+| Trae (`trae`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Windsurf (`windsurf`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Zed (`zed`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+
+{/* apothem:generated-reference:end */}
 
 ## Где регистрируются серверы MCP
 
-Каждый инструмент регистрирует серверы MCP через свой собственный нативный
-механизм, и Apothem соблюдает эту поверхность, а не перезаписывает её. В адаптере
-Claude Code (одном из многих) серверы регистрируются командой `claude mcp add` в
-`~/.claude.json` (пользовательская или локальная область) и в `.mcp.json` на
-уровне проекта; другие адаптеры проецируют в свои собственные нативные
-поверхности. Настройки, управляемые Apothem, никогда не несут блок `mcpServers`.
+Каждый инструмент регистрирует серверы MCP через собственный нативный механизм,
+и Apothem соблюдает эту поверхность, а не перезаписывает её. В Claude Code
+серверы регистрируются командой `claude mcp add` в `~/.claude.json`
+(пользовательская или локальная область) и в `.mcp.json` на уровне проекта;
+адаптер Claude Code не записывает ни один из этих файлов, а управляемые Apothem
+настройки Claude Code никогда не содержат блок `mcpServers`.
 
 ## Добавление сервера
 
-Зарегистрируйте сервер через нативный механизм вашего инструмента; канонической
-формой записи является ключ под `mcpServers`:
+Зарегистрируйте сервер через нативный механизм вашего инструмента; каноническая
+форма записи — один ключ под `mcpServers`:
 
 ```json
 {
@@ -36,10 +66,11 @@ Claude Code (одном из многих) серверы регистрирую
 }
 ```
 
-Runtime инструмента загружает зарегистрированные серверы при старте сессии;
-перезапустите инструмент, чтобы подхватить новые серверы.
+Среда выполнения инструмента загружает зарегистрированные серверы при запуске
+сессии; перезапустите инструмент, чтобы он подхватил новые серверы.
 
-## Конвенция именования
+## Соглашение об именовании
 
-Инструменты MCP появляются у ассистента как `mcp__<server>__<tool>` согласно
-стандартной конвенции именования MCP-инструментов инструмента.
+Инструменты MCP становятся доступны ассистенту как `mcp__<server>__<tool>`
+согласно стандартному соглашению об именовании MCP-инструментов этого
+инструмента.

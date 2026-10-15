@@ -2,11 +2,11 @@
 title: "migrate-workspace"
 description: "apothem migrate-workspace 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "61e082f5e4bcbe9b"
+sourceHash: "282a9458bb23c4b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-将每harness的旧式工作区迁移到共享的 `.apothem` 布局。
+将旧有的按工具划分的工作区迁移到共享的 `.apothem` 布局中。
 
 ## 概要
 
@@ -16,41 +16,35 @@ apothem migrate-workspace [--project PATH] [--dry-run]
                           [--format plain|json] [--json] [--no-color]
 ```
 
-`migrate-workspace` 会将每harness的旧式数据主目录（`.apothem/<harness>/...`）和旧式
-`.plans/` 树合并到单个共享工作目录 `.apothem/{plans,memory,learning,contexts}` 中。基准目录在提供时为
-解析后的 `--project` 根目录，否则为当前工作目录（项目本地默认值）。
+`migrate-workspace` 会将旧有的按工具划分的数据主目录（`.apothem/<harness>/...`）和旧有的 `.plans/` 树合并到单一的共享工作目录 `.apothem/{plans,memory,learning,contexts}` 中。基准目录在提供了根目录时为解析后的 `--project` 根目录，否则为当前工作目录（项目本地的默认值）。
 
-每harness的内存、上下文和学习存储会按 id 并集合并到共享存储中；学习信号会连接并去重；
-冲突记录（id 相同、内容不同）会被跳过，绝不覆盖。旧式 `.plans/` 树会被移动到
-`.apothem/plans/` 之下。每个被消费的来源都会先行备份。该迁移是幂等的——在已迁移的树上
-重新运行是一个无操作。
+按工具划分的记忆、上下文和学习存储会按 id 以并集方式合并到共享存储中；学习信号会被拼接并去重；冲突的记录（id 相同、内容不同）会被跳过，绝不会被覆盖。旧有的 `.plans/` 树会被移动到 `.apothem/plans/` 下。每个被合并吸收的来源都会先被备份。该迁移是幂等的——在已迁移的树上重新运行是一个无操作。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--project PATH` | 用于项目范围适配器的项目根目录，这些适配器物化到项目树中，而非用户范围的配置目录。 |
-| `--dry-run` | 检测旧式布局并报告将迁移的内容，但不写入。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--project PATH` | 项目范围适配器的项目根目录，这些适配器物化到项目树中，而不是用户范围的配置目录中。 |
+| `--dry-run` | 检测旧有布局并报告将会迁移的内容，而不写入任何内容。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
 
-`--json` 信封携带迁移结果。在迁移完成时，`status` 为 `success`，载荷会报告合并的记录计数、
-是否重新放置了 `.plans/` 树、备份根目录，以及任何被跳过的冲突。`--dry-run` 调用则改为报告
-`legacy_layout_detected`。
+`--json` 信封携带迁移结果。迁移完成时，`status` 为 `success`，载荷会报告已合并的记录数、`.plans/` 树是否已被移动到新位置、备份根目录，以及任何被跳过的冲突。`--dry-run` 调用则改为报告 `legacy_layout_detected`。
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "status": "success",
   "base": "/home/example/project",
   "migrated": true,
-  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "backup_root": "/home/example/project/.apothem/backups/migrate-20260101T120000Z",
   "memory_merged": 12,
   "contexts_merged": 4,
   "learning_merged": 7,
@@ -60,11 +54,11 @@ apothem migrate-workspace [--project PATH] [--dry-run]
 }
 ```
 
-当不存在旧式布局时，`migrated` 为 `false` 且不写入任何内容。`--dry-run` 信封会省略结果
-计数，仅报告检测结果：
+当不存在旧有布局时，`migrated` 为 `false`，且不会写入任何内容。`--dry-run` 信封省略结果计数，只报告检测结果：
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "base": "/home/example/project",
   "dry_run": true,
@@ -82,13 +76,14 @@ apothem migrate-workspace --dry-run --json
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
-| 0 | 迁移完成，或未找到旧式布局（无需迁移） |
-| 1 | 预期错误——校验或项目根目录错误，或迁移失败 |
+| 0 | 迁移已完成，或未发现旧有布局（没有需要迁移的内容） |
+| 1 | 预期内的错误——校验错误或项目根目录错误，或者迁移失败 |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem install](/docs/cli-reference/install) — 从共享配置文件物化某个harness
-- [apothem status](/docs/cli-reference/status) — 报告安装、校验和漂移状态
-- [计划纪律](/docs/reference/plans-discipline) — 共享的 `.apothem/plans/` 布局
+- [apothem install](/docs/cli-reference/install)——从共享配置档案物化一个工具
+- [apothem status](/docs/cli-reference/status)——报告安装、验证和漂移状态
+- [计划规范](/docs/reference/plans-discipline)——共享的 `.apothem/plans/` 布局

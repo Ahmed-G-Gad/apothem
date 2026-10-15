@@ -1,12 +1,12 @@
 ---
 title: "Hermes"
-description: "Hermes(미리 보기)를 위한 Apothem 하니스 어댑터."
+description: "Hermes(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "7d64ffd668c14134"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** Hermes
+**벤더:** Hermes
 **설치 이름:** `hermes`
 **상태:** 미리 보기
 **네이티브 구성:** `~/.hermes/config.yaml`
@@ -17,26 +17,43 @@ sourceHash: "7d64ffd668c14134"
 apothem install --harness hermes
 ```
 
-어댑터는 공유 프로필을 Hermes Agent 사용자 전역 구성 파일로 번역하고, 하니스
+어댑터는 공유 프로필을 Hermes Agent 사용자 전역 구성 파일로 변환하고, 하니스
 루트 아래에 Apothem 지원 코호트를 설치합니다.
 
-**작성되는 파일:** `~/.hermes/config.yaml` 및 `~/.hermes/.apothem/support/` 아래의 지원
-파일
+**작성되는 파일:** `~/.hermes/config.yaml`, 프로필 문서
+`~/.hermes/apothem/rules/00-apothem-profile.md`, 그리고
+`~/.hermes/.apothem/support/` 아래의 지원 파일
 
-## 프로필에서 네이티브 구성으로의 매핑
+프로필 문서는 Apothem 지원 파일 섹션으로 끝나며, 이 섹션은 저장소 스타일의 각
+인용(`rules/<name>.md`, `templates/...`, `hooks/...`)이 해석되는 기준인
+`~/.hermes/.apothem/support/` 아래의 절대 디렉터리를 명시합니다.
 
-어댑터는 Apothem의 공유 프로필을 읽고 네이티브 YAML 구성을 렌더링합니다. Hermes
-자체의 스킬 표면은 `skills.config` — Hermes가 동적 슬래시 명령으로 자동
-노출하는 설치 가능한 레지스트리 패키지 — 이며, Apothem은 이를 작성하지 않습니다.
-대신 Apothem은 공유 명령 및 스킬 콘텐츠를 `~/.hermes/.apothem/support/` 아래의 지원
-자료로 전달하며, 네이티브 지시 앵커에서 참조합니다. 헬퍼 정의, 규칙, 템플릿,
-훅 프롬프트도 마찬가지로 `~/.hermes/.apothem/support/` 아래의 지원 자료로 남습니다.
+## 프로필-네이티브 구성 매핑
+
+어댑터는 Apothem의 공유 프로필을 읽고, 프로필의 MCP 인벤토리를 포함한 네이티브
+YAML 구성을 렌더링합니다. 프로필의 신원, 선호, 규칙은 프로필 문서에
+들어갑니다. 공유 커맨드, 스킬, 도우미 정의, 규칙, 템플릿, 훅 프롬프트는
+`~/.hermes/.apothem/support/` 아래에 지원 자료로 배치됩니다.
 
 ## 호환성 참고 사항
 
-미리 보기 어댑터. 네이티브 YAML 구성이 활성 Hermes 표면입니다. Apothem은 스킬에
-대해 문서화된 외부 스킬 디렉터리 훅을 사용하고, 다른 코호트는 설치된 안내를 위한
-참조 자료로 유지합니다.
+미리 보기 어댑터입니다. Hermes는 지원 트리나 프로필 문서를 스스로 로드하지
+않습니다. `config.yaml`의 어떤 항목도, Hermes가 읽는 어떤 컨텍스트 파일도
+그곳을 가리키지 않으므로, 설치 후 Hermes는 Apothem의 규칙, 스킬, 훅 없이
+실행됩니다. Hermes는 `~/.hermes/skills/`와 `config.yaml`의 `skills.external_dirs`
+아래에 나열된 모든 폴더에서 스킬을 읽습니다. Apothem 스킬을 사용하려면
+`~/.hermes/.apothem/support/skills`를 그 목록에 직접 추가하세요. `apothem update`는
+여러분이 `config.yaml`에 추가한 키를 유지합니다. 어댑터는 프로필의 MCP
+인벤토리를 Hermes가 MCP 서버를 읽는 최상위 `mcp_servers` 키 아래에 작성합니다.
+이전 Apothem 릴리스는 이를 `auxiliary.mcp` 아래에 작성했는데, Hermes는 이 키를
+MCP 도구 디스패치용 보조 모델로 읽습니다. `apothem update`와
+`apothem uninstall`은 모두, 그 블록이 그러한 릴리스가 여러분의 현재 공유
+프로필로부터 작성했을 내용과 여전히 일치할 때 그 블록을 제거합니다(블록이 남는
+경우는 [제거](#제거) 참조).
+(Hermes 동작은
+[스킬](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)과
+[MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)에
+관한 사용자 가이드 페이지를 따르며, 2026-10-02에 확인했습니다.)
 
 ## 검증
 
@@ -44,10 +61,12 @@ apothem install --harness hermes
 apothem verify --harness hermes
 ```
 
-verify 명령은 다음을 확인합니다:
+verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -56,7 +75,7 @@ verify 명령은 다음을 확인합니다:
 apothem update --harness hermes
 ```
 
-현재 공유 프로필 상태에서 네이티브 구성을 다시 파생합니다.
+현재 공유 프로필 상태에서 네이티브 구성을 다시 도출합니다.
 `~/.config/apothem/profile.yaml`을 편집하거나 설치된 Apothem 패키지를
 업그레이드한 후에 실행하세요.
 
@@ -66,8 +85,19 @@ apothem update --harness hermes
 apothem uninstall --harness hermes
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+어댑터가 추가한 것을 제거합니다. 설치가 `config.yaml`에 기록한 `mcp_servers`
+항목(여러분의 키는 유지되며, 파일은 Apothem이 만들었고 여러분의 것이 하나도
+남아 있지 않을 때만 삭제됨), 프로필 문서, 지원 트리입니다. 공유 프로필 YAML과
+Apothem 엔진은 영향을 받지 않습니다.
+
+프로필의 서버를 `auxiliary.mcp` 아래에 작성한 이전 릴리스로 수행한 설치에서도,
+그 블록이 해당 릴리스가 `~/.config/apothem/profile.yaml`의 여러분의 현재 공유
+프로필로부터 작성했을 내용과 여전히 일치하면 그 블록이 제거됩니다. 이는
+`apothem update`가 적용하는 것과 같은 규칙이므로, 먼저 업데이트하지 않고
+제거해도 프로필의 MCP 서버가 바뀌지 않은 한 오래된 블록이 남지 않습니다. 여러분이
+편집한 블록, 여러분의 현재 프로필의 MCP 서버와 더 이상 일치하지 않는 블록,
+또는 비교 대상으로 읽을 수 있는 공유 프로필이 없는 블록은 그대로 남으며,
+여러분의 나머지 `auxiliary` 설정은 항상 유지됩니다.
 
 ## 적합성 게이트
 
@@ -77,14 +107,20 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 해결 |
+| 증상 | 해결 방법 |
 |---------|-----|
-| 구성 파일을 찾을 수 없음 | `apothem install --harness hermes`를 다시 실행하세요 |
-| 검증 실패 | `apothem update --harness hermes`를 실행한 후 다시 검증하세요 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness hermes`를 다시 실행하세요 |
+| 구성 파일을 찾을 수 없음 | `apothem install --harness hermes`를 다시 실행 |
+| 검증 실패 | `apothem update --harness hermes`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness hermes`를 다시 실행 |
 
 ## 구성 노브
 
 | 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
+
+## 함께 보기
+
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

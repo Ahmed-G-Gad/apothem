@@ -1,14 +1,14 @@
 ---
 title: "OpenCode"
-description: "Adaptateur d'outil Apothem pour OpenCode (Beta)."
+description: "Adaptateur d'environnement Apothem pour OpenCode (bêta)."
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Fournisseur :** OpenCode
+**Éditeur :** OpenCode
 **Nom d'installation :** `opencode`
-**Statut :** Beta
+**Statut :** Bêta
 **Configuration native :** `~/.config/opencode/`
 
 ## Installation
@@ -17,35 +17,57 @@ sourceHash: "4469c3fbcf489bd8"
 apothem install --harness opencode
 ```
 
-L'adaptateur écrit la configuration JSON d'OpenCode, installe les compétences
-Apothem dans la surface de compétences d'OpenCode, convertit les invites de
-commandes en fichiers de commandes Markdown d'OpenCode et normalise les définitions
-d'assistants Apothem en tant que sous-assistants OpenCode.
+L'adaptateur écrit la configuration JSON d'OpenCode, installe les skills Apothem
+dans la surface de skills d'OpenCode, convertit les prompts de commande en
+fichiers de commande Markdown OpenCode et normalise les définitions
+d'auxiliaires Apothem en sous-auxiliaires OpenCode.
 
 **Fichiers écrits :**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
-## Correspondance du profil vers la configuration native
+## Correspondance entre le profil et la configuration native
 
-L'adaptateur restitue `opencode.json` avec une liste de fichiers `instructions` qui
-pointe vers les règles installées d'Apothem, puis propage chaque cohorte partagée
-d'Apothem soit vers une surface native d'OpenCode, soit vers un sous-arbre de prise
-en charge appartenant à Apothem. Les enfants gérés par Apothem qui correspondent
-déjà sont sauvegardés avant remplacement.
+L'adaptateur rend `opencode.json` avec une liste de fichiers `instructions` qui
+nomme votre document de profil et les règles toujours actives d'Apothem, puis
+propage chaque cohorte Apothem partagée soit vers une surface native d'OpenCode,
+soit vers une sous-arborescence de support détenue par Apothem. Les enfants
+existants correspondants gérés par Apothem sont sauvegardés avant remplacement.
 
 ## Notes de compatibilité
 
-Les règles sont référencées via la liste native `instructions`. Les modèles et les
-invites de hooks sont du matériel de référence sous `~/.config/opencode/.apothem/support/` ;
-les commandes, les compétences et les définitions d'assistants utilisent des
-emplacements de découverte natifs.
+OpenCode combine chaque fichier que nomme la liste `instructions` dans chaque
+session ([règles d'OpenCode](https://opencode.ai/docs/rules/)). La liste nomme
+donc d'abord votre document de profil, puis uniquement les règles dont
+`alwaysApply` vaut `true`, chacune par un chemin explicite
+`~/.config/opencode/.apothem/support/rules/<name>.md` ; OpenCode développe le
+`~/` initial par rapport à votre répertoire personnel. Les règles filtrées par
+chemin, les templates et les prompts de hook restent installés comme matériel
+de référence sous `~/.config/opencode/.apothem/support/`, où une règle, une
+skill ou une commande qui en cite un le lit à la demande. Les commandes, les
+skills et les définitions d'auxiliaires utilisent les emplacements de
+découverte natifs.
+
+Le document de profil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+porte votre identité et vos préférences issues du profil partagé, et se termine
+par une section consacrée aux fichiers de support Apothem, qui nomme le
+répertoire absolu sous `~/.config/opencode/.apothem/support/` par rapport auquel
+se résout chaque citation de style dépôt (`rules/<name>.md`, `templates/...`,
+`hooks/...`). C'est la première entrée de `instructions` ; OpenCode le charge
+donc dans chaque session.
+
+Un `opencode.json` écrit par une publication antérieure liste le glob unique
+`~/.config/opencode/.apothem/support/rules/*.md`, qui charge toutes les règles.
+`apothem install` et `apothem update` le remplacent par la liste des règles
+toujours actives, et `apothem uninstall` supprime les deux formes. Vos propres
+entrées `instructions` sont conservées dans tous les cas.
 
 ## Vérification
 
@@ -56,7 +78,10 @@ apothem verify --harness opencode
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -65,8 +90,8 @@ La commande verify confirme que :
 apothem update --harness opencode
 ```
 
-Actualise `opencode.json`, les commandes natives, les compétences, les définitions
-d'assistants et l'arborescence de prise en charge Apothem.
+Actualise `opencode.json`, les commandes natives, les skills, les définitions
+d'auxiliaires et l'arborescence de support Apothem.
 
 ## Désinstallation
 
@@ -74,10 +99,21 @@ d'assistants et l'arborescence de prise en charge Apothem.
 apothem uninstall --harness opencode
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime les entrées que l'adaptateur a ajoutées à
+`~/.config/opencode/opencode.json` (vos propres clés, vos serveurs MCP et vos
+entrées `instructions` restent en place, et le fichier n'est supprimé que si
+Apothem l'a créé et qu'il n'y reste plus rien qui vous appartienne). Supprime le
+bloc Apothem du document de profil
+`~/.config/opencode/apothem/rules/00-apothem-profile.md` et conserve tout autre
+texte qu'il contient ; ce fichier n'est supprimé que si rien d'autre n'y
+subsiste. Supprime aussi les fichiers Apothem de `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/` et
+`~/.config/opencode/.apothem/support/` ; les autres fichiers de ces dossiers
+restent en place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant
+d'être modifié ou supprimé. Le YAML du profil partagé et le moteur Apothem ne
+sont pas affectés.
 
-## Porte de conformité
+## Portail de conformité
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,12 +123,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptôme | Correctif |
 |---------|-----|
-| Fichier de configuration introuvable | Réexécutez `apothem install --harness opencode` |
+| Fichier de configuration introuvable | Relancez `apothem install --harness opencode` |
 | Échec de la vérification | Exécutez `apothem update --harness opencode`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness opencode` |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness opencode` |
 
-## Boutons de configuration
+## Paramètres de configuration
 
-| Indicateur | Par défaut | Description |
+| Option | Par défaut | Description |
 |------|---------|-------------|
 | `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |
+
+## Voir aussi
+
+- [Tous les environnements](/docs/harnesses) — le catalogue complet des outils pris en charge
+- [Guide d'installation](/docs/install) — installer Apothem dans cet environnement
+- [Référence de `apothem harnesses`](/docs/cli-reference/harnesses) — lister et inspecter les adaptateurs depuis la CLI

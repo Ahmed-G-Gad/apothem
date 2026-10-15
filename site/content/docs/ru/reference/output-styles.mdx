@@ -1,35 +1,56 @@
 ---
 title: "Стили вывода"
-description: "Профили тона оператора (Senior Architect, Concise Engineer, Forensic Auditor), активируемые посессионно через команду /output-style."
+description: "Профили тона оператора (Senior Architect, Concise Engineer, Forensic Auditor), которые активируются для отдельной сессии командой /output-style."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Профили стиля вывода находятся под `src/apothem/output-styles/` и несут
-рекомендации по тону оператора для каждого стиля. Runtime хост-ассистента
-программирования активирует стиль посессионно через `/output-style <name>`.
+Профили стилей вывода находятся в `src/apothem/output-styles/` и содержат
+рекомендации по тону оператора для каждого стиля. Хост-окружение активирует
+стиль для отдельной сессии командой `/output-style <name>`.
 
 ## Канонические профили
 
 | Профиль | Файл | Тон |
 |---------|------|------|
-| Архитектор по умолчанию | `src/apothem/output-styles/default-architect.md` | Тон Senior Software Architect (по умолчанию) |
+| По умолчанию | `src/apothem/output-styles/default.md` | Базовый тон, который дополняют все остальные стили |
+| Архитектор по умолчанию | `src/apothem/output-styles/default-architect.md` | Тон Senior Software Architect |
 | Лаконичный инженер | `src/apothem/output-styles/concise-engineer.md` | Краткий инженерный тон |
-| Криминалистический аудитор | `src/apothem/output-styles/forensic-auditor.md` | Тон аудита находка за находкой |
+| Криминалистический аудитор | `src/apothem/output-styles/forensic-auditor.md` | Тон аудита, разбирающего находку за находкой |
 
-## Контракт frontmatter
+## Куда устанавливаются стили
+
+`apothem install --harness claude-code` копирует стили в
+`~/.claude/output-styles/`. Плагин Claude Code поставляет те же файлы в своей
+папке `output-styles/`, которую Claude Code просматривает в поисках стилей
+вывода плагинов ([справочник по плагинам](https://code.claude.com/docs/en/plugins-reference)),
+поэтому стили можно выбрать, даже если установлен только плагин. Ни у одного
+другого окружения нет поверхности стилей вывода, поэтому никакая другая
+установка их не поставляет.
+
+## Контракт фронтматтера
 
 ```yaml
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
+`name` и `description` обязательны. Каждый поставляемый стиль также задаёт
+`keep-coding-instructions: true`. Claude Code исключает свои встроенные
+инструкции по программной инженерии (как ограничивать объём изменений, писать
+комментарии и проверять работу) из любого пользовательского стиля вывода, если
+этот ключ не равен `true`; по умолчанию он равен `false`. Стили Apothem меняют
+то, как работа представлена, а не то, как она выполняется, поэтому они
+сохраняют эти инструкции. См.
+[справочник по стилям вывода Claude Code](https://code.claude.com/docs/en/output-styles).
+
 ## Создание нового профиля
 
-Создайте новый файл `<name>.md` под `src/apothem/output-styles/` с каноническим
-frontmatter, объявите тон в теле и ратифицируйте, вызвав `/output-style <name>`
-в начале вашей следующей сессии.
+Создайте новый файл `<name>.md` в `src/apothem/output-styles/` с каноническим
+фронтматтером, включая `keep-coding-instructions: true`, кроме случая, когда
+стиль не предназначен для инженерной работы, объявите тон в теле и утвердите
+стиль, вызвав `/output-style <name>` в начале следующей сессии.

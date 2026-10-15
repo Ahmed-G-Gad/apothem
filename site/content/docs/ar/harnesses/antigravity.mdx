@@ -1,14 +1,14 @@
 ---
 title: "Antigravity"
-description: "محوّل أداة Apothem لـ Antigravity (إصدار أوّلي)."
+description: "محوّل إطار عمل Apothem لـ Antigravity (معاينة)."
 machineTranslated: true
-sourceHash: "b5740666d67c3796"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Antigravity</bdi>
 **اسم التثبيت:** <bdi>`antigravity`</bdi>
-**الحالة:** إصدار أوّلي
+**الحالة:** معاينة
 **الإعداد الأصلي:** <bdi>`~/.gemini/GEMINI.md`</bdi> إضافةً إلى
 <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>
 
@@ -18,37 +18,68 @@ sourceHash: "b5740666d67c3796"
 apothem install --harness antigravity
 ```
 
-يقوم المحوّل بتجسيد الملف التعريفي المشترك إلى <bdi>`~/.gemini/GEMINI.md`</bdi> ويثبّت
-مجموعات دعم <bdi>Apothem</bdi> بوصفها مُلحَق <bdi>Antigravity CLI</bdi>.
+يُجسِّد المحوّل الملف التعريفي المشترك إلى <bdi>`~/.gemini/GEMINI.md`</bdi> ويثبّت
+حزم دعم <bdi>Apothem</bdi> بوصفها إضافة لـ <bdi>Antigravity CLI</bdi>.
 
 **الملفات المكتوبة:** <bdi>`~/.gemini/GEMINI.md`</bdi>،
 و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`</bdi>،
 و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/skills/`</bdi>،
 و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/rules/`</bdi>،
-وتعريفات المساعِدات المحلّية المُحوَّلة داخل المُلحَق،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`</bdi>،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`</bdi>.
+وتعريفات المساعِدات المحلّية المُحوَّلة داخل الإضافة،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`</bdi>،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`</bdi>.
+
+تنتهي كتلة <bdi>Apothem</bdi> في <bdi>`~/.gemini/GEMINI.md`</bdi> بقسم ملفات دعم
+<bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب
+المستودع: <bdi>`rules/<name>.md`</bdi> تحت <bdi>`rules/`</bdi> الخاص بالإضافة،
+و<bdi>`templates/...`</bdi> و<bdi>`hooks/...`</bdi> تحت <bdi>`.apothem/support/`</bdi>
+الخاص بالإضافة.
+
+**قواعد الإضافة.** يُسقِط <bdi>Antigravity</bdi> أي ملف في دليل <bdi>`rules/`</bdi>
+الخاص بإضافةٍ ما لا يبدأ بـ <bdi>`trigger`</bdi> صالح
+([وثائق قواعد <bdi>Antigravity</bdi>](https://antigravity.google/docs/rules))، لذا
+تُحوَّل كل قاعدة من قواعد <bdi>Apothem</bdi> عند التثبيت. تحصل القاعدة التي تنطبق
+دائمًا على <bdi>`trigger: always_on`</bdi>؛ وتحصل القاعدة المقصورة على مسارات على
+<bdi>`trigger: glob`</bdi> مع الأنماط نفسها في <bdi>`globs`</bdi>؛ وتحصل أي قاعدة
+أخرى على <bdi>`trigger: model_decision`</bdi>. وتحتفظ كل قاعدة بحقل
+<bdi>`description`</bdi> الخاص بها. يتقاسم <bdi>Antigravity</bdi> ميزانية قدرها
+20,000 رمز مميّز بين القواعد الدائمة التفعيل، ويحوّل أكبرها إلى مؤشّرات عند الطلب
+بعد تجاوز تلك الميزانية.
+
+**بيان الإضافة.** لا يحمل <bdi>`plugin.json`</bdi> إلا <bdi>`name`</bdi>
+و<bdi>`description`</bdi>، وهما المفتاحان اللذان يقبلهما مخطط الإضافات في
+<bdi>Antigravity</bdi>.
+
+**مساعِدات الإضافة.** تحمل تعريفات المساعِدات في دليل <bdi>`agents/`</bdi> الخاص
+بالإضافة الحقلين <bdi>`name`</bdi> و<bdi>`description`</bdi>. تستخدم قائمة
+<bdi>`tools`</bdi> في <bdi>Antigravity</bdi> أسماء أدواته الخاصة، وتحذّر الوثائق من أن
+اسمًا غير معروف قد يُعلِّق العامل الفرعي، لذا لا تُصدَر أي قائمة أدوات وترث
+المساعِدات أدوات العامل الأب. ولأنه لا شيء في <bdi>Antigravity</bdi> يفرض قيد
+القراءة فقط، تُسقِط أوصاف تلك المساعِدات التسمية «للقراءة فقط».
 
 **مرساة المستخدم المشتركة.** <bdi>`~/.gemini/GEMINI.md`</bdi> هو أيضًا المرساة على
 نطاق المستخدم لأدوات عائلة <bdi>Gemini</bdi>. يُبقي محوّل <bdi>Antigravity</bdi>
-مادّته الإضافية الخاصّة بـ<bdi>Apothem</bdi> داخل مُلحَق <bdi>`apothem`</bdi> تحت
-<bdi>`~/.gemini/antigravity-cli/plugins/`</bdi>، حتى لا يستولي على أدلّة مشاريع
-<bdi>Gemini CLI</bdi> العامّة.
+مادّة <bdi>Apothem</bdi> الإضافية الخاصة به داخل إضافة <bdi>`apothem`</bdi> تحت
+<bdi>`~/.gemini/antigravity-cli/plugins/`</bdi> حتى لا يستولي على أدلّة مشاريع
+<bdi>Gemini CLI</bdi> العامّة. ولأن أكثر من أداة واحدة تُحمِّل
+<bdi>`~/.gemini/GEMINI.md`</bdi>، تُكتَب كتلة <bdi>Apothem</bdi> هناك بوصفها إرشادات
+عامّة لا تُسمّي أداة واحدة بعينها قارئًا لها.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويجسّد مرساة التعليمات
-إضافةً إلى مجموعات الدعم في كل عملية <bdi>`apothem install`</bdi> أو
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد مرساة التعليمات
+إضافةً إلى حزم الدعم في كل تشغيل لـ <bdi>`apothem install`</bdi> أو
 <bdi>`apothem update`</bdi>.
 
 ## ملاحظات التوافق
 
-محوّل في إصدار أوّلي. مرساة <bdi>`GEMINI.md`</bdi> هي محتوى تعليمات نشط؛ ويحفظ
-مُلحَق <bdi>Antigravity</bdi> مهارات الأوامر المُحوَّلة، والمهارات القابلة لإعادة
-الاستخدام، وتعريفات المساعِدات المحلّية، والقواعد، والقوالب، ومادّة دعم الخطافات في
-مساحة أسماء واضحة يملكها <bdi>Apothem</bdi>.
-لا تُسجَّل ملفات الخطافات بوصفها أحداث خطافات <bdi>Antigravity</bdi> نشطة إلى أن
-يمتلك المحوّل طبقة ترجمة مخطّط لملفّ <bdi>`hooks.json`</bdi> الخاص بـ<bdi>Antigravity</bdi>.
+محوّل في مرحلة المعاينة. مرساة <bdi>`GEMINI.md`</bdi> محتوى تعليمات نشط؛ وتحفظ إضافة
+<bdi>Antigravity</bdi> مهارات الأوامر المُحوَّلة، والمهارات القابلة لإعادة الاستخدام،
+وتعريفات المساعِدات المحلّية، والقواعد، والقوالب، ومادّة دعم الخطّافات في مساحة
+أسماء واضحة يملكها <bdi>Apothem</bdi>.
+لا تُسجَّل ملفات الخطّافات بوصفها أحداث خطّافات نشطة في <bdi>Antigravity</bdi> إلى
+أن يمتلك المحوّل طبقة ترجمة مخطط لملف <bdi>`hooks.json`</bdi> الخاص بـ
+<bdi>Antigravity</bdi>.
 
 ## التحقّق
 
@@ -58,9 +89,10 @@ apothem verify --harness antigravity
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود ملف السياق الأصلي في المسار المتوقَّع.
-2. وجود بيانات تعريف مُلحَق <bdi>Apothem Antigravity CLI</bdi> وإعلانه اسم المُلحَق
-   <bdi>`apothem`</bdi>.
+1. ملف السياق الأصلي موجود في المسار المتوقَّع.
+2. ملف بيان الإضافة <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه
+   <bdi>JSON</bdi>. ولا يتحقّق أمر التحقّق من اسم الإضافة؛ افحص هذا الحقل بنفسك
+   بعد تغييره.
 
 ## التحديث
 
@@ -68,8 +100,9 @@ apothem verify --harness antigravity
 apothem update --harness antigravity
 ```
 
-يعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك. شغّله بعد تحرير
-<bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة <bdi>Apothem</bdi> المثبّتة.
+يُعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك. شغّله بعد تحرير
+<bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة <bdi>Apothem</bdi>
+المُثبَّتة.
 
 ## إلغاء التثبيت
 
@@ -77,10 +110,17 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.gemini/GEMINI.md`</bdi> ويُبقي أي نص آخر
+فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل أيضًا مفاتيح
+<bdi>Apothem</bdi> من <bdi>`plugin.json`</bdi> في مجلد الإضافة
+<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> ويُبقي مفاتيحك، ويُزيل ملفات
+<bdi>Apothem</bdi> في المجلدات الفرعية <bdi>`skills/`</bdi> و<bdi>`rules/`</bdi>
+و<bdi>`agents/`</bdi> و<bdi>`.apothem/support/`</bdi> لذلك المجلد؛ وتبقى الملفات
+الأخرى فيها. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره
+أو إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -92,10 +132,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness antigravity`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness antigravity`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness antigravity`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness antigravity`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

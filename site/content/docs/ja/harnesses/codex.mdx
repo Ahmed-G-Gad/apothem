@@ -1,14 +1,14 @@
 ---
 title: "Codex"
-description: "Codex（Beta）向けの Apothem ハーネスアダプター。"
+description: "Codex（ベータ）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** OpenAI
 **インストール名：** `codex`
-**ステータス：** Beta
+**ステータス：** ベータ
 **ネイティブ設定：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
 `~/.codex/hooks/`、`~/.codex/agents/*.toml`、および `~/.agents/skills/`
 
@@ -18,27 +18,40 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-アダプターは Codex ネイティブの指示とフックをインストールし、Apothem エージェントを
-Codex TOML エージェントに変換し、再利用可能なコマンドプロンプトを Codex スキルとして
-ラップします。
+アダプターは Codex ネイティブの命令とフックをインストールし、Apothem のエージェントを Codex の TOML エージェントに変換し、再利用可能なコマンドプロンプトを Codex のスキルとしてラップします。
 
 **書き込まれるファイル：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
 `~/.codex/hooks/`、`~/.codex/agents/*.toml`、
-`~/.agents/skills/*/SKILL.md`、および `~/.config/apothem/{rules,templates}/`
-配下のサポートファイル。
+`~/.agents/skills/*/SKILL.md`、ユーザー起動スキル向けの `~/.agents/skills/*/agents/openai.yaml`、
+および `~/.config/apothem/{rules,templates}/` 配下のサポートファイル。
+
+`AGENTS.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。
+このセクションは、インストールされたスキルとルール内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` と `templates/...` は `~/.config/apothem/` 配下に、`hooks/...` は `~/.codex/hooks/` 配下に解決されます。
+Codex のインストールは `schemas/` ツリーも `conformity/` ツリーも同梱しないため、このセクションはどちらも列挙しません。
+
+**ユーザー起動スキル。** Codex は `disable-model-invocation` キーを無視します。
+ソースで `disable-model-invocation: true` が設定されているすべてのスキルまたはコマンドについて、アダプターは `SKILL.md` の隣に `policy.allow_implicit_invocation: false` を指定した `agents/openai.yaml` を書き込みます。
+これにより、Codex がそのスキルを自ら選ぶことはありません。`$skill-name` を使えば、引き続き明示的に実行できます。
+[Codex のスキルに関するドキュメント](https://developers.openai.com/codex/skills)を参照してください。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有コホートを読み取り、それぞれを正しい Codex 面にインストール
-します。指示は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは
-TOML へ、スキルは `~/.agents/skills/` へ、そしてネイティブでない Markdown ルール/
-テンプレートはサポート資料として `~/.config/apothem/` へインストールされます。
+アダプターは Apothem の共有コホートを読み取り、それぞれを正しい Codex の面にインストールします。
+命令は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは TOML へ、スキルは `~/.agents/skills/` へ、ネイティブでない Markdown のルール/テンプレートはサポート素材として `~/.config/apothem/` へインストールされます。
+
+変換された各ヘルパーは `name`、`description`、`developer_instructions` を設定します。
+ヘルパー自身の `disallowedTools` リストに挙げられたツールを取り除いた後のツール付与に、ファイル編集ツール（`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、Codex 独自の書き込み制限である `sandbox_mode = "read-only"` も設定します。
+`Bash` はファイル編集ツールに数えられないため、`Bash` を付与され、それらのツールを 1 つも付与されていないヘルパーにも、引き続きその設定が適用されます。
+モデルも推論エフォートも設定されないため、各ヘルパーはセッションの選択を継承します。
+Codex にはヘルパーごとのツールリストもターン数の上限もないため、ヘルパーの `tools` と `maxTurns` は引き継がれません。
 
 ## 互換性に関する注意
 
-Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。Apothem はそこに
-Markdown の動作ルールを配置しません。それらを `~/.config/apothem/` に保持し、
-`AGENTS.md` とインストール済みスキルから参照します。
+`~/.agents/skills/` は Codex が所有する共有ルートです。サポート対象の他の 8 つのツールもこれを読み込むため（[ハーネスレジストリ](/docs/reference/harness-registry)に列挙されています）、Codex のインストールがそこに書き込む Apothem のスキルはそれらのツールにも表示され、Codex のアンインストールはそれらのツールからもスキルを取り除きます。
+インストール時には、それらのツールを名指しする注記が出力されます。
+
+Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。
+Apothem は Markdown の振る舞いルールをそこに配置しません。それらを `~/.config/apothem/` に保持し、`AGENTS.md` とインストールされたスキルから参照します。
 
 ## 検証
 
@@ -46,10 +59,10 @@ Markdown の動作ルールを配置しません。それらを `~/.config/apoth
 apothem verify --harness codex
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -58,7 +71,7 @@ verify コマンドは、次のことを確認します。
 apothem update --harness codex
 ```
 
-Codex のブートストラップ、変換済みエージェント、スキル、サポートコホートを更新します。
+Codex のブートストラップ、変換されたエージェント、スキル、サポートコホートを更新します。
 
 ## アンインストール
 
@@ -66,10 +79,13 @@ Codex のブートストラップ、変換済みエージェント、スキル�
 apothem uninstall --harness codex
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除します。
-共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+`~/.codex/AGENTS.md` から Apothem ブロックを取り除き、その外側にあるテキストはそのまま残します。また、`~/.codex/hooks.json` から Apothem のエントリを取り除き、あなた自身のエントリは残します。
+さらに、`~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/`、`~/.config/apothem/{rules,templates}/` 内にある Apothem のファイルを取り除きます。これらのフォルダー内の他のファイルはそのまま残ります。
+`~/.agents/skills/` から取り除かれたスキルは、これを読み込む他のツールからも消えます（[互換性に関する注意](#互換性に関する注意)を参照）。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -80,11 +96,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness codex` を再実行する |
-| 検証に失敗した | `apothem update --harness codex` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness codex` を再実行する |
+| 検証が失敗した | `apothem update --harness codex` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness codex` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

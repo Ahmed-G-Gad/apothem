@@ -2,14 +2,13 @@
 title: "profile"
 description: "apothem profile 命令组的 CLI 参考。"
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-管理共享的 Apothem 配置文件。
+管理共享的 Apothem 配置档案。
 
-`profile` 是一个命令组，包含四个子命令：`init`、`show`、`set` 和 `edit`。
-共享配置文件是单一事实来源，每个harness适配器都将其物化为各自的原生配置。
+`profile` 是一个命令组，包含四个子命令：`init`、`show`、`set` 和 `edit`。共享配置档案是唯一的事实来源，每个工具适配器都会将它物化为各自的原生配置。
 
 ## 概要
 
@@ -32,40 +31,53 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 | 选项 | 描述 |
 |---|---|
-| `--profile PATH` | 共享配置文件 YAML 的路径（默认为标准配置文件位置）。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--profile PATH` | 共享配置档案 YAML 的路径（默认为标准的配置档案位置）。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## 子命令
 
 ### `profile init`
 
-在 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 处创建一个符合模式的最小配置文件脚手架。除非提供 `--force`，否则会保留现有文件。
+在 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 处创建一个符合模式的最小配置档案脚手架。除非提供了 `--force`，否则现有文件会被保留。
+
+脚手架的第一行是一条 `yaml-language-server` modeline 指令，指明配置档案模式的 `$id`，即 `https://apothem.ahmedgad.com/schemas/profile.schema.json`。本站在该地址提供打包的模式，因此支持 YAML 语言的编辑器会在你编辑配置档案时对其进行校验。`src/apothem/schemas/` 下的每个打包模式都以同样的方式在 `https://apothem.ahmedgad.com/schemas/<file>` 提供。
 
 | 选项 | 描述 |
 |---|---|
-| `--force` | 覆盖现有的配置文件脚手架。 |
+| `--force` | 覆盖现有的配置档案脚手架。 |
 
 ### `profile show`
 
-显示经过校验、默认值已展开的共享配置文件。
+显示经过校验、默认值已展开的共享配置档案。使用 `--json` 时，输出的文档就是配置档案本身，以 `schema_version` 开头：即引擎读取该配置档案时所依据的配置档案模式版本（参见 [JSON 输出契约](/docs/cli-reference#json-输出契约)）。
 
 ### `profile set KEY VALUE`
 
-在共享配置文件中设置一个键。`KEY` 是一个点分路径，会逐层下降到嵌套的配置文件中（`identity.name`、`preferences.style`、`enforcement.sprints`、`harnesses.<harness>.preferences.style`）；不含点的单个键设置一个顶层节点。`VALUE` 作为字面字符串存储——裸词不会被强制转换（`no` 保持为 `"no"`，`2024-01-01` 和 `1.0` 保持为字符串）——但 `true`/`false`（布尔型强制执行标志）以及显式的 `[...]`/`{...}` 列表/映射输入除外。在写入之前，完整组装的配置文件会针对模式进行校验；无效的设置会被拒绝，磁盘上的配置文件保持不变。
+在共享配置档案中设置一个键。`KEY` 是一个点分路径，会逐层深入嵌套的配置档案（`identity.name`、`preferences.style`、`enforcement.sprints`、`harnesses.<harness>.preferences.style`）；不含点的单个键设置一个顶层节点。`VALUE` 作为字面字符串存储——裸词不会被强制转换（`no` 保持为 `"no"`，`2024-01-01` 和 `1.0` 保持为字符串）——但 `true`/`false`（布尔型强制执行标志）以及显式的 `[...]`/`{...}` 列表/映射输入除外。在写入之前，完整组装后的配置档案会依据模式进行校验；无效的设置会被拒绝，磁盘上的配置档案保持不变。
 
 | 参数 | 描述 |
 |---|---|
-| `KEY` | 要设置的、进入配置文件的点分路径（必填）。 |
-| `VALUE` | 要赋的字面值；写入前会被校验（必填）。 |
+| `KEY` | 配置档案中要设置的点分路径（必需）。 |
+| `VALUE` | 要赋予的字面值；写入前会经过校验（必需）。 |
 
 ### `profile edit`
 
-在系统编辑器中打开共享配置文件。
+在系统编辑器中打开共享配置档案。
+
+## 校验错误
+
+每个读取配置档案的命令都会依据打包的模式对其进行校验，并一次性报告它发现的**每一个**问题，因此一次编辑即可将它们全部修复：
+
+- **纯文本输出**完整给出第一个问题（`Field`、`Reason`、`Fix` 和 `Offending value (redacted)`：未通过校验的输入，其中形似机密的值被替换为 `<redacted>`；它绝不是建议的替换值），然后在 `Other problems` 下再列出最多十个问题。
+- **JSON 输出**将第一个问题保留在 `error` 对象的顶层字段中，并添加一个包含每个问题的 `errors` 数组（`code`、`field`、`reason`、`fix`、`safe_value`）。
+- **未知键**只回显这个意外的键及其经过脱敏的值，而不是整个配置档案。
+- **受管块标记。** 任何键或文本值都不得包含 `<!-- BEGIN APOTHEM MANAGED BLOCK -->` 或 `<!-- END APOTHEM MANAGED BLOCK -->`。Apothem 会在指令文件中围绕它所管理的块写入这些标记，而配置档案文本会落在该块内部，因此其中出现的标记会把该块拆开。每个这样的字段都会以 `profile.managed_block_marker` 失败：`field` 是它的点分路径（例如 `rules.2` 或 `mcp_servers.search.env.SEARCH_MODE`），`reason` 指明该标记。值本身绝不会被回显（`safe_value` 为 `null`），因为它可能是一项凭据。
+
+`profile init`（以及其他每个生成配置档案脚手架的命令）会写入 `schema_version: 1`。不含 `schema_version` 的配置档案按版本 1 读取。
 
 ## 示例
 
@@ -81,12 +93,13 @@ apothem profile edit
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
 | 0 | 成功（或者，对于 `edit`，编辑器正常退出） |
-| 1 | 配置文件缺失、无效、在没有 `--force` 时已存在，或无法写入 |
+| 1 | 配置档案缺失、无效、在未提供 `--force` 时已存在，或者无法写入 |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem install](/docs/cli-reference/install) — 将配置文件物化到某个harness
-- [apothem doctor](/docs/cli-reference/doctor) — 运行系统范围的安装诊断
+- [apothem install](/docs/cli-reference/install)——将配置档案物化到一个工具中
+- [apothem doctor](/docs/cli-reference/doctor)——运行系统级的安装诊断

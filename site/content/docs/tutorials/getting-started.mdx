@@ -33,9 +33,11 @@ name when you reach the [harness list](/docs/harnesses).
 - Python 3.10 or newer on your `PATH`. Check with `python3 --version`.
 - The two runtime libraries the engine imports from your interpreter: `click`
   and `rich`. The rest of the stack (`pyyaml`, `jsonschema`) is vendored into
-  the tree, so only these two need to be importable. The installer checks for
-  them, names anything missing, and offers to install the missing pieces for you — so you can
-  confirm and continue.
+  the tree, so only these two need to be importable. If `click` or `rich` is missing, the
+  installer stops and prints the install command. The one-line command pipes
+  the script into bash, so it cannot prompt; set `APOTHEM_AUTO_INSTALL_DEPS=1`
+  (for example `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`)
+  or install the two packages first.
 
 Apothem ships as a bundled source tree rather than a published package — there
 is no `pip install` step. The installer clones the tree and runs the engine
@@ -53,16 +55,16 @@ The installer performs these steps:
 
 1. **Prerequisite check.** The installer finds a real Python 3.10+ interpreter
    and confirms the two runtime libraries (`click` and `rich`) are importable.
-   If one is missing it names it and offers to install it for you — or set
-   `APOTHEM_AUTO_INSTALL_DEPS=1` to install without prompting.
+   If one is missing it names it, stops, and prints the install command; set
+   `APOTHEM_AUTO_INSTALL_DEPS=1` to install without a prompt, since a piped run
+   cannot prompt.
 2. **Source placement.** The bundled tree is cloned into `~/.apothem` (override
    with the `APOTHEM_HOME` environment variable). A re-run fast-forwards the
    existing clone instead of duplicating it.
 3. **Profile bootstrap.** If you have no profile yet, the installer copies the
-   example profile to `~/.config/apothem/profile.yaml`, then **stops and asks
-   you to edit it** before continuing. This is intentional — the example uses
-   placeholder identity data, and you should make it yours before any harness
-   config is written. We do that in Step 2.
+   example profile to `~/.config/apothem/profile.yaml`, installs and verifies
+   Claude Code from it in the same run, and warns that the identity fields are
+   placeholders.
 
 You can steer the install with environment variables. The ones you are most
 likely to use:
@@ -76,9 +78,10 @@ APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
 
 Other recognized variables are `APOTHEM_REPO` and `APOTHEM_REF` (which remote to
 clone and which git ref to check out — unset resolves and verifies the latest
-signed release tag; set a tag to pin it or `main` for the moving branch),
+signed release tag; set a tag to pin it, or `main` for the moving branch (a branch is not a signed
+tag, so it also needs `APOTHEM_ALLOW_UNVERIFIED=1`)),
 `APOTHEM_ALLOW_UNVERIFIED=1` (downgrade a tag-signature-verification failure to
-a warning), `APOTHEM_SOURCE` (use an existing local checkout instead of
+a warning, and allow a non-tag ref such as `main`), `APOTHEM_SOURCE` (use an existing local checkout instead of
 cloning), and `APOTHEM_SKIP_VERIFY=1` (skip the post-install verify, which we
 want to run, so leave it unset).
 
@@ -139,11 +142,13 @@ moving on.
 
 ## Step 3 — Materialize a harness configuration
 
-If your Step 1 run completed a full pass — that is, you already had a profile,
-so the installer did not stop at the bootstrap — it materialized the default
-harness for you. On a first-time run it stopped at the profile bootstrap
-instead, so run `install` now to materialize the harness from the profile you
-just edited (this also adds a second harness):
+If your Step 1 run created the profile, it already installed Claude Code from
+the placeholder identity. Edit the profile in Step 2, then apply your identity
+with:
+
+```bash
+apothem update --harness claude-code
+```
 
 ```bash
 apothem install --harness claude-code

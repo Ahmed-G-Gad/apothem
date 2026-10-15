@@ -1,28 +1,58 @@
 ---
 title: "خوادم MCP"
-description: "تهيئة خوادم <bdi>Model Context Protocol</bdi> — مملوكة للمُشغِّل ومُسجَّلة عبر آلية <bdi>MCP</bdi> الأصلية لكل أداة؛ يزامن <bdi>Apothem</bdi> الجرد من الملف الشخصي المشترك لكنه لا يكتب أي مدخلات خوادم."
+description: "إعداد خوادم Model Context Protocol — مملوكة للمُشغِّل ومُسجَّلة عبر آلية MCP الأصلية لكل أداة؛ تُسقِط بضعة محوّلات جرد MCP من الملف التعريفي المشترك، ولا يكتب الباقي أي مُدخَلات خوادم."
 machineTranslated: true
-sourceHash: "47fd8ec2c4c5bef7"
+sourceHash: "493b667087182d32"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-خوادم <bdi>Model Context Protocol</bdi> (<bdi>MCP</bdi>) **مملوكة للمُشغِّل**.
-يحتفظ <bdi>Apothem</bdi> بجرد <bdi>MCP</bdi> في الملف الشخصي المشترك ويُسقِطه في
-سطح <bdi>MCP</bdi> الأصلي لكل أداة، لكنه لا يكتب أي مدخلات خوادم خاصة به — يبقى
-السطح ملكك لإدارته.
+خوادم <bdi>Model Context Protocol</bdi> (<bdi>MCP</bdi>) **مملوكة للمُشغِّل**. يحمل
+<bdi>Apothem</bdi> جرد <bdi>MCP</bdi> في الملف التعريفي المشترك (<bdi>`mcp_servers`</bdi>).
+والمحوّل الذي تحتفظ أداته بخوادم <bdi>MCP</bdi> في ملف إعداد يكتبه <bdi>Apothem</bdi>
+أصلًا يُسقِط ذلك الجرد في الملف؛ أما كل محوّل آخر فلا يكتب أي مُدخَلات خوادم، وتبقى
+الخوادم شأنك تُسجِّلها عبر الأداة.
 
-## أين تُسجَّل خوادم MCP
+## المحوّلات التي تُسقِط الجرد
+
+الجدول أدناه مُولَّد من خلية القدرة <bdi>`mcp_servers`</bdi> في سجلّ أُطُر العمل لكل
+محوّل.
+
+{/* apothem:generated-reference:start */}
+
+| Harness | MCP inventory | Note |
+| --- | --- | --- |
+| Antigravity (`antigravity`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Claude Code (`claude-code`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| CodeBuddy (`codebuddy`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Codex (`codex`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Cursor (`cursor`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Gemini CLI (`gemini-cli`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| GitHub Copilot (`github-copilot`) | Not projected (unsupported) | Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them. |
+| GLM (Z.ai) (`glm`) | Not projected (unsupported) | GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface. |
+| Hermes (`hermes`) | Projected: written into the tool's MCP config | — |
+| Kimi Code (`kimi-code`) | Not projected (discovery-pending) | `.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries. |
+| Kiro (`kiro`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Open-Claw (`open-claw`) | Not projected (unsupported) | Open-Claw MCP lives in the mcp.servers config block managed via the openclaw mcp CLI; the adapter authors no entries. |
+| OpenCode (`opencode`) | Projected: written into the tool's MCP config | — |
+| Qwen Code (`qwen-code`) | Projected: written into the tool's MCP config | — |
+| Trae (`trae`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Windsurf (`windsurf`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Zed (`zed`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+
+{/* apothem:generated-reference:end */}
+
+## أين تُسجَّل خوادم <bdi>MCP</bdi>
 
 تُسجِّل كل أداة خوادم <bdi>MCP</bdi> عبر آليتها الأصلية الخاصة، ويحترم
-<bdi>Apothem</bdi> ذلك السطح بدلًا من الكتابة فوقه. في مُحوِّل <bdi>Claude Code</bdi>
-(واحد من كثير)، تُسجَّل الخوادم بـ <bdi>`claude mcp add`</bdi> في
-<bdi>`~/.claude.json`</bdi> (نطاق المستخدم أو المحلي) و<bdi>`.mcp.json`</bdi> على
-مستوى المشروع؛ وتُسقِط المحوِّلات الأخرى في أسطحها الأصلية الخاصة. الإعدادات
-المُدارة بواسطة <bdi>Apothem</bdi> لا تحمل أبدًا كتلة <bdi>`mcpServers`</bdi>.
+<bdi>Apothem</bdi> ذلك السطح بدلًا من الكتابة فوقه. على <bdi>Claude Code</bdi>، تُسجَّل
+الخوادم بالأمر <bdi>`claude mcp add`</bdi> في <bdi>`~/.claude.json`</bdi> (نطاق
+المستخدم أو النطاق المحلي) وفي <bdi>`.mcp.json`</bdi> على مستوى المشروع؛ ولا يكتب
+محوّل <bdi>Claude Code</bdi> أيًّا من الملفين، ولا تحمل إعدادات <bdi>Claude Code</bdi>
+التي يديرها <bdi>Apothem</bdi> كتلة <bdi>`mcpServers`</bdi> أبدًا.
 
 ## إضافة خادم
 
-سجِّل خادمًا عبر الآلية الأصلية لأداتك؛ صيغة المدخل الكنسية هي مفتاح تحت
+سجِّل خادمًا عبر الآلية الأصلية لأداتك؛ وشكل المُدخَل المرجعي مفتاح واحد تحت
 <bdi>`mcpServers`</bdi>:
 
 ```json
@@ -36,10 +66,10 @@ sourceHash: "47fd8ec2c4c5bef7"
 }
 ```
 
-يُحمِّل وقتُ تشغيل الأداة الخوادمَ المُسجَّلة عند بدء الجلسة؛ أعِد تشغيل الأداة
-لالتقاط الخوادم الجديدة.
+يُحمِّل وقت تشغيل الأداة الخوادمَ المُسجَّلة عند بدء الجلسة؛ أعِد تشغيل الأداة لالتقاط
+الخوادم الجديدة.
 
 ## اصطلاح التسمية
 
-تظهر أدوات <bdi>MCP</bdi> للمساعِد بصيغة <bdi>`mcp__<server>__<tool>`</bdi> وفق
-اصطلاح تسمية أدوات <bdi>MCP</bdi> القياسي في الأداة.
+تظهر أدوات <bdi>MCP</bdi> للمساعد بالصيغة <bdi>`mcp__<server>__<tool>`</bdi> وفق اصطلاح
+التسمية القياسي لأدوات <bdi>MCP</bdi> في الأداة.

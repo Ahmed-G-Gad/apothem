@@ -1,21 +1,22 @@
 ---
-title: "委托工作者"
-description: "用于研究、审计、质量与编排的持久化委托工作者，带有 frontmatter 契约和部署隔离协议。"
+title: "辅助器"
+description: "用于研究、审计、质量与编排的持久化辅助智能体，附带 frontmatter 契约和部署隔离协议。"
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "18a785a98f21c750"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-持久化委托工作者以扁平文件的形式存放于规范的委托工作者目录下，使用
-`<name>.md` 后缀。规范路径为：
+持久化辅助器以扁平文件的形式存放在规范的辅助器目录下，使用 `<name>.md` 后缀。规范路径为：
 
 ```text
 src/apothem/agents/
 ```
 
-每个委托工作者都是一个研究、审计、质量或编排角色，拥有各自的工具限制和系统提示词。
+每个辅助器都是一个专注的角色，例如研究、审计、质量、重构或脚手架搭建，各有自己的工具限制和系统提示词。
 
-| 委托工作者 | 文件 | 模式 | 模型策略 |
+下方的表格和路径列表展示了其中四个辅助器。本页末尾生成的清单列出了每一个辅助器定义。
+
+| 辅助器 | 文件 | 模式 | 模型策略 |
 |-------|------|---------|--------------|
 | Codebase Explorer | 见下方清单路径 | 研究 | 由宿主选择 |
 | Convention Auditor | 见下方清单路径 | 审计 | 由宿主选择 |
@@ -45,16 +46,31 @@ maxTurns: <integer>
 ---
 ```
 
+## 按工具转换
+
+如果某个辅助器的 `tools` 授权在减去 `disallowedTools` 之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它就是只读的。每个转换辅助器的工具要么原生地强制执行该限制，要么去掉只读标签：
+
+| 工具 | 工具限制 | 轮次限制 | 模型与推理强度 |
+| --- | --- | --- | --- |
+| Claude Code | 按原样使用 `tools` / `disallowedTools` | `maxTurns` | 继承（未设置） |
+| Codex | 对只读辅助器使用 `sandbox_mode = "read-only"` | 不可用 | 继承（未设置） |
+| Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表 | `max_turns` | 继承（未设置） |
+| Qwen Code | 使用 Qwen 工具名称的 `tools` / `disallowedTools` | 未映射 | `model: inherit` |
+| OpenCode | `permission`（每个工具的 `allow` / `deny`） | 未映射 | 继承（未设置） |
+| Antigravity | 不输出任何限制；描述中去掉“只读” | 不可用 | 继承（未设置） |
+
+Hermes、Open-Claw 和 Kimi Code 以支持材料的形式接收辅助器文件，而不是将其作为原生辅助器。
+
 ## 编排
 
-委托工作者的部署、并行启动协议、返回契约的强制执行以及隔离规律存放于编排规则。逐工作者的调度树存放于编排模式规则的 §Decision Tree。规范路径：
+辅助器的部署、并行启动协议、返回契约的强制执行以及隔离纪律位于编排规则中。逐工作者的调度树位于编排模式规则的 §Decision Tree。规范路径：
 
 ```text
 src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## 生成的委托工作者清单
+## 生成的智能体清单
 
 {/* apothem:generated-reference:start */}
 

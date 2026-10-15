@@ -2,7 +2,7 @@
 title: "Apothem 对比原生 Windsurf 配置"
 description: "在 .devin/rules/ 下手工维护 Windsurf 的规则，与从 apothem 的共享配置档案渲染它们。"
 machineTranslated: true
-sourceHash: "797edb954c5a2435"
+sourceHash: "e3bc9da3b1b1af38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,12 +12,12 @@ Windsurf 从 `.devin/rules/` 目录读取规则。Apothem 的 windsurf 适配器
 
 ## 工作量对比
 
-| 任务 | 原生手工配置 | Apothem 管理 |
+| 任务 | 手工配置 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| 编写规则 | 在 `.windsurf/rules/` 下手写每个文件 | 从共享语料渲染 |
-| 保持单一规则格式 | 在 `.windsurf/rules/` 与单文件 `.windsurfrules` 之间手动取舍 | 适配器只写入 `.devin/rules/` |
-| 与其他环境保持规则对齐 | 手动、逐工具 | 在 `apothem update` 时自动完成 |
-| 验证配置正确 | 手动检查 | `apothem verify --harness windsurf` |
+| 编写规则 | 在 `.windsurf/rules/` 下手写每个文件 | 从共享语料库渲染 |
+| 保持单一规则格式 | 在 `.windsurf/rules/` 与单文件 `.windsurfrules` 之间手工取舍 | 适配器只写入 `.devin/rules/` |
+| 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness windsurf --project <path>` |
 
 ## Apothem 管理什么
 
@@ -28,12 +28,11 @@ windsurf 适配器将共享规则渲染到 `.devin/rules/` 目录；它不写入
 
 ## 迁移路径
 
-1. 若你尚未创建共享配置档案，运行 `apothem profile init`。
-2. 把你现有 `.windsurf/rules/`（以及任何单文件 `.windsurfrules`）中的规则
-   移入共享语料。
-3. 运行 `apothem install --harness windsurf` 以渲染 `.devin/rules/` 目录。
-4. 运行 `apothem verify --harness windsurf` 确认配置已落地。
-5. 之后每次变更都使用 `apothem update --harness windsurf`。
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把现有 `.windsurf/rules/`（以及任何单文件 `.windsurfrules`）中的规则移入共享语料库。
+3. 运行 `apothem install --harness windsurf --project <path>`，以渲染 `.devin/rules/` 目录。
+4. 运行 `apothem verify --harness windsurf --project <path>` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness windsurf --project <path>`。
 
 ## 继续阅读
 

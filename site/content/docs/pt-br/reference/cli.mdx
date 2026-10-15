@@ -2,12 +2,12 @@
 title: "Referência da CLI"
 description: "Referência da CLI do Apothem — todos os subcomandos e flags."
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 A CLI `apothem` é a interface principal do operador para gerenciar o perfil
-compartilhado e os adaptadores de ferramenta.
+compartilhado e os adaptadores de harness.
 
 ## Flags globais
 
@@ -20,18 +20,20 @@ compartilhado e os adaptadores de ferramenta.
 
 ### `apothem install`
 
-Instala um adaptador de ferramenta a partir do perfil compartilhado.
+Instala um adaptador de harness a partir do perfil compartilhado.
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | Opção | Descrição |
 |--------|-------------|
-| `--harness <name>` | Nome do adaptador de ferramenta (veja os valores canônicos abaixo). Obrigatório. |
+| `--harness <name>` | Nome do adaptador de harness (veja os valores canônicos abaixo). Obrigatório. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. Padrão: `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Raiz do projeto para ferramentas com escopo de projeto. |
+| `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. |
 | `--dry-run` | Pré-visualiza a instalação sem gravar arquivos. |
+| `--clean`, `--fresh` | Recomeço do zero por adesão explícita: faz backup e remove o estado de instalação anterior (`~/.claude`, `~/.codex`, `~/.agents`, `~/.config/apothem`) antes de instalar. |
+| `--yes` | Pula a confirmação por alvo durante uma remoção de recomeço do zero (obrigatório para execuções não interativas de `--clean`). |
 
 Valores canônicos de `--harness`:
 
@@ -43,7 +45,9 @@ codex
 cursor
 gemini-cli
 github-copilot
+glm
 hermes
+kimi-code
 kiro
 open-claw
 opencode
@@ -59,7 +63,7 @@ lote de instalação/atualização.
 
 ### `apothem update`
 
-Re-deriva a configuração nativa de um adaptador de ferramenta a partir do perfil
+Re-deriva a configuração nativa de um adaptador de harness a partir do perfil
 compartilhado atual.
 
 ```bash
@@ -68,18 +72,18 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 
 | Opção | Descrição |
 |--------|-------------|
-| `--harness <name>` | Nome do adaptador de ferramenta. Obrigatório. |
+| `--harness <name>` | Nome do adaptador de harness. Obrigatório. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. |
-| `--project PATH` | Raiz do projeto para ferramentas com escopo de projeto. |
+| `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. |
 | `--dry-run` | Pré-visualiza a atualização sem gravar arquivos. |
 
-`update` rematerializa a saída da ferramenta. Ele não atualiza o pacote da CLI do
-Apothem; para atualizações de pacote, use o gerenciador de pacotes com o qual o
-Apothem foi instalado.
+`update` rematerializa a saída do harness. Ele não atualiza o pacote da CLI do
+Apothem; para atualizações de pacote, use o gerenciador de pacotes que instalou o
+Apothem.
 
 ### `apothem uninstall`
 
-Remove a configuração nativa de um adaptador de ferramenta.
+Remove a configuração nativa de um adaptador de harness.
 
 ```bash
 apothem uninstall --harness <name|all> [--project PATH] [--yes]
@@ -87,25 +91,66 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 
 | Opção | Descrição |
 |--------|-------------|
-| `--harness <name>` | Nome do adaptador de ferramenta. Obrigatório. |
-| `--project PATH` | Raiz do projeto para ferramentas com escopo de projeto. |
-| `--yes` | Pula a confirmação. |
+| `--harness <name>` | Nome do adaptador de harness. Obrigatório. |
+| `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. |
+| `--yes` | Pula a solicitação de confirmação. |
 
 ### `apothem verify`
 
-Verifica se um adaptador de ferramenta está instalado e se seu caminho de saída
-está presente.
+Verifica se os alvos gerenciados de um adaptador de harness estão presentes e
+válidos.
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | Opção | Descrição |
 |--------|-------------|
-| `--harness <name>` | Nome do adaptador de ferramenta ou `all`. Obrigatório. |
-| `--project PATH` | Raiz do projeto para ferramentas com escopo de projeto. |
+| `--harness <name>` | Nome do adaptador de harness ou `all`. Obrigatório. |
+| `--profile PATH` | YAML do perfil compartilhado contra o qual a fidelidade é verificada. Sem ele, a verificação é puramente estrutural. |
+| `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. |
 
-O código de saída é `0` quando o adaptador está instalado e `1` quando não está.
+Sem `--profile`, a verificação é estrutural: todo alvo gerenciado deve estar
+presente e válido. Com `--profile`, ela também exige fidelidade, de modo que uma
+instalação que existe, mas se desviou desse perfil, falha no verify — use-o para
+confirmar que um perfil específico está instalado fielmente.
+
+O código de saída é `0` quando o harness é verificado (e, com `--profile`, fiel a
+ele), e `1` quando um alvo está ausente ou inválido, ou quando `--profile` é
+fornecido e a instalação se desviou.
+
+### `apothem status`
+
+Relata o estado de instalação, de verificação e de desvio de cada harness
+registrado.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Opção | Descrição |
+|--------|-------------|
+| `--profile PATH` | Perfil compartilhado a usar como linha de base de desvio. Um perfil padrão ilegível rebaixa o desvio para `unknown` em vez de abortar a varredura. |
+| `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. Sem ela, esses harnesses relatam `needs-project`. |
+
+Cada linha associa uma flag `installed` a uma flag `verified`, e as duas se
+combinam no estado de desvio:
+
+| Estado | Significado |
+|-------|---------|
+| `absent` | O Apothem não fez instalação neste harness. |
+| `in-sync` | Instalado e correspondente à linha de base do perfil. |
+| `drift` | Instalado, mas não corresponde mais — corrija com `apothem update`. |
+| `unknown` | Instalado, mas o perfil de linha de base não pôde ser lido. |
+
+`installed` responde "o Apothem instalou aqui?", não "este harness está presente
+na máquina?". Ele se baseia nos próprios artefatos do Apothem — o bloco
+gerenciado dentro de uma âncora de instruções e o conteúdo sob a subárvore
+`.apothem/` de propriedade do Apothem —, nunca em um arquivo de propriedade do
+fornecedor que o harness grava para si mesmo. Um harness cujo diretório de
+configuração existe, mas que o Apothem nunca tocou, relata `absent`, e um harness
+que foi desinstalado relata `absent` mesmo que os diretórios esvaziados
+permaneçam.
 
 ### `apothem profile`
 
@@ -121,16 +166,16 @@ apothem profile edit [--profile PATH]
 | Subcomando | Descrição |
 |------------|-------------|
 | `profile init` | Cria um esqueleto de perfil mínimo válido conforme o schema. |
-| `profile show` | Imprime o perfil resolvido (YAML) no stdout. |
-| `profile set <key> <value>` | Define um campo do perfil. O valor é analisado como YAML (strings, números, booleanos, listas e mapeamentos são todos aceitos). |
-| `profile edit` | Abre o perfil no `$EDITOR` (recorre ao editor padrão da plataforma). |
+| `profile show` | Imprime o perfil resolvido como JSON no stdout. Com `--json`, o documento começa com `schema_version`. |
+| `profile set <key> <value>` | Define um campo do perfil. O valor é armazenado como uma string literal — palavras sem aspas não sofrem conversão de tipo, de modo que `no` continua `"no"` e `1.0` continua uma string —, exceto `true`/`false` e entradas explícitas de lista e mapa `[...]` / `{...}`. O perfil montado é validado conforme o schema antes de ser gravado. |
+| `profile edit` | Abre o perfil no `$EDITOR` (recorre ao padrão da plataforma). |
 
 A opção `--profile PATH` aponta cada subcomando para um arquivo de perfil
 alternativo. Padrão: `~/.config/apothem/profile.yaml`.
 
 ### `apothem harnesses`
 
-Lista e inspeciona os adaptadores de ferramenta registrados.
+Lista e inspeciona os adaptadores de harness registrados.
 
 ```bash
 apothem harnesses list
@@ -139,7 +184,7 @@ apothem harnesses show <name>
 
 | Subcomando | Descrição |
 |------------|-------------|
-| `harnesses list` | Imprime uma tabela de cada adaptador registrado com sua flag de status de instalação e o caminho de saída. |
+| `harnesses list` | Imprime uma tabela de cada adaptador registrado com sua flag de status de instalação e seu caminho de saída. |
 | `harnesses show <name>` | Imprime o nome, o estado de instalação e o caminho de saída de um adaptador. |
 
 ### `apothem doctor`
@@ -150,10 +195,7 @@ Executa diagnósticos do sistema para a instalação do Apothem.
 apothem doctor
 ```
 
-Imprime a versão do Apothem, o interpretador Python, a plataforma, o caminho do
-perfil resolvido e uma tabela de status de instalação por ferramenta. O código de
-saída é `0` quando todo adaptador registrado relata estar instalado; caso
-contrário, `1`.
+Imprime a versão do Apothem, o interpretador Python, a plataforma, o caminho do perfil resolvido e uma tabela de status de instalação por harness. O código de saída é `1` quando qualquer verificação falha: um perfil inválido, um harness instalado que não passa na verificação, um comando de hook registrado que não consegue iniciar, um adaptador que não pôde ser carregado ou sondado, ou um ledger ilegível. Um harness que não está instalado é relatado e não constitui uma falha, e notas informativas não alteram o código de saída.
 
 ## Referência gerada de comandos e flags
 

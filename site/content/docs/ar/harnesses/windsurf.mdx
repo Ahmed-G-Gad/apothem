@@ -1,15 +1,19 @@
 ---
 title: "Windsurf"
-description: "محوّل أداة Apothem لـ Windsurf (إصدار عام)."
+description: "محوّل إطار عمل Apothem لـ Windsurf (إصدار عام)."
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**المورّد:** <bdi>Codeium</bdi>
+**المورّد:** <bdi>Devin Desktop</bdi> (سابقًا <bdi>Codeium Windsurf</bdi>)
 **اسم التثبيت:** <bdi>`windsurf`</bdi>
 **الحالة:** إصدار عام
 **الإعداد الأصلي:** <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi>
+
+أصبح <bdi>Windsurf</bdi> الآن <bdi>Devin Desktop</bdi>، و<bdi>`.devin/rules/`</bdi> هو
+الموقع المُفضَّل لقواعد مساحة العمل (وتكون له الأسبقية على
+<bdi>`.windsurf/rules/`</bdi>).
 
 ## التثبيت
 
@@ -17,23 +21,30 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-يكتب المحوّل ملف قواعد <bdi>Windsurf</bdi> واحدًا بنطاق المشروع من قواعد <bdi>Apothem</bdi>
-المشتركة وسطح الحوكمة.
+يكتب المحوّل ملف قواعد واحدًا لـ <bdi>Windsurf</bdi> على نطاق المشروع انطلاقًا من
+القواعد المشتركة لـ <bdi>Apothem</bdi> وسطح الحوكمة.
 
 **الملفات المكتوبة:** <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi>
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويجسّد ملف قواعد المشروع في
-كل عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف التعريفي
-المشترك هو مصدر الحقيقة؛ وتُحفظ التعديلات المحلّية للمشروع على الملف المُولَّد كنسخة
-احتياطية قبل أن تستبدل المزامنة التالية المحتوى الذي يديره <bdi>Apothem</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد ملف قواعد المشروع
+في كل تشغيل لـ <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف
+التعريفي المشترك هو مصدر الحقيقة؛ وتُنسَخ التعديلات المحلّية للمشروع على الملف
+المُولَّد احتياطيًا قبل أن تستبدل المزامنة التالية المحتوى الذي يديره
+<bdi>Apothem</bdi>.
+
+يبدأ الملف ببياناته الأمامية <bdi>`trigger: always_on`</bdi>، التي تضبط وضع تفعيل
+القاعدة. وتليها الكتلة التي يديرها <bdi>Apothem</bdi>؛ ويُحتفَظ بالنص الذي تضيفه بعد
+الكتلة في كل مزامنة.
 
 ## ملاحظات التوافق
 
-سطح قواعد <bdi>Windsurf</bdi> الحالي بنطاق المشروع تحت <bdi>`.devin/rules/`</bdi>.
-سير العمل والذاكرة المحلّية للجهاز يملكها المُشغِّل؛ ولا يكتبها <bdi>Apothem</bdi>.
-ولا تُكتَب صيغة الملف الواحد <bdi>`.windsurfrules`</bdi> عن قصد.
+سطح القواعد الحالي في <bdi>Windsurf</bdi> على نطاق المشروع تحت
+<bdi>`.devin/rules/`</bdi> (الموقع المُفضَّل، الذي تكون له الأسبقية على الموقع
+الاحتياطي <bdi>`.windsurf/rules/`</bdi> المُبقى للتوافق مع الإصدارات السابقة). سير
+العمل والذكريات المحلّية للجهاز يملكها المُشغِّل؛ ولا يكتبها <bdi>Apothem</bdi>. ولا
+تُكتَب صيغة الملف الواحد <bdi>`.windsurfrules`</bdi> عن قصد.
 
 ## التحقّق
 
@@ -43,9 +54,9 @@ apothem verify --harness windsurf --project /path/to/project
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -53,7 +64,7 @@ apothem verify --harness windsurf --project /path/to/project
 apothem update --harness windsurf --project /path/to/project
 ```
 
-يعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
+يُعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
 
 ## إلغاء التثبيت
 
@@ -61,10 +72,14 @@ apothem update --harness windsurf --project /path/to/project
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi>، والبيانات الأمامية التي كتبها <bdi>Apothem</bdi> فوقها،
+من <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi> ويُبقي أي نص آخر فيه. ولا
+يُحذَف الملف إلا حين لا يتبقى فيه شيء آخر. قبل التغيير تُحفَظ نسخة مختومة بالوقت من
+الملف تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترَك أي ملف نسخة احتياطية في
+المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -76,10 +91,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness windsurf --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness windsurf --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

@@ -55,11 +55,14 @@ Codex surface: instructions to `AGENTS.md`, hooks to `hooks.json` and
 Markdown rules/templates to `~/.config/apothem/` as support material.
 
 Each converted helper sets `name`, `description`, and `developer_instructions`.
-A helper whose tool grant cannot write files also sets
-`sandbox_mode = "read-only"`, Codex's own write restriction. No model or
-reasoning effort is set, so each helper inherits the session's choices. Codex
-has no per-helper tool list or turn limit, so a helper's `tools` and `maxTurns`
-do not carry over.
+A helper whose tool grant, once the tools in its own `disallowedTools` list are
+removed, includes no file-editing tool (`Write`, `Edit`, `MultiEdit`, or
+`NotebookEdit`) also sets `sandbox_mode = "read-only"`, Codex's own write
+restriction. `Bash` does not count as a file-editing tool, so a helper granted
+`Bash` and none of those tools still gets that setting. No model or reasoning
+effort is set, so each helper inherits the session's choices. Codex has no
+per-helper tool list or turn limit, so a helper's `tools` and `maxTurns` do not
+carry over.
 
 ## Compatibility notes
 
@@ -82,7 +85,9 @@ apothem verify --harness codex
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -99,8 +104,14 @@ Refreshes the Codex bootstrap, converted agents, skills, and support cohorts.
 apothem uninstall --harness codex
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block from `~/.codex/AGENTS.md` and keeps any text outside
+it, and removes Apothem's entries from `~/.codex/hooks.json` and keeps yours.
+Also removes the Apothem files in `~/.codex/hooks/`, `~/.codex/agents/`,
+`~/.agents/skills/`, and `~/.config/apothem/{rules,templates}/`; other files in
+those folders stay. Skills removed from `~/.agents/skills/` disappear from the
+other tools that load it too (see [Compatibility notes](#compatibility-notes)).
+Each file is backed up under `~/.apothem/backups/` before it is changed or
+removed. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 

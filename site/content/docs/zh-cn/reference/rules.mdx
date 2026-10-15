@@ -1,36 +1,34 @@
 ---
 title: "规则"
-description: "常驻与路径过滤的行为规则，在整个行为规则集中治理问题求解、代码工艺、整洁架构、规划与质量。"
+description: "常驻与按路径筛选的行为规则，在整个行为规则集中治理问题求解、代码工艺、整洁架构、规划与质量。"
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-行为规则以扁平文件形式存放于 `src/apothem/rules/` 下，带 `*.md`
-后缀。每条规则都是自包含的——Purpose、Obligations、Seriousness
-Scaling、Anti-Patterns、Enforcement、Bindings——并且要么常驻、要么路径过滤。
+行为规则以扁平文件的形式存放在 `src/apothem/rules/` 下，使用 `*.md` 后缀。每条规则都是自包含的——包含 Purpose、Obligations、Seriousness Scaling、Anti-Patterns、Enforcement、Bindings——并且要么常驻，要么按路径筛选。
 
-## 活动规则
+## 生效的规则
 
-规范的注册表是规则集。同一集合的扁平形式：
+规范注册表是规则集合。以下是同一组规则的扁平形式：
 
-| 规则 | 范围 | 实现 |
+| 规则 | 作用域 | 实现 |
 |------|-------|------------|
 | Auto Memory | 常驻 | CM-26 |
 | Clean-Room Generation | 常驻 | CM-5 / CM-7 / CM-21 |
 | Cognitive Identity | 常驻 | CM-21 |
 | Context Management | 常驻 | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | 路径过滤 | CM-12 / CM-24（companion） |
+| Context Management Scratch | 按路径筛选 | CM-12 / CM-24（配套） |
 | Conventions Vigilance | 常驻 | CM-22 |
-| Interactive Questions | 常驻 | CM-2 extension |
-| Interactive Questions Sweep Matchers | 路径过滤 | CM-2 extension（companion） |
+| Interactive Questions | 常驻 | CM-2 扩展 |
+| Interactive Questions Sweep Matchers | 按路径筛选 | CM-2 扩展（配套） |
 | Operational Mandates | 常驻 | CM-1–10 |
 | Worker Orchestration | 常驻 | CM-17 / CM-25 |
-| Clean Architecture | 路径过滤 | CM-27 |
-| Large File Generation | 路径过滤 | CM-23 |
-| Performance Discipline | 路径过滤 | Performance axis |
-| Planning Techniques | 路径过滤 | CM-20 / CM-21 |
-| Python Senior Architect | 路径过滤 | CM-28 |
+| Clean Architecture | 按路径筛选 | CM-27 |
+| Large File Generation | 按路径筛选 | CM-23 |
+| Performance Discipline | 按路径筛选 | 性能维度 |
+| Planning Techniques | 按路径筛选 | CM-20 / CM-21 |
+| Python Senior Architect | 按路径筛选 | CM-28 |
 
 ## Frontmatter 契约
 
@@ -45,17 +43,17 @@ alwaysApply: <true | false>
 ---
 ```
 
-`pathFilter` 字段在常驻规则上省略，在路径过滤规则上存在。校验器的
-`frontmatter-cohort` 检查会在每个规则文件上核实该契约。
+在常驻规则上，`pathFilter` 是空字符串（`""`），`alwaysApply` 为 `true`；在按路径筛选的规则上，`pathFilter` 携带 glob 列表，`alwaysApply` 为 `false`。机器可读的契约是 [`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)（`{name, description, pathFilter, alwaysApply}`）；校验器的 `frontmatter-cohort` 检查会在每个规则文件上验证它。
 
-## 编写规律
+`pathFilter` 和 `alwaysApply` 与工具无关。在工具具有原生作用域字段的地方，每个适配器都会转换它们。Claude Code 只从规则中读取 `paths:`，并在启动时加载每条不带该字段的规则，因此引擎安装（`apothem install --harness claude-code`）会将每条按路径筛选的规则写入 `~/.claude/rules/`，并附带一个由其 `pathFilter` 构建的 `paths:` 列表，而常驻规则则原样复制。这 28 条常驻规则在每个会话中加载；63 条按路径筛选的配套规则在助手读取匹配的文件时加载。
 
-- **自包含。** 每条规则都有自己的 Purpose、Obligations、Anti-Patterns
-  与 Enforcement 章节。
-- **Bindings 块。** 每条规则都以规范的五方向 Bindings 块收尾（Drives → /
-  Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔）。
-- **仅用领域语言。** 不含计划内部引用——参见
-  `CLAUDE.md` CM-7。
+OpenCode 没有按规则划分的作用域字段：它会将其 `opencode.json` 的 `instructions` 列表所指明的每个文件合并到每个会话中。因此，OpenCode 安装（`apothem install --harness opencode`）会列出你的配置档案文档，并且只列出 `alwaysApply` 为 `true` 的规则，每个文件一个明确的 `~/.config/opencode/...` 路径，在写入配置时从规则文件中读取。每条规则（包括按路径筛选的规则）仍会安装在 `~/.config/opencode/.apothem/support/rules/` 下，引用其中某一条的规则、技能或命令会按需读取它。
+
+## 编写纪律
+
+- **自包含。** 每条规则都有自己的 Purpose、Obligations、Anti-Patterns 和 Enforcement 部分。
+- **Bindings 区块。** 每条规则都以规范的五方向 Bindings 区块结尾（Drives → / Satisfies → / Established by ↑ / Gated by ← / Cross-bound with ↔）。
+- **仅使用领域语言。** 不包含计划内部引用——参见 `CLAUDE.md` CM-7。
 
 ## 生成的规则清单
 

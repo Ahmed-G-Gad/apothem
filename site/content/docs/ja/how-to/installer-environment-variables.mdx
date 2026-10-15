@@ -1,74 +1,77 @@
 ---
 title: "インストーラーの環境変数"
-description: "環境変数でスクリプトインストーラー(宛先、ソース、ハーネス、プロファイル、検証)を制御します。"
+description: "環境変数でスクリプトインストーラー（インストール先、ソース、ハーネス、プロファイル、検証）を制御します。"
 machineTranslated: true
-sourceHash: "d68d326f61c80d62"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-目標: 実行前に環境変数を設定することで、スクリプトを編集せずに
-`install.sh` / `install.ps1` を操作します。
+目標: 実行前に環境変数を設定することで、スクリプトを編集せずに `install.sh` / `install.ps1` を操作します。
 
 ## 前提条件
 
-- POSIX シェル(`bash`)または PowerShell 5.1 以上。
-- 変数はインストーラーの先頭で一度だけ読み込まれるため、同じコマンド内で
-  設定する(または先にエクスポートする)うえでインストーラーを実行します。
+- POSIX シェル（`bash`）または PowerShell 5.1+。以下の PowerShell の例は `pwsh`（PowerShell 7+）を実行します。Windows PowerShell 5.1 では、代わりに
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` を実行します。
+- 変数はインストーラーの冒頭で一度だけ読み込まれるため、同じコマンド内で設定し（または先にエクスポートし）、それからインストーラーを実行します。
 
 ## インストーラーの変数
 
 | 変数 | 制御する対象 | デフォルト |
 | --- | --- | --- |
 | `APOTHEM_HOME` | クローンしたソースツリーのインストール先 | `$HOME/.apothem` |
-| `APOTHEM_REPO` | クローン元の Git リモート | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | チェックアウトする Git の ref。未設定なら最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決し、タグ値で固定でき、`main` で移動するブランチを選択します | 未設定(最新の署名付きタグ) |
-| `APOTHEM_ALLOW_UNVERIFIED` | `1` を設定すると、タグ署名検証の失敗を致命的な中断から警告へと格下げします | `0`(検証する。フェイルクローズ) |
-| `APOTHEM_SOURCE` | クローンの代わりに使用する明示的なローカルソースツリー | 未設定(クローンする) |
+| `APOTHEM_REPO` | クローンする Git リモート | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決します。タグの値を指定するとそのタグに固定され、`main` は移動するブランチを選びます。`main` のような、タグではない ref は、`APOTHEM_ALLOW_UNVERIFIED=1` が設定されていない限り中止します。 | 未設定（最新の署名付きタグ） |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、タグ署名の検証失敗を、致命的な中断から警告へ格下げします | `0`（検証する、フェイルクローズ） |
+| `APOTHEM_VERIFY` | `signature` は、リリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォーム用アーカイブを、その SHA-256 をリリースの `SHA256SUMS` と照合したうえでインストールします（完全性を確認するものであり、誰が公開したかの証明ではありません） | `signature` |
+| `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_SOURCE` | クローンの代わりに使う、明示的なローカルソースツリー | 未設定（クローン） |
 | `APOTHEM_HARNESS` | インストールするハーネス | `claude-code` |
 | `APOTHEM_PROFILE` | 共有プロファイル YAML へのパス | `$HOME/.config/apothem/profile.yaml` |
-| `APOTHEM_SKIP_VERIFY` | `1` を設定すると、インストール後の検証手順をスキップします | `0`(検証を実行する) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | `1` に設定すると、不足している前提条件 `click` / `rich` を確認なしで自動インストールします | `0`（確認する。非対話パイプでは拒否） |
-| `APOTHEM_BIN_DIR` | 配置される `apothem` コマンドの shim のディレクトリ | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+| `APOTHEM_SKIP_VERIFY` | `1` に設定すると、インストール後の検証ステップをスキップします | `0`（検証を実行） |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1` に設定すると、不足している `click` / `rich` の前提条件を、確認なしで自動的にインストールします | `0`（確認する。非対話のパイプでは拒否する） |
+| `APOTHEM_BIN_DIR` | 配置される `apothem` コマンドのシムのディレクトリ | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+| `NO_COLOR` | 任意の値に設定すると、色付きの出力をオフにします（[no-color.org](https://no-color.org/)）。出力が端末ではない場合（パイプ、ファイル、CI ログ）も、色は常にオフになります | 未設定（対話型の端末でのみ色を付ける） |
 
-`APOTHEM_SOURCE` はクローンよりも優先されます。`src/apothem` を含む
-チェックアウトに設定されている場合、インストーラーはそれを直接使用し、
-`APOTHEM_REPO` / `APOTHEM_REF` には一切触れず、タグ解決と署名検証を
-スキップします(検証すべき取得物が何もありません)。
+`APOTHEM_SOURCE` はクローンよりも優先されます。`src/apothem` を含むチェックアウトに設定されている場合、インストーラーはそれを直接使用し、`APOTHEM_REPO` / `APOTHEM_REF` には決して触れず、タグの解決と署名の検証をスキップします（検証対象として取得されるものが何もないためです）。
+
+`APOTHEM_HOME` が git クローンではない既存のディレクトリを指している場合、インストーラーはそのディレクトリの削除を拒否します。そのディレクトリを別の場所へ移動するか、`APOTHEM_HOME` を別の場所に向けるか、`--yes`（Windows では `-Yes`）を渡して置き換えを承認してください。
+古い空のディレクトリは、このフラグなしで置き換えられます。
 
 ## 信頼モデル
 
-`APOTHEM_REF` が設定されていない場合、インストーラーは最新の署名付き
-リリースタグを解決し、いかなる構成を生成する前に `git verify-tag` で
-その署名を検証します。署名されていない、または改ざんされたタグは
-インストールを中断させます。`APOTHEM_REF=<tag>` で既知のリリースを
-固定する(これも検証されます。タグは [リリースページ](https://github.com/ahmed-g-gad/apothem/releases) のもの)、`APOTHEM_REF=main` で移動する
-ブランチを選択する(検証なし)、あるいは `APOTHEM_ALLOW_UNVERIFIED=1` を
-設定して検証失敗を警告とともに通過させる(エアギャップ環境、ローカル、
-署名前のリリースでの利用)、のいずれかが可能です。
+`APOTHEM_REF` が設定されていない場合、インストーラーは最新の署名付きリリースタグを解決し、いずれかの構成をマテリアライズする前に `git verify-tag` でその署名を検証します。署名されていないタグや改ざんされたタグは、インストールを中断させます。
+メンテナーの公開鍵がローカルのキーリングにない署名付きタグの場合は、代わりに鍵のインポート手順を案内して中断します — 鍵をインポートし、そのフィンガープリントを [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) で公開されている値と照合してください。
+既知のリリースを固定するには `APOTHEM_REF=<tag>` を使い、タグは[リリースページ](https://github.com/ahmed-g-gad/apothem/releases)から取得します。固定したタグも同じ方法で検証されます。
+移動するブランチを選ぶには、`APOTHEM_REF=main` に加えて `APOTHEM_ALLOW_UNVERIFIED=1` を指定します。このインストールは検証されません。`main` だけを指定すると、ブランチは署名付きタグではないため中止します。
+検証の失敗を警告付きで通過させるには、`APOTHEM_ALLOW_UNVERIFIED=1` だけを設定します（エアギャップ環境、ローカル、または署名付きリリース以前の用途）。
 
-```bash title="固定・検証済みのインストール"
+```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="検証なしで続行(暫定 / エアギャップ環境)"
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
+```
+
+```bash title="Proceed without verification (interim / air-gapped)"
 APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
-## 手順(POSIX bash)
+## 手順（POSIX bash）
 
-1. デフォルト以外のハーネスをインストールします:
+1. デフォルト以外のハーネスをインストールします。
 
    ```bash
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. ソースの ref とインストール先を固定します:
+2. インストール先を固定し、移動する `main` ブランチを選択します。ブランチは署名付きタグではないため、インストーラーには `APOTHEM_ALLOW_UNVERIFIED=1` も必要です。
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
-3. ローカルチェックアウトとカスタムプロファイルを使用し、検証をスキップします:
+3. ローカルチェックアウトとカスタムプロファイルを使用し、検証をスキップします。
 
    ```bash
    APOTHEM_SOURCE=/work/apothem \
@@ -77,9 +80,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    bash install.sh
    ```
 
-## 手順(PowerShell)
+## 手順（PowerShell）
 
-インストーラーを実行する前に、各変数を `$env:` に設定します:
+インストーラーを実行する前に、各変数を `$env:` に設定します。
 
 ```powershell
 $env:APOTHEM_HARNESS = 'cursor'
@@ -87,6 +90,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1
@@ -101,20 +105,18 @@ pwsh -NoProfile -File install.ps1
 
 ## 検証
 
-インストーラーは `✓ Harness <name> installed` を出力し、続いて
-(`APOTHEM_SKIP_VERIFY=1` でない限り)`✓ verify passed` を出力します。
-独立して確認します:
+インストーラーは `✓ Harness <name> installed` を出力し、続いて（`APOTHEM_SKIP_VERIFY=1` でない限り）`✓ verify passed` を出力します。
+インストーラーとは別に確認するには、次を実行します。
 
 ```bash
 apothem verify --harness cursor
 ```
 
-プロファイルがまだ存在しなかった場合、インストーラーはサンプルから
-一つ作成して早期に終了します —— `$APOTHEM_PROFILE` を編集してから
-再実行してください。
+プロファイルがまだ存在しなかった場合、インストーラーはサンプルからプロファイルを作成し、同じ実行の中でそのままインストールと検証に進みます。
+サンプルの識別情報フィールドはプレースホルダーであるため、インストールは注意書きを出力します。`$APOTHEM_PROFILE` を編集してから、`apothem update --harness <name>` を実行してあなたの識別情報を適用してください。
+プロファイルがない状態での `--dry-run` は、サンプルをその代わりとして用いてプレビューし、何も書き込みません。
 
 ## 関連
 
-- [インストール](/docs/install) は、ワンショットのネットワークインストールを
-  扱います。
-- 初回インストール後に CLI を通じてハーネスを追加するには、[ハーネスを追加する](/docs/how-to/adding-a-harness) を参照してください。
+- [インストール](/docs/install)では、ワンショットのネットワークインストールを扱います。
+- [ハーネスを追加する](/docs/how-to/adding-a-harness)では、初回インストール後に CLI を通じてハーネスを追加する方法を扱います。

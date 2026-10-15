@@ -1,14 +1,14 @@
 ---
 title: "Zed"
-description: "محوّل إطار عمل Apothem لـ Zed (GA)."
+description: "محوّل إطار عمل Apothem لـ Zed (إصدار عام)."
 machineTranslated: true
-sourceHash: "490d423446686f01"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Zed Industries</bdi>
 **اسم التثبيت:** <bdi>`zed`</bdi>
-**الحالة:** <bdi>GA</bdi>
+**الحالة:** إصدار عام
 **الإعداد الأصلي:** <bdi>`<project>/.rules`</bdi>
 
 ## التثبيت
@@ -17,29 +17,50 @@ sourceHash: "490d423446686f01"
 apothem install --harness zed --project /path/to/project
 ```
 
-يكتب المحوّل ملفّ تعليمات <bdi>Zed</bdi> واحدًا بنطاق المشروع من سطح القواعد
-والحوكمة المشترك لـ<bdi>Apothem</bdi>. يقرأ <bdi>Zed</bdi> ملفًّا مسطّحًا واحدًا
-باسم <bdi>`.rules`</bdi> في جذر المشروع (إلى جانب عائلة <bdi>`AGENTS.md`</bdi> /
-<bdi>`CLAUDE.md`</bdi>) بوصفه تعليمات؛ ولا يوجد دليل قواعد لكل أداة، لذا يحطّ سطح
-<bdi>Apothem</bdi> بأكمله في هذا الملف الواحد.
+يكتب المحوّل ملف تعليمات واحدًا لـ <bdi>Zed</bdi> على نطاق المشروع انطلاقًا من القواعد
+المشتركة لـ <bdi>Apothem</bdi> وسطح الحوكمة. يقرأ <bdi>Zed</bdi> ملف تعليمات واحدًا
+للمشروع، هو أول تطابق في هذه القائمة:
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+لا يوجد دليل قواعد لكل أداة، لذا يستقرّ سطح <bdi>Apothem</bdi> بأكمله في الملف المسطّح
+<bdi>`.rules`</bdi> الذي يتصدّر تلك القائمة.
 
 **الملفات المكتوبة:** <bdi>`<project>/.rules`</bdi>
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر ملفّ
-<bdi>`.rules`</bdi> للمشروع في كل عملية <bdi>`apothem install`</bdi> أو
-<bdi>`apothem update`</bdi>. الملف التعريفي المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة
-احتياطية من أي ملفّ <bdi>`.rules`</bdi> موجود مسبقًا (أو التعديلات المحلية للمشروع
-على الملف المُولَّد) قبل أن تستبدل المزامنة التالية المحتوى المُدار بواسطة
-<bdi>Apothem</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد ملف
+<bdi>`.rules`</bdi> الخاص بالمشروع في كل تشغيل لـ <bdi>`apothem install`</bdi> أو
+<bdi>`apothem update`</bdi>. الملف التعريفي المشترك هو مصدر الحقيقة؛ ويُنسَخ أي ملف
+<bdi>`.rules`</bdi> موجود مسبقًا (أو التعديلات المحلّية للمشروع على الملف المُولَّد)
+احتياطيًا قبل أن تستبدل المزامنة التالية المحتوى الذي يديره <bdi>Apothem</bdi>.
 
 ## ملاحظات التوافق
 
-سطح التعليمات الحالي لـ<bdi>Zed</bdi> هو ملفّ <bdi>`.rules`</bdi> المسطّح في جذر
-المشروع. ملفّ التعليمات العام <bdi>`~/.config/zed/AGENTS.md`</bdi> وكتلة خوادم سياق
-<bdi>MCP</bdi> (<bdi>`context_servers`</bdi> في <bdi>`.zed/settings.json`</bdi>)
-يملكهما المشغّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
+يُسمّي <bdi>Zed</bdi> ملف <bdi>`AGENTS.md`</bdi> ملفَّ تعليماته الأساسي، ويُبقي ملف
+<bdi>`.rules`</bdi> الخاص بالمشروع ملفَّ توافق مدعومًا
+([تعليمات <bdi>Zed</bdi>](https://zed.dev/docs/ai/instructions)). ولأن <bdi>Zed</bdi>
+لا يقرأ إلا التطابق الأول، فإن ملف <bdi>`.rules`</bdi> جديدًا يحجب ملف
+<bdi>`AGENTS.md`</bdi> أو ملف <bdi>`CLAUDE.md`</bdi> أو أي ملف آخر أدنى في القائمة
+يعتمد عليه المشروع بالفعل. لا يُحرِّر التثبيت تلك الملفات أبدًا. عندما لا يحتوي
+<bdi>`.rules`</bdi> إلا على كتلة <bdi>Apothem</bdi> ويحتوي ملف أدنى أولوية على نصّك،
+يطبع التثبيت والتحديث تحذيرًا يُسمّي الملف المحجوب؛ انسخ التعليمات التي تحتاجها إلى
+<bdi>`.rules`</bdi> خارج كتلة <bdi>Apothem</bdi> لتُبقيها في <bdi>Zed</bdi>.
+
+ملف التعليمات العام <bdi>`~/.config/zed/AGENTS.md`</bdi> وكتلة خوادم سياق
+<bdi>MCP</bdi> (<bdi>`.zed/settings.json`</bdi> <bdi>`context_servers`</bdi>) يملكهما
+المُشغِّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
 
 ## التحقّق
 
@@ -49,9 +70,9 @@ apothem verify --harness zed --project /path/to/project
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -59,7 +80,8 @@ apothem verify --harness zed --project /path/to/project
 apothem update --harness zed --project /path/to/project
 ```
 
-يعيد اشتقاق ملفّ <bdi>`.rules`</bdi> للمشروع من حالة الملف التعريفي المشترك الحالية.
+يُعيد اشتقاق ملف <bdi>`.rules`</bdi> الخاص بالمشروع من الحالة الراهنة للملف التعريفي
+المشترك.
 
 ## إلغاء التثبيت
 
@@ -67,11 +89,9 @@ apothem update --harness zed --project /path/to/project
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-يزيل ملفّ الإعداد الأصلي الذي كتبه المحوّل، مع إعادة تسميته أولًا إلى نسخة احتياطية
-ذات طابع زمني. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك
-<bdi>Apothem</bdi>.
+يُزيل الكتلة المُدارة الخاصة بـ <bdi>Apothem</bdi> من ملف الإعداد الأصلي <bdi>`.rules`</bdi> ويُبقي نصّك الخاص. ولا يُحذف الملف إلا إذا لم يبقَ فيه شيء آخر. وقبل التغيير تُحفَظ نسخة من الملف بطابع زمني تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا تبقى أي نسخة احتياطية في المشروع. ولا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,10 +103,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness zed --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness zed --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness zed --project /path/to/project`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness zed --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

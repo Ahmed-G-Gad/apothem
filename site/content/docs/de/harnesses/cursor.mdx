@@ -1,8 +1,8 @@
 ---
 title: "Cursor"
-description: "Apothem-Werkzeugadapter für Cursor (GA)."
+description: "Apothem-Harness-Adapter für Cursor (GA)."
 machineTranslated: true
-sourceHash: "592a5617c82b9316"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,24 +17,33 @@ sourceHash: "592a5617c82b9316"
 apothem install --harness cursor --project /path/to/project
 ```
 
-Der Adapter rendert aus den gemeinsam genutzten Apothem-Regeln und der
-Governance-Oberfläche eine einzelne `.mdc`-Regeldatei mit Projektumfang.
+Der Adapter rendert aus der gemeinsamen Regel- und Governance-Oberfläche von
+Apothem eine einzelne `.mdc`-Regeldatei auf Projektebene.
 
 **Geschriebene Dateien:** `<project>/.cursor/rules/apothem-rules.mdc`
 
-## Zuordnung des Profils zur nativen Konfiguration
+Diese Datei ist die gesamte Installation: Neben ihr wird keine Regel-, Skill-,
+Command-, Template- oder Hook-Datei abgelegt, daher sagt die Datei dies selbst,
+statt auf Apothem-Dateien zu verweisen, die sich nicht im Projekt befinden.
 
-Der Adapter liest das gemeinsam genutzte Apothem-Profil und rendert die
-Projekt-Regeldatei bei jedem `apothem install`- oder `apothem update`-Lauf. Das
-gemeinsam genutzte Profil ist die Quelle der Wahrheit; projektlokale Änderungen an
-der generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter liest das gemeinsame Profil von Apothem und rendert bei jedem Lauf
+von `apothem install` oder `apothem update` die Projekt-Regeldatei. Das
+gemeinsame Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der
+generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
 Apothem verwalteten Inhalt ersetzt.
+
+Die Datei beginnt mit ihrem YAML-Frontmatter (`description`, `globs`,
+`alwaysApply: true`), weil Cursor den Typ einer Regel nur aus dem Frontmatter
+am Anfang der Datei liest. Der von Apothem verwaltete Block folgt darauf; Text,
+den Sie nach dem Block hinzufügen, bleibt bei jeder Synchronisierung erhalten.
 
 ## Kompatibilitätshinweise
 
-Cursor 0.45+ unterstützt Anweisungen auf Projektebene über `.cursor/rules/`. Der
-Adapter schreibt standardmäßig in das Verzeichnis `.cursor/rules/` mit
-Projektumfang; Cursor verfügt über keinen dokumentierten, dateibasierten Pfad für
+Cursor 0.45+ unterstützt Anweisungen auf Projektebene über `.cursor/rules/`.
+Der Adapter schreibt standardmäßig in das projektbezogene Verzeichnis
+`.cursor/rules/`; Cursor hat keinen dokumentierten, dateibasierten Pfad für
 benutzerweite globale Regeln, den dieser Adapter verwalten könnte.
 
 ## Verifizierung
@@ -43,11 +52,14 @@ benutzerweite globale Regeln, den dieser Adapter verwalten könnte.
 apothem verify --harness cursor --project /path/to/project
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration unter dem erwarteten Pfad vorhanden ist.
-2. Alle Pflichtfelder aus dem gemeinsam genutzten Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -55,8 +67,8 @@ Der Befehl verify bestätigt, dass:
 apothem update --harness cursor --project /path/to/project
 ```
 
-Leitet die Projekt-Regeldatei aus dem aktuellen Zustand des gemeinsam genutzten
-Profils neu ab.
+Leitet die Projekt-Regeldatei aus dem aktuellen Zustand des gemeinsamen Profils
+neu ab.
 
 ## Deinstallation
 
@@ -64,10 +76,15 @@ Profils neu ab.
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsam genutzten Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block und das Frontmatter, das Apothem darüber geschrieben
+hat, aus `<project>/.cursor/rules/apothem-rules.mdc` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig
+ist. Vor der Änderung wird eine mit Zeitstempel versehene Kopie der Datei unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
-## Konformitätsschranke
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -85,4 +102,10 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Vorschau der Installation ohne Schreiben von Dateien. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

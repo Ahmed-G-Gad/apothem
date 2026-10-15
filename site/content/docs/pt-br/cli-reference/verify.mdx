@@ -2,7 +2,7 @@
 title: "verify"
 description: "Referência da CLI para o comando apothem verify."
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,20 +11,35 @@ Verifica a instalação de um adaptador de harness.
 ## Sinopse
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-Chama a implementação `verify()` de cada adaptador selecionado. Sai com 0 apenas quando todos os adaptadores selecionados relatam que seus destinos gerenciados estão presentes e válidos.
+Chama a implementação `verify()` de cada adaptador selecionado. Sai com 0
+somente quando todos os adaptadores selecionados relatam que seus destinos
+gerenciados estão presentes e válidos. Sem `--profile`, a verificação é
+**estrutural** — todo destino gerenciado precisa estar presente e válido. Com
+`--profile`, a verificação exige adicionalmente **fidelidade ao perfil**, de
+modo que uma instalação presente, mas com desvio, não passa na verificação,
+respondendo "ESTE perfil está instalado fielmente?" em vez de apenas "ele
+existe?".
+
+Uma varredura com `--harness all` respeita o `exclude_harnesses` do perfil — as
+mesmas exclusões que o lote de `install`/`update` aplicou —, de modo que a
+verificação nunca relata como ausente um harness excluído deliberadamente. As
+exclusões vêm de `--profile`, quando fornecido; caso contrário, do perfil
+padrão. Um perfil padrão ilegível ou ausente faz a verificação recair no
+registro completo.
 
 ## Opções
 
 | Opção | Descrição |
 |---|---|
 | `--harness NAME` | Adaptador de harness a verificar, ou `all` para o conjunto de todo o registro (obrigatório). |
-| `--project PATH` | Raiz do projeto para os harness com escopo de projeto. |
-| `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
+| `--profile PATH` | YAML do perfil compartilhado contra o qual a fidelidade é verificada. Sem ele, a verificação é puramente estrutural. |
+| `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. |
+| `--quiet`, `-q` | Suprime a saída informativa; apenas os erros são emitidos. |
 | `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
 | `--json` | Abreviação de `--format json`. |
@@ -35,6 +50,7 @@ Chama a implementação `verify()` de cada adaptador selecionado. Sai com 0 apen
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +75,9 @@ Chama a implementação `verify()` de cada adaptador selecionado. Sai com 0 apen
 }
 ```
 
-Quando qualquer harness selecionado está ausente ou inválido, `status` é `error`, a linha de resultado que falha carrega `verified: false` e o processo sai com o código 1.
+Quando qualquer harness selecionado está ausente ou inválido, `status` é
+`error`, a linha de resultado que falha carrega `verified: false` e o processo
+sai com o código 1.
 
 ## Exemplos
 
@@ -73,11 +91,12 @@ apothem verify --harness all --project .
 
 | Código | Significado |
 |---|---|
-| 0 | O harness está instalado |
-| 1 | O harness não está instalado |
+| 0 | Harness verificado — todos os destinos gerenciados estão presentes e válidos |
+| 1 | Harness não verificado — destinos gerenciados ausentes ou inválidos |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 
 - [apothem install](/docs/cli-reference/install) — instala uma configuração de harness
 - [apothem update](/docs/cli-reference/update) — reaplica o perfil atual a um harness
-- [apothem doctor](/docs/install/concepts) — diagnóstico de instalação em todo o sistema
+- [apothem doctor](/docs/cli-reference/doctor) — diagnóstico da instalação em todo o sistema

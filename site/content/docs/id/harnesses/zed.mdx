@@ -2,12 +2,12 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "490d423446686f01"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Zed Industries
-**Nama instal:** `zed`
+**Nama instalasi:** `zed`
 **Status:** GA
 **Konfigurasi native:** `<project>/.rules`
 
@@ -17,27 +17,50 @@ sourceHash: "490d423446686f01"
 apothem install --harness zed --project /path/to/project
 ```
 
-Adaptor menulis satu berkas instruksi Zed berlingkup-proyek dari permukaan aturan
-dan tata kelola Apothem bersama. Zed membaca satu berkas `.rules` datar di akar
-proyek (berdampingan dengan keluarga `AGENTS.md` / `CLAUDE.md`) sebagai instruksi;
-tidak ada direktori aturan per-alat, sehingga seluruh permukaan Apothem jatuh ke
-dalam satu berkas ini.
+Adaptor menulis satu berkas instruksi Zed berlingkup proyek dari aturan dan
+permukaan tata kelola Apothem bersama. Zed membaca satu berkas instruksi
+proyek, yaitu kecocokan pertama dalam daftar ini:
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+Tidak ada direktori aturan per-alat, sehingga seluruh permukaan Apothem
+mendarat di berkas `.rules` datar di urutan teratas daftar tersebut.
 
 **Berkas yang ditulis:** `<project>/.rules`
 
 ## Pemetaan profil ke konfigurasi native
 
 Adaptor membaca profil bersama Apothem dan merender berkas `.rules` proyek pada
-setiap jalannya `apothem install` atau `apothem update`. Profil bersama adalah
-sumber kebenaran; setiap `.rules` yang sudah ada (atau suntingan lokal-proyek pada
-berkas yang dihasilkan) dicadangkan sebelum sinkronisasi berikutnya mengganti konten
-yang dikelola Apothem.
+setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
+adalah sumber kebenaran; setiap `.rules` yang sudah ada sebelumnya (atau
+suntingan lokal-proyek pada berkas yang dihasilkan) dicadangkan sebelum
+sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
 
 ## Catatan kompatibilitas
 
-Permukaan instruksi Zed saat ini adalah berkas `.rules` datar di akar proyek. Berkas
-instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
-(`context_servers` di `.zed/settings.json`) milik operator; Apothem tidak
+Zed menetapkan `AGENTS.md` sebagai berkas instruksi utamanya dan mempertahankan
+`.rules` proyek sebagai berkas kompatibilitas yang didukung
+([instruksi Zed](https://zed.dev/docs/ai/instructions)). Karena Zed hanya
+membaca kecocokan pertama, `.rules` yang baru menyembunyikan `AGENTS.md`,
+`CLAUDE.md`, atau berkas lain yang lebih rendah dalam daftar yang sudah
+diandalkan proyek. Instalasi tidak pernah menyunting berkas-berkas tersebut.
+Ketika `.rules` hanya berisi blok Apothem dan sebuah berkas berprioritas lebih
+rendah berisi teks Anda, install dan update mencetak peringatan yang menyebutkan
+berkas yang tersembunyi; salin instruksi yang Anda perlukan ke dalam `.rules` di
+luar blok Apothem agar instruksi tersebut tetap terbaca di Zed.
+
+Berkas instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
+(`.zed/settings.json` `context_servers`) dimiliki operator; Apothem tidak
 menulisnya.
 
 ## Verifikasi
@@ -49,16 +72,16 @@ apothem verify --harness zed --project /path/to/project
 Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness zed --project /path/to/project
 ```
 
-Menurunkan-ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
+Menurunkan ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
 
 ## Pencopotan
 
@@ -66,9 +89,7 @@ Menurunkan-ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor, terlebih dahulu
-mengganti namanya menjadi cadangan bertanda waktu. YAML profil bersama dan mesin
-Apothem tidak terpengaruh.
+Menghapus blok terkelola Apothem dari berkas konfigurasi native `.rules` dan mempertahankan teks Anda sendiri. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -82,10 +103,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness zed --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness zed --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness zed --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness zed --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI

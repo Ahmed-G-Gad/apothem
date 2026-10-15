@@ -1,90 +1,161 @@
 ---
 title: "Sicherheit"
-description: "Apothems Sicherheitshaltung – OpenSSF-Scorecard-Ziel, Schwachstellenmeldung, Härtungsoberflächen."
+description: "Apothems Sicherheitshaltung — OpenSSF-Scorecard-Ziel, Schwachstellenmeldung, Härtungsoberflächen."
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothems Sicherheitshaltung ruht auf fünf Säulen: Härtung der Lieferkette, Schwachstellenreaktion, Branch-Schutz, Versionssignierung und kontinuierliche Sicherheitsanalyse. Dieser Abschnitt dokumentiert jede Oberfläche.
+Apothems Sicherheitshaltung beruht auf fünf Säulen: Härtung der Lieferkette, Reaktion auf Schwachstellen, Branch-Schutz, Release-Signierung und kontinuierliche Sicherheitsanalyse. Dieser Abschnitt dokumentiert jede Oberfläche.
 
 ## Bedrohungsmodell
 
 Apothem ist ein Konfigurations-Materialisierer. Es liest ein gemeinsames Profil
 und schreibt harness-native Konfigurationsdateien in die Verzeichnisse, die
-jeder Harness liest. Diese eine Funktion begrenzt, was
-es vertraut und was nicht.
+jeder Harness liest. Diese eine Funktion begrenzt, was es als vertrauenswürdig
+behandelt und was nicht.
 
-- **Was Apothem vertraut.** Das gemeinsame Profil, das du verfasst, und der
-  gebündelte Quellbaum, den der Installer ablegt. Das Profil ist deine erklärte
-  Absicht; die Engine behandelt es nach der Schemavalidierung als maßgebliche
-  Eingabe.
-- **Was Apothem nicht vertraut.** Profilinhalte erreichen das Dateisystem erst
-  nach der Validierung: Schemafehler, unbekannte Harness-IDs, unsichere
-  Projektpfade, fehlende Manifestquellen, Ziel-Traversierung und
-  Symlink-Überschreitungen halten alle vor jedem Schreibvorgang an und liefern
-  strukturierte Diagnosen mit `files_written: []` zurück.
-- **Was die materialisierte Ausgabe niemals mit sich führt.** Keine Geheimnisse.
-  Die Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
-  bevor sie die Klartextausgabe, das JSON, die Logs, die Doku-Schnipsel oder die
-  Tests erreichen, und öffentliche Beispiele verwenden fiktive
-  Platzhalter-Identitäten und -Domänen. Die materialisierte Konfiguration ist
-  dafür gedacht, committet und geteilt zu werden; sie trägt keine
-  Anmeldedaten.
-- **Die universelle Verweigerungsgrundlinie.** Die Regeln, die Apothem
-  materialisiert, tragen eine nicht verhandelbare Verweigerungsgrundlinie
-  unabhängig von jeder harness-spezifischen Erlaubnisliste – Geheimnispfade
+- **Was Apothem als vertrauenswürdig behandelt.** Das gemeinsame Profil, das
+  Sie verfassen, und den gebündelten Quellbaum, den der Installer ablegt. Das
+  Profil ist Ihre erklärte Absicht; die Engine behandelt es nach der
+  Schemavalidierung als maßgebliche Eingabe.
+- **Was Apothem nicht als vertrauenswürdig behandelt.** Profilinhalte erreichen
+  das Dateisystem erst nach der Validierung: Schemafehler, unbekannte
+  Harness-IDs, unsichere Projektpfade, fehlende Manifestquellen,
+  Ziel-Traversierung und Symlink-Überschreitungen stoppen alle vor jedem
+  Schreibvorgang und liefern strukturierte Diagnosen mit `files_written: []`
+  zurück.
+- **Was materialisierte Ausgabe niemals enthält.** Keine Geheimnisse.
+  Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
+  bevor sie Klartextausgabe, JSON, Logs, Doku-Schnipsel oder Tests erreichen,
+  und öffentliche Beispiele verwenden fiktive Platzhalter-Identitäten und
+  -Domains. Materialisierte Konfiguration ist dafür gedacht, committet und
+  geteilt zu werden; sie enthält keine Anmeldedaten.
+- **Die universelle Verweigerungsuntergrenze.** Die Regeln, die Apothem
+  materialisiert, tragen eine nicht verhandelbare Verweigerungsuntergrenze,
+  unabhängig von jeder harness-spezifischen Erlaubnisliste — Geheimnispfade
   (`.env*`, `~/.ssh/**`, Anmeldedatenspeicher), destruktive Shell-Operationen
   (`rm -rf`, `sudo`, Force-Pushes auf geschützte Branches) und die Ausführung
   nicht vertrauenswürdiger Eingaben. Keine Erlaubnisliste erweitert diese
-  Grundlinie stillschweigend.
-- **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und die
-  Apothem-eigenen Support-Teilbäume beschränkt. Bestehende verwaltete Ziele
-  werden vor dem Ersetzen gesichert und gemeinsame Discovery-Verzeichnisse
-  werden Kind für Kind zusammengeführt, sodass nicht verwandte, vom Operator
-  verfasste Dateien an Ort und Stelle bleiben.
+  Untergrenze stillschweigend.
+- **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und
+  die Apothem-eigenen Unterstützungs-Teilbäume beschränkt. Bestehende
+  verwaltete Ziele werden vor dem Ersetzen gesichert, und gemeinsame
+  Discovery-Verzeichnisse werden Kind für Kind zusammengeführt, sodass nicht
+  zugehörige, vom Operator verfasste Dateien an Ort und Stelle bleiben.
 
 ## Sicherheitshaltung zur Laufzeit
 
 Harness-Lebenszyklus- und Profilschreibbefehle validieren vor dem Schreiben.
 Profil-Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende
-Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen halten vor
-Schreibvorgängen ins Dateisystem an und liefern strukturierte Diagnosen mit
+Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen stoppen vor
+Schreibvorgängen ins Dateisystem und liefern strukturierte Diagnosen mit
 `files_written: []` zurück.
 
 Installations- und Aktualisierungsvorgänge bewahren bestehende verwaltete Ziele,
 indem sie sie vor dem Ersetzen sichern. Gemeinsame Discovery-Verzeichnisse
-werden Kind für Kind zusammengeführt, sodass nicht verwandte, vom Operator
+werden Kind für Kind zusammengeführt, sodass nicht zugehörige, vom Operator
 verfasste Dateien an Ort und Stelle bleiben. `--dry-run` führt dieselbe
 Validierung durch und meldet die geplanten Ergebnisse, ohne Verzeichnisse oder
 Dateien zu erstellen.
 
-Die Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
-bevor sie die Klartextausgabe, die JSON-Ausgabe, die Logs, die Doku-Schnipsel
-oder die Tests erreichen. Öffentliche Beispiele verwenden fiktive
-Platzhalter-Identitäten und -Domänen.
+Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
+bevor sie Klartextausgabe, JSON-Ausgabe, Logs, Doku-Schnipsel oder Tests
+erreichen. Öffentliche Beispiele verwenden fiktive Platzhalter-Identitäten und
+-Domains.
 
 ## Schnelllinks
 
 - [**OpenSSF-Scorecard-Haltung**](/docs/security/openssf-scorecard-target) — Nachweis je Prüfung und bekannte Plattformgrenzen
 - [**Webhooks-Audit**](/docs/security/webhooks-audit) — Nachweis der Webhook-Secret-Hygiene
-- [**Branch-Schutz**](/docs/security/branch-protection-ruleset) — Review-Gate, Statusprüfungen und Push-Beschränkungen
-- [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Versionsnachweis ohne Binärdateien im Quellcode
+- [**Branch-Schutz**](/docs/security/branch-protection-ruleset) — Pull-Request-Pflicht, erforderliche Statusprüfungen sowie Sperren für Force-Pushes und Löschungen
+- [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Release-Nachweis ohne Binärdateien im Quellcode
 - [Sicherheitsrichtlinie](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — Schwachstellenmeldung & unterstützte Versionen
 - [OpenSSF-Scorecard-Badge](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — Live-Bewertung
 
 ## Eine Schwachstelle melden
 
-Verwende das [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) im Security-Tab des Repositorys. Die vollständige Richtlinie, die Matrix der unterstützten Versionen und die Reaktionszeiten finden sich in [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Verwenden Sie [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) im Security-Tab des Repositorys. Die vollständige Richtlinie, die Matrix der unterstützten Versionen und die Reaktionszeiten finden Sie in [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Lieferketten-Versionsnachweise
+## Release-Nachweise der Lieferkette
 
-Jedes Versionsartefakt wird ausgeliefert mit:
+Jedes Release-Artefakt wird ausgeliefert mit:
 
 - **SLSA-3-Build-Provenienz** über [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Sigstore-Signaturen** über [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **CycloneDX-SBOM** über [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **CycloneDX-SBOM** des ausgelieferten Wheels und sdist, geschrieben von `scripts/release/generate_sbom.py`: das apothem-Paket, jedes unter `apothem/_vendor` vendorte Paket mit seiner Lizenz, die deklarierten Laufzeitanforderungen und der SHA-256 jeder Distribution. Das SBOM ist signiert und wie die Distributionen von der Build-Provenienz abgedeckt
 - **npm-Provenienz-Erklärungen** über Trusted-Publishing-OIDC auf `@ahmed-g-gad/apothem`
-- **GPG-signierte git-Tags** (EDDSA-Schlüssel `70396FED9C634163`)
+- **GPG-signierte Git-Tags** (EDDSA-Schlüssel `70396FED9C634163`)
 
-Verifizierungsrezepte sind inline in [Versionszyklus](/docs/runbooks/release-cycle) und [Versionswiederherstellung](/docs/runbooks/release-recovery) dokumentiert; ein dediziertes Runbook zur Versionsverifizierung steht noch aus.
+## Ein Release verifizieren
+
+Laden Sie jedes Asset eines Release in ein leeres Verzeichnis herunter und
+prüfen Sie dann die Signaturen und die Build-Provenienz. Ersetzen Sie `vX.Y.Z`
+und `X.Y.Z` durch das Release, das Sie heruntergeladen haben.
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` gibt `Verified OK` aus, und `slsa-verifier` gibt `PASSED: SLSA
+verification passed` aus. Wiederholen Sie den `cosign`-Befehl für jedes andere
+Asset mit seinem `<asset>.cosign.bundle` (frühere Releases benennen die Bundles
+für Plattformarchive und `SHA256SUMS` `<asset>.sig`). Die darwin- und
+linux-Archive sind dieselben Bytes unter zwei Namen, daher listet `SHA256SUMS`
+einen Digest zweimal. Aus einem Klon heraus führt
+`bash scripts/release/verify-provenance.sh <download-dir>` alle drei Prüfungen,
+einschließlich des `SHA256SUMS`-Manifests, in einem Durchlauf aus.
+
+Zwei Details entscheiden, ob die Verifizierung etwas bedeutet:
+
+- **Schreibweise des Eigentümers.** Identitätsprüfungen unterscheiden Groß- und
+  Kleinschreibung, und die Zertifikate tragen den Eigentümer so, wie GitHub ihn
+  meldet: `Ahmed-G-Gad`. Mit einem kleingeschriebenen Eigentümer schlagen beide
+  Werkzeuge fehl.
+- **Exakte Identität.** Bevorzugen Sie `--certificate-identity` mit dem
+  vollständigen Subjekt von oben. Um jedes Release-Tag zu akzeptieren,
+  verankern Sie das Muster an beiden Enden:
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  Ein nicht verankertes Muster wie `github.com/Ahmed-G-Gad/apothem` passt auch
+  auf ein gefälschtes Subjekt, das diesen Text lediglich enthält, zum Beispiel
+  einen Workflow in einem anderen Repository auf einem Branch, der nach diesem
+  benannt ist.
+
+Das [Runbook zum Release-Zyklus](/docs/runbooks/release-cycle) hält dieselben
+Befehle als Prüfung des Maintainers nach dem Release fest.
+
+### Ein Release neu bauen und vergleichen
+
+Wheel und sdist sind reproduzierbar: Ein Neubau des Tags mit der
+Release-Toolchain ergibt die veröffentlichten SHA-256-Digests. Verwenden Sie
+Python 3.12 unter Linux, wie es auch das Release tut:
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+Vergleichen Sie die Digests mit dem veröffentlichten Wheel und sdist. Der Build
+verwendet das hash-gesperrte setuptools, das `pyproject.toml` pinnt, und
+`normalize_sdist.py` entfernt die Build-Zeit, die Dateieigentümer und die
+Checkout-Zeitstempel aus dem sdist.

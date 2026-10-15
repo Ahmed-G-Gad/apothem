@@ -2,7 +2,7 @@
 title: "خطّاف أدنى"
 description: "مثال خطّاف <bdi>Apothem</bdi> أدنى — إطلاق فحص عند كل كتابة ملف."
 machineTranslated: true
-sourceHash: "d1337398a00a9c83"
+sourceHash: "714a1269e07cc416"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## التسجيل في settings.json
@@ -48,10 +48,9 @@ sys.exit(0)  # exit 0 = proceed; non-zero = block
 
 ## حجب الكتابات
 
-غيِّر <bdi>`sys.exit(0)`</bdi> إلى <bdi>`sys.exit(1)`</bdi> واطبع كتلة
-<bdi>JSON</bdi> للحجب إلى <bdi>stdout</bdi>:
+لحجب عملية الكتابة، اطبع غلاف الرفض إلى <bdi>stdout</bdi> وأبقِ رمز الخروج <bdi>`0`</bdi>، كما تفعل خطّافات <bdi>Apothem</bdi> نفسها:
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

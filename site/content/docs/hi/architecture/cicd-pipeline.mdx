@@ -2,7 +2,7 @@
 title: "CI/CD पाइपलाइन आरेख"
 description: "बिल्ड, टेस्ट, lint, सुरक्षा और प्रकाशन वर्कफ़्लो चरणों का दृश्य मानचित्र और लेन-विभाजन, जो हर कोड परिवर्तन और रिलीज़ को गेट करते हैं।"
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -69,12 +68,13 @@ flowchart LR
 
 ## लेन की भूमिकाएँ
 
-- **स्थैतिक विश्लेषण लेन** — त्वरित प्रतिक्रिया। Ruff Python शैली और एक संक्षेपित
+- **स्थैतिक विश्लेषण लेन** — त्वरित प्रतिक्रिया। Ruff Python शैली और एक चुने हुए
   नियम-समुच्चय को कवर करता है; mypy strict पर प्रकार-अनुशासन लागू करता है;
-  markdownlint दस्तावेज़ीकरण सतह की निगरानी करता है; frontmatter सत्यापक नियमों,
-  स्किल्स, प्रत्यायोजित कर्मियों और कमांडों के लिए आर्टिफ़ैक्ट-स्कीमा अनुपालन को
-  गेट करता है।
-- **टेस्ट लेन** — `pytest tests/hooks` hook रनटाइम को पूर्ण इवेंट-मैट्रिक्स के
+  frontmatter सत्यापक नियमों, स्किल्स, प्रत्यायोजित वर्कर और कमांडों के लिए
+  आर्टिफ़ैक्ट-स्कीमा अनुपालन को गेट करता है। markdownlint इस लेन में नहीं है: वह
+  केवल pre-commit हुक के रूप में चलता है, और CI उसे नहीं चलाता
+  ([Markdown परंपराएँ](/docs/reference/markdown-conventions) देखें)।
+- **टेस्ट लेन** — `pytest tests/hooks` हुक रनटाइम को पूर्ण इवेंट-मैट्रिक्स के
   विरुद्ध चलाता है; `validate_ecosystem.py` आर्टिफ़ैक्ट-अंतर संगति के लिए प्राथमिक
   संरचनात्मक गेट है; `chaos_pass.py` और `src/apothem/benchmarks/` के अंतर्गत
   प्रति-वर्ग बेंचमार्क सुइट क्षीण इनपुट के अंतर्गत अवनति और रनटाइम-बजट प्रतिगमन को
@@ -98,8 +98,8 @@ flowchart LR
 
 - `pyproject.toml` — Ruff / mypy / pytest विन्यास का सत्य-स्रोत।
 - `scripts/dev/validate_ecosystem.py` — प्राथमिक आर्टिफ़ैक्ट-अंतर गेट।
-- `scripts/dev/validate_hooks.py` — hook-विशिष्ट संरचनात्मक सत्यापन।
-- `scripts/dev/chaos_pass.py` — प्रत्येक विन्यस्त hook का प्रतिकूल स्वीप।
+- `scripts/dev/validate_hooks.py` — हुक-विशिष्ट संरचनात्मक सत्यापन।
+- `scripts/dev/chaos_pass.py` — प्रत्येक विन्यस्त हुक का प्रतिकूल स्वीप।
 - `src/apothem/benchmarks/` — प्रति-वर्ग रनटाइम-बजट सत्यापक।
 - `site/content/docs/developer-guide.mdx` — संचालक-मुखी योगदानकर्ता वर्कफ़्लो।
 - `CHANGELOG.md` — रिलीज़-नोट स्रोत।

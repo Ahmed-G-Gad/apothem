@@ -2,7 +2,7 @@
 title: "Apothem बनाम हस्तचालित Cursor कॉन्फ़िगरेशन"
 description: "`.cursor/rules/` के अंतर्गत Cursor के MDC नियमों को हाथ से बनाए रखने बनाम उन्हें Apothem के साझा प्रोफ़ाइल से रेंडर करने की तुलना।"
 machineTranslated: true
-sourceHash: "129cd7c149852366"
+sourceHash: "c2a9e94f668e10b1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,11 +15,11 @@ cursor अडैप्टर उन `.mdc` फ़ाइलों को सा�
 
 | कार्य | हस्तचालित कॉन्फ़िग | Apothem-प्रबंधित |
 | ---- | --------------- | --------------- |
-| नियम लिखना | `.cursor/rules/` के अंतर्गत प्रत्येक `.mdc` फ़ाइल हाथ से लिखें | साझा कॉर्पस से रेंडर |
+| नियम लिखना | `.cursor/rules/` के अंतर्गत हर `.mdc` फ़ाइल हाथ से लिखें | साझा कॉर्पस से रेंडर |
 | MDC frontmatter लिखना | प्रति फ़ाइल `description` / `globs` / `alwaysApply` हाथ से लिखें | अडैप्टर द्वारा जनरेट |
-| एक नियम प्रारूप बनाए रखना | MDC नियमों और एकल `.cursorrules` फ़ाइल के बीच हाथ से चुनें | अडैप्टर केवल `.cursor/rules/` MDC फ़ाइलें लिखता है |
-| नियमों को अन्य एनवायरनमेंट के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
-| कॉन्फ़िग सही है यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness cursor` |
+| एक नियम प्रारूप बनाए रखना | MDC नियमों और एकल `.cursorrules` फ़ाइल के बीच हाथ से चुनें | अडैप्टर केवल `.cursor/rules/` की MDC फ़ाइलें लिखता है |
+| नियमों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness cursor --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
@@ -31,13 +31,11 @@ Cursor में कोई PreToolUse हुक नहीं है, इसल�
 
 ## माइग्रेशन पथ
 
-1. यदि आपके पास अभी तक नहीं है तो साझा प्रोफ़ाइल बनाने के लिए `apothem profile init` चलाएँ।
-2. अपने मौजूदा `.cursor/rules/` (और किसी भी `.cursorrules`) से नियमों को
-   साझा कॉर्पस में ले जाएँ।
-3. सही MDC frontmatter वाली `.mdc` फ़ाइलें रेंडर करने के लिए
-   `apothem install --harness cursor` चलाएँ।
-4. कॉन्फ़िग उतरी है यह पुष्टि करने के लिए `apothem verify --harness cursor` चलाएँ।
-5. हर बाद के बदलाव के लिए `apothem update --harness cursor` का उपयोग करें।
+1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
+2. अपने मौजूदा `.cursor/rules/` (और किसी भी `.cursorrules`) के नियमों को साझा कॉर्पस में ले जाएँ।
+3. सही MDC frontmatter वाली `.mdc` फ़ाइलें रेंडर करने के लिए `apothem install --harness cursor --project <path>` चलाएँ।
+4. कॉन्फ़िग सही जगह पहुँची है, इसकी पुष्टि के लिए `apothem verify --harness cursor --project <path>` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness cursor --project <path>` का उपयोग करें।
 
 ## आगे पढ़ें
 

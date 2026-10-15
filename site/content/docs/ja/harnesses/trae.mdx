@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "229e541ddce9cc3e"
+sourceHash: "0e9e61064d66a5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,25 +17,23 @@ sourceHash: "229e541ddce9cc3e"
 apothem install --harness trae --project /path/to/project
 ```
 
-アダプターは、共有された Apothem のルールおよびガバナンス面から、プロジェクト
-スコープの Trae ルールファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Trae ルールファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.trae/rules/apothem-rules.md`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の実行のたびにプロジェクトルールファイルをレンダリングします。
-共有プロファイルが真実の源です。生成されたファイルへのプロジェクトローカルな編集は、
-次回の同期が Apothem 管理下のコンテンツを置き換える前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、プロジェクトのルールファイルをレンダリングします。
+共有プロファイルが信頼できる情報源です。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem 管理のコンテンツを置き換える前にバックアップされます。
+
+このファイルは、`alwaysApply: true` と `description` を設定する YAML フロントマターで始まります。これは、[Trae のルールに関するドキュメント](https://docs.trae.ai/ide/rules)によれば Trae の Always Apply モードです。
+Apothem 管理のブロックはその後に続きます。ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Trae の現在のルール面は `.trae/rules/` 配下でプロジェクトスコープになっています。
-アダプターは専用の `apothem-rules.md` ファイルを書き込み、これはオペレーターが所有
-する `project_rules.md` および `user_rules.md` アンカーと共存し、それらを決して
-上書きしません。`.trae/mcp.json` ツールサーバー面と `.trae/skills/` スキル面は
-オペレーターの所有物であり、Apothem はそれらを書き込みません。
+Trae の現在のルール面は `.trae/rules/` 配下のプロジェクトスコープです。グローバルルールは `~/.trae/user_rules` 配下に置かれます。
+アダプターは専用の `apothem-rules.md` ファイルを書き込み、そのディレクトリ内の他のルールファイルやあなたのグローバルルールを決して上書きしません。
+`.trae/mcp.json` のツールサーバー面と `.trae/skills/` のスキル面はオペレーターの所有であり、Apothem はそれらを書き込みません。
 
 ## 検証
 
@@ -43,10 +41,10 @@ Trae の現在のルール面は `.trae/rules/` 配下でプロジェクトス�
 apothem verify --harness trae --project /path/to/project
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -55,7 +53,7 @@ verify コマンドは、次のことを確認します。
 apothem update --harness trae --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクトルールファイルを再導出します。
+現在の共有プロファイルの状態から、プロジェクトのルールファイルを再導出します。
 
 ## アンインストール
 
@@ -63,10 +61,12 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除します。
-共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+`<project>/.trae/rules/apothem-rules.md` から、Apothem のブロックと、Apothem がその上に書き込んだフロントマターを削除し、その中の他のテキストは残します。
+このファイルは、その中に他に何も残っていない場合にのみ削除されます。
+変更の前に、このファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -77,11 +77,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness trae --project /path/to/project` を再実行する |
-| 検証に失敗した | `apothem update --harness trae --project /path/to/project` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness trae --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness trae --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness trae --project /path/to/project` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

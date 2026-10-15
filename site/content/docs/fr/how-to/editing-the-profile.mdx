@@ -2,7 +2,7 @@
 title: "Modifier le profil"
 description: "Modifier le profil partagé et re-matérialiser chaque environnement installé."
 machineTranslated: true
-sourceHash: "aef30135c731008d"
+sourceHash: "24dfc028806d15cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,8 +83,15 @@ apothem profile show
 apothem verify --harness all
 ```
 
-`profile show` reflète votre modification ; `verify` confirme que la
-configuration matérialisée correspond au profil mis à jour.
+`profile show` reflète votre modification.
+
+`apothem verify --harness all` contrôle chaque environnement enregistré ; la commande se termine donc avec un code non nul, sauf si tous sont installés. Les environnements à portée projet exigent aussi `--project PATH` ; sans cette option, le lot s'arrête avec une erreur `project.required`. Pour ne vérifier que l'environnement que vous avez mis à jour, exécutez la même commande avec le nom de cet environnement :
+
+```bash
+apothem verify --harness <name>
+```
+
+Pour une vue d'ensemble du système qui tolère les environnements que vous n'avez pas installés, exécutez `apothem doctor`.
 
 ## Connexes
 

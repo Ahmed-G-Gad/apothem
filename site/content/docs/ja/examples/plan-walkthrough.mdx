@@ -2,7 +2,7 @@
 title: "計画ウォークスルー"
 description: "実際のタスクに対する /plan パイプラインのエンドツーエンドのウォークスルー。"
 machineTranslated: true
-sourceHash: "a046160921a5a9b1"
+sourceHash: "474f591d305c3c7e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-これは 6 フェーズの Forge を実行し、明確化のための質問を行い、`plans/apothem-status-command/_spec/spec.md` を生成します。
+これは 6 フェーズの Forge を実行し、明確化のための質問を行い、`.apothem/plans/apothem-status-command/_spec/spec.md` を生成します。
 
 ## ステップ 3：計画を生成する
 
@@ -33,7 +33,7 @@ human-readable by default.
 /plan-generate
 ```
 
-`plans/apothem-status-command/phases/` の下に、PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md、および各フェーズの PHASE.md ファイルを生成します。
+`.apothem/plans/apothem-status-command/phases/` の下に、PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md、および各フェーズの PHASE.md ファイルを生成します。
 
 ## ステップ 4：計画をレビューする
 

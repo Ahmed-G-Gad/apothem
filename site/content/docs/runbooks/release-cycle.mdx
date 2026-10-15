@@ -1,6 +1,6 @@
 ---
 title: "Release-cycle runbook"
-description: "Complete release workflow from local gates through the signed GitHub Release to the optional npm publish dispatch."
+description: "Complete release workflow from local gates through the signed GitHub Release to the npm publish."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -141,14 +141,38 @@ log for the asset-upload confirmations.
 
 ### 2.4 Confirm the npm publish
 
-The tag push also runs `publish-npm.yml`. Approve the `release` environment
-deployment when prompted. The workflow publishes `@ahmed-g-gad/apothem@X.Y.Z`
-to npmjs.com through npm trusted publishing (OIDC); no registry token is
-stored in the repository. Then confirm readiness:
+The tag push also runs `publish-npm.yml` beside `release.yml`. The npm
+workflow does not wait for the release workflow; the `release` environment
+approval is the gate. Once the release workflow from §2.3 has finished,
+confirm readiness. The check reads releases, workflow runs and the published
+SBOM, so set up two inputs first:
+
+- **`GH_TOKEN`.** The script refuses to run without it, even when `gh` is
+  already logged in. Use a fine-grained personal access token limited to
+  `ahmed-g-gad/apothem`, with **Actions: Read** (workflow runs) and
+  **Contents: Read** (releases). The check writes nothing, so no write
+  permission is needed. A token from `gh auth token` carries every scope of
+  the login, so prefer the fine-grained token.
+- **The published SBOM.** The check reads `dist/release-assets/sbom.cdx.json`,
+  the CycloneDX file the release attaches. Download the copy the release
+  published rather than a local build.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+The check fails when the release is a draft or a prerelease, when a required
+workflow for the tag's commit is not green, when the SBOM is missing, when it
+describes another version, or when it omits a vendored package. The failure
+message names the cause.
+
+Then approve the `release` environment deployment when prompted. The workflow
+publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com through npm trusted
+publishing (OIDC); no registry token is stored in the repository.
 
 To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication

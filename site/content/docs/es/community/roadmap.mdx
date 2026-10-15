@@ -1,38 +1,82 @@
 ---
 title: "Hoja de ruta"
-description: "Hoja de ruta pública de Apothem — próximas funcionalidades y mejoras planeadas."
+description: "Hoja de ruta pública de Apothem — próximas funcionalidades y mejoras planificadas."
 machineTranslated: true
-sourceHash: "28a767b07e7d897d"
+sourceHash: "66086baa5064d245"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
+{/* apothem:roadmap:start */}
+
+Esta hoja de ruta describe hacia dónde se dirige Apothem. Es una declaración de
+intenciones, no un compromiso; las prioridades cambian a medida que evolucionan
+el proyecto y sus usuarios. Para lo que ya se ha publicado, consulta el
+[registro de cambios](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md).
+El
+[ROADMAP.md](https://github.com/ahmed-g-gad/apothem/blob/main/ROADMAP.md) del
+repositorio es la única hoja de ruta; la
+[página de la hoja de ruta](https://apothem.ahmedgad.com/docs/community/roadmap)
+del sitio web del proyecto se genera a partir de él.
+
+Leyenda de estados: **planificado** · **en curso** · **publicado**.
+
 ## Lanzamiento actual
 
-- Estabilizar los diecisiete adaptadores de entorno.
-- Completar la infraestructura de revisión y auditoría.
-- Estabilizar la superficie de la CLI de Apothem.
-- Establecer la canalización de CI/CD de GitHub Actions.
+La línea actual distribuye el gestor de configuración de entornos agnóstico al
+host: un perfil compartido (`~/.config/apothem/profile.yaml`) que se materializa
+en configuración nativa de cada entorno para los adaptadores registrados,
+controlado mediante la línea de comandos `apothem` (`quickstart` · `install` ·
+`update` · `uninstall` · `rollback` · `verify` · `status` · `diff` ·
+`harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
+
+| Elemento | Estado | Notas |
+| ---- | ------ | ----- |
+| Diecisiete adaptadores de entorno | publicado | Cada uno con instalación, desinstalación, actualización y verificación; las páginas de [entornos admitidos](https://apothem.ahmedgad.com/docs/harnesses) los listan |
+| Propagación de plantillas basada en un manifiesto | publicado | Una única fuente de verdad de la propagación en `src/apothem/lib/propagation-manifest.yaml` |
+| Sitio de documentación | publicado | Sitio público con índices de referencia generados, recursos de marca, un índice del sitio legible por máquina y runbooks de lanzamiento |
+| Lanzamientos firmados | publicado | Cada GitHub Release lleva artefactos firmados, un SBOM y procedencia de compilación |
+| Canalizaciones `/plan` y `/research` | publicado | La canalización de planificación por etapas de especificación, generación, revisión y ejecución, además de la canalización de investigación de trece etapas |
+| Comandos de auditoría y el bucle `/fortress` | publicado | Auditorías bajo demanda de seguridad, código, accesibilidad, rendimiento, dependencias, cadena de suministro, modelo de amenazas, arquitectura, revisión de código, revisión de documentación y UX, envueltas por el bucle de endurecimiento `/fortress` |
+| Infraestructura de auditoría y de revisión de la deriva | publicado | Escáneres de inventario y de deriva detrás de los comandos de auditoría |
+| Puerta de conformidad | publicado | Validadores de cabeceras de autoría, nomenclatura, artesanía del código, lenguaje evasivo y reciprocidad de vínculos sobre cada superficie materializada, con goldens de behavior-diff que fijan la salida de cada adaptador |
+| Memoria duradera y aprendizaje continuo opcional | publicado | Un nivel de memoria persistente y un bucle de aprendizaje opcional que llevan las convenciones confirmadas de una sesión a otra |
+| Canalización de CI/CD y cadena de suministro de lanzamientos firmados | publicado | Cada cambio pasa, antes del lanzamiento, por puertas de lint, pruebas, comprobaciones de tipos, una compilación de la documentación y comprobaciones de la cadena de suministro |
 
 ## A corto plazo
 
-- Madurar la distribución por npm / npx: mantener el punto de entrada
-  `@ahmed-g-gad/apothem` alineado con cada lanzamiento y ampliar su cobertura de
-  plataformas.
-- Hacer crecer la ficha del plugin de Claude Code a medida que la superficie del
-  marketplace se estabilice.
-- Auto-actualización de los adaptadores de entorno mediante `apothem update --watch`.
-- Herramientas de versionado y migración del perfil.
-- Validación del esquema del perfil compartido en la compuerta de conformidad.
-- Adaptadores de entorno adicionales según las solicitudes de la comunidad.
+| Elemento | Estado | Notas |
+| ---- | ------ | ----- |
+| Guías de documentación | en curso | Más guías orientadas a tareas, diagramas y ejemplos para configuraciones reales de entornos |
+| Distribución por npm / npx | planificado | Mantener el punto de entrada npx `@ahmed-g-gad/apothem` alineado con cada lanzamiento y ampliar su cobertura de plataformas |
+| Ficha del plugin de Claude Code | planificado | Hacer crecer la ficha del plugin a medida que se estabilice la superficie del marketplace |
+| Más adaptadores de entorno | planificado | Entornos adicionales a medida que sus convenciones de configuración se estabilicen y los usuarios los soliciten |
+| Mejoras del esquema del perfil | planificado | Superficies de anulación por entorno más ricas y diagnósticos de validación más estrictos |
+| Validación del perfil en la puerta de conformidad | planificado | Validar el perfil compartido contra su esquema como una comprobación de la puerta |
+| Versionado y migración del perfil | planificado | Versionar el formato del perfil y migrar hacia delante los perfiles más antiguos |
+| `apothem update --watch` | planificado | Volver a materializar la configuración de los entornos cuando cambie el perfil |
 
 ## A más largo plazo
 
-- Sincronización del perfil alojada en la nube (opcional, controlada por el operador).
-- Extensión de VS Code para retroalimentación de conformidad en tiempo real.
-- Gestión de perfiles compartidos por equipos.
+| Elemento | Estado | Notas |
+| ---- | ------ | ----- |
+| Sincronización del perfil alojada en la nube | planificado | Opcional y controlada por el operador |
+| Gestión de perfiles compartidos en equipo | planificado | Un perfil compartido por todo un equipo |
+| Extensión de editor con retroalimentación de conformidad en vivo | planificado | Hallazgos de conformidad mientras editas, en editores de la familia VS Code |
 
-## Solicitudes y comentarios
+## Visión a largo plazo
 
-Envía solicitudes para la hoja de ruta a través de
-[GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions).
-La hoja de ruta se nutre de la comunidad; las solicitudes populares avanzan más rápido.
+Apothem aspira a ser la forma predeterminada en que cualquiera gestiona la
+configuración de entornos en todas las herramientas que usa: escribir las
+convenciones una vez, materializarlas en todas partes y mantenerlas
+sincronizadas a medida que evolucionan tanto las preferencias como los entornos.
+
+## Cómo influir en la hoja de ruta
+
+- Abre un issue o vota a favor de uno existente en el
+  [gestor de issues](https://github.com/ahmed-g-gad/apothem/issues); una
+  solicitud de funcionalidad allí es la forma de proponer un elemento para la
+  hoja de ruta. Las solicitudes populares avanzan más rápido.
+- Consulta [CONTRIBUTING.md](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md)
+  para saber cómo proponer e integrar cambios.
+
+{/* apothem:roadmap:end */}

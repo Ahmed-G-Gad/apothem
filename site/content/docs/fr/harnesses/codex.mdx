@@ -1,8 +1,8 @@
 ---
 title: "Codex"
-description: "Adaptateur d'environnement Apothem pour Codex (Bêta)."
+description: "Adaptateur d'environnement Apothem pour Codex (bêta)."
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,27 +18,65 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-L'adaptateur installe les instructions et les hooks natifs de Codex, convertit les
-agents d'Apothem en agents TOML de Codex et enveloppe les prompts de commandes
+L'adaptateur installe les instructions et les hooks natifs de Codex, convertit
+les agents Apothem en agents TOML de Codex et encapsule les prompts de commande
 réutilisables sous forme de skills Codex.
 
 **Fichiers écrits :** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
-`~/.agents/skills/*/SKILL.md`, et fichiers de support sous
+`~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` pour
+les skills invoqués par l'utilisateur, et les fichiers de support sous
 `~/.config/apothem/{rules,templates}/`.
 
-## Mappage du profil vers la configuration native
+Le bloc Apothem de `AGENTS.md` se termine par une section consacrée aux
+fichiers de support Apothem, qui nomme le répertoire absolu par rapport auquel
+se résout chaque citation de style dépôt dans les skills et règles installés :
+`rules/<name>.md` et `templates/...` sous `~/.config/apothem/`, et `hooks/...`
+sous `~/.codex/hooks/`. L'installation Codex ne livre aucune arborescence
+`schemas/` ni `conformity/` ; la section ne mentionne donc ni l'une ni l'autre.
 
-L'adaptateur lit les cohortes partagées d'Apothem et installe chacune dans la bonne
-surface de Codex : les instructions vers `AGENTS.md`, les hooks vers `hooks.json` et
-`hooks/`, les agents en TOML, les skills vers `~/.agents/skills/`, et les
-règles/modèles Markdown non natifs vers `~/.config/apothem/` comme matériel de support.
+**Skills invoqués par l'utilisateur.** Codex ignore la clé
+`disable-model-invocation`. Pour chaque skill ou commande dont la source
+définit `disable-model-invocation: true`, l'adaptateur écrit
+`agents/openai.yaml` à côté de son `SKILL.md` avec
+`policy.allow_implicit_invocation: false`, de sorte que Codex ne choisit pas ce
+skill de lui-même ; vous pouvez toujours l'exécuter explicitement avec
+`$skill-name`. Voir la
+[documentation des skills de Codex](https://developers.openai.com/codex/skills).
+
+## Correspondance entre le profil et la configuration native
+
+L'adaptateur lit les cohortes partagées d'Apothem et installe chacune dans la
+bonne surface de Codex : les instructions dans `AGENTS.md`, les hooks dans
+`hooks.json` et `hooks/`, les agents en TOML, les skills dans
+`~/.agents/skills/`, et les règles et templates Markdown non natifs dans
+`~/.config/apothem/` comme matériel de support.
+
+Chaque auxiliaire converti définit `name`, `description` et
+`developer_instructions`. Un auxiliaire dont l'autorisation d'outils, une fois
+retirés les outils de sa propre liste `disallowedTools`, ne comprend aucun outil
+d'édition de fichiers (`Write`, `Edit`, `MultiEdit` ou `NotebookEdit`) définit
+aussi `sandbox_mode = "read-only"`, la restriction d'écriture propre à Codex.
+`Bash` ne compte pas comme un outil d'édition de fichiers : un auxiliaire
+auquel `Bash` est accordé, sans aucun de ces outils, reçoit donc tout de même ce
+paramètre. Aucun modèle ni effort de raisonnement n'est défini ; chaque
+auxiliaire hérite donc des choix de la session. Codex n'a ni liste d'outils ni
+limite de tours par auxiliaire ; les `tools` et `maxTurns` d'un auxiliaire ne
+sont donc pas repris.
 
 ## Notes de compatibilité
 
-Codex réserve `~/.codex/rules/` aux politiques d'exécution `.rules`. Apothem n'y place
-pas de règles de comportement en Markdown ; il les conserve dans `~/.config/apothem/` et
-les référence depuis `AGENTS.md` et les skills installées.
+`~/.agents/skills/` est une racine partagée dont Codex est propriétaire : huit
+autres outils pris en charge la chargent aussi (le
+[registre des environnements](/docs/reference/harness-registry) les liste) ;
+les skills Apothem qu'une installation Codex y écrit apparaissent donc
+également dans ces outils, et une désinstallation de Codex les retire de ces
+outils. L'installation affiche une note qui nomme ces outils.
+
+Codex réserve `~/.codex/rules/` aux politiques d'exécution `.rules`. Apothem n'y
+place pas de règles comportementales Markdown ; il les conserve dans
+`~/.config/apothem/` et les référence depuis `AGENTS.md` et les skills
+installés.
 
 ## Vérification
 
@@ -49,8 +87,11 @@ apothem verify --harness codex
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
-3. La routine de vérification spécifique à l'adaptateur signale un succès.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
+3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
 
@@ -58,7 +99,7 @@ La commande verify confirme que :
 apothem update --harness codex
 ```
 
-Rafraîchit le bootstrap de Codex, les agents convertis, les skills et les cohortes de
+Actualise l'amorce Codex, les agents convertis, les skills et les cohortes de
 support.
 
 ## Désinstallation
@@ -67,10 +108,17 @@ support.
 apothem uninstall --harness codex
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur. Le YAML du profil
-partagé et le moteur d'Apothem ne sont pas affectés.
+Supprime le bloc Apothem de `~/.codex/AGENTS.md` et conserve tout texte situé en
+dehors de ce bloc, et supprime les entrées d'Apothem de `~/.codex/hooks.json` en
+conservant les vôtres. Supprime aussi les fichiers Apothem de `~/.codex/hooks/`,
+`~/.codex/agents/`, `~/.agents/skills/` et `~/.config/apothem/{rules,templates}/` ;
+les autres fichiers de ces dossiers restent en place. Les skills retirés de
+`~/.agents/skills/` disparaissent aussi des autres outils qui chargent ce dossier
+(voir [Notes de compatibilité](#notes-de-compatibilité)). Chaque fichier est
+sauvegardé sous `~/.apothem/backups/` avant d'être modifié ou supprimé. Le YAML
+du profil partagé et le moteur Apothem ne sont pas affectés.
 
-## Porte de conformité
+## Portail de conformité
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -80,12 +128,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptôme | Correctif |
 |---------|-----|
-| Fichier de configuration introuvable | Réexécutez `apothem install --harness codex` |
-| La vérification a échoué | Exécutez `apothem update --harness codex`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness codex` |
+| Fichier de configuration introuvable | Relancez `apothem install --harness codex` |
+| Échec de la vérification | Exécutez `apothem update --harness codex`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness codex` |
 
 ## Paramètres de configuration
 
-| Flag | Par défaut | Description |
+| Option | Par défaut | Description |
 |------|---------|-------------|
 | `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |
+
+## Voir aussi
+
+- [Tous les environnements](/docs/harnesses) — le catalogue complet des outils pris en charge
+- [Guide d'installation](/docs/install) — installer Apothem dans cet environnement
+- [Référence de `apothem harnesses`](/docs/cli-reference/harnesses) — lister et inspecter les adaptateurs depuis la CLI

@@ -2,11 +2,11 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "702473c5586ee896"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Menghapus konfigurasi adapter asisten-pengkodean.
+Menghapus konfigurasi adapter harness.
 
 ## Ringkasan
 
@@ -16,18 +16,40 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-Menghapus target asisten-pengkodean yang dikelola adapter. Meminta konfirmasi kecuali `--yes` disediakan. Jika asisten-pengkodean yang dipilih tidak terpasang, perintah berhasil (keluar 0) dengan pemberitahuan "nothing to remove".
+Menghapus target harness yang dikelola adapter, lalu direktori yang dibuat
+pemasangan setelah direktori tersebut kosong (direktori yang berisi apa pun
+milik Anda tetap ada). Meminta konfirmasi kecuali
+`--yes` diberikan. Ketika prompt tidak mungkin ditampilkan — `--format json`
+(teks prompt akan merusak dokumen JSON tunggal) atau shell non-interaktif
+(tanpa TTY) — perintah menolak sejak awal dengan galat terstruktur
+`uninstall.confirmation_required` (keluar 1) kecuali `--yes` diberikan.
+Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dengan
+pemberitahuan "nothing to remove".
 
-Alias bentuk-kontinu `apothem uninstalling` di-resolve ke handler yang sama.
+Penyimpanan data bersama di bawah `.apothem/` pada root pemasangan (`memory/`,
+`contexts/`, `learning/`) tetap ada selama harness terpasang lain pada root yang
+sama masih menggunakannya. Ketika harness yang Anda hapus adalah yang terakhir
+pada root tersebut, perintah terlebih dahulu menyalin setiap penyimpanan ke root
+cadangan Apothem (`~/.apothem/backups/`), lalu menghapusnya beserta seluruh
+isinya. Apa pun yang Anda simpan di `plans/` tidak pernah dihapus.
+
+Penghapusan `--harness all` sengaja dibuat menyeluruh: penghapusan ini mencakup
+setiap harness yang terdaftar, termasuk harness apa pun yang dilewati
+`exclude_harnesses` milik profil saat pemasangan — pembersihan menjangkau
+keadaan yang mungkin ditinggalkan oleh pemasangan sebelumnya yang lebih luas.
+Harness yang tidak pernah dipasang melaporkan "nothing to remove".
+
+Alias bentuk-kontinu `apothem uninstalling` (juga diterima sebagai
+`apothem Uninstalling`) di-resolve ke handler yang sama.
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter asisten-pengkodean yang akan dihapus, atau `all` untuk set selingkup-registri (wajib). |
+| `--harness NAME` | Adapter harness yang akan dihapus, atau `all` untuk himpunan selingkup registri (wajib). |
 | `--yes` | Melewati prompt konfirmasi. |
-| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. |
-| `--quiet`, `-q` | Menekan keluaran informasional; hanya kesalahan yang dipancarkan. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
@@ -39,14 +61,34 @@ Alias bentuk-kontinu `apothem uninstalling` di-resolve ke handler yang sama.
 Ketika adapter terpasang dan berhasil dihapus:
 
 ```json
-{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Ketika adapter tidak terpasang:
-
-```json
-{"status": "not_installed", "harness": "claude-code"}
-```
+Ketika adapter belum terpasang, perintah keluar dengan `0`. Dalam keluaran JSON,
+amplop memiliki `"status": "success"` dan `"action": "uninstalled"`, dan baris
+results memiliki `"outcome": "skipped"` dengan pesan `"not installed; no files
+removed"`. Bidang `status` tidak pernah bernilai `"not_installed"`.
 
 ## Contoh
 
@@ -62,11 +104,13 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 
 | Kode | Arti |
 |---|---|
-| 0 | Adapter dihapus, atau tidak terpasang |
-| 1 | Asisten-pengkodean tidak ditemukan, atau pengguna membatalkan prompt konfirmasi |
+| 0 | Adapter dihapus, atau memang tidak terpasang |
+| 1 | Harness tidak ditemukan, konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`), atau setiap penghapusan gagal |
+| 2 | Penghapusan parsial — setidaknya satu harness telah dihapus sebelum terjadi kegagalan |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
 - `apothem uninstalling` — alias bentuk-kontinu untuk perintah ini (didokumentasikan di sini; CLI menerima kedua bentuk)
-- [apothem install](/docs/cli-reference/install) — memasang konfigurasi asisten-pengkodean
-- [apothem verify](/docs/cli-reference/verify) — mengonfirmasi status pemasangan
+- [apothem install](/docs/cli-reference/install) — memasang konfigurasi harness
+- [apothem verify](/docs/cli-reference/verify) — memastikan status pemasangan

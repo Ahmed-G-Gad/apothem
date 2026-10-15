@@ -2,14 +2,14 @@
 title: "Antigravity"
 description: "适用于 Antigravity（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "b5740666d67c3796"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Antigravity
 **安装名称：** `antigravity`
 **状态：** 预览版
-**平台原生配置：** `~/.gemini/GEMINI.md` 以及
+**原生配置：** `~/.gemini/GEMINI.md` 以及
 `~/.gemini/antigravity-cli/plugins/apothem/`
 
 ## 安装
@@ -18,33 +18,28 @@ sourceHash: "b5740666d67c3796"
 apothem install --harness antigravity
 ```
 
-该适配器将共享配置档案渲染为 `~/.gemini/GEMINI.md`，并将
-Apothem 支持套组作为 Antigravity CLI 插件安装。
+该适配器将共享配置档案渲染到 `~/.gemini/GEMINI.md`，并将 Apothem 支持集合作为一个 Antigravity CLI 插件安装。
 
-**写入的文件：** `~/.gemini/GEMINI.md`、
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`、
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`、
-插件内已转换的本地辅助工具定义、
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`，以及
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`。
+**写入的文件：** `~/.gemini/GEMINI.md`、`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、`~/.gemini/antigravity-cli/plugins/apothem/skills/`、`~/.gemini/antigravity-cli/plugins/apothem/rules/`、插件内已转换的本地辅助程序定义、`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`，以及 `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`。
 
-**共享的用户锚点。** `~/.gemini/GEMINI.md` 同时也是 Gemini 系列工具的用户级锚点。
-Antigravity 适配器将其额外的 Apothem 材料保留在 `~/.gemini/antigravity-cli/plugins/`
-下的 `apothem` 插件中，因此不会占用通用的 Gemini CLI 项目目录。
+`~/.gemini/GEMINI.md` 中的 Apothem 区块以一个 Apothem 支持文件小节结尾，该小节写明每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于插件的 `rules/` 下，`templates/...` 和 `hooks/...` 位于插件的 `.apothem/support/` 下。
 
-## 配置档案到平台原生配置的映射
+**插件规则。** Antigravity 会丢弃插件 `rules/` 目录中任何不以有效 `trigger` 开头的文件（[Antigravity 规则文档](https://antigravity.google/docs/rules)），因此每条 Apothem 规则都会在安装时被转换。始终适用的规则获得 `trigger: always_on`；限定于特定路径的规则获得 `trigger: glob`，并在 `globs` 中带有相同的模式；其他任何规则获得 `trigger: model_decision`。每条规则都保留其 `description`。Antigravity 让所有始终开启的规则共享 20,000 个令牌的预算，超出该预算时会将其中最大的规则转为按需加载的指针。
 
-在每次 `apothem install` 或 `apothem update` 时，适配器都会读取 Apothem
-的共享配置档案，并渲染指令锚点以及支持套组。
+**插件清单。** `plugin.json` 只携带 `name` 和 `description`，即 Antigravity 插件 schema 所接受的两个键。
+
+**插件辅助程序。** 插件 `agents/` 目录中的辅助程序定义携带 `name` 和 `description`。Antigravity 的 `tools` 列表使用它自己的工具名称，而其文档警告未知名称可能导致子智能体挂起，因此不会生成任何工具列表，辅助程序继承父级的工具。由于 Antigravity 上没有任何机制强制执行只读限制，这些辅助程序的描述会去掉“只读”标签。
+
+**共享的用户锚点。** `~/.gemini/GEMINI.md` 同时也是 Gemini 系列工具的用户级锚点。Antigravity 适配器将其额外的 Apothem 材料保留在 `~/.gemini/antigravity-cli/plugins/` 下的 `apothem` 插件内，因此不会占用通用的 Gemini CLI 项目目录。由于不止一个工具会加载 `~/.gemini/GEMINI.md`，那里的 Apothem 区块被写成全局指引，不把任何单一工具指定为其读者。
+
+## 配置档案到原生配置的映射
+
+适配器在每次运行 `apothem install` 或 `apothem update` 时读取 Apothem 的共享配置档案，并渲染指令锚点以及支持集合。
 
 ## 兼容性说明
 
-预览版适配器。`GEMINI.md` 锚点是活动的指令内容；Antigravity 插件
-在一个清晰的、由 Apothem 所有的命名空间中，保留已转换的命令技能、可复用技能、
-本地辅助工具定义、规则、模板和钩子支持材料。
-在适配器拥有针对 Antigravity `hooks.json` 的模式转换层之前，钩子文件
-不会被注册为活动的 Antigravity 钩子事件。
+预览版适配器。`GEMINI.md` 锚点是生效的指令内容；Antigravity 插件在一个清晰的、Apothem 自有的命名空间中保存已转换的命令技能、可复用技能、本地辅助程序定义、规则、模板以及钩子支持材料。
+在适配器拥有针对 Antigravity `hooks.json` 的 schema 转换层之前，钩子文件不会被注册为生效的 Antigravity 钩子事件。
 
 ## 验证
 
@@ -54,9 +49,8 @@ apothem verify --harness antigravity
 
 verify 命令确认：
 
-1. 平台原生上下文文件存在于预期路径。
-2. Apothem Antigravity CLI 插件元数据存在并声明了
-   `apothem` 插件名称。
+1. 原生上下文文件存在于预期路径。
+2. 插件清单 `plugin.json` 存在、非空，并且可以解析为 JSON。验证不会检查插件名称；更改该字段后请自行检查。
 
 ## 更新
 
@@ -64,8 +58,7 @@ verify 命令确认：
 apothem update --harness antigravity
 ```
 
-从当前的共享配置档案状态重新派生平台原生配置。在编辑
-`~/.config/apothem/profile.yaml` 之后或升级已安装的 Apothem 包之后运行。
+根据共享配置档案的当前状态重新派生原生配置。在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
 
@@ -73,10 +66,9 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `~/.gemini/GEMINI.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。同时从插件文件夹 `~/.gemini/antigravity-cli/plugins/apothem/` 中的 `plugin.json` 移除 Apothem 的键并保留你自己的键，并移除该文件夹 `skills/`、`rules/`、`agents/` 和 `.apothem/support/` 子文件夹中的 Apothem 文件；其中的其他文件保持不变。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -95,3 +87,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

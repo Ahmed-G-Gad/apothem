@@ -1,67 +1,84 @@
 ---
 title: "설치"
-description: "Apothem 설치 개요 — 여덟 개의 설치 채널, 각각 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 그리고 검증 단계를 갖춘: Claude Code 플러그인, npm 심, 원스텝 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 그리고 직접 엔진."
+description: "Apothem 설치 개요 — 여덟 개의 설치 채널과 각 채널의 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 검증 단계: Claude Code 플러그인, npm 심, 원샷 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 직접 엔진."
 machineTranslated: true
-sourceHash: "cd736673edf581f0"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem은 2분 이내에 설치되며 기존 하니스 구성과 나란히 동작합니다. 모든 경로는
-동일한 자체 완결형 엔진을 실행합니다 — 소스 트리가 벤더링된 의존성을 지니며 시스템
-Python 3.10 이상에서 체크아웃으로부터 실행됩니다(
-[자체 완결형 런타임](/docs/architecture/self-contained-runtime) 참조).
+Apothem은 2분 이내에 설치되며 기존 하니스 구성과 함께 동작합니다. 모든 경로는
+동일한 자체 완결형 엔진을 실행합니다 — 소스 트리가 벤더링된 종속성을 담고 있으며,
+시스템 Python 3.10 이상에서 체크아웃으로부터 실행됩니다
+([자체 완결형 런타임](/docs/architecture/self-contained-runtime) 참조).
 
 **모든 경로가 공유하는 두 가지 사전 요건:** `PATH`에 있는 시스템 **Python 3.10
-이상**, 그리고 그 아래에서 임포트 가능한 `click`과 `rich` 패키지. npm 심과 도구
-플러그인 경로는 추가로 `npx`를 실행하기 위해 **Node.js 18 이상**이 필요합니다. 아래
-각 채널의 섹션은 그 정확한 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 그리고
-검증 단계를 반복합니다.
+이상**, 그리고 그 인터프리터에서 임포트할 수 있는 `click`과 `rich` 패키지입니다.
+npm 심(채널 2), VS Code 계열 확장(채널 4), 명령줄 부트스트랩(채널 5–7)은 `npx`를
+실행하기 위해 추가로 **Node.js 18 이상**이 필요합니다. Python 3.10과 Node.js 18 및
+20은 업스트림 수명 종료를 지났습니다. 이들은 계속 지원되고 테스트되지만, 더 새로운
+버전을 권장합니다([사전 요건 한눈에](#사전-요건-한눈에) 참조). 아래 각 채널의
+섹션은 해당 채널의 정확한 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 그리고
+검증 단계를 다시 제시합니다.
 
 ## 채널 선택
 
-여덟 개의 설치 채널이 있습니다. 이미 일하는 방식에 따라 고르세요.
+여덟 개의 설치 채널이 있습니다. 이미 일하는 방식에 맞춰 고르세요.
 
 | # | 채널 | 제공하는 것 | 사전 요건 |
 |---|---------|----------|---------------|
-| 1 | [Claude Code 플러그인](#1-claude-code-plugin) | Claude Code에서 전체 하니스 | Claude Code · Python 3.10+ |
-| 2 | [npm 심(`npx`)](#2-npm-shim-npx) | 전체 하니스, 어떤 도구든 | Node 18+ · Python 3.10+ |
-| 3 | [원스텝 설치 프로그램](#3-one-shot-installers) | 전체 하니스 + `apothem` 명령 | Python 3.10+ (네트워크 설치에는 `git`) |
-| 4 | [VS Code 계열 확장](#4-vs-code-family-extension) | 에디터에서 전체 하니스 | VS Code · Node 18+ · Python 3.10+ |
-| 5 | [명령줄 부트스트랩 (확장 호스트)](#5-command-line-bootstrap-extension-host) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
-| 6 | [명령줄 부트스트랩 (`qwen-code` 호스트)](#6-command-line-bootstrap-qwen-code-host) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
-| 7 | [명령줄 부트스트랩 (플러그인 호스트)](#7-command-line-bootstrap-plugin-host) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
-| 8 | [직접 엔진(`python -m apothem`)](#8-direct-engine-python--m-apothem) | 체크아웃에서 전체 하니스 | Python 3.10+ (`click`, `rich`) |
+| 1 | [Claude Code 플러그인](#1-claude-code-플러그인) | Claude Code의 전체 하니스 | Claude Code · Python 3.10+ |
+| 2 | [npm 심(`npx`)](#2-npm-심npx) | 전체 하니스, 어떤 도구든 | Node 18+ · Python 3.10+ |
+| 3 | [원샷 설치 프로그램](#3-원샷-설치-프로그램) | 전체 하니스 + `apothem` 명령 | Python 3.10+ (네트워크 설치에는 `git`) |
+| 4 | [VS Code 계열 확장](#4-vs-code-계열-확장) | 에디터에서 전체 하니스 | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [명령줄 부트스트랩(확장 호스트)](#5-명령줄-부트스트랩확장-호스트) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
+| 6 | [명령줄 부트스트랩(`qwen-code` 호스트)](#6-명령줄-부트스트랩qwen-code-호스트) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
+| 7 | [명령줄 부트스트랩(플러그인 호스트)](#7-명령줄-부트스트랩플러그인-호스트) | 엔진을 실행하는 부트스트랩 | 해당 호스트 도구 · Node 18+ · Python 3.10+ |
+| 8 | [직접 엔진(`python -m apothem`)](#8-직접-엔진python--m-apothem) | 체크아웃에서 전체 하니스 | Python 3.10+ (`click`, `rich`) |
 
 <Callout title="어떤 채널이 전체 하니스를 제공하는가">
-  npm 심(2), 원스텝 설치 프로그램(3), 그리고 직접 엔진(8)은 어떤 하니스든 전체
-  동기화 단위를 자체적으로 머티리얼라이즈합니다. 세 개의 명령줄 확장(5–7)은 엔진으로
-  셸 아웃하는(`npx @ahmed-g-gad/apothem install`) 작은 **부트스트랩**을 설치하여
-  전체 하니스를 머티리얼라이즈합니다 — 그것들은 진입점일 뿐 그 자체로 전체 제공은
-  아닙니다. Claude Code 플러그인(1)과 VS Code 계열 확장(4)은 엔진을 담고 직접
-  실행합니다.
+  npm 심(2), 원샷 설치 프로그램(3), 직접 엔진(8)은 어떤 하니스에 대해서든
+  동기화 단위 전체를 자체적으로 머티리얼라이즈합니다. 세 개의 명령줄 확장(5–7)은
+  전체 하니스를 머티리얼라이즈하기 위해 엔진으로 셸 아웃하는
+  (`npx @ahmed-g-gad/apothem install`) 작은 **부트스트랩**을 설치합니다 — 이
+  확장들은 진입점일 뿐, 그 자체로 전체를 제공하지는 않습니다. Claude Code
+  플러그인(1)은 엔진을 담고 있으며 엔진을 직접 실행합니다. VS Code 계열
+  확장(4)은 자체 엔진을 담고 있지 않습니다. 이 확장의 명령은 기본적으로 npm 심을
+  통해 엔진을 실행합니다.
 </Callout>
 
-모든 경로는 멱등적입니다. 재실행은 안전하며 동일한 상태로 수렴합니다.
+모든 경로는 멱등적입니다. 재실행은 안전하며 같은 상태로 수렴합니다.
 
 ## 1. Claude Code 플러그인
 
 **사전 요건:** Claude Code, 그리고 `PATH`에 있는 시스템 Python 3.10+.
 
-플러그인 경로는 전적으로 Claude Code 내부에서 실행됩니다. Apothem 엔진을 그 슬래시
-명령, 위임 작업자, 스킬, 규칙, 훅과 함께 번들하며, 모두 자체 완결형 플러그인 트리에서
-실행할 수 있습니다.
+플러그인 경로는 전적으로 Claude Code 내부에서 실행됩니다. Apothem 엔진을 슬래시
+명령, 위임 작업자, 스킬, 규칙, 훅과 함께 번들하며, 이 모두를 자체 완결형 플러그인
+트리에서 실행할 수 있습니다.
 
 ```text title="Inside Claude Code"
 /plugin marketplace add ahmed-g-gad/apothem
 /plugin install apothem@apothem
 ```
 
-설치 후에는 Apothem 명령 세트(`/plan-spec`, `/code-review`, `/security-audit` 등),
-번들된 위임 작업자, 그리고 스킬이 모든 Claude Code 세션에서 사용 가능합니다. 명령의
-전체 카탈로그는 [슬래시 명령](/docs/reference/commands)을 참조하세요.
+설치 후에는 Apothem 명령 세트, 번들된 위임 작업자, 스킬, 그리고 네 가지
+[출력 스타일](/docs/reference/output-styles)(`/output-style`로 또는 `/config`에서
+하나를 고릅니다)을 모든 Claude Code 세션에서 사용할 수 있습니다. 플러그인 명령에는
+플러그인의 접두사가 붙습니다: `/apothem:plan-spec`, `/apothem:security-audit` 등.
+다른 명령이 그 이름을 쓰지 않는 동안에는 Claude Code가 짧은 형식(`/plan-spec`)도
+받아들입니다. 두 이름은 Claude Code 자체가 사용합니다. `/plan`은 플랜 모드로
+들어가고 `/code-review`는 번들된 리뷰를 실행하므로, Apothem 명령을 쓰려면
+`/apothem:plan`과 `/apothem:code-review`를 입력하세요. 플러그인 대신 Apothem 엔진이
+Claude Code에 설치하는 경우, 명령은 접두사 없이 `~/.claude/skills/` 아래의 개인
+스킬이 되며, 개인 `code-review` 스킬이 번들된 `/code-review`를 대체합니다(그
+`/review` 별칭은 여전히 번들된 것을 실행합니다). 두 이름, `projectify`와
+`workflow`는 명령과 스킬 양쪽으로 제공됩니다. 둘 다 있으면 Claude Code는 스킬을
+실행하므로, 플러그인은 스킬을 실행하고 엔진 설치는 `~/.claude/skills/<name>/`에
+스킬만 쓰며 명령에서 파생한 스킬은 쓰지 않습니다. 전체 명령 카탈로그는
+[슬래시 명령](/docs/reference/commands)을 참조하세요.
 
-**검증:** Claude Code 내부에서 `/plugin`을 실행하고 **apothem**이 설치됨으로
-나열되는지 확인하거나, 터미널에서 드리프트 보고를 확인하세요.
+**검증:** Claude Code 내부에서 `/plugin`을 실행하여 **apothem**이 설치됨으로
+나열되는지 확인하거나, 터미널에서 드리프트 보고서를 확인하세요.
 
 ```bash title="Verify"
 npx @ahmed-g-gad/apothem verify --harness claude-code
@@ -71,22 +88,32 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 **사전 요건:** Node.js 18+(`npx`용)와 `PATH`에 있는 시스템 Python 3.10+. 심은
 인터프리터를 찾아 모든 CLI 명령을 번들된 엔진으로 전달합니다 — 시스템에 영구적으로
-배치되는 것은 없습니다.
+배치되는 것은 없습니다. 심은 `python3`, `python`, `py -3`을 이 순서대로 시도합니다.
+**`APOTHEM_PYTHON`**을 인터프리터 경로로 설정하면 그 인터프리터를 먼저 시도하며,
+Python이 설치되어 있지만 `PATH`에 없을 때, 또는 여러 버전이 설치되어 있고 그중 특정
+버전을 원할 때 필요한 설정입니다. 지정한 인터프리터도 여전히 Python 3.10+ 검사를
+통과해야 합니다. 통과하지 못하면 심은 대신 `python3`, `python`, `py -3`을 이
+순서대로 시도합니다.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
 ```
 
-저장소에서 곧장 실행되기도 합니다.
+프로필이 없는 머신에서는 이 첫 `install`이 `~/.config/apothem/profile.yaml`에 초기
+프로필을 생성하고 그 사실을 알립니다. 이 프로필의 신원 필드는 플레이스홀더입니다.
+이를 개인화한 다음(`npx @ahmed-g-gad/apothem profile edit`), 적용하려면 `install`
+대신 `update`로 명령을 다시 실행하세요.
+
+저장소에서 곧바로 실행할 수도 있습니다.
 
 ```bash title="npx from the repository"
 npx github:ahmed-g-gad/apothem install --harness claude-code
 ```
 
-[CLI 레퍼런스](/docs/cli-reference)의 모든 명령이 이 형식으로 동작합니다. `apothem`을
-`npx @ahmed-g-gad/apothem`으로 바꾸세요. 이는 별도의 플러그인이나 확장 레지스트리를
-노출하지 않는 OpenCode를 비롯한 다른 모든 도구의 설치 경로이기도 합니다 — Apothem은
-그것들을 네이티브 구성 디렉터리로 곧장 동기화합니다
+[CLI 참조](/docs/cli-reference)의 모든 명령이 이 형식으로 동작합니다. `apothem`
+대신 `npx @ahmed-g-gad/apothem`을 쓰세요. 이는 별도의 플러그인이나 확장 레지스트리를
+노출하지 않는 OpenCode와 그 밖의 모든 도구의 설치 경로이기도 합니다 — Apothem은
+이 도구들을 네이티브 구성 디렉터리로 곧바로 동기화합니다
 (`npx @ahmed-g-gad/apothem install --harness opencode`).
 
 **검증:**
@@ -96,17 +123,19 @@ npx @ahmed-g-gad/apothem --version
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-## 3. 원스텝 설치 프로그램
+## 3. 원샷 설치 프로그램
 
 **사전 요건:** `PATH`에 있는 시스템 Python 3.10+(설치 프로그램이 `click` / `rich`
 사전 요건을 대신 추가하겠다고 제안합니다). `git`은 소스를 클론하는 네트워크 설치에만
 필요합니다.
 
-설치 스크립트는 서명된 최신 릴리스 태그를 해석하고, 그 서명을 검증하고, Apothem
-소스 트리를 해당 태그로 `~/.apothem`에 배치하고, 프로필이 없으면 초기 프로필을
-생성하고, 첫 하니스를 머티리얼라이즈한 뒤 결과를 검증합니다. 재실행은 멱등적입니다 — 기존
-트리는 해석된 태그로 다시 체크아웃되고 하니스는 다시 머티리얼라이즈됩니다. 태그 고정 검증
-설치가 기본이자 권장 경로입니다.
+설치 스크립트는 한 번의 실행으로 서명된 최신 릴리스 태그를 해석하고, 그 서명을
+검증하고, 해당 태그의 Apothem 소스 트리를 `~/.apothem`에 배치하고, 프로필이 없으면
+초기 프로필을 생성하고, 첫 하니스를 머티리얼라이즈하고, 결과를 검증합니다. 초기
+프로필에는 플레이스홀더 신원 필드가 들어 있습니다. 프로필을 편집한 다음
+`apothem update --harness <name>`을 실행하여 여러분의 값을 적용하세요. 재실행은
+멱등적입니다. 기존 트리는 해석된 태그로 다시 체크아웃되고 하니스는 다시
+머티리얼라이즈됩니다. 태그에 고정된 검증 설치가 기본이자 권장 경로입니다.
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -116,9 +145,9 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-동일한 스크립트가 체크아웃의 `scripts/installer/` 아래에 담겨 있습니다 — `.sh`,
-`.ps1`, `.bat` 형식의 `install`, `uninstall`, `update` — 클론한 뒤 곧장 실행할 수
-있습니다.
+같은 스크립트가 체크아웃의 `scripts/installer/` 아래에 함께 들어 있으므로
+— `.sh`, `.ps1`, `.bat` 형식의 `install`, `uninstall`, `update` — 클론한 뒤 직접
+실행할 수 있습니다.
 
 ```bash title="From a checkout"
 APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
@@ -127,11 +156,16 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### 신뢰 모델
 
-`APOTHEM_REF`을 설정하지 않으면, 설치 프로그램은 가장 높은 `vMAJOR.MINOR.PATCH`
-릴리스 태그를 해석하고 *그것*을 체크아웃합니다 — 움직이는 `main` 브랜치가
-아닙니다. 어떤 구성도 머티리얼라이즈하기 전에, 가져온 태그의 서명이 `git verify-tag`로
-검증됩니다. 서명되지 않았거나, 변조되었거나, 검증할 수 없는 태그는 무엇이든 쓰기
-전에 설치를 중단합니다. 특정 릴리스로 고정하려면 `APOTHEM_REF`을 사용하세요.
+`APOTHEM_REF`가 설정되지 않으면 설치 프로그램은 가장 높은 `vMAJOR.MINOR.PATCH`
+릴리스 태그를 해석하고 *그 태그*를 체크아웃합니다 — 움직이는 `main` 브랜치는 결코
+체크아웃하지 않습니다. 어떤 구성이든 머티리얼라이즈되기 전에, 가져온 태그의 서명이
+`git verify-tag`로 검증됩니다. 서명되지 않았거나, 변조되었거나, 검증할 수 없는
+태그는 아무것도 쓰기 전에 설치를 중단시킵니다. 서명은 되어 있지만 메인테이너 공개
+키가 아직 로컬 키링에 없는 태그는 대신 키 가져오기 안내와 함께 중단됩니다. 키를
+가져오고, 그 지문을
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)에
+게시된 값과 대조한 뒤, 다시 실행하세요. 특정 릴리스로 고정하려면 `APOTHEM_REF`를
+사용하세요.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -139,34 +173,48 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 
 `vMAJOR.MINOR.PATCH`를
 [릴리스 페이지](https://github.com/ahmed-g-gad/apothem/releases)의 태그로 바꾸세요.
+가장 오래된 릴리스 태그는 자체 서명이 없는 경량 태그이므로, 그 커밋이 서명되어
+있더라도 태그 검사가 이 태그에서 중단됩니다. 그 이후의 모든 릴리스 태그는 주석
+태그이며 서명되어 있습니다.
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)의
+릴리스 서명 섹션에 각 태그와 그 검증 방법이 나열되어 있습니다.
 
-두 가지 명시적 재정의가 기본 동작을 완화합니다. `APOTHEM_REF=main`은 움직이는
-브랜치를 (검증 없이) 체크아웃하고, `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를
-경고로 격하하고 계속 진행합니다 — 에어갭, 로컬, 또는 사전 서명된 릴리스 사용을
-위함입니다. `APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도 가져오지 않으며 검증을
-건너뜁니다.
+명시적 재정의는 기본 동작을 완화합니다. `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를
+경고로 낮추고 계속 진행합니다. 에어갭, 로컬, 또는 서명된 릴리스 이전의 용도입니다.
+`APOTHEM_REF=main`은 `APOTHEM_ALLOW_UNVERIFIED=1`과 함께 있을 때에만 검증 없이 움직이는
+브랜치를 체크아웃합니다. `APOTHEM_REF=main`만 지정하면 브랜치는 서명된 릴리스 태그가
+아니므로, 설치 프로그램은 `main`을 `APOTHEM_HOME`으로 가져온 뒤 구성을
+머티리얼라이즈하기 전에 중단합니다. `APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도
+가져오지 않고 검증도 건너뜁니다.
 
-그런 다음 엔진은 배치된 트리에서 직접 자체 완결형 런타임으로 실행됩니다 — 서드파티
-의존성은 소스 트리 내부에 벤더링되어 있으므로, 패키지 레지스트리는 전혀 관여하지
-않습니다.
+`APOTHEM_VERIFY=checksum`은 메인테이너의 공개 키를 아직 보유하지 않은 호스트를 위한
+중간 경로입니다. 설치 프로그램은 클론하는 대신 릴리스의 플랫폼 아카이브와 그
+`SHA256SUMS`를 다운로드하고, 다이제스트가 일치하지 않으면 아무것도 추출하기 전에
+중단하며, 일치하는 다이제스트는 그 아카이브가 릴리스에 나열된 아카이브라는 것을
+증명할 뿐 누가 게시했는지는 증명하지 않는다고 경고합니다.
+
+그런 다음 엔진은 배치된 트리에서 직접 실행됩니다. `click`과 `rich`를 제외한 모든
+서드파티 종속성은 소스 트리 내부에 벤더링되어 있으며, 진입점이 그 벤더 디렉터리를
+직접 `sys.path`에 올립니다.
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-두 스크립트 모두 동일한 구성용 환경 변수(`APOTHEM_HOME`, `APOTHEM_REPO`,
-`APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`, `APOTHEM_SOURCE`, `APOTHEM_HARNESS`,
-`APOTHEM_PROFILE`, `APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`)를
-읽습니다. 전체 표는
-[설치 프로그램 환경 변수](/docs/how-to/installer-environment-variables)를,
+두 스크립트 모두 동일한 구성 환경 변수(`APOTHEM_HOME`, `APOTHEM_REPO`,
+`APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`, `APOTHEM_VERIFY`,
+`APOTHEM_RELEASE_BASE`, `APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
+`APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`, `APOTHEM_BIN_DIR`)를 읽습니다.
+전체 표는 [설치 프로그램 환경 변수](/docs/how-to/installer-environment-variables)를,
 `python -m` 호출 모델의 작동 방식은
 [자체 완결형 런타임](/docs/architecture/self-contained-runtime)을 참조하세요.
 
-**`apothem` 명령.** 설치가 성공하면, 설치 프로그램은 번들된 엔진으로 전달하는
-`apothem` 심을 씁니다 — POSIX는 `$HOME/.local/bin`에, Windows는
-`%LOCALAPPDATA%\Microsoft\WindowsApps`에(기본 Windows `PATH`에 이미 있는 사용자
-디렉터리). 설치 프로그램은 당신의 `PATH`를 결코 편집하지 않습니다. 그 디렉터리가
-`PATH`에 올라오면 수동 `PYTHONPATH` 없이 `apothem <command>`를 직접 실행합니다.
+**`apothem` 명령.** 설치가 성공하면 설치 프로그램은 번들된 엔진으로 전달하는
+`apothem` 심을 씁니다 — POSIX에서는 `$HOME/.local/bin`에, Windows에서는
+`%LOCALAPPDATA%\Microsoft\WindowsApps`(기본 Windows `PATH`에 이미 포함된 사용자
+디렉터리)에 씁니다. 설치 프로그램은 여러분의 `PATH`를 결코 편집하지 않습니다. 그
+디렉터리가 `PATH`에 오르면 수동 `PYTHONPATH` 설정 없이 `apothem <command>`를 직접
+실행합니다.
 
 **검증:**
 
@@ -182,46 +230,47 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **사전 요건:** VS Code, Node.js 18+, 그리고 `PATH`에 있는 시스템 Python 3.10+.
 
 **Apothem** 확장은 `apothem.vsix` 패키지로 설치합니다.
-`code --install-extension apothem.vsix`를 실행하거나 에디터의
-*Install from VSIX…* 명령을 사용하세요. 릴리스 워크플로가 패키지에 서명하고 각
-GitHub Release에 첨부합니다. 워크플로가 확장을 패키징하기 전에 게시된 릴리스에는
-패키지가 없습니다. 최신 릴리스에 없으면 `.github/vsce/`에 고정된 vsce 릴리스로
-체크아웃에서 패키지를 빌드하세요. 이 vsce 릴리스에는 Node.js 22 이상이 필요합니다.
+`code --install-extension apothem.vsix`를 실행하거나 에디터의 *Install from VSIX…*
+명령을 사용하세요. 릴리스 워크플로가 패키지에 서명하고 각 GitHub Release에
+첨부합니다. 워크플로가 확장을 패키징하기 전에 게시된 릴리스에는 `.vsix`가 없습니다.
+최신 릴리스에 없으면, `.github/vsce/`에 고정된 vsce 릴리스(이 vsce 릴리스에는
+Node.js 22 이상이 필요합니다)로 체크아웃에서 패키지를 빌드하세요.
 `npm ci --prefix .github/vsce --ignore-scripts`를 실행한 다음
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`를
-실행하세요. [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-등록은 아직 게시되지 않았습니다. 하나의 확장이 VS Code와 그 에디터 내 컴패니언
-어시스턴트 표면을 커버합니다. 팔레트 명령(`Apothem: Install`, `Verify`, `Update`,
-`Uninstall`, `Doctor`)은 구성된 러너를 통해 동일한 엔진을 실행합니다(기본값은
-`npx @ahmed-g-gad/apothem@<extension version>`이므로 확장은 함께 배포된 엔진
-버전을 실행합니다. 소스에서 실행하려면 사용자 설정 `apothem.runner`를 로컬
-체크아웃으로 가리키세요). Install, Verify, Update, Uninstall은 어떤 하니스에
-적용할지 묻고, 에디터 자체의 하니스를 먼저 제시합니다. `all`은 선택지 중 하나이며
-기본값이 되지 않습니다. `apothem.runner` 설정은 머신 범위이므로 워크스페이스에서
+실행합니다. [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+등록은 아직 게시되지 않았습니다. 하나의 확장이 VS Code 계열의 에디터를 모두
+다룹니다. 팔레트 명령(`Apothem: Install`, `Verify`,
+`Update`, `Uninstall`, `Doctor`)은 구성된 러너를 통해 동일한 엔진을 실행합니다(기본
+러너는 `npx @ahmed-g-gad/apothem@<extension version>`이므로 확장은 함께 배포된 엔진
+버전을 실행합니다. 소스에서 실행하려면 `apothem.runner` 사용자 설정이 로컬
+체크아웃을 가리키도록 하세요). Install, Verify, Update, Uninstall은 어느 하니스에
+적용할지 묻고 에디터 자체의 하니스를 먼저 제시합니다. `all`은 선택지 중 하나일 뿐
+결코 기본값이 아닙니다. `apothem.runner` 설정은 머신 범위이므로 워크스페이스가
 변경할 수 없으며, 확장은 신뢰할 수 있는 워크스페이스에서만 실행됩니다.
 
 **검증:** 에디터의 명령 팔레트에서 **Apothem: Verify** 명령을 실행하거나,
-터미널에서 실행하세요.
+터미널에서 다음을 실행하세요.
 
 ```bash title="Verify"
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-## 5. 명령줄 부트스트랩 (확장 호스트)
+## 5. 명령줄 부트스트랩(확장 호스트)
 
 **사전 요건:** 해당 호스트 명령줄 도구, Node.js 18+, 그리고 `PATH`에 있는 시스템
 Python 3.10+.
 
-Apothem을 저장소에서 곧장 확장으로 설치하세요 — 명령이 정확한 호스트와 하니스
-slug를 담고 있습니다.
+저장소에서 곧바로 Apothem을 확장으로 설치하세요 — 명령에 정확한 호스트와 하니스
+slug가 들어 있습니다.
 
 ```bash title="Install the extension"
 gemini extensions install https://github.com/ahmed-g-gad/apothem
 ```
 
 이 확장은 그 자체로 전체 설치가 아니라 **부트스트랩**입니다. Apothem 컨텍스트
-파일을 로드하고 엔진으로 셸 아웃하는(`npx @ahmed-g-gad/apothem`) `/apothem` 명령을
-추가합니다. 이를 통해 install을 실행하여 전체 하니스를 머티리얼라이즈하세요.
+파일을 로드하고, 엔진으로 셸 아웃하는(`npx @ahmed-g-gad/apothem`) `/apothem`
+명령을 추가합니다. 이 확장을 통해 설치를 실행하여 전체 하니스를
+머티리얼라이즈하세요.
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
@@ -233,19 +282,20 @@ npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
 npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
 ```
 
-## 6. 명령줄 부트스트랩 (`qwen-code` 호스트)
+## 6. 명령줄 부트스트랩(`qwen-code` 호스트)
 
 **사전 요건:** 해당 호스트 명령줄 도구, Node.js 18+, 그리고 `PATH`에 있는 시스템
 Python 3.10+.
 
-Apothem을 저장소에서 곧장 `--harness qwen-code` 확장으로 설치하세요.
+저장소에서 곧바로 Apothem을 `--harness qwen-code` 확장으로 설치하세요.
 
 ```bash title="Install the extension"
 qwen extensions install ahmed-g-gad/apothem
 ```
 
-채널 5의 확장처럼, 이것은 **부트스트랩**입니다. Apothem 컨텍스트 파일을 로드하고
-엔진으로 셸 아웃합니다. 이를 통해 install을 실행하여 전체 하니스를 머티리얼라이즈하세요.
+채널 5의 확장과 마찬가지로 이것은 **부트스트랩**입니다. Apothem 컨텍스트 파일을
+로드하고 엔진으로 셸 아웃합니다. 이 확장을 통해 설치를 실행하여 전체 하니스를
+머티리얼라이즈하세요.
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness qwen-code
@@ -257,21 +307,22 @@ npx @ahmed-g-gad/apothem install --harness qwen-code
 npx @ahmed-g-gad/apothem verify --harness qwen-code
 ```
 
-## 7. 명령줄 부트스트랩 (플러그인 호스트)
+## 7. 명령줄 부트스트랩(플러그인 호스트)
 
 **사전 요건:** 해당 호스트 명령줄 도구, Node.js 18+, 그리고 `PATH`에 있는 시스템
 Python 3.10+.
 
-저장소를 플러그인 마켓플레이스로 추가한 다음 플러그인을 설치하세요 — 명령이 정확한
-호스트와 하니스 slug를 담고 있습니다.
+저장소를 플러그인 마켓플레이스로 추가한 다음 플러그인을 설치하세요 — 명령에 정확한
+호스트와 하니스 slug가 들어 있습니다.
 
 ```bash title="Install the plugin"
 codex plugin marketplace add ahmed-g-gad/apothem
 codex plugin add apothem@apothem
 ```
 
-채널 5와 채널 6의 확장처럼, 이것은 엔진으로 셸 아웃하는 **부트스트랩**입니다. 이를
-통해 install을 실행하여 전체 하니스를 머티리얼라이즈하세요.
+채널 5와 채널 6의 확장과 마찬가지로 이것은 엔진으로 셸 아웃하는
+**부트스트랩**입니다. 이 플러그인을 통해 설치를 실행하여 전체 하니스를
+머티리얼라이즈하세요.
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex
@@ -285,11 +336,12 @@ npx @ahmed-g-gad/apothem verify --harness codex
 
 ## 8. 직접 엔진(`python -m apothem`)
 
-**사전 요건:** `click`과 `rich` 패키지가 임포트 가능한 시스템 Python 3.10+, 그리고
-저장소의 체크아웃. Node.js는 필요하지 않습니다.
+**사전 요건:** `click`과 `rich` 패키지를 임포트할 수 있는 시스템 Python 3.10+,
+그리고 저장소의 체크아웃. Node.js는 필요하지 않습니다.
 
-자체 완결형 엔진을 클론에서 곧장 실행하세요 — 소스 트리가 벤더링된 의존성을
-지니므로 `PYTHONPATH=src`가 전체 설정입니다.
+클론에서 곧바로 엔진을 실행하세요. 진입점이 벤더링된 종속성
+(`src/apothem/_vendor`)을 `sys.path`에 올리므로, `click`과 `rich`를 임포트할 수
+있다면 `PYTHONPATH=src`가 설정의 전부입니다.
 
 ```bash title="Direct engine"
 git clone https://github.com/ahmed-g-gad/apothem
@@ -297,15 +349,18 @@ cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
 
+npm 심과 마찬가지로, 프로필이 없는 머신에서 첫 `install`은
+`~/.config/apothem/profile.yaml`에 초기 프로필을 생성하고 계속 진행합니다.
+
 **검증:**
 
 ```bash title="Verify"
 PYTHONPATH=src python -m apothem verify --harness claude-code
 ```
 
-## 임의의 설치 검증
+## 어떤 설치든 검증하기
 
-위의 모든 채널은 각자의 검증 명령을 명시합니다. 두 가지 일반 형식은 다음과
+위의 모든 채널은 각자의 검증 명령을 제시합니다. 두 가지 일반 형식은 다음과
 같습니다.
 
 ```bash title="Installer path"
@@ -317,31 +372,47 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
 하니스 이름을 설치한 어댑터로 바꾸세요. 지원되는 모든 이름은
-[하니스 목록](/docs/harnesses)을 참조하세요. 등록된 각 어댑터를 한눈에 확인하려면
-같은 형식으로 `apothem doctor`(또는 `npx @ahmed-g-gad/apothem doctor`)를
-실행하세요. 플러그인 경로의 경우 Claude Code 내부에서 `/plugin`을 실행하고
-**apothem**이 설치됨으로 나열되는지 확인하세요.
+[하니스 목록](/docs/harnesses)을 참조하세요. 설치된 모든 어댑터를 한 번에
+점검하려면(각 어댑터의 verify와 훅 명령), `verify --harness NAME` 대신 `doctor`를
+위에서 사용한 형식 그대로 실행하세요. 즉 `apothem doctor`,
+`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`, 또는
+`npx @ahmed-g-gad/apothem doctor`입니다. 플러그인 경로의 경우 Claude Code
+내부에서 `/plugin`을 실행하여 **apothem**이 설치됨으로 나열되는지 확인하세요.
 
 ## 사전 요건 한눈에
 
-- **Python 3.10 이상** — 엔진을 실행하는 각 경로가 이를 탐지합니다(`python3`,
-  `python`, 버전이 붙은 이름, Windows에서는 `py -3`).
-- 그 인터프리터에서 **`click`과 `rich`가 임포트 가능할 것** — 엔진이 벤더링하지
-  않는 두 개의 터미널 대면 의존성입니다. 설치 프로그램은 둘 다 확인하고, 누락된
-  항목의 이름을 알려 주며, 사용자를 대신해 설치하겠다고 제안합니다 — 사용자의
-  확인을 받거나, `--yes`(PowerShell에서는 `-Yes`) 또는
-  `APOTHEM_AUTO_INSTALL_DEPS=1`로 자동으로.
-- **Node.js 18 이상** — npm 심과 도구 플러그인 경로만.
-- **Git** — 설치 프로그램 경로만, 그리고 네트워크 형식에서만 필요합니다(스크립트가
-  소스를 클론합니다. 로컬 체크아웃은 클론이 필요하지 않습니다).
-- **Claude Code** — 플러그인 경로만. **VS Code**와 각 명령줄 부트스트랩 자체의
-  호스트 도구는 각자의 채널(4–7)에만 필요합니다.
+- **Python 3.10 이상** — 이를 찾는 경로는 이름으로 찾으며, 그 이름은 경로마다
+  다릅니다. npm 심은 `python3`, `python`, `py -3` 순으로 시도합니다. 설치 프로그램은
+  `python3`, `python`, 그리고 버전이 붙은 이름 `python3.14`부터 `python3.10`까지
+  시도합니다.
+- **`click`과 `rich` 임포트 가능**(해당 인터프리터에서) — 엔진이 벤더링하지 않는
+  터미널 대면 종속성 두 가지입니다. 설치 프로그램은 둘 다 확인하고, 누락된 항목의
+  이름을 알려 주며, 대신 설치하겠다고 제안합니다 — 여러분의 확인을 받아서, 또는
+  `--yes`(PowerShell에서는 `-Yes`)나 `APOTHEM_AUTO_INSTALL_DEPS=1`이 있으면
+  자동으로. 그 밖의 모든 채널에서는 누락된 패키지가 오류(종료 코드 1)와 함께 엔진을
+  중지시키며, 이 오류는 엔진이 찾은 인터프리터에 맞는 정확한 명령을, Apothem을
+  테스트하는 기준이 되는 버전 제약 조건과 함께 제시합니다
+  (`<interpreter> -m pip install "click==…" "rich>=…"`). `--json`을 사용하면 같은
+  오류가 코드 `runtime.dependency_missing`이 담긴 JSON 엔벨로프로 전달됩니다.
+- **Node.js 18 이상** — `npx`를 실행하는 경로에서만 필요합니다. npm 심(2),
+  VS Code 계열 확장(4), 명령줄 부트스트랩(5–7)입니다.
+- **수명 종료 런타임.** Python 3.10은 2026-10-01에, Node.js 18과 20은 각각
+  2025-04-30과 2026-04-30에 업스트림 수명 종료에 도달했습니다. Apothem은 이들을
+  선언된 최저 버전으로서 여전히 지원하고 CI에서 각각을 테스트하지만, 이들은 더 이상
+  업스트림 보안 수정을 받지 않으므로 Python 3.11 이상과 Node.js 22 이상을 우선
+  사용하세요.
+  [런타임 최저 버전 정책](/docs/governance/release-engineering-policy#런타임-최저-버전)이
+  최저 버전을 올리는 방법을 설명합니다.
+- **Git** — 설치 프로그램 경로에서만, 그것도 네트워크 형식에서만 필요합니다
+  (스크립트가 소스를 클론합니다. 로컬 체크아웃은 클론이 필요하지 않습니다).
+- **Claude Code** — 플러그인 경로에서만 필요합니다. **VS Code**와 각 명령줄
+  부트스트랩 자체의 호스트 도구는 각자의 채널(4–7)에서만 필요합니다.
 
 ## 다음 가이드
 
 | 목표 | 가이드 |
 |------|-------|
-| 가장 짧은 설정 | [퀵스타트](/docs/install/quickstart) |
+| 가장 짧은 설정 | [빠른 시작](/docs/install/quickstart) |
 | 하니스 추가 | [하니스 설정](/docs/install/harness-setup) |
 | 업데이트 | [업데이트](/docs/install/updating) |
 | 제거 | [제거](/docs/install/uninstalling) |

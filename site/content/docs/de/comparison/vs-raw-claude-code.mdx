@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Claude Code Konfiguration"
 description: "Den gesamten nativen Konfigurationsbaum von Claude Code von Hand pflegen, verglichen mit seiner Verwaltung über das geteilte Profil von Apothem."
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,23 +27,18 @@ Der Adapter propagiert Regeln, Agenten, Befehle, Skills, Output-Styles,
 Statuslines und `settings.json` nach `~/.claude/`. Die nativen Hooks PreToolUse,
 PostToolUse, Stop und SessionStart werden aus dem geteilten Korpus konfiguriert.
 
-Apothem verwaltet `CLAUDE.md` **nicht** — diese Datei ist betriebereigenes
-Gebiet. Ihre Projekt- und persönlichen Anweisungen in `CLAUDE.md` bleiben Ihre;
-Apothem regiert die propagierten Oberflächen darum herum.
+Apothem schreibt einen durch Sentinel-Marker begrenzten, verwalteten Block in Ihre `~/.claude/CLAUDE.md` auf Benutzerebene. `apothem update` schreibt nur diesen Block neu und lässt Ihren Text außerhalb davon unberührt. Projektbezogene `CLAUDE.md`-Dateien werden nicht verändert. Apothem steuert die propagierten Oberflächen rund um diese Datei.
 
 ## Migrationspfad
 
-1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen,
-   falls noch nicht geschehen.
-2. Verschieben Sie Ihre vorhandenen `~/.claude/`-Regeln, -Agenten, -Befehle und
-   -Skills in das geteilte Korpus.
-3. Lassen Sie `CLAUDE.md` an Ort und Stelle — Apothem rührt sie nicht an.
-4. Führen Sie `apothem install --harness claude-code` aus, um das Korpus zu
-   propagieren.
-5. Führen Sie `apothem verify --harness claude-code` aus, um zu bestätigen, dass
-   die Konfiguration angekommen ist.
-6. Verwenden Sie `apothem update --harness claude-code` für jede spätere
-   Änderung.
+1. Führen Sie `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie Ihre vorhandenen `~/.claude/`-Regeln, -Agenten, -Befehle und -Skills in das
+   gemeinsame Korpus.
+3. Lassen Sie `CLAUDE.md` an Ort und Stelle. Apothem behält Ihren Text außerhalb seines verwalteten
+   Blocks bei und schreibt nur diesen Block neu.
+4. Führen Sie `apothem install --harness claude-code` aus, um das Korpus zu propagieren.
+5. Führen Sie `apothem verify --harness claude-code` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+6. Verwenden Sie `apothem update --harness claude-code` für jede spätere Änderung.
 
 ## Als Nächstes lesen
 

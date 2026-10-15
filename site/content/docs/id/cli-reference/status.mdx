@@ -2,48 +2,67 @@
 title: "status"
 description: "Referensi CLI untuk perintah apothem status."
 machineTranslated: true
-sourceHash: "a4669e50e0d90f9f"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap asisten-pengkodean yang terdaftar.
+Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap harness yang terdaftar.
 
 ## Ringkasan
 
 ```
-apothem status [--project PATH]
+apothem status [--profile PATH] [--project PATH]
                [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-`status` adalah perintah inspeksi hanya-baca. Perintah ini menelusuri setiap adapter asisten-pengkodean yang terdaftar dan melaporkan tiga fakta per asisten: apakah ia terpasang, apakah target yang dikelolanya terverifikasi, dan apakah konfigurasi yang terpasang telah menyimpang dari profil bersama. Ia tidak menulis apa pun ke disk.
+`status` adalah perintah inspeksi hanya-baca. Perintah ini menelusuri setiap
+adapter harness yang terdaftar dan melaporkan tiga fakta per harness: apakah
+harness tersebut terpasang, apakah target yang dikelolanya lolos verifikasi,
+dan apakah konfigurasi yang terpasang telah menyimpang dari profil bersama.
+Perintah ini tidak menulis apa pun ke disk.
 
-Untuk setiap asisten-pengkodean, `status` melaporkan:
+Untuk setiap harness, `status` melaporkan:
 
 | Kolom | Arti |
 |---|---|
-| `installed` | Konfigurasi terkelola adapter ada di jalur targetnya. |
-| `verified` | Target terkelola adapter ada dan valid. |
+| `installed` | Konfigurasi terkelola milik adapter ada di jalur targetnya. |
+| `verified` | Target terkelola milik adapter ada dan valid. |
 | `drift` | Putusan kesetiaan profil (lihat di bawah). |
 
 Nilai `drift` adalah salah satu dari:
 
 | Nilai | Arti |
 |---|---|
-| `in-sync` | Konfigurasi terpasang membawa profil bersama yang baru diproyeksikan secara harfiah. |
-| `drift` | Asisten-pengkodean terpasang tetapi konten profil yang diproyeksikannya tidak lagi cocok dengan profil bersama saat ini. Jalankan `apothem install` lagi untuk memproyeksikan ulang. |
-| `absent` | Asisten-pengkodean tidak terpasang, jadi tidak ada yang dibandingkan. |
-| `needs-project` | Sebuah asisten-pengkodean berlingkup-proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat di-resolve. Berikan `--project PATH` untuk memeriksanya. |
+| `in-sync` | Konfigurasi yang terpasang membawa profil bersama yang baru diproyeksikan secara harfiah. |
+| `drift` | Harness terpasang, tetapi konten profil yang diproyeksikannya tidak lagi cocok dengan profil bersama saat ini. Jalankan ulang `apothem install` untuk memproyeksikan ulang. |
+| `absent` | Harness tidak terpasang, sehingga tidak ada yang dibandingkan. |
+| `needs-project` | Harness berlingkup-proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat di-resolve. Berikan `--project PATH` untuk memeriksanya. |
+| `unknown` | Profil default tidak dapat dimuat, sehingga harness yang terpasang tidak memiliki acuan dasar untuk dibandingkan. Perbaiki profil untuk memulihkan putusan penyimpangan. |
 
-Penyimpangan dilaporkan, tidak pernah diperlakukan sebagai galat: `status` keluar dengan 0 bahkan ketika satu atau lebih asisten-pengkodean melaporkan `drift`. Penyimpangan adalah fakta tentang penyiapan Anda, bukan kegagalan perintah.
+Penyimpangan dilaporkan, tidak pernah diperlakukan sebagai galat: `status`
+keluar dengan 0 bahkan ketika satu atau lebih harness melaporkan `drift`.
+Penyimpangan adalah fakta tentang penyiapan Anda, bukan kegagalan perintah.
 
-Jika profil bersama tidak dapat dimuat, penyimpangan diturunkan menjadi `absent` untuk asisten-pengkodean yang terpasang (fakta installed/verified tetap dilaporkan) alih-alih membatalkan penyapuan.
+Jika profil bersama default tidak dapat dimuat, penyimpangan diturunkan menjadi
+`unknown` untuk harness yang terpasang (fakta installed/verified tetap
+dilaporkan) alih-alih membatalkan penyapuan. `--profile` eksplisit yang tidak
+dapat dimuat merupakan galat pengguna dan sebagai gantinya membatalkan proses
+dengan galat terstruktur.
+
+Penurunan ini selalu dilaporkan: `status` mencetak sebuah peringatan yang
+menyebutkan profil dan perbaikannya, dan amplop `--json` membawa entri
+`drift_baseline_unavailable` yang sesuai di `warnings`. Hal ini paling penting
+ketika tidak ada harness yang terpasang — setiap baris kemudian terbaca `absent`
+dan tidak ada sel `unknown`, sehingga peringatan tersebut adalah satu-satunya
+sinyal bahwa acuan dasar tidak pernah dimuat.
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Tanpanya, asisten-pengkodean berlingkup-proyek melaporkan `needs-project`. |
+| `--profile PATH` | YAML profil bersama yang memilih acuan dasar penyimpangan. Tanpa opsi ini, profil default (`~/.config/apothem/profile.yaml`) digunakan. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. Tanpa opsi ini, harness berlingkup-proyek melaporkan `needs-project`. |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
@@ -53,10 +72,15 @@ Jika profil bersama tidak dapat dimuat, penyimpangan diturunkan menjadi `absent`
 
 ## Keluaran JSON
 
-Amplop `--json` membawa satu baris hasil per asisten-pengkodean yang terdaftar. Setiap baris membawa kunci terdokumentasi `harness`, `installed`, `verified`, dan `drift`.
+Amplop `--json` membawa satu baris hasil per harness yang terdaftar. Setiap
+baris membawa kunci terdokumentasi `harness`, `installed`, `verified`, dan
+`drift`. `warnings` kosong pada penyapuan yang bersih; ketika profil default
+tidak dapat dimuat, bidang itu membawa satu entri `drift_baseline_unavailable`
+dengan `path`, `code`, `reason`, dan `fix`.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "status",
   "action": "status",
@@ -81,7 +105,10 @@ Amplop `--json` membawa satu baris hasil per asisten-pengkodean yang terdaftar. 
 }
 ```
 
-Isolasi kegagalan per-adapter: jika satu adapter melempar pengecualian saat melaporkan statusnya, baris asisten-pengkodean tersebut membawa `outcome: "error"` dan sebuah `message`, asisten-pengkodean yang tersisa tetap melaporkan secara normal, dan proses keluar dengan kode 2.
+Isolasi kegagalan per-adapter: jika satu adapter melempar pengecualian saat
+melaporkan statusnya, baris harness tersebut membawa `outcome: "error"` dan
+sebuah `message`, harness lainnya tetap melapor secara normal, dan proses
+keluar dengan kode 2.
 
 ## Contoh
 
@@ -96,10 +123,12 @@ apothem status --json
 | Kode | Arti |
 |---|---|
 | 0 | Status dilaporkan (penyimpangan dilaporkan, bukan galat) |
+| 1 | Galat validasi yang diharapkan (`--profile` tidak valid, atau jalur `--project` yang tidak ada) |
 | 2 | Setidaknya satu adapter gagal melaporkan statusnya |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan satu asisten-pengkodean
-- [apothem diff](/docs/cli-reference/diff) — pratinjau perubahan tertunda untuk asisten-pengkodean
-- [apothem harnesses](/docs/cli-reference/harnesses) — mendaftar dan memeriksa asisten-pengkodean yang terdaftar
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan adapter harness
+- [apothem diff](/docs/cli-reference/diff) — mempratinjau perubahan tertunda untuk sebuah harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa harness yang terdaftar

@@ -2,7 +2,7 @@
 title: "Configuration de l'environnement"
 description: "Ajouter et configurer des adaptateurs d'environnement pour les plateformes."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-Pour vérifier chaque adaptateur enregistré d'un seul coup, exécutez `apothem doctor`. Il affiche
-un tableau du statut d'installation par environnement et se termine avec un code non nul si un adaptateur signale
-qu'il n'est pas installé.
+Pour vérifier d'un seul coup chaque adaptateur enregistré, exécutez `apothem doctor`. La commande affiche un tableau de l'état d'installation par environnement et ne se termine avec un code non nul que si un contrôle échoue, par exemple un environnement installé qui ne passe pas la vérification, une commande de hook qui ne peut pas démarrer, ou un profil présent qui ne passe pas la validation. Un environnement non installé est listé mais ne fait pas échouer `doctor`.
 
 ## Afficher les environnements installés
 

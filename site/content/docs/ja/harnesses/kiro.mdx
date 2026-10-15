@@ -1,15 +1,15 @@
 ---
 title: "Kiro"
-description: "Kiro（GA）向けの Apothem ツールアダプター。"
+description: "Kiro（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** AWS
 **インストール名：** `kiro`
 **ステータス：** GA
-**ネイティブ構成：** `<project>/.kiro/steering/apothem-rules.md`
+**ネイティブ設定：** `<project>/.kiro/steering/apothem-rules.md`
 
 ## インストール
 
@@ -17,27 +17,23 @@ sourceHash: "409a9949239d4b5f"
 apothem install --harness kiro --project /path/to/project
 ```
 
-このアダプターは、共有された Apothem ルールとガバナンスサーフェスから、
-プロジェクトスコープの Kiro ステアリングファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Kiro ステアリングファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.kiro/steering/apothem-rules.md`
 
-## プロファイルからネイティブ構成へのマッピング
+## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` の各実行時にプロジェクトのステアリングファイルをレンダリング
-します。共有プロファイルが信頼できる情報源です。生成ファイルへのプロジェクト
-ローカルの編集は、次回の同期が Apothem 管理のコンテンツを置き換える前に
-バックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、プロジェクトのステアリングファイルをレンダリングします。
+信頼できる情報源は共有プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の管理するコンテンツを置き換える前にバックアップされます。
+
+Kiro はインクルージョン設定がファイルの最初の内容であることを要求するため、このファイルは `inclusion: always` フロントマターで始まります。
+Apothem 管理のブロックはその後に続きます。ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Kiro のステアリングサーフェスは `.kiro/steering/` 下でプロジェクトスコープです。
-アダプターは `inclusion: always` のフロントマターを持つ専用の `apothem-rules.md`
-ステアリングファイルを書き込み、Kiro の操作者が作成した基盤ファイル
-（`product.md`、`tech.md`、`structure.md`）を決して上書きしません。Kiro の仕様
-（`.kiro/specs/`）とエージェントフックは操作者が所有します。Apothem はそれらを
-書き込みません。
+Kiro のステアリング面は `.kiro/steering/` 配下のプロジェクトスコープです。
+アダプターは `inclusion: always` フロントマターを持つ専用の `apothem-rules.md` ステアリングファイルを書き込み、オペレーターが作成した Kiro の基盤ファイル（`product.md`、`tech.md`、`structure.md`）を決して上書きしません。
+Kiro のスペック（`.kiro/specs/`）とエージェントフックはオペレーターの所有です。Apothem はそれらを書き込みません。
 
 ## 検証
 
@@ -47,8 +43,8 @@ apothem verify --harness kiro --project /path/to/project
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定パスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -57,7 +53,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness kiro --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクトのステアリングファイルを再導出します。
+現在の共有プロファイルの状態から、プロジェクトのステアリングファイルを再導出します。
 
 ## アンインストール
 
@@ -65,10 +61,12 @@ apothem update --harness kiro --project /path/to/project
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+`<project>/.kiro/steering/apothem-rules.md` から、Apothem ブロックと、その上に Apothem が書き込んだフロントマターを削除し、ファイル内のそれ以外のテキストは保持します。
+ファイルが削除されるのは、その中に他に何も残っていない場合のみです。
+変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -76,14 +74,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness kiro --project /path/to/project` を再実行する |
-| 検証が失敗した | `apothem update --harness kiro --project /path/to/project` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness kiro --project /path/to/project` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness kiro --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness kiro --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness kiro --project /path/to/project` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

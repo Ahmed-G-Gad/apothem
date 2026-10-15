@@ -1,8 +1,8 @@
 ---
 title: "Cursor"
-description: "Adaptador de herramienta de Apothem para Cursor (GA)."
+description: "Adaptador de entorno de Apothem para Cursor (GA)."
 machineTranslated: true
-sourceHash: "592a5617c82b9316"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,25 +17,37 @@ sourceHash: "592a5617c82b9316"
 apothem install --harness cursor --project /path/to/project
 ```
 
-El adaptador renderiza un único archivo de reglas `.mdc` con alcance de proyecto
-a partir de las reglas compartidas de Apothem y la superficie de gobernanza.
+El adaptador renderiza un único archivo de reglas `.mdc` con alcance de
+proyecto a partir de la superficie compartida de reglas y gobernanza de
+Apothem.
 
 **Archivos escritos:** `<project>/.cursor/rules/apothem-rules.mdc`
 
+Ese archivo es toda la instalación: no se coloca a su lado ningún archivo de
+regla, skill, comando, plantilla ni hook, así que el archivo lo indica en lugar
+de apuntar a archivos de Apothem que no están en el proyecto.
+
 ## Asignación del perfil a la configuración nativa
 
-El adaptador lee el perfil compartido de Apothem y renderiza el archivo de reglas
-del proyecto en cada ejecución de `apothem install` o `apothem update`. El perfil
-compartido es la fuente de verdad; las ediciones locales del proyecto al archivo
-generado se respaldan antes de que la siguiente sincronización reemplace el
-contenido gestionado por Apothem.
+El adaptador lee el perfil compartido de Apothem y renderiza el archivo de
+reglas del proyecto en cada ejecución de `apothem install` o `apothem update`.
+El perfil compartido es la fuente de verdad; las ediciones locales del proyecto
+sobre el archivo generado se respaldan antes de que la siguiente
+sincronización reemplace el contenido gestionado por Apothem.
+
+El archivo comienza con su frontmatter YAML (`description`, `globs`,
+`alwaysApply: true`), porque Cursor lee el tipo de una regla solo del
+frontmatter al inicio del archivo. El bloque gestionado por Apothem va a
+continuación; el texto que agregues después del bloque se conserva en cada
+sincronización.
 
 ## Notas de compatibilidad
 
-Cursor 0.45+ admite instrucciones a nivel de proyecto mediante `.cursor/rules/`. El
-adaptador escribe en el directorio `.cursor/rules/` con alcance de proyecto por
-defecto; Cursor no tiene una ruta de reglas globales de usuario basada en archivos
-documentada para que este adaptador la gestione.
+Cursor 0.45+ admite instrucciones a nivel de proyecto mediante
+`.cursor/rules/`. El adaptador escribe en el directorio `.cursor/rules/` con
+alcance de proyecto de forma predeterminada; Cursor no tiene ninguna ruta
+documentada de reglas globales de usuario basada en archivos que este adaptador
+pueda gestionar.
 
 ## Verificación
 
@@ -46,8 +58,11 @@ apothem verify --harness cursor --project /path/to/project
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Todos los campos obligatorios del perfil compartido están presentes.
-3. La rutina de verificación específica del adaptador informa éxito.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y
+   las configuraciones JSON o YAML se analizan correctamente. Añade
+   `--profile PATH` para confirmar también que los archivos instalados coinciden
+   con ese perfil.
+3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
 
@@ -55,8 +70,8 @@ El comando verify confirma que:
 apothem update --harness cursor --project /path/to/project
 ```
 
-Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual del
-perfil compartido.
+Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual
+del perfil compartido.
 
 ## Desinstalación
 
@@ -64,8 +79,12 @@ perfil compartido.
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador.
-El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+Elimina el bloque de Apothem, y el frontmatter que Apothem escribió encima de
+él, de `<project>/.cursor/rules/apothem-rules.mdc` y conserva cualquier otro
+texto que haya en él. El archivo se elimina solo cuando no queda nada más en él.
+Antes del cambio, se guarda bajo `~/.apothem/backups/` una copia con marca de
+tiempo del archivo; no se deja ningún archivo de respaldo en el proyecto. El
+YAML del perfil compartido y el motor de Apothem no se ven afectados.
 
 ## Puerta de conformidad
 
@@ -77,12 +96,18 @@ python -m apothem.conformity.gate --all .
 
 | Síntoma | Solución |
 |---------|-----|
-| Archivo de configuración no encontrado | Vuelve a ejecutar `apothem install --harness cursor --project /path/to/project` |
-| Verificación fallida | Ejecuta `apothem update --harness cursor --project /path/to/project` y luego verifica de nuevo |
-| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, luego vuelve a ejecutar `apothem update --harness cursor --project /path/to/project` |
+| No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness cursor --project /path/to/project` |
+| La verificación falló | Ejecuta `apothem update --harness cursor --project /path/to/project` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH` y luego vuelve a ejecutar `apothem update --harness cursor --project /path/to/project` |
 
 ## Opciones de configuración
 
-| Indicador | Por defecto | Descripción |
+| Indicador | Predeterminado | Descripción |
 |------|---------|-------------|
 | `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |
+
+## Véase también
+
+- [Todos los entornos](/docs/harnesses) — el catálogo completo de herramientas compatibles
+- [Guía de instalación](/docs/install) — instala Apothem en este entorno
+- [Referencia de `apothem harnesses`](/docs/cli-reference/harnesses) — lista e inspecciona adaptadores desde la CLI

@@ -1,15 +1,15 @@
 ---
 title: "Cursor"
-description: "Cursor（正式版）向けの Apothem ツールアダプター。"
+description: "Cursor（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "592a5617c82b9316"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** Anysphere
 **インストール名：** `cursor`
-**ステータス：** 正式版
-**ネイティブ構成：** プロジェクトルートの `.cursor/rules/`
+**ステータス：** GA
+**ネイティブ設定：** プロジェクトルートの `.cursor/rules/`
 
 ## インストール
 
@@ -17,25 +17,24 @@ sourceHash: "592a5617c82b9316"
 apothem install --harness cursor --project /path/to/project
 ```
 
-アダプターは、共有された Apothem のルールとガバナンス面から、プロジェクト範囲の
-`.mdc` ルールファイルを 1 つレンダリングします。
+アダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトスコープの `.mdc` ルールファイルを 1 つレンダリングします。
 
 **書き込まれるファイル：** `<project>/.cursor/rules/apothem-rules.mdc`
 
-## プロファイルからネイティブ構成へのマッピング
+このファイルがインストールのすべてです。ルール、スキル、コマンド、テンプレート、フックのファイルはその隣に一切配置されないため、このファイルは、プロジェクト内に存在しない Apothem のファイルを指し示す代わりに、その旨を記載しています。
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
-`apothem update` を実行するたびにプロジェクトのルールファイルをレンダリングします。
-共有プロファイルが信頼できる唯一の情報源です。生成されたファイルへのプロジェクト
-ローカルな編集は、次回の同期で Apothem 管理のコンテンツに置き換えられる前に
-バックアップされます。
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびにプロジェクトのルールファイルをレンダリングします。
+信頼できる情報源は共有プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の管理するコンテンツを置き換える前にバックアップされます。
+
+ファイルは YAML フロントマター（`description`、`globs`、`alwaysApply: true`）で始まります。Cursor はルールの種類を、ファイル先頭のフロントマターからしか読み取らないためです。
+Apothem が管理するブロックがその後に続きます。ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Cursor 0.45+ は `.cursor/rules/` を通じてプロジェクトレベルの指示をサポートします。
-アダプターはデフォルトでプロジェクト範囲の `.cursor/rules/` ディレクトリに書き込み
-ます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバル
-ルールパスは文書化されていません。
+Cursor 0.45+ は、`.cursor/rules/` を通じてプロジェクトレベルの命令をサポートします。
+アダプターはデフォルトで、プロジェクトスコープの `.cursor/rules/` ディレクトリに書き込みます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバルなルールパスが文書化されていません。
 
 ## 検証
 
@@ -43,10 +42,10 @@ Cursor 0.45+ は `.cursor/rules/` を通じてプロジェクトレベルの指�
 apothem verify --harness cursor --project /path/to/project
 ```
 
-verify コマンドは次のことを確認します：
+verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定どおりのパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -63,10 +62,12 @@ apothem update --harness cursor --project /path/to/project
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+`<project>/.cursor/rules/apothem-rules.mdc` から、Apothem ブロックと、Apothem がその上に書き込んだフロントマターを取り除き、その中にある他のテキストはそのまま残します。
+ファイルが削除されるのは、中に他に何も残っていない場合のみです。
+変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -76,12 +77,18 @@ python -m apothem.conformity.gate --all .
 
 | 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness cursor --project /path/to/project` を再実行する |
-| 検証に失敗した | `apothem update --harness cursor --project /path/to/project` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness cursor --project /path/to/project` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness cursor --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness cursor --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness cursor --project /path/to/project` を再実行する |
 
-## 構成のつまみ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
-| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューします。 |
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

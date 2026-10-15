@@ -2,36 +2,38 @@
 title: "Referensi CLI"
 description: "Referensi CLI Apothem — semua subperintah dan flag."
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 CLI `apothem` adalah antarmuka operator utama untuk mengelola profil bersama dan
-adaptor harness.
+adapter harness.
 
 ## Flag global
 
 | Flag | Deskripsi |
 |------|-------------|
-| `--version` | Mencetak versi Apothem dan keluar |
+| `--version` | Mencetak versi Apothem lalu keluar |
 | `--help` | Mencetak bantuan untuk perintah |
 
 ## Subperintah
 
 ### `apothem install`
 
-Memasang adaptor harness dari profil bersama.
+Memasang sebuah adapter harness dari profil bersama.
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | Opsi | Deskripsi |
 |--------|-------------|
-| `--harness <name>` | Nama adaptor harness (lihat nilai kanonis di bawah). Wajib. |
-| `--profile PATH` | Path ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--harness <name>` | Nama adapter harness (lihat nilai kanonis di bawah). Wajib. |
+| `--profile PATH` | Jalur ke YAML profil bersama. Bawaannya `~/.config/apothem/profile.yaml`. |
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. |
 | `--dry-run` | Pratinjau pemasangan tanpa menulis berkas. |
+| `--clean`, `--fresh` | Awal bersih yang bersifat opt-in: mencadangkan lalu menghapus status pemasangan sebelumnya (`~/.claude`, `~/.codex`, `~/.agents`, `~/.config/apothem`) sebelum memasang. |
+| `--yes` | Melewati konfirmasi per target selama penghapusan awal bersih (wajib untuk eksekusi `--clean` non-interaktif). |
 
 Nilai `--harness` kanonis:
 
@@ -56,12 +58,12 @@ zed
 ```
 
 Gunakan `--harness all --project <path>` untuk memilih kumpulan seluruh
-registri. Daftar `exclude_harnesses` pada profil dihormati selama pemilihan batch
-pemasangan/pembaruan.
+registri. Daftar `exclude_harnesses` pada profil dihormati saat pemilihan batch
+install/update.
 
 ### `apothem update`
 
-Menurunkan ulang konfigurasi native sebuah adaptor harness dari profil bersama
+Menurunkan ulang konfigurasi native sebuah adapter harness dari profil bersama
 saat ini.
 
 ```bash
@@ -70,18 +72,18 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 
 | Opsi | Deskripsi |
 |--------|-------------|
-| `--harness <name>` | Nama adaptor harness. Wajib. |
-| `--profile PATH` | Path ke YAML profil bersama. |
+| `--harness <name>` | Nama adapter harness. Wajib. |
+| `--profile PATH` | Jalur ke YAML profil bersama. |
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. |
 | `--dry-run` | Pratinjau pembaruan tanpa menulis berkas. |
 
 `update` mematerialisasi ulang keluaran harness. Perintah ini tidak memperbarui
-paket CLI Apothem; untuk peningkatan paket, gunakan pengelola paket yang dipakai
+paket CLI Apothem; untuk peningkatan paket, gunakan pengelola paket yang
 memasang Apothem.
 
 ### `apothem uninstall`
 
-Menghapus konfigurasi native sebuah adaptor harness.
+Menghapus konfigurasi native sebuah adapter harness.
 
 ```bash
 apothem uninstall --harness <name|all> [--project PATH] [--yes]
@@ -89,24 +91,65 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 
 | Opsi | Deskripsi |
 |--------|-------------|
-| `--harness <name>` | Nama adaptor harness. Wajib. |
+| `--harness <name>` | Nama adapter harness. Wajib. |
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. |
 | `--yes` | Melewati prompt konfirmasi. |
 
 ### `apothem verify`
 
-Memverifikasi bahwa sebuah adaptor harness terpasang dan path keluarannya ada.
+Memverifikasi bahwa target terkelola sebuah adapter harness ada dan valid.
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | Opsi | Deskripsi |
 |--------|-------------|
-| `--harness <name>` | Nama adaptor harness atau `all`. Wajib. |
+| `--harness <name>` | Nama adapter harness atau `all`. Wajib. |
+| `--profile PATH` | YAML profil bersama yang menjadi acuan pemeriksaan kesetiaan. Tanpanya, pemeriksaan murni struktural. |
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. |
 
-Kode keluar adalah `0` saat adaptor terpasang, dan `1` saat tidak.
+Tanpa `--profile`, pemeriksaannya struktural: setiap target terkelola harus ada
+dan valid. Dengan `--profile`, pemeriksaan juga menuntut kesetiaan, sehingga
+pemasangan yang ada tetapi telah menyimpang dari profil itu gagal verify —
+gunakan opsi ini untuk memastikan sebuah profil tertentu terpasang dengan setia.
+
+Kode keluar adalah `0` saat harness terverifikasi (dan, dengan `--profile`,
+setia terhadapnya), `1` saat sebuah target hilang atau tidak valid, atau saat
+`--profile` diberikan dan pemasangan telah menyimpang.
+
+### `apothem status`
+
+Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap harness
+yang terdaftar.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Opsi | Deskripsi |
+|--------|-------------|
+| `--profile PATH` | Profil bersama yang dipakai sebagai acuan penyimpangan. Profil bawaan yang tidak terbaca menurunkan status penyimpangan menjadi `unknown` alih-alih membatalkan sapuan. |
+| `--project PATH` | Root proyek untuk harness berlingkup proyek. Tanpanya, harness tersebut melaporkan `needs-project`. |
+
+Setiap baris memasangkan flag `installed` dengan flag `verified`, dan keduanya
+bergabung menjadi status penyimpangan:
+
+| Status | Arti |
+|-------|---------|
+| `absent` | Apothem belum memasang ke harness ini. |
+| `in-sync` | Terpasang dan cocok dengan profil acuan. |
+| `drift` | Terpasang tetapi tidak lagi cocok — perbaiki dengan `apothem update`. |
+| `unknown` | Terpasang, tetapi profil acuan tidak dapat dibaca. |
+
+`installed` menjawab "apakah Apothem memasang di sini?", bukan "apakah harness
+ini ada di mesin?". Flag ini berpatokan pada artefak milik Apothem sendiri —
+blok terkelola di dalam jangkar instruksi, dan konten di bawah subtree
+`.apothem/` milik Apothem — tidak pernah pada berkas milik vendor yang ditulis
+harness untuk dirinya sendiri. Harness yang direktori konfigurasinya ada tetapi
+tidak pernah disentuh Apothem melaporkan `absent`, dan harness yang telah
+dicopot melaporkan `absent` meskipun direktori yang telah dikosongkan masih
+tersisa.
 
 ### `apothem profile`
 
@@ -122,16 +165,16 @@ apothem profile edit [--profile PATH]
 | Subperintah | Deskripsi |
 |------------|-------------|
 | `profile init` | Membuat kerangka profil minimal yang valid menurut skema. |
-| `profile show` | Mencetak profil yang telah diselesaikan (YAML) ke stdout. |
-| `profile set <key> <value>` | Menetapkan sebuah field profil. Nilainya diurai sebagai YAML (string, angka, boolean, daftar, dan pemetaan semuanya diterima). |
-| `profile edit` | Membuka profil di `$EDITOR` (jatuh ke editor default platform). |
+| `profile show` | Mencetak profil yang telah di-resolve sebagai JSON ke stdout. Dengan `--json`, dokumen diawali dengan `schema_version`. |
+| `profile set <key> <value>` | Menetapkan sebuah field profil. Nilainya disimpan sebagai string literal — kata polos tidak dikonversi, sehingga `no` tetap `"no"` dan `1.0` tetap string — kecuali `true`/`false` serta masukan daftar dan map eksplisit `[...]` / `{...}`. Profil yang telah dirakit divalidasi terhadap skema sebelum ditulis. |
+| `profile edit` | Membuka profil di `$EDITOR` (beralih ke bawaan platform sebagai cadangan). |
 
-Opsi `--profile PATH` mengarahkan tiap subperintah ke berkas profil alternatif.
-Default-nya `~/.config/apothem/profile.yaml`.
+Opsi `--profile PATH` mengarahkan setiap subperintah ke berkas profil
+alternatif. Bawaannya `~/.config/apothem/profile.yaml`.
 
 ### `apothem harnesses`
 
-Mendaftar dan memeriksa adaptor harness yang terdaftar.
+Mendaftar dan memeriksa adapter harness yang terdaftar.
 
 ```bash
 apothem harnesses list
@@ -140,8 +183,8 @@ apothem harnesses show <name>
 
 | Subperintah | Deskripsi |
 |------------|-------------|
-| `harnesses list` | Mencetak tabel setiap adaptor terdaftar beserta flag status pemasangan dan path keluarannya. |
-| `harnesses show <name>` | Mencetak nama, status pemasangan, dan path keluaran sebuah adaptor. |
+| `harnesses list` | Mencetak tabel setiap adapter terdaftar beserta flag status terpasang dan jalur keluarannya. |
+| `harnesses show <name>` | Mencetak nama, status terpasang, dan jalur keluaran untuk satu adapter. |
 
 ### `apothem doctor`
 
@@ -151,9 +194,7 @@ Menjalankan diagnostik sistem untuk pemasangan Apothem.
 apothem doctor
 ```
 
-Mencetak versi Apothem, interpreter Python, platform, path profil yang
-diselesaikan, dan tabel status pemasangan per harness. Kode keluar adalah `0`
-saat setiap adaptor terdaftar melaporkan terpasang; selain itu `1`.
+Mencetak versi Apothem, interpreter Python, platform, jalur profil yang telah di-resolve, dan tabel status pemasangan per harness. Kode keluar adalah `1` ketika ada pemeriksaan yang gagal: profil tidak valid, harness yang terpasang tetapi tidak lolos verifikasi, perintah hook terdaftar yang tidak dapat dimulai, adapter yang tidak dapat dimuat atau diperiksa, atau ledger yang tidak dapat dibaca. Harness yang belum terpasang dilaporkan dan bukan kegagalan, serta catatan informasional tidak mengubah kode keluar.
 
 ## Referensi Perintah dan Flag yang Dihasilkan
 

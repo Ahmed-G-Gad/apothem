@@ -1,43 +1,31 @@
 ---
 title: "品牌调板"
-description: "Apothem 核心品牌色与十七种工具品牌色。单一事实来源是位于 assets/design-tokens.css 的规范设计令牌；网站镜像这些值。"
+description: "Apothem 核心品牌色与十五种工具品牌色，后者定义在“工具颜色”页面上。核心颜色的单一事实来源是位于 assets/design-tokens.css 的规范设计令牌；网站镜像这些值。"
 machineTranslated: true
-sourceHash: "b6a2525d651606d6"
+sourceHash: "7bb26cf570fc6357"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 核心调板
 
-规范调板——板岩中性色阶、翡翠强调色阶和语义色相——由位于
-[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
-的设计令牌（及其 `assets/design-tokens.json` 镜像）拥有。位于
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-的网站主题将这些令牌值镜像到 Fumadocs 主题所使用的 CSS 变量中。下方的每个值
-都追溯到一个规范色阶级别。
+规范调板——板岩中性色阶、翡翠强调色阶和语义色相——由位于 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css) 的设计令牌（及其 `assets/design-tokens.json` 镜像）拥有。位于 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) 的网站主题将这些令牌值镜像到 Fumadocs 主题所使用的 CSS 变量中。下方的每个值都是这些设计令牌中板岩色阶或翡翠色阶的一个级别；诸如 slate-600 之类的级别名称指向该色阶中对应的值。
 
 | 角色 | 令牌（CSS） | 浅色模式 | 深色模式 | 用途 |
 |---|---|---|---|---|
-| 主色 | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 标题、导航文本、主要阅读界面。 |
-| 强调色 | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | 活动链接、焦点环、选中的导航。 |
-| 正文文本 | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | 默认正文文本。 |
-| 正文底色 | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | 默认背景。 |
-| 导航底色 | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | 页眉和导航条带。 |
-| 代码底色 | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | 行内/块级代码界面。 |
+| 主色 | `--apothem-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 标题、导航文本和主要阅读界面。 |
+| 强调色 | `--apothem-accent-text` | emerald-700 `#047857` | emerald-400 `#34d399` | 活动链接、焦点环和选中的导航。 |
+| 正文文本 | `--apothem-text-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | 默认正文文本。 |
+| 正文底色 | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | 默认背景。 |
+| 导航底色 | `--apothem-surface-sunken` | slate-100 `#eef2f7` | slate-950 `#080c15` | 页眉和导航条带。 |
 
 ## 工具调板
 
-工具颜色位于[工具颜色](/docs/brand/harness-colors)。它在 Apothem 标识的六边形——
-其中心节点和终端节点——上的几何映射已折叠进品牌部分。位于
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-的 CSS 事实来源将每个令牌接入其 CSS 变量。
+工具颜色位于[工具颜色](/docs/brand/harness-colors)。Apothem 标识不带任何工具颜色；其六边形、中心节点和终端节点在 [`assets/DESIGN-SYSTEM.md`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/DESIGN-SYSTEM.md) 的标识部分中有所描述。工具颜色定义在该页面中，而不在设计令牌或 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) 中；这二者只承载核心调板。
 
 ## 在文档中的用法
 
-调板通过全局样式表 `site/app/global.css` 接入，由根布局导入。浅色和深色模式变体
-随主题的 `.dark` 类状态切换。
+调板通过全局样式表 `site/app/global.css` 接入，由根布局导入。浅色和深色模式变体随主题的 `.dark` 类状态切换。
 
 ## 更新
 
-仅当某个核心颜色（板岩/翡翠）发生变化，或某个工具在上游批准了品牌色变更时，调板
-才会更新。逐工具的变更会跨 `site/app/global.css`、[工具颜色](/docs/brand/harness-colors)
-以及 `assets/src/` 下每个受影响的 SVG 母版原子性地传播。
+仅当某个核心颜色（板岩/翡翠）发生变化，或某个工具在上游正式确认了品牌色变更时，调板才会更新。逐工具的变更会在[工具颜色](/docs/brand/harness-colors)以及 `assets/src/` 下每个受影响的 SVG 母版之间原子性地传播。

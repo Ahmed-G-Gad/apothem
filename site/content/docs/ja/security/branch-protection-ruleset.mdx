@@ -1,55 +1,130 @@
 ---
 title: "ブランチ保護"
-description: "main 上の Apothem ブランチ保護 — レビューゲート、ステータスチェックによるゲーティング、プッシュ制限。"
+description: "main に対する Apothem のブランチ保護 — 現行の保護ルール、その必須ステータスチェック、追加予定のチェック。"
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem の `main` ブランチは、単一の新規リリースコミットが公開された後、GitHub のブランチ保護によって保護されます。この保護は `rules/production-ready-prs.md` で宣言された変更セットの規律を強制し、今後の作業のために OpenSSF Scorecard の **Branch-Protection** および **Code-Review** チェックに供給します。
+Apothem の `main` ブランチは、GitHub のクラシックなブランチ保護ルールによって保護されています。リポジトリにルールセットはありません。この保護は `rules/production-ready-prs.md` で宣言された変更セットの規律を強制し、OpenSSF Scorecard の **Branch-Protection** チェックと **Code-Review** チェックに情報を提供します。
 
-## ルールセット宣言
+このページは、2026-10-07 に GitHub API から最後に読み取ったとおりの現行設定を正確に記録します。メンテナーが意図しているがまだ適用していない設定は、[メンテナーによる保留中の変更](#メンテナーによる保留中の変更)の下にのみ記載されます。
 
-| 設定 | 値 | 根拠 |
+## 保護設定
+
+| 設定 | API フィールド | 現行の値 | 効果 |
+|---|---|---|---|
+| **マージ前にプルリクエストを必須にする** | `required_pull_request_reviews`（存在する） | ✅ | 変更はプルリクエストを通じて `main` に到達します。 |
+| **必須の承認レビュー数** | `required_approving_review_count` | **0** | プルリクエストは承認レビューなしでマージされます。[単独メンテナーモデル](#単独メンテナーモデル)を参照してください。 |
+| **新しいコミットで古い承認を破棄する** | `dismiss_stale_reviews` | ✅ | 新しいプッシュの前に与えられた承認は、もはやカウントされません。 |
+| **Code Owners からのレビューを必須にする** | `require_code_owner_reviews` | ❌ | 2 人目のメンテナーが加わる前にこれを有効にすると、単独メンテナーのプルリクエストがデッドロックします。 |
+| **最新のレビュー可能なプッシュの承認を必須にする** | `require_last_push_approval` | ❌ | GitHub はその承認がプッシュした人以外から行われることを要求しますが、単独メンテナーはそれを用意できません。 |
+| **ステータスチェックの合格を必須にする** | `required_status_checks` | ✅ | [必須ステータスチェック](#必須ステータスチェック)に記載されている 12 のコンテキストが合格しなければなりません。 |
+| **マージ前にブランチを最新の状態にすることを必須にする** | `required_status_checks.strict` | ❌ | 必須チェックが古い `main` に対して合格していれば、プルリクエストはマージできます。その後、`main` へのプッシュで実行されるワークフローが、マージされた結果をテストします。 |
+| **マージ前に会話の解決を必須にする** | `required_conversation_resolution` | ✅ | 未解決のレビュースレッドがマージをブロックします。 |
+| **署名付きコミットを必須にする** | `required_signatures` | ❌ | リリースコミットはローカルで署名されています。強制は、コントリビューターのオンボーディング文書が SSH または GPG の署名セットアップを記述するまで待ちます。 |
+| **線形履歴を必須にする** | `required_linear_history` | ✅ | `main` の公開履歴を一本の線に保ちます。 |
+| **ブランチをロックする** | `lock_branch` | ❌ | `main` はマージを受け付けます。 |
+| **上記の設定のバイパスを許可しない** | `enforce_admins` | ❌ | 上記の設定はリポジトリ管理者を拘束しません。管理者は、必須チェックなしでマージすることも、`main` に直接プッシュすることもできます。 |
+| **強制プッシュを許可する** | `allow_force_pushes` | ❌ | `main` への強制プッシュは、管理者を含むすべての人に対してブロックされます。 |
+| **削除を許可する** | `allow_deletions` | ❌ | 管理者を含め、誰も `main` を削除できません。 |
+
+## 単独メンテナーモデル
+
+リポジトリのメンテナーは 1 人です。GitHub は「プルリクエストの作成者は、自分のプルリクエストを承認できません」と述べています。したがって、必須の承認数が 0 を超えると、メンテナーのすべてのプルリクエストがブロックされます。現行のルールは、承認 0 件でのプルリクエストを要求し、`enforce_admins` をオフのままにしています。
+
+管理者権限を持たない人がマージするには、引き続き、必須ステータスチェックがグリーンであること、レビューの会話が解決されていること、線形履歴であることが必要です。`main` への強制プッシュとその削除は、すべてのアカウントに対してブロックされたままです。
+
+2 人目のメンテナーが加わったときのより強力な設定は、少なくとも 1 件の必須承認、最新プッシュの承認、CODEOWNERS レビュー、そして `enforce_admins` のオンです。[単独メンテナーのマージ儀式](/docs/runbooks/solo-maintainer-merge)は、承認を要求し、かつそれを管理者にも強制する保護にのみ適用されます。
+
+## 必須ステータスチェック
+
+次の 12 のコンテキストはそれぞれ必須であり、そのソースは GitHub Actions（アプリ ID `15368`）です。
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| コンテキスト | ワークフローとジョブ | すべてのプルリクエストで報告される仕組み |
 |---|---|---|
-| **対象** | `main` | 公開のデフォルトブランチを保護します。 |
-| **強制状態** | `active` | ドライランモードではありません。 |
-| **マージ前にプルリクエストを必須化** | ✅ | `main` への直接プッシュを禁止します。 |
-| **必須の承認レビュー数** | **1** | 新規の単独メンテナープロジェクトに対する最低限の人手レビューゲート。 |
-| **新しいコミットで古い承認を破棄** | ✅ | 承認後の force-push がレビューを再トリガーします。 |
-| **Code Owners からのレビューを必須化** | 延期 | 2 人目のメンテナーが加わる前にこれを有効化すると、単独メンテナーの PR がデッドロックする可能性があります。 |
-| **最新のレビュー可能なプッシュの承認を必須化** | ✅ | 最後にプッシュされたコミットが承認を持つ必要があります。 |
-| **会話の解決を必須化** | ✅ | 未解決のレビュースレッドがマージをブロックします。 |
-| **ステータスチェックの合格を必須化** | ✅ | CI ワークフロー + Scorecard + CodeQL + pip-audit。 |
-| **必須ステータスチェック** | 現行のコアチェック | 必須リストは最新のグリーンなリリースコミットから更新されます。 |
-| **ブランチを最新状態に保つことを必須化** | ✅ | 古いマージによるリグレッションを防ぎます。 |
-| **署名付きコミットを必須化** | 推奨 | ローカルのリリースコミットは署名されています。完全な強制は、コントリビューターのオンボーディング文書が SSH/GPG セットアップを記述するまで待ちます。 |
-| **線形履歴を必須化** | ✅ | 単一線の公開履歴を理解可能に保ちます。 |
-| **force-push をブロック** | ✅ | `main` 上での履歴の書き換えをブロックします。 |
-| **削除を許可** | ❌ | `main` ブランチは削除できません。 |
+| `quality / <os> / py<ver>`（10） | `ci.yml`、ジョブ `quality` | プルリクエストがコードまたは設定のパスに触れると、`ci.yml` が実行されます。ドキュメントのみのプルリクエストでは、`ci-docs-stub.yml` が同じコンテキストを報告します。 |
+| `coverage` | `ci.yml`、ジョブ `coverage` | `quality` と同じです。 |
+| `Require Signed-off-by` | `dco.yml`、ジョブ `dco` | そのプルリクエストトリガーには `paths` フィルターがないため、`main` へのすべてのプルリクエストで実行されます。 |
 
-## 単独メンテナーの制約
+プレリリースのセル `quality / ubuntu-latest / py3.15` は、`continue-on-error` 付きで `ci.yml` 内で実行され、必須ではありません。CodeQL、Scorecard、pip-audit を含むその他のワークフローはステータスを報告することがありますが、そのコンテキストがこのリストに追加されない限り、その結果がマージをゲートすることはありません。
 
-GitHub では、リポジトリのファイルが人手によるレビュー履歴を作成することはできません。そのためリポジトリは、現在のメンテナーモデルに対してデッドロックを起こさない最も強力なブランチ保護を適用します。すなわち、1 件の承認レビュー、古いレビューの破棄、最新プッシュの承認、会話の解決、ステータスチェック、線形履歴、そしてブランチ削除や force-push の禁止です。2 人目のメンテナーが加わると、CODEOWNERS レビューと 2 名のレビュアー最低要件がより強力な設定になります。
+## メンテナーによる保留中の変更
 
-## ステータスチェックの要件
+メンテナーは、次の 25 のコンテキストを必須リストに追加する予定です。各ワークフローのヘッダーはそのジョブを必須チェックとして宣言しており、そのプルリクエストトリガーには `paths` フィルターがないため、`main` へのすべてのプルリクエストで実行されます。コンテキストが追加されるまでは、そのコンテキストでの失敗はマージをブロックしません。
 
-上記で宣言された 4 つのハードゲーティングのステータスチェック：
+`clean-install-gate.yml`、7 つのコンテキスト:
 
-- **`ci`** — 完全なテストマトリクス + ruff + mypy + bandit + Trivy + 解決済み依存ツリーに対する pip-audit
-- **`Scorecard`** — チェックごとのリグレッションなしの OpenSSF Scorecard 実行
-- **`CodeQL`** — `python` + `actions` 向けの `security-extended` クエリパック
-- **`pip-audit`** — 解決済み依存ツリーに対する週次 + PR ごとの脆弱性スキャン
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-その他のワークフローはステータスを報告できますが、必須チェックリストに昇格されない限り、その結果はマージをゲーティングしません。
+`harness-matrix.yml`、17 のコンテキスト。ジョブのマトリクス内のアダプターごとに 1 つの `matrix (<adapter>)` です:
 
-## 監査のリズム
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
 
-このファイルはすべてのセキュリティ監査時、およびすべてのリリースエンジニアリングのチェックポイントで見直されます。このファイルと実際のブランチ保護設定との間のドリフトは、高重大度の発見事項です。
+`installer-lint.yml`、1 つのコンテキスト:
+
+```text
+installer-lint
+```
+
+`harness-matrix.yml` のコンテキストが必須になった後は、新しいアダプターを登録すると `matrix (<adapter>)` コンテキストが追加され、同じ変更で必須リストにもそれが加わります。「マージ前にブランチを最新の状態にすることを必須にする」はオフのままです。保留中の変更を適用したときは、同じ変更でそれを上記の現行設定のセクションへ移してください。
+
+## 監査の周期
+
+このファイルは、すべてのセキュリティ監査時と、すべてのリリースエンジニアリングのチェックポイントで見直されます。このファイルと実際のブランチ保護設定との間のドリフトは、高重大度の発見事項です。現行の設定は、次のコマンドで読み取ります。
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## 参考資料
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — パススコープのレビュー所有権
-- `rules/production-ready-prs.md` §1 — このルールセットが強制する同一変更セットの規律
+- [OpenSSF Scorecard — Branch-Protection チェック](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — 保護されたブランチについて](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — ブランチ保護ルールを管理する](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — 必須レビューのあるプルリクエストを承認する](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — パス単位のレビュー所有権
+- [Apothem CI ワークフロー](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — 各必須コンテキストの出どころとなるワークフロー
+- `rules/production-ready-prs.md` §1 — この保護が強制する同一変更セットの規律

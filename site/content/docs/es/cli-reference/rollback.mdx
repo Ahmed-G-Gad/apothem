@@ -2,11 +2,11 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "95a26e667a1ea20a"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Restaura un harness al estado anterior a su instalación registrada.
+Restaura un entorno al estado anterior a su instalación registrada.
 
 ## Sinopsis
 
@@ -17,19 +17,68 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-`rollback` reconstruye los bytes previos a la instalación de cada harness seleccionado a partir de la raíz de copias de seguridad de Apothem. Resuelve la instalación registrada — la más reciente por defecto, o la indicada por `--install-id` —, restaura cada copia de seguridad que esa instalación capturó y luego añade un registro `rollback` al historial del harness.
+`rollback` devuelve cada entorno seleccionado al estado en el que estaba antes
+de la pasada de instalación registrada: la más reciente por defecto, o la
+indicada por `--install-id`. Al recorrer el registro de esa instalación en el
+libro mayor, empezando por el cambio más reciente, el comando:
 
-Se solicita confirmación por cada harness a menos que se proporcione `--yes`. `--install-id` y `--last` seleccionan la instalación y son mutuamente excluyentes.
+- restaura cada archivo y cada directorio que la instalación sobrescribió a
+  partir de la copia de seguridad que la instalación capturó, en su ruta
+  registrada (un directorio que la instalación reemplazó se restaura
+  exactamente, sin los archivos que la instalación agregó en él);
+- elimina cada archivo y cada directorio que la instalación creó, y devuelve a
+  su lugar cualquier ruta de la estructura heredada que la instalación barrió;
+- elimina los almacenes de datos compartidos (`memory`, `contexts`, `learning`)
+  que la instalación creó, a menos que otro entorno instalado todavía los use;
+- elimina los directorios que la instalación creó, una vez que están vacíos.
+
+Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
+de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede
+a su vez deshacerse a mano. A continuación, rollback agrega un registro
+`rollback` al libro mayor del entorno. Revertir una instalación anterior
+restaura o elimina solo los destinos que esa instalación anterior registró, y
+descarta cada instalación posterior de las instalaciones activas del libro mayor
+en esa misma raíz. Los archivos que una instalación posterior agregó fuera de
+esos destinos se mantienen en su lugar.
+
+El libro mayor conserva los 10 registros de instalación más recientes por raíz
+de instalación (con las copias de seguridad a las que hacen referencia); una
+instalación más antigua ya no puede revertirse por id e informa
+`rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/backups)
+reduce ese límite a petición, y nunca elimina la copia de seguridad desde la
+cual restaura la instalación más reciente.
+
+Los registros escritos por un lanzamiento de Apothem anterior a que se agregara
+este comportamiento no indican qué archivos creó la instalación; revertir uno de
+esos registros restaura solo los archivos sobrescritos.
+
+Se solicita confirmación por cada entorno, a menos que se proporcione `--yes`.
+Cuando no es posible mostrar una solicitud —`--format json` (el texto de la
+solicitud corrompería el único documento JSON) o una shell no interactiva (sin
+TTY)—, el comando se niega de antemano con un error estructurado
+`rollback.confirmation_required` (código de salida 1), a menos que se
+proporcione `--yes`. `--install-id` y `--last` seleccionan la pasada de
+instalación y son mutuamente excluyentes.
+
+Una reversión con `--harness all` es exhaustiva de forma deliberada: abarca cada
+entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
+durante la instalación — restaurar el estado previo a la instalación es una
+operación de limpieza, así que alcanza los registros que una instalación
+anterior de mayor alcance pueda haber dejado. Un entorno sin ninguna instalación
+registrada falla como una fila `"outcome": "error"` en `results` (consulta la
+salida JSON), y la ejecución continúa con los demás entornos. Después el comando
+termina con el código 1, o con el 2 cuando se revirtió al menos un destino de
+otro entorno.
 
 ## Opciones
 
 | Opción | Descripción |
 |---|---|
-| `--harness NAME` | Adaptador de harness a revertir, o `all` para el conjunto de todo el registro (obligatorio). |
-| `--install-id ULID` | Revierte la instalación indicada. Por defecto, la última instalación registrada. |
-| `--last` | Revierte la última instalación registrada (la opción por defecto; la forma explícita). Mutuamente excluyente con `--install-id`. |
-| `--yes` | Omite la solicitud de confirmación por harness. |
-| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. Obligatorio cuando el conjunto seleccionado incluye adaptadores con alcance de proyecto. |
+| `--harness NAME` | Adaptador de entorno que se revierte, o `all` para el conjunto de todo el registro (obligatorio). |
+| `--install-id ULID` | Revierte la pasada de instalación indicada. Por defecto, la instalación registrada más reciente. |
+| `--last` | Revierte la instalación registrada más reciente (el valor por defecto, en su forma explícita). Mutuamente excluyente con `--install-id`. |
+| `--yes` | Omite la solicitud de confirmación por entorno. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Obligatoria cuando el conjunto seleccionado incluye adaptadores con alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
 | `--format plain\|json` | Formato de salida (por defecto: `plain`). |
@@ -41,6 +90,7 @@ Se solicita confirmación por cada harness a menos que se proporcione `--yes`. `
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "rollback",
   "action": "rolled_back",
@@ -55,7 +105,16 @@ Se solicita confirmación por cada harness a menos que se proporcione `--yes`. `
 }
 ```
 
-Cada destino restaurado aparece en `results` con `"operation": "rollback"` y un `outcome` de `created` o `updated` (y en `files_written`). Un destino que la instalación creó desde cero — sin bytes previos que restaurar — se informa con `"outcome": "skipped"`; una restauración fallida es `"outcome": "error"`. Cuando no existe ningún registro de instalación coincidente, el comando informa un error `rollback.no_record` con `"status": "error"`.
+Cada destino restaurado o eliminado aparece en `results` con
+`"operation": "rollback"` y un `outcome` de `created` o `updated` (y en
+`files_written`); el `message` indica si la ruta se restauró o se eliminó. Una
+restauración fallida (por ejemplo, una copia de seguridad que se borró) es
+`"outcome": "error"`. Una instalación que no registró cambios se informa con
+`"outcome": "skipped"`. Cuando no existe ningún registro de instalación
+coincidente para un único entorno indicado por su nombre, el comando informa un
+error `rollback.no_record` con `"status": "error"`. Con `--harness all`, en
+cambio, un entorno sin ningún registro coincidente es una fila
+`"outcome": "error"` en `results`.
 
 ## Ejemplos
 
@@ -69,13 +128,14 @@ apothem rollback --harness cursor --project . --last --json
 
 | Código | Significado |
 |---|---|
-| 0 | Revertido correctamente, o nada que restaurar (la instalación no capturó copias de seguridad) |
-| 1 | Error esperado — sin registro de instalación, selectores en conflicto, harness desconocido, raíz del proyecto ausente o confirmación abortada |
-| 2 | Restauración parcial tras revertir al menos un destino |
+| 0 | Revertido correctamente, o nada que revertir (la instalación no registró cambios) |
+| 1 | Error esperado: no hay registro de instalación, selectores en conflicto, entorno desconocido, raíz del proyecto ausente, o confirmación rechazada o no disponible (modo no interactivo o JSON sin `--yes`) |
+| 2 | Resultado parcial: se revirtió al menos un destino y también se registró un fallo (una restauración fallida o, con `--harness all`, un entorno sin registro de instalación) |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
-- [apothem install](/docs/cli-reference/install) — instala una configuración de harness
+- [apothem install](/docs/cli-reference/install) — instala una configuración de entorno
 - [apothem update](/docs/cli-reference/update) — reinstala a partir del perfil compartido actual
-- [apothem uninstall](/docs/cli-reference/uninstall) — elimina una configuración de harness
-- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, verificación y deriva
+- [apothem uninstall](/docs/cli-reference/uninstall) — elimina una configuración de entorno
+- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de desviación

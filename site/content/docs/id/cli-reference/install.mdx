@@ -2,56 +2,146 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "71088e5120c4f3ba"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Memasang konfigurasi adapter asisten-pengkodean dari profil bersama.
+Memasang konfigurasi adapter harness dari profil bersama.
 
 ## Ringkasan
 
 ```
 apothem install --harness NAME|all [--profile PATH] [--dry-run]
-                 [--project PATH]
+                 [--clean|--fresh] [--yes] [--project PATH]
                  [--quiet|-q] [--verbose|-v]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-Memuat dan memvalidasi profil bersama, memilih adapter bernama atau set `all` selingkup-registri, memvalidasi rencana materialisasi, dan menulis konfigurasi asli asisten-pengkodean beserta kohort pendukung. Adapter berlingkup-proyek memerlukan `--project PATH`.
+Memuat dan memvalidasi profil bersama, memilih adapter bernama atau himpunan
+`all` selingkup registri, memvalidasi rencana materialisasi, lalu menulis
+konfigurasi native-harness beserta kohor pendukung. Adapter berlingkup-proyek
+memerlukan `--project PATH`.
 
-Alias bentuk-kontinu `apothem installing` di-resolve ke handler yang sama.
+Alias bentuk-kontinu `apothem installing` (juga diterima sebagai
+`apothem Installing`) di-resolve ke handler yang sama.
+
+## Eksekusi pertama tanpa profil
+
+Ketika `--profile` dihilangkan dan tidak ada profil di jalur default
+(`~/.config/apothem/profile.yaml`), `install` terlebih dahulu menulis profil
+awal di sana, mencetak `Created a starter profile at <path>`, lalu melanjutkan.
+Profil awal membawa bidang identitas placeholder, sehingga pemasangan juga
+mencetak catatan identitas-placeholder; personalisasikan profil, lalu jalankan
+[`update`](/docs/cli-reference/update) untuk menerapkannya. Di bawah `--json`,
+pembuatan ini dilaporkan sebagai entri `warnings` dengan
+`"operation": "profile_created"`.
+
+- `--dry-run` tidak pernah menulis profil: pratinjau menggunakan profil awal di
+  memori dan melaporkan `"operation": "profile_scaffold_preview"`.
+- `--profile PATH` eksplisit yang tidak ada tidak pernah dibuat; perintah keluar
+  dengan kode 1 disertai `profile.not_found`.
 
 ## Pratinjau radius-dampak
 
-`install --harness all` mengembang ke lingkup campuran: adapter berlingkup-proyek menulis di bawah root `--project` yang disediakan, sedangkan adapter berlingkup-pengguna menulis di bawah direktori home Anda — di luar root tersebut. Sebelum berkas apa pun ditulis, perintah ini mencetak target konkret yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan yang berada di bawah direktori home Anda.
+`install --harness all` menyebar ke cakupan campuran: adapter berlingkup-proyek
+menulis di bawah root `--project` yang diberikan, sedangkan adapter
+berlingkup-pengguna menulis di bawah direktori home Anda — di luar root
+tersebut. Sebelum berkas apa pun ditulis, perintah ini mencetak target konkret
+yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan
+yang berada di bawah direktori home Anda.
 
-Ketika pilihan menulis di luar root proyek, sebuah konfirmasi interaktif menjaga penulisan yang berakar di home. `--yes`, shell non-interaktif (tanpa TTY), `--dry-run`, dan `--format json` masing-masing melanjutkan tanpa bertanya; `--dry-run` dan `--format json` tidak menulis apa pun. Menolak prompt akan membatalkan sebelum berkas apa pun ditulis.
+Ketika pilihan tersebut menulis di luar root proyek, sebuah konfirmasi
+interaktif menjaga penulisan yang berakar di direktori home. `--yes`, shell
+non-interaktif (tanpa TTY), `--dry-run`, dan `--format json` masing-masing
+melanjutkan tanpa meminta konfirmasi. Hanya `--dry-run` yang tidak menulis apa
+pun; `--format json` melewati pratinjau dan prompt konfirmasi tetapi tetap
+melakukan penulisan. Menolak prompt direktori home membatalkan proses sebelum
+pemasangan menulis. Dengan `--clean`, langkah awal bersih dijalankan lebih dulu
+di bawah konfirmasi per target tersendiri: langkah itu menulis cadangan di bawah
+`~/.apothem/backups` dan menghapus target yang dikonfirmasinya. Penghapusan
+tersebut dan cadangannya tetap berada di tempatnya ketika prompt pemasangan
+ditolak.
 
 ## Catatan kemampuan
 
-Setiap adapter hanya memproyeksikan kemampuan yang didukung secara asli oleh asisten-pengkodeannya; kemampuan tanpa permukaan asli dilaporkan, bukan dibuang secara diam-diam. Dalam mode plain ini berupa satu catatan terkelompok per asisten-pengkodean (misalnya `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`); di bawah `--verbose` setiap kemampuan mencetak baris alasannya sendiri. Amplop `--format json` selalu membawa array `warnings` lengkap terlepas dari tingkat verbositas.
+Setiap adapter hanya memproyeksikan kemampuan yang didukung secara native oleh
+harness-nya; kemampuan tanpa permukaan native dilaporkan, bukan dibuang
+diam-diam. Dalam mode plain, ini berupa satu catatan terkelompok per harness
+(misalnya `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
+di bawah `--verbose`, setiap kemampuan mencetak baris alasannya sendiri.
+Peringatan adapter lainnya juga dicetak pada baris `Warning:` tersendiri dalam
+mode plain, misalnya peringatan Zed yang menyebutkan berkas instruksi yang
+disembunyikan oleh `.rules` yang baru. Amplop `--format json` selalu membawa
+larik `warnings` lengkap terlepas dari tingkat verbositas.
+
+Perintah install dan update juga mencetak pemberitahuan sebagai baris `Note:`.
+Sebuah pemberitahuan tidak pernah mengubah apa yang ditulis pemasangan. Ketika
+sebuah pemasangan menulis root bersama, yaitu jalur yang juga dimuat oleh alat
+lain (misalnya folder skill `~/.agents/skills/`), catatan tersebut menyebutkan
+alat-alat itu. Ketika sebuah pemasangan menargetkan alat yang sudah memuat
+konten Apothem dari root bersama milik pemasangan lain, catatan tersebut
+menyebutkan pemasangan itu. Dalam amplop `--format json`, setiap pemberitahuan
+adalah entri `warnings` dengan `"outcome": "advisory"` dan
+`"operation": "shared_root"`.
+
+Server MCP pada profil mendapatkan tiga pemberitahuan, masing-masing
+menyebutkan bidang profil yang bersangkutan:
+
+| Operasi | Kondisi | Perbaikan |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse` (spesifikasi MCP menyatakan HTTP+SSE usang) | Gunakan `streamable-http` ketika server mendukungnya. |
+| `mcp_plain_http` | URL `http://` ke host yang bukan loopback | Gunakan URL `https://`. |
+| `mcp_literal_credential` | nilai `headers` atau `env` yang berbentuk seperti token (`ghp_`, `github_pat_`, `sk-`, `xox*-`, atau `Bearer` dengan token panjang) | Simpan rahasia dalam variabel lingkungan dan tulis referensi bergaya `${GITHUB_TOKEN}`. |
+
+Pemberitahuan kredensial tidak pernah mencetak nilai yang ditemukannya. Nilai
+yang berisi referensi `${...}` tidak pernah ditandai.
+
+## Konfigurasi operator dengan komentar
+
+Beberapa konfigurasi harness adalah berkas yang juga Anda sunting, seperti
+`settings.json`, `opencode.json` (yang mungkin berupa JSONC), `openclaw.json`
+(JSON5), dan `config.yaml`. Pemasangan menggabungkan kuncinya ke dalam
+berkas-berkas ini dan mempertahankan setiap kunci yang Anda tambahkan.
+
+Penggabungan menulis ulang berkas sebagai JSON atau YAML biasa, yang akan
+membuang komentar, koma di akhir, dan sintaks JSON5. Oleh karena itu:
+
+- Ketika penggabungan tidak akan mengubah nilai apa pun (misalnya, Anda sudah
+  menambahkan sendiri kunci-kunci Apothem), berkas dibiarkan apa adanya, byte
+  demi byte.
+- Ketika penggabungan harus mengubah sebuah nilai dalam berkas yang membawa
+  komentar atau sintaks JSON5, atau dalam berkas yang sama sekali tidak dapat
+  di-parse, pemasangan tidak menulis apa pun untuk harness tersebut dan keluar
+  dengan kode 1 serta kode galat `config.unparseable`. Bidang `fix` menyebutkan
+  kunci yang akan ditambahkan pemasangan, sehingga Anda dapat mengonversi
+  berkas ke JSON atau YAML biasa, atau menambahkan kunci tersebut secara manual
+  lalu menjalankan ulang.
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter asisten-pengkodean yang akan dipasang, atau `all` untuk set selingkup-registri (wajib). Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
-| `--profile PATH` | Path ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
-| `--dry-run` | Pratinjau pemasangan tanpa menulis berkas. |
-| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. |
-| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
-| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan, bukan catatan terkelompok per asisten-pengkodean. |
+| `--harness NAME` | Adapter harness yang akan dipasang, atau `all` untuk himpunan selingkup registri (wajib). Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
+| `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Mempratinjau pemasangan tanpa menulis berkas. |
+| `--clean`, `--fresh` | Awal bersih opt-in: mencadangkan dan menghapus keadaan pemasangan per-harness sebelumnya sebelum memasang. |
+| `--yes` | Melewati konfirmasi per target selama penghapusan awal bersih (wajib untuk eksekusi `--clean` non-interaktif). |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan alih-alih catatan terkelompok per harness. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
-| `--json` | Singkatan dari `--format json`. |
-| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
 | `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ## Keluaran JSON
 
-Ketika `--json` (atau `--format json`) diberikan, satu dokumen JSON ditulis ke stdout:
+Ketika `--json` (atau `--format json`) diberikan, satu dokumen JSON ditulis ke
+stdout:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -66,10 +156,15 @@ Ketika `--json` (atau `--format json`) diberikan, satu dokumen JSON ditulis ke s
 }
 ```
 
-Untuk `--dry-run`:
+Untuk `--dry-run`, tidak ada yang ditulis dan `results` mencantumkan setiap
+jalur yang akan ditulis pemasangan, masing-masing dengan hasil yang akan
+diperolehnya (`created`, `updated`, atau `unchanged`) dan, untuk berkas yang
+juga Anda sunting, diff terpadu di `detail.diff` — rencana yang sama dengan yang
+ditampilkan [`apothem diff`](/docs/cli-reference/diff):
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -81,10 +176,37 @@ Untuk `--dry-run`:
 }
 ```
 
-Error validasi yang diharapkan menggunakan amplop yang sama dan menyertakan objek error:
+Ketika `--clean` diberikan, amplop juga membawa objek `clean` yang menjelaskan
+fase penghapusan — daftar disposisi per target, apakah eksekusi tersebut
+merupakan pratinjau, dan direktori cadangan bercap waktu (`null` dalam dry
+run):
 
 ```json
 {
+  "clean": {
+    "dry_run": true,
+    "backup_dir": null,
+    "targets": [
+      {
+        "path": "C:\\Users\\Example\\.claude",
+        "present": true,
+        "removed": false,
+        "skipped_reason": null
+      }
+    ]
+  }
+}
+```
+
+Dry run awal bersih mempratinjau kedua fase dalam satu dokumen: pratinjau
+penghapusan di bawah `clean` dan pratinjau penulisan baru di bawah `results`.
+
+Galat validasi yang diharapkan menggunakan amplop yang sama dan menyertakan
+objek galat:
+
+```json
+{
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",
@@ -92,7 +214,7 @@ Error validasi yang diharapkan menggunakan amplop yang sama dan menyertakan obje
   "error": {
     "code": "project.required",
     "field": "project",
-    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
     "fix": "Pass --project PATH or select only user-scope harnesses."
   }
 }
@@ -114,12 +236,13 @@ apothem installing --harness claude-code   # lowercase variant
 | Kode | Arti |
 |---|---|
 | 0 | Adapter berhasil dipasang atau dry-run direncanakan dengan bersih |
-| 1 | Error validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
-| 2 | Materialisasi batch sebagian setelah setidaknya satu penulisan |
+| 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
+| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
 - `apothem installing` — alias bentuk-kontinu untuk perintah ini (didokumentasikan di sini; CLI menerima kedua bentuk)
-- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah asisten-pengkodean
+- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah harness
 - [apothem verify](/docs/cli-reference/verify) — memastikan adapter aktif
 - [Memulai](/docs/install) — panduan pemasangan lengkap

@@ -1,8 +1,8 @@
 ---
 title: "Kiro"
-description: "Adaptador de ferramenta do Apothem para o Kiro (GA)."
+description: "Adaptador de harness do Apothem para o Kiro (GA)."
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,8 +18,7 @@ apothem install --harness kiro --project /path/to/project
 ```
 
 O adaptador grava um arquivo de direcionamento (steering) do Kiro com escopo de
-projeto a partir das regras compartilhadas do Apothem e da superfície de
-governança.
+projeto a partir da superfície compartilhada de regras e governança do Apothem.
 
 **Arquivos gravados:** `<project>/.kiro/steering/apothem-rules.md`
 
@@ -27,18 +26,23 @@ governança.
 
 O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de
 direcionamento do projeto a cada execução de `apothem install` ou
-`apothem update`. O perfil compartilhado é a fonte da verdade; as edições locais do
-projeto no arquivo gerado são copiadas em backup antes de a próxima sincronização
-substituir o conteúdo gerenciado pelo Apothem.
+`apothem update`. O perfil compartilhado é a fonte da verdade; as edições locais
+do projeto no arquivo gerado recebem backup antes que a próxima sincronização
+substitua o conteúdo gerenciado pelo Apothem.
+
+O arquivo começa com seu front matter `inclusion: always`, porque o Kiro exige
+que a configuração de inclusão seja o primeiro conteúdo do arquivo. O bloco
+gerenciado pelo Apothem vem em seguida; o texto que você adiciona depois do
+bloco é mantido a cada sincronização.
 
 ## Notas de compatibilidade
 
-A superfície de direcionamento do Kiro tem escopo de projeto em `.kiro/steering/`.
-O adaptador grava um arquivo de direcionamento dedicado `apothem-rules.md` com o
-front matter `inclusion: always` e nunca sobrescreve os arquivos de base escritos
-pelo operador do Kiro (`product.md`, `tech.md`, `structure.md`). As especificações
-do Kiro (`.kiro/specs/`) e os ganchos (hooks) de assistentes pertencem ao operador;
-o Apothem não os grava.
+A superfície de direcionamento do Kiro tem escopo de projeto sob
+`.kiro/steering/`. O adaptador grava um arquivo de direcionamento dedicado
+`apothem-rules.md` com o front matter `inclusion: always` e nunca sobrescreve os
+arquivos de base do Kiro redigidos pelo operador (`product.md`, `tech.md`,
+`structure.md`). As especificações (specs) do Kiro (`.kiro/specs/`) e os hooks
+de agente pertencem ao operador; o Apothem não os grava.
 
 ## Verificação
 
@@ -49,7 +53,9 @@ apothem verify --harness kiro --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -58,8 +64,8 @@ O comando verify confirma que:
 apothem update --harness kiro --project /path/to/project
 ```
 
-Rederiva o arquivo de direcionamento do projeto a partir do estado atual do perfil
-compartilhado.
+Deriva novamente o arquivo de direcionamento do projeto a partir do estado atual
+do perfil compartilhado.
 
 ## Desinstalação
 
@@ -67,10 +73,14 @@ compartilhado.
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem, e o front matter que o Apothem gravou acima dele, de
+`<project>/.kiro/steering/apothem-rules.md` e mantém qualquer outro texto nele.
+O arquivo só é excluído quando nada mais resta nele. Antes da alteração, uma
+cópia do arquivo com carimbo de data e hora é salva sob `~/.apothem/backups/`;
+nenhum arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e
+o motor do Apothem não são afetados.
 
-## Portão de conformidade
+## Conformity gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -80,12 +90,18 @@ python -m apothem.conformity.gate --all .
 
 | Sintoma | Correção |
 |---------|-----|
-| Arquivo de configuração não encontrado | Reexecute `apothem install --harness kiro --project /path/to/project` |
-| Verificação falhou | Execute `apothem update --harness kiro --project /path/to/project` e verifique novamente |
-| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness kiro --project /path/to/project` |
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness kiro --project /path/to/project` |
+| Falha na verificação | Execute `apothem update --harness kiro --project /path/to/project` e depois verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness kiro --project /path/to/project` |
 
-## Botões de configuração
+## Ajustes de configuração
 
 | Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
+
+## Veja também
+
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

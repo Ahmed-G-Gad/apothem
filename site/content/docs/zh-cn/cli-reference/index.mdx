@@ -1,32 +1,58 @@
 ---
 title: "CLI 参考"
-description: "Apothem CLI 参考——apothem 命令行界面的每命令概要、选项和退出码。"
+description: "Apothem CLI 参考——apothem 命令行界面中每个命令的概要、选项和退出码。"
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`apothem` 命令行界面从共享配置文件管理harness适配器配置。下面每个页面记录一个子命令：其概要、选项、行为和退出码。
+`apothem` 命令行界面根据共享配置档案管理工具适配器配置。下面的每个页面记录一个子命令：它的概要、选项、行为和退出码。
 
-`install`、`update` 和 `uninstall` 各自还接受一个连续式别名（`installing`、`updating`、`uninstalling`），在标志和行为上与基础命令完全相同。通过安装渠道——Claude Code 插件、`npx` 和一次性安装脚本——进行更新和卸载，记录在 [更新](/docs/install/updating) 和 [卸载](/docs/install/uninstalling) 安装指南中，而不是由别名本身记录。
+`install`、`update` 和 `uninstall` 各自还接受一个连续式别名（`installing`、`updating`、`uninstalling`），它在标志和行为上与基础命令完全相同。通过各安装渠道——Claude Code 插件、`npx` 以及一键安装脚本——进行更新和卸载，记录在[更新](/docs/install/updating)和[卸载](/docs/install/uninstalling)这两份安装指南中，而不是由这些别名本身记录。
 
 ## 命令
 
 | 命令 | 描述 |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | 引导式首次运行：确保有配置文件，预览写入，然后安装。 |
-| [install](/docs/cli-reference/install) | 从共享配置文件安装某个harness适配器配置（别名：`installing`）。 |
-| [update](/docs/cli-reference/update) | 从当前共享配置文件重新安装某个harness适配器配置（别名：`updating`）。 |
-| [uninstall](/docs/cli-reference/uninstall) | 移除某个harness适配器配置（别名：`uninstalling`）。 |
-| [rollback](/docs/cli-reference/rollback) | 将某个harness恢复到其记录的安装之前的状态。 |
-| [verify](/docs/cli-reference/verify) | 校验某个harness适配器安装。 |
-| [status](/docs/cli-reference/status) | 报告每个已注册harness的安装、校验和漂移状态。 |
-| [diff](/docs/cli-reference/diff) | 预览单个harness的待定配置更改。 |
-| [harnesses](/docs/cli-reference/harnesses) | 列出并查看已注册的harness适配器。 |
-| [profile](/docs/cli-reference/profile) | 管理共享的 Apothem 配置文件。 |
-| [doctor](/docs/cli-reference/doctor) | 运行 Apothem 安装的系统诊断。 |
-| [completion](/docs/cli-reference/completion) | 输出可 source 的 shell 补全脚本（bash、zsh、fish、powershell）。 |
+| [quickstart](/docs/cli-reference/quickstart) | 引导式首次运行：确保存在配置档案，预览写入内容，然后安装。 |
+| [install](/docs/cli-reference/install) | 从共享配置档案安装一个工具适配器配置（别名：`installing`）。 |
+| [update](/docs/cli-reference/update) | 从当前的共享配置档案重新安装一个工具适配器配置（别名：`updating`）。 |
+| [uninstall](/docs/cli-reference/uninstall) | 移除一个工具适配器配置（别名：`uninstalling`）。 |
+| [rollback](/docs/cli-reference/rollback) | 将一个工具恢复到其已记录的安装之前的状态。 |
+| [backups](/docs/cli-reference/backups) | 清理 Apothem 保留的安装备份和账本历史（`backups prune`）。 |
+| [verify](/docs/cli-reference/verify) | 验证一个工具适配器的安装。 |
+| [status](/docs/cli-reference/status) | 报告每个已注册工具的安装、验证和漂移状态。 |
+| [diff](/docs/cli-reference/diff) | 预览单个工具待应用的配置更改。 |
+| [harnesses](/docs/cli-reference/harnesses) | 列出并检查已注册的工具适配器。 |
+| [profile](/docs/cli-reference/profile) | 管理共享的 Apothem 配置档案。 |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | 将旧有的按工具划分的工作区迁移到共享的 `.apothem` 布局中。 |
+| [doctor](/docs/cli-reference/doctor) | 为 Apothem 安装运行系统诊断。 |
+| [completion](/docs/cli-reference/completion) | 输出一个可被 source 的 shell 补全脚本（bash、zsh、fish、powershell）。 |
 
-有关斜杠命令和更高层的 CLI 概览，请参阅
-[CLI 概览](/docs/reference/cli) 和 [斜杠命令](/docs/reference/commands)
-参考页面。
+## JSON 输出契约
+
+每个命令都接受 `--json`（`--format json` 的简写），随后向 stdout 写入恰好一个 JSON 文档。每个文档都以一个顶层 `schema_version` 键开头，它是一个整数，目前为 `1`：
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **稳定性。** 在同一个 `schema_version` 内，变更是追加式的：可以出现新键，但不会有任何键被重命名或移除，也不会有任何值改变类型。任何其他变更都会提升 `schema_version`。
+- **带版本的工件。** `profile show --json` 输出的是配置档案本身，因此它的 `schema_version` 是配置档案的模式版本（目前同样为 `1`）。
+- **一个例外。** `harnesses list --json` 一如既往地输出一个 JSON 数组（每个工具一个对象），因此它没有可承载版本的顶层键。将它包装在一个对象中会破坏现有的解析器；在某次版本提升做出这一改变之前，将它的形状视为 `schema_version` `1`。
+- **错误。** 预期内的失败使用相同的文档形状，带有 `"status": "error"` 以及一个携带 `code`、`field`、`reason` 和 `fix` 的 `error` 对象。
+
+## 退出码
+
+每个命令都使用同一小组退出码；每个页面列出该命令可能返回的退出码。
+
+| 代码 | 含义 |
+|---|---|
+| 0 | 成功 |
+| 1 | 预期内的失败：校验、配置档案、工具、项目或适配器错误 |
+| 2 | 部分结果：一个批处理在失败之前已写入或移除了某些内容（仅限页面中列出此代码的命令） |
+| 64 | 用法错误：未知的选项或命令、缺失的必需选项，或无效的选项值 |
+
+用法错误绝不会触及文件系统。在 `--json`（或 `--format json`）下，它会打印一个带有 `"code": "cli.usage"` 的错误文档，而不是纯文本的用法说明，因此自动化流程可以将输错的标志与部分写入区分开来。
+
+有关斜杠命令和更高层级的 CLI 概览，请参阅 [CLI 概览](/docs/reference/cli)和[斜杠命令](/docs/reference/commands)参考页面。

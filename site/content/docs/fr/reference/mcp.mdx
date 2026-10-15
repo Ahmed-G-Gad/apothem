@@ -1,24 +1,55 @@
 ---
 title: "Serveurs MCP"
-description: "Configuration des serveurs Model Context Protocol — propriété de l'opérateur et enregistrés via le mécanisme MCP natif de chaque outil ; Apothem synchronise l'inventaire depuis le profil partagé mais n'écrit aucune entrée de serveur."
+description: "Configuration des serveurs Model Context Protocol — propriété de l'opérateur et enregistrés via le mécanisme MCP natif de chaque outil ; quelques adaptateurs projettent l'inventaire MCP du profil partagé, les autres n'écrivent aucune entrée de serveur."
 machineTranslated: true
-sourceHash: "47fd8ec2c4c5bef7"
+sourceHash: "493b667087182d32"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Les serveurs Model Context Protocol (MCP) sont la **propriété de l'opérateur**.
-Apothem tient l'inventaire MCP dans le profil partagé et le projette dans la
-surface MCP native de chaque outil, mais n'écrit aucune entrée de serveur propre
-— la surface reste à votre charge.
+Apothem porte l'inventaire MCP dans le profil partagé (`mcp_servers`). Un
+adaptateur dont l'outil conserve ses serveurs MCP dans un fichier de
+configuration qu'Apothem écrit déjà projette cet inventaire dans ce fichier ;
+tous les autres adaptateurs n'écrivent aucune entrée de serveur, et
+l'enregistrement des serveurs via l'outil reste à votre charge.
+
+## Quels adaptateurs projettent l'inventaire
+
+Le tableau ci-dessous est généré à partir de la cellule de capacité
+`mcp_servers` du registre des environnements pour chaque adaptateur.
+
+{/* apothem:generated-reference:start */}
+
+| Harness | MCP inventory | Note |
+| --- | --- | --- |
+| Antigravity (`antigravity`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Claude Code (`claude-code`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| CodeBuddy (`codebuddy`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Codex (`codex`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Cursor (`cursor`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Gemini CLI (`gemini-cli`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| GitHub Copilot (`github-copilot`) | Not projected (unsupported) | Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them. |
+| GLM (Z.ai) (`glm`) | Not projected (unsupported) | GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface. |
+| Hermes (`hermes`) | Projected: written into the tool's MCP config | — |
+| Kimi Code (`kimi-code`) | Not projected (discovery-pending) | `.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries. |
+| Kiro (`kiro`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Open-Claw (`open-claw`) | Not projected (unsupported) | Open-Claw MCP lives in the mcp.servers config block managed via the openclaw mcp CLI; the adapter authors no entries. |
+| OpenCode (`opencode`) | Projected: written into the tool's MCP config | — |
+| Qwen Code (`qwen-code`) | Projected: written into the tool's MCP config | — |
+| Trae (`trae`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Windsurf (`windsurf`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Zed (`zed`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+
+{/* apothem:generated-reference:end */}
 
 ## Où les serveurs MCP s'enregistrent
 
 Chaque outil enregistre les serveurs MCP via son propre mécanisme natif, et
-Apothem respecte cette surface au lieu de l'écraser. Sur l'adaptateur Claude Code
-(l'un parmi beaucoup), les serveurs s'enregistrent avec `claude mcp add` dans
-`~/.claude.json` (portée utilisateur ou locale) et un `.mcp.json` au niveau du
-projet ; les autres adaptateurs projettent dans leurs propres surfaces natives.
-Les paramètres gérés par Apothem ne portent jamais de bloc `mcpServers`.
+Apothem respecte cette surface au lieu de l'écraser. Sur Claude Code, les
+serveurs s'enregistrent avec `claude mcp add` dans `~/.claude.json` (portée
+utilisateur ou locale) et dans un `.mcp.json` au niveau du projet ; l'adaptateur
+Claude Code n'écrit aucun de ces deux fichiers, et les paramètres Claude Code
+gérés par Apothem ne portent jamais de bloc `mcpServers`.
 
 ## Ajouter un serveur
 
@@ -36,8 +67,8 @@ canonique est une clé sous `mcpServers` :
 }
 ```
 
-Le runtime de l'outil charge les serveurs enregistrés au démarrage de la session ;
-redémarrez l'outil pour prendre en compte les nouveaux serveurs.
+Le runtime de l'outil charge les serveurs enregistrés au démarrage de la
+session ; redémarrez l'outil pour prendre en compte les nouveaux serveurs.
 
 ## Convention de nommage
 

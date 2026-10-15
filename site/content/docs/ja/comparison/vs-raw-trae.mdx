@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Trae 構成の比較"
 description: "Trae の .trae/rules/ 配下のルールを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ Trae は `.trae/rules/` ディレクトリからルールを読み取り、そ�
 
 | タスク | 手作業の構成 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| ルールを書く | `.trae/rules/` 配下の各ファイルを手書き | 共有コーパスからレンダリング |
-| Apothem の表面を分離して保つ | `project_rules.md` を過負荷にしないよう注意 | アダプターが専用の `apothem-rules.md` を書き込む |
-| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
-| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness trae` |
+| ルールを書く | `.trae/rules/` 配下の各ファイルを手で書く | 共有コーパスからレンダリング |
+| Apothem の表面を分離して保つ | `project_rules.md` を過負荷にしないよう注意する | アダプターが専用の `apothem-rules.md` を書き込む |
+| ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness trae --project <path>` |
 
 ## Apothem が管理するもの
 
@@ -30,11 +30,11 @@ trae アダプターは共有ルールを `.trae/rules/` 配下の専用の `apo
 
 ## 移行手順
 
-1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
-2. 既存の `.trae/rules/` ファイルのルールを共有コーパスへ移します。
-3. `apothem install --harness trae` を実行して `apothem-rules.md` ファイルをレンダリングします。
-4. `apothem verify --harness trae` を実行して構成が配置されたことを確認します。
-5. 以降の変更には毎回 `apothem update --harness trae` を使います。
+1. まだ作成していなければ、`apothem profile init` を実行して共有プロファイルを作成します。
+2. 既存の `.trae/rules/` ファイルのルールを、共有コーパスへ移します。
+3. `apothem install --harness trae --project <path>` を実行して、`apothem-rules.md` ファイルをレンダリングします。
+4. `apothem verify --harness trae --project <path>` を実行して、構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness trae --project <path>` を使います。
 
 ## 次に読む
 

@@ -1,110 +1,135 @@
 ---
 title: "Kimi Code"
-description: "Apothem harness adapter for Kimi Code (GA)."
+description: "Kimi Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "f8cfda1978e7aeae"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Moonshot
-**Install name:** `kimi-code`
-**Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**विक्रेता:** Moonshot
+**इंस्टॉल नाम:** `kimi-code`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** `<project>/AGENTS.md` तथा `<project>/.kimi-code/.apothem/support/`
 
-## Installation
+## इंस्टॉलेशन
 
 ```bash
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-The adapter writes the shared Apothem governance surface into the project-root
-`AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+अडैप्टर साझा Apothem शासन सतह को प्रोजेक्ट-रूट `AGENTS.md` में एक
+सेंटिनल-सीमांकित प्रबंधित ब्लॉक के रूप में लिखता है (सेंटिनलों के बाहर ऑपरेटर का
+गद्य संरक्षित रहता है) और गैर-नेटिव Markdown समूहों को
+`<project>/.kimi-code/.apothem/support/` पर Apothem-स्वामित्व वाले समर्थन वृक्ष के
+अंतर्गत रखता है। किसी प्रोजेक्ट की `AGENTS.md` फ़ाइल को Kimi Code के अलावा कई
+कोडिंग टूल पढ़ते हैं, इसलिए ब्लॉक प्रोजेक्ट-व्यापी मार्गदर्शन के रूप में लिखा
+जाता है, जो किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता।
 
-Kimi Code reads the project-root `AGENTS.md` instruction file following the
-universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+Kimi Code सार्वभौमिक AGENTS.md परिपाटी का पालन करते हुए प्रोजेक्ट-रूट `AGENTS.md`
+निर्देश फ़ाइल पढ़ता है, और प्रोजेक्ट कॉन्फ़िगरेशन `<project>/.kimi-code/` के
+अंतर्गत रहता है। `<project>/.kimi-code/mcp.json` सतह ऑपरेटर-स्वामित्व वाली है;
+Apothem उसे नामित करता है, लेकिन उसमें कोई प्रविष्टि नहीं लिखता।
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
-`<project>/.kimi-code/.apothem/support/`.
+**लिखी गई फ़ाइलें:** `<project>/AGENTS.md` (प्रबंधित ब्लॉक) और
+`<project>/.kimi-code/.apothem/support/` के अंतर्गत कमांड, स्किल, हुक, एजेंट, नियम,
+और टेम्पलेट समूह।
 
-## Profile-to-native-config mapping
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
-The adapter reads Apothem's shared profile and renders the project-root
-`AGENTS.md` instruction surface on every `apothem install` or `apothem update`
-run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और हर `apothem install` या
+`apothem update` रन पर प्रोजेक्ट-रूट `AGENTS.md` निर्देश सतह रेंडर करता है।
+व्यवहारगत नियम और शासन कॉर्पस `AGENTS.md` के प्रबंधित ब्लॉक में उतरते हैं; कमांड,
+स्किल, हुक, एजेंट, नियम, और टेम्पलेट समूह `.kimi-code/.apothem/support/` के
+अंतर्गत रखे जाते हैं और निर्देश सतह से संदर्भित किए जाते हैं। यह अडैप्टर का चुना
+हुआ लेआउट है, Kimi Code की कोई कमी नहीं: Kimi Code स्किल `.kimi-code/skills/` और
+`.agents/skills/` से, कस्टम एजेंट `.kimi-code/agents/` और `.agents/agents/` से, और
+हुक `~/.kimi-code/config.toml` में `[[hooks]]` ऐरे से लोड करता है, लेकिन वह उन्हें
+समर्थन वृक्ष से लोड नहीं करता, इसलिए वहाँ रखी Apothem प्रतियाँ वह संदर्भ सामग्री
+हैं जिसकी ओर `AGENTS.md` ब्लॉक इंगित करता है। ब्लॉक एक Apothem समर्थन फ़ाइल
+अनुभाग के साथ समाप्त होता है, जो प्रोजेक्ट रूट के सापेक्ष
+`.kimi-code/.apothem/support/` के अंतर्गत वह डायरेक्टरी बताता है जिसके सापेक्ष
+प्रत्येक रिपॉज़िटरी-शैली उद्धरण (`rules/<name>.md`, `templates/...`, `hooks/...`)
+हल होता है, ताकि कमिट की गई `AGENTS.md` फ़ाइल में कोई मशीन-विशिष्ट पथ न रहे।
+(Kimi Code का व्यवहार उसके अनुकूलन पृष्ठों
+[स्किल](https://moonshotai.github.io/kimi-code/en/customization/skills),
+[सबएजेंट](https://moonshotai.github.io/kimi-code/en/customization/agents), और
+[हुक](https://moonshotai.github.io/kimi-code/en/customization/hooks) के अनुसार,
+2026-10-02 को पढ़ा गया।)
 
-## Compatibility notes
+## संगतता टिप्पणियाँ
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+Kimi Code प्रोजेक्ट निर्देश `AGENTS.md` या `.kimi-code/AGENTS.md` से पढ़ता है और
+`.kimi-code/mcp.json` को ऑपरेटर-स्वामित्व वाली MCP सतह के रूप में पहचानता है;
+Apothem उस सतह को नामित करता है, लेकिन उसमें कोई प्रविष्टि नहीं लिखता। दोनों
+निर्देश फ़ाइलों में से अडैप्टर केवल प्रोजेक्ट-रूट `AGENTS.md` लिखता है, जिसे
+Kimi Code प्रोजेक्ट निर्देश के रूप में पढ़ता है; Kimi Code का दस्तावेज़ यह नहीं बताता
+कि दोनों फ़ाइलें मौजूद होने पर किस फ़ाइल को प्राथमिकता मिलती है। Kimi Code कोई
+स्टेटसलाइन या आउटपुट-स्टाइल फ़ाइल सतह उजागर नहीं करता, इसलिए वे समूह मटेरियलाइज़
+नहीं किए जाते।
 
-Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
-for the current model and configuration surface.
+Kimi Code, Moonshot के Kimi मॉडल परिवार पर चलता है; वर्तमान मॉडल और कॉन्फ़िगरेशन
+सतह के लिए
+[विक्रेता कॉन्फ़िगरेशन संदर्भ](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+देखें।
 
-## Verification
+## सत्यापन
 
 ```bash
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-The verify command confirms that:
+verify कमांड पुष्टि करता है कि:
 
-1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
-3. The adapter-specific verification routine reports success.
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. हर प्रबंधित टारगेट मौजूद है; प्रबंधित फ़ाइलें खाली नहीं हैं, और JSON या YAML
+   कॉन्फ़िग पार्स होते हैं। `--profile PATH` जोड़ने पर यह भी पुष्टि होती है कि
+   इंस्टॉल की गई फ़ाइलें उस प्रोफ़ाइल से मेल खाती हैं।
+3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
 
-## Updating
+## अपडेट करना
 
 ```bash
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट-रूट `AGENTS.md` प्रबंधित ब्लॉक और
+समर्थन समूहों को पुनः व्युत्पन्न करता है।
 
-## Uninstalling
+## अनइंस्टॉल करना
 
 ```bash
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+प्रोजेक्ट-रूट `AGENTS.md` से Apothem ब्लॉक हटाता है और सेंटिनलों के बाहर का कोई भी
+टेक्स्ट बनाए रखता है। फ़ाइल केवल तभी हटाई जाती है जब उसमें और कुछ शेष न रहे। साथ
+ही `<project>/.kimi-code/.apothem/support/` के अंतर्गत Apothem द्वारा रखी गई समर्थन
+फ़ाइलें भी हटाता है। बदलाव से पहले, प्रत्येक फ़ाइल की एक टाइमस्टैम्प-युक्त प्रति
+`~/.apothem/backups/` के अंतर्गत सहेजी जाती है; प्रोजेक्ट में कोई बैकअप फ़ाइल नहीं
+छोड़ी जाती। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
-## Conformity gate
+## अनुरूपता गेट
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## समस्या निवारण
 
-| Symptom | Fix |
+| लक्षण | समाधान |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
-| Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness kimi-code --project /path/to/project` फिर से चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness kimi-code --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness kimi-code --project /path/to/project` फिर से चलाएँ |
 
-## Configuration knobs
+## कॉन्फ़िगरेशन नॉब
 
-| Flag | Default | Description |
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
 
-## See also
+## यह भी देखें
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [सभी हार्नेस](/docs/harnesses) — समर्थित टूल्स का पूरा कैटलॉग
+- [इंस्टॉल गाइड](/docs/install) — इस हार्नेस में Apothem इंस्टॉल करें
+- [`apothem harnesses` संदर्भ](/docs/cli-reference/harnesses) — CLI से अडैप्टरों को सूचीबद्ध करें और उनका निरीक्षण करें

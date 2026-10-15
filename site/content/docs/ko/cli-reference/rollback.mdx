@@ -2,11 +2,11 @@
 title: "rollback"
 description: "apothem rollback 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "95a26e667a1ea20a"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-하니스를 기록된 설치 직전 상태로 복원합니다.
+하니스를 기록된 설치 이전의 상태로 복원합니다.
 
 ## 개요
 
@@ -17,9 +17,49 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-`rollback`은 선택한 각 하니스의 설치 전 바이트를 Apothem 백업 루트에서 재구성합니다. 기록된 설치 패스 — 기본적으로 가장 최근 패스, 또는 `--install-id`로 지정한 패스 — 를 해석하여 해당 설치가 캡처한 모든 백업을 복원한 다음, 하니스 원장에 `rollback` 기록을 추가합니다.
+`rollback`은 선택한 각 하니스를 기록된 설치 패스(기본값은 가장 최근 패스, 또는
+`--install-id`로 지정한 패스) 이전의 상태로 되돌립니다. 해당 설치의 원장 기록을
+가장 최근 변경부터 차례로 처리하면서 다음을 수행합니다.
 
-`--yes`가 제공되지 않는 한 하니스별로 확인을 요청합니다. `--install-id`와 `--last`는 설치 패스를 선택하며 상호 배타적입니다.
+- 설치가 덮어쓴 모든 파일과 디렉터리를 설치가 캡처한 백업에서 기록된 경로로
+  복원합니다(설치가 교체한 디렉터리는 설치가 그 안에 추가한 파일 없이 정확히
+  복원됩니다).
+- 설치가 만든 모든 파일과 디렉터리를 제거하고, 설치가 정리하며 없앤 레거시
+  레이아웃 경로를 되돌려 놓습니다.
+- 설치가 만든 공유 데이터 저장소(`memory`, `contexts`, `learning`)를 제거합니다.
+  단, 설치된 다른 하니스가 아직 사용 중이면 제거하지 않습니다.
+- 설치가 만든 디렉터리가 비게 되면 해당 디렉터리를 제거합니다.
+
+rollback이 제거하거나 교체하는 모든 대상은 먼저 Apothem 백업 루트
+(`~/.apothem/backups/`)에 복사되므로, 롤백 자체도 수동으로 되돌릴 수 있습니다.
+rollback은 이어서 하니스 원장에 `rollback` 기록을 추가합니다. 이전 설치를
+롤백하면 그 설치가 기록한 대상만 복원하거나 제거하며, 같은 루트의 원장 활성
+설치에서 그 이후의 모든 설치를 제외합니다. 이후 설치가 그 대상 바깥에 추가한
+파일은 그대로 남습니다.
+
+원장은 설치 루트마다 가장 최근의 설치 기록 10개(그리고 그 기록이 참조하는
+백업)를 보관합니다. 그보다 오래된 설치는 더 이상 id로 롤백할 수 없으며
+`rollback.no_record`를 보고합니다.
+[`apothem backups prune`](/docs/cli-reference/backups)은 요청 시 이 한도를
+낮추며, 최신 설치가 복원 원본으로 삼는 백업은 절대 제거하지 않습니다.
+
+이 동작이 추가되기 전의 Apothem 릴리스가 작성한 기록에는 설치가 어떤 파일을
+만들었는지 나열되어 있지 않습니다. 그런 기록을 롤백하면 덮어쓴 파일만
+복원됩니다.
+
+`--yes`를 제공하지 않으면 하니스마다 확인을 요청합니다. 프롬프트를 띄울 수 없는
+경우, 즉 `--format json`(프롬프트 텍스트가 단일 JSON 문서를 손상시킴) 또는
+비대화형 셸(TTY 없음)에서는 `--yes`를 제공하지 않는 한 명령이 구조화된
+`rollback.confirmation_required` 오류(종료 코드 1)와 함께 처음부터 거부합니다.
+`--install-id`와 `--last`는 설치 패스를 선택하며 상호 배타적입니다.
+
+`--harness all` 롤백은 의도적으로 빠짐없이 동작합니다. 프로필의
+`exclude_harnesses`가 설치 중에 건너뛰는 하니스를 포함해 등록된 모든 하니스를
+대상으로 합니다. 설치 전 상태 복원은 정리 작업이므로, 이전에 더 넓은 범위로
+수행된 설치가 남겼을 수 있는 기록까지 다룹니다. 기록된 설치가 없는 하니스는
+`results`의 `"outcome": "error"` 행으로 실패하며(JSON 출력 참조), 실행은 나머지
+하니스로 계속됩니다. 그런 다음 명령은 1로 종료하며, 다른 하니스의 대상이 하나
+이상 롤백된 경우에는 2로 종료합니다.
 
 ## 옵션
 
@@ -27,13 +67,13 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 |---|---|
 | `--harness NAME` | 롤백할 하니스 어댑터, 또는 레지스트리 전역 집합을 나타내는 `all`(필수). |
 | `--install-id ULID` | 지정한 설치 패스를 롤백합니다. 기본값은 가장 최근에 기록된 설치입니다. |
-| `--last` | 가장 최근에 기록된 설치를 롤백합니다(기본값의 명시적 형식). `--install-id`와 상호 배타적입니다. |
+| `--last` | 가장 최근에 기록된 설치를 롤백합니다(기본 동작을 명시하는 형식). `--install-id`와 상호 배타적입니다. |
 | `--yes` | 하니스별 확인 프롬프트를 건너뜁니다. |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. 선택한 집합에 프로젝트 범위 어댑터가 포함되면 필수입니다. |
-| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 발생시킵니다. |
-| `--verbose`, `-v` | 추가 진단 출력을 발생시킵니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
-| `--json` | `--format json`의 약식. |
+| `--json` | `--format json`의 단축형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
 | `-h`, `--help` | 도움말을 표시하고 종료합니다. |
 
@@ -41,6 +81,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "rollback",
   "action": "rolled_back",
@@ -55,7 +96,14 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 }
 ```
 
-복원된 각 대상은 `"operation": "rollback"`과 `created` 또는 `updated`의 `outcome`으로 `results`에 표시됩니다(그리고 `files_written`에도 포함됩니다). 설치가 새로 생성한 대상 — 복원할 이전 바이트가 없는 경우 — 은 `"outcome": "skipped"`로 보고되며, 실패한 복원은 `"outcome": "error"`입니다. 일치하는 설치 기록이 없으면, 명령은 `"status": "error"`와 함께 `rollback.no_record` 오류를 보고합니다.
+복원되거나 제거된 각 대상은 `"operation": "rollback"`과 `created` 또는
+`updated`인 `outcome`으로 `results`에 나타납니다(`files_written`에도 나타남).
+`message`는 해당 경로가 복원되었는지 제거되었는지를 알려 줍니다. 실패한
+복원(예: 백업이 삭제된 경우)은 `"outcome": "error"`입니다. 변경 사항을 기록하지
+않은 설치는 `"outcome": "skipped"`로 보고됩니다. 이름을 지정한 단일 하니스에
+일치하는 설치 기록이 없으면 명령은 `"status": "error"`와 함께
+`rollback.no_record` 오류를 보고합니다. `--harness all`에서는 일치하는 기록이 없는
+하니스가 대신 `results`의 `"outcome": "error"` 행이 됩니다.
 
 ## 예시
 
@@ -69,9 +117,10 @@ apothem rollback --harness cursor --project . --last --json
 
 | 코드 | 의미 |
 |---|---|
-| 0 | 성공적으로 롤백됨, 또는 복원할 것이 없음(설치가 백업을 캡처하지 않음) |
-| 1 | 예상되는 오류 — 설치 기록 없음, 선택자 충돌, 알 수 없는 하니스, 프로젝트 루트 누락, 또는 확인 중단 |
-| 2 | 최소 한 번의 대상이 롤백된 후 부분 복원 |
+| 0 | 롤백 성공, 또는 롤백할 것이 없음(설치가 변경 사항을 기록하지 않음) |
+| 1 | 예상된 오류 — 설치 기록 없음, 충돌하는 선택자, 알 수 없는 하니스, 프로젝트 루트 누락, 또는 확인이 거부되었거나 불가능함(`--yes` 없는 비대화형 또는 JSON 모드) |
+| 2 | 부분 결과 — 하나 이상의 대상이 롤백되었고 실패도 함께 기록됨(복원 실패, 또는 `--harness all`에서 설치 기록이 없는 하니스) |
+| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 오류가 코드 `cli.usage`를 담은 JSON 봉투로 반환됩니다. |
 
 ## 함께 보기
 

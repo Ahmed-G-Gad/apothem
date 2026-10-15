@@ -2,7 +2,7 @@
 title: "Apothem 대 수동 Kiro 구성"
 description: ".kiro/steering/ 아래의 Kiro 스티어링 파일을 손으로 유지하는 것과 Apothem의 공유 프로파일에서 렌더링하는 것의 비교."
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ Apothem의 kiro 어댑터는 공유 프로파일에서 전용 `apothem-rules.md`
 
 | 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
-| 스티어링 규칙 작성 | `.kiro/steering/` 아래 각 파일을 손으로 작성 | 공유 코퍼스에서 렌더링 |
-| 기반 파일을 건드리지 않고 유지 | `product.md` / `tech.md` / `structure.md`를 덮어쓰지 않도록 기억 | 어댑터는 `apothem-rules.md`만 작성 |
-| 규칙을 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
-| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness kiro` |
+| 스티어링 규칙 작성 | `.kiro/steering/` 아래의 각 파일을 직접 작성 | 공유 코퍼스에서 렌더링 |
+| 기반 파일은 건드리지 않고 유지 | `product.md` / `tech.md` / `structure.md`를 덮어쓰지 않도록 기억해 둠 | 어댑터는 `apothem-rules.md`만 작성 |
+| 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness kiro --project <path>` |
 
 ## Apothem이 관리하는 것
 
@@ -30,11 +30,11 @@ kiro 어댑터는 공유 규칙을 `inclusion: always` 프런트매터가 있는
 
 ## 마이그레이션 경로
 
-1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행합니다.
 2. 기존 `.kiro/steering/`의 규칙을 공유 코퍼스로 옮깁니다.
-3. `apothem install --harness kiro`를 실행해 `apothem-rules.md` 스티어링 파일을 렌더링합니다.
-4. `apothem verify --harness kiro`를 실행해 구성이 안착했는지 확인합니다.
-5. 이후의 모든 변경에는 `apothem update --harness kiro`를 사용합니다.
+3. `apothem install --harness kiro --project <path>`를 실행해 `apothem-rules.md` 스티어링 파일을 렌더링합니다.
+4. `apothem verify --harness kiro --project <path>`를 실행해 구성이 반영되었는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness kiro --project <path>`를 사용합니다.
 
 ## 다음으로 읽기
 

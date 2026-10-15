@@ -26,16 +26,18 @@ statuslines, and `settings.json` into `~/.claude/`.
 The native PreToolUse, PostToolUse, Stop, and SessionStart hooks are configured
 from the shared corpus.
 
-Apothem does **not** manage `CLAUDE.md` — that file is operator-owned territory.
-Your project and personal instructions in `CLAUDE.md` stay yours; Apothem
-governs the propagated surfaces around it.
+Apothem writes one sentinel-delimited managed block into your user-scope
+`~/.claude/CLAUDE.md`. `apothem update` rewrites only that block and keeps your
+text outside it. Project `CLAUDE.md` files are not touched. Apothem governs the
+propagated surfaces around it.
 
 ## Migration path
 
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move your existing `~/.claude/` rules, agents, commands, and skills into the
    shared corpus.
-3. Leave `CLAUDE.md` in place — Apothem will not touch it.
+3. Leave `CLAUDE.md` in place. Apothem keeps your text outside its managed block
+   and rewrites only that block.
 4. Run `apothem install --harness claude-code` to propagate the corpus.
 5. Run `apothem verify --harness claude-code` to confirm the config landed.
 6. Use `apothem update --harness claude-code` for every later change.

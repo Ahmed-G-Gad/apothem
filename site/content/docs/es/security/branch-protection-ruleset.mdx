@@ -1,55 +1,130 @@
 ---
 title: "Protección de ramas"
-description: "Protección de ramas de Apothem en main: puerta de revisión, control mediante verificaciones de estado y restricciones de push."
+description: "Protección de ramas de Apothem en main: la regla de protección vigente, sus verificaciones de estado requeridas y las verificaciones pendientes de agregar."
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-La rama `main` de Apothem está protegida por la protección de ramas de GitHub después de que se publica el único commit de lanzamiento nuevo. La protección hace cumplir la disciplina de conjunto de cambios declarada en `rules/production-ready-prs.md` y alimenta las verificaciones **Branch-Protection** y **Code-Review** de OpenSSF Scorecard para el trabajo futuro.
+La rama `main` de Apothem está protegida por una regla clásica de protección de rama de GitHub. El repositorio no tiene conjuntos de reglas. La protección hace cumplir la disciplina de conjunto de cambios declarada en `rules/production-ready-prs.md` y alimenta las comprobaciones **Branch-Protection** y **Code-Review** de OpenSSF Scorecard.
 
-## Declaración del conjunto de reglas
+Esta página registra exactamente los ajustes vigentes, tal como se leyeron por última vez de la API de GitHub el 2026-10-07. Un ajuste que el mantenedor tiene previsto pero que todavía no ha aplicado aparece solo en [Cambios pendientes del mantenedor](#cambios-pendientes-del-mantenedor).
 
-| Ajuste | Valor | Justificación |
+## Ajustes de protección
+
+| Ajuste | Campo de la API | Valor vigente | Efecto |
+|---|---|---|---|
+| **Exigir una pull request antes de fusionar** | `required_pull_request_reviews` (presente) | ✅ | Los cambios llegan a `main` a través de una pull request. |
+| **Revisiones de aprobación requeridas** | `required_approving_review_count` | **0** | Una pull request se fusiona sin una revisión de aprobación. Consulta [Modelo de mantenedor único](#modelo-de-mantenedor-único). |
+| **Descartar aprobaciones obsoletas con nuevos commits** | `dismiss_stale_reviews` | ✅ | Una aprobación otorgada antes de un nuevo push deja de contar. |
+| **Exigir la revisión de Code Owners** | `require_code_owner_reviews` | ❌ | Habilitar esto antes de que se incorpore un segundo mantenedor produce un bloqueo mutuo en las pull requests de mantenedor único. |
+| **Exigir la aprobación del push revisable más reciente** | `require_last_push_approval` | ❌ | GitHub exige que esa aprobación provenga de alguien distinto de quien hizo el push, algo que un mantenedor único no puede aportar. |
+| **Exigir que las verificaciones de estado pasen** | `required_status_checks` | ✅ | Los 12 contextos listados en [Verificaciones de estado requeridas](#verificaciones-de-estado-requeridas) deben pasar. |
+| **Exigir que las ramas estén actualizadas antes de fusionar** | `required_status_checks.strict` | ❌ | Una pull request puede fusionarse cuando sus verificaciones requeridas pasaron contra un `main` más antiguo. Los flujos de trabajo que se ejecutan con un push a `main` prueban entonces el resultado fusionado. |
+| **Exigir la resolución de conversaciones antes de fusionar** | `required_conversation_resolution` | ✅ | Los hilos de revisión abiertos bloquean la fusión. |
+| **Exigir commits firmados** | `required_signatures` | ❌ | Los commits de lanzamiento se firman localmente. La aplicación obligatoria espera hasta que la documentación de incorporación de colaboradores describa la configuración de firma SSH o GPG. |
+| **Exigir historial lineal** | `required_linear_history` | ✅ | Mantiene el historial público de `main` en una sola línea. |
+| **Bloquear la rama** | `lock_branch` | ❌ | `main` acepta fusiones. |
+| **No permitir omitir los ajustes anteriores** | `enforce_admins` | ❌ | Los ajustes anteriores no obligan a un administrador del repositorio. Un administrador puede fusionar sin las verificaciones requeridas o hacer push directamente a `main`. |
+| **Permitir force pushes** | `allow_force_pushes` | ❌ | Los force pushes a `main` están bloqueados para todos, incluidos los administradores. |
+| **Permitir eliminaciones** | `allow_deletions` | ❌ | Nadie puede eliminar `main`, incluidos los administradores. |
+
+## Modelo de mantenedor único
+
+El repositorio tiene un solo mantenedor. GitHub indica: «Los autores de una pull request no pueden aprobar sus propias pull requests». Por lo tanto, un número de aprobaciones requeridas superior a 0 bloquearía todas las pull requests del mantenedor. La regla vigente exige una pull request con 0 aprobaciones y deja `enforce_admins` desactivado.
+
+Para cualquier persona sin permiso de administrador, una fusión sigue necesitando las verificaciones de estado requeridas en verde, las conversaciones de revisión resueltas y un historial lineal. Los force pushes y la eliminación de `main` siguen bloqueados para todas las cuentas.
+
+Cuando se incorpore un segundo mantenedor, los ajustes más estrictos son al menos una aprobación requerida, la aprobación del último push, la revisión de CODEOWNERS y `enforce_admins` activado. La [ceremonia de fusión para mantenedor único](/docs/runbooks/solo-maintainer-merge) se aplica solo a una protección que exige una aprobación y la aplica a los administradores.
+
+## Verificaciones de estado requeridas
+
+Cada uno de estos 12 contextos es obligatorio, con GitHub Actions (ID de app `15368`) como origen:
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| Contexto | Flujo de trabajo y trabajo | Cómo informa en cada pull request |
 |---|---|---|
-| **Objetivo** | `main` | Protege la rama predeterminada pública. |
-| **Estado de aplicación** | `active` | No está en modo de simulación. |
-| **Requerir pull request antes de fusionar** | ✅ | Los pushes directos a `main` quedan bloqueados. |
-| **Revisiones de aprobación requeridas** | **1** | Puerta mínima de revisión humana para un nuevo proyecto con mantenedor único. |
-| **Descartar aprobaciones obsoletas en nuevos commits** | ✅ | Un force-push tras la aprobación vuelve a disparar la revisión. |
-| **Requerir revisión de Code Owners** | Diferido | Habilitar esto antes de que se incorpore un segundo mantenedor puede bloquear los PR de mantenedor único. |
-| **Requerir aprobación del push revisable más reciente** | ✅ | El último commit enviado debe llevar aprobación. |
-| **Resolución de conversaciones requerida** | ✅ | Los hilos de revisión abiertos bloquean la fusión. |
-| **Requerir que las verificaciones de estado pasen** | ✅ | Workflow de CI + Scorecard + CodeQL + pip-audit. |
-| **Verificaciones de estado requeridas** | Verificaciones núcleo actuales | La lista requerida se actualiza desde el último commit de lanzamiento en verde. |
-| **Requerir que las ramas estén actualizadas** | ✅ | Previene regresiones por fusión obsoleta. |
-| **Requerir commits firmados** | Recomendado | Los commits de lanzamiento locales están firmados; la aplicación completa espera hasta que la documentación de incorporación de contribuyentes describa la configuración SSH/GPG. |
-| **Requerir historial lineal** | ✅ | Mantiene comprensible el historial público de una sola línea. |
-| **Bloquear force-pushes** | ✅ | La reescritura de historial en `main` queda bloqueada. |
-| **Permitir eliminación** | ❌ | La rama `main` no puede eliminarse. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, trabajo `quality` | `ci.yml` se ejecuta cuando una pull request modifica una ruta de código o de configuración. `ci-docs-stub.yml` informa los mismos contextos en una pull request solo de documentación. |
+| `coverage` | `ci.yml`, trabajo `coverage` | Igual que `quality`. |
+| `Require Signed-off-by` | `dco.yml`, trabajo `dco` | Su disparador de pull request no tiene filtro `paths`, por lo que se ejecuta en cada pull request a `main`. |
 
-## Restricción de mantenedor único
+La celda de prelanzamiento `quality / ubuntu-latest / py3.15` se ejecuta en `ci.yml` con `continue-on-error` y no es obligatoria. Cualquier otro flujo de trabajo, incluidos CodeQL, Scorecard y pip-audit, puede informar un estado, pero su resultado no condiciona la fusión a menos que su contexto se agregue a esta lista.
 
-GitHub no permite que los archivos del repositorio creen historial de revisión humana. Por lo tanto, el repositorio aplica la protección de ramas más fuerte que no genera bloqueo para su modelo de mantenedor actual: una revisión de aprobación, descarte de revisión obsoleta, aprobación del último push, resolución de conversaciones, verificaciones de estado, historial lineal, y sin eliminación de rama ni force-push. Cuando se incorpore un segundo mantenedor, la revisión de CODEOWNERS y un mínimo de dos revisores se convertirán en el ajuste más fuerte.
+## Cambios pendientes del mantenedor
 
-## Requisitos de verificación de estado
+El mantenedor tiene previsto agregar estos 25 contextos a la lista de obligatorios. El encabezado de cada flujo de trabajo declara el trabajo como verificación requerida, y su disparador de pull request no tiene filtro `paths`, por lo que se ejecuta en cada pull request a `main`. Hasta que se agregue un contexto, un fallo en él no bloquea la fusión.
 
-Las cuatro verificaciones de estado de control estricto declaradas arriba:
+`clean-install-gate.yml`, 7 contextos:
 
-- **`ci`** — matriz completa de pruebas + ruff + mypy + bandit + Trivy + pip-audit sobre el árbol de dependencias resuelto
-- **`Scorecard`** — ejecución de OpenSSF Scorecard sin regresión por verificación
-- **`CodeQL`** — paquetes de consulta `security-extended` para `python` + `actions`
-- **`pip-audit`** — escaneo de vulnerabilidades semanal + por PR contra el árbol de dependencias resuelto
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-Cualquier otro workflow puede reportar estado, pero su resultado no controla la fusión a menos que se promueva a la lista de verificaciones requeridas.
+`harness-matrix.yml`, 17 contextos, un `matrix (<adapter>)` por cada adaptador de la matriz del trabajo:
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`, 1 contexto:
+
+```text
+installer-lint
+```
+
+Una vez que los contextos de `harness-matrix.yml` sean obligatorios, registrar un nuevo adaptador agrega un contexto `matrix (<adapter>)`, y la lista de obligatorios lo incorpora en el mismo cambio. «Exigir que las ramas estén actualizadas antes de fusionar» sigue desactivado. Cuando se aplique un cambio pendiente, muévelo a las secciones de la configuración vigente de arriba en el mismo cambio.
 
 ## Cadencia de auditoría
 
-Este archivo se revisa en cada auditoría de seguridad y en cada punto de control de ingeniería de lanzamiento. La deriva entre este archivo y la configuración real de protección de ramas es un hallazgo de alta severidad.
+Este archivo se revisa en cada auditoría de seguridad y en cada punto de control de ingeniería de lanzamientos. Una desviación entre este archivo y la configuración real de protección de rama es un hallazgo de severidad alta. Lee la configuración vigente con:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## Referencias
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propiedad de revisión con alcance por ruta
-- `rules/production-ready-prs.md` §1 — disciplina de mismo conjunto de cambios que este conjunto de reglas hace cumplir
+- [OpenSSF Scorecard — comprobación Branch-Protection](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — Acerca de las ramas protegidas](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — Administrar una regla de protección de rama](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — Aprobar una pull request con revisiones requeridas](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
+- [CODEOWNERS de Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propiedad de revisión con alcance por ruta
+- [Flujos de trabajo de CI de Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — los flujos de trabajo de los que proviene cada contexto requerido
+- `rules/production-ready-prs.md` §1 — la disciplina de mismo conjunto de cambios que esta protección hace cumplir

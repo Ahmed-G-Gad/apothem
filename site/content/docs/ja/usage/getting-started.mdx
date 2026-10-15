@@ -1,25 +1,25 @@
 ---
 title: "コアワークフロー"
-description: "Apothem の 4 つのコアワークフロー——プロファイル、ルール、計画、そして適合性ゲート。"
+description: "Apothem の 4 つのコアワークフロー — プロファイル、ルール、計画、そしてコンフォーミティゲート。"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem は 4 つのコア機能を提供します。共有のガバナンスプロファイル、ルール
-コーパス、構造化された計画パイプライン、そしてリアルタイムの適合性ゲートです。
+コーパス、構造化された計画パイプライン、そしてリアルタイムのコンフォーミティゲートです。
 
 <Callout title="はじめての方へ">
   ゼロから初回実行までのガイド付きウォークスルーは、まず
   [入門チュートリアル](/docs/tutorials/getting-started)から始めてください。この
-  ページはセットアップ後の 4 つのコアワークフローへのクイックリファレンスです。
+  ページは、セットアップ後に使う 4 つのコアワークフローのクイックリファレンスです。
 </Callout>
 
 ## 共有プロファイル
 
 `--profile PATH` を渡さない限り、あなたの Apothem プロファイルは
-`~/.config/apothem/profile.yaml` にあります。これは唯一の信頼できる情報源であり、
-各環境アダプターはここからネイティブ設定を導き出します。
+`~/.config/apothem/profile.yaml` にあります。これは単一の信頼できる情報源であり、
+すべてのハーネスアダプターはここからネイティブ設定を導き出します。
 
 ```yaml
 identity:
@@ -30,7 +30,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-プロファイルを作成して確認します。
+プロファイルがまだ存在しない場合は作成し、その後で内容を確認します。
+ワンショットインストーラーと `apothem install` は、最初の実行時にスタータープロファイルを
+すでに書き込んでおり、`profile init` は、`--force` を渡さない限り、エラーで停止し、
+既存のファイルを変更せずに残します。
 
 ```bash
 apothem profile init
@@ -39,9 +42,9 @@ apothem profile show --json
 
 ## 最初のルール
 
-プロファイル YAML に共有ルールを追加し、選択した環境を再物化します。それらの
-ルールに例データを含める場合は、実在の識別情報や認証情報が共有プロファイルや
-CI 実行に紛れ込まないよう、ダミーのプレースホルダーを使ってください。
+プロファイル YAML に共有ルールを追加し、その後、選択したハーネスを再マテリアライズします。
+それらのルールに例データを含める場合は、実在のアイデンティティや認証情報が共有プロファイルや
+CI の実行に紛れ込まないよう、架空のプレースホルダーを使ってください。
 
 ```bash
 apothem profile set rules '["Always include a brief summary at the end of every response."]'
@@ -51,24 +54,30 @@ apothem verify --harness claude-code
 
 ## 最初の計画
 
-`/plan` パイプラインは `apothem` バイナリ経由ではなく、あなたの
-環境内でスラッシュコマンドとして実行されます。環境を
-インストールしたら、ツールのチャットから計画を開始します。
+`/plan` パイプラインは、`apothem` バイナリ経由ではなく、あなたのハーネス内で
+スラッシュコマンドとして実行されます。ハーネスをインストールしたら、
+ツールのチャットから計画を開始します。
 
 ```text
 /plan-spec
 ```
 
 `/plan-spec` はあなたの文章を仕様へと精錬し、`/plan-generate` は
-`<project-root>/.apothem/plans/{suite}/` の下に計画スイートを物化します。全体の流れは
+`<project-root>/.apothem/plans/{suite}/` の下にプランスイートをマテリアライズします。全体の流れは
 [パイプラインコマンドリファレンス](/docs/pipeline)を参照してください。
 
-## 適合性ゲート
+## コンフォーミティゲート
 
-リポジトリのルートから実行します。
+Apothem のチェックアウトから、次のコマンドを実行します。
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-すべての機械的な適合性チェックを実行し、バーごとに合否を報告します。
+スクリプトでインストールした後は、次のコマンドを実行します。
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+```
+
+すべての機械的なコンフォーミティチェックを実行し、バーごとに合否を報告します。

@@ -1,13 +1,13 @@
 ---
 title: "Codex"
-description: "Adaptor harness Apothem untuk Codex (Beta)."
+description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** OpenAI
-**Nama instal:** `codex`
+**Nama instalasi:** `codex`
 **Status:** Beta
 **Konfigurasi native:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`, dan `~/.agents/skills/`
@@ -18,26 +18,62 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-Adaptor memasang instruksi dan hook native Codex, mengonversi agen Apothem menjadi agen
-TOML Codex, dan membungkus prompt perintah yang dapat dipakai ulang sebagai skill Codex.
+Adapter memasang instruksi dan hook native Codex, mengonversi agen Apothem
+menjadi agen TOML Codex, dan membungkus prompt command yang dapat digunakan
+ulang sebagai skill Codex.
 
 **Berkas yang ditulis:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
-`~/.agents/skills/*/SKILL.md`, dan berkas dukungan di bawah
+`~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` untuk
+skill yang dipanggil pengguna, dan berkas pendukung di bawah
 `~/.config/apothem/{rules,templates}/`.
+
+Blok Apothem di `AGENTS.md` diakhiri dengan bagian berkas pendukung Apothem
+yang menyebutkan direktori absolut tempat setiap kutipan bergaya repositori
+dalam skill dan aturan yang terpasang di-resolve: `rules/<name>.md` dan
+`templates/...` di bawah `~/.config/apothem/`, serta `hooks/...` di bawah
+`~/.codex/hooks/`. Instalasi Codex tidak menyertakan pohon `schemas/` maupun
+`conformity/`, sehingga bagian tersebut tidak mencantumkan keduanya.
+
+**Skill yang dipanggil pengguna.** Codex mengabaikan kunci
+`disable-model-invocation`. Untuk setiap skill atau command yang sumbernya
+menyetel `disable-model-invocation: true`, adapter menulis `agents/openai.yaml`
+di samping `SKILL.md` milik skill tersebut dengan
+`policy.allow_implicit_invocation: false`, sehingga Codex tidak memilih skill
+itu atas inisiatifnya sendiri; Anda tetap dapat menjalankannya secara eksplisit
+dengan `$skill-name`. Lihat
+[dokumentasi skill Codex](https://developers.openai.com/codex/skills).
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca kohort bersama Apothem dan memasang masing-masing ke permukaan Codex
-yang tepat: instruksi ke `AGENTS.md`, hook ke `hooks.json` dan `hooks/`, agen ke TOML,
-skill ke `~/.agents/skills/`, dan aturan/template Markdown non-native ke
-`~/.config/apothem/` sebagai materi dukungan.
+Adapter membaca kohor bersama Apothem dan memasang masing-masing ke permukaan
+Codex yang tepat: instruksi ke `AGENTS.md`, hook ke `hooks.json` dan `hooks/`,
+agen ke TOML, skill ke `~/.agents/skills/`, dan aturan/templat Markdown
+non-native ke `~/.config/apothem/` sebagai materi pendukung.
+
+Setiap helper yang dikonversi menyetel `name`, `description`, dan
+`developer_instructions`. Helper yang izin alatnya, setelah alat-alat dalam
+daftar `disallowedTools` miliknya sendiri dikeluarkan, tidak menyertakan alat
+penyunting berkas apa pun (`Write`, `Edit`, `MultiEdit`, atau `NotebookEdit`)
+juga menyetel `sandbox_mode = "read-only"`, pembatasan penulisan milik Codex
+sendiri. `Bash` tidak dihitung sebagai alat penyunting berkas, sehingga helper
+yang diberi `Bash` tanpa satu pun alat tersebut tetap mendapat pengaturan itu.
+Tidak ada model atau upaya penalaran yang disetel, sehingga setiap helper
+mewarisi pilihan sesi. Codex tidak memiliki daftar alat atau batas giliran per
+helper, sehingga `tools` dan `maxTurns` milik helper tidak terbawa.
 
 ## Catatan kompatibilitas
 
-Codex menyediakan `~/.codex/rules/` untuk kebijakan eksekusi `.rules`. Apothem tidak
-menempatkan aturan perilaku Markdown di sana; ia menyimpannya di `~/.config/apothem/` dan
-merujuknya dari `AGENTS.md` dan skill yang terpasang.
+`~/.agents/skills/` adalah direktori akar bersama yang dimiliki Codex: delapan
+alat lain yang didukung juga memuatnya
+([registri harness](/docs/reference/harness-registry) mencantumkannya),
+sehingga skill Apothem yang ditulis instalasi Codex di sana juga muncul di
+alat-alat tersebut, dan pencopotan Codex menghapusnya dari alat-alat tersebut.
+Instalasi mencetak catatan yang menyebutkan alat-alat tersebut.
+
+Codex mereservasi `~/.codex/rules/` untuk kebijakan eksekusi `.rules`. Apothem
+tidak menempatkan aturan perilaku Markdown di sana; Apothem menyimpannya di
+`~/.config/apothem/` dan merujuknya dari `AGENTS.md` dan skill yang terpasang.
 
 ## Verifikasi
 
@@ -45,19 +81,21 @@ merujuknya dari `AGENTS.md` dan skill yang terpasang.
 apothem verify --harness codex
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness codex
 ```
 
-Menyegarkan bootstrap Codex, agen yang dikonversi, skill, dan kohort dukungan.
+Menyegarkan bootstrap Codex, agen yang dikonversi, skill, dan kohor pendukung.
 
 ## Pencopotan
 
@@ -65,8 +103,15 @@ Menyegarkan bootstrap Codex, agen yang dikonversi, skill, dan kohort dukungan.
 apothem uninstall --harness codex
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor. YAML profil bersama dan
-mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `~/.codex/AGENTS.md` dan mempertahankan teks apa
+pun di luarnya, serta menghapus entri milik Apothem dari `~/.codex/hooks.json`
+dan mempertahankan entri milik Anda. Juga menghapus berkas Apothem di
+`~/.codex/hooks/`, `~/.codex/agents/`, `~/.agents/skills/`, dan
+`~/.config/apothem/{rules,templates}/`; berkas lain di folder-folder tersebut
+tetap ada. Skill yang dihapus dari `~/.agents/skills/` juga hilang dari alat
+lain yang memuatnya (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)).
+Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah atau
+dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -80,10 +125,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness codex` |
 | Verifikasi gagal | Jalankan `apothem update --harness codex`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness codex` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness codex` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

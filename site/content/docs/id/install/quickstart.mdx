@@ -1,51 +1,55 @@
 ---
 title: "Mulai cepat"
-description: "Pasang Apothem, definisikan profil, materialisasikan lingkungan pertama Anda, dan verifikasi — panduan salin-tempel dengan keluaran yang diharapkan."
+description: "Pasang Apothem, tulis profil, materialisasikan harness pertama Anda, dan verifikasi — tur salin-tempel dengan keluaran yang diharapkan."
 machineTranslated: true
-sourceHash: "111dbc2aa36d8278"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Ini adalah jalur tercepat dari nol ke konfigurasi lingkungan yang terverifikasi:
-pasang, definisikan profil bersama, materialisasikan konfigurasi native sebuah
-alat, konfirmasikan, dan lakukan suntingan pertama Anda. Setiap perintah nyata
-dan dapat disalin-tempel, dan setiap langkah menampilkan apa yang dicetak oleh
-eksekusi yang bersih. Instalasi itu sendiri selesai dalam kurang dari dua menit;
-menyunting profil adalah satu-satunya bagian yang memakan waktu sesuai keinginan
-Anda.
+Ini adalah jalur cepat dari nol ke konfigurasi harness yang terverifikasi: pasang,
+tulis profil bersama, materialisasikan konfigurasi native satu alat, konfirmasikan,
+dan lakukan suntingan pertama Anda. Setiap perintah nyata dan dapat dijalankan
+dengan salin-tempel, dan setiap langkah menampilkan apa yang dicetak oleh eksekusi
+yang bersih. Instalasinya sendiri selesai dalam waktu kurang dari dua menit;
+menyunting profil adalah satu-satunya bagian yang memakan waktu selama yang Anda
+inginkan.
 
-Pada akhirnya Anda akan memiliki konfigurasi lingkungan yang berfungsi, yang
-dihasilkan dari profil yang Anda tulis sendiri — dan Anda akan tahu satu perintah
-yang mendorong perubahan profil keluar ke setiap alat.
+Pada akhirnya Anda akan memiliki konfigurasi harness yang berfungsi, yang
+dihasilkan dari profil yang Anda tulis — dan Anda akan mengetahui satu perintah
+yang mendorong perubahan profil kembali ke satu alat atau ke semuanya.
 
-<Callout title="Ingin versi bercerita yang santai?">
-  [Tutorial memulai](/docs/tutorials/getting-started) menelusuri wilayah yang sama
-  dengan lebih banyak penjelasan tentang setiap langkah dan mengapa itu penting.
-  Halaman ini adalah panduan ringkas yang berorientasi keluaran.
+<Callout title="Ingin versi yang lambat dan bernarasi?">
+  [Tutorial memulai](/docs/tutorials/getting-started) menempuh jalur yang sama
+  dengan lebih banyak penjelasan tentang setiap langkah dan alasan langkah itu
+  penting. Halaman ini adalah tur ringkas yang mendahulukan keluaran.
 </Callout>
 
-Anda akan menggunakan **Claude Code** sebagai contoh lingkungan: itu bawaan
-pemasang. Ganti nama adaptor di langkah mana pun untuk mengarah ke alat lain;
-[daftar lingkungan](/docs/harnesses) memuat semua nama yang didukung.
+Anda akan menggunakan **Claude Code** sebagai contoh harness — ini adalah default
+pemasang. Ganti nama adapter di langkah mana pun untuk menargetkan alat lain;
+[daftar harness](/docs/harnesses) memuat setiap nama yang didukung.
 
 ## 1. Pasang Apothem
 
-Apothem didistribusikan sebagai runtime mandiri: mesin berjalan langsung dari
-pohon kode sumbernya dengan dependensi yang tertanam. Satu perintah mengunduh kode
-sumber, menempatkan mesin, dan mematerialisasikan lingkungan pertama Anda.
+Apothem dikirim sebagai runtime mandiri — mesin berjalan langsung dari pohon
+sumbernya dengan dependensi yang di-vendor. Satu perintah mengambil sumber,
+menempatkan mesin, dan mematerialisasikan harness pertama Anda:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Pemasang memerlukan Python 3.10+ sistem dengan `click` dan `rich` yang dapat
-diimpor, ditambah `git` untuk bentuk jaringan. Ia memeriksa prasyarat, menempatkan
-mesin di `~/.apothem`, dan mencetak pemanggilan mesin yang tepat untuk shell Anda
-saat selesai.
+Pemasang memerlukan Python 3.10+ sistem, ditambah `git` untuk bentuk jaringan.
+Pemasang memeriksa prasyarat dan menempatkan mesin di bawah `~/.apothem`. Ketika
+`click` atau `rich` tidak ada, pemasang memasang paketnya dengan konfirmasi Anda,
+atau saat `--yes` (`-Yes` pada PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1`
+diberikan, dan jika tidak, berhenti dengan perintah pip yang harus dijalankan
+(lihat [Prasyarat sekilas](/docs/install#prasyarat-sekilas)). Setelah selesai,
+pemasang mencetak banner langkah berikutnya; pada POSIX, ketika direktori shim
+sudah ada di `PATH`, banner tampak seperti ini:
 
 ```text
 Installation complete.
@@ -57,10 +61,21 @@ Recommended first step — the guided setup (profile -> preview -> install):
   apothem quickstart
 ```
 
+<Callout title="Eksekusi pertama tanpa profil">
+  Jika Anda belum memiliki profil, pemasang menyalin profil contoh ke
+  `~/.config/apothem/profile.yaml` dan terus berjalan: pemasang
+  mematerialisasikan harness pertama Anda dan memverifikasinya dalam eksekusi
+  yang sama. Kolom identitas pada contoh tersebut adalah placeholder, sehingga
+  instalasi mencetak sebuah catatan. Jadikan profil itu milik Anda di Langkah 2,
+  lalu terapkan dengan `apothem update --harness <name>` seperti di Langkah 5.
+</Callout>
+
 <Callout title="Perintah `apothem`">
-  Pemasang menempatkan shim `apothem` di `PATH` Anda, jadi Anda menjalankan mesin
-  secara langsung sebagai `apothem <command>`. Jika direktori shim belum ada di
-  `PATH`, banner mencetak fallback mandiri —
+  Pemasang menulis shim `apothem` ke dalam `$HOME/.local/bin` (POSIX) atau
+  `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) dan tidak pernah menyunting
+  `PATH` Anda. Setelah direktori itu ada di `PATH`, Anda menjalankan mesin secara
+  langsung sebagai `apothem <command>`. Jika direktori itu belum ada di `PATH`,
+  banner mencetak fallback mandiri —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — yang tidak
   memerlukan shim; tambahkan prefiks persis yang dicetak banner Anda di depan
   setiap perintah.
@@ -69,23 +84,27 @@ Recommended first step — the guided setup (profile -> preview -> install):
 [Panduan instalasi](/docs/install) mencakup jalur instalasi lainnya — plugin
 Claude Code (`/plugin marketplace add ahmed-g-gad/apothem` lalu
 `/plugin install apothem@apothem`); ekstensi keluarga VS Code dan ekstensi
-native-alat lainnya; serta bentuk sesuai permintaan dengan npx
+native-alat lainnya; serta bentuk npx sesuai permintaan
 (`npx @ahmed-g-gad/apothem <command>`) — bersama opsi variabel lingkungan.
 
 ## 2. Buat profil bersama
 
-`apothem profile init` menulis profil valid terkecil yang mungkin ke
-`~/.config/apothem/profile.yaml`. Berikan `--profile PATH` saat Anda memelihara
-profil khusus proyek atau khusus CI di lokasi lain.
+`apothem profile init` menulis profil valid-skema terkecil ke
+`~/.config/apothem/profile.yaml`. Jika sebuah profil sudah ada di sana, seperti
+ketika pemasang pada Langkah 1 menyalin contoh, `init` berhenti dengan galat dan
+membiarkan berkas tidak berubah; berikan `--force` untuk menimpanya, atau
+pertahankan berkas itu dan sunting seperti ditunjukkan di bawah. Berikan
+`--profile PATH` saat Anda menyimpan profil khusus proyek atau khusus CI di
+tempat lain.
 
 ```bash
 apothem profile init
 apothem profile show --json
 ```
 
-Kerangka ini menggunakan data identitas placeholder yang fiktif dan aman untuk
-disunting sebelum memasang keluaran lingkungan apa pun. `show --json` membacanya
-kembali dan melaporkan profil yang tervalidasi.
+Kerangka ini menggunakan data identitas placeholder palsu dan aman untuk disunting
+sebelum Anda memasang keluaran harness apa pun. `show --json` membacanya kembali
+dan melaporkan profil yang tervalidasi:
 
 ```json
 {
@@ -97,19 +116,19 @@ kembali dan melaporkan profil yang tervalidasi.
 }
 ```
 
-Di sinilah suntingan yang cacat juga muncul: jika YAML tidak valid, `show`
-melaporkannya pada titik ini, sebelum konfigurasi lingkungan apa pun ditulis.
-Jadikan profil ini milik Anda dengan `apothem profile edit` (membukanya di editor
-Anda) atau setel satu kunci di tempat.
+Di sini pula suntingan yang cacat muncul — jika YAML tidak valid, `show`
+melaporkannya di sini, sebelum konfigurasi harness apa pun ditulis. Jadikan profil
+milik Anda dengan `apothem profile edit` (membukanya di editor Anda) atau setel
+satu kunci di tempat:
 
 ```bash
 apothem profile set identity.name "Your Name"
 ```
 
-## 3. Pasang adaptor lingkungan
+## 3. Pasang adapter harness
 
-Materialisasikan adaptor harness utama Anda. Ini membaca profil Anda dan
-menulis konfigurasi native alat tersebut.
+Materialisasikan adapter untuk harness utama Anda. Ini membaca profil Anda dan
+menulis konfigurasi native alat tersebut:
 
 ```bash
 apothem install --harness claude-code
@@ -119,32 +138,34 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Adaptor bercakupan proyek menulis di dalam sebuah proyek alih-alih direktori home
-Anda, jadi membutuhkan `--project PATH`. Pratinjau instalasi apa pun tanpa menulis
-berkas menggunakan `--dry-run`.
+Adapter bercakupan proyek menulis di dalam sebuah proyek alih-alih di direktori
+home Anda, sehingga memerlukan `--project PATH`. Pratinjau instalasi apa pun tanpa
+menulis berkas dengan `--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Pasang set lengkap yang didukung registri sekaligus dengan `--harness all`. Karena
-pilihan itu menulis berkas baik bercakupan proyek maupun bercakupan pengguna,
-perintah mencetak tujuan konkret yang dikelompokkan berdasarkan lokasi dan meminta
-konfirmasi sebelum menulis di luar akar proyek.
+Pasang seluruh set yang didukung registri sekaligus dengan `--harness all`.
+Karena pilihan itu menulis berkas bercakupan proyek maupun berkas bercakupan
+pengguna, perintah mencetak target konkret yang dikelompokkan menurut lokasi. Di
+terminal interaktif, perintah meminta konfirmasi sebelum menulis di luar root
+proyek. Eksekusi tanpa terminal, eksekusi yang diberi `--yes`, atau eksekusi
+dengan `--format json` menulis tanpa bertanya; `--dry-run` tidak menulis apa
+pun. Jalankan seluruh set dengan:
 
 ```bash
 apothem install --harness all --project .
 ```
 
-Lihat [daftar lingkungan lengkap](/docs/harnesses) untuk semua nama yang didukung,
+Lihat [daftar harness lengkap](/docs/harnesses) untuk setiap nama yang didukung,
 dan [referensi install](/docs/cli-reference/install) untuk set opsi lengkap.
 
 ## 4. Verifikasi
 
-Materialisasi hanyalah separuh pekerjaan: `verify` mengonfirmasi bahwa berkas
-konfigurasi lingkungan yang diharapkan telah ditulis dan cocok dengan apa yang
-dideklarasikan profil.
+Materialisasi hanyalah separuh pekerjaan — `verify` memastikan berkas konfigurasi
+yang diharapkan harness sudah terpasang dan valid:
 
 ```bash
 apothem verify --harness claude-code
@@ -154,36 +175,48 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` keluar dengan kode bukan-nol jika konfigurasi hilang atau menyimpang,
-sehingga juga berfungsi sebagai gerbang dalam skrip penyiapan. Untuk pemeriksaan
-kesehatan seluruh mesin pada setiap adaptor terdaftar, jalankan:
+`verify` keluar dengan kode bukan-nol jika target terkelola hilang, berkas
+terkelola kosong, atau konfigurasi JSON atau YAML tidak dapat diurai. Tambahkan
+`--profile PATH` untuk juga gagal ketika berkas yang terpasang berbeda dari
+profil tersebut, sehingga `verify` berfungsi sebagai pemeriksaan penyimpangan;
+tanpanya, konfigurasi yang usang tetap lolos verifikasi. Kode keluar bukan-nol
+memungkinkan `verify` berfungsi sebagai gerbang dalam skrip penyiapan. Untuk
+pemeriksaan kesehatan seluruh mesin di setiap adapter terdaftar, jalankan:
 
 ```bash
 apothem doctor
 ```
 
-`doctor` melaporkan status instalasi setiap adaptor dan keluar dengan kode
-bukan-nol jika ada adaptor terdaftar yang melaporkan dirinya tidak terpasang.
+`doctor` memeriksa setiap harness yang terpasang: harness itu harus lolos
+verifikasi, dan setiap perintah hook yang didaftarkan oleh instalasinya harus
+dapat dimulai. Harness yang belum Anda pasang tercantum tetapi tidak dihitung
+sebagai kegagalan, sehingga `doctor` keluar dengan kode 0 ketika tidak ada
+pemeriksaan yang gagal, bahkan jika hanya satu harness yang terpasang.
 
 ## 5. Eksekusi pertama Anda
 
-Buka harness yang baru saja Anda konfigurasikan — Claude Code, dalam
-contoh ini — dan mulai sesi di proyek mana pun. Aturan dan preferensi yang Anda
-tulis ke profil di Langkah 2 sudah menjadi bagian dari perilaku alat itu. Itulah
-eksekusi pertama yang berfungsi: satu profil, membentuk sesi nyata.
+Buka harness yang baru saja Anda konfigurasikan — Claude Code, dalam contoh ini —
+dan mulai sesi di proyek mana pun. Profil yang Anda siapkan di Langkah 2 kini
+menjadi bagian dari perilaku alat itu. Itulah eksekusi pertama yang berfungsi:
+satu profil, membentuk sesi nyata.
 
-Saat Anda mengubah profil nanti, terapkan ulang tanpa memasang ulang.
+Saat Anda mengubah profil nanti, terapkan ulang tanpa memasang ulang:
 
 ```bash
 apothem update --harness claude-code
 ```
 
+Sebutkan adapter lain untuk menerapkan ulang profil ke alat itu (tambahkan
+`--project PATH` untuk adapter bercakupan proyek), atau berikan
+`--harness all --project .` untuk menerapkannya ulang ke setiap harness yang
+didukung.
+
 ## Langkah berikutnya
 
-- [Tambahkan lebih banyak lingkungan](/docs/install/harness-setup) — ulangi
-  Langkah 3 untuk setiap alat.
+- [Tambahkan lebih banyak harness](/docs/install/harness-setup) — ulangi Langkah 3
+  untuk setiap alat.
 - [Tulis aturan pertama Anda](/docs/usage/writing-rules) — unit yang diwarisi
-  setiap lingkungan.
-- [Buat sebuah rencana](/docs/usage/authoring-plans) — arahkan misi lengkap
-  melalui alur perencanaan deterministik.
-- [Referensi CLI](/docs/cli-reference) — setiap perintah, opsi, dan kode keluar.
+  setiap harness.
+- [Tulis sebuah rencana](/docs/usage/authoring-plans) — arahkan seluruh misi
+  melalui pipeline rencana yang deterministik.
+- [Referensi CLI](/docs/cli-reference) — setiap perintah, flag, dan kode keluar.

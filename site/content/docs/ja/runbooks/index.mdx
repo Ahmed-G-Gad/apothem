@@ -1,21 +1,23 @@
 ---
 title: "ランブック"
-description: "Apothem のランブック——リリース、パブリッシャー設定、Pages 有効化、復旧、アダプター作成のためのステップバイステップの運用手順。"
+description: "Apothem のランブック — リリース、パブリッシャーのセットアップ、Pages の有効化、復旧、アダプター作成のための段階的な運用手順。"
 machineTranslated: true
-sourceHash: "63bed63ad7506d0b"
+sourceHash: "cd67c6a222612ca3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-メンテナー向けの運用手順です。各ランブックは順序立てられた、文脈に依存しない
-手順です。既知の開始状態を、検証済みの終了状態へと導き、有能なコントリビューターが
-事前の文脈なしに従えるように書かれています。
+メンテナー向けの運用手順です。
+各ランブックは、順序立てられた、文脈に依存しない手順です。既知の開始状態を検証済みの終了状態へと進め、有能なコントリビューターが事前の文脈なしに従えるように書かれています。
 
 ## ページ
 
 | ページ | 説明 |
 |------|-------------|
-| [Pages 有効化](/docs/runbooks/pages-enablement) | `apothem.ahmedgad.com` を、新規の GitHub Pages 設定から `200 OK` を返す HTTPS のランディングページまで導きます。 |
-| [リリースサイクル](/docs/runbooks/release-cycle) | `vX.Y.Z` リリースを、クリーンな作業ツリーから、検証済みの GitHub Release と npm の設定面まで導きます。 |
-| [パブリッシャーアカウントの設定](/docs/runbooks/publisher-account-setup) | `@ahmed-g-gad/apothem` 向けに npmjs.com の信頼済みパブリッシャーと、GitHub 側のリリース前提条件を設定します。 |
-| [リリースの復旧](/docs/runbooks/release-recovery) | リリース切り替えシーケンスが途中で失敗したとき、`ahmed-g-gad/apothem` を動作する状態へ復元します。 |
-| [新しい環境アダプターの作成](/docs/runbooks/new-harness-adapter-authoring) | ファーストパーティへの組み込みに向けて、新しい環境アダプターを作成して公開します。 |
+| [Pages 有効化](/docs/runbooks/pages-enablement) | `apothem.ahmedgad.com` を、新規の GitHub Pages 設定から、`200 OK` を返す HTTPS のランディングページまで進めます。 |
+| [リリースサイクル](/docs/runbooks/release-cycle) | `vX.Y.Z` リリースを、クリーンな作業ツリーから、検証済みの GitHub Release と npm の面まで進めます。 |
+| [パブリッシャーアカウントのセットアップ](/docs/runbooks/publisher-account-setup) | `@ahmed-g-gad/apothem` 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。 |
+| [リリースの復旧](/docs/runbooks/release-recovery) | リリースのカットオーバーシーケンスが途中で失敗したときに、`ahmed-g-gad/apothem` を動作する状態へ復元します。 |
+| [新しいハーネスアダプターの作成](/docs/runbooks/new-harness-adapter-authoring) | ファーストパーティへの組み込みに向けて、新しいハーネスアダプターを作成して公開します。 |
+| [デプロイチェックリスト](/docs/runbooks/deployment-checklist) | Apothem エコシステムをデプロイまたは共有する前に、事前検証チェックリストを実行します。 |
+| [単独メンテナーのマージ儀式](/docs/runbooks/solo-maintainer-merge) | メンテナーが自分のプルリクエストを直接マージできる場合と、承認を要求し管理者にもそれを強制する保護のもとでの自己マージ儀式。 |
+| [マシン間同期チェックリスト](/docs/runbooks/cross-machine-sync-checklist) | 完全な移植性チェックを行い、Claude Code アダプターが新しいホストで正しくインストール、検証、アンインストールされることを確認します。 |

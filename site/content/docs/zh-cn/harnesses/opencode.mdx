@@ -2,14 +2,14 @@
 title: "OpenCode"
 description: "适用于 OpenCode（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** OpenCode
 **安装名称：** `opencode`
 **状态：** 测试版
-**平台原生配置：** `~/.config/opencode/`
+**原生配置：** `~/.config/opencode/`
 
 ## 安装
 
@@ -17,31 +17,30 @@ sourceHash: "4469c3fbcf489bd8"
 apothem install --harness opencode
 ```
 
-该适配器写入 OpenCode 的 JSON 配置，将 Apothem 技能安装到 OpenCode 技能界面，
-将命令提示转换为 OpenCode Markdown 命令文件，并将 Apothem 辅助工具定义规范化为
-OpenCode 子辅助工具。
+适配器写入 OpenCode 的 JSON 配置，将 Apothem 技能安装到 OpenCode 技能表面，将命令提示词转换为 OpenCode Markdown 命令文件，并将 Apothem 辅助器定义规范化为 OpenCode 子辅助器。
 
 **写入的文件：**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器渲染 `opencode.json`，其中的 `instructions` 文件列表指向 Apothem 已安装的
-规则，然后将每个共享的 Apothem 套组传播到 OpenCode 原生界面或 Apothem 所有的
-支持子树中。已存在的匹配的 Apothem 托管子项会在替换之前被备份。
+适配器渲染 `opencode.json`，其中的 `instructions` 文件列表指明你的配置档案文档和 Apothem 的始终启用规则，然后将每个共享的 Apothem 集合传播到 OpenCode 原生表面或 Apothem 自有的支持子树中。现有的、匹配的 Apothem 管理子项会在替换之前被备份。
 
 ## 兼容性说明
 
-规则通过原生的 `instructions` 列表被引用。模板和钩子提示是
-`~/.config/opencode/.apothem/support/` 下的参考素材；命令、技能和辅助工具定义使用原生
-发现位置。
+OpenCode 会将 `instructions` 列表指明的每个文件合并到每个会话中（[OpenCode 规则](https://opencode.ai/docs/rules/)）。因此，该列表首先指明你的配置档案文档，然后只列出 `alwaysApply` 为 `true` 的规则，每条规则一个明确的 `~/.config/opencode/.apothem/support/rules/<name>.md` 路径；OpenCode 会将开头的 `~/` 展开为你的主目录。按路径筛选的规则、模板和钩子提示词仍作为参考材料安装在 `~/.config/opencode/.apothem/support/` 下，引用其中某一项的规则、技能或命令会按需读取它。命令、技能和辅助器定义使用原生发现位置。
+
+配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 携带共享配置档案中你的身份和偏好，并以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.config/opencode/.apothem/support/` 下的绝对目录。它是第一个 `instructions` 条目，因此 OpenCode 会在每个会话中加载它。
+
+由较早发布写入的 `opencode.json` 列出单个通配模式 `~/.config/opencode/.apothem/support/rules/*.md`，它会加载每条规则。`apothem install` 和 `apothem update` 会将其替换为始终启用的列表，而 `apothem uninstall` 会移除这两种形式。在任何情况下，你自己的 `instructions` 条目都会被保留。
 
 ## 验证
 
@@ -51,9 +50,9 @@ apothem verify --harness opencode
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必填字段都已存在。
-3. 适配器特定的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
+3. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -61,7 +60,7 @@ verify 命令确认：
 apothem update --harness opencode
 ```
 
-刷新 `opencode.json`、原生命令、技能、辅助工具定义，以及 Apothem 支持树。
+刷新 `opencode.json`、原生命令、技能、辅助器定义以及 Apothem 支持树。
 
 ## 卸载
 
@@ -69,10 +68,9 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加到 `~/.config/opencode/opencode.json` 的条目（你自己的键、MCP 服务器和 `instructions` 条目会保留；只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件）。从配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 中移除 Apothem 块，并保留其中的其他任何文本；只有当该文件中不再剩下其他内容时，才会删除该文件。同时移除 `~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/` 和 `~/.config/opencode/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件会保留。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -91,3 +89,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

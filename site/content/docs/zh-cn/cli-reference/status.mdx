@@ -2,61 +2,66 @@
 title: "status"
 description: "apothem status 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "a4669e50e0d90f9f"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-报告每个已注册harness的安装、校验和漂移状态。
+报告每个已注册工具的安装、验证和漂移状态。
 
 ## 概要
 
 ```
-apothem status [--project PATH]
+apothem status [--profile PATH] [--project PATH]
                [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-`status` 是一个只读的检查命令。它会遍历每个已注册的harness适配器，并为每个harness报告三项事实：它是否已安装、其受管目标是否通过校验，以及已安装的配置是否已偏离共享配置文件。它不向磁盘写入任何内容。
+`status` 是一个只读的检查命令。它遍历每个已注册的工具适配器，并为每个工具报告三项事实：它是否已安装、其受管目标是否通过验证，以及已安装的配置是否已偏离共享配置档案。它不会向磁盘写入任何内容。
 
-对于每个harness，`status` 报告：
+对于每个工具，`status` 报告：
 
 | 列 | 含义 |
 |---|---|
-| `installed` | 适配器的受管配置存在于其目标路径。 |
+| `installed` | 适配器的受管配置存在于其目标路径上。 |
 | `verified` | 适配器的受管目标存在且有效。 |
-| `drift` | 配置文件保真度判定（见下文）。 |
+| `drift` | 配置档案保真度判定（见下文）。 |
 
-`drift` 值是以下之一：
+`drift` 的值为以下之一：
 
 | 值 | 含义 |
 |---|---|
-| `in-sync` | 已安装的配置逐字携带了刚刚投射的共享配置文件。 |
-| `drift` | 该harness已安装，但其投射的配置文件内容不再与当前共享配置文件匹配。重新运行 `apothem install` 以重新投射。 |
-| `absent` | 该harness未安装，因此没有可比较的内容。 |
-| `needs-project` | 报告了一个项目范围的harness却未提供 `--project`，因此无法解析其目标。传入 `--project PATH` 以检查它。 |
+| `in-sync` | 已安装的配置逐字携带了新近投射的共享配置档案。 |
+| `drift` | 该工具已安装，但其投射的配置档案内容已不再与当前的共享配置档案一致。重新运行 `apothem install` 以重新投射。 |
+| `absent` | 该工具未安装，因此没有可比较的内容。 |
+| `needs-project` | 一个项目范围的工具在未提供 `--project` 的情况下被报告，因此无法解析其目标。传入 `--project PATH` 以检查它。 |
+| `unknown` | 无法加载默认配置档案，因此已安装的工具没有可供比较的基线。修复配置档案即可恢复漂移判定。 |
 
-漂移会被报告，但从不视为错误：即便一个或多个harness报告 `drift`，`status` 仍以 0 退出。漂移是关于你的设置的一项事实，而非该命令的失败。
+漂移会被报告，但绝不会被视为错误：即使一个或多个工具报告 `drift`，`status` 也以 0 退出。漂移是关于你的设置的一项事实，而不是该命令的失败。
 
-如果无法加载共享配置文件，对于已安装的harness，漂移会降级为 `absent`（installed/verified 事实仍会被报告），而不会中止整个遍历。
+如果无法加载默认的共享配置档案，对于已安装的工具，漂移会降级为 `unknown`（已安装/已验证这两项事实仍会被报告），而不是中止整个扫查。而显式指定但无法加载的 `--profile` 属于用户错误，会改为以一个结构化错误中止。
+
+这种降级总会被报告：`status` 会打印一条指明该配置档案及修复方法的提示，`--json` 信封则会在 `warnings` 中携带一个对应的 `drift_baseline_unavailable` 条目。这在没有安装任何工具时最为重要——此时每一行都显示 `absent`，不存在任何 `unknown` 单元格，因此该提示是基线从未加载的唯一信号。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--project PATH` | 项目范围harness的项目根目录。不提供时，项目范围的harness报告 `needs-project`。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--profile PATH` | 用于选择漂移基线的共享配置档案 YAML。未提供时，使用默认配置档案（`~/.config/apothem/profile.yaml`）。 |
+| `--project PATH` | 项目范围工具的项目根目录。未提供时，项目范围的工具报告 `needs-project`。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
 
-`--json` 信封为每个已注册的harness携带一行结果。每一行携带已记录的键 `harness`、`installed`、`verified` 和 `drift`。
+`--json` 信封为每个已注册的工具携带一行结果。每一行都携带文档所述的键 `harness`、`installed`、`verified` 和 `drift`。扫查无异常时，`warnings` 为空；当无法加载默认配置档案时，它携带一个 `drift_baseline_unavailable` 条目，其中包含 `path`、`code`、`reason` 和 `fix`。
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "status",
   "action": "status",
@@ -81,7 +86,7 @@ apothem status [--project PATH]
 }
 ```
 
-每适配器故障隔离：如果某个适配器在报告其状态时抛出异常，该harness的行会携带 `outcome: "error"` 和一条 `message`，其余harness仍正常报告，进程以代码 2 退出。
+按适配器隔离故障：如果某个适配器在报告其状态时抛出异常，该工具的行会携带 `outcome: "error"` 和一条 `message`，其余工具仍会正常报告，而进程以代码 2 退出。
 
 ## 示例
 
@@ -93,13 +98,15 @@ apothem status --json
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
-| 0 | 已报告状态（漂移会被报告，而非错误） |
+| 0 | 已报告状态（漂移会被报告，而不是错误） |
+| 1 | 预期内的校验错误（无效的 `--profile`，或者不存在的 `--project` 路径） |
 | 2 | 至少一个适配器未能报告其状态 |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem verify](/docs/cli-reference/verify) — 校验单个harness安装
-- [apothem diff](/docs/cli-reference/diff) — 预览某个harness的待定更改
-- [apothem harnesses](/docs/cli-reference/harnesses) — 列出并检查已注册的harness
+- [apothem verify](/docs/cli-reference/verify)——验证工具适配器的安装
+- [apothem diff](/docs/cli-reference/diff)——预览一个工具待应用的更改
+- [apothem harnesses](/docs/cli-reference/harnesses)——列出并检查已注册的工具

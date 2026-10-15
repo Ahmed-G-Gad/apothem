@@ -1,14 +1,14 @@
 ---
 title: "Codex"
-description: "محوّل إطار عمل Apothem لـ Codex (Beta)."
+description: "محوّل إطار عمل Apothem لـ Codex (تجريبي)."
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>OpenAI</bdi>
 **اسم التثبيت:** <bdi>`codex`</bdi>
-**الحالة:** <bdi>Beta</bdi>
+**الحالة:** تجريبي
 **الإعداد الأصلي:** <bdi>`~/.codex/AGENTS.md`</bdi>، و<bdi>`~/.codex/hooks.json`</bdi>،
 و<bdi>`~/.codex/hooks/`</bdi>، و<bdi>`~/.codex/agents/*.toml`</bdi>، و<bdi>`~/.agents/skills/`</bdi>
 
@@ -18,28 +18,62 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-يثبّت المحوّل تعليمات <bdi>Codex</bdi> الأصلية وخطافاتها، ويحوّل وكلاء <bdi>Apothem</bdi>
-إلى وكلاء <bdi>TOML</bdi> الخاصة بـ<bdi>Codex</bdi>، ويغلّف مطالبات الأوامر القابلة لإعادة
-الاستخدام بوصفها مهارات <bdi>Codex</bdi>.
+يثبّت المحوّل التعليمات والخطّافات الأصلية لـ <bdi>Codex</bdi>، ويحوّل عوامل
+<bdi>Apothem</bdi> إلى عوامل <bdi>Codex</bdi> بصيغة <bdi>TOML</bdi>، ويُغلِّف مطالبات
+الأوامر القابلة لإعادة الاستخدام بوصفها مهارات <bdi>Codex</bdi>.
 
 **الملفات المكتوبة:** <bdi>`~/.codex/AGENTS.md`</bdi>، و<bdi>`~/.codex/hooks.json`</bdi>،
 و<bdi>`~/.codex/hooks/`</bdi>، و<bdi>`~/.codex/agents/*.toml`</bdi>،
-و<bdi>`~/.agents/skills/*/SKILL.md`</bdi>، وملفات الدعم تحت
+و<bdi>`~/.agents/skills/*/SKILL.md`</bdi>، و<bdi>`~/.agents/skills/*/agents/openai.yaml`</bdi>
+للمهارات التي يستدعيها المستخدم، وملفات الدعم تحت
 <bdi>`~/.config/apothem/{rules,templates}/`</bdi>.
+
+تنتهي كتلة <bdi>Apothem</bdi> في <bdi>`AGENTS.md`</bdi> بقسم ملفات دعم
+<bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب
+المستودع في المهارات والقواعد المُثبَّتة: <bdi>`rules/<name>.md`</bdi>
+و<bdi>`templates/...`</bdi> تحت <bdi>`~/.config/apothem/`</bdi>، و<bdi>`hooks/...`</bdi>
+تحت <bdi>`~/.codex/hooks/`</bdi>. لا يشحن تثبيت <bdi>Codex</bdi> أي شجرة
+<bdi>`schemas/`</bdi> أو <bdi>`conformity/`</bdi>، لذا لا يسرد القسم أيًّا منهما.
+
+**المهارات التي يستدعيها المستخدم.** يتجاهل <bdi>Codex</bdi> المفتاح
+<bdi>`disable-model-invocation`</bdi>. لكل مهارة أو أمر يضبط مصدرُه
+<bdi>`disable-model-invocation: true`</bdi>، يكتب المحوّل <bdi>`agents/openai.yaml`</bdi>
+بجوار <bdi>`SKILL.md`</bdi> الخاص به مع
+<bdi>`policy.allow_implicit_invocation: false`</bdi>، بحيث لا يختار <bdi>Codex</bdi>
+المهارة من تلقاء نفسه؛ ويظل بإمكانك تشغيلها صراحةً باستخدام <bdi>`$skill-name`</bdi>.
+راجع [وثائق مهارات <bdi>Codex</bdi>](https://developers.openai.com/codex/skills).
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل أفواج <bdi>Apothem</bdi> المشتركة ويثبّت كلًّا منها في سطح <bdi>Codex</bdi>
-الصحيح: التعليمات إلى <bdi>`AGENTS.md`</bdi>، والخطافات إلى <bdi>`hooks.json`</bdi> و
-<bdi>`hooks/`</bdi>، والوكلاء إلى <bdi>TOML</bdi>، والمهارات إلى <bdi>`~/.agents/skills/`</bdi>،
-وقواعد/قوالب <bdi>Markdown</bdi> غير الأصلية إلى <bdi>`~/.config/apothem/`</bdi> بوصفها مادة
-دعم.
+يقرأ المحوّل حزم <bdi>Apothem</bdi> المشتركة ويثبّت كلًّا منها في سطح
+<bdi>Codex</bdi> الصحيح: التعليمات إلى <bdi>`AGENTS.md`</bdi>، والخطّافات إلى
+<bdi>`hooks.json`</bdi> و<bdi>`hooks/`</bdi>، والعوامل إلى <bdi>TOML</bdi>، والمهارات
+إلى <bdi>`~/.agents/skills/`</bdi>، وقواعد/قوالب <bdi>Markdown</bdi> غير الأصلية إلى
+<bdi>`~/.config/apothem/`</bdi> بوصفها مادّة دعم.
+
+يضبط كل مساعِد مُحوَّل <bdi>`name`</bdi>، و<bdi>`description`</bdi>،
+و<bdi>`developer_instructions`</bdi>. والمساعِد الذي لا تتضمّن الأدوات الممنوحة له،
+بعد إزالة الأدوات المذكورة في قائمة <bdi>`disallowedTools`</bdi> الخاصة به، أيّ أداة
+لتحرير الملفات (<bdi>`Write`</bdi>، أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>،
+أو <bdi>`NotebookEdit`</bdi>) يضبط أيضًا <bdi>`sandbox_mode = "read-only"`</bdi>، وهو
+قيد الكتابة الخاص بـ <bdi>Codex</bdi> نفسه. لا تُعَدّ <bdi>`Bash`</bdi> أداةً لتحرير
+الملفات، لذا يحصل المساعِد الذي مُنح <bdi>`Bash`</bdi> ولم يُمنح أيًّا من تلك الأدوات
+على هذا الإعداد مع ذلك. لا يُضبَط أي نموذج أو جهد استدلال، لذا يرث كل مساعِد
+اختيارات الجلسة. لا يملك <bdi>Codex</bdi> قائمة أدوات أو حدًّا للأدوار لكل مساعِد،
+لذا لا يُنقَل <bdi>`tools`</bdi> و<bdi>`maxTurns`</bdi> الخاصان بالمساعِد.
 
 ## ملاحظات التوافق
 
-يحجز <bdi>Codex</bdi> الدليل <bdi>`~/.codex/rules/`</bdi> لسياسات تنفيذ <bdi>`.rules`</bdi>.
-ولا يضع <bdi>Apothem</bdi> هناك قواعد سلوك بصيغة <bdi>Markdown</bdi>؛ بل يحتفظ بها في
-<bdi>`~/.config/apothem/`</bdi> ويشير إليها من <bdi>`AGENTS.md`</bdi> والمهارات المثبَّتة.
+<bdi>`~/.agents/skills/`</bdi> جذر مشترك يملكه <bdi>Codex</bdi>: تُحمِّله أيضًا ثماني
+أدوات مدعومة أخرى (يسردها [سجلّ أُطُر العمل](/docs/reference/harness-registry))، لذا
+تظهر مهارات <bdi>Apothem</bdi> التي يكتبها تثبيت <bdi>Codex</bdi> هناك في تلك الأدوات
+أيضًا، ويُزيلها إلغاء تثبيت <bdi>Codex</bdi> من تلك الأدوات. يطبع التثبيت ملاحظة
+تُسمّي تلك الأدوات.
+
+يحجز <bdi>Codex</bdi> الدليل <bdi>`~/.codex/rules/`</bdi> لسياسات التنفيذ
+<bdi>`.rules`</bdi>. لا يضع <bdi>Apothem</bdi> قواعد السلوك بصيغة <bdi>Markdown</bdi>
+هناك؛ بل يحتفظ بها في <bdi>`~/.config/apothem/`</bdi> ويُشير إليها من
+<bdi>`AGENTS.md`</bdi> ومن المهارات المُثبَّتة.
 
 ## التحقّق
 
@@ -49,9 +83,11 @@ apothem verify --harness codex
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -59,7 +95,7 @@ apothem verify --harness codex
 apothem update --harness codex
 ```
 
-يحدّث تمهيد <bdi>Codex</bdi> والوكلاء المحوَّلين والمهارات وأفواج الدعم.
+يُحدِّث تمهيد <bdi>Codex</bdi>، والعوامل المُحوَّلة، والمهارات، وحزم الدعم.
 
 ## إلغاء التثبيت
 
@@ -67,10 +103,17 @@ apothem update --harness codex
 apothem uninstall --harness codex
 ```
 
-يزيل ملفات الإعداد الأصلية التي كتبها المحوّل. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي
-المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.codex/AGENTS.md`</bdi> ويُبقي أي نص خارجها،
+ويُزيل مدخلات <bdi>Apothem</bdi> من <bdi>`~/.codex/hooks.json`</bdi> ويُبقي مدخلاتك.
+ويُزيل كذلك ملفات <bdi>Apothem</bdi> في <bdi>`~/.codex/hooks/`</bdi>،
+و<bdi>`~/.codex/agents/`</bdi>، و<bdi>`~/.agents/skills/`</bdi>،
+و<bdi>`~/.config/apothem/{rules,templates}/`</bdi>؛ وتبقى الملفات الأخرى في تلك
+المجلدات. تختفي المهارات المُزالة من <bdi>`~/.agents/skills/`</bdi> من الأدوات
+الأخرى التي تُحمِّله هي أيضًا (راجع [ملاحظات التوافق](#ملاحظات-التوافق)). يُنسَخ كل
+ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو إزالته. لا يتأثّر
+ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -82,10 +125,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness codex`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness codex`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness codex`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness codex`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

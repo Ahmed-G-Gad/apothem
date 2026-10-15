@@ -12,11 +12,11 @@ This document IS the canonical CM-N registry — it is the source where `CM-1` t
 
 ## Namespaces
 
-`CM-N` = config mandate (defined here, or in `src/apothem/rules/*.md` per the artifact-registries rules row); `TM-N` = template mandate (defined in `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (defined in the same template §6 "Core Principles", CP-1–27). The plan-suite template is the canonical TM/CP registry — `/plan` commands resolve cross-references through that file. Helper artifacts (rules, helpers, commands, hooks) cite this registry by reference.
+`CM-N` = config mandate (defined here, or in `src/apothem/rules/*.md` per the rules table in `site/content/docs/reference/rules.mdx`); `TM-N` = template mandate (defined in `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (defined in the same template §6 "Core Principles", CP-1–27). The plan-suite template is the canonical TM/CP registry — `/plan` commands resolve cross-references through that file. Helper artifacts (rules, helpers, commands, hooks) cite this registry by reference.
 
 ## Activation
 
-CM-1–10 + cognitive identity govern all interactions. CM-11, CM-13, CM-15, CM-16, CM-20 apply within the `/plan` pipeline only. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 apply universally (always-on). CM-23, CM-27, CM-28 apply universally within their declared path-filter scope. Ad-hoc default seriousness: PERSONAL_USE.
+CM-1–10 + cognitive identity govern all interactions. CM-11, CM-13 (sub-rules A to C), CM-15, CM-16, CM-20 apply within the `/plan` pipeline only. CM-13 sub-rule D applies to every git write, and sub-rule E to `git mv` / `git rm` targets and commit-body paths, inside or outside that pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 apply universally (always-on). CM-23, CM-27, CM-28 apply universally within their declared path-filter scope. Ad-hoc default seriousness: PERSONAL_USE.
 
 ## CM-1–10 (Operational)
 
@@ -36,7 +36,7 @@ Codebase artifacts must NEVER contain plan-internal references. **Forbidden term
 
 ## CM-12 (Context Stewardship)
 
-Lean context management at all times — see CM-24 rule. Four sub-tiers are enumerated in the Sub-Reference Convention section below. Compaction discipline (CM-19) governs the action; CM-12 governs the steady-state discipline.
+Lean context management at all times — see CM-24 rule. Four sub-tiers are enumerated in the Sub-Reference Convention section below. Compaction discipline (CM-19) governs the act of compacting; CM-12 governs the steady-state discipline.
 
 ## CM-13 (Commits)
 
@@ -52,7 +52,7 @@ Lean context management at all times — see CM-24 rule. Four sub-tiers are enum
 
 ## CM-15–21 (Pipeline)
 
-CM-15 and CM-16 are inline-defined here (no separate rule); CM-17–21 delegate to rules per the artifact-registries rules table.
+CM-15 and CM-16 are inline-defined here (no separate rule); CM-17–21 delegate to rules per the rules table in `site/content/docs/reference/rules.mdx`. The heading groups these mandates by topic; their scope follows the Activation paragraph: CM-15, CM-16 and CM-20 apply within the `/plan` pipeline only, and CM-17–19 and CM-21 apply universally.
 
 - **CM-15 Collective Coherence:** Verify plan artifacts remain coherent after modification.
 - **CM-16 Autonomous Execution:** At SHARED+, never stop between phases. Compaction mandatory at phase transitions (PERSONAL_USE+).
@@ -76,12 +76,12 @@ One-line anchors for the rule-delegated mandates (full specifications live in th
 
 ## Rule-Delegated vs. Inline-Defined Mandates
 
-- **Rule-delegated** (full specification in `src/apothem/rules/`): see the artifact-registries rules table "Implements" column. Covers CM-1–10, CM-12, CM-14, CM-17–28.
-- **Inline-defined** (full specification here, no separate rule): CM-11 (Plan Integrity), CM-13 (Commits), CM-15 (Collective Coherence), CM-16 (Autonomous Execution).
+- **Rule-delegated** (full specification in `src/apothem/rules/`): see the "Implements" column of the rules table in `site/content/docs/reference/rules.mdx`. Covers CM-1–10, CM-12, CM-14, CM-17–28.
+- **Inline-defined** (full specification here, no separate rule): CM-11 (Plan Integrity), CM-13 (Commits; sub-rules D and E cite rule files for their detailed specification), CM-15 (Collective Coherence), CM-16 (Autonomous Execution).
 
 ## Sub-Reference Convention
 
-Commands use lettered suffixes to reference specific subsections within mandates. Pattern: `CM-N` + suffix letter = rule section. **Casing convention:** Uppercase suffixes denote structural subsections within a mandate; lowercase suffixes denote finer-grained directives within a Stewardship tier. The canonical sub-reference key-mapping table (registry-internal definitions) is preserved verbatim in the fenced block below:
+Commands use lettered suffixes to reference specific subsections within mandates. Pattern: `CM-N` + suffix letter = rule section. **Casing convention:** Uppercase suffixes denote structural subsections within a mandate; lowercase suffixes denote finer-grained directives within a Stewardship tier. The canonical sub-reference key-mapping table (registry-internal definitions) is in the fenced block below:
 
 ```text
 CM-11A = Prose Fidelity
@@ -96,6 +96,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

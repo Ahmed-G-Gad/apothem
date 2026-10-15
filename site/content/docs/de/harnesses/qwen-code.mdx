@@ -1,8 +1,8 @@
 ---
 title: "Qwen Code"
-description: "Apothem-Werkzeugadapter für Qwen Code (Beta)."
+description: "Apothem-Harness-Adapter für Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "0ba705985aed7ff1"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,9 @@ sourceHash: "0ba705985aed7ff1"
 apothem install --harness qwen-code
 ```
 
-Der Adapter schreibt die Qwen-Code-Einstellungen, installiert einen
-`QWEN.md`-Kontextanker, registriert Apothems Hook-Dispatcher, konvertiert
-Apothem-Befehle in Qwen-Markdown-Befehlsdateien, installiert Fähigkeiten als
+Der Adapter schreibt die Einstellungen von Qwen Code, installiert einen
+`QWEN.md`-Kontextanker, registriert Apothem-Hook-Dispatcher, konvertiert
+Apothem-Commands in Markdown-Command-Dateien von Qwen, installiert Skills als
 SKILL.md-Verzeichnisse und passt Helferdefinitionen als Qwen-Subagenten an.
 
 **Geschriebene Dateien:**
@@ -27,25 +27,33 @@ SKILL.md-Verzeichnisse und passt Helferdefinitionen als Qwen-Subagenten an.
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Die Datei `~/.qwen/apothem/rules/00-apothem-profile.md` ist das Profildokument.
+Es trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil.
+
 ## Zuordnung von Profil zu nativer Konfiguration
 
-Der Adapter rendert die dokumentierten `settings.json`-Schlüssel für Kontext und
-Hooks, schreibt `QWEN.md` und verwebt Apothem-Befehle, -Fähigkeiten und
--Helferdefinitionen durch die nativen Erkennungsverzeichnisse von Qwen Code. Regeln,
-Vorlagen und das Hook-Quellmaterial verbleiben als Unterstützungsmaterial unter
+Der Adapter rendert dokumentierte `settings.json`-Schlüssel für Kontext und
+Hooks, schreibt `QWEN.md` und verteilt Apothem-Commands, -Skills und
+Helferdefinitionen über die nativen Discovery-Verzeichnisse von Qwen Code.
+Regeln, Templates und Hook-Quellmaterial bleiben Unterstützungsmaterial unter
 `~/.qwen/.apothem/support/`.
 
 ## Kompatibilitätshinweise
 
-`~/.qwen/.apothem/support/` ist Unterstützungsmaterial, das von `QWEN.md` und den
-Hook-Befehlen der Einstellungen referenziert wird; es ist kein
-herstellereigener Erkennungs-Namensraum.
+`~/.qwen/.apothem/support/` ist Unterstützungsmaterial, auf das `QWEN.md` und
+die Hook-Befehle in den Einstellungen verweisen; es ist kein anbietereigener
+Discovery-Namensraum.
+Der Apothem-Block in `QWEN.md` endet mit einem Abschnitt zu den
+Apothem-Unterstützungsdateien, der das absolute Verzeichnis unter
+`~/.qwen/.apothem/support/` nennt, gegen das jeder Verweis im Repository-Stil
+(`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst wird.
 
 ## Verifizierung
 
@@ -53,11 +61,14 @@ herstellereigener Erkennungs-Namensraum.
 apothem verify --harness qwen-code
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -65,8 +76,8 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness qwen-code
 ```
 
-Aktualisiert `settings.json`, `QWEN.md`, die nativen Befehle, Fähigkeiten,
-Subagenten und den Apothem-Unterstützungsbaum.
+Aktualisiert `settings.json`, `QWEN.md`, native Commands, Skills, Subagenten und
+den Apothem-Unterstützungsbaum.
 
 ## Deinstallation
 
@@ -74,10 +85,20 @@ Subagenten und den Apothem-Unterstützungsbaum.
 apothem uninstall --harness qwen-code
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Entfernt die Einträge, die der Adapter zu `~/.qwen/settings.json` hinzugefügt
+hat (Ihre eigenen Schlüssel, MCP-Server und Hook-Handler bleiben erhalten, und
+die Datei wird nur gelöscht, wenn Apothem sie angelegt hat und nichts von Ihnen
+übrig ist). Entfernt den Apothem-Block aus `~/.qwen/QWEN.md` und aus dem
+Profildokument `~/.qwen/apothem/rules/00-apothem-profile.md` und behält jeden
+anderen Text darin; jede dieser Dateien wird nur gelöscht, wenn darin nichts
+anderes mehr übrig ist. Entfernt außerdem die Apothem-Dateien in
+`~/.qwen/commands/`, `~/.qwen/skills/`, `~/.qwen/agents/` und
+`~/.qwen/.apothem/support/`; andere Dateien in diesen Ordnern bleiben bestehen.
+Jede Datei wird unter `~/.apothem/backups/` gesichert, bevor sie geändert oder
+entfernt wird. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine
+bleiben unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,12 +108,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness qwen-code` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness qwen-code` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness qwen-code` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness qwen-code` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness qwen-code` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness qwen-code` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

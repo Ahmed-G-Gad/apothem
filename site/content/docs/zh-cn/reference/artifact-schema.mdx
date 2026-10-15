@@ -1,32 +1,32 @@
 ---
 title: "制品 Schema 规范"
-description: "Apothem 源码树中所有制品类型的规范化 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
+description: "Apothem 源码树中所有制品类型的规范 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
-sourceHash: "78472bdb279c1cb4"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**所有 Apothem 生态系统制品的规范化 YAML frontmatter 与必填字段。**
+**所有 Apothem 生态系统制品的逐类 YAML frontmatter 模板与必填字段。**
+
+> **权威来源。** 机器可读、由闸门强制执行的契约是 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 JSON Schema（`agent.schema.json`、`command.schema.json`、`skill.schema.json`……），每个 schema 都声明了 `additionalProperties`，因此合规闸门会拒绝未知键。本页与 [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) 是这些 schema 的两个人类可读投影——本页承载逐类的**模板与完整示例**，frontmatter-schema 承载简洁的**必需键索引**。当某一页与 JSON Schema 不一致时，以 schema 为准。
 
 ## 概述
 
-Apothem 源码树中（位于 `src/apothem/` 与根配置界面下）的所有制品都必须包含一个
-YAML frontmatter 块（位于 `---` 分隔符之间），其中携带特定于该制品类型的
-必填字段与可选字段。本文档定义每种类型的规范化 schema。
+Apothem 源码树中的所有制品（位于 `src/apothem/` 下以及根配置表面中）都必须包含一个 YAML frontmatter 块（位于 `---` 分隔符之间），其中带有特定于其制品类型的必填字段与可选字段。本文档为每种类型定义规范 schema。
 
 **通用规则：**
 
 - frontmatter 符合 YAML 1.2
-- 除空值外，所有字符串值均使用双引号
+- 所有字符串值都使用双引号，空字符串写作 `""`
 - 字段顺序：必填字段在前，可选字段按相关性分组
-- frontmatter 中的注释使用带空格的 `#`：`# comment`
-- 路径值必须为相对路径（无前导 `/`）并使用正斜杠（`/`）以保证跨平台兼容性
+- frontmatter 中的注释使用 `#` 加一个空格：`# comment`
+- 路径值必须为相对路径（不带前导 `/`），并使用正斜杠（`/`）以保证跨平台兼容性
 
-**版本约定（跨制品类型通用）：**
+**版本约定（带版本的制品类别——命令、辅助器、技能、CLAUDE.md）：**
 
-- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。schema 或契约的破坏性变更递增 MAJOR；新增式非破坏性变更（新增可选字段、新增章节、新增反模式）递增 MINOR；澄清、格式修复或无行为变更的纯文档编辑递增 PATCH。
-- `updated` 为最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而变化，也可在不递增版本的链接刷新时独立更新。
-- 新制品以 `v0.Y.Z` 起始。提升至 `vX.Y.Z` 表示该制品的契约已稳定到足以作为公开承诺。
+- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。破坏性的 schema 或契约变更递增 MAJOR；增量式的非破坏性变更（新的可选字段、新增章节、新增反模式）递增 MINOR；澄清、格式修复或不改变行为的纯文档编辑递增 PATCH。
+- `updated` 是最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而改变，也可以在不递增版本的链接刷新中单独更新。
+- 新制品从 `v0.Y.Z` 起步。提升到 `vX.Y.Z` 表示该制品的契约已足够稳定，可以作为一项公开承诺。
 
 ---
 
@@ -34,7 +34,7 @@ YAML frontmatter 块（位于 `---` 分隔符之间），其中携带特定于�
 
 **路径模式：** `src/apothem/rules/*.md`
 
-**用途：** 行为性强制规定与运行指令。
+**用途：** 行为强制规定与操作指令。
 
 ### 必填字段
 
@@ -50,15 +50,13 @@ alwaysApply: true | false
 | 字段 | 类型 | 用途 | 示例 |
 | ----- | ---- | ------- | ------- |
 | `name` | string | 机器可读标识符 | `"operational-mandates"` |
-| `version` | string | 语义化版本 | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
 | `description` | string | 供注册表使用的单行描述 | `"Operational mandates CM-1–10"` |
-| `scope` | enum | `always-on`（处处适用）或 `path-filtered`（以文件路径为条件） | `"always-on"` |
-| `portability` | enum | 环境兼容性保证 | `"universal"` |
+| `pathFilter` | string | 以逗号分隔的 glob 列表，用于限定路径过滤规则的作用范围；始终生效规则上为空字符串（`""`） | `"**/*.py, **/*.toml"` |
+| `alwaysApply` | boolean | 始终生效规则（处处加载）为 `true`；路径过滤规则（在 `pathFilter` 匹配时加载）为 `false` | `true` |
 
-### 可选字段（如适用）
+### 可选字段
 
-Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+规则不带任何可选 frontmatter 字段，并且——与其他制品类别不同——也不带 `version` / `updated` / `scope` / `portability` 字段。上述四个必填字段就是由 `frontmatter_grep` 强制执行的完整规则 frontmatter 契约。
 
 ### 示例
 
@@ -101,14 +99,16 @@ allowed-tools: "Read, Glob, Grep"
 | ----- | ---- | ------- | ------- |
 | `name` | string | 命令名称（不含前导 `/`） | `"plan-execute"` |
 | `version` | string | 语义化版本 | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `updated` | string（ISO 8601） | 最近更新日期 | `"2026-04-20"` |
 | `description` | string | 简短描述 | `"Executes a phase with quality gates"` |
-| `argument-hint` | string | 用法模式，若无则填 `"[args...]"` | `"[path/to/plan] [phase-id]"` |
-| `disable-model-invocation` | boolean | 若为 true，则该命令不应由harness运行时调用 | `true` |
+| `argument-hint` | string | 用法模式；若无参数则为 `"[args...]"` | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | 若为 true，则只有操作者会启动该命令；模型绝不会自行调用它 | `true` |
+| `portability` | string | 跨工具适配器的可移植性分类 | `"universal"` |
+| `allowed-tools` | string | 命令运行期间预先批准的工具：只读工具，以及仅以限定范围规则（例如 `Bash(git log *)`）形式出现的有副作用工具。裸 `"*"` 通配符会被拒绝 | `"Read, Glob, Grep"` |
 
 ### 可选字段
 
-Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+命令不带任何可选 frontmatter 字段——上述八个必填字段就是由 `command.schema.json`（`additionalProperties: false`）强制执行的完整命令 frontmatter 契约。
 
 ### 示例
 
@@ -130,7 +130,7 @@ allowed-tools: "Read, Glob, Grep"
 
 ---
 
-## Schema：助手
+## Schema：辅助器
 
 **路径模式：**
 
@@ -138,7 +138,7 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**用途：** 用于并行探索、审计与质量门控的持久化助手定义。
+**用途：** 用于并行探索、审计和质量闸门的持久化辅助器定义（也称为委派工作者）。
 
 ### 必填字段
 
@@ -157,13 +157,13 @@ effort: "high" | "medium" | "low"
 
 | 字段 | 类型 | 用途 | 示例 |
 | ----- | ---- | ------- | ------- |
-| `name` | string | 助手标识符 | `"codebase-explorer"` |
+| `name` | string | 辅助器标识符 | `"codebase-explorer"` |
 | `version` | string | 语义化版本 | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `updated` | string（ISO 8601） | 最近更新日期 | `"2026-04-20"` |
 | `description` | string | 专长描述 | `"Deep codebase exploration"` |
 | `tools` | string（逗号分隔） | 允许的工具 | `"Read, Glob, Grep, Bash"` |
-| `disallowedTools` | string（逗号分隔） | 禁用的工具 | `"Write, Edit, TodoWrite"` |
-| `maxTurns` | integer | 最大会话轮次（通常 5–20；超过 20 的值需附内联说明注释） | `20` |
+| `disallowedTools` | string（逗号分隔） | 禁止的工具 | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | 最大对话轮次（通常为 5–20；超过 20 的值需要一条内联理由注释） | `20` |
 | `effort` | enum | 计算范围 | `"high"` |
 
 ### 可选字段
@@ -200,7 +200,7 @@ You are a codebase exploration specialist...
 
 **路径模式：** `src/apothem/skills/*/SKILL.md`
 
-**用途：** 携带检测信号与执行流程的可复用技术定义。
+**用途：** 带有检测信号和执行流程的可复用技术定义。
 
 ### 必填字段
 
@@ -221,9 +221,12 @@ allowed-tools: "Read, Glob, Grep"
 | ----- | ---- | ------- | ------- |
 | `name` | string | 技能标识符 | `"plan-suite"` |
 | `version` | string | 语义化版本 | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `updated` | string（ISO 8601） | 最近更新日期 | `"2026-04-20"` |
 | `description` | string | 该技能提供的内容 | `"Master Plan Suite template"` |
-| `user-invocable` | boolean | 若为 true，用户可显式请求该技能 | `false` |
+| `archetype` | string | 形态类别，一个 kebab-case 的 `<class>-template` 标识符 | `"workflow-template"` |
+| `userInvocable` | boolean | 若为 true，用户可以显式请求该技能 | `false` |
+| `disable-model-invocation` | boolean | 若为 true，则该技能只能通过显式调用到达 | `true` |
+| `allowed-tools` | string | 技能运行期间预先批准的工具：只读工具，以及仅以限定范围规则（例如 `Bash(git log *)`）形式出现的有副作用工具。裸 `"*"` 通配符会被拒绝 | `"Read, Glob, Grep"` |
 
 ### 可选字段
 
@@ -254,14 +257,13 @@ argument-hint: "[--focus area] [--fix]"
 
 ## Schema：钩子
 
-**路径模式：** `settings.json` 的 `hooks` 块，加上 `src/apothem/hooks/` 下的
-Python 实现。
+**路径模式：** `settings.json` 的 `hooks` 块，加上 `src/apothem/hooks/` 下的 Python 实现。
 
-**用途：** 声明事件触发的校验器与状态管理处理器，由宿主在明确定义的生命周期点调用。
+**用途：** 声明由事件触发的校验器和状态管理处理器，由宿主在明确定义的生命周期节点调用。
 
 ### 设置文件 Schema
 
-顶层 `hooks` 键将事件名称映射到匹配器块的数组：
+顶层键 `hooks` 将事件名称映射到匹配器块数组：
 
 ```json
 "hooks": {
@@ -271,8 +273,8 @@ Python 实现。
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -282,53 +284,53 @@ Python 实现。
 }
 ```
 
+`-m apothem.hooks.dispatch` 形式仅用于在设置了 `PYTHONPATH=src` 的源码检出中进行开发。
+
 | 字段 | 类型 | 用途 | 示例 |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | 工具名称模式（或对工具无关事件填 `"*"`） | `"Write"` |
-| `hooks[].type` | 字面量 `"command"` | 当前唯一支持的钩子处理器类型 | `"command"` |
-| `hooks[].command` | string | 可执行命令；Apothem 使用 `python` | `"python"` |
-| `hooks[].args` | string 数组 | 调用 `-m apothem.hooks.dispatch` 或 `-m apothem.conformity.gate` 的 exec 形式参数 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer 秒 | 宿主终止钩子前的最大运行时长 | `30` |
-| `hooks[].statusMessage` | string | 宿主界面显示的简短标签 | `"Session start"` |
+| `matcher` | string | 工具名称模式（对与工具无关的事件则为 `"*"`） | `"Write"` |
+| `hooks[].type` | 字面量 `"command"` | 目前唯一支持的钩子处理器类型 | `"command"` |
+| `hooks[].command` | string | 可执行命令；Apothem 使用 `${PYTHON_BIN}` 占位符，在安装时解析 | `"${PYTHON_BIN}"` |
+| `hooks[].args` | 字符串数组 | exec 形式的参数：`${HARNESS_ROOT}/.apothem/support/` 下的脚本路径，然后是其参数 | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | 整数（秒） | 宿主终止该钩子之前的最长运行时间 | `30` |
+| `hooks[].statusMessage` | string | 在宿主界面中显示的简短标签 | `"Session start"` |
 
 ### 必需事件
 
-随附模板注册以下事件。这五个事件全部必需，校验器才会报告 PASS：
+Claude Code 模板注册四个事件：SessionStart、PreToolUse、PostToolUse 和 Stop。`scripts/dev/validate_hooks.py` 在 `settings.json` 中检查下表中的五个事件，这是不同的一组事件，并将其未找到的每一个事件作为警告而非失败报告。PostToolUse 已注册，但不在这五个事件之列。PreCompact 与 PostCompact 属于这五个事件，但未在 Claude Code 上注册（参见[钩子参考](/docs/reference/hooks)），因此检查器在 Claude Code 上会对这两者都发出警告。
 
-> **超时值镜像规范的钩子事件预算** — 下表为方便读者而复现这些值；以规范的来源为准。
+> **超时值镜像规范的钩子事件预算**——下表为方便读者而复现了这些值；以规范来源为准。
 
 | 事件 | 典型超时 | 用途 |
 | ----- | --------------- | ------- |
-| `SessionStart` | 30 秒 | 读取内存、检查 plan 状态、报告就绪情况 |
+| `SessionStart` | 30 秒 | 读取记忆、检查计划状态、报告就绪情况 |
 | `PreToolUse` | 10 秒 | 校验写入是否符合内容隔离策略 + frontmatter |
-| `PreCompact` | 30 秒 | 在上下文压缩前验证状态已外部化 |
-| `PostCompact` | 30 秒 | 在上下文压缩后恢复工作状态 |
-| `Stop` | 60 秒 | 会话结束的外部化 — 恢复状态、输出、决策 |
+| `PreCompact` | 30 秒 | 在上下文压缩之前验证状态已外部化 |
+| `PostCompact` | 30 秒 | 在上下文压缩之后恢复工作状态 |
+| `Stop` | 60 秒 | 会话结束时的外部化——恢复状态、输出、决策 |
 
-`dispatch.py` 也在其事件白名单中接受 `UserPromptSubmit` 与 `Notification` 以备
-向前兼容；这两者在随附模板中均未接线。添加一个采用相同 exec 形式模式的匹配器块
-即可启用。
+`dispatch.py` 还在其事件白名单中接受 `UserPromptSubmit` 和 `Notification`，以实现向前兼容；两者都没有在随附模板中接线。添加一个采用相同 exec 形式模式的匹配器块即可启用。
 
 ### Python 层
 
-每个钩子命令都通过同一个 Python 调度器路由：
+每条钩子命令都经由同一个 Python 调度器路由：
 
 | 文件 | 角色 |
 | ---- | ---- |
-| `src/apothem/hooks/dispatch.py` | 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，将其他每个白名单事件路由到 `emit_hook_context.main()`。始终以 0 退出。 |
-| `src/apothem/hooks/session_start_bootstrap.py` | 会话启动钩子脚本 — 发出内存与 plan 套件摘要上下文。 |
-| `src/apothem/hooks/emit_hook_context.py` | 默认钩子发射器 — 写出携带已注册 `--context-file` 载荷的有效信封。 |
+| `src/apothem/hooks/dispatch.py` | 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单事件路由到 `emit_hook_context.main()`。始终以 0 退出。 |
+| `src/apothem/hooks/session_start_bootstrap.py` | 会话启动钩子脚本——发出记忆和计划套件摘要上下文。 |
+| `src/apothem/hooks/emit_hook_context.py` | 默认钩子发射器——写出一个携带已注册 `--context-file` 载荷的有效信封。 |
 | `src/apothem/hooks/messages/*.md` | 由 `--context-file` 引用的静态上下文载荷。 |
 
 ### 校验
 
 `scripts/dev/validate_hooks.py` 强制执行钩子契约：
 
-- `settings.json` 可解析为 JSON 并声明每个必需事件。
-- 全部三个 Python 脚本均存在且可解析为有效 Python。
-- 所有由 `--context-file` 参数引用的消息文件均存在。
+- `settings.json` 可解析为 JSON，并声明表中五个事件中的每一个；缺失某个事件是警告，而非失败。
+- 全部三个 Python 脚本都存在，并可解析为有效的 Python。
+- 由 `--context-file` 参数引用的所有消息文件都存在。
 - `src/apothem/hooks/**.py` 中不出现硬编码的绝对用户路径（`C:\Users\...` 等）。
-- `src/apothem/hooks/` 与 `scripts/` 下的 shell 制品仅限于已批准的定位器 / 引导桩。
+- `src/apothem/hooks/` 和 `scripts/` 下的 shell 制品仅限于已批准的定位器 / 引导桩。
 
 ---
 
@@ -336,36 +338,24 @@ Python 实现。
 
 **路径：** `CLAUDE.md`（根目录）
 
-**用途：** 全局生态系统配置索引。
+**用途：** 项目范围的 Claude Code 指令。
 
-### 必填 YAML frontmatter
+### 必填 YAML Frontmatter
 
 ```yaml
 ---
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### 必需章节（按顺序）
+### 章节
 
-1. **§1 Plan 套件** — 引用模板位置
-2. **§2 认知身份** — 创造性架构强制规定
-3. **§3 制品目录** — 路径与用途表
-4. **§4 严肃度分级治理** — 四级定义
-5. **§5 运行指令** — 问题解决、沟通原则
-6. **§6 横切强制规定** — CM-1–28 概览
-7. **§7 注册表** — 制品表：
-   - 7.1 命令
-   - 7.2 规则
-   - 7.3 助手
-   - 7.4 钩子
-   - 7.5 技能
-   - 7.6 制品演进
+`CLAUDE.md` 以散文式章节编写，详见 [`CLAUDE.md`](/docs/reference/claude-md)。没有任何校验器要求固定的章节列表：`scripts/dev/validate_ecosystem.py` 检查上述 frontmatter 键。
 
 ---
 
@@ -375,35 +365,35 @@ portability: "universal"
 
 ### Frontmatter 校验
 
-- [ ] YAML 语法有效（无解析错误）
-- [ ] 该制品类型的所有必填字段都已存在
+- [ ] YAML 在语法上有效（无解析错误）
+- [ ] 该制品类型的所有必填字段都存在
 - [ ] `name` 遵循 kebab-case 约定
-- [ ] `version` 为语义化（`MAJOR.MINOR.PATCH`）
+- [ ] `version` 为语义化版本（`MAJOR.MINOR.PATCH`）
 - [ ] `updated` 为 ISO 8601 日期格式（`YYYY-MM-DD`）
-- [ ] `description` 为非空字符串、单行
-- [ ] 可选字段匹配预期的枚举值（如适用）
-- [ ] 字段名无拼写错误（使用 schema 中的规范名称）
-- [ ] 无多余空白或格式问题
+- [ ] `description` 为非空字符串，且为单行
+- [ ] 可选字段与预期的枚举值匹配（如适用）
+- [ ] 字段名中没有拼写错误（使用 schema 中的规范名称）
+- [ ] 没有多余的空白或格式问题
 
 ### 内容校验
 
-- [ ] 内容紧接在闭合 `---` 之后另起一行开始
-- [ ] 无 plan 内部引用（符合 CM-7）
-- [ ] 交叉引用可解析（若列出其他制品）
+- [ ] 内容在闭合 `---` 之后另起一行开始；在 Markdown 系列文件上，规范的 SPDX 头部行是其后的第一项内容
+- [ ] 没有计划内部引用（符合 CM-7）
+- [ ] 交叉引用可以解析（若列出了其他制品）
 - [ ] 链接使用带正斜杠的相对路径
 
 ### 可移植性校验
 
-- [ ] 无硬编码绝对路径（使用相对路径）
-- [ ] universal 范围的制品中无 Windows 特定语法
+- [ ] 没有硬编码的绝对路径（使用相对路径）
+- [ ] universal 范围的制品中没有 Windows 专用语法
 - [ ] 路径分隔符使用正斜杠
-- [ ] 环境变量使用平台无关格式（`${VAR}` 或工具原生格式）
+- [ ] 环境变量使用与平台无关的格式（`${VAR}` 或工具原生格式）
 
 ---
 
-## 注记
+## 说明
 
-- **一致性即安全性：** 规范化的 frontmatter 使自动化校验、工具化与跨制品验证成为可能。偏差会迅速累积。
-- **可移植性声明：** 并非所有制品都能做到 universal。显式声明约束 —— 记录一条注意事项胜过交付一个无声的缺陷。
-- **名称用 kebab-case：** 便于在 URL、脚本与命令行环境中使用。名称应避免空格、下划线与 camelCase。
-- **版本递增卫生：** 每次改变行为的编辑都必须同时递增 `version` 与 `updated`。纯格式或拼写修复递增 PATCH；新增可选章节或反模式递增 MINOR；结构性重组或契约变更递增 MAJOR。
+- **一致性即安全：** 规范的 frontmatter 使自动化校验、工具支持和跨制品验证成为可能。偏差会迅速累积。
+- **可移植性声明：** 并非所有制品都能做到 universal。显式声明约束——记录一条注意事项，胜过交付一个无声的缺陷。
+- **名称使用 kebab-case：** 便于在 URL、脚本和命令行环境中使用。名称应避免空格、下划线和 camelCase。
+- **版本递增卫生：** 每次改变行为的编辑都必须同时递增 `version` 和 `updated`。纯格式或拼写修复递增 PATCH；新的可选章节或反模式递增 MINOR；结构性重组或契约变更递增 MAJOR。

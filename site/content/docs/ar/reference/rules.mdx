@@ -1,41 +1,41 @@
 ---
 title: "القواعد"
-description: "قواعد سلوكية دائمة-التفعيل ومُصفّاة-بالمسار تحكم حلَّ المشكلات وإتقان الشيفرة والمعمارية النظيفة والتخطيط والجودة عبر مجموعة القواعد السلوكية."
+description: "قواعد سلوكية دائمة التفعيل ومُصفّاة بالمسار تحكم حلّ المشكلات، وإتقان الشيفرة، والمعمارية النظيفة، والتخطيط، والجودة عبر مجموعة القواعد السلوكية."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تعيش القواعد السلوكية كملفات مسطَّحة تحت <bdi>`src/apothem/rules/`</bdi> باللاحقة
-<bdi>`*.md`</bdi>. كلُّ قاعدة مكتفية بذاتها — <bdi>Purpose</bdi>،
-<bdi>Obligations</bdi>، <bdi>Seriousness Scaling</bdi>، <bdi>Anti-Patterns</bdi>، <bdi>Enforcement</bdi>، <bdi>Bindings</bdi> — وهي
-إمّا دائمة-التفعيل أو مُصفّاة-بالمسار.
+تعيش القواعد السلوكية ملفاتٍ مسطّحةً تحت <bdi>`src/apothem/rules/`</bdi> باللاحقة
+<bdi>`*.md`</bdi>. كل قاعدة مكتفية بذاتها — <bdi>Purpose</bdi>، و<bdi>Obligations</bdi>،
+و<bdi>Seriousness Scaling</bdi>، و<bdi>Anti-Patterns</bdi>، و<bdi>Enforcement</bdi>،
+و<bdi>Bindings</bdi> — وهي إمّا دائمة التفعيل أو مُصفّاة بالمسار.
 
 ## القواعد النشطة
 
-السجلّ الكنسيّ هو <bdi>`CLAUDE.md`</bdi> §7.2. المجموعة ذاتها في صيغة مسطَّحة:
+السجلّ المرجعي هو حزمة القواعد. وهذه المجموعة نفسها في صيغة مسطّحة:
 
 | القاعدة | النطاق | تُنفِّذ |
 |------|-------|------------|
-| Auto Memory | دائمة-التفعيل | CM-26 |
-| Clean-Room Generation | دائمة-التفعيل | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | دائمة-التفعيل | CM-21 |
-| Context Management | دائمة-التفعيل | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | مُصفّاة-بالمسار | CM-12 / CM-24 (مرافِقة) |
-| Conventions Vigilance | دائمة-التفعيل | CM-22 |
-| Interactive Questions | دائمة-التفعيل | CM-2 extension |
-| Interactive Questions Sweep Matchers | مُصفّاة-بالمسار | CM-2 extension (مرافِقة) |
-| Operational Mandates | دائمة-التفعيل | CM-1–10 |
-| Worker Orchestration | دائمة-التفعيل | CM-17 / CM-25 |
-| Clean Architecture | مُصفّاة-بالمسار | CM-27 |
-| Large File Generation | مُصفّاة-بالمسار | CM-23 |
-| Performance Discipline | مُصفّاة-بالمسار | محور الأداء |
-| Planning Techniques | مُصفّاة-بالمسار | CM-20 / CM-21 |
-| Python Senior Architect | مُصفّاة-بالمسار | CM-28 |
+| <bdi>Auto Memory</bdi> | دائمة التفعيل | <bdi>CM-26</bdi> |
+| <bdi>Clean-Room Generation</bdi> | دائمة التفعيل | <bdi>CM-5 / CM-7 / CM-21</bdi> |
+| <bdi>Cognitive Identity</bdi> | دائمة التفعيل | <bdi>CM-21</bdi> |
+| <bdi>Context Management</bdi> | دائمة التفعيل | <bdi>CM-12 / CM-14 / CM-18 / CM-19 / CM-24</bdi> |
+| <bdi>Context Management Scratch</bdi> | مُصفّاة بالمسار | <bdi>CM-12 / CM-24</bdi> (مرافِقة) |
+| <bdi>Conventions Vigilance</bdi> | دائمة التفعيل | <bdi>CM-22</bdi> |
+| <bdi>Interactive Questions</bdi> | دائمة التفعيل | امتداد <bdi>CM-2</bdi> |
+| <bdi>Interactive Questions Sweep Matchers</bdi> | مُصفّاة بالمسار | امتداد <bdi>CM-2</bdi> (مرافِقة) |
+| <bdi>Operational Mandates</bdi> | دائمة التفعيل | <bdi>CM-1–10</bdi> |
+| <bdi>Worker Orchestration</bdi> | دائمة التفعيل | <bdi>CM-17 / CM-25</bdi> |
+| <bdi>Clean Architecture</bdi> | مُصفّاة بالمسار | <bdi>CM-27</bdi> |
+| <bdi>Large File Generation</bdi> | مُصفّاة بالمسار | <bdi>CM-23</bdi> |
+| <bdi>Performance Discipline</bdi> | مُصفّاة بالمسار | محور الأداء |
+| <bdi>Planning Techniques</bdi> | مُصفّاة بالمسار | <bdi>CM-20 / CM-21</bdi> |
+| <bdi>Python Senior Architect</bdi> | مُصفّاة بالمسار | <bdi>CM-28</bdi> |
 
 ## عقد البيانات الأمامية
 
-يحمل كلُّ ملف قاعدة:
+يحمل كل ملف قاعدة:
 
 ```yaml
 ---
@@ -46,21 +46,43 @@ alwaysApply: <true | false>
 ---
 ```
 
-يُحذف حقل <bdi>`pathFilter`</bdi> من القواعد دائمة-التفعيل ويوجد في القواعد
-المُصفّاة-بالمسار. يتحقّق فحص <bdi>`frontmatter-cohort`</bdi> الخاصّ بالمُدقّق من
-العقد على كلّ ملف قاعدة.
+في القاعدة دائمة التفعيل يكون <bdi>`pathFilter`</bdi> السلسلةَ الفارغة (<bdi>`""`</bdi>)
+ويكون <bdi>`alwaysApply`</bdi> هو <bdi>`true`</bdi>؛ وفي القاعدة المُصفّاة بالمسار يحمل
+<bdi>`pathFilter`</bdi> قائمة أنماط <bdi>glob</bdi> ويكون <bdi>`alwaysApply`</bdi> هو
+<bdi>`false`</bdi>. والعقد المقروء آليًا هو
+[<bdi>`frontmatter_grep`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(<bdi>`{name, description, pathFilter, alwaysApply}`</bdi>)؛ ويتحقّق منه فحص
+<bdi>`frontmatter-cohort`</bdi> في أداة التحقّق على كل ملف قاعدة.
+
+الحقلان <bdi>`pathFilter`</bdi> و<bdi>`alwaysApply`</bdi> محايدان تجاه أُطُر العمل.
+ويترجمهما كل محوّل حيث يملك إطار عمله حقل تحديد نطاق أصليًا. لا يقرأ
+<bdi>Claude Code</bdi> من القاعدة إلا <bdi>`paths:`</bdi>، ويُحمِّل كل قاعدة تخلو منه عند
+الإقلاع، لذا يكتب تثبيت المحرّك (<bdi>`apothem install --harness claude-code`</bdi>) كل
+قاعدة مُصفّاة بالمسار إلى <bdi>`~/.claude/rules/`</bdi> مع قائمة <bdi>`paths:`</bdi>
+مبنية من <bdi>`pathFilter`</bdi> الخاص بها، وينسخ القواعد دائمة التفعيل دون تغيير.
+تُحمَّل القواعد الـ 28 دائمة التفعيل في كل جلسة؛ وتُحمَّل القواعد المرافِقة الـ 63
+المُصفّاة بالمسار عندما يقرأ المساعد ملفًا مطابقًا.
+
+لا يملك <bdi>OpenCode</bdi> حقل تحديد نطاق لكل قاعدة: فهو يضمّ إلى كل جلسة كل ملف
+تُسمّيه قائمة <bdi>`instructions`</bdi> في <bdi>`opencode.json`</bdi> الخاص به. لذلك يسرد
+تثبيت <bdi>OpenCode</bdi> (<bdi>`apothem install --harness opencode`</bdi>) مستند ملفك
+التعريفي والقواعد التي يكون فيها <bdi>`alwaysApply`</bdi> هو <bdi>`true`</bdi> فقط،
+بمسار <bdi>`~/.config/opencode/...`</bdi> صريح واحد لكل ملف، مقروءةً من ملفات القواعد
+عند كتابة الإعداد. ومع ذلك تُثبَّت كل قاعدة، بما فيها القواعد المُصفّاة بالمسار، تحت
+<bdi>`~/.config/opencode/.apothem/support/rules/`</bdi>، حيث تقرؤها عند الطلب أيُّ
+قاعدة أو مهارة أو أمر يستشهد بها.
 
 ## انضباط التأليف
 
-- **مكتفية بذاتها.** لكلّ قاعدة أقسامُها الخاصّة من <bdi>Purpose</bdi> و<bdi>Obligations</bdi> و<bdi>Anti-Patterns</bdi>
-  و<bdi>Enforcement</bdi>.
-- **كتلة Bindings.** تُختتم كلُّ قاعدة بكتلة <bdi>Bindings</bdi> الكنسية ذات الاتّجاهات
-  الخمسة (<bdi>Drives →</bdi> / <bdi>Satisfies →</bdi> / <bdi>Established by ↑</bdi> / <bdi>Gated by ←</bdi> /
+- **مكتفية بذاتها.** لكل قاعدة أقسامها الخاصة: <bdi>Purpose</bdi>، و<bdi>Obligations</bdi>،
+  و<bdi>Anti-Patterns</bdi>، و<bdi>Enforcement</bdi>.
+- **كتلة الارتباطات (<bdi>Bindings</bdi>).** تنتهي كل قاعدة بكتلة الارتباطات
+  (<bdi>Bindings</bdi>) المرجعية ذات الاتجاهات الخمسة (<bdi>Drives →</bdi> /
+  <bdi>Satisfies →</bdi> / <bdi>Established by ↑</bdi> / <bdi>Gated by ←</bdi> /
   <bdi>Cross-bound with ↔</bdi>).
-- **لغة المجال فقط.** لا إشارات داخلية-للخطّة — انظر
-  <bdi>`CLAUDE.md`</bdi> CM-7.
+- **لغة النطاق فقط.** لا إشارات داخلية للخطة — انظر <bdi>`CLAUDE.md`</bdi> <bdi>CM-7</bdi>.
 
-## Generated Rule Inventory
+## جرد القواعد المُولَّد
 
 {/* apothem:generated-reference:start */}
 

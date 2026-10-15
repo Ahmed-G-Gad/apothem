@@ -2,11 +2,11 @@
 title: "update"
 description: "apothem update コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "fc03f27749f2a77a"
+sourceHash: "e91dcc6ca6a07470"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-現在の共有プロファイルからハーネスアダプターの構成を再インストールします。
+現在の共有プロファイルからハーネスアダプターの設定を再インストールします。
 
 ## 構文
 
@@ -17,29 +17,31 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` は現在の共有プロファイルからハーネスの出力を再物質化します。`install` と同じプロファイル検証、`--harness all` の選択、プロジェクトスコープのチェック、dry-run の動作、および JSON 信封を使用します。
+`update` は、現在の共有プロファイルからハーネスの出力を再マテリアライズします。
+`install` と同じプロファイル検証、`--harness all` の選択、プロジェクトスコープのチェック、ドライランの動作、JSON エンベロープを使用します。
 
-連続形のエイリアス `apothem updating` は同じハンドラーに解決されます。
+進行形のエイリアス `apothem updating`（`apothem Updating` としても受け付けられます）は、同じハンドラーに解決されます。
 
 ## オプション
 
 | オプション | 説明 |
 |---|---|
 | `--harness NAME` | 更新するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。 |
-| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml`。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml` です。 |
 | `--dry-run` | ファイルを書き込まずに更新をプレビューします。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。選択したハーネスのセットにプロジェクトスコープのアダプターが含まれる場合は必須です。 |
 | `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
 | `--verbose`, `-v` | 追加の診断出力を出力します。 |
-| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
 | `--json` | `--format json` の短縮形。 |
-| `--no-color` | 出力内の ANSI カラーコードを無効にします。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
 ## JSON 出力
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "update",
   "action": "updated",
@@ -70,12 +72,13 @@ apothem updating --harness claude-code   # lowercase variant
 
 | コード | 意味 |
 |---|---|
-| 0 | アダプターが正常に更新されたか、dry-run がクリーンに計画された |
-| 1 | 予期される検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
-| 2 | 少なくとも 1 回の書き込み後の部分的なバッチ物質化 |
+| 0 | アダプターが正常に更新された、またはドライランが問題なく計画された |
+| 1 | 想定された検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 少なくとも 1 回の書き込みの後の、部分的なバッチのマテリアライズ |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` のもとでは、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 
-- `apothem updating` — このコマンドの連続形のエイリアス（ここで文書化。CLI は両方の形式を受け付けます）
+- `apothem updating` — このコマンドの進行形エイリアス（ここに記載。CLI は両方の形式を受け付けます）
 - [apothem install](/docs/cli-reference/install) — 初回インストール
 - [更新ガイド](/docs/install/updating) — インストーラーごとの更新パス

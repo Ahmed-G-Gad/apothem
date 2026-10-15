@@ -2,7 +2,7 @@
 title: "Hook minimal"
 description: "Exemple de hook Apothem minimal — déclencher une vérification à chaque écriture de fichier."
 machineTranslated: true
-sourceHash: "d1337398a00a9c83"
+sourceHash: "714a1269e07cc416"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## Enregistrement dans settings.json
@@ -48,9 +48,9 @@ sortie stderr dans le panneau de trace du hook.
 
 ## Bloquer les écritures
 
-Remplacez `sys.exit(0)` par `sys.exit(1)` et imprimez un bloc JSON sur stdout :
+Pour bloquer une écriture, imprimez l'enveloppe de refus sur stdout et terminez quand même avec le code 0, comme le font les hooks d'Apothem :
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

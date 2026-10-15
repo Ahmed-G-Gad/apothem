@@ -1,16 +1,16 @@
 ---
 title: "Codex"
-description: "适用于 Codex（Beta）的 Apothem 工具适配器。"
+description: "适用于 Codex（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** OpenAI
 **安装名称：** `codex`
-**状态：** Beta
-**平台原生配置：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
-`~/.codex/hooks/`、`~/.codex/agents/*.toml` 和 `~/.agents/skills/`
+**状态：** 测试版
+**原生配置：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
+`~/.codex/hooks/`、`~/.codex/agents/*.toml` 以及 `~/.agents/skills/`
 
 ## 安装
 
@@ -18,26 +18,25 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-适配器安装 Codex 原生指令和钩子，将 Apothem 智能体转换为 Codex TOML 智能体，
-并将可复用的命令提示包装为 Codex 技能。
+适配器安装 Codex 原生指令和钩子，将 Apothem 智能体转换为 Codex TOML 智能体，并将可复用的命令提示词封装为 Codex 技能。
 
-**写入的文件：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
-`~/.codex/hooks/`、`~/.codex/agents/*.toml`、
-`~/.agents/skills/*/SKILL.md`，以及 `~/.config/apothem/{rules,templates}/`
-下的支持文件。
+**写入的文件：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、`~/.codex/hooks/`、`~/.codex/agents/*.toml`、`~/.agents/skills/*/SKILL.md`、针对由用户调用的技能的 `~/.agents/skills/*/agents/openai.yaml`，以及 `~/.config/apothem/{rules,templates}/` 下的支持文件。
 
-## 配置档案到平台原生配置的映射
+`AGENTS.md` 中的 Apothem 区块以一个 Apothem 支持文件小节结尾，该小节写明已安装的技能和规则中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 和 `templates/...` 位于 `~/.config/apothem/` 下，`hooks/...` 位于 `~/.codex/hooks/` 下。Codex 安装不附带 `schemas/` 或 `conformity/` 树，因此该小节两者都不列出。
 
-适配器读取 Apothem 的共享队列，并将每一项安装到正确的 Codex 界面：指令安装到
-`AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体安装为 TOML，技能安装到
-`~/.agents/skills/`，而非原生的 Markdown 规则/模板作为支持材料安装到
-`~/.config/apothem/`。
+**由用户调用的技能。** Codex 会忽略 `disable-model-invocation` 键。对于源文件设置了 `disable-model-invocation: true` 的每个技能或命令，适配器都会在其 `SKILL.md` 旁写入带有 `policy.allow_implicit_invocation: false` 的 `agents/openai.yaml`，因此 Codex 不会自行选用该技能；你仍可以通过 `$skill-name` 显式运行它。参见 [Codex 技能文档](https://developers.openai.com/codex/skills)。
+
+## 配置档案到原生配置的映射
+
+适配器读取 Apothem 的共享集合，并将每个集合安装到正确的 Codex 表面：指令安装到 `AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体转换为 TOML，技能安装到 `~/.agents/skills/`，非原生的 Markdown 规则/模板则作为支持材料安装到 `~/.config/apothem/`。
+
+每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权在去掉其自身 `disallowedTools` 列表中的工具之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。`Bash` 不算作文件编辑工具，因此被授予 `Bash` 而不含上述任何工具的辅助程序仍然会得到该设置。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
 
 ## 兼容性说明
 
-Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不会在那里放置
-Markdown 行为规则；它将这些规则保留在 `~/.config/apothem/` 中，并从 `AGENTS.md`
-和已安装的技能中引用它们。
+`~/.agents/skills/` 是一个由 Codex 拥有的共享根目录：其他八个受支持的工具也会加载它（[工具注册表](/docs/reference/harness-registry)列出了这些工具），因此 Codex 安装写入其中的 Apothem 技能也会出现在这些工具中，而 Codex 卸载会将它们从这些工具中移除。安装时会打印一条注明这些工具的提示。
+
+Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不在那里放置 Markdown 行为规则；它将这些规则保存在 `~/.config/apothem/` 中，并从 `AGENTS.md` 和已安装的技能中引用它们。
 
 ## 验证
 
@@ -47,8 +46,8 @@ apothem verify --harness codex
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中所有必需字段均存在。
+1. 原生配置存在于预期路径。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
 3. 适配器专属的验证例程报告成功。
 
 ## 更新
@@ -57,7 +56,7 @@ verify 命令确认：
 apothem update --harness codex
 ```
 
-刷新 Codex 引导程序、已转换的智能体、技能和支持队列。
+刷新 Codex 引导文件、已转换的智能体、技能和支持集合。
 
 ## 卸载
 
@@ -65,10 +64,9 @@ apothem update --harness codex
 apothem uninstall --harness codex
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `~/.codex/AGENTS.md` 中移除 Apothem 区块并保留该区块之外的任何文本，并从 `~/.codex/hooks.json` 中移除 Apothem 的条目并保留你自己的条目。同时移除 `~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/` 和 `~/.config/apothem/{rules,templates}/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。从 `~/.agents/skills/` 中移除的技能，也会从其他加载该目录的工具中消失（参见[兼容性说明](#兼容性说明)）。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,3 +85,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

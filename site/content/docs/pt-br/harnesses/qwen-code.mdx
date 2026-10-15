@@ -1,8 +1,8 @@
 ---
 title: "Qwen Code"
-description: "Adaptador de ferramenta do Apothem para o Qwen Code (Beta)."
+description: "Adaptador de harness do Apothem para o Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "0ba705985aed7ff1"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,9 @@ apothem install --harness qwen-code
 ```
 
 O adaptador grava as configurações do Qwen Code, instala uma âncora de contexto
-`QWEN.md`, registra os despachantes de ganchos (hooks) do Apothem, converte os
-comandos do Apothem em arquivos de comando Markdown do Qwen, instala as habilidades
-como diretórios SKILL.md e adapta as definições de assistentes como subagentes do
+`QWEN.md`, registra os despachantes de hook do Apothem, converte os comandos do
+Apothem em arquivos de comando Markdown do Qwen, instala as skills como
+diretórios SKILL.md e adapta as definições de auxiliares como subagentes do
 Qwen.
 
 **Arquivos gravados:**
@@ -28,25 +28,33 @@ Qwen.
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+O arquivo `~/.qwen/apothem/rules/00-apothem-profile.md` é o documento de perfil.
+Ele carrega a sua identidade e as suas preferências do perfil compartilhado.
+
 ## Mapeamento do perfil para a configuração nativa
 
-O adaptador renderiza as chaves documentadas de `settings.json` para o contexto e os
-ganchos (hooks), grava `QWEN.md` e entrelaça os comandos, as habilidades e as
-definições de assistentes do Apothem pelos diretórios de descoberta nativos do Qwen
-Code. As regras, os modelos e o material-fonte dos ganchos (hooks) permanecem como
-material de suporte sob `~/.qwen/.apothem/support/`.
+O adaptador renderiza as chaves documentadas de `settings.json` para contexto e
+hooks, grava `QWEN.md` e distribui os comandos, as skills e as definições de
+auxiliares do Apothem pelos diretórios de descoberta nativos do Qwen Code. As
+regras, os templates e o material-fonte dos hooks permanecem como material de
+suporte sob `~/.qwen/.apothem/support/`.
 
 ## Notas de compatibilidade
 
-`~/.qwen/.apothem/support/` é material de suporte referenciado por `QWEN.md` e pelos comandos
-de ganchos (hooks) das configurações; não é um namespace de descoberta de
+`~/.qwen/.apothem/support/` é material de suporte referenciado por `QWEN.md` e
+pelos comandos de hook das configurações; não é um namespace de descoberta de
 propriedade do fornecedor.
+O bloco do Apothem em `QWEN.md` termina com uma seção de arquivos de suporte do
+Apothem que nomeia o diretório absoluto sob `~/.qwen/.apothem/support/` em
+relação ao qual cada citação no estilo do repositório (`rules/<name>.md`,
+`templates/...`, `hooks/...`) é resolvida.
 
 ## Verificação
 
@@ -57,8 +65,10 @@ apothem verify --harness qwen-code
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
-3. A rotina de verificação específica do adaptador relata sucesso.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
+3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -66,7 +76,7 @@ O comando verify confirma que:
 apothem update --harness qwen-code
 ```
 
-Atualiza `settings.json`, `QWEN.md`, os comandos nativos, as habilidades, os
+Atualiza `settings.json`, `QWEN.md`, os comandos nativos, as skills, os
 subagentes e a árvore de suporte do Apothem.
 
 ## Desinstalação
@@ -75,10 +85,19 @@ subagentes e a árvore de suporte do Apothem.
 apothem uninstall --harness qwen-code
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove as entradas que o adaptador adicionou a `~/.qwen/settings.json` (as suas
+próprias chaves, os servidores MCP e os manipuladores de hook permanecem, e o
+arquivo é excluído somente quando o Apothem o criou e nada seu restou). Remove o
+bloco do Apothem de `~/.qwen/QWEN.md` e do documento de perfil
+`~/.qwen/apothem/rules/00-apothem-profile.md` e mantém qualquer outro texto
+neles; cada arquivo é excluído somente quando nada mais resta nele. Também
+remove os arquivos do Apothem em `~/.qwen/commands/`, `~/.qwen/skills/`,
+`~/.qwen/agents/` e `~/.qwen/.apothem/support/`; os demais arquivos dessas
+pastas permanecem. Cada arquivo recebe backup em `~/.apothem/backups/` antes de
+ser alterado ou removido. O YAML do perfil compartilhado e o motor do Apothem
+não são afetados.
 
-## Portão de conformidade
+## Conformity gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -88,12 +107,18 @@ python -m apothem.conformity.gate --all .
 
 | Sintoma | Correção |
 |---------|-----|
-| Arquivo de configuração não encontrado | Reexecute `apothem install --harness qwen-code` |
-| Verificação falhou | Execute `apothem update --harness qwen-code` e verifique novamente |
-| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness qwen-code` |
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness qwen-code` |
+| Falha na verificação | Execute `apothem update --harness qwen-code` e depois verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness qwen-code` |
 
-## Botões de configuração
+## Ajustes de configuração
 
 | Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
+
+## Veja também
+
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

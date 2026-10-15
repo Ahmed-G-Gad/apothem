@@ -58,9 +58,12 @@ resolves against, so a committed `AGENTS.md` carries no machine-specific path. (
 Kimi Code reads project instructions from `AGENTS.md` or
 `.kimi-code/AGENTS.md` and recognizes `.kimi-code/mcp.json` as the
 operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+surface but authors no entries into it. Of the two instruction files, the adapter
+writes only the project-root `AGENTS.md`, which Kimi Code reads as project
+instructions; the Kimi Code documentation does not say which of the two files
+wins when both exist. Kimi Code
+exposes no statusline or output-style file surface, so those cohorts are not
+materialized.
 
 Kimi Code runs on the Kimi model family from Moonshot; see the
 [vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
@@ -75,7 +78,9 @@ apothem verify --harness kimi-code --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -93,8 +98,12 @@ from the current shared profile state.
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block from the project-root `AGENTS.md` and keeps any text
+outside the sentinels. The file is deleted only when nothing else remains in it.
+Also removes the support files Apothem placed under
+`<project>/.kimi-code/.apothem/support/`. Before the change, a timestamped copy
+of each file is saved under `~/.apothem/backups/`; no backup file is left in the
+project. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 

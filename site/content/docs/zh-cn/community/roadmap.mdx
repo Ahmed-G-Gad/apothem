@@ -1,35 +1,62 @@
 ---
 title: "路线图"
-description: "Apothem 公开路线图 —— 即将到来的特性与计划中的改进。"
+description: "Apothem 公开路线图——即将推出的功能和计划中的改进。"
 machineTranslated: true
-sourceHash: "28a767b07e7d897d"
+sourceHash: "66086baa5064d245"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
+{/* apothem:roadmap:start */}
+
+本路线图描述 Apothem 的前进方向。它是一份意向声明，而非承诺；优先级会随着项目及其用户的发展而变化。已经发布的内容参见[变更日志](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)。仓库中的 [ROADMAP.md](https://github.com/ahmed-g-gad/apothem/blob/main/ROADMAP.md) 是唯一的路线图；项目网站上的[路线图页面](https://apothem.ahmedgad.com/docs/community/roadmap)由它生成。
+
+状态图例：**已计划** · **进行中** · **已交付**。
+
 ## 当前发布
 
-- 稳定十七个工具适配器。
-- 完成审计审查基础设施。
-- 稳定 Apothem CLI 表面。
-- 建立 GitHub Actions CI/CD 流水线。
+当前发布线提供与宿主无关的工具配置管理器：一份共享配置档案（`~/.config/apothem/profile.yaml`）为已注册的适配器物化为工具原生配置，由 `apothem` 命令行驱动（`quickstart` · `install` · `update` · `uninstall` · `rollback` · `verify` · `status` · `diff` · `harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`）。
+
+| 条目 | 状态 | 说明 |
+| ---- | ------ | ----- |
+| 十七个工具适配器 | 已交付 | 每个适配器都具备安装、卸载、更新和验证；[受支持的工具](https://apothem.ahmedgad.com/docs/harnesses)页面列出了它们 |
+| 清单驱动的模板传播 | 已交付 | 传播的单一事实来源位于 `src/apothem/lib/propagation-manifest.yaml` |
+| 文档网站 | 已交付 | 公开网站，包含生成的参考索引、品牌资源、机器可读的网站索引和发布操作手册 |
+| 经签名的发布 | 已交付 | 每个 GitHub Release 都携带经签名的产物、一份 SBOM 和构建出处溯源 |
+| `/plan` 和 `/research` 流水线 | 已交付 | 分阶段的规格、生成、评审和执行规划流水线，以及十三阶段的研究流水线 |
+| 审计命令与 `/fortress` 循环 | 已交付 | 按需进行的安全、代码、无障碍、性能、依赖、供应链、威胁模型、架构、代码评审、文档评审和用户体验审计，由 `/fortress` 加固循环统一封装 |
+| 审计与漂移评审基础设施 | 已交付 | 审计命令背后的盘点与漂移扫描器 |
+| 合规闸门 | 已交付 | 覆盖每个物化表面的作者署名头、命名、代码工艺、含糊措辞和绑定互惠校验器，并以行为差异黄金基准锁定每个适配器的输出 |
+| 持久记忆与可选启用的持续学习 | 已交付 | 一个持久记忆层和一个可选启用的学习循环，在会话之间延续已确认的约定 |
+| CI/CD 流水线与经签名发布的供应链 | 已交付 | 每项变更在发布前都要经过 lint、测试、类型检查、文档构建和供应链检查的把关 |
 
 ## 近期
 
-- 让 npm / npx 分发成熟：使 `@ahmed-g-gad/apothem` 入口点与每次发布保持
-  一致，并拓宽其平台覆盖。
-- 随着市场表面的稳定，发展 Claude Code 插件的上架。
-- 通过 `apothem update --watch` 实现工具适配器自动更新。
-- 配置文件版本化与迁移工具。
-- 在符合性闸门中进行共享配置文件模式验证。
-- 基于社区请求的更多工具适配器。
+| 条目 | 状态 | 说明 |
+| ---- | ------ | ----- |
+| 文档指南 | 进行中 | 更多面向任务的指南、图示和示例，用于真实的工具设置 |
+| npm / npx 分发 | 已计划 | 使 `@ahmed-g-gad/apothem` npx 入口点与每次发布保持一致，并扩大其平台覆盖 |
+| Claude Code 插件上架 | 已计划 | 随着市场表面趋于稳定，扩充插件上架内容 |
+| 更多工具适配器 | 已计划 | 随着更多工具的配置约定趋于稳定且有用户请求，加入这些工具 |
+| 配置档案模式增强 | 已计划 | 更丰富的逐工具覆盖表面和更严格的校验诊断 |
+| 合规闸门中的配置档案校验 | 已计划 | 将依据其模式校验共享配置档案作为一项闸门检查 |
+| 配置档案版本化与迁移 | 已计划 | 为配置档案格式加上版本，并将较旧的配置档案向前迁移 |
+| `apothem update --watch` | 已计划 | 当配置档案变化时重新物化工具配置 |
 
-## 长期
+## 更长期
 
-- 云端托管的配置文件同步（可选，由操作者控制）。
-- 用于实时符合性反馈的 VS Code 扩展。
-- 团队共享的配置文件管理。
+| 条目 | 状态 | 说明 |
+| ---- | ------ | ----- |
+| 云端托管的配置档案同步 | 已计划 | 可选，并由操作者控制 |
+| 团队共享的配置档案管理 | 已计划 | 一份配置档案在整个团队中共享 |
+| 带实时合规反馈的编辑器扩展 | 已计划 | 在 VS Code 系列编辑器中，编辑时即可看到合规发现 |
 
-## 请求与反馈
+## 长期愿景
 
-通过 [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions)
-提交路线图请求。路线图由社区意见塑造；呼声更高的请求推进更快。
+Apothem 的目标是成为任何人在其使用的每个工具上管理工具配置的默认方式：约定只写一次，在各处物化，并在偏好和工具不断演进时保持它们同步。
+
+## 如何影响路线图
+
+- 在[问题跟踪器](https://github.com/ahmed-g-gad/apothem/issues)上创建问题或为问题投票；在那里提出功能请求是提议路线图条目的方式。受欢迎的请求推进得更快。
+- 参见 [CONTRIBUTING.md](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md)，了解如何提议并落地变更。
+
+{/* apothem:roadmap:end */}

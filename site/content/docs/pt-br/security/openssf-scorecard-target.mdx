@@ -1,12 +1,12 @@
 ---
 title: "Postura do OpenSSF Scorecard"
-description: "A meta de OpenSSF Scorecard do Apothem e as superfícies de evidência usadas para manter a pontuação em melhoria."
+description: "A meta do Apothem no OpenSSF Scorecard e as superfícies de evidência usadas para manter a pontuação em melhoria."
 machineTranslated: true
-sourceHash: "be47d3429bfb74c5"
+sourceHash: "5e9567b9ec6c681e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-O Apothem mira a pontuação máxima do OpenSSF Scorecard mantendo a fachada pública honesta sobre o que o Scorecard pode e não pode inferir de um repositório novo com um único mantenedor. Este documento enumera cada verificação, a superfície de evidência que a respalda e o controle que mantém a postura atual.
+O Apothem mira a pontuação máxima do OpenSSF Scorecard, mantendo a fachada pública honesta sobre o que o Scorecard pode e não pode inferir de um repositório novo com um único mantenedor. Este documento enumera cada verificação, a superfície de evidência que a respalda e o controle que mantém a postura atualizada.
 
 A pontuação ao vivo está no [visualizador do Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); o selo está no [cabeçalho do README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
 
@@ -15,37 +15,37 @@ A pontuação ao vivo está no [visualizador do Scorecard](https://securityscore
 | Verificação | Superfície de evidência | Notas |
 |---|---|---|
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Nenhum binário executável é rastreado no código-fonte; os arquivos de distribuição gerados permanecem em `dist/`. |
-| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` é protegido antes da promoção para uma versão pública; force-pushes e exclusões são bloqueados depois que o commit da versão nova aterrissa. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` é protegida antes da promoção para lançamento público; force-pushes e exclusões são bloqueados depois que o novo commit de lançamento aterrissa. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matriz de Pytest, ruff, mypy, CodeQL, Trivy, build da documentação e verificações de fumaça do empacotamento. |
-| **CII-Best-Practices** | Registro no OpenSSF Best Practices | Exige registro pelo mantenedor no site do OpenSSF Best Practices; isso não pode ser concluído apenas com arquivos do repositório. |
-| **Code-Review** | Proteção de branch + CODEOWNERS | Aplicado para futuras pull requests; o histórico do Scorecard permanece limitado até que existam PRs revisadas. |
-| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Um projeto novo com mantenedor solo não pode fabricar um histórico de contribuições de múltiplas organizações; isso melhora naturalmente conforme colaboradores aparecem. |
-| **Dangerous-Workflow** | Auditoria de workflows | Sem `pull_request_target`; as Actions são fixadas por SHA e escopadas com permissões explícitas. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | O Renovate cobre GitHub Actions, manifestos Python, requisitos de versão com hash travado e superfícies npm, mantendo disponíveis PRs de dependências agrupadas. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Testes de propriedade do Hypothesis exercitam as invariantes do parser e do frontmatter; o Scorecard upstream pode não creditar o Hypothesis como uma integração de fuzzing. |
+| **CII-Best-Practices** | Registro no OpenSSF Best Practices | Exige registro por parte do mantenedor no site do OpenSSF Best Practices; isso não pode ser concluído apenas com arquivos do repositório. |
+| **Code-Review** | Proteção de branch + CODEOWNERS | Pull requests são obrigatórios para `main` para todos, exceto os administradores do repositório, e a proteção de branch exige 0 revisões de aprovação enquanto o projeto tiver um único mantenedor (consulte [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); o histórico do Scorecard permanece limitado até que existam PRs revisados. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Um projeto novo com mantenedor solo não pode fabricar um histórico de contribuições de várias organizações; isso melhora naturalmente à medida que colaboradores entram. |
+| **Dangerous-Workflow** | Auditoria de fluxos de trabalho | Sem `pull_request_target`; as Actions são fixadas por SHA e têm escopo definido com permissões explícitas. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | O Renovate cobre GitHub Actions, manifestos Python, requisitos de lançamento travados por hash e superfícies do npm, mantendo disponíveis PRs de dependências agrupadas. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Testes de propriedade do Hypothesis exercitam as invariantes do parser e do frontmatter; o Scorecard upstream pode não reconhecer o Hypothesis como uma integração de fuzzing. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Licença MIT na raiz do repositório. |
-| **Maintained** | Histórico do Git | O commit da versão atual e a cadência ativa de workflows demonstram manutenção; repositórios muito novos podem receber um aviso de idade. |
-| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Workflows de Release, Pages e npmjs.com que produzem o sdist, o wheel, o SBOM, a proveniência SLSA e as assinaturas Sigstore. |
-| **Pinned-Dependencies** | Auditoria de workflows + requisitos com hash travado | As Actions são fixadas por SHA; as instalações das ferramentas de release usam `--require-hashes`; as ferramentas pip exclusivas dos workflows usam fixações exatas. |
+| **Maintained** | Histórico do Git | O commit de lançamento atual e a cadência ativa de fluxos de trabalho demonstram manutenção; repositórios muito novos podem receber um aviso de idade. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Fluxos de trabalho de lançamento, Pages e npmjs.com que produzem o sdist, o wheel, o SBOM, a procedência SLSA e as assinaturas do Sigstore. |
+| **Pinned-Dependencies** | Auditoria de fluxos de trabalho + requisitos travados por hash | As Actions são fixadas por SHA; as instalações das ferramentas de lançamento usam `--require-hashes`; as ferramentas pip usadas apenas nos fluxos de trabalho usam fixações exatas. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Consultas `security-extended` do CodeQL em Python e Actions. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Política de divulgação coordenada, matriz de versões suportadas e cronograma de resposta. |
-| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Assinaturas keyless do Sigstore, proveniência SLSA, SBOM, somas de verificação e artefatos da versão. |
-| **Token-Permissions** | Auditoria de workflows | Os workflows usam permissões somente-leitura por padrão; os escopos de escrita são locais ao job e atrelados a operações de implantação/empacotamento. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Varredura semanal de vulnerabilidades e varredura de CI com upload de SARIF; o gate de dependency-review bloqueia pull requests que introduzem dependências vulneráveis ou com licenças não permitidas. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Assinaturas sem chave do Sigstore, procedência SLSA, SBOM, somas de verificação e artefatos de lançamento. |
+| **Token-Permissions** | Auditoria de fluxos de trabalho | Os fluxos de trabalho usam permissões somente leitura por padrão; os escopos de escrita são locais ao job e vinculados a operações de implantação/pacote. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Varredura semanal de vulnerabilidades e varredura de CI com upload de SARIF; o portão de dependency-review bloqueia pull requests que introduzem dependências vulneráveis ou com licença não permitida. |
 
 ## Interpretação da pontuação
 
-O Scorecard pontua cada verificação numa escala de 0 a 10 e a pontuação geral é uma média ponderada. Os controles que dependem do histórico do repositório, de registro de terceiros ou da diversidade de colaboradores são rastreados explicitamente em vez de superafirmados. A deriva em qualquer verificação controlada por arquivos dispara remediação imediata.
+O Scorecard pontua cada verificação em uma escala de 0 a 10, e a pontuação geral é uma média ponderada. Os controles que dependem do histórico do repositório, de registro em terceiros ou da diversidade de colaboradores são acompanhados explicitamente, em vez de superestimados. Um desvio em qualquer verificação controlada por arquivos dispara remediação imediata.
 
 ## Cadência de atualização
 
-- **A cada push:** o workflow do Scorecard é reexecutado a cada push para `main`.
-- **Semanal:** segundas-feiras às 02:30 UTC — capta mudanças na metodologia de pontuação upstream + novas vulnerabilidades divulgadas contra dependências fixadas existentes.
-- **A cada versão:** antes da promoção pública, o mantenedor verifica a superfície do visualizador do Scorecard ao vivo e registra quaisquer limites do estado da plataforma.
+- **A cada push:** o fluxo de trabalho do Scorecard é executado novamente a cada push para `main`.
+- **Semanal:** às segundas-feiras, 02:30 UTC — capta mudanças na metodologia de pontuação upstream + novas vulnerabilidades divulgadas contra dependências fixadas existentes.
+- **A cada lançamento:** antes da promoção pública, o mantenedor verifica a superfície ao vivo do visualizador do Scorecard e registra quaisquer limites do estado da plataforma.
 
 ## Referências
 
 - [OpenSSF Scorecard](https://github.com/ossf/scorecard) — projeto upstream
 - [Referência das verificações do Scorecard](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — semântica de cada verificação
-- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — wrapper de GitHub Actions
-- [Framework SLSA](https://slsa.dev/) — níveis de cadeia de suprimentos (apothem é publicado em SLSA-3)
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — wrapper para GitHub Actions
+- [Framework SLSA](https://slsa.dev/) — níveis da cadeia de suprimentos (o apothem é distribuído em SLSA-3)

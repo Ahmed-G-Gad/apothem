@@ -1,6 +1,6 @@
 ---
 title: "Brand palette"
-description: "Apothem core brand colors and the seventeen harness brand colors. The single source of truth is the canonical design tokens at assets/design-tokens.css; the site mirrors those values."
+description: "Apothem core brand colors and the fifteen harness brand colors, which are defined on the Harness colors page. The single source of truth for the core colors is the canonical design tokens at assets/design-tokens.css; the site mirrors those values."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,20 +12,19 @@ the semantic hues — is owned by the design tokens at
 (and its `assets/design-tokens.json` mirror). The site theme at
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
 mirrors those token values into the CSS variables the Fumadocs theme consumes. Every value below
-traces to a canonical ramp step.
+is a step of the slate or emerald ramp in those design tokens; a step name such as slate-600 refers to that ramp's value.
 
 | Role | Token (CSS) | Light mode | Dark mode | Use |
 |---|---|---|---|---|
-| Primary | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Headings, navigation text, primary reading surfaces. |
-| Accent | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Active links, focus rings, selected navigation. |
-| Body text | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Default prose text. |
-| Body ground | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Default background. |
-| Navigation ground | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Header and navigation bands. |
-| Code ground | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Inline / block code surfaces. |
+| Primary | `--apothem-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Headings, navigation text, primary reading surfaces. |
+| Accent | `--apothem-accent-text` | emerald-700 `#047857` | emerald-400 `#34d399` | Active links, focus rings, selected navigation. |
+| Body text | `--apothem-text-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Default prose text. |
+| Body ground | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | Default background. |
+| Navigation ground | `--apothem-surface-sunken` | slate-100 `#eef2f7` | slate-950 `#080c15` | Header and navigation bands. |
 
 ## Harness palette
 
-The harness colors live at [Harness colors](/docs/brand/harness-colors). The geometric mapping onto the Apothem mark's hexagon — its center node and terminus node — is folded into the brand section. The CSS source of truth at [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) wires every token to its CSS variable.
+The harness colors live at [Harness colors](/docs/brand/harness-colors). The Apothem mark carries no harness color; its hexagon, center node and terminus nodes are described in the mark section of [`assets/DESIGN-SYSTEM.md`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/DESIGN-SYSTEM.md). The harness colors are defined on that page, not in the design tokens or in [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), which carry the core palette only.
 
 ## Usage in documentation
 
@@ -33,4 +32,4 @@ The palette is wired through the global stylesheet `site/app/global.css`, import
 
 ## Updates
 
-The palette updates only when a core color shifts (slate / emerald) or a harness ratifies a brand-color change upstream. Per-harness changes propagate atomically across [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), [Harness colors](/docs/brand/harness-colors), and every affected SVG master under `assets/src/`.
+The palette updates only when a core color shifts (slate / emerald) or a harness ratifies a brand-color change upstream. Per-harness changes propagate atomically across [Harness colors](/docs/brand/harness-colors) and every affected SVG master under `assets/src/`.

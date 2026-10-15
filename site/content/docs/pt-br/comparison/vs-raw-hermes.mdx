@@ -1,49 +1,54 @@
 ---
-title: "Apothem vs. a configuração bruta do Hermes"
-description: "Manter a configuração do Hermes à mão versus gerenciá-la através do perfil compartilhado do Apothem."
+title: "Apothem versus a configuração manual do Hermes"
+description: "Manter à mão a configuração do Hermes versus gerenciá-la por meio do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "30eff4ccddef295b"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-O Hermes lê `~/.hermes/config.yaml`. O Apothem escreve a configuração YAML nativa
-(projetando o inventário de MCP do perfil em `auxiliary.mcp`) e instala coortes
-compartilhadas de comandos e skills sob `~/.hermes/.apothem/support/skills/`. O próprio
-`skills.config` do Hermes é uma lista de pacotes de registro, então o Apothem não
-o escreve.
+O Hermes lê `~/.hermes/config.yaml`. O Apothem grava a configuração YAML nativa
+(projetando o inventário de MCP do perfil em `mcp_servers`) e instala cohorts
+compartilhados de comandos e de skills em `~/.hermes/.apothem/support/skills/`.
+O próprio `skills.config` do Hermes é uma lista de pacotes de registro, então o
+Apothem não o redige.
 
 ## Status
 
-**Prévia.** O adaptador do Hermes mira o arquivo de configuração atualmente
-documentado e a superfície de descoberta de skills. As coortes que não são de
-skills permanecem material de apoio do Apothem.
+**Prévia.** O adaptador do Hermes mira o arquivo de configuração documentado
+atual e a superfície de descoberta de skills. Os cohorts que não são de skills
+permanecem como material de suporte do Apothem.
 
 ## Comparação de esforço
 
-| Tarefa | Config à mão bruta | Gerenciado pelo Apothem |
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Escrever skills reutilizáveis | Editar à mão a config e os diretórios de skills | Escrever uma vez no corpus compartilhado |
-| Manter as coortes alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
-| Instalar / remover a config | Manual | `apothem install` / `apothem uninstall` |
-| Verificar se a config está correta | Inspeção manual | `apothem verify --harness hermes` |
+| Redigir skills reutilizáveis | Editar à mão a configuração e os diretórios de skills | Escrever uma vez no corpus compartilhado |
+| Manter os cohorts alinhados com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Instalar / remover a configuração | Manual | `apothem install` / `apothem uninstall` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness hermes` |
 
 ## O que o Apothem gerencia
 
-O adaptador do Hermes escreve `config.yaml`, envolve os comandos de barra do
-Apothem como skills, copia as skills do Apothem para o diretório de apoio
-referenciado e mantém as regras, modelos, agents e material de hooks sob a
-subárvore de apoio do Apothem.
+O adaptador do Hermes grava `config.yaml`, encapsula os comandos de barra do
+Apothem como skills, copia as skills do Apothem para o diretório de suporte e
+mantém as regras, os templates, os agentes e o material de hooks na subárvore de
+suporte do Apothem. O Hermes carrega essas skills somente depois que você
+adiciona `~/.hermes/.apothem/support/skills` a `skills.external_dirs` em
+`config.yaml`.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se você ainda
-   não o fez.
-2. Mova as skills ou os prompts de comandos reutilizáveis do Hermes para o corpus
-   compartilhado.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda
+   não o tenha feito.
+2. Mova as skills ou os prompts de comando reutilizáveis do Hermes para o
+   corpus compartilhado.
 3. Execute `apothem install --harness hermes` para renderizar a configuração
-   nativa e o diretório de skills de apoio.
-4. Execute `apothem verify --harness hermes` para confirmar que a configuração
-   aterrissou.
+   nativa e o diretório de skills de suporte.
+4. Adicione `~/.hermes/.apothem/support/skills` a `skills.external_dirs` em
+   `config.yaml` para que o Hermes carregue as skills instaladas. O
+   `apothem update` mantém as chaves que você adiciona a `config.yaml`.
+5. Execute `apothem verify --harness hermes` para confirmar que a configuração
+   chegou ao destino.
 
 ## Leia a seguir
 

@@ -1,113 +1,125 @@
 ---
 title: "GLM (Z.ai)"
-description: "Apothem harness adapter for GLM (Z.ai) as a configurable model backend."
+description: "محوّل إطار عمل Apothem لـ GLM (Z.ai) بوصفه واجهة خلفية للنماذج قابلة للضبط."
 machineTranslated: true
-sourceHash: "c2f9dc937ca0e8cc"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Z.ai
-**Install name:** `glm`
-**Status:** GA
-**Native config:** `<project>/.apothem/providers/glm.toml`
+**المورّد:** <bdi>Z.ai</bdi>
+**اسم التثبيت:** <bdi>`glm`</bdi>
+**الحالة:** إتاحة عامة
+**الإعداد الأصلي:** <bdi>`<project>/.apothem/providers/glm.toml`</bdi>
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+<bdi>GLM (Z.ai)</bdi> **واجهة خلفية للنماذج**، وليس أداة برمجة قائمة بذاتها. لا تشحن
+<bdi>Z.ai</bdi> سطر أوامر رسميًا من إنتاجها لـ <bdi>GLM</bdi>؛ بل تُوجَّه إلى
+<bdi>GLM</bdi> أداةٌ تتحدّث البروتوكول المتوافق مع <bdi>Anthropic</bdi> أو المتوافق مع
+<bdi>OpenAI</bdi>، بضبط عنوان <bdi>URL</bdi> أساسي للواجهة الخلفية ومفتاح. ومع ذلك
+ما يزال <bdi>Apothem</bdi> يعدّ <bdi>GLM</bdi> من محوّلات أُطُر العمل لديه، لذا
+تختاره بالراية <bdi>`--harness glm`</bdi> مثل أي محوّل آخر. يكتب محوّل
+<bdi>`glm`</bdi> ملف إعداد مزوّد يُسجِّل سطحَي التوافق كليهما، بحيث يمكن ربط أي أداة
+متوافقة بعائلة نماذج <bdi>GLM</bdi>.
 
-## Installation
+## التثبيت
 
 ```bash
 apothem install --harness glm --project /path/to/project
 ```
 
-The adapter writes one project-scope provider file recording the GLM backend
-endpoints and operator-configurable placeholders.
+يكتب المحوّل ملف مزوّد واحدًا بنطاق المشروع يُسجِّل نقاط نهاية الواجهة الخلفية لـ
+<bdi>GLM</bdi> وعناصر نائبة يضبطها المُشغِّل.
 
-**Files written:** `<project>/.apothem/providers/glm.toml`
+**الملفات المكتوبة:** <bdi>`<project>/.apothem/providers/glm.toml`</bdi>
 
-## Profile-to-native-config mapping
+## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-The provider file records two backends. The Anthropic-compatible backend uses
-the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
-protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+يُسجِّل ملف المزوّد واجهتين خلفيتين. تستخدم الواجهة الخلفية المتوافقة مع
+<bdi>Anthropic</bdi> عنوان <bdi>URL</bdi> الأساسي
+<bdi>`https://api.z.ai/api/anthropic`</bdi>؛ وتتوجّه الأداة التي تتحدّث بروتوكول
+<bdi>Anthropic</bdi> إلى <bdi>GLM</bdi> بضبط <bdi>`ANTHROPIC_BASE_URL`</bdi>،
+و<bdi>`ANTHROPIC_AUTH_TOKEN`</bdi>، و<bdi>`API_TIMEOUT_MS`</bdi> اختياريًا. ويسرد
+الجدول <bdi>`[backends.anthropic_compatible.env]`</bdi> في الملف تلك المتغيّرات، ويسرد
+كذلك <bdi>`ANTHROPIC_DEFAULT_OPUS_MODEL`</bdi>،
+و<bdi>`ANTHROPIC_DEFAULT_SONNET_MODEL`</bdi>، و<bdi>`ANTHROPIC_DEFAULT_HAIKU_MODEL`</bdi>،
+التي تربط أدوار <bdi>opus</bdi> و<bdi>sonnet</bdi> و<bdi>haiku</bdi> في الأداة بنماذج
+<bdi>GLM</bdi>. تستخدم الواجهة الخلفية المتوافقة مع <bdi>OpenAI</bdi> عنوان
+<bdi>URL</bdi> الأساسي <bdi>`https://api.z.ai/api/coding/paas/v4`</bdi>. رمز المصادقة
+عنصر نائب تستبدله بمفتاح <bdi>Z.ai</bdi> الخاص بك — لا يكتب <bdi>Apothem</bdi> سرًّا
+حقيقيًا أبدًا. مُعرِّفات النماذج متقلّبة بتغيّر النسخ، لذا لا يُثبِّت
+<bdi>Apothem</bdi> أيًّا منها؛ ويحمل الملف عناصر نائبة <bdi>`<GLM_MODEL_ID>`</bdi>
+تملؤها من [وثائق <bdi>Z.ai</bdi>](https://docs.z.ai/devpack/tool/claude) الحالية. لا
+شيء من الملف التعريفي المشترك يدخل هذا الملف؛ فهو قالب ثابت.
 
-## Compatibility notes
+## ملاحظات التوافق
 
-Because GLM is a backend rather than a harness, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+لأن <bdi>GLM</bdi> واجهة خلفية لا أداة برمجة، فهو لا يكشف أي سطح للقواعد أو الأوامر أو
+المهارات أو الخطّافات — لا يكتب المحوّل سوى ملف مزوّد الواجهة الخلفية ولا شيء غيره.
+يبقى مفتاح <bdi>Z.ai</bdi> الخاص بك واختياراتك لمُعرِّفات النماذج ملكًا للمُشغِّل.
+اصطلاحات سطح المورّد التي يعتمد عليها المحوّل مُثبَّتة في
+<bdi>`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`</bdi>، ملتقَطة بوصفها لقطة
+مقابل وثائق <bdi>Z.ai</bdi> الحيّة.
 
-GLM runs the GLM model family from Z.ai; see the
-[vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
-current backend, model, and Anthropic-compatible configuration surface.
+يُشغِّل <bdi>GLM</bdi> عائلة نماذج <bdi>GLM</bdi> من <bdi>Z.ai</bdi>؛ راجع
+[مرجع إعداد المورّد](https://docs.z.ai/devpack/tool/claude) للاطلاع على سطح الإعداد
+الحالي الخاص بالواجهة الخلفية والنموذج والتوافق مع <bdi>Anthropic</bdi>.
 
-## Verification
+## التحقّق
 
 ```bash
 apothem verify --harness glm --project /path/to/project
 ```
 
-The verify command confirms that:
+يؤكّد أمر التحقّق ما يلي:
 
-1. The native config exists at the expected path.
-2. The provider file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. ملف المزوّد موجود وغير فارغ.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
-## Updating
+## التحديث
 
 ```bash
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+يصبح ملف المزوّد ملكًا لك بمجرّد وجوده. لا يكتب <bdi>`install`</bdi> ولا
+<bdi>`update`</bdi> القالب إلا حين يكون <bdi>`.apothem/providers/glm.toml`</bdi>
+غائبًا، ولا يكتب أيٌّ منهما فوقه أبدًا بعد ذلك، لذا يبقى مرجع مفتاحك واختياراتك
+للنماذج بعد كل إعادة تشغيل. لاعتماد قالب أحدث، انقل ملفك جانبًا، وشغّل
+<bdi>`update`</bdi>، وانسخ قيمك إلى الملف الجديد.
 
-## Uninstalling
+## إلغاء التثبيت
 
 ```bash
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+لا يُزيل ملف المزوّد إلا حين يكون <bdi>Apothem</bdi> قد أنشأه وما يزال هو القالب غير
+المُعدَّل، وينسخه احتياطيًا أولًا تحت جذر النسخ الاحتياطية في <bdi>Apothem</bdi>.
+ويُترَك في مكانه أي ملف أنشأته أنت أو عدّلته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص
+بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## Conformity gate
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## استكشاف الأخطاء وإصلاحها
 
-| Symptom | Fix |
+| العَرَض | الإصلاح |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness glm --project /path/to/project`</bdi> |
+| فشل التحقّق | ملف المزوّد مفقود أو فارغ. إذا كان مفقودًا، فشغّل <bdi>`apothem update --harness glm --project /path/to/project`</bdi>. وإذا كان فارغًا، فانقل <bdi>`.apothem/providers/glm.toml`</bdi> جانبًا أولًا، ثم شغّل <bdi>`update`</bdi> وتحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | عدّل <bdi>`.apothem/providers/glm.toml`</bdi> مباشرةً؛ فـ<bdi>Apothem</bdi> لا يُعيد كتابة ملف موجود أبدًا، ولا يضيف الملف التعريفي المشترك إليه شيئًا. وللحصول على قالب جديد، انقل الملف جانبًا وشغّل <bdi>`apothem update --harness glm --project /path/to/project`</bdi> |
 
-## Configuration knobs
+## مفاتيح الضبط
 
-| Flag | Default | Description |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
 
-## See also
+## انظر أيضًا
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

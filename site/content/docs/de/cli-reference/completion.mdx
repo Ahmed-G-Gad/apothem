@@ -2,11 +2,14 @@
 title: "completion"
 description: "CLI-Referenz für den Befehl apothem completion."
 machineTranslated: true
-sourceHash: "eba23204384a65f8"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Gibt ein Shell-Vervollständigungsskript für die angeforderte Shell auf der Standardausgabe aus. Das Aktivieren der Vervollständigung ist **optional**: Dieser Befehl gibt nur das Skript aus — er bearbeitet niemals deine Shell-Startdateien. Du fügst die Ausgabe selbst der Vervollständigungsdatei der Shell hinzu.
+Gibt ein Shell-Vervollständigungsskript für die angeforderte Shell nach stdout
+aus. Das Aktivieren der Vervollständigung ist **optional**: Dieser
+Befehl gibt nur das Skript aus — er bearbeitet niemals Ihre Shell-Startdateien.
+Sie hängen die Ausgabe selbst an die Vervollständigungsdatei der Shell an.
 
 ## Übersicht
 
@@ -14,58 +17,73 @@ Gibt ein Shell-Vervollständigungsskript für die angeforderte Shell auf der Sta
 apothem completion bash|zsh|fish|powershell
 ```
 
-Das ausgegebene Skript aktiviert die `<TAB>`-Vervollständigung von `apothem`-Unterbefehlen, -Flags und — für die Option `--harness` — der registrierten Harness-IDs sowie `all`.
+Das ausgegebene Skript aktiviert die `<TAB>`-Vervollständigung von
+`apothem`-Unterbefehlen, Flags und — für die Option `--harness` — den
+registrierten Harness-IDs sowie `all`.
 
 ## Unterstützte Shells
 
 | Shell | Wie das Skript erzeugt wird |
 |---|---|
-| `bash` | Clicks natives bash-Vervollständigungsskript. |
-| `zsh` | Clicks natives zsh-Vervollständigungsskript. |
-| `fish` | Clicks natives fish-Vervollständigungsskript. |
-| `powershell` | Ein `Register-ArgumentCompleter`-Snippet, das eine Brücke zu Clicks Vervollständigungsprotokoll schlägt (Click liefert kein natives PowerShell-Skript mit, daher verdrahtet dieses Snippet dasselbe Protokoll in PowerShell). |
+| `bash` | Das native bash-Vervollständigungsskript von Click. |
+| `zsh` | Das native zsh-Vervollständigungsskript von Click. |
+| `fish` | Das native fish-Vervollständigungsskript von Click. |
+| `powershell` | Ein `Register-ArgumentCompleter`-Skript, das von der PowerShell-Vervollständigungsklasse erzeugt wird, die Apothem bei Click registriert (Click liefert nativ keine mit), und das dasselbe Vervollständigungsprotokoll ansteuert wie die anderen Shells. |
 
-Das Anfordern jeder anderen Shell endet mit `64` samt der Liste der unterstützten Shells.
+Das Anfordern jeder anderen Shell endet mit Exit-Code `64` und der Liste der
+unterstützten Shells.
 
 ## Vervollständigung je Shell aktivieren
 
-Zuerst muss der Befehl `apothem` in deinem `PATH` liegen (die Ein-Schritt-Installer legen ihn dort ab). Aktiviere die Vervollständigung dann, indem du das Skript an die Vervollständigungsdatei der Shell anhängst und die Shell neu startest:
+Der Befehl `apothem` muss zuerst in Ihrem `PATH` liegen. Die Ein-Schritt-Installer
+schreiben einen `apothem`-Shim nach `$HOME/.local/bin` (POSIX) oder
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) und bearbeiten Ihren `PATH`
+niemals; fügen Sie dieses Verzeichnis daher hinzu, falls es noch nicht
+aufgeführt ist. Aktivieren Sie die Vervollständigung dann, indem Sie das Skript
+an die Vervollständigungsdatei der Shell anhängen und die Shell neu starten:
 
 ```bash
-# bash — an deine bashrc anhängen
+# bash — append to your bashrc
 apothem completion bash >> ~/.bashrc
 
-# zsh — an deine zshrc anhängen
+# zsh — append to your zshrc
 apothem completion zsh >> ~/.zshrc
 
-# fish — in das fish-Vervollständigungsverzeichnis schreiben
+# fish — write to the fish completions directory
 apothem completion fish > ~/.config/fish/completions/apothem.fish
 ```
 
 ```powershell
-# PowerShell — die Completer-Registrierung an dein Profil anhängen
+# PowerShell — append the completer registration to your profile
 apothem completion powershell >> $PROFILE
 ```
 
-Um die Vervollständigung nur für die aktuelle Sitzung auszuprobieren, ohne eine Datei zu bearbeiten, sourcest du das Skript direkt (bash/zsh): `source <(apothem completion bash)`.
+Um die Vervollständigung nur für die aktuelle Sitzung auszuprobieren, ohne eine
+Datei zu bearbeiten, laden Sie das Skript direkt per source (bash/zsh):
+`source <(apothem completion bash)`.
 
 ## Warum es optional ist
 
-Apothem bearbeitet niemals stillschweigend die Shell-Startdateien eines Operators. Die Installer geben einen einzeiligen Hinweis aus, der auf diesen Befehl verweist; der Operator entscheidet, ob er die Vervollständigung aktiviert und an welche Datei er sie anhängt. Das hält den Installationsfußabdruck vorhersehbar und reversibel — das Entfernen des angehängten Blocks deaktiviert die Vervollständigung.
+Apothem bearbeitet niemals still die Shell-Startdateien eines Operators. Die
+Installer geben einen einzeiligen Hinweis aus, der auf diesen Befehl verweist;
+der Operator entscheidet, ob er die Vervollständigung aktiviert und an welche
+Datei er das Skript anhängt. Das hält den Installations-Fußabdruck vorhersehbar
+und umkehrbar — das Entfernen des angehängten Blocks deaktiviert die
+Vervollständigung.
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
 | `SHELL` | Eine von `bash`, `zsh`, `fish`, `powershell` (erforderliches Positionsargument). |
-| `-h`, `--help` | Hilfe anzeigen und beenden. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## Exit-Codes
 
 | Code | Bedeutung |
 |---|---|
 | 0 | Vervollständigungsskript ausgegeben |
-| 2 | Nicht unterstützte Shell angefordert |
+| 64 | Nicht unterstützte Shell angefordert oder ein anderer Verwendungsfehler (unter `--json` ein `cli.usage`-Fehlerumschlag) |
 
 ## Siehe auch
 

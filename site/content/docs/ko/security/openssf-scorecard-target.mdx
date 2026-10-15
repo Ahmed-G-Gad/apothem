@@ -1,51 +1,51 @@
 ---
 title: "OpenSSF Scorecard 태세"
-description: "Apothem의 OpenSSF Scorecard 목표와 점수를 지속적으로 개선하기 위해 사용하는 증거 표면."
+description: "Apothem의 OpenSSF Scorecard 목표와 점수를 계속 개선하는 데 쓰는 증거 표면입니다."
 machineTranslated: true
-sourceHash: "be47d3429bfb74c5"
+sourceHash: "5e9567b9ec6c681e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, 새로운 단독 메인테이너 저장소에서 Scorecard가 무엇을 추론할 수 있고 무엇을 추론할 수 없는지에 대해 공개 외관을 정직하게 유지합니다. 이 문서는 각 검사, 이를 뒷받침하는 증거 표면, 그리고 태세를 최신으로 유지하는 통제를 열거합니다.
+Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, Scorecard가 새로운 단독 메인테이너 저장소에서 무엇을 추론할 수 있고 무엇을 추론할 수 없는지에 대해 공개 외관을 정직하게 유지합니다. 이 문서는 각 검사, 그 검사를 뒷받침하는 증거 표면, 그리고 태세를 최신으로 유지하는 통제를 열거합니다.
 
-실시간 점수는 [Scorecard 뷰어](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)에 있습니다. 배지는 [README 헤더](https://github.com/ahmed-g-gad/apothem/blob/main/README.md)에 있습니다.
+현재 점수는 [Scorecard 뷰어](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)에 있으며, 배지는 [README 헤더](https://github.com/ahmed-g-gad/apothem/blob/main/README.md)에 있습니다.
 
 ## 검사별 증거 매트릭스
 
 | 검사 | 증거 표면 | 비고 |
 |---|---|---|
-| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 소스에 추적되는 실행 가능 바이너리가 전혀 없습니다. 생성된 배포 아카이브는 `dist/`에 남습니다. |
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 소스에서 추적되는 실행 가능 바이너리는 0개입니다. 생성된 배포 아카이브는 `dist/`에 머뭅니다. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main`은 공개 릴리스 승격 전에 보호됩니다. 새 릴리스 커밋이 안착한 후에는 강제 푸시와 삭제가 차단됩니다. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, CodeQL, Trivy, 문서 빌드 및 패키징 스모크 검사. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, CodeQL, Trivy, 문서 빌드, 패키징 스모크 검사. |
 | **CII-Best-Practices** | OpenSSF Best Practices 등록 | OpenSSF Best Practices 사이트에서 메인테이너 측 등록이 필요합니다. 이는 저장소 파일만으로는 완료할 수 없습니다. |
-| **Code-Review** | 브랜치 보호 + CODEOWNERS | 향후 풀 리퀘스트에 대해 강제됩니다. 검토된 PR이 존재하기 전까지 Scorecard 이력은 제한적으로 유지됩니다. |
-| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 새로운 단독 메인테이너 프로젝트는 여러 조직에 걸친 기여 이력을 조작할 수 없습니다. 이는 기여자가 합류함에 따라 자연스럽게 개선됩니다. |
-| **Dangerous-Workflow** | 워크플로 감사 | `pull_request_target` 없음. Actions는 SHA로 고정되고 명시적 권한으로 범위가 한정됩니다. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate는 GitHub Actions, Python 매니페스트, 해시 잠금 릴리스 요구 사항, npm 표면을 커버하면서 그룹화된 의존성 PR을 이용 가능하게 유지합니다. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 속성 테스트가 파서 및 frontmatter 불변식을 검증합니다. 상류 Scorecard는 Hypothesis를 퍼징 통합으로 인정하지 않을 수 있습니다. |
+| **Code-Review** | 브랜치 보호 + CODEOWNERS | 저장소 관리자를 제외한 모든 사람에게 `main`에 대한 풀 리퀘스트가 필수이며, 프로젝트에 메인테이너가 한 명인 동안 브랜치 보호는 승인 검토 0개를 요구합니다([branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) 참조). 검토된 PR이 생기기 전까지 Scorecard 이력은 제한적으로 남습니다. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 새로운 단독 메인테이너 프로젝트는 여러 조직에 걸친 기여 이력을 만들어 낼 수 없습니다. 이 항목은 기여자가 합류하면서 자연스럽게 개선됩니다. |
+| **Dangerous-Workflow** | 워크플로 감사 | `pull_request_target`이 없습니다. Actions는 SHA로 고정되고 명시적 권한으로 범위가 한정됩니다. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate는 GitHub Actions, Python 매니페스트, 해시 잠금된 릴리스 요구 사항, npm 표면을 다루며, 그룹화된 의존성 PR도 계속 사용할 수 있게 합니다. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 속성 테스트가 파서와 frontmatter 불변식을 검증합니다. 업스트림 Scorecard는 Hypothesis를 퍼저 통합으로 인정하지 않을 수 있습니다. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 저장소 루트의 MIT 라이선스. |
-| **Maintained** | Git 이력 | 현재 릴리스 커밋과 활발한 워크플로 주기가 유지보수를 입증합니다. 매우 새로운 저장소는 연령 경고를 받을 수 있습니다. |
-| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist, wheel, SBOM, SLSA 출처, Sigstore 서명을 생성하는 Release, Pages, npmjs.com 워크플로. |
-| **Pinned-Dependencies** | 워크플로 감사 + 해시 잠금 요구 사항 | Actions는 SHA로 고정됩니다. 릴리스 도구 설치는 `--require-hashes`를 사용합니다. 워크플로 전용 pip 도구는 정확한 핀을 사용합니다. |
+| **Maintained** | Git 히스토리 | 현재 릴리스 커밋과 활발한 워크플로 주기가 유지 관리를 입증합니다. 매우 새로운 저장소는 연령 경고를 받을 수 있습니다. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist, wheel, SBOM, SLSA 출처, Sigstore 서명을 생성하는 릴리스, Pages, npmjs.com 워크플로. |
+| **Pinned-Dependencies** | 워크플로 감사 + 해시 잠금된 요구 사항 | Actions는 SHA로 고정됩니다. 릴리스 도구 설치는 `--require-hashes`를 사용합니다. 워크플로 전용 pip 도구는 정확한 버전 고정을 사용합니다. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python과 Actions 전반에 걸친 CodeQL `security-extended` 쿼리. |
-| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 협조적 공개 정책, 지원 버전 매트릭스, 대응 타임라인. |
-| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 키리스 서명, SLSA 출처, SBOM, 체크섬, 릴리스 산출물. |
-| **Token-Permissions** | 워크플로 감사 | 워크플로는 기본적으로 읽기 전용 권한을 사용합니다. 쓰기 범위는 잡 로컬이며 배포/패키징 작업에 묶여 있습니다. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 주간 취약점 스캔과 SARIF 업로드가 포함된 CI 스캔. dependency-review 게이트는 취약하거나 허용되지 않은 라이선스의 의존성을 도입하는 풀 리퀘스트를 차단합니다. |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 조율된 공개 정책, 지원 버전 매트릭스, 대응 타임라인. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 키리스 서명, SLSA 출처, SBOM, 체크섬, 릴리스 아티팩트. |
+| **Token-Permissions** | 워크플로 감사 | 워크플로는 기본적으로 읽기 전용 권한을 사용합니다. 쓰기 범위는 작업 로컬이며 배포/패키지 작업에 묶여 있습니다. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 주간 취약점 스캔과 CI 스캔(SARIF 업로드 포함). dependency-review 게이트는 취약하거나 허용되지 않은 라이선스의 의존성을 도입하는 풀 리퀘스트를 차단합니다. |
 
 ## 점수 해석
 
-Scorecard는 각 검사를 0–10 척도로 채점하며 전체 점수는 가중 평균입니다. 저장소 이력, 서드파티 등록, 또는 기여자 다양성에 의존하는 통제는 과대 주장 대신 명시적으로 추적됩니다. 파일로 통제되는 검사에서 드리프트가 발생하면 즉각적인 시정이 트리거됩니다.
+Scorecard는 각 검사를 0-10 척도로 채점하며, 전체 점수는 가중 평균입니다. 저장소 이력, 서드파티 등록, 기여자 다양성에 의존하는 통제는 과장해 주장하지 않고 명시적으로 추적합니다. 파일로 통제되는 검사에서 드리프트가 발생하면 즉시 시정 조치가 시작됩니다.
 
 ## 갱신 주기
 
-- **푸시마다:** Scorecard 워크플로는 `main`으로의 각 푸시에서 다시 실행됩니다.
-- **매주:** 월요일 UTC 02:30 — 상류 채점 방법론의 변경 + 기존 고정 의존성에 대해 새로 공개된 취약점을 포착합니다.
-- **릴리스마다:** 공개 승격 전에 메인테이너가 실시간 Scorecard 뷰어 표면을 검증하고 플랫폼 상태 제약을 기록합니다.
+- **푸시마다:** Scorecard 워크플로는 `main`으로의 모든 푸시에서 다시 실행됩니다.
+- **매주:** 월요일 02:30 UTC — 업스트림 채점 방법론의 변경 + 기존에 고정된 의존성을 대상으로 새로 공개된 취약점을 포착합니다.
+- **릴리스마다:** 공개 승격 전에 메인테이너가 현재 Scorecard 뷰어 표면을 검증하고 플랫폼 상태 제약을 기록합니다.
 
 ## 참고 자료
 
-- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — 상류 프로젝트
-- [Scorecard 검사 참조](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — 검사별 의미론
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — 업스트림 프로젝트
+- [Scorecard 검사 참조](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — 검사별 의미
 - [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — GitHub Actions 래퍼
-- [SLSA 프레임워크](https://slsa.dev/) — 공급망 등급(apothem은 SLSA-3으로 출하)
+- [SLSA 프레임워크](https://slsa.dev/) — 공급망 등급(apothem은 SLSA-3으로 배포됨)

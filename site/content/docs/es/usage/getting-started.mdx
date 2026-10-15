@@ -2,7 +2,7 @@
 title: "Flujos de trabajo principales"
 description: "Los cuatro flujos de trabajo principales de Apothem: perfil, reglas, planes y la puerta de conformidad."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-Crea e inspecciona el perfil:
+Crea el perfil si todavía no existe y luego inspecciónalo. Los instaladores de
+un solo paso y `apothem install` ya escriben un perfil inicial en la primera
+ejecución, y `profile init` se detiene con un error y deja sin cambios un
+archivo existente a menos que pases `--force`.
 
 ```bash
 apothem profile init
@@ -54,25 +57,31 @@ apothem verify --harness claude-code
 
 ## El primer plan
 
-La canalización `/plan` se ejecuta dentro de tu herramienta como
-comandos de barra, no a través del binario `apothem`. Una vez instalado un
-entorno, inicia un plan desde el chat de la herramienta:
+La canalización `/plan` se ejecuta dentro de tu entorno como comandos de barra,
+no a través del binario `apothem`. Una vez instalado un entorno, inicia un plan
+desde el chat de la herramienta:
 
 ```text
 /plan-spec
 ```
 
 `/plan-spec` refina tu prosa en una especificación, y `/plan-generate`
-materializa un conjunto de planes bajo `<project-root>/.apothem/plans/{suite}/`. Consulta
-la [referencia de comandos de la canalización](/docs/pipeline) para ver el flujo
-completo.
+materializa una suite de plan bajo `<project-root>/.apothem/plans/{suite}/`.
+Consulta la [referencia de comandos de la canalización](/docs/pipeline) para ver
+el flujo completo.
 
 ## Puerta de conformidad
 
-Ejecuta desde la raíz del repositorio:
+Desde un checkout de Apothem, ejecuta:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+Tras una instalación con script, ejecuta:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Ejecuta todas las comprobaciones mecánicas de conformidad e informa de

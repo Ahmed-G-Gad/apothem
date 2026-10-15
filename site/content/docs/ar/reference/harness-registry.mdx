@@ -1,64 +1,105 @@
 ---
-title: "سجلّ الهارنس"
-description: "مرجع سجلّ تقني لمحوّلات هارنس Apothem المُضمَّنة."
+title: "سجلّ أُطُر العمل"
+description: "مرجع تقني لسجلّ محوّلات أُطُر العمل المُضمَّنة في Apothem."
 machineTranslated: true
-sourceHash: "b555b7671a67df8c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-سجلّ الهارنس هو جرد المحوّلات المصدر-للحقيقة المُستخدَم من قِبل الـ CLI
-والوثائق واختبارات التركيبات والتحقّق من دبّوس العُرف. مصدر وقت-التشغيل
-هو <bdi>`src/apothem/lib/harness_registry.py`</bdi>؛ وكل صف أدناه قابل للتتبّع إلى ذلك
-السجلّ، وملف <bdi>`capabilities.yml`</bdi> لكل-محوّل، و
-<bdi>`STANDARD-CONVENTION-PIN.md`</bdi> لكل محوّل.
+سجلّ أُطُر العمل هو جرد المحوّلات الذي يُعدّ مصدر الحقيقة، وتستخدمه واجهة سطر الأوامر،
+والوثائق، واختبارات التجهيزات، والتحقّق من تثبيتات الاصطلاح. ومصدر وقت التشغيل هو
+<bdi>`src/apothem/lib/harness_registry.py`</bdi>؛ وكل صف أدناه قابل للتتبّع إلى ذلك
+السجلّ، وإلى <bdi>`capabilities.yml`</bdi> الخاص بكل محوّل، وإلى
+<bdi>`STANDARD-CONVENTION-PIN.md`</bdi> الخاص بكل محوّل.
 
 ## مصفوفة السجلّ
 
-| الهارنس | اسم التثبيت | النطاق | الصيغة | الأهداف | MCP | دبّوس العُرف |
+| إطار العمل | اسم التثبيت | النطاق | الصيغة | الأهداف | <bdi>MCP</bdi> | تثبيت الاصطلاح |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | <bdi>`antigravity`</bdi> | المستخدم | markdown | <bdi>`~/.gemini/GEMINI.md`</bdi>؛ <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Claude Code | <bdi>`claude-code`</bdi> | المستخدم | json | <bdi>`~/.claude/settings.json`</bdi>؛ <bdi>`agents`</bdi> و<bdi>`rules`</bdi> و<bdi>`skills`</bdi> و<bdi>`statuslines`</bdi> و<bdi>`output-styles`</bdi> الأصلية؛ <bdi>`~/.claude/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md`</bdi> |
-| CodeBuddy | <bdi>`codebuddy`</bdi> | المشروع | markdown | <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Codex | <bdi>`codex`</bdi> | المستخدم | markdown | <bdi>`~/.codex/AGENTS.md`</bdi>؛ <bdi>`hooks.json`</bdi>؛ <bdi>`hooks/`</bdi>؛ <bdi>`agents/*.toml`</bdi>؛ <bdi>`~/.agents/skills/`</bdi>؛ <bdi>`~/.config/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Cursor | <bdi>`cursor`</bdi> | المشروع | mdc | <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> | أصلي | <bdi>`src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Gemini CLI | <bdi>`gemini-cli`</bdi> | المشروع | markdown | <bdi>`<project>/GEMINI.md`</bdi>؛ <bdi>`<project>/.gemini/{commands,skills,agents}/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md`</bdi> |
-| GitHub Copilot | <bdi>`github-copilot`</bdi> | المشروع | markdown | <bdi>`<project>/.github/copilot-instructions.md`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md`</bdi> |
-| GLM (Z.ai) | <bdi>`glm`</bdi> | المشروع | toml | <bdi>`<project>/.apothem/providers/glm.toml`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Hermes | <bdi>`hermes`</bdi> | المستخدم | yaml | <bdi>`~/.hermes/config.yaml`</bdi>؛ <bdi>`~/.hermes/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Kimi Code | <bdi>`kimi-code`</bdi> | المشروع | markdown | <bdi>`<project>/AGENTS.md`</bdi>؛ <bdi>`<project>/.kimi-code/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Kiro | <bdi>`kiro`</bdi> | المشروع | markdown | <bdi>`<project>/.kiro/steering/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Open-Claw | <bdi>`open-claw`</bdi> | المستخدم | json | <bdi>`~/.openclaw/openclaw.json`</bdi>؛ <bdi>`~/.openclaw/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md`</bdi> |
-| OpenCode | <bdi>`opencode`</bdi> | المستخدم | json | <bdi>`~/.config/opencode/opencode.json`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`apothem/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Qwen Code | <bdi>`qwen-code`</bdi> | المستخدم | json | <bdi>`~/.qwen/settings.json`</bdi>؛ <bdi>`~/.qwen/QWEN.md`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`apothem/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Trae | <bdi>`trae`</bdi> | المشروع | markdown | <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Windsurf | <bdi>`windsurf`</bdi> | المشروع | markdown | <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md`</bdi> |
-| Zed | <bdi>`zed`</bdi> | المشروع | markdown | <bdi>`<project>/.rules`</bdi> | أصلي | <bdi>`src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Antigravity</bdi> | <bdi>`antigravity`</bdi> | المستخدم | <bdi>markdown</bdi> | <bdi>`~/.gemini/GEMINI.md`</bdi>؛ <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Claude Code</bdi> | <bdi>`claude-code`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.claude/settings.json`</bdi>؛ <bdi>`~/.claude/CLAUDE.md`</bdi>؛ <bdi>`agents`</bdi> و<bdi>`rules`</bdi> و<bdi>`skills`</bdi> و<bdi>`statuslines`</bdi> و<bdi>`output-styles`</bdi> الأصلية؛ <bdi>`~/.claude/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>CodeBuddy</bdi> | <bdi>`codebuddy`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Codex</bdi> | <bdi>`codex`</bdi> | المستخدم | <bdi>markdown</bdi> | <bdi>`~/.codex/AGENTS.md`</bdi>؛ <bdi>`hooks.json`</bdi>؛ <bdi>`hooks/`</bdi>؛ <bdi>`agents/*.toml`</bdi>؛ <bdi>`~/.agents/skills/`</bdi>؛ <bdi>`~/.config/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Cursor</bdi> | <bdi>`cursor`</bdi> | المشروع | <bdi>mdc</bdi> | <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Gemini CLI</bdi> | <bdi>`gemini-cli`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/GEMINI.md`</bdi>؛ <bdi>`<project>/.gemini/{commands,skills,agents}/`</bdi>؛ <bdi>`<project>/.gemini/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>GitHub Copilot</bdi> | <bdi>`github-copilot`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.github/copilot-instructions.md`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>GLM (Z.ai)</bdi> | <bdi>`glm`</bdi> | المشروع | <bdi>toml</bdi> | <bdi>`<project>/.apothem/providers/glm.toml`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Hermes</bdi> | <bdi>`hermes`</bdi> | المستخدم | <bdi>yaml</bdi> | <bdi>`~/.hermes/config.yaml`</bdi>؛ <bdi>`~/.hermes/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Kimi Code</bdi> | <bdi>`kimi-code`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/AGENTS.md`</bdi>؛ <bdi>`<project>/.kimi-code/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Kiro</bdi> | <bdi>`kiro`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.kiro/steering/apothem-rules.md`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Open-Claw</bdi> | <bdi>`open-claw`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.openclaw/openclaw.json`</bdi>؛ <bdi>`~/.openclaw/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>OpenCode</bdi> | <bdi>`opencode`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.config/opencode/opencode.json`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`~/.config/opencode/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Qwen Code</bdi> | <bdi>`qwen-code`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.qwen/settings.json`</bdi>؛ <bdi>`~/.qwen/QWEN.md`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`~/.qwen/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Trae</bdi> | <bdi>`trae`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Windsurf</bdi> | <bdi>`windsurf`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Zed</bdi> | <bdi>`zed`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.rules`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md`</bdi> |
 
-## دعم كوكبة الحمولة
+## دعم حِزم الحمولة
 
-قيم الحالة هي <bdi>`native`</bdi> و<bdi>`converted`</bdi> و<bdi>`support-tree`</bdi> و
-<bdi>`profile-projected`</bdi> و<bdi>`unsupported`</bdi> و<bdi>`not-applicable`</bdi> و
-<bdi>`discovery-pending`</bdi>.
+قيم الحالة هي <bdi>`native`</bdi>، و<bdi>`converted`</bdi>، و<bdi>`support-tree`</bdi>،
+و<bdi>`profile-projected`</bdi>، و<bdi>`unsupported`</bdi>، و<bdi>`not-applicable`</bdi>،
+و<bdi>`discovery-pending`</bdi>.
 
-| الهارنس | حمولات أصلية أو محوّلة | حمولات شجرة-الدعم | تحذيرات غير-مدعومة أو معلّقة |
+تُعاد كتابة الحزمة <bdi>`converted`</bdi> بصيغة إطار العمل نفسه، وبعض حقول المصدر لا
+مكان لها فيها. ولكل حزمة أوامر أو عوامل أو قواعد مُحوَّلة، يحمل ملف
+<bdi>`capabilities.yml`</bdi> الخاص بالمحوّل خريطة <bdi>`conversion_losses`</bdi> تبيّن
+ما يحدث لكل حقل من حقول البيانات الأمامية في المصدر:
+
+| القيمة | المعنى |
+| --- | --- |
+| <bdi>`native:<field>`</bdi> | يقرؤه إطار العمل تحت ذلك الحقل. |
+| <bdi>`sidecar:<path>`</bdi> | يُكتَب في ملف منفصل بجوار الملف المُحوَّل، مثل <bdi>`agents/openai.yaml`</bdi> الخاص بـ <bdi>Codex</bdi>. |
+| <bdi>`filename`</bdi> | يحمله اسم الملف أو المجلّد. |
+| <bdi>`inlined`</bdi> | ينتقل إلى نص المُوجِّه أو المتن. |
+| <bdi>`ignored`</bdi> | يبقى في الملف، لكن إطار العمل لا يقرؤه. |
+| <bdi>`dropped`</bdi> | يُستبعَد. |
+
+يُصيِّر اختبارٌ كل ملف مُحوَّل ويفحص الخرائط مقابل المُخرَجات.
+
+| إطار العمل | الحمولات الأصلية أو المُحوَّلة | حمولات شجرة الدعم | تحذيرات غير المدعوم أو المعلّق |
 | --- | --- | --- | --- |
-| Antigravity | أوامر وعاملون مُحوَّلون؛ مهارات أصلية، توزيع عامل-فرعي، قوالب موجِّه-النظام؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP والذاكرة معلّق |
-| Claude Code | أوامر مُحوَّلة؛ مهارات، خطّافات، عاملون، قواعد، أسطر حالة، أنماط إخراج، MCP، توزيع عامل-فرعي، قيود أدوات، ذاكرة أصلية | القوالب | يبقى <bdi>`CLAUDE.md`</bdi> مملوكًا للمُشغِّل؛ لا قالب موجِّه-نظام مكتوب-من-المحوّل |
-| CodeBuddy | قواعد، MCP، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي |
-| Codex | أوامر وعاملون مُحوَّلون؛ مهارات، خطّافات، توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP معلّق لأنّ Apothem لا يكتب فوق <bdi>`config.toml`</bdi> |
-| Cursor | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
-| Gemini CLI | أوامر وعاملون مُحوَّلون؛ مهارات أصلية، توزيع عامل-فرعي، قوالب موجِّه-النظام؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP والذاكرة معلّق |
-| GitHub Copilot | قواعد وقوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، ذاكرة |
-| GLM (Z.ai) | لا شيء | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، القواعد، القوالب، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، قيود أدوات، قوالب موجِّه-النظام، ذاكرة — GLM واجهة نموذج خلفية بلا سطح تهيئة أصلي |
-| Hermes | أوامر مُحوَّلة؛ قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي |
-| Kimi Code | توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية | الأوامر، المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP وقيود الأدوات معلّق |
-| Kiro | قواعد، MCP، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي |
-| Open-Claw | أوامر مُحوَّلة؛ قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي |
-| OpenCode | أوامر وعاملون مُحوَّلون؛ مهارات، MCP، توزيع عامل-فرعي، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج |
-| Qwen Code | أوامر وعاملون مُحوَّلون؛ مهارات، خطّافات، MCP، توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | القواعد، القوالب | أسطر الحالة، أنماط الإخراج |
-| Trae | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
-| Windsurf | قواعد وقوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، ذاكرة |
-| Zed | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
+| <bdi>Antigravity</bdi> | الأوامر والعوامل والقواعد مُحوَّلة؛ والمهارات، وتوزيع العوامل الفرعية، وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | الخطّافات، والقوالب | أسطر الحالة، وأنماط الإخراج؛ واكتشاف <bdi>MCP</bdi> والذاكرة معلّق |
+| <bdi>Claude Code</bdi> | الأوامر مُحوَّلة؛ والمهارات، والخطّافات، والعوامل، والقواعد، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية، وقيود الأدوات، والذاكرة أصلية | القوالب | يبقى <bdi>`CLAUDE.md`</bdi> مملوكًا للمُشغِّل؛ ولا قالب مُوجِّه نظام يكتبه المحوّل؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>CodeBuddy</bdi> | القواعد، وقوالب مُوجِّه النظام، والذاكرة أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>Codex</bdi> | الأوامر والعوامل مُحوَّلة؛ والمهارات، والخطّافات، وتوزيع العوامل الفرعية، وقوالب مُوجِّه النظام، والذاكرة أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | القواعد، والقوالب | أسطر الحالة، وأنماط الإخراج؛ واكتشاف <bdi>MCP</bdi> معلّق لأن <bdi>Apothem</bdi> لا يكتب فوق <bdi>`config.toml`</bdi> |
+| <bdi>Cursor</bdi> | القواعد، وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية، والذاكرة؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>Gemini CLI</bdi> | الأوامر والعوامل مُحوَّلة؛ والمهارات، وتوزيع العوامل الفرعية، وقوالب مُوجِّه النظام، والذاكرة أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | الخطّافات، والقواعد، والقوالب | أسطر الحالة، وأنماط الإخراج؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>GitHub Copilot</bdi> | القواعد وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، و<bdi>MCP</bdi>، وتوزيع العوامل الفرعية، والذاكرة |
+| <bdi>GLM (Z.ai)</bdi> | لا شيء | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، والقواعد، والقوالب، وأسطر الحالة، وأنماط الإخراج، و<bdi>MCP</bdi>، وتوزيع العوامل الفرعية، وقيود الأدوات، وقوالب مُوجِّه النظام، والذاكرة — <bdi>GLM</bdi> واجهة خلفية للنماذج بلا سطح إعداد أصلي |
+| <bdi>Hermes</bdi> | الأوامر مُحوَّلة؛ وقوالب مُوجِّه النظام، و<bdi>MCP</bdi> أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | المهارات، والخطّافات، والعوامل، والقواعد، والقوالب | أسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية |
+| <bdi>Kimi Code</bdi> | توزيع العوامل الفرعية، وقوالب مُوجِّه النظام، والذاكرة أصلية | الأوامر، والمهارات، والخطّافات، والعوامل، والقواعد، والقوالب | أسطر الحالة، وأنماط الإخراج؛ واكتشاف <bdi>MCP</bdi> وقيود الأدوات معلّق |
+| <bdi>Kiro</bdi> | القواعد، وقوالب مُوجِّه النظام، والذاكرة أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>Open-Claw</bdi> | الأوامر مُحوَّلة؛ وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | المهارات، والخطّافات، والعوامل، والقواعد، والقوالب | أسطر الحالة، وأنماط الإخراج، و<bdi>MCP</bdi>، وتوزيع العوامل الفرعية |
+| <bdi>OpenCode</bdi> | الأوامر والعوامل مُحوَّلة؛ والمهارات، و<bdi>MCP</bdi>، وتوزيع العوامل الفرعية، وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | الخطّافات، والقواعد، والقوالب | أسطر الحالة، وأنماط الإخراج |
+| <bdi>Qwen Code</bdi> | الأوامر والعوامل مُحوَّلة؛ والمهارات، والخطّافات، و<bdi>MCP</bdi>، وتوزيع العوامل الفرعية، وقوالب مُوجِّه النظام، والذاكرة أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | القواعد، والقوالب | أسطر الحالة، وأنماط الإخراج |
+| <bdi>Trae</bdi> | القواعد، وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية، والذاكرة؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>Windsurf</bdi> | القواعد وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية، والذاكرة؛ واكتشاف <bdi>MCP</bdi> معلّق |
+| <bdi>Zed</bdi> | القواعد، وقوالب مُوجِّه النظام أصلية؛ وقيود الأدوات مُسقَطة من الملف التعريفي | لا شيء | الأوامر، والمهارات، والخطّافات، والعوامل، وأسطر الحالة، وأنماط الإخراج، وتوزيع العوامل الفرعية، والذاكرة؛ واكتشاف <bdi>MCP</bdi> معلّق |
+
+## الجذور المشتركة
+
+بعض أهداف التثبيت تُحمِّلها أُطُر عمل غير الإطار الذي يكتبها. ويُسجِّل السجلّ كل مسار
+من هذا النوع في <bdi>`SHARED_ROOTS`</bdi> مع مالك واحد (المحوّل الوحيد الذي يكتبه)
+والقرّاء الذين تُحمِّله وثائق مورّديهم افتراضيًا، إضافةً إلى صفحات المورّدين التي تُظهر
+ذلك وتاريخ استرجاعها. وتثبيت المالك يضع محتوى <bdi>Apothem</bdi> أمام كل قارئ، وإلغاء
+تثبيت المالك يزيله من كل قارئ.
+
+| المسار | المالك | القرّاء |
+| --- | --- | --- |
+| <bdi>`~/.agents/skills/`</bdi> | <bdi>Codex</bdi> | <bdi>Cursor</bdi>، <bdi>Gemini CLI</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Kimi Code</bdi>، <bdi>Open-Claw</bdi>، <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi>، <bdi>Zed</bdi> |
+| <bdi>`~/.claude/skills/`</bdi> | <bdi>Claude Code</bdi> | <bdi>Cursor</bdi>، <bdi>OpenCode</bdi> |
+| <bdi>`~/.claude/CLAUDE.md`</bdi> | <bdi>Claude Code</bdi> | <bdi>OpenCode</bdi> |
+| <bdi>`<project>/AGENTS.md`</bdi> | <bdi>Kimi Code</bdi> | <bdi>Antigravity</bdi>، <bdi>CodeBuddy</bdi>، <bdi>Codex</bdi>، <bdi>Cursor</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Hermes</bdi>، <bdi>Kiro</bdi>، <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi>، <bdi>Zed</bdi> |
+| <bdi>`<project>/GEMINI.md`</bdi> | <bdi>Gemini CLI</bdi> | <bdi>Antigravity</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Zed</bdi> |
+| <bdi>`~/.gemini/GEMINI.md`</bdi> | <bdi>Antigravity</bdi> | <bdi>Gemini CLI</bdi> |
+| <bdi>`<project>/.github/copilot-instructions.md`</bdi> | <bdi>GitHub Copilot</bdi> | <bdi>Zed</bdi> |
+
+لا تُسمّي كتلة <bdi>Apothem</bdi> التي يكتبها المالك في ملف تعليمات مشترك أيَّ أداة
+بعينها قارئًا لها. ويُخفِق <bdi>`tests/unit/test_shared_roots.py`</bdi> عندما يكتب
+محوّلان الهدفَ نفسه من أهداف السجلّ، وعندما لا يكون لهدف في السجلّ يُسمّى تسمية ملف
+تعليمات عابر للأدوات (<bdi>`AGENTS.md`</bdi>، و<bdi>`CLAUDE.md`</bdi>، و<bdi>`GEMINI.md`</bdi>،
+و<bdi>`copilot-instructions.md`</bdi>) مالكٌ مُعلَن. والاستثناء الوحيد هو
+<bdi>`~/.codex/AGENTS.md`</bdi>، الذي لا يوثّق أي إطار عمل مسجَّل آخر تحميله.
 
 ## خطّافات التحقّق
 
@@ -66,11 +107,12 @@ sourceHash: "b555b7671a67df8c"
 
 | الفحص | الغرض |
 | --- | --- |
-| <bdi>`python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD`</bdi> | يؤكّد أنّ لكل محوّل دبّوس عُرف حاليًّا وأنّ السجلّ لا يزال يُعدِّد سبعة عشر محوّلًا. |
-| <bdi>`python -m apothem.conformity.gate --all .`</bdi> | يُشغِّل فحوص مطابقة الوثائق والتنفيذ. |
-| <bdi>`python -m pytest`</bdi> | يُمرِّن اختبارات تركيبات السجلّ واختبارات عقد المحوّل. |
+| <bdi>`python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD`</bdi> | يؤكّد أن لكل محوّل تثبيتَ اصطلاحٍ لا يتجاوز عمره 90 يومًا، ويستشهد بعنوان <bdi>URL</bdi> واحد على الأقل للمورّد، ولا يحمل هدف اكتشاف متأخّرًا عن موعده. ويُشغِّله <bdi>CI</bdi> على كل طلب سحب، وأسبوعيًا، وقبل الإصدار. |
+| <bdi>`python scripts/dev/check_vendor_urls.py`</bdi> | يجلب كل عنوان <bdi>URL</bdi> للمورّد تستشهد به تثبيتات الاصطلاح وقوالب أُطُر العمل، ويُخفِق عند صفحة منقولة أو ميتة، بما في ذلك اسم مضيف لم يعد يُحَلّ أو شهادة يُخفِق التحقّق منها؛ أمّا انتهاء المهلة، أو الاتصال المرفوض أو المُعاد ضبطه، أو خطأ الخادم <bdi>5xx</bdi>، فيُبلَّغ عنه بوصفه تعذّر وصول ولا يُفشِله. ويُشغِّله مراقب الاصطلاحات الأسبوعي. |
+| <bdi>`python -m apothem.conformity.gate --all .`</bdi> | يُشغِّل فحوص المطابقة للوثائق والتنفيذ. |
+| <bdi>`python -m pytest`</bdi> | يُشغِّل اختبارات تجهيزات السجلّ واختبارات عقود المحوّلات. |
 
-## مرجع محوّل الهارنس المولَّد
+## مرجع محوّلات أُطُر العمل المُولَّد
 
 {/* apothem:generated-reference:start */}
 

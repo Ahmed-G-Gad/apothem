@@ -1,55 +1,114 @@
 ---
 title: "doctor"
-description: "مرجع سطر الأوامر لأمر apothem doctor."
+description: "مرجع واجهة سطر الأوامر لأمر apothem doctor."
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "d1627f4255de5db5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يُجري تشخيصات النظام لتثبيت <bdi>Apothem</bdi>.
+فحص سلامة ما هو مُثبَّت. فبينما يتحقّق
+[<bdi>`apothem verify`</bdi>](/docs/cli-reference/verify) من أُطُر العمل التي تختارها،
+يفحص <bdi>`doctor`</bdi> كل إطار عمل مُثبَّت والملف التعريفي المشترك في تمريرة واحدة.
 
 ## الموجز
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-يفحص تثبيت <bdi>Apothem</bdi> ويبلِّغ عن حالة كلّ محوِّل <bdi>harness</bdi> مُسجَّل.
-عند وجود ملف تعريف مشترك، يُتحقَّق منه مقابل المخطَّط المُضمَّن — لا يُكتفى بالتحقُّق
-من وجوده — بحيث يُكشف ملفُّ التعريف المُشوَّه على أنّه فشل تشخيصي بدلًا من
-"موجود" أخضر. تحمل مخرجات <bdi>JSON</bdi> حقلًا باسم <bdi>`profile_valid`</bdi>
-(<bdi>`true`</bdi> / <bdi>`false`</bdi>، أو <bdi>`null`</bdi> عند عدم وجود ملف
-تعريف) وحقلًا باسم <bdi>`profile_error`</bdi> عند فشل التحقُّق. يخرج بالرمز 0
-عندما تنجح كلّ الفحوصات، وبالرمز 1 عندما يكون واحد أو أكثر من الـ<bdi>harnesses</bdi>
-غير مُثبَّت أو عندما يكون ملفُّ التعريف موجودًا لكنّه يفشل في التحقُّق من المخطَّط.
+## ما الذي يفحصه
+
+- **الملف التعريفي المشترك.** يُتحقَّق من الملف التعريفي الموجود مقابل المخطط
+  المُحزَّم؛ ويفشل الملف المشوَّه برمز تشخيصه. أما الملف التعريفي المفقود فيُبلَّغ
+  عنه ولا يُعَدّ فشلًا (يُنشئ <bdi>`install`</bdi> واحدًا).
+- **أُطُر العمل المُثبَّتة فقط.** يُبلَّغ عن إطار العمل غير المُثبَّت بالحالة
+  <bdi>`not_installed`</bdi> ولا يُعَدّ فشلًا، لذا يجتاز الفحصَ جهازٌ فيه إطار عمل
+  سليم واحد. وتُفحَص أُطُر العمل ذات نطاق المشروع عندما يُسمّي <bdi>`--project`</bdi>
+  جذرها؛ ومن دونه يُبلَّغ عنها بالحالة <bdi>`needs_project`</bdi>.
+- **التحقّق.** يجب أن يجتاز كل إطار عمل مُثبَّت الفحص نفسه الذي يُجريه
+  [<bdi>`verify`</bdi>](/docs/cli-reference/verify).
+- **زمن تشغيل الخطّافات.** لكل إطار عمل جرى التحقّق منه، يقرأ <bdi>doctor</bdi>
+  الملفات التي كتبها أحدث تثبيت له، ويعثر على أوامر الخطّافات التي سجّلها
+  <bdi>Apothem</bdi> هناك، ويُشغِّل كل مُفسِّر وكل برنامج خطّاف نصّي مرة واحدة بحمولة
+  لا تفعل شيئًا (الوسائط المُسجَّلة مضافًا إليها <bdi>`--help`</bdi>، و<bdi>`{}`</bdi>
+  على <bdi>stdin</bdi>، ودليل عمل مؤقّت، مع إزالة <bdi>`PYTHONPATH`</bdi>). لا يُكتَب
+  أي شيء. ويُفشِل الفحصَ مُفسِّرٌ مفقود، أو برنامج نصّي مفقود، أو انهيار وقت
+  الاستيراد.
+
+يُسمّي كل فحص فاشل إصلاحًا له. يخرج بالرمز 0 عندما لا يفشل أي فحص، وبالرمز 1 خلاف
+ذلك.
+
+## مخرجات <bdi>JSON</bdi>
+
+يحتفظ <bdi>`--json`</bdi> بالحقول السابقة (<bdi>`version`</bdi>، و<bdi>`python`</bdi>،
+و<bdi>`platform`</bdi>، و<bdi>`profile_path`</bdi>، و<bdi>`profile_exists`</bdi>،
+و<bdi>`profile_valid`</bdi>، و<bdi>`harnesses`</bdi>، و<bdi>`all_ok`</bdi>،
+و<bdi>`profile_error`</bdi> عندما يكون الملف التعريفي غير صالح) ويضيف:
+
+- <bdi>`profile_error_code`</bdi> — رمز تشخيص الملف التعريفي، عندما يكون الملف
+  التعريفي غير صالح.
+- <bdi>`project`</bdi> — جذر <bdi>`--project`</bdi> المُحلَّل، أو <bdi>`null`</bdi>.
+- <bdi>`harnesses[].status`</bdi> — <bdi>`ok`</bdi>، أو <bdi>`not_installed`</bdi>، أو
+  <bdi>`needs_project`</bdi>، أو <bdi>`verify_failed`</bdi>، أو <bdi>`hook_failed`</bdi>،
+  أو <bdi>`error`</bdi>؛ إضافةً إلى <bdi>`verified`</bdi> و<bdi>`hooks`</bdi>
+  (<bdi>`{"probed": N, "failed": [...]}`</bdi>، أو <bdi>`null`</bdi> عندما لا يوجد سجلّ
+  تثبيت).
+- <bdi>`checks`</bdi> — سجلّ واحد لكل فحص: <bdi>`code`</bdi> (مثل
+  <bdi>`harness.verify_failed`</bdi>، أو <bdi>`hook.start_failed`</bdi>، أو
+  <bdi>`ledger.unreadable`</bdi>، أو رمز <bdi>`profile.*`</bdi>)، و<bdi>`status`</bdi>
+  (<bdi>`pass`</bdi>، أو <bdi>`fail`</bdi>، أو <bdi>`info`</bdi>)، و<bdi>`harness`</bdi>،
+  و<bdi>`message`</bdi>، و<bdi>`fix`</bdi>.
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## الخيارات
 
 | الخيار | الوصف |
 |---|---|
-| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يكبت المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع؛ ومن دونه يُبلَّغ عنها بالحالة <bdi>`needs_project`</bdi>. |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
 | <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
 | <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
-| <bdi>`--json`</bdi> | اختصار لـ<bdi>`--format json`</bdi>. |
-| <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
+| <bdi>`--no-color`</bdi> | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
 | <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
 
 ## أمثلة
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+تطبع الصيغة الافتراضية <bdi>`plain`</bdi> تشخيصات مقروءة للبشر؛ ويُصدِر
+<bdi>`--json`</bdi> (المكافئ لـ <bdi>`--format json`</bdi>) مستندًا قابلًا للقراءة
+آليًا على <bdi>stdout</bdi>، مناسبًا لتمريره عبر الأنابيب إلى أدوات أخرى.
 
 ## رموز الخروج
 
 | الرمز | المعنى |
 |---|---|
-| 0 | نجحت كلّ الفحوصات |
-| 1 | واحد أو أكثر من الـ<bdi>harnesses</bdi> غير مُثبَّت، أو ملفُّ تعريف موجود فشل في التحقُّق من المخطَّط |
+| 0 | نجحت كل الفحوص (وكذلك عندما لا يكون أي إطار عمل مُثبَّتًا بعد) |
+| 1 | إطار عمل مُثبَّت لا يجتاز التحقّق، أو أمر خطّاف مُسجَّل يتعذّر بدؤه، أو محوّل تعذّر تحميله أو فحصه، أو ملف تعريفي موجود فشل في التحقّق من المخطط |
+| 64 | خطأ في الاستخدام: خيار أو أمر غير معروف، أو قيمة خيار مفقودة أو غير صالحة. مع <bdi>`--json`</bdi> يكون الخطأ غلاف <bdi>JSON</bdi> بالرمز <bdi>`cli.usage`</bdi>. |
 
 ## انظر أيضًا
 
-- [apothem harnesses](/docs/cli-reference/harnesses) — سرد وفحص الـ<bdi>harnesses</bdi> المُسجَّلة
-- [apothem verify](/docs/cli-reference/verify) — فحص تثبيت <bdi>harness</bdi> محدَّد
+- [<bdi>apothem harnesses</bdi>](/docs/cli-reference/harnesses) — يسرد أُطُر العمل المُسجَّلة ويفحصها
+- [<bdi>apothem verify</bdi>](/docs/cli-reference/verify) — يتحقّق من تثبيت محوّل إطار عمل

@@ -2,11 +2,12 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "95a26e667a1ea20a"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Restaure un harness à l'état précédant son installation enregistrée.
+Restaure un environnement dans l'état où il se trouvait avant son installation
+enregistrée.
 
 ## Synopsis
 
@@ -17,23 +18,77 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-`rollback` reconstruit les octets de chaque harness sélectionné tels qu'ils étaient avant l'installation, à partir de la racine de sauvegarde d'Apothem. Elle résout la passe d'installation enregistrée — la plus récente par défaut, ou celle nommée par `--install-id` —, restaure chaque sauvegarde que cette installation a capturée, puis ajoute un enregistrement `rollback` au registre du harness.
+`rollback` ramène chaque environnement sélectionné à l'état où il se trouvait
+avant la passe d'installation enregistrée — la plus récente par défaut, ou
+celle nommée par `--install-id`. En parcourant l'enregistrement de cette
+installation dans le journal, du changement le plus récent au plus ancien,
+elle :
 
-La confirmation est demandée par harness à moins que `--yes` ne soit fourni. `--install-id` et `--last` sélectionnent la passe d'installation et sont mutuellement exclusifs.
+- restaure chaque fichier et chaque répertoire que l'installation a écrasés, à
+  partir de la sauvegarde que l'installation a capturée, à leur chemin
+  enregistré (un répertoire que l'installation a remplacé est restauré à
+  l'identique, sans les fichiers que l'installation y a ajoutés) ;
+- supprime chaque fichier et chaque répertoire que l'installation a créés, et
+  remet en place tout chemin de la disposition héritée que l'installation a
+  balayé ;
+- supprime les magasins de données partagés (`memory`, `contexts`, `learning`)
+  que l'installation a créés, sauf si un autre environnement installé les
+  utilise encore ;
+- supprime les répertoires que l'installation a créés, une fois qu'ils sont
+  vides.
+
+Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de
+sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même
+être annulé à la main. Le rollback ajoute ensuite un enregistrement `rollback`
+au journal de l'environnement. Annuler une installation plus ancienne ne
+restaure ou ne supprime que les cibles enregistrées par cette installation
+plus ancienne, et retire chaque installation qui l'a suivie des installations
+actives du journal, à la même racine. Les fichiers qu'une installation
+ultérieure a ajoutés en dehors de ces cibles restent en place.
+
+Le journal conserve les 10 enregistrements d'installation les plus récents par
+racine d'installation (avec les sauvegardes qu'ils référencent) ; une
+installation plus ancienne ne peut plus être annulée par son id et signale
+`rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/backups)
+abaisse cette limite à la demande, et ne supprime jamais la sauvegarde à partir
+de laquelle la dernière installation est restaurée.
+
+Les enregistrements écrits par une publication d'Apothem antérieure à l'ajout
+de ce comportement ne listent pas les fichiers que l'installation a créés ;
+annuler un tel enregistrement ne restaure que les fichiers écrasés.
+
+La confirmation est demandée pour chaque environnement, sauf si `--yes` est
+fourni. Lorsqu'aucune invite n'est possible — `--format json` (le texte de
+l'invite corromprait l'unique document JSON) ou un shell non interactif (sans
+TTY) —, la commande refuse d'emblée avec une erreur structurée
+`rollback.confirmation_required` (code de sortie 1), sauf si `--yes` est
+fourni. `--install-id` et `--last` sélectionnent la passe d'installation et
+s'excluent mutuellement.
+
+Un rollback `--harness all` est délibérément exhaustif : il couvre chaque
+environnement enregistré, y compris ceux que le champ `exclude_harnesses` du
+profil ignore lors de l'installation — restaurer l'état antérieur à
+l'installation est une opération de nettoyage ; elle atteint donc les
+enregistrements qu'une installation antérieure plus large a pu laisser. Un
+environnement sans installation enregistrée échoue sous la forme d'une ligne
+`"outcome": "error"` dans `results` (voir la sortie JSON), et l'exécution se
+poursuit avec les environnements restants. La commande se termine ensuite avec
+le code 1, ou 2 lorsqu'au moins une cible d'un autre environnement a été
+annulée.
 
 ## Options
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Adaptateur de harness à restaurer, ou `all` pour l'ensemble de tout le registre (obligatoire). |
-| `--install-id ULID` | Restaure la passe d'installation nommée. Par défaut : l'installation enregistrée la plus récente. |
-| `--last` | Restaure l'installation enregistrée la plus récente (la valeur par défaut ; la forme explicite). Mutuellement exclusif avec `--install-id`. |
-| `--yes` | Ignore l'invite de confirmation par harness. |
-| `--project PATH` | Racine du projet pour les harness à portée de projet. Obligatoire lorsque l'ensemble sélectionné inclut des adaptateurs à portée de projet. |
+| `--harness NAME` | Adaptateur d'environnement à restaurer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
+| `--install-id ULID` | Annule la passe d'installation nommée. Par défaut : la dernière installation enregistrée. |
+| `--last` | Annule la dernière installation enregistrée (la valeur par défaut, sous sa forme explicite). Mutuellement exclusif avec `--install-id`. |
+| `--yes` | Ignore l'invite de confirmation par environnement. |
+| `--project PATH` | Racine de projet pour les environnements à portée de projet. Obligatoire lorsque l'ensemble sélectionné inclut des adaptateurs à portée de projet. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
 | `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
-| `--json` | Raccourci pour `--format json`. |
+| `--json` | Raccourci de `--format json`. |
 | `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
@@ -41,6 +96,7 @@ La confirmation est demandée par harness à moins que `--yes` ne soit fourni. `
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "rollback",
   "action": "rolled_back",
@@ -55,7 +111,16 @@ La confirmation est demandée par harness à moins que `--yes` ne soit fourni. `
 }
 ```
 
-Chaque cible restaurée apparaît dans `results` avec `"operation": "rollback"` et un `outcome` valant `created` ou `updated` (et dans `files_written`). Une cible que l'installation a créée de toutes pièces — sans octets antérieurs à restaurer — est signalée avec `"outcome": "skipped"` ; une restauration échouée vaut `"outcome": "error"`. Lorsqu'aucun enregistrement d'installation correspondant n'existe, la commande signale une erreur `rollback.no_record` avec `"status": "error"`.
+Chaque cible restaurée ou supprimée apparaît dans `results` avec
+`"operation": "rollback"` et un `outcome` valant `created` ou `updated` (ainsi
+que dans `files_written`) ; le `message` indique si le chemin a été restauré ou
+supprimé. Une restauration en échec (par exemple, une sauvegarde qui a été
+supprimée) vaut `"outcome": "error"`. Une installation qui n'a enregistré aucun
+changement est signalée avec `"outcome": "skipped"`. Lorsqu'aucun
+enregistrement d'installation correspondant n'existe pour un seul environnement
+nommé, la commande signale une erreur `rollback.no_record` avec
+`"status": "error"`. Sous `--harness all`, un environnement sans enregistrement
+correspondant est plutôt une ligne `"outcome": "error"` dans `results`.
 
 ## Exemples
 
@@ -69,13 +134,14 @@ apothem rollback --harness cursor --project . --last --json
 
 | Code | Signification |
 |---|---|
-| 0 | Restauration réussie, ou rien à restaurer (l'installation n'a capturé aucune sauvegarde) |
-| 1 | Erreur attendue — aucun enregistrement d'installation, sélecteurs en conflit, harness inconnu, racine de projet manquante ou confirmation annulée |
-| 2 | Restauration partielle après qu'au moins une cible a été restaurée |
+| 0 | Annulation réussie, ou rien à annuler (l'installation n'a enregistré aucun changement) |
+| 1 | Erreur attendue — aucun enregistrement d'installation, sélecteurs en conflit, environnement inconnu, racine de projet manquante, ou confirmation refusée ou impossible (mode non interactif ou JSON sans `--yes`) |
+| 2 | Résultat partiel — au moins une cible a été annulée et un échec a aussi été enregistré (une restauration en échec ou, sous `--harness all`, un environnement sans enregistrement d'installation) |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi
 
-- [apothem install](/docs/cli-reference/install) — installe une configuration de harness
+- [apothem install](/docs/cli-reference/install) — installe une configuration d'environnement
 - [apothem update](/docs/cli-reference/update) — réinstalle à partir du profil partagé actuel
-- [apothem uninstall](/docs/cli-reference/uninstall) — supprime une configuration de harness
-- [apothem status](/docs/cli-reference/status) — rapporte l'état d'installation, de vérification et de dérive
+- [apothem uninstall](/docs/cli-reference/uninstall) — supprime une configuration d'environnement
+- [apothem status](/docs/cli-reference/status) — signale l'état d'installation, de vérification et de dérive

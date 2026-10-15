@@ -2,11 +2,12 @@
 title: "update"
 description: "Référence de la CLI pour la commande apothem update."
 machineTranslated: true
-sourceHash: "fc03f27749f2a77a"
+sourceHash: "e91dcc6ca6a07470"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Réinstalle la configuration d'un adaptateur de harness à partir du profil partagé actuel.
+Réinstalle la configuration d'un adaptateur d'environnement à partir du profil
+partagé actuel.
 
 ## Synopsis
 
@@ -17,22 +18,26 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` rematérialise la sortie du harness à partir du profil partagé actuel. Elle utilise la même validation de profil, la même sélection `--harness all`, la même vérification de la portée de projet, le même comportement de dry-run et la même enveloppe JSON que `install`.
+`update` rematérialise la sortie de l'environnement à partir du profil partagé
+actuel. La commande utilise la même validation de profil, la même sélection
+`--harness all`, la même vérification de la portée de projet, le même
+comportement de dry-run et la même enveloppe JSON que `install`.
 
-L'alias en forme continue `apothem updating` se résout vers le même gestionnaire.
+L'alias en forme continue `apothem updating` (également accepté sous la forme
+`apothem Updating`) se résout vers le même gestionnaire.
 
 ## Options
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Adaptateur de harness à mettre à jour, ou `all` pour l'ensemble de tout le registre (obligatoire). |
-| `--profile PATH` | Chemin vers le profil partagé YAML. Par défaut : `~/.config/apothem/profile.yaml`. |
+| `--harness NAME` | Adaptateur d'environnement à mettre à jour, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
+| `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut : `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Prévisualise la mise à jour sans écrire de fichiers. |
-| `--project PATH` | Racine du projet pour les harness à portée de projet. Obligatoire lorsque l'ensemble de harness sélectionné inclut des adaptateurs à portée de projet. |
+| `--project PATH` | Racine du projet pour les environnements à portée de projet. Obligatoire lorsque l'ensemble d'environnements sélectionné inclut des adaptateurs à portée de projet. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
 | `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
-| `--json` | Raccourci pour `--format json`. |
+| `--json` | Raccourci de `--format json`. |
 | `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
@@ -40,6 +45,7 @@ L'alias en forme continue `apothem updating` se résout vers le même gestionnai
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "update",
   "action": "updated",
@@ -70,12 +76,13 @@ apothem updating --harness claude-code   # lowercase variant
 
 | Code | Signification |
 |---|---|
-| 0 | Adaptateur mis à jour avec succès ou dry-run planifié proprement |
-| 1 | Erreur attendue de validation, de profil, de harness, de projet ou d'adaptateur |
-| 2 | Matérialisation par lots partielle après au moins une écriture |
+| 0 | Adaptateur mis à jour avec succès ou dry-run planifié sans erreur |
+| 1 | Erreur attendue de validation, de profil, d'environnement, de projet ou d'adaptateur |
+| 2 | Matérialisation partielle du lot après au moins une écriture |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi
 
 - `apothem updating` — alias en forme continue de cette commande (documenté ici ; la CLI accepte les deux formes)
 - [apothem install](/docs/cli-reference/install) — installation initiale
-- [Guide de mise à jour](/docs/install/updating) — chemins de mise à jour par installateur
+- [Guide de mise à jour](/docs/install/updating) — chemins de mise à jour propres à chaque installateur

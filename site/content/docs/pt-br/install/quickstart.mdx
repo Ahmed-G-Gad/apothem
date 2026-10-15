@@ -1,52 +1,56 @@
 ---
 title: "Início rápido"
-description: "Instale o Apothem, escreva um perfil, materialize seu primeiro ambiente e verifique-o — um passo a passo de copiar e colar com a saída esperada."
+description: "Instale o Apothem, escreva um perfil, materialize seu primeiro harness e verifique-o — um roteiro de copiar e colar com a saída esperada."
 machineTranslated: true
-sourceHash: "111dbc2aa36d8278"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Este é o caminho rápido do zero até uma configuração de ambiente verificada:
+Este é o caminho rápido do zero até uma configuração de harness verificada:
 instalar, escrever o perfil compartilhado, materializar a configuração nativa de
-uma ferramenta, confirmá-la e fazer sua primeira edição. Cada comando é real e
-pode ser copiado e colado, e cada etapa mostra o que uma execução limpa imprime.
-A instalação em si leva menos de dois minutos; editar o perfil é a única parte
-que leva o tempo que você quiser.
+uma ferramenta, confirmá-la e fazer sua primeira edição. Todo comando é real e
+pode ser copiado, colado e executado, e cada etapa mostra o que uma execução
+limpa imprime. A instalação em si termina em menos de dois minutos; editar o
+perfil é a única parte que leva o tempo que você quiser.
 
-Ao final, você terá uma configuração de ambiente funcional gerada a partir de um
-perfil que você escreveu — e conhecerá o único comando que envia uma alteração de
-perfil de volta para todas as ferramentas.
+Ao final, você terá uma configuração de harness funcional gerada a partir de um
+perfil que você escreveu — e conhecerá o único comando que propaga uma alteração
+do perfil de volta para uma ferramenta ou para todas elas.
 
-<Callout title="Quer a versão narrada e pausada?">
+<Callout title="Quer a versão mais lenta e narrada?">
   O [tutorial de primeiros passos](/docs/tutorials/getting-started) percorre o
-  mesmo terreno com mais explicação de cada etapa e por que ela importa. Esta
-  página é o passo a passo conciso e orientado à saída.
+  mesmo terreno com mais explicação de cada etapa e de por que ela importa. Esta
+  página é o roteiro conciso, centrado na saída.
 </Callout>
 
-Você usará o **Claude Code** como ambiente de exemplo: ele é o padrão do
-instalador. Troque o nome do adaptador em qualquer etapa para apontar para outra
-ferramenta; a [lista de ambientes](/docs/harnesses) tem todos os nomes
+Você usará o **Claude Code** como harness de exemplo — ele é o padrão do
+instalador. Troque o nome do adaptador em qualquer etapa para mirar outra
+ferramenta; a [lista de harnesses](/docs/harnesses) traz todos os nomes
 suportados.
 
 ## 1. Instalar o Apothem
 
-O Apothem é distribuído como um runtime autocontido: o motor é executado
-diretamente a partir da sua árvore de código-fonte com dependências
-incorporadas. Um único comando baixa o código-fonte, coloca o motor e
-materializa seu primeiro ambiente:
+O Apothem é distribuído como um runtime autocontido — o motor é executado
+diretamente a partir da sua árvore de código-fonte, com as dependências
+incorporadas. Um único comando baixa o código-fonte, posiciona o motor e
+materializa seu primeiro harness:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-O instalador requer um Python 3.10+ do sistema com `click` e `rich` importáveis,
-além de `git` para a forma de rede. Ele checa os pré-requisitos, coloca o motor
-em `~/.apothem` e imprime a invocação exata do motor para o seu shell ao
-terminar:
+O instalador requer um Python 3.10+ do sistema, além de `git` para a forma via
+rede. Ele verifica os pré-requisitos e posiciona o motor em `~/.apothem`. Quando
+`click` ou `rich` está ausente, ele instala o pacote com a sua confirmação, ou
+com `--yes` (`-Yes` no PowerShell), ou com `APOTHEM_AUTO_INSTALL_DEPS=1` e, caso
+contrário, para e informa o comando pip a executar (consulte
+[Pré-requisitos de relance](/docs/install#pré-requisitos-de-relance)). Ao
+concluir, ele imprime um banner de próximos passos; em POSIX, quando o diretório
+do shim já está no `PATH`, o banner tem esta aparência:
 
 ```text
 Installation complete.
@@ -58,36 +62,50 @@ Recommended first step — the guided setup (profile -> preview -> install):
   apothem quickstart
 ```
 
+<Callout title="Primeira execução sem um perfil">
+  Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para
+  `~/.config/apothem/profile.yaml` e segue adiante: ele materializa seu primeiro
+  harness e o verifica na mesma execução. Os campos de identidade do exemplo são
+  marcadores de posição, então a instalação imprime um aviso. Torne o perfil seu
+  na Etapa 2 e depois aplique-o com `apothem update --harness <name>`, como na
+  Etapa 5.
+</Callout>
+
 <Callout title="O comando `apothem`">
-  O instalador coloca um atalho `apothem` no seu `PATH`, então você executa o
-  motor diretamente como `apothem <command>`. Se o diretório do atalho ainda não
-  estiver no `PATH`, o banner imprime uma alternativa autocontida —
+  O instalador grava um shim `apothem` em `$HOME/.local/bin` (POSIX) ou em
+  `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) e nunca altera o seu `PATH`.
+  Assim que esse diretório estiver no `PATH`, você executa o motor diretamente
+  como `apothem <command>`. Se ele ainda não estiver no `PATH`,
+  o banner imprime uma alternativa autocontida —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — que não
-  precisa de atalho; anteponha a cada comando o prefixo exato que seu banner
+  precisa de shim; anteponha a cada comando o prefixo exato que o seu banner
   imprimiu.
 </Callout>
 
-O [guia de instalação](/docs/install) cobre as outras vias de instalação — o
+O [guia de instalação](/docs/install) cobre as outras rotas de instalação — o
 plugin do Claude Code (`/plugin marketplace add ahmed-g-gad/apothem` e depois
-`/plugin install apothem@apothem`); a extensão da família VS Code e as demais
+`/plugin install apothem@apothem`); as extensões da família VS Code e as demais
 extensões nativas das ferramentas; e a forma sob demanda com npx
-(`npx @ahmed-g-gad/apothem <command>`) — junto das opções de variáveis de
+(`npx @ahmed-g-gad/apothem <command>`) — junto com as opções de variáveis de
 ambiente.
 
 ## 2. Criar o perfil compartilhado
 
-`apothem profile init` grava o menor perfil válido possível em
-`~/.config/apothem/profile.yaml`. Passe `--profile PATH` quando você mantiver um
-perfil específico de um projeto ou de CI em outro lugar.
+`apothem profile init` grava o menor perfil válido segundo o schema em
+`~/.config/apothem/profile.yaml`. Se já houver um perfil ali, como quando o
+instalador da Etapa 1 copiou o exemplo, `init` para com um erro e deixa o
+arquivo inalterado; passe `--force` para sobrescrevê-lo, ou mantenha o arquivo e
+edite-o como mostrado abaixo. Passe `--profile PATH` quando você mantiver em
+outro lugar um perfil específico de um projeto ou de CI.
 
 ```bash
 apothem profile init
 apothem profile show --json
 ```
 
-O esqueleto usa dados de identidade fictícios de marcador de posição e é seguro
-editá-lo antes de instalar qualquer saída de ambiente. `show --json` o relê e
-relata o perfil validado:
+O esqueleto usa dados de identidade fictícios, como marcadores de posição, e
+pode ser editado com segurança antes de você instalar qualquer saída de harness.
+`show --json` o lê de volta e relata o perfil validado:
 
 ```json
 {
@@ -99,19 +117,19 @@ relata o perfil validado:
 }
 ```
 
-É aqui também que uma edição malformada aparece: se o YAML não for válido,
-`show` o relata neste ponto, antes de gravar qualquer configuração de ambiente.
-Torne o perfil seu com `apothem profile edit` (abre-o no seu editor) ou defina
-uma única chave no lugar:
+É também aqui que uma edição malformada aparece — se o YAML for inválido, `show`
+o relata neste ponto, antes que qualquer configuração de harness seja gravada.
+Torne o perfil seu com `apothem profile edit` (que o abre no seu editor) ou
+defina diretamente uma única chave:
 
 ```bash
 apothem profile set identity.name "Your Name"
 ```
 
-## 3. Instalar adaptadores de ambiente
+## 3. Instalar adaptadores de harness
 
-Materialize o adaptador da sua ferramenta principal. Isso lê seu
-perfil e grava a configuração nativa dessa ferramenta:
+Materialize o adaptador do seu harness principal. Isso lê o seu perfil e grava
+a configuração nativa dessa ferramenta:
 
 ```bash
 apothem install --harness claude-code
@@ -130,24 +148,26 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Instale o conjunto completo respaldado pelo registro de uma vez com
+Instale de uma vez todo o conjunto respaldado pelo registro com
 `--harness all`. Como essa seleção grava arquivos tanto de escopo de projeto
 quanto de escopo de usuário, o comando imprime os destinos concretos agrupados
-por localização e pede confirmação antes de gravar fora da raiz do projeto:
+por local. Em um terminal interativo, ele pede confirmação antes de gravar fora
+da raiz do projeto. Uma execução sem terminal, uma execução com `--yes` ou uma
+execução com `--format json` grava sem perguntar; `--dry-run` não grava nada.
+Execute o conjunto completo com:
 
 ```bash
 apothem install --harness all --project .
 ```
 
-Consulte a [lista completa de ambientes](/docs/harnesses) para todos os nomes
-suportados, e a [referência de install](/docs/cli-reference/install) para o
+Consulte a [lista completa de harnesses](/docs/harnesses) para todos os nomes
+suportados e a [referência de install](/docs/cli-reference/install) para o
 conjunto completo de opções.
 
 ## 4. Verificar
 
-Materializar é apenas metade do trabalho: `verify` confirma que os arquivos de
-configuração esperados do ambiente foram gravados e correspondem ao que o perfil
-declara:
+Materializar é só metade do trabalho: `verify` confirma que os arquivos de
+configuração esperados do harness foram gravados e são válidos:
 
 ```bash
 apothem verify --harness claude-code
@@ -157,39 +177,48 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` sai com um código diferente de zero se a configuração estiver faltando
-ou tiver desviado, então também serve como um portão em um script de
-configuração. Para uma verificação de saúde de toda a máquina em cada adaptador
-registrado, execute:
+`verify` sai com código diferente de zero se um destino gerenciado estiver
+ausente, se um arquivo gerenciado estiver vazio ou se uma configuração JSON ou
+YAML não puder ser analisada. Adicione `--profile PATH` para também falhar
+quando um arquivo instalado diferir desse perfil, o que faz do `verify` uma
+verificação de desvio; sem ele, uma configuração desatualizada ainda passa na
+verificação. A saída diferente de zero permite usar `verify` como portão em um
+script de configuração. Para uma verificação de saúde da máquina inteira,
+abrangendo todos os adaptadores registrados, execute:
 
 ```bash
 apothem doctor
 ```
 
-`doctor` relata o estado de instalação de cada adaptador e sai com um código
-diferente de zero se algum adaptador registrado relatar que não está instalado.
+`doctor` verifica cada harness instalado: ele deve passar na verificação, e cada
+comando de hook que a sua instalação registrou deve iniciar. Um harness que você
+não instalou é listado, mas não conta como falha, de modo que `doctor` sai com 0
+quando nenhuma verificação falha, mesmo que apenas um harness esteja instalado.
 
 ## 5. Sua primeira execução
 
-Abra a ferramenta que você acabou de configurar — o Claude Code,
-neste exemplo — e inicie uma sessão em qualquer projeto. As regras e
-preferências que você escreveu no perfil na Etapa 2 já fazem parte do
-comportamento dessa ferramenta. Essa é a primeira execução funcional: um perfil,
-moldando uma sessão real.
+Abra o harness que você acabou de configurar — o Claude Code, neste exemplo — e
+inicie uma sessão em qualquer projeto. O perfil que você configurou na Etapa 2
+agora faz parte do comportamento dessa ferramenta. Essa é a primeira execução
+funcional: um perfil moldando uma sessão real.
 
-Quando você mudar o perfil mais tarde, reaplique-o sem reinstalar:
+Quando você alterar o perfil mais tarde, reaplique-o sem reinstalar:
 
 ```bash
 apothem update --harness claude-code
 ```
 
+Informe outro adaptador para reaplicar o perfil a essa ferramenta (adicione
+`--project PATH` para um adaptador de escopo de projeto) ou passe
+`--harness all --project .` para reaplicá-lo a todos os harnesses suportados.
+
 ## Próximos passos
 
-- [Adicionar mais ambientes](/docs/install/harness-setup) — repita a Etapa 3 por
-  ferramenta.
-- [Escrever sua primeira regra](/docs/usage/writing-rules) — a unidade que cada
-  ambiente herda.
-- [Criar um plano](/docs/usage/authoring-plans) — conduza uma missão completa
-  através do fluxo de planejamento determinista.
-- [Referência da CLI](/docs/cli-reference) — cada comando, opção e código de
-  saída.
+- [Adicionar mais harnesses](/docs/install/harness-setup) — repita a Etapa 3
+  para cada ferramenta.
+- [Escrever sua primeira regra](/docs/usage/writing-rules) — a unidade que todo
+  harness herda.
+- [Criar um plano](/docs/usage/authoring-plans) — conduza uma missão inteira pelo
+  pipeline de planos determinístico.
+- [Referência da CLI](/docs/cli-reference) — todo comando, sinalizador e código
+  de saída.

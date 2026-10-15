@@ -1,20 +1,23 @@
 ---
 title: "スキル"
-description: "検出シグナル・手順・適用フックを備え、SKILL.md ファイルに記述された再利用可能な検出可能テクニック。プランスイートやエコシステム監査向け。"
+description: "SKILL.md ファイルに記述された、再利用可能で検出可能なテクニック。プランスイートとエコシステム監査のための検出シグナル、手順、強制フックを備えます。"
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-スキルは `src/apothem/skills/` 配下のフォルダーとして存在し、それぞれ `SKILL.md`
-エントリーポイントを持ちます。スキルは再利用可能な検出可能テクニックを捉えます——
-検出シグナル、手順、適用フックを備えています。
+スキルは `src/apothem/skills/` 配下のフォルダーとして置かれ、それぞれが `SKILL.md` という
+エントリーポイントを持ちます。スキルは、再利用可能で検出可能なテクニックを捉えます —
+検出シグナル、手順、強制フックを持ちます。
 
-完全なスキル一覧は、このページ末尾の「生成されたスキルインベントリ」セクションに生成されます。
+完全なスキルカタログは、下の[生成されたスキルインベントリ](#生成されたスキルインベントリ)に
+生成されます。
 
 ## Frontmatter 契約
 
-`SKILL.md` は次を持ちます。
+`SKILL.md` は、正規の 8 キーの frontmatter を持ちます。機械可読の契約は
+[`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)
+（`additionalProperties: false`）であり、このブロックはそれを反映しています:
 
 ```yaml
 ---
@@ -29,14 +32,31 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## ハーネスごとの出力
+
+ソースのスキルは上記のキーを使用します。一部のハーネスは異なるキーを読み取るため、
+インストールはそのハーネスに限ってキーを変換します:
+
+| ハーネス | インストールが変更する内容 |
+| --- | --- |
+| Claude Code（インストールとプラグイン） | `userInvocable` を、Claude Code が読み取るキーである `user-invocable` に改名します。Claude Code はキャメルケースのキーを無視するため、改名しなければ、`userInvocable: false` と指定されたスキルが `/` メニューに表示されたままになります。 |
+| Codex | `SKILL.md` はそのままにし、ソースで `disable-model-invocation: true` が設定されているすべてのスキルの隣に、`policy.allow_implicit_invocation: false` を含む `agents/openai.yaml` を書き込みます。Codex がそのキーを無視するためです。 |
+| その他のハーネス | 変更なし。 |
+
+`skill.schema.json` は、ユーザー呼び出し可否フラグのどちらの綴りも受け付け、そのうちちょうど
+1 つを必須とします。
+
 ## オーサリング規律
 
-- **スキルごとに 1 フォルダー。** 各スキルはそれぞれのフォルダーを持ち、
-  エントリーポイントは `SKILL.md` です。
-- **検出シグナル。** スキル本文は、テクニックをトリガーする検出シグナルで
+- **スキルごとに 1 フォルダー。** すべてのスキルはそれぞれ独自のフォルダーであり、
+  エントリーポイントは `SKILL.md` にあります。
+- **検出シグナル。** スキルの本文は、そのテクニックをトリガーする検出シグナルから
   始まります。
-- **手順 + 適用。** スキルは、適用すべき手順と、ループを閉じる適用シグナルの
-  両方を備えます。
+- **手順 + 強制。** スキルは、適用する手順と、ループを閉じる強制シグナルの
+  両方を持ちます。
+- **説明の長さ。** `description` は最大 1,024 文字で、これは
+  [Agent Skills](https://agentskills.io/specification) の上限です。より厳格なツールは、
+  それより長いものを拒否するか切り詰めます。スキーマはこの上限を強制します。
 
 ## 生成されたスキルインベントリ
 

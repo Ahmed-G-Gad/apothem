@@ -49,7 +49,9 @@ apothem verify --harness kiro --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -66,8 +68,12 @@ Re-derives the project steering file from the current shared profile state.
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block, and the front matter Apothem wrote above it, from
+`<project>/.kiro/steering/apothem-rules.md` and keeps any other text in it. The
+file is deleted only when nothing else remains in it. Before the change, a
+timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
+file is left in the project. The shared profile YAML and Apothem engine are
+unaffected.
 
 ## Conformity gate
 

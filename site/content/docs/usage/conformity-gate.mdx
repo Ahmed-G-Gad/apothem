@@ -8,6 +8,10 @@ The conformity gate at `src/apothem/conformity/gate.py` runs the
 mechanical fraction of the fifteen-bar pre-emission gate (M1-M15)
 against every artifact the operator authors.
 
+The commands on this page assume an Apothem checkout, so prefix each one you run
+with `PYTHONPATH=src`. After a script install, use `PYTHONPATH="$HOME/.apothem/src"`
+in place of `PYTHONPATH=src`.
+
 ## Running the gate
 
 The gate is **advisory by default**: it reports findings and exits `0`, so a
@@ -17,10 +21,10 @@ CI and pre-commit use to fail a violating change.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
@@ -34,19 +38,19 @@ validator runs, so `--all .` and `--all "$PWD"` inspect the same tree. Each
 validator reports `inspected` — how many targets it examined — and `--all`
 copies that count into every result entry. A validator that inspected nothing
 reports `passed: false`, so a wrong working directory cannot pass silently. The
-two plan-suite validators are the exception: plan suites live in the gitignored
+two plan-suite validators are one exception: plan suites live in the gitignored
 `.apothem/plans/` tree, so they report `empty_scope_expected: true` on a clean
 checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
-when the directory has no commit history.
+when the root has no commit history.
 
 ## Gate bars
 
 | Bar | Check | Kind |
 |-----|-------|------|
 | M1 | Host-project agnosticism | Reasoned |
-| M2 | Editorial disclosure | Mechanical |
-| M3 | Ten quality dimensions | Reasoned |
+| M2 | Editorial disclosure | Reasoned |
+| M3 | Ten quality dimensions | Mechanical + reasoned |
 | M4 | Self-application | Mechanical |
 | M5 | Authority (no fabricated identity / endpoint / secret) | Mechanical |
 | M6 | Expertise incorporation | Reasoned |
@@ -55,22 +59,22 @@ when the directory has no commit history.
 | M9 | Visual leverage | Reasoned |
 | M10 | Bidirectional binding | Mechanical |
 | M11 | Agile sprints | Reasoned |
-| M12 | Phase reporting & canonical layout | Mechanical |
+| M12 | Phase reporting & canonical layout | Mechanical + reasoned |
 | M13 | Code craft | Mechanical |
 | M14 | Systemicity | Reasoned |
-| M15 | Production-ready | Mechanical |
+| M15 | Production-ready | Mechanical + reasoned |
 
 ## Targeted checks
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` mode (`python -m apothem.conformity.gate --hook`) is the
@@ -80,10 +84,14 @@ form the deployed `PreToolUse` hook invokes; you rarely call it by hand.
 
 Hook mode is **scoped to a set of directories**. It runs the matcher chain
 only on writes whose target falls under one of them; a write outside every
-scope short-circuits to a silent pass. The defaults are the hook-capable
-user-scope harness roots Apothem installs into — each harness's page under
-Harnesses names its own root. Set `APOTHEM_CONFORMITY_SCOPE` to a directory
-to replace them:
+scope short-circuits to a silent pass. The defaults are two roots:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Set `APOTHEM_CONFORMITY_SCOPE` to a directory to replace them:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead
@@ -95,4 +103,8 @@ failure — check the write's target against the scopes above first.
 
 ## CI integration
 
-The gate runs in CI via `.github/workflows/conformity.yml` on every push.
+The quality job in `.github/workflows/ci.yml` runs the gate in strict mode
+(`python -m apothem.conformity.gate --all . --strict`) on pushes to `main` and
+on pull requests to `main` that touch the paths that job watches. The separate
+`.github/workflows/conformity.yml` workflow runs the fixture sweep
+(`tests/conformity-scenarios/verify.py --strict`).

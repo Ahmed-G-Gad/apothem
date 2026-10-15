@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Zed اليدوية"
 description: "صيانة ملف التعليمات المسطّح .rules الخاصّ بـ Zed يدويًّا، مقابل إخراجه من ملف التعريف المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "4314b16c52ba6c2e"
+sourceHash: "2c5b5e0dd0dfe386"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ sourceHash: "4314b16c52ba6c2e"
 
 | المهمة | تهيئة يدوية | يديرها Apothem |
 | ---- | --------------- | --------------- |
-| كتابة التعليمات | كتابة ملف <bdi>`.rules`</bdi> يدويًّا | مُخرَج من المتن المشترك |
-| الحفاظ على <bdi>`.rules`</bdi> سابق | أن تتذكّر نسخه جانبًا بنفسك | يحتفظ المحوِّل بنسخة احتياطية من الملف الموجود قبل الاستبدال |
+| كتابة التعليمات | كتابة ملف <bdi>`.rules`</bdi> يدويًّا | مُصيَّرة من المتن المشترك |
+| الحفاظ على ملف <bdi>`.rules`</bdi> السابق | أن تتذكّر نسخه جانبًا بنفسك | يحتفظ المحوِّل بنسخة احتياطية من الملف الموجود قبل الاستبدال |
 | إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
-| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness zed`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness zed --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem
 
@@ -31,14 +31,11 @@ sourceHash: "4314b16c52ba6c2e"
 
 ## مسار الترحيل
 
-1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد
-   فعلت بعد.
-2. انقل التعليمات من <bdi>`.rules`</bdi> الموجود لديك (وأيّ محتوى <bdi>`AGENTS.md`</bdi>
-   خاصّ بالمشروع تريد مشاركته) إلى المتن المشترك.
-3. شغّل <bdi>`apothem install --harness zed`</bdi> لإخراج ملف <bdi>`.rules`</bdi>.
-   ويُنسَخ <bdi>`.rules`</bdi> السابق احتياطيًّا أولًا.
-4. شغّل <bdi>`apothem verify --harness zed`</bdi> للتأكّد من وصول التهيئة.
-5. استخدم <bdi>`apothem update --harness zed`</bdi> مع كل تغيير لاحق.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل التعليمات من <bdi>`.rules`</bdi> الموجود لديك (وأيّ محتوى <bdi>`AGENTS.md`</bdi> خاصّ بالمشروع تريد مشاركته) إلى المتن المشترك.
+3. شغّل <bdi>`apothem install --harness zed --project <path>`</bdi> لإخراج ملف <bdi>`.rules`</bdi>. ويُنسَخ <bdi>`.rules`</bdi> السابق احتياطيًّا أولًا.
+4. شغّل <bdi>`apothem verify --harness zed --project <path>`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness zed --project <path>`</bdi> مع كل تغيير لاحق.
 
 ## اقرأ تاليًا
 

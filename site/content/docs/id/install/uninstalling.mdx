@@ -2,16 +2,16 @@
 title: "Pencopotan"
 description: "Hapus Apothem dan bersihkan konfigurasi harness."
 machineTranslated: true
-sourceHash: "e96d67dfc6af5311"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Hapus konfigurasi harness terlebih dahulu
 
-Sebelum mencopot Apothem, hapus setiap konfigurasi adaptor harness agar
-harness Anda berada dalam keadaan bersih. Jalankan `apothem harnesses list` untuk melihat
-adaptor mana yang saat ini terpasang, lalu hapus satu per satu atau gunakan
-penyeleksi seluruh-registri:
+Sebelum mencopot Apothem, hapus setiap konfigurasi adapter harness agar
+harness Anda berada dalam keadaan bersih. Jalankan `apothem harnesses list`
+untuk melihat adapter mana yang saat ini terpasang, lalu hapus satu per satu
+atau gunakan pemilih tingkat registri:
 
 ```bash
 apothem uninstall --harness claude-code
@@ -19,31 +19,89 @@ apothem uninstall --harness cursor --project /path/to/project
 apothem uninstall --harness all --project /path/to/project --yes
 ```
 
-Gunakan `--yes` untuk melewati prompt konfirmasi per-harness.
+Berikan `--yes` untuk melewati prompt konfirmasi per harness.
 
-## Hapus engine
+## Hapus mesin
 
-Penghapusan mengikuti kanal instalasi yang Anda gunakan:
+Cara penghapusan mengikuti kanal instalasi yang Anda gunakan. Nomor kanal
+mengikuti [tabel kanal instalasi](/docs/install#pilih-kanal):
 
-- **Plugin Claude Code** — hapus plugin dari dalam Claude Code:
+- **Plugin Claude Code (kanal 1)** — hapus plugin dari dalam Claude Code:
   `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus
   dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya. Bersihkan dengan
-  `npm cache clean --force` jika Anda ingin salinan tersimpan-cache hilang.
-- **Installer sekali-jalan** — jalankan skrip pencopotan yang sesuai dari
-  checkout: `scripts/installer/uninstall.sh` (POSIX) atau
-  `scripts/installer/uninstall.ps1` (PowerShell). Keduanya mengonfirmasi sebelum
-  menghapus dan menolak target yang tidak aman.
-- **Cadangan dan state** — cadangan instalasi berada di bawah `~/.apothem/backups/`;
-  hapus `~/.apothem/` saat Anda tidak lagi membutuhkannya.
+- **npx (kanal 2)** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya.
+  Bersihkan cache dengan `npm cache clean --force` jika Anda ingin salinan yang
+  ter-cache dihapus.
+- **Pemasang satu langkah (kanal 3)** — jalankan skrip pencopotan yang sesuai
+  dari checkout: `scripts/installer/uninstall.sh` (POSIX) atau
+  `scripts/installer/uninstall.ps1` (PowerShell). Keduanya meminta konfirmasi
+  sebelum menghapus dan menolak target yang tidak aman.
+- **Ekstensi keluarga VS Code (kanal 4)** — jalankan **Apothem: Uninstall** dari
+  palet perintah terlebih dahulu untuk menghapus konfigurasi harness, lalu hapus
+  ekstensi dari tampilan Extensions atau dengan
+  `code --uninstall-extension ahmed-g-gad.apothem`. Secara default ekstensi
+  menjalankan mesin melalui `npx`, sehingga entri **npx** di atas mencakup
+  cache-nya.
+- **Bootstrap baris perintah (kanal 5–7)** — hapus ekstensi atau plugin
+  dengan perkakas host-nya setelah konfigurasi harness dihapus. Host-nya:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  Bootstrap hanya menambahkan konteks asisten (sebuah berkas konteks, sebuah
+  command, atau sebuah skill) yang memanggil mesin melalui `npx`, sehingga tidak
+  ada yang tersisa. Host ekstensi pada kanal 5 dan 6 menyediakan perintah
+  pencopotan; untuk host plugin pada kanal 7, copot `apothem` di peramban
+  plugin-nya.
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **Mesin langsung (kanal 8)** — tidak ada yang perlu dicopot; hapus clone
+  setelah konfigurasi harness dihapus.
+- **Cadangan dan state** — cadangan instalasi berada di bawah
+  `~/.apothem/backups/` dan ledger instalasi di bawah `~/.apothem/state/`.
+  Ukuran keduanya tetap terbatas: setelah setiap instalasi, pencopotan, dan
+  rollback, Apothem menyimpan 10 catatan instalasi terbaru per akar instalasi
+  dan 10 set cadangan terbaru per harness, serta tidak pernah menghapus
+  cadangan yang masih dibutuhkan oleh catatan yang disimpan, sehingga 10
+  instalasi terakhir masih dapat di-rollback. Untuk menyimpan lebih sedikit,
+  jalankan [`apothem backups prune --keep N`](/docs/cli-reference/backups)
+  (tambahkan `--dry-run` untuk melihat terlebih dahulu apa yang akan
+  dihapusnya); perintah ini tidak pernah menghapus cadangan yang menjadi sumber
+  pemulihan saat rollback instalasi terbaru sebuah harness. Setelah mesin
+  dihapus dan Anda tidak lagi membutuhkan riwayat apa pun, hapus `~/.apothem/`.
 
 ## Apa yang TIDAK dihapus
 
 - YAML profil bersama di `~/.config/apothem/profile.yaml` atau
   `--profile PATH` tidak pernah dihapus oleh `apothem uninstall`.
-- Berkas tak-terkait yang ditulis operator di direktori harness dipertahankan.
-- Suite rencana di bawah `<project>/.apothem/plans/` (dan `<project>/.plans/` lama) tidak terpengaruh.
+- Berkas tak terkait yang ditulis operator di direktori harness dipertahankan.
+- Entri yang Anda tambahkan ke berkas pengaturan bersama dipertahankan: aturan
+  izin, server MCP, dan handler hook milik Anda sendiri tetap ada. Pencopotan
+  hanya menghapus kunci dan entri daftar yang dicatat oleh ledger instalasi
+  sebagai milik Apothem (lihat
+  [Pengaturan](/docs/reference/settings#menggabungkan-ke-dalam-berkas-pengaturan-anda-sendiri)).
+- Penyimpanan data bersama di bawah `.apothem/` pada akar instalasi (`memory/`,
+  `contexts/`, `learning/`) tetap ada selama harness lain yang terpasang pada
+  akar yang sama masih menggunakannya. Mencopot harness terakhir pada akar itu
+  menyalin setiap penyimpanan ke `~/.apothem/backups/` terlebih dahulu, lalu
+  menghapusnya beserta seluruh isinya.
+- Suite rencana di bawah `<project>/.apothem/plans/` (dan `<project>/.plans/` warisan) tidak terpengaruh.
 
-Untuk membersihkan akar harness sepenuhnya, hapus jalur native-harness yang didokumentasikan di
-[halaman referensi harness](/docs/harnesses) setelah memastikan Anda telah mencadangkan
-aturan, helper, atau berkas profil kustom apa pun yang ingin Anda simpan.
+## Direktori
+
+Pencopotan juga menghapus direktori yang dibuat oleh instalasi (misalnya
+`~/.claude/` yang belum ada sebelum instalasi pertama), setelah direktori
+tersebut kosong. Direktori yang masih menyimpan berkas milik Anda, atau data
+yang digunakan oleh harness lain yang terpasang, tetap ada. Direktori yang
+sudah ada sebelum instalasi tidak pernah dihapus.
+
+Untuk membersihkan akar harness sepenuhnya, hapus jalur native-harness yang
+didokumentasikan di [halaman referensi harness](/docs/harnesses) setelah
+memastikan Anda telah mencadangkan aturan, helper, atau berkas profil kustom
+apa pun yang ingin Anda simpan.

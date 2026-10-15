@@ -1,37 +1,41 @@
 ---
 title: "Conventions Markdown"
-description: "Standardiser la variante Markdown, la structure des titres, les déclarations de blocs de code, les formats de liens internes, les bannières de paternité et l'application par les validateurs."
+description: "Normaliser la variante Markdown, la structure des titres, la déclaration des blocs de code, le format des liens internes, les en-têtes de paternité et leur application par les validateurs."
 machineTranslated: true
-sourceHash: "80b6f4a49d92f47b"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence canonique pour la forme et le formatage de Markdown dans chaque artefact `.md` rédigé.** Le résumé dans [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions est la déclaration en ligne ; cette page est la référence autonome que citent les contributeurs en aval.
+> **Référence canonique pour la forme et la mise en forme Markdown de chaque artefact `.md` et `.mdx` rédigé.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; cette page est la référence autonome que citent les contributeurs en aval.
 
 ---
 
 ## 1. Variante
 
-GitHub-Flavored Markdown (GFM) est la variante de l'hôte. Chaque artefact se rend correctement dans l'interface web de GitHub, sur le site de documentation Fumadocs et dans les éditeurs standard compatibles avec Markdown.
+GitHub-Flavored Markdown (GFM) est la variante hôte. Chaque artefact s'affiche correctement dans l'interface web de GitHub, sur le site de documentation Fumadocs et dans les éditeurs standard compatibles Markdown.
 
 ## 2. Hiérarchie des titres
 
-Un seul H1 par fichier. Les titres suivants descendent de façon monotone (H2 → H3 → H4) sans sauter de niveaux. Titres en casse de phrase ; pas de MAJUSCULES, pas de Majuscule À Chaque Mot. Le H1 porte le titre principal du document et EST l'ancre du document dans la navigation du site de documentation.
+Un seul H1 par fichier. Les titres suivants descendent de façon monotone (H2 → H3 → H4) sans sauter de niveau. Titres en casse de phrase ; pas de TOUT EN MAJUSCULES, pas de Majuscule À Chaque Mot. Le H1 porte le titre principal du document. Sur une page du site de documentation, le `title` du frontmatter s'affiche comme H1 et sert d'ancre à la page dans la navigation du site de documentation ; le corps de la page commence donc au niveau H2.
 
 ## 3. Blocs de code
 
-Les blocs de code clôturés déclarent leur langage (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Les blocs sans étiquette suppriment la coloration syntaxique et signalent une dérive de rédaction ; la règle markdownlint MD040 dans [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) impose l'étiquette de langage.
+Les blocs de code délimités déclarent leur langage (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Les blocs sans étiquette désactivent la coloration syntaxique et signalent une dérive de rédaction ; la règle markdownlint MD040, configurée dans [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), impose l'étiquette de langage.
 
 ## 4. Liens internes
 
-Les références croisées internes utilisent des **chemins relatifs à la racine du site** (p. ex., `[Authorship header](/docs/reference/authorship-header)`). Les chemins relatifs au dépôt avec une extension `.md`/`.mdx` (`/docs/foo.md`) et les URL complètes vers le même dépôt (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) sont évités pour les liens internes au site car ils résistent mal aux renommages de page et aux réorganisations de section.
+Les références croisées internes utilisent des **chemins depuis la racine du site** (par exemple `[Authorship header](/docs/reference/authorship-header)`). Les chemins bruts relatifs au dépôt avec une extension `.md`/`.mdx` (`/docs/foo.md`) et les URL complètes vers le même dépôt (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) sont évités pour les liens internes au site, car ils entravent les renommages de pages et les réorganisations de sections.
 
-Les liens externes vers des références mutables (`main`, `master`, `latest`, `HEAD`) sont épinglés à des SHA de commit ou à des étiquettes de version chaque fois que la stabilité du contenu lié importe ; les références volatiles sont documentées comme telles par un commentaire adjacent `{/* volatile */}`.
+Ces chemins `/docs/...` depuis la racine du site, ainsi que la forme `/<locale>/docs/...` pour les locales de cohorte autres que la locale par défaut, sont résolus par rapport à l'ensemble des pages présentes sur disque sous `site/content/docs/` par le validateur `link-check` : `/docs/a/b` correspond à `site/content/docs/a/b.mdx` ou à l'index de dossier `site/content/docs/a/b/index.mdx`, et la forme localisée correspond à un chemin sous la sous-arborescence `site/content/docs/<locale>/`. Un lien vers une route supprimée ou renommée ne se résout vers aucun de ces deux fichiers et est signalé comme route morte (un 404 visible par l'utilisateur) par `link-check`, un matcher consultatif qui ne fait pas échouer l'exécution (voir le §6).
 
-## 5. Bannière de paternité
+Les liens externes vers des références mutables (`main`, `master`, `latest`, `HEAD`) sont épinglés à des SHA de commit ou à des étiquettes de publication chaque fois que la stabilité du contenu lié importe ; les références volatiles sont documentées comme telles par un commentaire adjacent `{/* volatile */}`.
 
-Chaque artefact Markdown (avec les exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) porte la bannière canonique d'en-tête de paternité au byte 0, dans la variante de commentaire HTML selon [Authorship header](/docs/reference/authorship-header). La bannière se place au-dessus du frontmatter YAML lorsque les deux sont présents.
+## 5. En-tête de paternité
+
+Chaque artefact Markdown (hors exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) porte l'en-tête de paternité canonique, la ligne unique `SPDX-License-Identifier: MIT`, dans la variante de commentaire propre à son type de fichier, selon [En-tête de paternité](/docs/reference/authorship-header) : un commentaire HTML sur les fichiers `.md` et un commentaire `{/* ... */}` sur les fichiers `.mdx`. Sans frontmatter, la ligne d'en-tête est la ligne 1. Avec un frontmatter YAML, le frontmatter reste à l'octet 0 et la ligne d'en-tête suit le `---` de fermeture.
 
 ## 6. Validateurs
 
-L'invocation de `markdownlint-cli2` dans [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) impose l'essentiel des règles des §§1–4. Le `file-header-grep` à `src/apothem/conformity/file_header_grep.py` impose §5. Les deux sont câblés dans la chaîne de hooks de pre-commit dans [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) et dans le job qualité de la CI dans [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).
+Le hook pre-commit `markdownlint` de [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) exécute `markdownlint-cli` avec la politique de règles de [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) et impose l'essentiel des règles des §§1–4. La CI n'exécute pas markdownlint : c'est donc dans le hook qu'il s'exécute. La politique désactive MD013 (longueur de ligne), MD033 (HTML en ligne) et MD041 (titre en première ligne). Elle désactive aussi MD038, car le suffixe canonique d'intitulé d'option ` (Recommended)` conserve son espace initial à l'intérieur d'un code en ligne, et MD060, car aucun style de colonnes de tableau n'accepte les tableaux à cellules compactes avec une ligne de séparation serrée `|---|` qu'utilise le corpus. MD024 ne contrôle que les titres frères, de sorte que les titres Added, Changed, Fixed et Security que chaque publication répète dans `CHANGELOG.md` passent. Les raisons de chaque choix figurent à côté du hook. Le hook ignore les arborescences de fixtures de test `tests/fixtures/`, `tests/conformity/`, `tests/conformity-scenarios/fixtures/` et `tests/scripts/inject-header/fixtures/`, dont les octets sont fixés par les tests. Il analyse toujours `plugins/claude-code/`, qui est généré à partir de `src/apothem/` ; corrigez donc un constat qui s'y trouve dans sa source sous `src/apothem/`, puis régénérez l'arborescence du plugin avec `python scripts/dev/assemble_plugin_tree.py`.
+
+Le `file-header-grep` situé dans `src/apothem/conformity/file_header_grep.py` contrôle le §5. Le validateur `link-check` situé dans `src/apothem/conformity/link_check.py` contrôle la discipline de résolution des liens du §4 : il résout les liens relatifs par rapport au répertoire du fichier source, et les routes de site `/docs/...` (et `/<locale>/docs/...`) par rapport à l'ensemble des pages de `site/content/docs/`, en signalant toute route qui ne correspond à aucune page sur disque. Tous deux sont des matchers consultatifs exécutés à chaque écriture. Ils s'exécutent dans le hook pre-commit `conformity-corpus-perwrite` et dans le job `corpus-perwrite-gate` du flux de travail Conformity, défini dans [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml), et aux deux endroits ils signalent leurs constats sans faire échouer l'exécution. La commande `python -m apothem.conformity.gate --all . --strict` du job qualité de la CI, dans [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml), ne couvre que les validateurs autonomes ; elle n'exécute donc ni l'un ni l'autre.

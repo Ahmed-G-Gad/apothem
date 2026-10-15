@@ -1,15 +1,18 @@
 ---
 title: "Windsurf"
-description: "Apothem-Werkzeugadapter für Windsurf (GA)."
+description: "Apothem-Harness-Adapter für Windsurf (GA)."
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Anbieter:** Codeium
+**Anbieter:** Devin Desktop (vormals Codeium Windsurf)
 **Installationsname:** `windsurf`
 **Status:** GA
 **Native Konfiguration:** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf ist jetzt Devin Desktop, und `.devin/rules/` ist der bevorzugte
+Speicherort für Workspace-Regeln (er hat Vorrang vor `.windsurf/rules/`).
 
 ## Installation
 
@@ -17,25 +20,31 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-Der Adapter schreibt eine projektgebundene Windsurf-Regeldatei aus den gemeinsamen
-Apothem-Regeln und der Governance-Oberfläche.
+Der Adapter schreibt aus der gemeinsamen Regel- und Governance-Oberfläche von
+Apothem eine Windsurf-Regeldatei mit Projektgeltungsbereich.
 
 **Geschriebene Dateien:** `<project>/.devin/rules/apothem-rules.md`
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
-Der Adapter liest Apothems gemeinsames Profil und rendert die Projektregeldatei bei
-jedem Lauf von `apothem install` oder `apothem update`. Das gemeinsame Profil ist
-die Quelle der Wahrheit; projektlokale Bearbeitungen an der generierten Datei werden
-gesichert, bevor die nächste Synchronisierung den von Apothem verwalteten Inhalt
-ersetzt.
+Der Adapter liest Apothems gemeinsames Profil und rendert die Regeldatei des
+Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das
+gemeinsame Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der
+generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
+Apothem verwalteten Inhalt ersetzt.
+
+Die Datei beginnt mit ihrem Frontmatter `trigger: always_on`, das den
+Aktivierungsmodus der Regel festlegt. Der von Apothem verwaltete Block folgt
+darauf; Text, den Sie nach dem Block hinzufügen, bleibt bei jeder
+Synchronisierung erhalten.
 
 ## Kompatibilitätshinweise
 
-Die aktuelle Regeloberfläche von Windsurf ist projektgebunden unter
-`.devin/rules/`. Workflows und maschinenlokale Erinnerungen gehören dem Operator;
-Apothem schreibt sie nicht. Die Einzeldatei-Form `.windsurfrules` wird absichtlich
-nicht geschrieben.
+Die aktuelle Regel-Oberfläche von Windsurf hat Projektgeltungsbereich unter
+`.devin/rules/` (der bevorzugte Speicherort, der Vorrang vor dem
+Abwärtskompatibilitäts-Fallback `.windsurf/rules/` hat). Workflows und
+maschinenlokale Memories gehören dem Operator; Apothem schreibt sie nicht. Die
+Einzeldatei-Form `.windsurfrules` wird absichtlich nicht geschrieben.
 
 ## Verifizierung
 
@@ -43,11 +52,14 @@ nicht geschrieben.
 apothem verify --harness windsurf --project /path/to/project
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -55,8 +67,8 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness windsurf --project /path/to/project
 ```
 
-Leitet die Projektregeldatei aus dem aktuellen Zustand des gemeinsamen Profils neu
-ab.
+Leitet die Regeldatei des Projekts aus dem aktuellen Zustand des gemeinsamen
+Profils neu ab.
 
 ## Deinstallation
 
@@ -64,10 +76,15 @@ ab.
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+Entfernt den Apothem-Block und das Frontmatter, das Apothem darüber geschrieben
+hat, aus `<project>/.devin/rules/apothem-rules.md` und behält jeden anderen Text
+darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig ist.
+Vor der Änderung wird eine mit Zeitstempel versehene Kopie der Datei unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
-## Konformitätstor
+## Konformitäts-Gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -77,12 +94,18 @@ python -m apothem.conformity.gate --all .
 
 | Symptom | Behebung |
 |---------|-----|
-| Konfigurationsdatei nicht gefunden | `apothem install --harness windsurf --project /path/to/project` erneut ausführen |
-| Verifizierung fehlgeschlagen | `apothem update --harness windsurf --project /path/to/project` ausführen, dann erneut verifizieren |
-| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness windsurf --project /path/to/project` erneut ausführen |
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness windsurf --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness windsurf --project /path/to/project` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness windsurf --project /path/to/project` erneut aus |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

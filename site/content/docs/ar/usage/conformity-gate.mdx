@@ -2,50 +2,109 @@
 title: "بوابة المطابقة"
 description: "شغّل بوابة المطابقة في Apothem للتحقّق من سلامة المنظومة."
 machineTranslated: true
-sourceHash: "9e8082c92412b0a9"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-تُجري بوابة المطابقة الموجودة في <bdi>`src/apothem/conformity/gate.py`</bdi>
-خمسة عشر فحصًا آليًّا على كلّ مُنتَج يكتبه المُشغِّل.
+تُشغِّل بوابة المطابقة في <bdi>`src/apothem/conformity/gate.py`</bdi> الجزء الميكانيكي
+من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (<bdi>M1-M15</bdi>) على كل مُنتَج
+يؤلّفه المُشغِّل.
+
+تفترض الأوامر في هذه الصفحة وجود نسخة مسحوبة من <bdi>Apothem</bdi>، لذا ضَع
+<bdi>`PYTHONPATH=src`</bdi> قبل كل أمر تُشغِّله. وبعد التثبيت بالسكربت، استخدم
+<bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> بدلًا من <bdi>`PYTHONPATH=src`</bdi>.
 
 ## تشغيل البوابة
 
+البوابة **استشارية افتراضيًا**: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>، لذا لا
+يحجبك التشغيل المحلّي أبدًا. أضِف <bdi>`--strict`</bdi> (أو اضبط
+<bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) للخروج برمز غير صفري عند وجود نتيجة حاجبة —
+وهو الوضع الذي يستخدمه <bdi>CI</bdi> و<bdi>pre-commit</bdi> لإفشال تغيير مخالف.
+
 ```bash
-python -m apothem.conformity.gate
+# Advisory: report every validator's findings across the repo, exit 0
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+
+# Strict: exit non-zero (code 2) when a blocking finding is present
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
-## أعمدة البوابة
+رموز الخروج: <bdi>`0`</bdi> نظيف (أو استشاري)، و<bdi>`2`</bdi> حجب بسبب نتائج في الوضع
+الصارم، و<bdi>`3`</bdi> خطأ في الاستخدام: راية أو اسم أداة تحقّق غير معروف، أو ملف
+غير موجود، أو دليل جذر غير موجود. يطبع <bdi>`--help`</bdi> الاستخدام الكامل ويخرج
+بالرمز <bdi>`0`</bdi>. وتقبل كل أداة تحقّق مستقلّة الراية <bdi>`--help`</bdi> نفسها
+وتخرج بالرمز <bdi>`3`</bdi> عند راية غير معروفة أو جذر مفقود.
 
-| العمود | الفحص | النوع |
+يُحَلّ الجذر النسبي مثل <bdi>`.`</bdi> إلى مسار مطلق قبل تشغيل أي أداة تحقّق، لذا
+يفحص <bdi>`--all .`</bdi> و<bdi>`--all "$PWD"`</bdi> الشجرة نفسها. تُبلِغ كل أداة
+تحقّق عن <bdi>`inspected`</bdi> — أي عدد الأهداف التي فحصتها — وينسخ
+<bdi>`--all`</bdi> ذلك العدد إلى كل مُدخَل في النتائج. وأداة التحقّق التي لم تفحص شيئًا
+تُبلِغ عن <bdi>`passed: false`</bdi>، لذا لا يمكن أن يجتاز دليل عمل خاطئ بصمت.
+أداتا التحقّق الخاصتان بحزم الخطّة هما إحدى حالات الاستثناء: تعيش حزم الخطّة في
+الشجرة <bdi>`.apothem/plans/`</bdi> التي يتجاهلها <bdi>git</bdi>، لذا تُبلِغان عن
+<bdi>`empty_scope_expected: true`</bdi> على نسخة مسحوبة نظيفة وتجتازان مع ذلك. وتفعل
+أدوات التحقّق الخاصة بسير العمل الشيء نفسه عندما لا يكون للمشروع دليل
+<bdi>`.github/workflows/`</bdi> بعد، وكذلك تفعل أداة التحقّق من عنوان الكوميت عندما لا
+يكون للجذر سجلّ كوميتات.
+
+## أشرطة البوابة
+
+| الشريط | الفحص | النوع |
 |-----|-------|------|
-| M1 | اتّساق النطاق | استدلالي |
-| M2 | عزل داخلي للخطة (CM-7) | آلي |
-| M3 | الامتثال للمعايير | استدلالي |
-| M4 | صلاحية الـ<bdi>frontmatter</bdi> | آلي |
-| M5 | لا عبارات محظورة | آلي |
-| M6 | الإفصاح التحريري | استدلالي |
-| M7 | لا إشارات للخطة في المُنتَجات | آلي |
-| M8 | وجود ترويسة التأليف | آلي |
-| M9 | تقييم صادق | استدلالي |
-| M10 | انضباط التسمية | آلي |
-| M11 | جهاز السبرنت | استدلالي |
-| M12 | التخطيط القانوني | آلي |
-| M13 | حِرفة الشيفرة | استدلالي |
-| M14 | المشاركة المنظومية | استدلالي |
-| M15 | التأليف البشري | آلي |
+| <bdi>M1</bdi> | حياد المشروع المضيف | استدلالي |
+| <bdi>M2</bdi> | الإفصاح التحريري | استدلالي |
+| <bdi>M3</bdi> | أبعاد الجودة العشرة | ميكانيكي + استدلالي |
+| <bdi>M4</bdi> | التطبيق الذاتي | ميكانيكي |
+| <bdi>M5</bdi> | السلطة (لا هوية / نقطة نهاية / سرّ مُختلَق) | ميكانيكي |
+| <bdi>M6</bdi> | دمج الخبرة | استدلالي |
+| <bdi>M7</bdi> | التعليق التوضيحي للخيارات | ميكانيكي |
+| <bdi>M8</bdi> | الحسم | ميكانيكي |
+| <bdi>M9</bdi> | الرافعة البصرية | استدلالي |
+| <bdi>M10</bdi> | الربط ثنائي الاتجاه | ميكانيكي |
+| <bdi>M11</bdi> | السباقات الرشيقة | استدلالي |
+| <bdi>M12</bdi> | تقارير المراحل والتخطيط المرجعي | ميكانيكي + استدلالي |
+| <bdi>M13</bdi> | حِرفة الشيفرة | ميكانيكي |
+| <bdi>M14</bdi> | المنظومية | استدلالي |
+| <bdi>M15</bdi> | الجاهزية للإنتاج | ميكانيكي + استدلالي |
 
-## فحوصات موجَّهة
+## فحوص موجَّهة
 
 ```bash
-# تشغيل فحص واحد
-python -m apothem.conformity.gate --check multi-surface-coherence
+# List every registered validator
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# التشغيل على ملف محدَّد
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+# Run a single named validator
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Run every validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+وضع <bdi>`--hook`</bdi> (<bdi>`python -m apothem.conformity.gate --hook`</bdi>) هو نقطة
+الدخول التي يستدعيها إطار العمل: يقرأ حمولة <bdi>JSON</bdi> لمُدخَلات الأداة من
+<bdi>stdin</bdi> ويُشغِّل سلسلة المطابِقات الخاصة بكل عملية كتابة على عملية الكتابة
+المعلّقة. هذا هو الشكل الذي يستدعيه خطّاف <bdi>`PreToolUse`</bdi> المنشور؛ ونادرًا ما
+تستدعيه يدويًا.
+
+وضع الخطّاف **مقصور على مجموعة من الأدلة**. لا يُشغِّل سلسلة المطابِقات إلا على عمليات
+الكتابة التي يقع هدفها تحت أحدها؛ وعملية الكتابة الواقعة خارج كل النطاقات تنتهي فورًا
+باجتياز صامت. القيم الافتراضية جذران اثنان:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+اضبط <bdi>`APOTHEM_CONFORMITY_SCOPE`</bdi> على دليل لاستبدالهما:
+
+```bash
+# Run the per-write matcher chain against one project tree instead
+export APOTHEM_CONFORMITY_SCOPE=/path/to/project
+```
+
+الخطّاف الذي يبدو أنه لا يفعل شيئًا يكون عادةً حالة خروج عن النطاق لا إخفاقًا — افحص
+هدف عملية الكتابة مقابل النطاقات أعلاه أولًا.
 
 ## التكامل مع <bdi>CI</bdi>
 
-تعمل البوابة في الـ<bdi>CI</bdi> عبر <bdi>`.github/workflows/conformity.yml`</bdi>
-عند كلّ دفعة <bdi>push</bdi>.
+تُشغِّل مهمّة الجودة في <bdi>`.github/workflows/ci.yml`</bdi> البوابة في الوضع الصارم (<bdi>`python -m apothem.conformity.gate --all . --strict`</bdi>) عند الدفع إلى <bdi>`main`</bdi>، وعند طلبات السحب إلى <bdi>`main`</bdi> التي تمسّ المسارات التي تراقبها تلك المهمّة. أما سير العمل المنفصل <bdi>`.github/workflows/conformity.yml`</bdi> فيُشغِّل مسح تجهيزات الاختبار (<bdi>`tests/conformity-scenarios/verify.py --strict`</bdi>).

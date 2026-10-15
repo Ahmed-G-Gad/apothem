@@ -2,7 +2,7 @@
 title: "最小フック"
 description: "最小の Apothem フックの例——ファイル書き込みごとにチェックを発火させる。"
 machineTranslated: true
-sourceHash: "d1337398a00a9c83"
+sourceHash: "714a1269e07cc416"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## settings.json への登録
@@ -48,9 +48,9 @@ Claude Code で任意のファイル書き込みを行い、フックトレー�
 
 ## 書き込みのブロック
 
-`sys.exit(0)` を `sys.exit(1)` に変更し、stdout に JSON のブロックを出力します。
+書き込みをブロックするには、Apothem 自身のフックと同様に、拒否用のエンベロープを stdout に出力し、それでも終了コードは 0 のままにします。
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

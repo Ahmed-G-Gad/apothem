@@ -17,7 +17,7 @@ Apothem.
 | Author rules | Hand-write each file under `.trae/rules/` | Rendered from the shared corpus |
 | Keep the Apothem surface separate | Remember not to overload `project_rules.md` | The adapter writes a dedicated `apothem-rules.md` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness trae` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness trae --project <path>` |
 
 ## What Apothem manages
 
@@ -32,9 +32,11 @@ Every change to the shared rules re-renders the file on the next
 
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the rules from your existing `.trae/rules/` files into the shared corpus.
-3. Run `apothem install --harness trae` to render the `apothem-rules.md` file.
-4. Run `apothem verify --harness trae` to confirm the config landed.
-5. Use `apothem update --harness trae` for every later change.
+3. Run `apothem install --harness trae --project <path>` to render the
+   `apothem-rules.md` file.
+4. Run `apothem verify --harness trae --project <path>` to confirm the config
+   landed.
+5. Use `apothem update --harness trae --project <path>` for every later change.
 
 ## Read next
 

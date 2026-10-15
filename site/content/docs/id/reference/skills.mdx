@@ -1,22 +1,23 @@
 ---
-title: "Keterampilan"
-description: "Teknik terdeteksi yang dapat dipakai ulang dalam berkas SKILL.md dengan sinyal deteksi, prosedur, dan hook penegakan untuk suite rencana dan audit ekosistem."
+title: "Skill"
+description: "Teknik yang dapat dipakai ulang dan dapat dideteksi dalam berkas SKILL.md, dengan sinyal deteksi, prosedur, dan hook penegakan untuk suite rencana dan audit ekosistem."
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Keterampilan hidup sebagai folder di bawah `src/apothem/skills/`, masing-masing
-dengan titik masuk `SKILL.md`. Keterampilan menangkap teknik terdeteksi yang
-dapat dipakai ulang — keduanya memiliki sinyal deteksi, prosedur, dan hook
-penegakan.
+Skill berada sebagai folder di bawah `src/apothem/skills/`, masing-masing dengan
+titik masuk `SKILL.md`. Skill menangkap teknik yang dapat dipakai ulang dan dapat
+dideteksi — skill memiliki sinyal deteksi, prosedur, dan hook penegakan.
 
-Katalog keterampilan lengkap dihasilkan di bawah pada bagian «Inventaris
-Keterampilan Tergenerasi» di bagian akhir halaman ini.
+Katalog skill lengkap dihasilkan di bawah, di [Inventaris Skill yang
+Dihasilkan](#inventaris-skill-yang-dihasilkan).
 
 ## Kontrak frontmatter
 
-`SKILL.md` membawa:
+`SKILL.md` membawa frontmatter delapan kunci yang kanonis. Kontrak yang dapat
+dibaca mesin adalah [`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)
+(`additionalProperties: false`); blok ini mencerminkannya:
 
 ```yaml
 ---
@@ -31,16 +32,34 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## Emisi per harness
+
+Skill sumber menggunakan kunci di atas. Sebagian harness membaca kunci yang
+berbeda, sehingga pemasangan menerjemahkannya hanya untuk harness tersebut:
+
+| Harness | Apa yang diubah pemasangan |
+| --- | --- |
+| Claude Code (pemasangan dan plugin) | Mengganti nama `userInvocable` menjadi `user-invocable`, kunci yang dibaca Claude Code. Claude Code mengabaikan kunci camelCase, sehingga tanpa penggantian nama itu skill yang ditandai `userInvocable: false` akan tetap muncul di menu `/`. |
+| Codex | Membiarkan `SKILL.md` apa adanya dan menulis `agents/openai.yaml` dengan `policy.allow_implicit_invocation: false` di samping setiap skill yang sumbernya menetapkan `disable-model-invocation: true`, karena Codex mengabaikan kunci tersebut. |
+| Harness lain | Tidak ada perubahan. |
+
+`skill.schema.json` menerima salah satu dari kedua ejaan flag user-invocability
+dan mewajibkan tepat satu di antaranya.
+
 ## Disiplin penulisan
 
-- **Folder-per-keterampilan.** Setiap keterampilan adalah folder tersendiri
-  dengan titik masuk di `SKILL.md`.
-- **Sinyal deteksi.** Tubuh keterampilan dibuka dengan sinyal deteksi yang
-  memicu teknik tersebut.
-- **Prosedur + penegakan.** Keterampilan membawa baik prosedur untuk
-  diterapkan maupun sinyal penegakan yang menutup loop.
+- **Satu folder per skill.** Setiap skill adalah folder tersendiri dengan titik
+  masuk di `SKILL.md`.
+- **Sinyal deteksi.** Isi skill dibuka dengan sinyal deteksi yang memicu teknik
+  tersebut.
+- **Prosedur + penegakan.** Skill membawa baik prosedur yang diterapkan maupun
+  sinyal penegakan yang menutup loop.
+- **Panjang deskripsi.** `description` paling banyak 1.024 karakter, batas
+  [Agent Skills](https://agentskills.io/specification). Tool yang lebih ketat
+  menolak atau memotong deskripsi yang lebih panjang, dan skema menegakkan batas
+  tersebut.
 
-## Inventaris Keterampilan Tergenerasi
+## Inventaris Skill yang Dihasilkan
 
 {/* apothem:generated-reference:start */}
 

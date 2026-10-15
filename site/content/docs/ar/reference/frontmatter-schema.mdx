@@ -1,43 +1,44 @@
 ---
-title: "مخطّط الفرونت-ماتر (Frontmatter Schema)"
-description: "دليل مرجعي لبنية كتلة الفرونت-ماتر YAML، والمفاتيح المطلوبة لكل صنف، وقواعد إنفاذ المُدقِّق عبر أصناف الأدوات."
+title: "مخطط البيانات الأمامية"
+description: "دليل مرجعي لبنية كتلة البيانات الأمامية بصيغة YAML، والمفاتيح المطلوبة لكل صنف، وقواعد الإنفاذ لدى المدقّقات عبر أصناف المُنتَجات."
 machineTranslated: true
-sourceHash: "9c6a607ba1dd7651"
+sourceHash: "d6c49336e4d3abf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **مرجع كنسي للفرونت-ماتر <bdi>YAML</bdi> على كل صنف من أصناف الأدوات.** الملخّص في [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) §٤ الاصطلاحات هو الإعلان المضمَّن؛ ومخطّطات <bdi>JSON Schema</bdi> لكل صنف في [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) هي العقد المقروء آليًّا؛ وهذه الصفحة هي المرجع المستقلّ الذي يستشهد به المساهمون اللاحقون.
+> **مرجع معتمد للبيانات الأمامية بصيغة <bdi>YAML</bdi> في كل صنف من أصناف المُنتَجات.** الملخّص في قسم الاصطلاحات من [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) هو الإعلان المُضمَّن؛ أما مخططات <bdi>JSON Schema</bdi> لكل صنف في [<bdi>`src/apothem/schemas/`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (حيث يرفض <bdi>`additionalProperties`</bdi> المفاتيح غير المعروفة) فهي العقد المقروء آليًا، وتكون لها الغلبة عند أي خلاف. هذه الصفحة هي فهرس المفاتيح المطلوبة، ويحمل [<bdi>`artifact-schema.mdx`</bdi>](/docs/reference/artifact-schema) القوالب والأمثلة المحلولة لكل صنف — وكلتاهما إسقاطان مقروءان للبشر لتلك المخططات.
 
 ---
 
-## ١. بنية كتلة الفرونت-ماتر
+## 1. شكل كتلة البيانات الأمامية
 
-تحمل كل أداة فرونت-ماتر <bdi>YAML</bdi> في رأسها، مُحدَّدًا بأسطر <bdi>`---`</bdi>. ويقع شعار رأس النسبة الكنسي بحسب [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) فوق الفرونت-ماتر في ملفّات عائلة <bdi>Markdown</bdi>؛ ويتبعه الفرونت-ماتر مباشرةً.
+يحمل كل مُنتَج بيانات أمامية بصيغة <bdi>YAML</bdi> في رأسه، محدودة بسطرَي <bdi>`---`</bdi>. وفي ملفات عائلة <bdi>Markdown</bdi> تكون البيانات الأمامية أول محتوى في الملف، ويلي سطرُ ترويسة <bdi>SPDX</bdi> المرجعي وفق [<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>](/docs/reference/authorship-header) الفاصلَ <bdi>`---`</bdi> الختامي.
 
-تستخدم المفاتيح <bdi>`kebab-case`</bdi>. والقيم القياسية إمّا عارية وإمّا بين علامتَي اقتباس مزدوجتين؛ أمّا القيم النصّية التي تحتوي على نقطتين رأسيّتين أو علامات تجزئة أو غيرها من المحارف ذات الدلالة في <bdi>YAML</bdi> فتُحاط بعلامات اقتباس.
+تستخدم مفاتيح الأوامر صيغة <bdi>`kebab-case`</bdi>. وتستخدم مفاتيح المهارات صيغة <bdi>`kebab-case`</bdi> ما عدا <bdi>`userInvocable`</bdi>، وهي كتابة <bdi>camelCase</bdi> التي يستخدمها متن المصدر، ويُعيد تثبيت <bdi>Claude Code</bdi> تسميتها إلى <bdi>`user-invocable`</bdi>. أما مفاتيح القواعد والعمّال المُفوَّضين فهي بصيغة <bdi>camelCase</bdi>، كما يسرد جدول المفاتيح المطلوبة في القسم 2. والقيم المفردة إما مجرّدة وإما بين علامتَي اقتباس مزدوجتين؛ وتوضع بين علامتَي اقتباس القيم النصية التي تحتوي على نقطتين رأسيتين، أو علامات <bdi>#</bdi>، أو غيرها من المحارف ذات الدلالة في <bdi>YAML</bdi>.
 
-## ٢. الحقول المطلوبة لكل صنف
+## 2. الحقول المطلوبة لكل صنف
 
-تتفاوت مجموعة المفاتيح المطلوبة بحسب صنف الأداة. وتُنفَّذ البنية المُعتمَدة بواسطة <bdi>`scripts/dev/validate_ecosystem.py`</bdi> ومخطّطات <bdi>JSON Schema</bdi> لكل صنف تحت الدليل <bdi>`schemas/`</bdi> (ملفّ مخطّط واحد لكل صنف أداة).
+تختلف مجموعة المفاتيح المطلوبة باختلاف صنف المُنتَج. ويفرض الشكلَ المعتمد <bdi>`scripts/dev/validate_ecosystem.py`</bdi> ومخططاتُ <bdi>JSON Schema</bdi> لكل صنف تحت الدليل <bdi>`src/apothem/schemas/`</bdi>. لكلٍّ من أصناف المساعِدين والمهارات والأوامر وأنماط الإخراج والخطط ملف مخطط واحد، مدرَج أدناه؛ أما صنفا <bdi>`CLAUDE.md`</bdi> والقواعد فلا مخطط لهما، ويفحص <bdi>`validate_ecosystem.py`</bdi> مفاتيحهما. ملفات الخطط ليست في الجدول أدناه؛ وتُسرَد مفاتيحها في [انضباط الخطط](/docs/reference/plans-discipline).
 
 ```text
-schemas/agent.schema.json
-schemas/skill.schema.json
-schemas/command.schema.json
-schemas/output-style.schema.json
-schemas/plan.schema.json
+src/apothem/schemas/agent.schema.json
+src/apothem/schemas/skill.schema.json
+src/apothem/schemas/command.schema.json
+src/apothem/schemas/output-style.schema.json
+src/apothem/schemas/plan.schema.json
 ```
 
 | الصنف | المفاتيح المطلوبة |
 |-------|---------------|
 | <bdi>`CLAUDE.md`</bdi> (إعداد الجذر) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`scope`</bdi>، <bdi>`portability`</bdi> |
 | القواعد (<bdi>`src/apothem/rules/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>، <bdi>`pathFilter`</bdi>، <bdi>`alwaysApply`</bdi> |
-| الأوامر (<bdi>`src/apothem/commands/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`argument-hint`</bdi>، <bdi>`disable-model-invocation`</bdi> |
-| المساعِدون (الدليل الكنسي المعروض أدناه) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`tools`</bdi>، <bdi>`disallowedTools`</bdi>، <bdi>`maxTurns`</bdi>، <bdi>`effort`</bdi> |
-| المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>، <bdi>`archetype`</bdi>، <bdi>`userInvocable`</bdi> |
+| الأوامر (<bdi>`src/apothem/commands/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`argument-hint`</bdi>، <bdi>`disable-model-invocation`</bdi>، <bdi>`portability`</bdi>، <bdi>`allowed-tools`</bdi> |
+| المساعِدون، ويُسمَّون أيضًا العمّال المُفوَّضين (<bdi>`src/apothem/agents/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`tools`</bdi>، <bdi>`disallowedTools`</bdi>، <bdi>`maxTurns`</bdi>، <bdi>`effort`</bdi> |
+| المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`archetype`</bdi>، <bdi>`userInvocable`</bdi>، <bdi>`disable-model-invocation`</bdi>، <bdi>`allowed-tools`</bdi>؛ ويُعيد تثبيت <bdi>Claude Code</bdi> وإضافته تسمية <bdi>`userInvocable`</bdi> إلى <bdi>`user-invocable`</bdi>، ويشترط المخطط أن تحمل كل مهارة تهجئة واحدة بالضبط من التهجئتين، لا الاثنتين معًا |
+| أنماط الإخراج (<bdi>`src/apothem/output-styles/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>؛ ويضبط كل نمط مشحون أيضًا <bdi>`keep-coding-instructions: true`</bdi> كي يحتفظ <bdi>Claude Code</bdi> بتعليماته الخاصة بهندسة البرمجيات |
 
-تحمل المخطّطات لكل صنف في [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) مجموعة القيود الكاملة، بما في ذلك قيود النوع والتنسيق و<bdi>enum</bdi> والنمط.
+تحمل المخططات لكل صنف في [<bdi>`src/apothem/schemas/`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) مجموعة القيود الكاملة، بما فيها قيود النوع، والصيغة، والتعداد، والنمط، وحدود الطول: فحقل <bdi>`description`</bdi> في المهارة أو الأمر لا يتجاوز 1,024 محرفًا، وهو حدّ [<bdi>Agent Skills</bdi>](https://agentskills.io/specification).
 
-## ٣. المُدقِّقات
+## 3. المدقّقات
 
-يجتاز <bdi>`scripts/dev/validate_ecosystem.py`</bdi> شجرة الأدوات، ويطبّق مجموعات المفاتيح المطلوبة أعلاه، ويُبلِّغ <bdi>`[FAIL]`</bdi> عن أي أداة ينقصها حقل مطلوب. ويُنفِّذ <bdi>`frontmatter-grep`</bdi> العامل عند كل كتابة في <bdi>`src/apothem/conformity/frontmatter_grep.py`</bdi> البنية نفسها عند حدود خطّاف <bdi>PreToolUse Write/Edit</bdi>.
+يجتاز <bdi>`scripts/dev/validate_ecosystem.py`</bdi> شجرة المُنتَجات، ويطبّق مجموعات المفاتيح المطلوبة أعلاه، ويُبلِغ عن <bdi>`[FAIL]`</bdi> لأي مُنتَج ينقصه حقل مطلوب. ويفرض <bdi>`frontmatter-grep`</bdi> العامل عند كل كتابة في <bdi>`src/apothem/conformity/frontmatter_grep.py`</bdi> الشكل نفسه عند حدود خطّاف <bdi>PreToolUse Write/Edit</bdi>.

@@ -2,11 +2,12 @@
 title: "quickstart"
 description: "CLI-Referenz für den geführten Erstlauf-Befehl apothem quickstart."
 machineTranslated: true
-sourceHash: "2de815559e9e2e4e"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Geführter Erstlauf: stellt sicher, dass ein Profil existiert, zeigt die Schreibvorgänge in der Vorschau an und installiert dann.
+Geführter erster Lauf: sicherstellen, dass ein Profil existiert, die
+Schreibvorgänge in der Vorschau anzeigen, dann installieren.
 
 ## Übersicht
 
@@ -16,38 +17,70 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-`quickstart` ist der einzige geführte Einstiegspunkt für einen neuen Operator. In einem linearen Ablauf: (1) stellt es sicher, dass ein geteiltes Profil existiert — und erstellt ein Starterprofil mit einem Hinweis zur Personalisierung, falls keines gefunden wird; (2) zeigt die konkreten Dateien in der Vorschau, die die ausgewählten Harnesses schreiben werden, gruppiert nach Projektwurzel gegenüber deinem Home-Verzeichnis; (3) bittet um Bestätigung; (4) installiert mit der gruppierten, entrauschten Ausgabe der Capability-Hinweise; und (5) gibt die empfohlenen Folgebefehle aus.
+`quickstart` ist der einzige geführte Einstiegspunkt für einen neuen Operator.
+In einem linearen Ablauf (1) stellt der Befehl sicher, dass ein gemeinsames
+Profil existiert — und legt ein Starterprofil mit einem Hinweis zur
+Personalisierung an, falls keines gefunden wird; (2) zeigt er die konkreten
+Dateien in der Vorschau an, die die ausgewählten Harnesses schreiben werden,
+gruppiert nach Projektwurzel gegenüber Ihrem Home-Verzeichnis; (3) bittet er um
+Bestätigung; (4) installiert er mit der gruppierten, entrauschten Ausgabe der
+Fähigkeitshinweise; und (5) gibt er die empfohlenen nächsten Befehle aus.
 
-Es setzt sich aus denselben Bausteinen zusammen, die der Befehl `install` verwendet — es implementiert sie nicht neu. `--harness` ist standardmäßig `all` und `--project` das aktuelle Verzeichnis.
+Er setzt dieselben Bausteine zusammen, die der Befehl `install` verwendet —
+er implementiert sie nicht neu. `--project` ist standardmäßig das
+aktuelle Verzeichnis. `--harness` hat keinen Standardwert: Wenn es weggelassen
+wird, fragt `quickstart`, welcher Harness installiert werden soll, sodass ein
+erster Lauf die Konfiguration eines einzigen Harness schreibt. `--harness all`
+installiert jeden unterstützten Harness und ist immer eine explizite Wahl.
 
 ## Verhalten
 
-- **Profil** — wenn der aufgelöste Profilpfad keine Datei besitzt, bietet `quickstart` an, ein Starterprofil zu erstellen (erstellt es automatisch mit `--yes`, in einer nicht-interaktiven Shell oder mit `--format json`) und benennt die Platzhalter-Identitätsfelder, die personalisiert werden sollen.
-- **Vorschau + Bestätigen** — vor jedem Schreibvorgang werden die Ziele unter zwei Überschriften aufgeführt (Projektwurzel gegenüber deinem Home-Verzeichnis); ein interaktiver Lauf bestätigt, bevor außerhalb des Projekts geschrieben wird. `--yes`, eine nicht-interaktive Shell und `--format json` fahren ohne Nachfrage fort. Ein Ablehnen bricht vor jedem Schreibvorgang ab.
-- **Installieren** — Capabilities, die ein Harness nicht nativ unterstützt, werden als ein gruppierter Hinweis pro Harness zusammengefasst (übergib `--verbose` für die Detailangabe pro Capability); der vollständige Satz steht stets im warnings-Array von `--format json`.
-- **Nächster Schritt** — die Terminalausgabe benennt die Folgebefehle (`apothem verify …`, `apothem doctor`).
+- **Harness** — ohne `--harness` listet ein interaktiver Lauf die unterstützten
+  Namen (plus `all`) auf und fragt nach einem davon, bevor etwas geschrieben wird.
+  Ein Lauf, der nicht nachfragen kann — `--yes`, `--format json` oder kein
+  Terminal —, bricht mit einem Verwendungsfehler ab, der die Option `--harness`
+  nennt, und schreibt nichts.
+- **Profil** — existiert am aufgelösten Profilpfad keine Datei, bietet `quickstart`
+  an, ein Starterprofil anzulegen (unter `--yes`, in einer nicht interaktiven Shell
+  oder mit `--format json` geschieht das automatisch), und benennt die
+  Platzhalter-Identitätsfelder, die Sie anpassen sollten.
+- **Vorschau + Bestätigung** — bei `--harness all` werden die Ziele unter zwei
+  Überschriften aufgeführt (Projektwurzel bzw. Ihr Home-Verzeichnis), und ein
+  interaktiver Lauf bestätigt, bevor er außerhalb des Projekts schreibt. Ein einzeln
+  benannter Harness wird ohne Vorschau und ohne Nachfrage installiert. `--yes`, eine
+  nicht interaktive Shell und `--format json` fahren ohne Nachfrage fort. Lehnen Sie
+  die Vorschau für `--harness all` ab, bricht die Installation ab, bevor sie schreibt;
+  ein in Schritt 1 angelegtes Starterprofil bleibt erhalten.
+- **Installation** — Fähigkeiten, die ein Harness nicht nativ unterstützt, werden als
+  ein gruppierter Hinweis je Harness zusammengefasst (übergeben Sie `--verbose` für die
+  Details je Fähigkeit); die vollständige Menge steht immer im warnings-Array von
+  `--format json`.
+- **Nächster Schritt** — die Terminalausgabe nennt die Folgebefehle (`apothem
+  verify …`, `apothem doctor`).
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zu installierender Harness-Adapter oder `all` für das registry-weite Set (Standard: `all`). |
-| `--profile PATH` | Pfad zum YAML des geteilten Profils. Standard ist `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Standard ist das aktuelle Verzeichnis. |
-| `--yes` | Führt die vollständige geführte Sequenz nicht-interaktiv aus (überspringt jede Eingabeaufforderung). |
+| `--harness NAME` | Zu installierender Harness-Adapter oder `all` für die registry-weite Menge. Kein Standardwert: Ein interaktiver Lauf fragt nach; ein nicht interaktiver Lauf muss die Option übergeben. |
+| `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. Standard: das aktuelle Verzeichnis. |
+| `--yes` | Führt die vollständige geführte Abfolge nicht interaktiv aus (überspringt jede Abfrage). |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
-| `--verbose`, `-v` | Gibt die Begründung jeder nicht projizierten Capability statt des gruppierten Hinweises aus. |
+| `--verbose`, `-v` | Gibt die Begründung jeder nicht projizierten Fähigkeit aus statt des gruppierten Hinweises. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
 
-`--format json` gibt ein einzelnes Dokument aus, das jeden geführten Schritt zusammenfasst:
+`--format json` gibt ein einzelnes Dokument aus, das jeden geführten Schritt
+zusammenfasst:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "quickstart",
   "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
@@ -63,10 +96,10 @@ Es setzt sich aus denselben Bausteinen zusammen, die der Befehl `install` verwen
 ## Beispiele
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## Exit-Codes
@@ -75,11 +108,12 @@ apothem quickstart --json
 |---|---|
 | 0 | Geführter Lauf abgeschlossen |
 | 1 | Erwarteter Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
-| 2 | Teilweise Stapel-Materialisierung nach mindestens einem Schreibvorgang |
+| 2 | Teilweise Batch-Materialisierung nach mindestens einem Schreibvorgang |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
-- [apothem install](/docs/cli-reference/install) — materialisiert einen Harness aus dem geteilten Profil
+- [apothem install](/docs/cli-reference/install) — materialisiert einen Harness aus dem gemeinsamen Profil
 - [apothem verify](/docs/cli-reference/verify) — bestätigt, dass eine Installation aktiv ist
-- [apothem doctor](/docs/cli-reference/doctor) — Gesundheit von Umgebung und Installation
+- [apothem doctor](/docs/cli-reference/doctor) — Zustand von Umgebung und Installation
 - [Erste Schritte](/docs/install) — vollständige Installationsanleitung

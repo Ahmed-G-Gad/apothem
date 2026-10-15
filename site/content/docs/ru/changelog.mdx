@@ -463,6 +463,70 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   gives the same result as on PowerShell 7.2 and later: a valid signature
   passes, a missing maintainer key gets key-import guidance, and an unsigned
   or tampered tag aborts.
+- **Translated release and security pages match their English pages again.**
+  In all eleven translations, the release-recovery runbook still told readers
+  to reset `main` to a safety tag, force-push it, and delete a malformed
+  release and its tag. The English runbook and the release-engineering policy
+  forbid all three: `main` is never force-pushed, and no published tag, GitHub
+  Release or npm version is deleted, moved or reused. The translated policy
+  also lacked its "Release model: additive" subsection, and the translated
+  branch-protection page listed settings that are not live. Those three pages,
+  the release-cycle, solo-maintainer merge and publisher-account runbooks, the
+  runbooks index, the Scorecard posture page and the security index are
+  translated again from their current English text in every language, and the
+  site no longer marks them out of date.
+- **Every translated docs page matches its English page again.** The other 66
+  pages in each language, 726 in all, were translations of older English text.
+  For example, the translated quickstart said `apothem doctor` fails when a
+  harness is not installed, where it now lists that harness and passes, and
+  the translated installer-variables page lacked `APOTHEM_VERIFY`,
+  `APOTHEM_RELEASE_BASE` and `NO_COLOR`. These pages are translated again from
+  their current English text in all eleven languages, and no page is marked out
+  of date. Links to a section of a translated page now reach that section: they
+  had pointed at English heading names the translated pages do not use. The
+  translated source-layout, conformity-gate and pipeline pages now show the
+  generated tables their English pages carry.
+- **Install runs under a Microsoft Store Python.** The interpreter resolver
+  rejected the Python that was running it whenever its path contained
+  `WindowsApps`, which is the path the Store build of CPython reports for
+  itself. So `apothem install`, `update` and `diff` for Claude Code and Qwen
+  Code stopped with a traceback ending in `no real CPython >= 3.10 interpreter
+  found`. The resolver now uses that interpreter as it reports itself. Its
+  search of `PATH` still skips the Store launcher stub.
+- **English docs pages state what the code does.** Translators of the docs
+  reported 44 statements that could lead a reader to act wrongly. Seven had
+  been corrected already; the other 37 are fixed on 33 pages. For example,
+  `APOTHEM_PYTHON` is tried first and the npm shim falls back to `python3`,
+  `python` and `py -3` when it fails, so it does not skip the probe.
+  `apothem diff` rejects `all`. `apothem rollback` fails with
+  `rollback.no_record` for a harness with no recorded install and carries on
+  with the others. `apothem update --harness glm` writes `glm.toml` only when
+  the file is missing. Eight light-mode brand colors fall below WCAG AA
+  against white text, and no dark-mode color reaches it. `publish-npm.yml`
+  runs on the tag push, with manual dispatch as the fallback. The
+  conformity-gate pages call M2 reasoned and M3, M12 and M15 part mechanical,
+  and say the semver-stability validator runs on its own, not through the
+  gate. The uninstall page now covers the VS Code-family extension, the
+  command-line bootstraps and the direct engine.
+- **Docs pages say what each uninstall removes, and fix 132 more
+  statements.** Translators of two further rounds sent 570 reports, which
+  merge into 171 distinct statements. Each was checked against the code.
+  113 are fixed, 50 read two ways but lead no reader to act wrongly, so
+  their wording stays, 3 were already correct, and 5 wait on a maintainer
+  decision. Checking turned up 19 more, all fixed, so 132 statements are
+  corrected on 55 pages. Uninstall no longer "removes the native config
+  files" on every harness page: each page says what is removed, what stays
+  and what is backed up under `~/.apothem/backups/` first. Adapters that
+  merge into a shared file strip only their managed block or their own
+  keys. Uninstalling the last harness at an install root also backs up and
+  removes the `memory/`, `contexts/` and `learning/` stores, and never
+  touches `plans/`. `apothem verify` takes `--harness all`, the installers
+  write the `apothem` shim into a directory and never edit `PATH`, and the
+  npm shim and the installers probe for Python with different lists. The
+  cognitive-identity page says Filters 1 and 5 always run and Filters 2 to
+  4 apply to non-trivial decisions. CI does not run markdownlint. These
+  pages are translated again from their current English text in all eleven
+  languages.
 
 ### Security
 

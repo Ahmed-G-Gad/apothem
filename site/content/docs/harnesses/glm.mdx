@@ -9,12 +9,13 @@ description: "Apothem harness adapter for GLM (Z.ai) as a configurable model bac
 **Status:** GA
 **Native config:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
+GLM (Z.ai) is a **model backend**, not a coding tool of its own. Z.ai ships no
+first-party GLM command line; instead, a tool that speaks the Anthropic-compatible
 or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+and a key. Apothem still counts GLM among its harness adapters, so you select it
+with `--harness glm` like any other. The `glm` adapter writes a provider
+configuration file that records both compatibility surfaces so any compatible
+tool can be wired to the GLM model family.
 
 ## Installation
 
@@ -32,19 +33,21 @@ endpoints and operator-configurable placeholders.
 The provider file records two backends. The Anthropic-compatible backend uses
 the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
 protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The same env table lists
-`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, and
-`ANTHROPIC_DEFAULT_HAIKU_MODEL`, which map the tool's opus, sonnet, and haiku
-roles to GLM models. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries `<GLM_MODEL_ID>`
+and optionally `API_TIMEOUT_MS`. The `[backends.anthropic_compatible.env]` table
+in the file lists those variables and also `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+`ANTHROPIC_DEFAULT_SONNET_MODEL`, and `ANTHROPIC_DEFAULT_HAIKU_MODEL`, which map
+the tool's opus, sonnet, and haiku roles to GLM models. The OpenAI-compatible
+backend uses the base URL `https://api.z.ai/api/coding/paas/v4`. The auth token
+is a placeholder you replace with your own Z.ai key — Apothem never writes a
+real secret. Model ids are version-volatile, so Apothem pins none; the file
+carries `<GLM_MODEL_ID>`
 placeholders you fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+[Z.ai documentation](https://docs.z.ai/devpack/tool/claude). Nothing from the
+shared profile goes into this file; it is a fixed template.
 
 ## Compatibility notes
 
-Because GLM is a backend rather than a harness, it exposes no surface for
+Because GLM is a backend rather than a coding tool, it exposes no surface for
 rules, commands, skills, or hooks — the adapter writes only the backend
 provider file and nothing else. Your Z.ai key and your model-id choices stay
 operator-owned. The vendor surface conventions the adapter relies on are pinned
@@ -73,10 +76,10 @@ The verify command confirms that:
 apothem update --harness glm --project /path/to/project
 ```
 
-The provider file is yours once it exists. `install` writes the template only
-when `.apothem/providers/glm.toml` is absent, and neither `install` nor `update`
-ever overwrites it afterwards, so your key reference and model choices survive
-every re-run. To pick up a newer template, move your file aside, run `update`,
+The provider file is yours once it exists. `install` and `update` both write the
+template only when `.apothem/providers/glm.toml` is absent, and neither ever
+overwrites it afterwards, so your key reference and model choices survive every
+re-run. To pick up a newer template, move your file aside, run `update`,
 and copy your values into the new file.
 
 ## Uninstalling
@@ -101,8 +104,8 @@ python -m apothem.conformity.gate --all .
 | Symptom | Fix |
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| Verification failed | The provider file is missing or empty. If it is missing, run `apothem update --harness glm --project /path/to/project`. If it is empty, move `.apothem/providers/glm.toml` aside first, then run `update` and verify again |
+| Unexpected config content | Edit `.apothem/providers/glm.toml` directly; Apothem never rewrites an existing file, and the shared profile adds nothing to it. For a fresh template, move the file aside and run `apothem update --harness glm --project /path/to/project` |
 
 ## Configuration knobs
 

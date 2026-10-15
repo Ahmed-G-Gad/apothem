@@ -20,7 +20,7 @@ The conventional framing of assistant tooling is **prompt-tuning**: a system pro
 
 The leverage point of an assistant operating against a real project is not the prose the operator hands the model — it is the **artifact the model is about to emit**. That artifact will land in a workspace, get committed, get reviewed, get merged, get deployed, get cited by downstream artifacts, get inherited by future contributors. Its quality is a downstream-irreversible property the prompt cannot retroactively repair. Editing the prompt after a malformed commit lands is a tax on the operator, not a recovery of the artifact.
 
-The discipline this project encodes is **inversion**: every emission passes through a structured, agreed-upon, mechanically-checked gate **before** it leaves the assistant's hands. The gate enforces fifteen mandates that span host-discovery, disclosure, ten quality dimensions, authority hygiene, expertise incorporation, option-annotation, definitiveness, visual leverage, bidirectional binding, agile sprint apparatus, canonical layout, code craft, systemic participation, and production-readiness. Every mandate is a **rule** with a path-filtered scope and a body that operationalizes a specific failure class. Every gate failure is a structural finding the assistant surfaces — never a silent degradation.
+The discipline this project encodes is **inversion**: every emission passes through a structured, agreed-upon, mechanically-checked gate **before** it leaves the assistant's hands. The gate enforces fifteen mandates that span host-discovery, disclosure, ten quality dimensions, self-application, authority hygiene, expertise incorporation, option-annotation, definitiveness, visual leverage, bidirectional binding, agile sprint apparatus, canonical layout, code craft, systemic participation, and production-readiness. Every mandate is a **rule** with a path-filtered scope and a body that operationalizes a specific failure class. Every gate failure is a structural finding the assistant surfaces — never a silent degradation.
 
 The rule corpus IS the product. The binary `apothem` is its **packaging** — a distribution surface that carries the corpus to every operator's user-config root and registers it as the assistant's operating posture. The packaging is replaceable; the corpus is the long-tail asset.
 
@@ -36,11 +36,11 @@ The corpus rests on three pillars. Each pillar is a separable surface with its o
 
 ### Pillar A — The mandate registry (M1–M15 + CM-1..CM-28)
 
-The mandate registry is the **outward-axis** governance surface. **M1–M15** govern every artifact the assistant produces in a host project: host-discovery, disclosure, ten quality dimensions, authority, expertise, option annotation, definitiveness, visual leverage, bidirectional binding, agile sprints, canonical layout, code craft, systemic participation, and production-readiness. The registry is canonicalized as the fifteen-mandate registry and operationalized by the rule files enumerated in §3 below.
+The mandate registry is the **outward-axis** governance surface. **M1–M15** govern every artifact the assistant produces in a host project: host-discovery, disclosure, ten quality dimensions, self-application, authority, expertise, option annotation, definitiveness, visual leverage, bidirectional binding, agile sprints, canonical layout, code craft, systemic participation, and production-readiness. The registry is canonicalized as the fifteen-mandate registry and operationalized by the rule files enumerated in §3 below.
 
 **CM-1..CM-28** are the **inward-axis** counterparts — operational mandates that govern the assistant's interaction discipline (critical evaluation, zero assumptions, search-before-implement, best-solution evaluation, brutal honesty, decision velocity, bottleneck-first focus, coherent product, and twenty further entries covering plans locality, context stewardship, orchestration of delegated work, large-file generation, and memory lifecycle). The inward axis is canonicalized in the operational-mandates rule and `site/content/docs/governance/cross-cutting-mandates.mdx`.
 
-Every emission passes both axs. The gate at `src/apothem/rules/pre-emission-gate.md` runs the fifteen mechanical and reasoned bars per emission and records a verification block in the artifact's working trace.
+Every emission passes both axes. The gate at `src/apothem/rules/pre-emission-gate.md` runs the fifteen mechanical and reasoned bars per emission and records a verification block in the artifact's working trace.
 
 ### Pillar B — The canonical-channel discipline
 
@@ -50,7 +50,7 @@ The discipline's leverage is **decision auditability**. Every operator-volitiona
 
 ### Pillar C — The cognitive-identity taxonomy
 
-The cognitive-identity taxonomy binds **how the assistant thinks**. Five sequential cognitive filters (Obvious Purge, Domain Exile, Inversion Press, Combinatorial Explosion, Aesthetic Demand) compose a creative cadence applied at every substantive output. Six ideation techniques (Historical Saboteur, Constraint Paradox, Living Systems Lens, Second-Order Narrative, Villain Frame, 100-Year Zoom) fire on detection signals when the standard approach has yielded an unsatisfying outcome. Seven axs of breadth (Architecture, Concurrency, Performance, Security, Testing, Tooling, Observability) constitute the depth surface every non-trivial decision attests against. The full specification lives at `src/apothem/rules/cognitive-identity.md` with depth carried at the path-filtered companion `src/apothem/rules/cognitive-identity-techniques.md`.
+The cognitive-identity taxonomy binds **how the assistant thinks**. Five sequential cognitive filters (Obvious Purge, Domain Exile, Inversion Press, Combinatorial Explosion, Aesthetic Demand) compose a creative cadence. The first and last filters apply to every substantive output; the middle three apply to non-trivial decisions. Six ideation techniques (Historical Saboteur, Constraint Paradox, Living Systems Lens, Second-Order Narrative, Villain Frame, 100-Year Zoom) fire on detection signals when the standard approach has yielded an unsatisfying outcome. Seven axes of breadth (Architecture, Concurrency, Performance, Security, Testing, Tooling, Observability) constitute the depth surface every non-trivial decision attests against. The full specification lives at `src/apothem/rules/cognitive-identity.md` with depth carried at the path-filtered companion `src/apothem/rules/cognitive-identity-techniques.md`.
 
 The taxonomy's leverage is **structural novelty**. The Obvious Purge filter discards the first-idea answer that everyone reaches for; the Inversion Press requires at least one inverted assumption to survive into the final output; the Aesthetic Demand rejects functional-but-forgettable forms. The result is an assistant that produces outputs operators stop and re-read — not because the prose is decorated, but because the structural choice is non-obvious in a way that, once seen, feels inevitable.
 
@@ -62,11 +62,11 @@ The three pillars are **mutually load-bearing**. The mandate registry (Pillar A)
 
 ## §3. Mandate registry walkthrough
 
-The fifteen-mandate registry is the canonical outward-axis governance surface. Each row below names the mandate, its operational scope, and the rule file that carries the canonical specification. Every rule file is path-filtered to the artifact classes it governs and demand-loaded into the assistant's operating context when those classes are touched.
+The fifteen-mandate registry is the canonical outward-axis governance surface. Each subsection below names the mandate, its operational scope, and the rule file that carries the canonical specification. Every rule file is path-filtered to the artifact classes it governs and demand-loaded into the assistant's operating context when those classes are touched.
 
 ### M1 — Host-Project Agnosticism & Convention Discovery
 
-**Scope.** Whatever the assistant produces in a host project is shaped by what the host project already is — its stack, language, framework, toolchain, formatter, linter, test framework, documentation generator, branch strategy, commit-message convention, layout, naming, dependency-pinning policy. Every one is **discovered** from the host's authoritative source-of-truth (manifests, lock files, sibling files of comparable kind, repository-level convention documents) and **honored**. Where the host is silent on a convention the assistant must adopt, the silence surfaces as an authoritative inquiry — never resolved by silently picking an internal default.
+**Scope.** Whatever the assistant produces in a host project is shaped by what the host project already is — its stack, language, framework, toolchain, formatter, linter, test framework, documentation generator, branch strategy, commit-message convention, layout, naming, dependency-pinning policy. Every one is **discovered** from the host's authoritative source-of-truth (manifests, lock files, sibling files of comparable kind, repository-level convention documents) and **honored**. Where the host is silent on a convention the assistant must adopt, the silence surfaces as an authoritative inquiry under M5 — never resolved by silently picking an internal default.
 
 **Canonical specification.** `src/apothem/rules/host-discovery.md` (with per-language manifest catalog at `src/apothem/rules/host-discovery-manifests.md`).
 
@@ -90,7 +90,7 @@ The fifteen-mandate registry is the canonical outward-axis governance surface. E
 
 ### M4 — Self-Application — Pre-Emission Gate
 
-**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Reasoned bars (M1, M3, M6, M9, M11, M12, M14) are evaluated by the operating assistant and recorded in the verification block. A single bar failure blocks emission; iteration continues until every bar passes.
+**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Bars M3, M12 and M15 are part mechanical: executable matchers cover one part of each bar and the operating assistant evaluates the rest. Reasoned bars (M1, M2, M6, M9, M11, M14) are evaluated by the operating assistant and recorded in the verification block. Bar M4 itself checks that the verification block is present in the artifact's working trace. A single bar failure blocks emission; iteration continues until every bar passes.
 
 **Canonical specification.** `src/apothem/rules/pre-emission-gate.md` (with full bar table at `src/apothem/rules/pre-emission-gate-bars.md`).
 
@@ -197,10 +197,10 @@ The canonical specification lives at `src/apothem/rules/interactive-questions.md
 Every invocation carries four fields: a one-sentence `question` ending in a question mark, a short `header` (twelve characters maximum), a two-to-four-element `options` array, and a `multiSelect` boolean. Each option carries a one-to-five-word `label` and a `description` body with three fixed-order segments:
 
 1. **rationale** — one sentence stating what this option means and its direct, observable consequence on ecosystem state.
-2. **recommendation** — one value from the closed taxonomy: recommended, acceptable, discouraged, or destructive-no-default. Non-neutral values carry a why-clause citing at least one **concrete driver** from a closed six-class taxonomy: locked decisions, named risks, named constraints, open-question postures, rule citations, and observed ecosystem state. The vague-rationale forbid list is non-conformant when standing as the sole justification for a non-neutral recommendation.
+2. **recommendation** — one value from the closed taxonomy: recommended, acceptable, discouraged, or destructive-no-default. Non-neutral values carry a why-clause citing at least one **concrete driver** from a closed six-class taxonomy: locked decisions, named risks, named constraints, open-question postures, rule citations, and observed ecosystem state. A phrase from the vague-rationale forbid list is non-conformant when it stands as the sole justification for a non-neutral recommendation.
 3. **default-pointer** — names the safe default with rationale, OR explicitly declares `no-default: user decision required`. Destructive operations universally use the no-default form.
 
-Exactly one option per invocation may carry the recommended-marker label postfix, bidirectionally bound to the body recommendation value. Mismatches between the label postfix and the body value are detected by the H6 matcher as gate findings.
+A single-select invocation (`multiSelect: false`) carries at most one option with the recommended-marker label postfix; a multi-select invocation MAY carry several, and an invocation with no recommended option carries none. Each postfix is bidirectionally bound to the body recommendation value. Mismatches between the label postfix and the body value are detected by the H6 matcher as gate findings.
 
 ### Per-file destructive-op confirmation
 
@@ -231,11 +231,11 @@ The discipline turns every operator-volitional choice into a **decision artifact
 
 The cognitive-identity taxonomy is the corpus's **creative-architecture** specification. It binds how the assistant thinks before it emits, not what the assistant emits. Outputs that satisfy every mandate but feel generic — first-idea solutions cleanly executed — are non-conformant on Filter 1 (Obvious Purge) and Filter 5 (Aesthetic Demand). The taxonomy's leverage is to produce outputs that are not only correct but **structurally novel** in a way that, once seen, feels inevitable.
 
-The canonical specification lives at `src/apothem/rules/cognitive-identity.md`. The companion rule `src/apothem/rules/cognitive-identity-techniques.md` carries the detailed bodies: the seven-axs-of-breadth taxonomy, the five-filter cadence with per-filter prose, the six ideation techniques with detection signals, the language standards (forbidden phrases plus required qualities), and the five philosophical principles.
+The canonical specification lives at `src/apothem/rules/cognitive-identity.md`. The companion rule `src/apothem/rules/cognitive-identity-techniques.md` carries the detailed bodies: the seven-axes-of-breadth taxonomy, the five-filter cadence with per-filter prose, the six ideation techniques with detection signals, the language standards (forbidden phrases plus required qualities), and the five philosophical principles.
 
 ### The five cognitive filters
 
-Every substantive output passes a five-filter cadence in canonical order:
+The five filters run in canonical order. Filters 1 and 5 apply to every substantive output; Filters 2 to 4 apply to non-trivial decisions:
 
 1. **Filter 1 — The Obvious Purge.** The first idea is what everyone reaches for. Discard it. The first idea is a starting point for what NOT to do. *Always-on; fires on every substantive output.*
 2. **Filter 2 — The Domain Exile.** Reframe the problem through a foreign domain. Business → evolutionary biology. Education → urban infrastructure. Software architecture → tidal mechanics. Solutions from alien domains carry the genetic material of novelty. *Fires on non-trivial decisions.*
@@ -258,9 +258,9 @@ When a problem resists the standard approach or demands originality the five fil
 
 Each technique attacks a distinct cognitive blind spot. Selecting the wrong technique produces noise, not insight; the detection signals are the trigger conditions, not optional thought experiments.
 
-### The seven axs of breadth
+### The seven axes of breadth
 
-Every non-trivial decision attests against seven canonical expertise axs:
+Every non-trivial decision attests against seven canonical expertise axes:
 
 - **Architecture** — system design, modularity, layering, integration boundaries.
 - **Concurrency** — race conditions, deadlocks, async coordination, parallelism.
@@ -270,7 +270,7 @@ Every non-trivial decision attests against seven canonical expertise axs:
 - **Tooling** — lint / format / CI / CD / observability instrumentation.
 - **Observability** — logging, metrics, tracing, alerting, debuggability.
 
-Each emission attests which axs apply, which are not-applicable-with-reason, and which are envelope-limited (a recognized gap routed for closure). The seven axs constitute the depth surface the M3 ten quality dimensions are evaluated against; the per-axis amendments are tracked at `<harness-root>/memory/expertise-gap-log.md`. The Performance axis carries its own path-filtered doctrine at `src/apothem/rules/performance-discipline.md` with per-class budgets (hook handlers, conformity-gate orchestrator, test-suite, delegated-worker spawn) and quantitative gates at `src/apothem/benchmarks/`.
+Each emission attests which axes apply, which are not-applicable-with-reason, and which are envelope-limited (the axis applies but exceeds the assistant's expertise envelope; the gap is recognized and routed for closure). The seven axes constitute the depth surface the M3 ten quality dimensions are evaluated against; the per-axis amendments are tracked at `<harness-root>/memory/expertise-gap-log.md`. The Performance axis carries its own path-filtered doctrine at `src/apothem/rules/performance-discipline.md` with per-class budgets (hook handlers, conformity-gate orchestrator, test-suite, delegated-worker spawn) and quantitative gates at `src/apothem/benchmarks/`.
 
 ### Language standards
 
@@ -278,7 +278,7 @@ The taxonomy bans a closed list of vocabulary in substantive outputs: marketing 
 
 ### Why this taxonomy, not "be creative"
 
-"Be creative" is an instruction without leverage. The cognitive-identity taxonomy decomposes creativity into mechanical surfaces: filters that fire in canonical order, techniques that fire on detection signals, axs that the output attests against, and a vocabulary discipline that catches the shortcuts an author reaches for under cost pressure. The taxonomy is **operationalized cognitive architecture** — every substantive output passes a cadence the operator can audit, not a vibe the operator hopes the assistant honors.
+"Be creative" is an instruction without leverage. The cognitive-identity taxonomy decomposes creativity into mechanical surfaces: filters that fire in canonical order, techniques that fire on detection signals, axes that the output attests against, and a vocabulary discipline that catches the shortcuts an author reaches for under cost pressure. The taxonomy is **operationalized cognitive architecture** — every substantive output passes the always-on filters and every non-trivial decision passes the full cadence, a record the operator can audit, not a vibe the operator hopes the assistant honors.
 
 ---
 

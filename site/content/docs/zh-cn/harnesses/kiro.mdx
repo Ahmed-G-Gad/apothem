@@ -2,14 +2,14 @@
 title: "Kiro"
 description: "适用于 Kiro（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "409a9949239d4b5f"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** AWS
 **安装名称：** `kiro`
 **状态：** GA
-**平台原生配置：** `<project>/.kiro/steering/apothem-rules.md`
+**原生配置：** `<project>/.kiro/steering/apothem-rules.md`
 
 ## 安装
 
@@ -17,22 +17,19 @@ sourceHash: "409a9949239d4b5f"
 apothem install --harness kiro --project /path/to/project
 ```
 
-该适配器根据共享的 Apothem 规则与治理界面，写入一个项目级的 Kiro 引导文件。
+适配器根据共享的 Apothem 规则和治理表面，写入一个项目级的 Kiro 引导文件。
 
 **写入的文件：** `<project>/.kiro/steering/apothem-rules.md`
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update`
-运行时渲染项目引导文件。共享配置档案是事实来源；在下一次同步替换 Apothem
-托管的内容之前，对生成文件的项目本地编辑会被备份。
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目引导文件。共享配置档案是事实来源；在下一次同步替换 Apothem 管理的内容之前，对生成文件所做的项目本地编辑会被备份。
+
+该文件以其 `inclusion: always` 前置元数据开头，因为 Kiro 要求包含配置是文件中的第一部分内容。Apothem 管理的块紧随其后；你在该块之后添加的文本在每次同步时都会被保留。
 
 ## 兼容性说明
 
-Kiro 的引导界面在 `.kiro/steering/` 下，属于项目级。适配器写入一个带有
-`inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不
-覆盖 Kiro 由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。
-Kiro 规格（`.kiro/specs/`）和智能体钩子由操作者拥有；Apothem 不写入它们。
+Kiro 的引导表面位于 `.kiro/steering/` 下，作用范围为项目级。适配器写入一个带有 `inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不覆盖 Kiro 中由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。Kiro 规格（`.kiro/specs/`）和智能体钩子归操作者所有；Apothem 不写入它们。
 
 ## 验证
 
@@ -42,9 +39,9 @@ apothem verify --harness kiro --project /path/to/project
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必填字段都已存在。
-3. 适配器特定的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
+3. 适配器专属的验证例程报告成功。
 
 ## 更新
 
@@ -52,7 +49,7 @@ verify 命令确认：
 apothem update --harness kiro --project /path/to/project
 ```
 
-从当前的共享配置档案状态重新派生项目引导文件。
+根据当前的共享配置档案状态，重新派生项目引导文件。
 
 ## 卸载
 
@@ -60,10 +57,9 @@ apothem update --harness kiro --project /path/to/project
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `<project>/.kiro/steering/apothem-rules.md` 中移除 Apothem 块，以及 Apothem 写在该块上方的前置元数据，并保留文件中的其他任何文本。只有当文件中不再剩下其他内容时，才会删除该文件。更改之前，会在 `~/.apothem/backups/` 下保存该文件的一份带时间戳的副本；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -82,3 +78,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

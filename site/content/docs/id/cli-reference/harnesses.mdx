@@ -2,11 +2,11 @@
 title: "harnesses"
 description: "Referensi CLI untuk grup perintah apothem harnesses."
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "e2eac8d28543091e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Mendaftar dan memeriksa adapter harness yang terdaftar.
+Mencantumkan dan memeriksa adapter harness yang terdaftar.
 
 `harnesses` adalah grup perintah dengan dua subperintah: `list` dan `show`.
 
@@ -24,30 +24,31 @@ apothem harnesses show NAME
 
 ### `harnesses list`
 
-Mendaftar semua adapter harness yang terdaftar.
+Mencantumkan semua adapter harness yang terdaftar.
 
 | Opsi | Deskripsi |
 |---|---|
-| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
-| `--json` | Singkatan dari `--format json`. |
-| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
 | `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ### `harnesses show NAME`
 
 Menampilkan detail untuk adapter harness tertentu. `NAME` adalah pengidentifikasi
-harness dalam kebab-case; jalankan `apothem harnesses list` untuk melihat pengidentifikasi yang tersedia.
+harness dalam kebab-case; jalankan `apothem harnesses list` untuk melihat
+pengidentifikasi yang tersedia.
 
 | Opsi | Deskripsi |
 |---|---|
 | `NAME` | Adapter harness yang akan diperiksa (argumen posisional wajib). |
-| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
-| `--json` | Singkatan dari `--format json`. |
-| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
 | `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ## Contoh
@@ -86,9 +87,11 @@ zed
 | Kode | Arti |
 |---|---|
 | 0 | Berhasil |
-| 1 | Harness tidak ditemukan (`harnesses show` dengan `NAME` yang tidak dikenal) |
+| 1 | Harness tidak ditemukan (`harnesses show` dengan `NAME` yang tidak dikenal), atau setiap adapter gagal dimuat atau melapor (`harnesses list`) |
+| 2 | Setidaknya satu adapter tercantum, tetapi setidaknya satu gagal melapor (`harnesses list`) |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan seluruh sistem
-- [apothem verify](/docs/cli-reference/verify) — memeriksa pemasangan harness tertentu
+- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan di seluruh sistem
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan adapter harness

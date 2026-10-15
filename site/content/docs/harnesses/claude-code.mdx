@@ -104,7 +104,9 @@ apothem verify --harness claude-code
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -125,8 +127,15 @@ sentinels.
 apothem uninstall --harness claude-code
 ```
 
-Removes the native config files written by the adapter and strips the Apothem
-block from `CLAUDE.md`, leaving your own prose in place.
+Removes the Apothem block from `~/.claude/CLAUDE.md` and keeps any other text
+in it. The file is deleted only when nothing else remains in it. Removes the
+entries the adapter added to `~/.claude/settings.json` (your own permission
+rules, keys, and hook handlers stay, and the file is deleted only when Apothem
+created it and nothing of yours is left). Also removes the Apothem files in
+`~/.claude/agents/`, `~/.claude/rules/`, `~/.claude/skills/`,
+`~/.claude/statuslines/`, `~/.claude/output-styles/`, and
+`~/.claude/.apothem/support/`; other files in those folders stay. Each file is
+backed up under `~/.apothem/backups/` before it is changed or removed.
 The installed `apothem` package and source repository are unaffected.
 
 ## Conformity gate

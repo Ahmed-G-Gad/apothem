@@ -1,8 +1,8 @@
 ---
 title: "Markenpalette"
-description: "Apothem-Kernmarkenfarben und die siebzehn Harness-Markenfarben. Die einzige Quelle der Wahrheit sind die kanonischen Design-Tokens in assets/design-tokens.css; die Website spiegelt diese Werte."
+description: "Apothem-Kernmarkenfarben und die fünfzehn Harness-Markenfarben, die auf der Seite „Harness-Farben“ definiert sind. Die einzige Quelle der Wahrheit für die Kernfarben sind die kanonischen Design-Tokens in assets/design-tokens.css; die Website spiegelt diese Werte."
 machineTranslated: true
-sourceHash: "b6a2525d651606d6"
+sourceHash: "7bb26cf570fc6357"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,35 +14,24 @@ semantischen Farbtöne — gehört zu den Design-Tokens in
 (und ihrem Spiegel `assets/design-tokens.json`). Das Website-Theme in
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
 spiegelt diese Token-Werte in die CSS-Variablen, die das Fumadocs-Theme konsumiert. Jeder
-Wert unten lässt sich auf einen kanonischen Rampenschritt zurückführen.
+Wert unten ist ein Schritt der Slate- oder Emerald-Rampe in diesen Design-Tokens; ein Schrittname wie slate-600 bezeichnet den Wert dieser Rampe.
 
 | Rolle | Token (CSS) | Heller Modus | Dunkler Modus | Verwendung |
 |---|---|---|---|---|
-| Primär | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Überschriften, Navigationstext, primäre Leseflächen. |
-| Akzent | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Aktive Links, Fokusringe, ausgewählte Navigation. |
-| Fließtext | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Standard-Fließtext. |
-| Textgrund | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Standardhintergrund. |
-| Navigationsgrund | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Kopfzeilen- und Navigationsbänder. |
-| Codegrund | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Inline-/Block-Code-Oberflächen. |
+| Primär | `--apothem-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Überschriften, Navigationstext, primäre Leseflächen. |
+| Akzent | `--apothem-accent-text` | emerald-700 `#047857` | emerald-400 `#34d399` | Aktive Links, Fokusringe, ausgewählte Navigation. |
+| Fließtext | `--apothem-text-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Standard-Fließtext. |
+| Textgrund | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | Standardhintergrund. |
+| Navigationsgrund | `--apothem-surface-sunken` | slate-100 `#eef2f7` | slate-950 `#080c15` | Kopfzeilen- und Navigationsbänder. |
 
 ## Harness-Palette
 
-Die Harness-Farben befinden sich unter [Harness-Farben](/docs/brand/harness-colors). Die
-geometrische Abbildung auf das Sechseck der Apothem-Bildmarke — ihren Mittelknoten und
-ihren Endknoten — ist in den Markenabschnitt eingebettet. Die CSS-Quelle der Wahrheit in
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-verdrahtet jedes Token mit seiner CSS-Variablen.
+Die Harness-Farben befinden sich unter [Harness-Farben](/docs/brand/harness-colors). Die Apothem-Bildmarke trägt keine Harness-Farbe; ihr Sechseck, ihr Mittelknoten und ihre Endknoten sind im Markenabschnitt von [`assets/DESIGN-SYSTEM.md`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/DESIGN-SYSTEM.md) beschrieben. Die Harness-Farben sind auf jener Seite definiert, nicht in den Design-Tokens und nicht in [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), die nur die Kernpalette enthalten.
 
 ## Verwendung in der Dokumentation
 
-Die Palette ist über das globale Stylesheet `site/app/global.css` verdrahtet, das vom
-Root-Layout importiert wird. Die Varianten für hellen und dunklen Modus wechseln mit dem
-Zustand der `.dark`-Klasse des Themes.
+Die Palette ist über das globale Stylesheet `site/app/global.css` verdrahtet, das vom Root-Layout importiert wird. Die Varianten für hellen und dunklen Modus wechseln mit dem Zustand der `.dark`-Klasse des Themes.
 
 ## Aktualisierungen
 
-Die Palette wird nur aktualisiert, wenn sich eine Kernfarbe ändert (slate / emerald) oder
-ein Harness eine Markenfarbenänderung stromaufwärts ratifiziert. Änderungen je Harness
-propagieren atomar über `site/app/global.css`,
-[Harness-Farben](/docs/brand/harness-colors) und jeden betroffenen SVG-Master unter
-`assets/src/`.
+Die Palette wird nur aktualisiert, wenn sich eine Kernfarbe ändert (slate / emerald) oder ein Harness vorgelagert eine Markenfarbenänderung ratifiziert. Änderungen je Harness propagieren atomar über [Harness-Farben](/docs/brand/harness-colors) und jeden betroffenen SVG-Master unter `assets/src/`.

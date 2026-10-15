@@ -2,7 +2,7 @@
 title: "核心工作流"
 description: "Apothem 的四个核心工作流——配置档案、规则、计划与合规闸门。"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Apothem 提供四项核心能力：一份共享的治理配置档案、一套规
 ## 共享配置档案
 
 除非你传入 `--profile PATH`，你的 Apothem 配置档案位于
-`~/.config/apothem/profile.yaml`。它是唯一的真相来源，每个环境适配器都从中
+`~/.config/apothem/profile.yaml`。它是唯一的真相来源，每个工具适配器都从中
 派生出原生配置：
 
 ```yaml
@@ -30,7 +30,9 @@ rules:
   - "Validate external input before writing files."
 ```
 
-创建并查看配置档案：
+如果配置档案尚不存在，则先创建它，然后查看它。一键安装器和 `apothem install`
+在首次运行时已经会写入一份起始配置档案；而除非你传入 `--force`，否则
+`profile init` 会以错误停止，并保持已有文件不变。
 
 ```bash
 apothem profile init
@@ -39,8 +41,8 @@ apothem profile show --json
 
 ## 第一条规则
 
-将共享规则添加到配置档案 YAML 中，然后重新物化所选环境。当这些规则包含示例
-数据时，请使用虚构的占位值，以免任何真实身份或凭据混入共享配置档案或 CI
+将共享规则添加到配置档案 YAML 中，然后重新物化所选工具。当这些规则包含示例
+数据时，请使用虚构的占位值，以免任何真实身份或凭据落入共享配置档案或 CI
 运行中。
 
 ```bash
@@ -52,7 +54,7 @@ apothem verify --harness claude-code
 ## 第一个计划
 
 `/plan` 流水线作为斜杠命令在你的工具内运行，而不是通过 `apothem`
-二进制文件。一旦某个环境安装完成，便可从该工具的对话中启动一个计划：
+二进制文件。一旦某个工具安装完成，便可从该工具的对话中启动一个计划：
 
 ```text
 /plan-spec
@@ -64,10 +66,16 @@ apothem verify --harness claude-code
 
 ## 合规闸门
 
-从仓库根目录运行：
+在 Apothem 检出目录中运行：
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-运行所有机械化合规检查，并逐条报告通过/失败。
+脚本安装之后，运行：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+```
+
+运行所有机械化合规检查，并按关卡逐项报告通过/失败。

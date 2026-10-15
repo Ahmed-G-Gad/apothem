@@ -1,15 +1,15 @@
 ---
 title: "CodeBuddy"
-description: "适用于腾讯 CodeBuddy（GA）的 Apothem 工具适配器。"
+description: "适用于 Tencent CodeBuddy（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "b2ad522fd661cc14"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**厂商：** 腾讯
+**厂商：** Tencent
 **安装名称：** `codebuddy`
 **状态：** GA
-**平台原生配置：** `<project>/.codebuddy/rules/apothem-rules.md`
+**原生配置：** `<project>/.codebuddy/rules/apothem-rules.md`
 
 ## 安装
 
@@ -17,31 +17,17 @@ sourceHash: "b2ad522fd661cc14"
 apothem install --harness codebuddy --project /path/to/project
 ```
 
-适配器从共享的 Apothem 规则和治理界面写出一个项目范围的规则文件。
+适配器根据共享的 Apothem 规则与治理表面写入一个项目级规则文件。
 
 **写入的文件：** `<project>/.codebuddy/rules/apothem-rules.md`
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或
-`apothem update` 运行时渲染项目规则文件。CodeBuddy 将 `.codebuddy/rules/`
-下的每个 `*.md` 文件读取为带可选 YAML 前置元数据（`alwaysApply`、`paths`、
-`enabled`）的 Markdown，详见
-[CodeBuddy Rules 文档](https://www.codebuddy.ai/docs/ide/Rules)；
-Apothem 的文件携带 `alwaysApply: true`，因此治理界面在每次交互时都会应用。
-共享配置档案才是真实来源；在下一次同步替换由 Apothem 管理的内容之前，对生成
-文件的项目本地编辑会先被备份。
+适配器在每次运行 `apothem install` 或 `apothem update` 时读取 Apothem 的共享配置档案，并渲染项目规则文件。按照 [CodeBuddy Rules 文档](https://www.codebuddy.ai/docs/ide/Rules)，CodeBuddy 将 `.codebuddy/rules/` 下的每个 `*.md` 文件读取为带有可选 YAML 前置元数据（`alwaysApply`、`paths`、`enabled`）的 Markdown；Apothem 的文件携带 `alwaysApply: true`，因此治理表面在每次交互时都会生效。前置元数据是文件中的第一部分内容，由 Apothem 管理的区块紧随其后；你在该区块之后添加的文本会在每次同步时保留。共享配置档案是事实来源；在下一次同步替换由 Apothem 管理的内容之前，对生成文件的项目本地编辑会先被备份。
 
 ## 兼容性说明
 
-CodeBuddy 的规则界面在 `.codebuddy/rules/` 下按项目范围划定。适配器写出一个
-专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件
-共存。`CODEBUDDY.md` 项目记忆文件和 `.codebuddy/settings.json`（权限、MCP）
-由操作者自有；Apothem 不会写入它们。技能、命令、智能体和钩子作为约束在规则
-文件内被引用——CodeBuddy 没有为它们提供由适配器拥有的文件界面。适配器所依赖
-的厂商界面约定固定在
-`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`，对照实时的
-CodeBuddy 文档进行快照。
+CodeBuddy 的规则表面是项目级的，位于 `.codebuddy/rules/` 下。适配器写入一个专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件共存。`CODEBUDDY.md` 项目记忆文件、`.codebuddy/settings.json` 以及项目的 `.mcp.json`（MCP 服务器）归操作者所有；Apothem 不写入它们。CodeBuddy 的文档还介绍了技能、命令、子智能体和钩子；适配器不写入其中任何一项，而是在规则文件内引用相应的规范。当项目没有 `CODEBUDDY.md` 时，CodeBuddy Code 会将 `AGENTS.md` 读取为项目记忆，因此由其他适配器写入的 `AGENTS.md` 也会触达 CodeBuddy。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 CodeBuddy 文档进行快照。
 
 ## 验证
 
@@ -51,7 +37,7 @@ apothem verify --harness codebuddy --project /path/to/project
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
+1. 原生配置存在于预期路径。
 2. 受管规则文件存在且非空。
 3. 适配器专属的验证例程报告成功。
 
@@ -61,8 +47,7 @@ verify 命令确认：
 apothem update --harness codebuddy --project /path/to/project
 ```
 
-从当前的共享配置档案状态重新派生项目规则文件。`install` 和 `update`
-是幂等的——重新运行会用最新渲染的内容覆盖受管文件。
+根据共享配置档案的当前状态重新派生项目规则文件。`install` 和 `update` 是幂等的——重新运行会用最新渲染的内容覆盖受管文件。
 
 ## 卸载
 
@@ -70,10 +55,9 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-移除适配器写入的平台原生配置文件，将受管规则文件重命名为带时间戳的备份。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除 `apothem-rules.md` 中的 Apothem 块，并保留其中的其他文本。只有当文件中已无其他内容时才会删除该文件。在变更之前，会在 `~/.apothem/backups/` 下保存一份带时间戳的文件副本；项目中不会留下备份文件。共享配置档案 YAML 与 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -92,3 +76,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

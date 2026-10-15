@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Cursor-Konfiguration"
 description: "Die MDC-Regeln von Cursor unter .cursor/rules/ von Hand pflegen gegenüber dem Rendern aus Apothems geteiltem Profil."
 machineTranslated: true
-sourceHash: "129cd7c149852366"
+sourceHash: "c2a9e94f668e10b1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,11 +16,11 @@ gegenüber.
 
 | Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
-| Regeln verfassen | Jede `.mdc`-Datei unter `.cursor/rules/` von Hand schreiben | Aus dem geteilten Korpus gerendert |
+| Regeln verfassen | Jede `.mdc`-Datei unter `.cursor/rules/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | MDC-Frontmatter schreiben | `description` / `globs` / `alwaysApply` pro Datei von Hand verfassen | Vom Adapter generiert |
-| Ein einziges Regelformat halten | Von Hand zwischen MDC-Regeln und einer einzelnen `.cursorrules`-Datei wählen | Der Adapter schreibt nur MDC-Dateien von `.cursor/rules/` |
-| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
-| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness cursor` |
+| Ein einziges Regelformat beibehalten | Von Hand zwischen MDC-Regeln und einer einzelnen `.cursorrules`-Datei wählen | Der Adapter schreibt nur MDC-Dateien unter `.cursor/rules/` |
+| Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness cursor --project <path>` |
 
 ## Was Apothem verwaltet
 
@@ -34,13 +34,14 @@ Regelprosa.
 
 ## Migrationspfad
 
-1. Führe `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
-2. Verschiebe die Regeln aus deinem vorhandenen `.cursor/rules/` (und jeder `.cursorrules`)
-   in das geteilte Korpus.
-3. Führe `apothem install --harness cursor` aus, um die `.mdc`-Dateien
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschiebe die Regeln aus deinem vorhandenen `.cursor/rules/` (und alle `.cursorrules`)
+   in den gemeinsamen Korpus.
+3. Führe `apothem install --harness cursor --project <path>` aus, um die `.mdc`-Dateien
    mit korrektem MDC-Frontmatter zu rendern.
-4. Führe `apothem verify --harness cursor` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
-5. Verwende `apothem update --harness cursor` für jede spätere Änderung.
+4. Führe `apothem verify --harness cursor --project <path>` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwende `apothem update --harness cursor --project <path>` für jede spätere Änderung.
 
 ## Als Nächstes lesen
 

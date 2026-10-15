@@ -2,7 +2,7 @@
 title: "settings.json 文档"
 description: "为 Apothem 生态配置 Claude Code 的钩子执行、权限、事件、超时、Python 运行时、校验以及分层设置优先级。"
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ sourceHash: "09e70625ff5e0caf"
 
 ## 仅限 Python 的运行时
 
-每个已配置的钩子都使用 Claude Code 的 exec 形式命令结构。
-随附的模板携带 `${HARNESS_ROOT}` 令牌：
+每个已配置的钩子都使用 Claude Code 的 exec 形式命令结构。随附模板携带 `${PYTHON_BIN}` 和 `${HARNESS_ROOT}` 令牌；`apothem install` 会把 `${PYTHON_BIN}` 替换为解析后的绝对解释器路径：
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -147,9 +146,9 @@ Claude Code 通过按递增的优先级顺序组合三层来解析有效设置�
 
 | 层级 | 位置 | 是否提交？ | 理由 |
 |------|----------|------------|-----------|
-| 1. **系统** | 编译进 Claude Code 自身的 harness 默认值 | 不适用（由供应商控制） | 底线；每个操作者都继承相同的基线。 |
-| 2. **项目** | `<harness-root>/settings.json` | ✅ 已提交 | 项目共享约定：钩子、权限、MCP 服务器、状态栏接线。Apothem 源码模板位于 Claude Code 适配器的 templates 目录内。 |
-| 3. **用户本地** | `<harness-root>/settings.local.json`（gitignored）——在仓库根以 `settings.local.example.json` 作为模板 | ❌ Gitignored | 操作者专属覆盖：API 令牌、本机路径、可选启用的功能。 |
+| 1. **系统** | 编译进 Claude Code 自身的工具默认值 | 不适用（由厂商控制） | 底线；每位操作者都继承相同的基线。 |
+| 2. **项目** | `<harness-root>/settings.json` | ✅ 已提交 | 项目共享约定：钩子、权限、MCP 服务器、状态栏接线。Apothem 源模板位于 Claude Code 适配器的 templates 目录内。 |
+| 3. **用户本地** | `<harness-root>/settings.local.json`（gitignored）——在 `examples/harnesses/claude-code/` 下以 `settings.local.example.json` 作为模板 | ❌ Gitignored | 操作者专属覆盖项：API 令牌、本机路径、可选启用的功能。 |
 
 更高层级的值会**在叶键级别**覆盖更低层级的值——当
 项目层与用户本地层都声明了 `permissions.allow` 条目时，取并集；
@@ -158,10 +157,6 @@ Claude Code 通过按递增的优先级顺序组合三层来解析有效设置�
 
 ### 创建用户本地覆盖
 
-1. 把 `settings.local.example.json`（仓库根）复制为 `<harness-root>/settings.local.json`。
-   `settings.local.json` 文件名匹配 `.gitignore` 模式，因此该文件永远
-   不会进入版本控制。
-2. 编辑本地副本——只保留要覆盖的键；harness 会组合各层，
-   因此缺失的键会从项目层继承。
-3. 保存前验证该文件能解析为有效 JSON——harness 会在会话开始时
-   拒绝格式错误的 JSON。
+1. 将 `examples/harnesses/claude-code/settings.local.example.json` 复制为 `<harness-root>/settings.local.json`。`settings.local.json` 文件名与 `.gitignore` 模式相匹配，因此该文件绝不会进入版本控制。
+2. 编辑本地副本，只保留需要覆盖的键；工具会组合各层，因此缺失的键会从项目层继承。
+3. 保存前验证该文件可解析为有效 JSON；工具会在会话开始时拒绝格式错误的 JSON。

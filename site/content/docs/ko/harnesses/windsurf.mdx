@@ -1,15 +1,18 @@
 ---
 title: "Windsurf"
-description: "Windsurf(GA)용 Apothem 도구 어댑터."
+description: "Windsurf(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** Codeium
+**벤더:** Devin Desktop(이전 명칭 Codeium Windsurf)
 **설치 이름:** `windsurf`
 **상태:** GA
 **네이티브 구성:** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf는 이제 Devin Desktop이며, `.devin/rules/`가 권장되는 워크스페이스 규칙
+위치입니다(`.windsurf/rules/`보다 우선함).
 
 ## 설치
 
@@ -17,23 +20,28 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-어댑터는 공유된 Apothem 규칙과 거버넌스 표면에서 하나의 프로젝트 범위 Windsurf
-규칙 파일을 작성합니다.
+어댑터는 공유 Apothem 규칙 및 거버넌스 표면으로부터 프로젝트 범위 Windsurf 규칙
+파일 하나를 작성합니다.
 
 **작성되는 파일:** `<project>/.devin/rules/apothem-rules.md`
 
 ## 프로필에서 네이티브 구성으로의 매핑
 
-어댑터는 Apothem의 공유 프로필을 읽고 `apothem install` 또는 `apothem update`를
-실행할 때마다 프로젝트 규칙 파일을 렌더링합니다. 공유 프로필이 사실의 원천입니다.
-생성된 파일에 대한 프로젝트 로컬 편집은 다음 동기화가 Apothem이 관리하는 콘텐츠를
+어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
+실행마다 프로젝트 규칙 파일을 렌더링합니다. 공유 프로필이 진실의 원천입니다.
+생성된 파일에 대한 프로젝트 로컬 편집은 다음 동기화가 Apothem 관리 콘텐츠를
 교체하기 전에 백업됩니다.
+
+이 파일은 규칙의 활성화 모드를 설정하는 `trigger: always_on` 프런트매터로
+시작합니다. Apothem 관리 블록이 그 뒤에 오며, 블록 뒤에 여러분이 추가한 텍스트는
+매 동기화 때 유지됩니다.
 
 ## 호환성 참고 사항
 
-Windsurf의 현재 규칙 표면은 `.devin/rules/` 아래의 프로젝트 범위입니다.
-워크플로와 머신 로컬 메모리는 운영자가 소유합니다. Apothem은 이를 작성하지
-않습니다. 단일 파일 형식의 `.windsurfrules`는 의도적으로 작성되지 않습니다.
+Windsurf의 현재 규칙 표면은 `.devin/rules/` 아래에서 프로젝트 범위로
+지정됩니다(권장 위치이며, 하위 호환용 대체 위치인 `.windsurf/rules/`보다 우선함).
+워크플로와 머신 로컬 메모리는 운영자 소유입니다. Apothem은 이를 작성하지
+않습니다. 단일 파일 형식인 `.windsurfrules`는 의도적으로 작성하지 않습니다.
 
 ## 검증
 
@@ -41,10 +49,12 @@ Windsurf의 현재 규칙 표면은 `.devin/rules/` 아래의 프로젝트 범�
 apothem verify --harness windsurf --project /path/to/project
 ```
 
-verify 명령은 다음을 확인합니다:
+verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -61,8 +71,12 @@ apothem update --harness windsurf --project /path/to/project
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+`<project>/.devin/rules/apothem-rules.md`에서 Apothem 블록과 Apothem이 그 위에
+작성한 프런트매터를 제거하고, 그 안의 나머지 텍스트는 그대로 둡니다. 파일은 그
+안에 다른 내용이 하나도 남지 않은 경우에만 삭제됩니다. 변경하기 전에 파일의
+타임스탬프가 찍힌 사본이 `~/.apothem/backups/` 아래에 저장되며, 프로젝트에는
+백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지
+않습니다.
 
 ## 적합성 게이트
 
@@ -72,14 +86,20 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 수정 |
+| 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness windsurf --project /path/to/project`를 다시 실행 |
-| 검증 실패 | `apothem update --harness windsurf --project /path/to/project`를 실행한 후 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness windsurf --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness windsurf --project /path/to/project`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness windsurf --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브
 
 | 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
+
+## 함께 보기
+
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

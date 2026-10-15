@@ -1,103 +1,152 @@
 ---
-title: "Index"
-description: "Portail de conformité d'Apothem — la fraction mécanique du portail de pré-émission à quinze points (M1-M15) que tout artefact émis doit franchir."
+title: "Portail de conformité"
+description: "Portail de conformité d'Apothem — la fraction mécanique du portail de pré-émission à quinze barres (M1-M15) que chaque artefact émis doit franchir."
 machineTranslated: true
-sourceHash: "7cea456f84cba0d3"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-## Les quinze points
+## Les quinze barres
 
-| Point | ID | Mandat | Classe de vérification | Échec → action |
+| Barre | ID | Mandat | Classe de vérification | Échec → action |
 |---|---|---|---|---|
 | 1 | M1 | Agnosticisme vis-à-vis du projet hôte | Raisonnée | Réviser pour correspondre aux conventions de l'hôte |
-| 2 | M2 | Discipline éditoriale (registre de divulgation) | Mécanique | Ajouter les marqueurs de divulgation |
-| 3 | M3 | Dix dimensions de qualité | Raisonnée | Réviser sur les dimensions en échec |
-| 4 | M4 | Auto-application (bloc de registre signé présent) | Mécanique | Consigner le bloc de registre signé |
-| 5 | M5 | Principe d'autorité (aucune identité / point de terminaison / secret fabriqués) | Mécanique | Acheminer vers la demande |
-| 6 | M6 | Incorporation d'expertise (lacunes mises au jour) | Raisonnée | Mettre les lacunes au jour ; citer les raffinements |
-| 7 | M7 | Annotation des options (marqueur de recommandation + justification) | Mécanique | Annoter les ensembles d'options |
-| 8 | M8 | Caractère définitif (aucun atermoiement dans la prose prescriptive) | Mécanique | Promouvoir les atermoiements en conditionnels |
+| 2 | M2 | Discipline éditoriale (registre de divulgation) | Raisonnée | Ajouter les marqueurs de divulgation |
+| 3 | M3 | Dix dimensions de qualité | Mécanique + raisonnée | Réviser sur les dimensions en échec |
+| 4 | M4 | Auto-application (enregistrement signé du portail présent) | Mécanique | Consigner le bloc d'enregistrement signé |
+| 5 | M5 | Principe d'autorité (aucune identité / aucun endpoint / aucun secret fabriqué) | Mécanique | Acheminer vers une demande de précision |
+| 6 | M6 | Incorporation de l'expertise (lacunes mises au jour) | Raisonnée | Mettre les lacunes au jour ; citer les affinements |
+| 7 | M7 | Annotation des options (marqueur Recommended + justification des facteurs déterminants) | Mécanique | Annoter les ensembles d'options |
+| 8 | M8 | Caractère définitif (aucune formulation évasive dans la prose prescriptive) | Mécanique | Transformer les formulations évasives en énoncés conditionnels |
 | 9 | M9 | Levier visuel (les sujets structurels portent des diagrammes) | Raisonnée | Créer / actualiser le diagramme |
-| 10 | M10 | Liaison bidirectionnelle (pointeurs réciproques fermés) | Mécanique | Fermer les demi-arêtes |
+| 10 | M10 | Liaison bidirectionnelle (pointeurs de retour réciproques fermés) | Mécanique | Fermer les demi-arêtes |
 | 11 | M11 | Sprints agiles (Objectif / Backlog / DoR / DoD / Revue / Rétrospective) | Raisonnée | Restructurer en sprints |
-| 12 | M12 | Rapports de phase et agencement canonique | Mécanique | Créer la synthèse ; déplacer vers l'agencement canonique |
-| 13 | M13 | Métier du code (linter / formateur / vérificateur de types ; nombre magique ; bare-except) | Mécanique | Réviser selon les règles de métier du code par langage |
-| 14 | M14 | Systémicité (déclare ascendants / descendants / pairs / applicateurs) | Raisonnée | Déclarer ; indexer dans les registres |
-| 15 | M15 | Prêt pour la production (tests + documentation + CHANGELOG + commit conforme + CI au vert + stabilité semver) | Mécanique | Ajouter les surfaces manquantes |
+| 12 | M12 | Rapports de phase et disposition canonique | Mécanique + raisonnée | Rédiger la synthèse ; déplacer vers la disposition canonique |
+| 13 | M13 | Artisanat du code (lint / formatage / vérification de types ; nombre magique ; bare-except) | Mécanique | Appliquer les règles d'artisanat du code propres à chaque langage |
+| 14 | M14 | Systémicité (déclare amont / aval / pairs / garants d'application) | Raisonnée | Déclarer ; indexer dans les registres |
+| 15 | M15 | Prêt pour la production (tests + documentation + CHANGELOG + commit conforme + CI au vert + stabilité semver) | Mécanique + raisonnée | Ajouter les surfaces manquantes |
+
+Le portail n'exécute que des validateurs vérifiables par machine. Le jugement raisonné que réclament les barres de classe Raisonnée, ainsi que la moitié raisonnée de chaque barre de classe Mécanique + raisonnée, est évalué en revue.
 
 ## Échelle de sévérité
 
-| Sévérité | Effet sur le portail |
-|---|---|
-| **Critique** | Portail FAIL — émission bloquée inconditionnellement |
-| **Importante** | Portail FAIL lorsque 2 points Importants ou plus échouent simultanément |
-| **Indicative** | Portail WARN — consignée dans le bloc signé ; ne bloque pas l'émission |
+Le portail ne comporte ni échelle de sévérité Critique, Importante ou Consultative, ni seuil de deux constats. Sans `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), le portail signale les constats et se termine avec le code `0`. Avec `--strict`, un contrôle sur un seul fichier ou un hook se termine avec le code `2` dès qu'un matcher échoue, et une exécution sur le corpus (`--all` ou `--all-perwrite`) se termine avec le code `2` lorsqu'un validateur ou un matcher bloquant échoue ; les constats consultatifs sont uniquement signalés. Le hook Write/Edit installé ne passe pas `--strict` : il signale les constats et l'écriture se poursuit, sauf si `APOTHEM_CONFORMITY_STRICT=1` est défini dans son environnement.
 
-La plupart des apparieurs de la fraction mécanique sont par défaut **Importants**. M5 (autorité — secrets, points de terminaison fabriqués) et M12 (sorties orphelines) sont **Critiques**.
+## Validateurs
 
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+La fraction mécanique vit dans [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrée par [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
+Chaque validateur s'exécute de l'une des trois façons suivantes :
 
-## Apparieurs de la fraction mécanique
+- **par écriture** : sur chaque écriture en attente (`--hook`), ou sur chaque fichier suivi avec `--all-perwrite`.
+- **autonome** : sur l'ensemble du dépôt avec `--all`, ou un par un avec `--check <name>`.
+- **par ensemble de modifications** : sur un diff indexé, exécuté directement avec `python -m apothem.conformity.semver_stability_grep --staged`, et non via le portail.
 
-La fraction mécanique vit dans [`src/apothem/conformity/*_grep.py`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrée par [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
+Le tableau ci-dessous est généré à partir des modules de validateurs.
 
-| Apparieur | Point | Fonction |
-|---|---|---|
-| `hedging_grep.py` | M8 | Détecte le vocabulaire atermoyant dans la prose prescriptive |
-| `option_annotation_grep.py` | M7 | Vérifie le marqueur `**Recommended**` + la justification sur les ensembles d'options |
-| `user_confirm_grep.py` | M5 | Bloque les espaces réservés `<USER-CONFIRM:…>` à l'émission |
-| `binding_reciprocity_grep.py` | M10 | Détecte les demi-arêtes dans `## Bindings (§0.j five-direction)` |
-| `orphan_output_grep.py` | M12 | Signale les artefacts sans consommateur / sans entrée d'index / sans attribution de producteur |
-| `bare_except_grep.py` | M13 | Détecte `except:` / `except Exception:` sans commentaire justificatif |
-| `magic_number_grep.py` | M13 | Détecte les littéraux numériques dans la logique métier |
-| `commented_out_code_grep.py` | M13 | Détecte les blocs de code commentés |
-| `file_header_grep.py` | M13 | Vérifie la présence de l'en-tête de licence SPDX sur une seule ligne |
-| `frontmatter_grep.py` | M14 | Vérifie les champs de frontmatter requis sur les quatre répertoires de directives canoniques listés ci-dessous |
-| `semver_stability_grep.py` | M15 | Détecte les changements rupturistes de l'API publique sans incrément de version MAJOR |
-| `production_ready_pr_grep.py` | M15 | Vérifie la discipline du même ensemble de modifications (tests + documentation + CHANGELOG) |
-| `secret_leak_grep.py` | M15 | Détecte les secrets / identifiants codés en dur |
-| `unpinned_action_grep.py` | M15 | Vérifie l'épinglage des GitHub Actions à un commit SHA |
-| `always_on_budget_grep.py` | plafond de budget | Plafonne le corps des règles toujours actives à 500 tokens substantiels |
+{/* apothem:generated-reference:start */}
+
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
+
+| Validator | Runs | Rule anchor | What it checks |
+| --- | --- | --- | --- |
+| `agent-capability-grep` | standalone | agent-capability-discipline (per-harness capability matrix) | Verify every harness declares its agentic-capability matrix. |
+| `agents-md-coverage-grep` | standalone | rules/agents-md-convention.md | Flag stale agent-companion files under the root-only AGENTS.md convention. |
+| `agnosticism-grep` | standalone | rules/agnostic-posture.md §3 (harness neutrality) + §1 (default-off) | Flag harness bias and re-introduced enforcement presets in shipped surfaces. |
+| `always-on-budget-grep` | per-write | D1 token-budget-discipline §Always-on body budget | Body-budget conformity matcher for always-on rules. |
+| `bare-except-grep` | per-write | M13.3 error handling | Flag bare except clauses without typed exceptions or re-raise. |
+| `binding-five-direction-grep` | standalone | M10 bidirectional-binding §1 (five-direction Bindings section) | Require the five-direction Bindings section on every rule, command, agent, and skill. |
+| `binding-reciprocity-corpus-grep` | standalone | M10 bidirectional-binding §2 (↔ self-reciprocal) | Cross-file binding-reciprocity corpus walk — the ↔-symmetric half-edge check. |
+| `binding-reciprocity-grep` | per-write | M10 bidirectional-binding §Notation | Flag binding declarations using non-canonical arrow notation. |
+| `brand-mark-grep` | per-write | rules/plain-language.md (brand-mark display/identifier casing) | Flag brand-mark display/identifier form drift on brand-touched surfaces. |
+| `commented-out-code-grep` | per-write | M13.1 why-not-what comments | Flag substantial commented-out code blocks left in source. |
+| `completion-claim-grep` | per-write | rules/session-closure.md (verifiable-close output honesty) | Flag unsupported completion / guarantee claims in cohort prose. |
+| `conventional-commit-grep` | standalone | CLAUDE.md Coding Conventions — Conventional Commits | Flag HEAD commit messages that drift from the Conventional-Commits grammar. |
+| `copilot-instructions-presence-grep` | per-write | — | GitHub Copilot surface presence check. |
+| `cross-platform-matrix-grep` | standalone | cross-platform OS x Python CI matrix | Verify CI declares a cross-platform OS x Python matrix. |
+| `determinism-grep` | standalone | rules/determinism.md | Prove every command and skill surface has a deterministic output shape. |
+| `diagram-staleness-grep` | per-write | M9 visual-leverage §Fidelity | Flag diagrams whose verification date is missing or stale. |
+| `dynamism-grep` | standalone | rules/dynamism.md (static-version embeds) | Flag static-string version embeds in dynamism-required surfaces. |
+| `editorconfig-presence-grep` | standalone | supply-chain SOTA-rigor §editorconfig | Verify a canonical .editorconfig is present at the project root. |
+| `file-header-grep` | per-write | — | Authorship-header presence and canonical-form check. |
+| `freshness-token-grep` | standalone | rules/freshness-facade.md | Flag freshness-narrative phrases on shipped public surfaces. |
+| `frontmatter-grep` | per-write | the per-class frontmatter JSON Schemas (src/apothem/schemas/) | Validate per-artifact-class YAML frontmatter against required-key sets. |
+| `frontmatter-value-grep` | standalone | per-class JSON Schema enum/pattern value constraints | Validate frontmatter VALUES against the per-class JSON Schema enum/pattern constraints. |
+| `gitattributes-presence-grep` | standalone | supply-chain .gitattributes contract | Verify the repo-root ``.gitattributes`` carries the canonical contract. |
+| `harden-runner-grep` | standalone | harden-runner egress baseline | Verify every workflow job opens with a conformant harden-runner step. |
+| `hedging-grep` | per-write | M8 definitiveness §Hedging | Flag hedging vocabulary in prescriptive contexts. |
+| `license-author-consistency-grep` | per-write | — | LICENSE author-identity presence check. |
+| `link-check` | per-write | rules/code-craft-markdown.md §6 Link Discipline | Validate Markdown internal links against the on-disk reference graph. |
+| `magic-number-grep` | per-write | M13.10 magic numbers | Flag magic numbers in source code. |
+| `multi-surface-coherence-grep` | per-write | — | Shared-claim coherence across AI-conventions surfaces. |
+| `naming-grep` | standalone | CLAUDE.md Coding Conventions (kebab-case naming) | Validate filesystem paths against the canonical naming convention. |
+| `no-global-plans-grep` | standalone | CLAUDE.md Plans Discipline (no global plans) | Walk the git index for tracked plans paths; fail when found. |
+| `no-toplevel-docs-grep` | standalone | single-source-of-truth (docs live in site/, not root docs/) | Fail when a top-level ``docs/`` directory exists at the repository root. |
+| `oidc-trusted-publishing-grep` | standalone | OIDC trusted publishing | Verify release workflows use OIDC trusted publishing. |
+| `option-annotation-grep` | per-write | M7 option-annotation (H6 per-option bind) | Enforce the per-option Recommended label-to-body bind (H6). |
+| `orphan-output-grep` | per-write | M12 canonical-layout + M14 systemicity | Flag artifacts emitted to non-canonical locations or without provenance. |
+| `permissions-minimum-scope-grep` | standalone | minimum-scope workflow permissions | Verify every GitHub Actions workflow declares a minimum-scope ``permissions:`` block. |
+| `plain-language-grep` | standalone | rules/plain-language.md — user-facing prose | Flag mechanistic / harness-internal vocabulary in user-facing prose. |
+| `plan-next-step-consistency-grep` | standalone | rules/recommend-next-step.md | Advisory: flag plan-suite infra files whose Recommended-Next-Step footer drifts from the suite's recorded next pipeline stage. |
+| `plan-suite-structure-grep` | standalone | context-management-scratch 2 (suite-locality + closed vocab) + canonical-layout-reporting-tiers 2.1 (numeric-prefix discipline) | Validate plan-suite structure: suite-locality, closed vocab, numeric prefix. |
+| `plans-discipline-language-grep` | standalone | CLAUDE.md Plans Discipline (multi-surface language) | Verify the canonical Plans Discipline language reaches every required surface. |
+| `production-ready-pr-grep` | per-write | M15 production-ready §Same-change-set | Flag commits whose change-set lacks the production-ready four-class shape. |
+| `recommend-next-step-grep` | standalone | rules/recommend-next-step.md | Verify every command file carries a `## Recommended Next Step` block. |
+| `redundancy-grep` | standalone | rules/operational-mandates.md §CM-7 coherent-product non-redundancy | Flag substantively-duplicated paragraphs across the governed corpus. |
+| `reference-token-grep` | standalone | rules/own-voice-reimplementation.md | Flag leaked reference-platform branding tokens on authored surfaces. |
+| `registry-capability-consistency-grep` | standalone | rules/agent-capability-discipline.md — registry capability cells backed by evidence | Flag registry capability cells not backed by install / materializer / projection evidence. |
+| `secret-leak-grep` | per-write | M13.8 security + M15 production-ready | Block emission of artifacts containing hardcoded credentials. |
+| `semver-stability-grep` | change-set | M15 semver-stability | Semver stability matcher (M15 mechanical fraction). |
+| `smoke-install-grep` | standalone | production-ready section 8.1 paired install scripts | Smoke-test the paired install scripts at the repository root. |
+| `static-version-grep` | standalone | rules/dynamism.md §static-version-resolution | Verify version-bearing sites resolve dynamically, not as static literals. |
+| `token-efficiency-grep` | per-write | clean-room-generation §5 + token-efficiency-rewrite | Flag filler phrases, throat-clearing openers, and content-free qualifiers. |
+| `unpinned-action-grep` | per-write | M15 production-ready §Supply-chain | Flag GitHub Actions workflows that pin actions to mutable refs. |
+| `user-confirm-grep` | per-write | M5 authority-inquiry §10 | Block emission of artifacts containing unresolved authority placeholders. |
+| `workflow-concurrency-grep` | standalone | workflow concurrency + per-job timeouts | Enforce concurrency + per-job timeout discipline on GitHub workflows. |
+
+{/* apothem:generated-reference:end */}
 
 ## Exécuter le portail
 
-Sur un harness installé, le portail s'exécute automatiquement : le
-`settings.json` de Claude Code le câble en tant que hook `PreToolUse` qui
+Sur un environnement installé, le portail s'exécute automatiquement : le
+`settings.json` de Claude Code le branche en tant que hook `PreToolUse` qui
 invoque la copie matérialisée à `~/.claude/.apothem/support/conformity/gate.py`
-avant chaque Write/Edit. Depuis un checkout source, la forme module
-exécute le même code :
+avant chaque Write/Edit. Le portail ne vérifie alors que les écritures situées
+dans la portée de son hook, et une écriture hors de cette portée passe
+silencieusement ; [Exécuter le portail de conformité](/docs/usage/conformity-gate)
+liste cette portée. Depuis un checkout du code source, la forme module exécute le
+même code ; faites précéder chaque commande `python` ci-dessous de
+`PYTHONPATH=src`. Le portail est consultatif par défaut : il signale les
+constats et se termine avec le code `0`. Ajoutez `--strict` pour qu'il se
+termine avec le code `2` sur un constat bloquant. Un nom de validateur inconnu
+se termine avec le code `3`.
 
 ```shell
-# Distribution sur un seul fichier (imite le hook PreToolUse) :
+# Every standalone validator across the repository:
+python -m apothem.conformity.gate --all .
+
+# The same sweep, failing on a blocking finding (the CI form):
+python -m apothem.conformity.gate --all --strict .
+
+# Every per-write validator against every tracked file:
+python -m apothem.conformity.gate --all-perwrite .
+
+# One validator by name (names come from --list):
+python -m apothem.conformity.gate --check naming-grep .
+
+# List every registered validator as JSON:
+python -m apothem.conformity.gate --list
+
+# Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
     | python -m apothem.conformity.gate --hook
-
-# Balayage composite à travers le dépôt :
-python -m apothem.conformity.gate --sweep src/ site/content/docs/ rules/
 ```
 
+`python -m apothem.conformity.gate --help` affiche le résumé d'utilisation.
 Voir [Exécuter le portail de conformité](/docs/usage/conformity-gate) pour la procédure complète.
 
 ## Référence
 
-- [Registre du portail de pré-émission](/docs/governance/pre-emission-gate-registry) — définitions canoniques des points
+- [Registre du portail de pré-émission](/docs/governance/pre-emission-gate-registry) — définitions canoniques des barres
 - [Registre de conformité externe](/docs/governance/outward-conformity-registry) — sémantique détaillée de M1-M15
 - [Mandats transversaux](/docs/governance/cross-cutting-mandates) — source de vérité des mandats
 - [Discipline de performance](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/performance-discipline.md) — budgets d'exécution par classe

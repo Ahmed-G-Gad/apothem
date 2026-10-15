@@ -2,11 +2,11 @@
 title: "harnesses"
 description: "apothem harnesses 命令组的 CLI 参考。"
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "e2eac8d28543091e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-列出并查看已注册的harness适配器。
+列出并查看已注册的工具适配器。
 
 `harnesses` 是一个命令组，包含两个子命令：`list` 和 `show`。
 
@@ -24,30 +24,29 @@ apothem harnesses show NAME
 
 ### `harnesses list`
 
-列出所有已注册的harness适配器。
+列出所有已注册的工具适配器。
 
 | 选项 | 描述 |
 |---|---|
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ### `harnesses show NAME`
 
-显示特定harness适配器的详细信息。`NAME` 是 kebab-case 形式的harness
-标识符；运行 `apothem harnesses list` 查看可用的标识符。
+显示特定工具适配器的详细信息。`NAME` 是 kebab-case 形式的工具标识符；运行 `apothem harnesses list` 可查看可用的标识符。
 
 | 选项 | 描述 |
 |---|---|
-| `NAME` | 要查看的harness适配器（必填位置参数）。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `NAME` | 要查看的工具适配器（必需的位置参数）。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## 示例
@@ -59,7 +58,7 @@ apothem harnesses show claude-code
 apothem harnesses show claude-code --json
 ```
 
-已注册的harness ID 为：
+已注册的工具 ID 如下：
 
 ```text
 antigravity
@@ -83,12 +82,14 @@ zed
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
 | 0 | 成功 |
-| 1 | 未找到harness（`harnesses show` 使用了未知的 `NAME`） |
+| 1 | 未找到工具（`harnesses show` 使用了未知的 `NAME`），或者每个适配器都未能加载或报告（`harnesses list`） |
+| 2 | 至少列出了一个适配器，但至少有一个未能报告（`harnesses list`） |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem doctor](/docs/cli-reference/doctor) — 运行系统级安装诊断
-- [apothem verify](/docs/cli-reference/verify) — 检查特定harness安装
+- [apothem doctor](/docs/cli-reference/doctor)——运行系统级的安装诊断
+- [apothem verify](/docs/cli-reference/verify)——验证工具适配器的安装

@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
+- Snapshot date: 2026-10-14
+- Snapshot note: refreshed against `opencode.ai/docs` (config, rules, skills, agents, commands, MCP servers, tools), and the `instructions` path semantics re-observed at opencode-ai 1.19.0 (see Vendor Sources). `opencode.json` sources (global `~/.config/opencode/opencode.json` plus project), Markdown agents and commands in plural `agents/` and `commands/` directories, `skills/<name>/SKILL.md`, the `instructions` key, plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`, and the `webfetch` / `websearch` tools are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/opencode/`
 - Evidence level: vendor-doc pinned for `opencode.json` and its
   `instructions` / `agent` / `command` / `mcp` / `plugin` keys; skills are a
@@ -42,10 +42,17 @@ Retrieved 2026-10-03 unless marked.
 
 - <https://opencode.ai/docs/config/> (config sources, plural directories, plugins)
 - <https://opencode.ai/docs/rules/> (`AGENTS.md` and `instructions`)
-- <https://raw.githubusercontent.com/sst/opencode/dev/packages/opencode/src/session/instruction.ts>
-  (`instructions` resolution: a leading `~/` expands to the home directory, an
-  absolute entry globs its final segment, a relative entry resolves against
-  the project directory)
+- Runtime observation, 2026-10-14: opencode-ai 1.19.0 (npm), run against a
+  local OpenAI-compatible mock provider that recorded the request. The
+  `instructions` entries `~/probe/home-note.md`, an absolute
+  `<dir>/*.md` glob and `rel-note.md` loaded `<home>/probe/home-note.md`, both
+  files the glob matched, and `<project>/rel-note.md`. So a leading `~/`
+  expands to the home directory, an absolute entry matches as a glob on its
+  final segment, and a relative entry resolves against the project directory.
+  The upstream source moved from `sst/opencode` (now
+  <https://github.com/anomalyco/opencode>, under `packages/core/`), and the
+  docs page above does not describe these semantics. This is an observation,
+  not a retrieved source; re-run it when the CLI version changes.
 - <https://opencode.ai/docs/mcp-servers/> (`mcp` block)
 - <https://opencode.ai/docs/skills/> (skill locations; retrieved 2026-10-02)
 - <https://opencode.ai/docs/agents/> (agents; retrieved 2026-10-02)

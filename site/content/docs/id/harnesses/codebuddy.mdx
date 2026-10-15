@@ -1,13 +1,13 @@
 ---
 title: "CodeBuddy"
-description: "Adaptor harness Apothem untuk Tencent CodeBuddy (GA)."
+description: "Adapter harness Apothem untuk Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "b2ad522fd661cc14"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Tencent
-**Nama instal:** `codebuddy`
+**Nama instalasi:** `codebuddy`
 **Status:** GA
 **Konfigurasi native:** `<project>/.codebuddy/rules/apothem-rules.md`
 
@@ -17,34 +17,41 @@ sourceHash: "b2ad522fd661cc14"
 apothem install --harness codebuddy --project /path/to/project
 ```
 
-Adaptor menulis satu berkas aturan berlingkup-proyek dari permukaan aturan dan tata
-kelola Apothem bersama.
+Adapter menulis satu berkas aturan berlingkup proyek dari permukaan aturan dan
+tata kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.codebuddy/rules/apothem-rules.md`
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada setiap
-jalannya `apothem install` atau `apothem update`. CodeBuddy membaca setiap berkas
-`*.md` di bawah `.codebuddy/rules/` sebagai Markdown dengan frontmatter YAML opsional
-(`alwaysApply`, `paths`, `enabled`) sesuai
-[dokumentasi CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules); berkas Apothem
-membawa `alwaysApply: true`, sehingga permukaan tata kelola diterapkan pada setiap
-interaksi. Profil bersama adalah sumber kebenaran; suntingan lokal-proyek pada berkas
-yang dihasilkan dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang
-dikelola Apothem.
+Adapter membaca profil bersama Apothem dan merender berkas aturan proyek pada
+setiap eksekusi `apothem install` atau `apothem update`. CodeBuddy membaca
+setiap berkas `*.md` di bawah `.codebuddy/rules/` sebagai Markdown dengan
+frontmatter YAML opsional (`alwaysApply`, `paths`, `enabled`) sesuai
+[dokumentasi CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules);
+berkas Apothem membawa `alwaysApply: true` sehingga permukaan tata kelola
+berlaku pada setiap interaksi. Frontmatter adalah konten pertama dalam berkas
+dan blok yang dikelola Apothem mengikutinya; teks yang Anda tambahkan setelah
+blok tersebut dipertahankan pada setiap sinkronisasi. Profil bersama adalah
+sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan
+dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
+Apothem.
 
 ## Catatan kompatibilitas
 
-Permukaan aturan CodeBuddy berlingkup-proyek di bawah `.codebuddy/rules/`. Adaptor
-menulis berkas `apothem-rules.md` khusus yang berdampingan dengan berkas aturan apa pun
-yang ditulis operator di direktori yang sama. Berkas memori proyek `CODEBUDDY.md` dan
-`.codebuddy/settings.json` (izin, MCP) milik operator; Apothem tidak menulisnya. Skill,
-perintah, agen, dan hook dirujuk sebagai disiplin di dalam berkas aturan — CodeBuddy
-tidak mengekspos permukaan berkas milik adaptor untuk mereka. Konvensi permukaan vendor
-yang menjadi sandaran adaptor disematkan di
-`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, di-snapshot terhadap
-dokumentasi CodeBuddy langsung.
+Permukaan aturan CodeBuddy berlingkup proyek di bawah `.codebuddy/rules/`.
+Adapter menulis berkas `apothem-rules.md` khusus yang berdampingan dengan
+berkas aturan apa pun yang ditulis operator di direktori yang sama. Berkas
+memori proyek `CODEBUDDY.md`, `.codebuddy/settings.json`, dan `.mcp.json`
+proyek (server MCP) adalah milik operator; Apothem tidak menulisnya. CodeBuddy
+juga mendokumentasikan skill, command, subagen, dan hook; adapter tidak menulis
+satu pun dari semua itu dan sebagai gantinya merujuk disiplin-disiplin tersebut
+di dalam berkas aturan. Ketika sebuah proyek tidak memiliki `CODEBUDDY.md`,
+CodeBuddy Code membaca `AGENTS.md` sebagai memori proyek, sehingga
+`AGENTS.md` yang ditulis adapter lain juga menjangkau CodeBuddy. Konvensi permukaan vendor yang
+menjadi sandaran adapter dipatok di
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, yang di-snapshot
+terhadap dokumentasi CodeBuddy yang berlaku.
 
 ## Verifikasi
 
@@ -52,21 +59,21 @@ dokumentasi CodeBuddy langsung.
 apothem verify --harness codebuddy --project /path/to/project
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Berkas aturan terkelola hadir dan tidak kosong.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Berkas aturan terkelola ada dan tidak kosong.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
-## Pemutakhiran
+## Pembaruan
 
 ```bash
 apothem update --harness codebuddy --project /path/to/project
 ```
 
-Menurunkan-ulang berkas aturan proyek dari keadaan profil bersama saat ini. `install`
-dan `update` bersifat idempoten — menjalankan ulang menimpa berkas terkelola dengan
-konten terender terbaru.
+Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
+`install` dan `update` bersifat idempoten — menjalankannya ulang menimpa berkas
+terkelola dengan konten hasil render terbaru.
 
 ## Pencopotan
 
@@ -74,9 +81,7 @@ konten terender terbaru.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor, mengganti nama berkas
-aturan terkelola menjadi cadangan bertanda waktu. YAML profil bersama dan mesin Apothem
-tidak terpengaruh.
+Menghapus blok Apothem dari `apothem-rules.md` dan mempertahankan teks lain di dalamnya. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -90,10 +95,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness codebuddy --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness codebuddy --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness codebuddy --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness codebuddy --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

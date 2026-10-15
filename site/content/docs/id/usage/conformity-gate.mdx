@@ -1,50 +1,120 @@
 ---
-title: "Gerbang kesesuaian"
-description: "Jalankan gerbang kesesuaian Apothem untuk memverifikasi kesehatan ekosistem."
+title: "Gerbang konformitas"
+description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "9e8082c92412b0a9"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Gerbang kesesuaian di `src/apothem/conformity/gate.py` menjalankan lima belas
-pemeriksaan mekanis terhadap setiap artefak yang ditulis operator.
+Gerbang konformitas di `src/apothem/conformity/gate.py` menjalankan bagian
+mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) terhadap setiap artefak
+yang ditulis operator.
+
+Perintah pada halaman ini mengasumsikan checkout Apothem, sehingga awali setiap
+perintah yang Anda jalankan dengan `PYTHONPATH=src`. Setelah pemasangan skrip,
+gunakan `PYTHONPATH="$HOME/.apothem/src"` sebagai pengganti `PYTHONPATH=src`.
 
 ## Menjalankan gerbang
 
+Gerbang ini **bersifat advisori secara default**: gerbang melaporkan temuan dan
+keluar dengan `0`, sehingga eksekusi lokal tidak pernah memblokir Anda.
+Tambahkan `--strict` (atau setel `APOTHEM_CONFORMITY_STRICT=1`) untuk keluar
+dengan kode bukan nol pada temuan yang memblokir — mode yang digunakan CI dan
+pre-commit untuk menggagalkan perubahan yang melanggar.
+
 ```bash
-python -m apothem.conformity.gate
+# Advisory: report every validator's findings across the repo, exit 0
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+
+# Strict: exit non-zero (code 2) when a blocking finding is present
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
-## Bilah gerbang
+Kode keluar: `0` bersih (atau advisori), `2` pemblokiran temuan mode strict,
+`3` kesalahan penggunaan: flag atau nama validator yang tidak dikenal, berkas
+yang tidak ada, atau direktori root yang tidak ada. `--help` mencetak
+penggunaan lengkap dan keluar dengan `0`. Setiap validator standalone menerima
+`--help` yang sama dan keluar dengan `3` pada flag yang tidak dikenal atau root
+yang hilang.
 
-| Bilah | Pemeriksaan | Jenis |
+Root relatif seperti `.` di-resolve menjadi jalur absolut sebelum validator apa
+pun berjalan, sehingga `--all .` dan `--all "$PWD"` memeriksa pohon yang sama.
+Setiap validator melaporkan `inspected` — berapa banyak target yang
+diperiksanya — dan `--all` menyalin hitungan tersebut ke setiap entri hasil.
+Validator yang tidak memeriksa apa pun melaporkan `passed: false`, sehingga
+direktori kerja yang salah tidak dapat lolos diam-diam. Dua validator suite
+rencana merupakan salah satu pengecualian: suite rencana berada di pohon
+`.apothem/plans/` yang di-gitignore, sehingga keduanya melaporkan
+`empty_scope_expected: true` pada checkout yang bersih dan tetap lolos.
+Validator alur kerja melakukan hal yang sama ketika proyek belum memiliki
+direktori `.github/workflows/`, dan validator subjek commit melakukannya ketika
+root tidak memiliki riwayat commit.
+
+## Bar gerbang
+
+| Bar | Pemeriksaan | Jenis |
 |-----|-------|------|
-| M1 | Penyelarasan cakupan | Penalaran |
-| M2 | Isolasi internal rencana (CM-7) | Mekanis |
-| M3 | Kepatuhan standar | Penalaran |
-| M4 | Validitas frontmatter | Mekanis |
-| M5 | Tanpa frasa terlarang | Mekanis |
-| M6 | Pengungkapan editorial | Penalaran |
-| M7 | Tanpa rujukan rencana di artefak | Mekanis |
-| M8 | Header kepengarangan ada | Mekanis |
-| M9 | Penilaian jujur | Penalaran |
-| M10 | Disiplin penamaan | Mekanis |
-| M11 | Perangkat sprint | Penalaran |
-| M12 | Tata letak kanonis | Mekanis |
-| M13 | Keterampilan kode | Penalaran |
-| M14 | Partisipasi sistemik | Penalaran |
-| M15 | Kepengarangan manusia | Mekanis |
+| M1 | Keagnostikan proyek-inang | Bernalar |
+| M2 | Pengungkapan editorial | Bernalar |
+| M3 | Sepuluh dimensi kualitas | Mekanis + bernalar |
+| M4 | Penerapan-diri | Mekanis |
+| M5 | Otoritas (tanpa identitas / endpoint / rahasia yang dikarang) | Mekanis |
+| M6 | Penggabungan keahlian | Bernalar |
+| M7 | Anotasi opsi | Mekanis |
+| M8 | Ketegasan | Mekanis |
+| M9 | Daya ungkit visual | Bernalar |
+| M10 | Pengikatan dua arah | Mekanis |
+| M11 | Sprint agile | Bernalar |
+| M12 | Pelaporan fase & tata letak kanonik | Mekanis + bernalar |
+| M13 | Kriya kode | Mekanis |
+| M14 | Sistemisitas | Bernalar |
+| M15 | Siap produksi | Mekanis + bernalar |
 
 ## Pemeriksaan tertarget
 
 ```bash
-# Menjalankan satu pemeriksaan
-python -m apothem.conformity.gate --check multi-surface-coherence
+# List every registered validator
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Menjalankan terhadap berkas tertentu
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+# Run a single named validator
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Run every validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+Mode `--hook` (`python -m apothem.conformity.gate --hook`) adalah entry point
+yang di-dispatch oleh harness: mode ini membaca payload JSON tool-input dari
+stdin dan menjalankan rantai matcher per-penulisan terhadap penulisan yang
+tertunda. Inilah bentuk yang dipanggil oleh hook `PreToolUse` yang di-deploy;
+Anda jarang memanggilnya secara manual.
+
+Mode hook **dibatasi pada sekumpulan direktori**. Mode ini menjalankan rantai
+matcher hanya pada penulisan yang targetnya berada di bawah salah satu
+direktori tersebut; penulisan di luar setiap cakupan langsung dihentikan
+sebagai lolos tanpa pesan. Default-nya ada dua root:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Setel `APOTHEM_CONFORMITY_SCOPE` ke sebuah direktori untuk menggantikan
+keduanya:
+
+```bash
+# Run the per-write matcher chain against one project tree instead
+export APOTHEM_CONFORMITY_SCOPE=/path/to/project
+```
+
+Hook yang tampak tidak melakukan apa-apa biasanya merupakan cakupan yang
+meleset, bukan kegagalan — periksa terlebih dahulu target penulisan terhadap
+cakupan di atas.
 
 ## Integrasi CI
 
-Gerbang berjalan di CI melalui `.github/workflows/conformity.yml` pada setiap push.
+Job quality di `.github/workflows/ci.yml` menjalankan gerbang dalam mode strict
+(`python -m apothem.conformity.gate --all . --strict`) pada push ke `main` dan
+pada pull request ke `main` yang menyentuh jalur yang dipantau job tersebut.
+Alur kerja terpisah `.github/workflows/conformity.yml` menjalankan sapuan
+fixture (`tests/conformity-scenarios/verify.py --strict`).

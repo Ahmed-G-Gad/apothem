@@ -1,27 +1,59 @@
 ---
 title: "MCP सर्वर"
-description: "Model Context Protocol सर्वर कॉन्फ़िगरेशन — ऑपरेटर-स्वामित्व वाली और प्रत्येक टूल के नेटिव MCP तंत्र के माध्यम से पंजीकृत; Apothem इन्वेंट्री को साझा प्रोफ़ाइल से सिंक करता है लेकिन कोई सर्वर एंट्री नहीं लिखता।"
+description: "Model Context Protocol सर्वर कॉन्फ़िगरेशन — ऑपरेटर-स्वामित्व वाला और प्रत्येक टूल के नेटिव MCP तंत्र के माध्यम से पंजीकृत; कुछ अडैप्टर साझा प्रोफ़ाइल की MCP इन्वेंट्री को प्रक्षेपित करते हैं, बाकी कोई सर्वर प्रविष्टि नहीं लिखते।"
 machineTranslated: true
-sourceHash: "47fd8ec2c4c5bef7"
+sourceHash: "493b667087182d32"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Model Context Protocol (MCP) सर्वर **ऑपरेटर-स्वामित्व वाले** हैं। Apothem साझा
-प्रोफ़ाइल में MCP इन्वेंट्री वहन करता है और उसे प्रत्येक टूल के नेटिव MCP सतह में
-प्रक्षेपित करता है, परंतु अपनी ओर से कोई सर्वर एंट्री नहीं लिखता — यह सतह प्रबंधित
-करने के लिए आपकी ही रहती है।
+Model Context Protocol (MCP) सर्वर **ऑपरेटर-स्वामित्व वाले** हैं। Apothem MCP
+इन्वेंट्री को साझा प्रोफ़ाइल (`mcp_servers`) में वहन करता है। जिस अडैप्टर का टूल
+अपने MCP सर्वर किसी ऐसी कॉन्फ़िग फ़ाइल में रखता है जिसे Apothem पहले से लिखता है,
+वह अडैप्टर उस इन्वेंट्री को उस फ़ाइल में प्रक्षेपित करता है; हर अन्य अडैप्टर कोई
+सर्वर प्रविष्टि नहीं लिखता, और सर्वरों को टूल के माध्यम से पंजीकृत करना आपके ही
+ज़िम्मे रहता है।
+
+## कौन-से अडैप्टर इन्वेंट्री प्रक्षेपित करते हैं
+
+नीचे की तालिका प्रत्येक अडैप्टर के लिए हार्नेस रजिस्ट्री के `mcp_servers` क्षमता
+सेल से जनित होती है।
+
+{/* apothem:generated-reference:start */}
+
+| Harness | MCP inventory | Note |
+| --- | --- | --- |
+| Antigravity (`antigravity`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Claude Code (`claude-code`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| CodeBuddy (`codebuddy`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Codex (`codex`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Cursor (`cursor`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Gemini CLI (`gemini-cli`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| GitHub Copilot (`github-copilot`) | Not projected (unsupported) | Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them. |
+| GLM (Z.ai) (`glm`) | Not projected (unsupported) | GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface. |
+| Hermes (`hermes`) | Projected: written into the tool's MCP config | — |
+| Kimi Code (`kimi-code`) | Not projected (discovery-pending) | `.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries. |
+| Kiro (`kiro`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Open-Claw (`open-claw`) | Not projected (unsupported) | Open-Claw MCP lives in the mcp.servers config block managed via the openclaw mcp CLI; the adapter authors no entries. |
+| OpenCode (`opencode`) | Projected: written into the tool's MCP config | — |
+| Qwen Code (`qwen-code`) | Projected: written into the tool's MCP config | — |
+| Trae (`trae`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Windsurf (`windsurf`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Zed (`zed`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+
+{/* apothem:generated-reference:end */}
 
 ## MCP सर्वर कहाँ पंजीकृत होते हैं
 
-प्रत्येक टूल अपने नेटिव तंत्र के माध्यम से MCP सर्वर पंजीकृत करता है, और Apothem उस
-सतह को अधिलेखित करने के बजाय उसका सम्मान करता है। Claude Code अडैप्टर (अनेक में से एक)
-पर, सर्वर `claude mcp add` के साथ `~/.claude.json` (उपयोगकर्ता या लोकल स्कोप) तथा
-प्रोजेक्ट-स्तरीय `.mcp.json` में पंजीकृत होते हैं; अन्य अडैप्टर अपनी-अपनी नेटिव सतहों
-में प्रक्षेपित करते हैं। Apothem की प्रबंधित सेटिंग्स कभी `mcpServers` ब्लॉक वहन नहीं करतीं।
+प्रत्येक टूल अपने नेटिव तंत्र के माध्यम से MCP सर्वर पंजीकृत करता है, और Apothem
+उस सतह को अधिलेखित करने के बजाय उसका सम्मान करता है। Claude Code पर, सर्वर
+`claude mcp add` के साथ `~/.claude.json` (उपयोगकर्ता या लोकल दायरा) और एक
+प्रोजेक्ट-स्तरीय `.mcp.json` में पंजीकृत होते हैं; Claude Code अडैप्टर इनमें से
+कोई भी फ़ाइल नहीं लिखता, और Apothem की प्रबंधित Claude Code सेटिंग्स कभी कोई
+`mcpServers` ब्लॉक नहीं रखतीं।
 
-## एक सर्वर जोड़ना
+## सर्वर जोड़ना
 
-अपने टूल के नेटिव तंत्र के माध्यम से एक सर्वर पंजीकृत करें; विहित एंट्री आकृति
+अपने टूल के नेटिव तंत्र के माध्यम से सर्वर पंजीकृत करें; विहित प्रविष्टि आकार
 `mcpServers` के अंतर्गत एक कुंजी है:
 
 ```json
@@ -35,10 +67,10 @@ Model Context Protocol (MCP) सर्वर **ऑपरेटर-स्वा�
 }
 ```
 
-टूल का रनटाइम सत्र आरंभ पर पंजीकृत सर्वर लोड करता है; नए सर्वर लेने के लिए टूल को
-पुनः आरंभ करें।
+टूल का रनटाइम सत्र आरंभ पर पंजीकृत सर्वर लोड करता है; नए सर्वर ग्रहण करने के लिए
+टूल को पुनः आरंभ करें।
 
-## नामकरण कन्वेंशन
+## नामकरण परिपाटी
 
-MCP टूल, टूल के मानक MCP-टूल नामकरण कन्वेंशन के अनुसार सहायक को
-`mcp__<server>__<tool>` के रूप में सामने आते हैं।
+MCP टूल, टूल की मानक MCP-टूल नामकरण परिपाटी के अनुसार, सहायक के सामने
+`mcp__<server>__<tool>` के रूप में आते हैं।

@@ -11,10 +11,11 @@ system Python 3.10 or newer (see
 [the self-contained runtime](/docs/architecture/self-contained-runtime)).
 
 **Two prerequisites are shared by every path:** system **Python 3.10 or newer**
-on `PATH`, with the `click` and `rich` packages importable under it. The
-npm-shim and tool-plugin paths additionally need **Node.js 18 or newer** to run
-`npx`. Python 3.10 and Node.js 18 and 20 are past upstream end of life; they
-remain supported and tested, but newer versions are preferred (see
+on `PATH`, with the `click` and `rich` packages importable under it. The npm
+shim (channel 2), the VS Code-family extension (channel 4), and the
+command-line bootstraps (channels 5–7) additionally need **Node.js 18 or
+newer** to run `npx`. Python 3.10 and Node.js 18 and 20 are past upstream end
+of life; they remain supported and tested, but newer versions are preferred (see
 [Prerequisites at a glance](#prerequisites-at-a-glance)). Each channel's own
 section below repeats its exact prerequisites, one copy-ready command, and a
 verification step.
@@ -40,8 +41,9 @@ Eight install channels are available. Pick by how you already work.
   command-line extensions (5–7) install a small **bootstrap** that shells out
   to the engine (`npx @ahmed-g-gad/apothem install`) to materialize the full
   harness — they are the entry point, not the full delivery by themselves. The
-  Claude Code plugin (1) and the VS Code-family extension (4) carry the engine
-  and run it directly.
+  Claude Code plugin (1) carries the engine and runs it directly. The
+  VS Code-family extension (4) carries no engine of its own: its commands run
+  the engine through the npm shim by default.
 </Callout>
 
 Every path is idempotent: re-running is safe and converges to the same state.
@@ -73,7 +75,8 @@ personal skills under `~/.claude/skills/` without a prefix, and a personal
 `code-review` skill replaces the bundled `/code-review` (its `/review` alias
 still runs the bundled one). Two names, `projectify` and `workflow`, ship as
 both a command and a skill; Claude Code runs the skill when both exist, so the
-plugin runs the skill and the engine install writes the skill into that slot. See [Slash commands](/docs/reference/commands)
+plugin runs the skill and the engine install writes only the skill, not a skill
+derived from the command, to `~/.claude/skills/<name>/`. See [Slash commands](/docs/reference/commands)
 for the full command catalog.
 
 **Verify:** run `/plugin` inside Claude Code and confirm **apothem** is listed
@@ -89,9 +92,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 The shim locates the interpreter and forwards every CLI command to the bundled
 engine — nothing is placed permanently on your system. It tries `python3`,
 `python`, then `py -3` in that order; set **`APOTHEM_PYTHON`** to an
-interpreter path to skip the probe, which is what you need when Python is
+interpreter path to try it first, which is what you need when Python is
 installed but not on `PATH`, or when several versions are and you want a
-specific one.
+specific one. The interpreter you name still has to pass the Python 3.10+
+check; when it does not, the shim falls back to `python3`, `python`, then
+`py -3`.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -179,11 +184,14 @@ is annotated and signed. The
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 release-signing section lists each tag and how to verify it.
 
-Two explicit overrides relax the default: `APOTHEM_REF=main` checks out the
-moving branch (unverified), and `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
-verification failure to a warning and proceeds — for air-gapped, local, or
-pre-signed-release use. A local checkout via `APOTHEM_SOURCE` fetches nothing
-and skips verification.
+Explicit overrides relax the default. `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
+verification failure to a warning and proceeds, for air-gapped or local use, or
+to install a release that predates tag signing. `APOTHEM_REF=main` checks out the moving branch without
+verification only together with `APOTHEM_ALLOW_UNVERIFIED=1`. With
+`APOTHEM_REF=main` alone, the installer fetches `main` into `APOTHEM_HOME`, then
+aborts before any configuration is materialized, because a branch is not a
+signed release tag. A local checkout via `APOTHEM_SOURCE` fetches nothing and
+skips verification.
 
 `APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
 the maintainer's public key: instead of cloning, the installer downloads the
@@ -232,13 +240,14 @@ The **Apothem** extension installs from an `apothem.vsix` package:
 `code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
 command. The release workflow signs the package and attaches it to each GitHub
 Release. Releases published before the workflow packaged the extension carry
-none; when the latest one lacks it, build the package from a checkout with
-the vsce release locked in `.github/vsce/`, which needs Node.js 22 or later:
+no `.vsix`; when the latest release lacks it, build the package from a checkout
+with the vsce release locked in `.github/vsce/` (that vsce release needs
+Node.js 22 or later):
 run `npm ci --prefix .github/vsce --ignore-scripts`, then
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 A [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
-not yet published. One extension covers VS Code and its in-editor companion
-assistant surface. Its palette commands (`Apothem: Install`, `Verify`,
+not yet published. One extension covers the editors of the VS Code family. Its palette
+commands (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) run the same engine through the configured
 runner (`npx @ahmed-g-gad/apothem@<extension version>` by default, so the
 extension runs the engine version it shipped with; point the `apothem.runner`
@@ -374,14 +383,18 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 Replace the harness name with whichever adapter you installed; see the
 [harness list](/docs/harnesses) for all supported names. To check every
-installed adapter at once (its verify and its hook commands), run
-`apothem doctor` (or `npx @ahmed-g-gad/apothem doctor`) in the same form. For the plugin path, run
+installed adapter at once (its verify and its hook commands), run `doctor`
+in place of `verify --harness NAME`, in whichever form you used above:
+`apothem doctor`, `PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`, or
+`npx @ahmed-g-gad/apothem doctor`. For the plugin path, run
 `/plugin` inside Claude Code and confirm **apothem** is listed as installed.
 
 ## Prerequisites at a glance
 
-- **Python 3.10 or later** — every path that runs the engine probes for it
-  (`python3`, `python`, the versioned names, and `py -3` on Windows).
+- **Python 3.10 or later** — the paths that locate it do so by name, and the
+  names differ by path. The npm shim tries `python3`, `python`, then `py -3`.
+  The installers try `python3`, `python`, and the versioned names `python3.14`
+  down to `python3.10`.
 - **`click` and `rich` importable** under that interpreter — the two
   terminal-facing dependencies the engine does not vendor. The installers
   check both, name anything missing, and offer to install it for you — with
@@ -391,7 +404,8 @@ installed adapter at once (its verify and its hook commands), run
   interpreter it found, with the version constraints Apothem is tested
   against (`<interpreter> -m pip install "click==…" "rich>=…"`); with `--json` the
   same error arrives as a JSON envelope with code `runtime.dependency_missing`.
-- **Node.js 18 or later** — the npm-shim and tool-plugin paths only.
+- **Node.js 18 or later** — only the paths that run `npx`: the npm shim (2),
+  the VS Code-family extension (4), and the command-line bootstraps (5–7).
 - **End-of-life runtimes.** Python 3.10 reached upstream end of life on
   2026-10-01, and Node.js 18 and 20 on 2025-04-30 and 2026-04-30. Apothem
   still supports them as its declared floors and tests each one in CI, but

@@ -1,90 +1,107 @@
 ---
 title: "GLM (Z.ai)"
-description: "Apothem harness adapter for GLM (Z.ai) as a configurable model backend."
+description: "Adaptador de harness do Apothem para o GLM (Z.ai) como backend de modelo configurável."
 machineTranslated: true
-sourceHash: "c2f9dc937ca0e8cc"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Z.ai
-**Install name:** `glm`
+**Fornecedor:** Z.ai
+**Nome de instalação:** `glm`
 **Status:** GA
-**Native config:** `<project>/.apothem/providers/glm.toml`
+**Configuração nativa:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a harness. Z.ai ships no first-party
-GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. The `glm` adapter writes a provider configuration file that records
-both compatibility surfaces so any compatible tool can be wired to the GLM
-model family.
+O GLM (Z.ai) é um **backend de modelo**, não uma ferramenta de programação
+própria. A Z.ai não distribui nenhuma linha de comando própria do GLM; em vez
+disso, uma ferramenta que fala o protocolo compatível com a Anthropic ou
+compatível com a OpenAI é apontada para o GLM pela definição de uma URL base de
+backend e de uma chave. O Apothem ainda conta o GLM entre os seus adaptadores de
+harness, de modo que você o seleciona com `--harness glm` como qualquer outro. O
+adaptador `glm` grava um arquivo de configuração de provedor que registra ambas
+as superfícies de compatibilidade, para que qualquer ferramenta compatível possa
+ser conectada à família de modelos GLM.
 
-## Installation
+## Instalação
 
 ```bash
 apothem install --harness glm --project /path/to/project
 ```
 
-The adapter writes one project-scope provider file recording the GLM backend
-endpoints and operator-configurable placeholders.
+O adaptador grava um único arquivo de provedor com escopo de projeto que
+registra os endpoints do backend do GLM e marcadores de posição configuráveis
+pelo operador.
 
-**Files written:** `<project>/.apothem/providers/glm.toml`
+**Arquivos gravados:** `<project>/.apothem/providers/glm.toml`
 
-## Profile-to-native-config mapping
+## Mapeamento do perfil para a configuração nativa
 
-The provider file records two backends. The Anthropic-compatible backend uses
-the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
-protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
-URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
-replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+O arquivo de provedor registra dois backends. O backend compatível com a
+Anthropic usa a URL base `https://api.z.ai/api/anthropic`; uma ferramenta que
+fala o protocolo da Anthropic é roteada para o GLM pela definição de
+`ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` e, opcionalmente,
+`API_TIMEOUT_MS`. A tabela `[backends.anthropic_compatible.env]` do arquivo lista
+essas variáveis e também `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+`ANTHROPIC_DEFAULT_SONNET_MODEL` e `ANTHROPIC_DEFAULT_HAIKU_MODEL`, que mapeiam
+os papéis opus, sonnet e haiku da ferramenta para modelos GLM. O backend
+compatível com a OpenAI usa a URL base `https://api.z.ai/api/coding/paas/v4`. O
+token de autenticação é um marcador de posição que você substitui pela sua
+própria chave da Z.ai — o Apothem nunca grava um segredo real. Os IDs de modelo
+são voláteis entre versões, então o Apothem não fixa nenhum; o arquivo carrega
+marcadores de posição `<GLM_MODEL_ID>` que você preenche a partir da
+[documentação da Z.ai](https://docs.z.ai/devpack/tool/claude) atual. Nada do
+perfil compartilhado vai para este arquivo; ele é um template fixo.
 
-## Compatibility notes
+## Notas de compatibilidade
 
-Because GLM is a backend rather than a harness, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+Como o GLM é um backend e não uma ferramenta de programação, ele não expõe
+nenhuma superfície para regras, comandos, skills ou hooks — o adaptador grava
+apenas o arquivo de provedor do backend e nada mais. Sua chave da Z.ai e suas
+escolhas de ID de modelo permanecem de propriedade do operador. As convenções da
+superfície do fornecedor das quais o adaptador depende estão fixadas em
+`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, com snapshot feito
+contra a documentação ao vivo da Z.ai.
 
-GLM runs the GLM model family from Z.ai; see the
-[vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
-current backend, model, and Anthropic-compatible configuration surface.
+O GLM executa a família de modelos GLM da Z.ai; consulte a
+[referência de configuração do fornecedor](https://docs.z.ai/devpack/tool/claude)
+para a superfície atual de backend, de modelo e de configuração compatível com a
+Anthropic.
 
-## Verification
+## Verificação
 
 ```bash
 apothem verify --harness glm --project /path/to/project
 ```
 
-The verify command confirms that:
+O comando verify confirma que:
 
-1. The native config exists at the expected path.
-2. The provider file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+1. A configuração nativa existe no caminho esperado.
+2. O arquivo de provedor está presente e não está vazio.
+3. A rotina de verificação específica do adaptador relata sucesso.
 
-## Updating
+## Atualização
 
 ```bash
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+O arquivo de provedor é seu a partir do momento em que existe. Tanto `install`
+quanto `update` gravam o template somente quando
+`.apothem/providers/glm.toml` está ausente, e nenhum dos dois jamais o
+sobrescreve depois disso, de modo que a sua referência de chave e as suas
+escolhas de modelo sobrevivem a cada nova execução. Para adotar um template mais
+recente, mova o seu arquivo para outro lugar, execute `update` e copie os seus
+valores para o novo arquivo.
 
-## Uninstalling
+## Desinstalação
 
 ```bash
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+Remove o arquivo de provedor somente quando o Apothem o criou e ele ainda é o
+template não editado, fazendo antes o backup dele sob a raiz de backups do
+Apothem. Um arquivo que você criou ou editou é deixado no lugar. O YAML do
+perfil compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 
@@ -92,22 +109,22 @@ unaffected.
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## Solução de problemas
 
-| Symptom | Fix |
+| Sintoma | Correção |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness glm --project /path/to/project` |
+| Falha na verificação | O arquivo de provedor está ausente ou vazio. Se estiver ausente, execute `apothem update --harness glm --project /path/to/project`. Se estiver vazio, mova `.apothem/providers/glm.toml` para outro lugar primeiro, depois execute `update` e verifique novamente |
+| Conteúdo de configuração inesperado | Edite `.apothem/providers/glm.toml` diretamente; o Apothem nunca reescreve um arquivo existente, e o perfil compartilhado não acrescenta nada a ele. Para um template novo, mova o arquivo para outro lugar e execute `apothem update --harness glm --project /path/to/project` |
 
-## Configuration knobs
+## Ajustes de configuração
 
-| Flag | Default | Description |
+| Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
 
-## See also
+## Veja também
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

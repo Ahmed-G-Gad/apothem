@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Apothem-Harness-Adapter für Claude Code (GA)."
 machineTranslated: true
-sourceHash: "3e22dcf3597b4cc3"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,42 +18,91 @@ apothem install --harness claude-code
 ```
 
 Der `claude-code`-Adapter installiert den gemeinsamen Apothem-Korpus in den
-nativen Erkennungsbaum von Claude Code. Markdown-Agents, Regeln, Skills,
-Ausgabestile, Statusleisten-Helfer und Einstellungen werden an ihren nativen
-Speicherorten installiert; Befehls-Prompts werden zusätzlich als Skills verpackt,
-damit wiederverwendbare Workflows über die aktuelle Skill-Oberfläche von Claude
-Code sichtbar bleiben.
+nativen Discovery-Baum von Claude Code. Markdown-Agenten, Regeln, Skills,
+Output-Styles und Einstellungen werden an ihren nativen Speicherorten
+installiert; Command-Prompts werden in Skills umgewandelt, damit
+wiederverwendbare Workflows über die aktuelle Skill-Oberfläche von Claude Code
+sichtbar bleiben. Der Statusline-Renderer wird nach `~/.claude/statuslines/`
+kopiert, aber nicht eingebunden: Claude Code liest seine Statuszeile aus der
+Einstellung `statusLine`, die der Adapter nicht setzt. Um sie einzuschalten,
+fügen Sie `settings.json` einen `statusLine`-Eintrag mit `"type": "command"`
+hinzu, der `~/.claude/statuslines/render.py` ausführt.
 
-**Geschriebene Dateien:** `settings.json`, `agents/`, `rules/`, `skills/`,
-`statuslines/`, `output-styles/` und der `apothem/`-Support-Teilbaum
-(`apothem/hooks/`, `apothem/conformity/`, `apothem/schemas/`,
-`apothem/templates/`) unter `~/.claude/`. Befehlsdateien werden in
-Kind-Skill-Verzeichnisse umgewandelt. Der Hook-Dispatcher und die Konformitäts-Gate
-laufen aus ihren materialisierten Kopien — die Hook-Einträge in `settings.json`
-rufen `~/.claude/.apothem/support/hooks/dispatch.py` und
-`~/.claude/.apothem/support/conformity/gate.py` per absolutem Pfad auf, sodass auf dem Host
-kein importierbares `apothem`-Paket benötigt wird.
+**Geschriebene Dateien:** `settings.json`, der Apothem-Block in `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
+`statuslines/`, `output-styles/` sowie der Unterstützungs-Teilbaum `.apothem/support/`
+(`.apothem/support/hooks/`, `.apothem/support/conformity/`,
+`.apothem/support/schemas/`, `.apothem/support/templates/`) unter `~/.claude/`.
+Command-Dateien werden in
+untergeordnete Skill-Verzeichnisse umgewandelt. Der Hook-Dispatcher und das
+Konformitäts-Gate laufen aus ihren materialisierten Kopien — die Hook-Einträge
+in `settings.json` rufen
+`~/.claude/.apothem/support/hooks/dispatch.py` und
+`~/.claude/.apothem/support/conformity/gate.py` über den absoluten Pfad auf,
+sodass auf dem Host kein importierbares `apothem`-Paket benötigt wird.
 
-Der Adapter verwaltet `CLAUDE.md` **nicht** — diese Datei gehört dem Betreiber. Die
+`~/.claude/CLAUDE.md` bleibt im Besitz des Operators. Der Adapter schreibt
+einen einzelnen, durch Sentinels begrenzten Apothem-Block hinein, der die
+Profilprojektion (Identität, Präferenzen, Regeln, Ernsthaftigkeit und per
+Opt-in aktivierte Verhaltensweisen) und einen Abschnitt zu den
+Apothem-Unterstützungsdateien enthält, und bewahrt jede Zeile außerhalb der
+Sentinels wörtlich. Der Abschnitt zu den Unterstützungsdateien nennt das
+absolute Verzeichnis, gegen das jeder Verweis im Repository-Stil in den
+installierten Regeln, Skills und Agenten aufgelöst wird: `rules/<name>.md` unter
+`~/.claude/rules/` sowie `templates/...`, `schemas/...`, `hooks/...` und
+`conformity/...` unter `~/.claude/.apothem/support/`. Der Rest der
 Governance-Oberfläche von Apothem erreicht Claude Code über den propagierten
-`rules/`-Baum und den SessionStart-Hook, nicht über eine materialisierte
-`CLAUDE.md`.
+`rules/`-Baum und den SessionStart-Hook. OpenCode lädt `~/.claude/CLAUDE.md`
+ebenfalls, wenn keine `~/.config/opencode/AGENTS.md` existiert, daher nennt der
+Block kein einzelnes Werkzeug als Leser.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Bei jedem `apothem install` oder `apothem update` propagiert der Adapter den
-gemeinsamen `apothem`-Korpus gemäß dem Propagierungs-Manifest nach `~/.claude/`.
-Der Adapter verwendet native Verzeichnisse direkt, wo es möglich ist, und wandelt
-Befehls-Prompts in Skill-Ordner um. Bereits vorhandene, von Apothem verwaltete
-übereinstimmende Kinder werden vor dem Ersetzen gesichert; nicht verwandte, vom
-Betreiber verfasste Einträge bleiben erhalten. `settings.json` wird zusammengeführt,
-sodass vom Betreiber verfasste Schlüssel wiederherstellbar bleiben.
+gemeinsamen `apothem`-Korpus gemäß dem Propagation-Manifest nach `~/.claude/`.
+Der Adapter verwendet native Verzeichnisse direkt, wo dies möglich ist, und
+wandelt Command-Prompts in Skill-Ordner um. Bereits vorhandene, übereinstimmende,
+von Apothem verwaltete Kindelemente werden vor dem Ersetzen gesichert; nicht
+zugehörige, vom Operator verfasste Einträge bleiben erhalten. `settings.json`
+wird zusammengeführt, sodass vom Operator verfasste Schlüssel
+wiederherstellbar bleiben.
+
+Installierte Skills und die im Claude Code-Plugin gebündelten Skills tragen
+`user-invocable` statt des `userInvocable` aus dem Quellkorpus, weil Claude
+Code nur den Schlüssel mit Bindestrich liest. Die beiden Template-Container
+(`plan-suite`, `research-suite`) setzen ihn auf `false`, sodass sie nicht im
+`/`-Menü erscheinen. Jeder Output-Style setzt `keep-coding-instructions: true`,
+sodass bei der Auswahl eines Output-Styles die integrierten
+Softwareentwicklungs-Anweisungen von Claude Code erhalten bleiben.
 
 ## Kompatibilitätshinweise
 
-Es findet keine Übersetzung statt. Die Installation validiert, dass das Profil wohlgeformt ist und alle Hook-Bindungen in settings.json auflösbar sind.
+Command-Prompts werden in Skill-Verzeichnisse umgewandelt; Agenten, Regeln,
+Skills und Output-Styles werden unverändert kopiert. Die Installation
+validiert, dass das Profil wohlgeformt ist und alle Hook-Bindungen in
+settings.json auflösbar sind. Der Adapter verfasst keine MCP-Server-Einträge:
+Registrieren Sie Server mit `claude mcp add` (siehe
+[MCP-Server](/docs/reference/mcp)).
 
-Claude Code wendet bei jedem Sitzungsstart alle Hook-Bindungen in settings.json an. Jeder Adapter wird gegen seine eigene native Harness verifiziert — es gibt keine privilegierte „Referenz“-Harness.
+Claude Code wendet bei jedem Sitzungsstart alle Hook-Bindungen in settings.json an. Jeder Adapter wird gegen seinen eigenen nativen Harness verifiziert — es gibt keinen privilegierten „Referenz“-Harness.
+
+### Grenzen der Berechtigungsregeln
+
+Die Settings-Vorlage verweigert `Read(...)` für Geheimnis- und Cache-Pfade wie
+`.env*` und `~/.ssh/**`. Claude Code wendet eine `Read`-Verweigerung auf seine
+Datei-Werkzeuge an, auf die Dateibefehle, die es in Bash erkennt (`cat`,
+`head`, `tail`, `sed`, `tee`), und auf Umleitungsziele. Es wendet die
+Verweigerung nicht auf eine Suche an, die Dateien liest, ohne sie zu benennen,
+etwa `grep -r pattern .`, und nicht auf ein Skript, das Dateien selbst öffnet
+([Berechtigungsreferenz](https://code.claude.com/docs/en/permissions)). Unter
+macOS, Linux und WSL lässt Claude Code die Werkzeuge `Glob` und `Grep` aus dem
+Standard-Werkzeugsatz weg und sucht stattdessen über Bash, daher greifen die
+Erlaubniseinträge der Vorlage für `Glob` und `Grep` nur dort, wo diese
+Werkzeuge vorhanden sind. Um jedem Prozess das Lesen eines Pfads zu verwehren,
+aktivieren Sie die Sandbox von Claude Code.
+
+Die Skills und Helferdefinitionen, die `TodoWrite` nennen, nennen auch
+`TaskCreate`, `TaskGet`, `TaskList` und `TaskUpdate`, weil Claude Code
+`TodoWrite` standardmäßig zugunsten dieser Werkzeuge abschaltet.
 
 ## Verifizierung
 
@@ -61,11 +110,14 @@ Claude Code wendet bei jedem Sitzungsstart alle Hook-Bindungen in settings.json 
 apothem verify --harness claude-code
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -73,11 +125,11 @@ Der Befehl verify bestätigt, dass:
 apothem update --harness claude-code
 ```
 
-Leitet die native Konfiguration aus dem aktuellen gemeinsamen Profil neu ab. Führen
-Sie dies aus, nachdem das installierte `apothem`-Paket aktualisiert wurde, damit
-die propagierte Konventions-Oberfläche (Agents, Regeln, Skills, Statusleisten,
-Ausgabestile) die neue Version widerspiegelt. `CLAUDE.md` gehört dem Betreiber und
-wird vom Adapter niemals angerührt.
+Leitet die native Konfiguration aus dem aktuellen gemeinsamen Profil neu ab.
+Führen Sie den Befehl aus, nachdem das installierte `apothem`-Paket
+aktualisiert wurde, damit die propagierte Konventions-Oberfläche (Agenten,
+Regeln, Skills, Statuslines, Output-Styles) die neue Version widerspiegelt. In
+`CLAUDE.md` schreibt update nur den Apothem-Block zwischen seinen Sentinels neu.
 
 ## Deinstallation
 
@@ -85,7 +137,17 @@ wird vom Adapter niemals angerührt.
 apothem uninstall --harness claude-code
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Entfernt den Apothem-Block aus `~/.claude/CLAUDE.md` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig
+ist. Entfernt die Einträge, die der Adapter zu `~/.claude/settings.json`
+hinzugefügt hat (Ihre eigenen Berechtigungsregeln, Schlüssel und Hook-Handler
+bleiben erhalten, und die Datei wird nur gelöscht, wenn Apothem sie angelegt hat
+und nichts von Ihnen übrig ist). Entfernt außerdem die Apothem-Dateien in
+`~/.claude/agents/`, `~/.claude/rules/`, `~/.claude/skills/`,
+`~/.claude/statuslines/`, `~/.claude/output-styles/` und
+`~/.claude/.apothem/support/`; andere Dateien in diesen Ordnern bleiben
+bestehen. Jede Datei wird unter `~/.apothem/backups/` gesichert, bevor sie
+geändert oder entfernt wird.
 Das installierte `apothem`-Paket und das Quell-Repository bleiben unberührt.
 
 ## Konformitäts-Gate
@@ -99,11 +161,17 @@ python -m apothem.conformity.gate --all .
 | Symptom | Behebung |
 |---------|-----|
 | Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness claude-code` erneut aus |
-| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness claude-code` aus und verifizieren Sie erneut |
-| Unerwarteter Konfigurationsinhalt | Führen Sie `apothem update` erneut aus; das gemeinsame `apothem`-Profil ist die Quelle der Wahrheit, nicht `~/.claude/` |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness claude-code` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Führen Sie `apothem update` erneut aus; die Quelle der Wahrheit ist das gemeinsame `apothem`-Profil, nicht `~/.claude/` |
 
 ## Konfigurationsschalter
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation vorschauen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
+
+## Siehe auch
+
+- [Alle Harnesses](/docs/harnesses) — der vollständige Katalog der unterstützten Werkzeuge
+- [Installationsanleitung](/docs/install) — Apothem in diesen Harness installieren
+- [Referenz zu `apothem harnesses`](/docs/cli-reference/harnesses) — Adapter über die CLI auflisten und untersuchen

@@ -16,7 +16,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## Registration in settings.json
@@ -46,9 +46,10 @@ hook trace panel.
 
 ## Blocking writes
 
-Change `sys.exit(0)` to `sys.exit(1)` and print a JSON block to stdout:
+To block a write, print the deny envelope to stdout and still exit 0, as
+Apothem's own hooks do:
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

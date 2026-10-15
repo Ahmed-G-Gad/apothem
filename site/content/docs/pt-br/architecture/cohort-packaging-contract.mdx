@@ -1,30 +1,30 @@
 ---
-title: "Contrato de empacotamento de cohort"
-description: "O contrato estável e consumível a jusante para empacotamento de cohort e manifestos de plugin — enumere as cohorts e resolva seus alvos nativos por harness sem rederivar o mapeamento."
+title: "Contrato de empacotamento de cohorts"
+description: "O contrato estável e consumível a jusante para o empacotamento de cohorts e os manifestos de plugin — enumere os cohorts e resolva seus alvos nativos por harness sem rederivar o mapeamento."
 machineTranslated: true
-sourceHash: "da87b3596b66d733"
+sourceHash: "ef3a145a60ec6690"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-# Contrato de empacotamento de cohort
+# Contrato de empacotamento de cohorts
 
-Este documento especifica o contrato estável e consumível a jusante para
-empacotamento de cohort e manifestos de plugin. Um consumidor lê este contrato
-para enumerar as cohorts e resolver seus alvos nativos por harness **sem
-rederivar o mapeamento**.
+Este documento especifica o contrato estável e consumível a jusante para o
+empacotamento de cohorts e os manifestos de plugin. Um consumidor lê este
+contrato para enumerar os cohorts e resolver seus alvos nativos por harness
+**sem rederivar o mapeamento**.
 
 ## Artefatos
 
 | Artefato | Função |
 | -------- | ---- |
-| `src/apothem/schemas/cohort.schema.json` | Esquema JSON para um documento de manifesto de cohort. |
-| `src/apothem/schemas/cohort-manifest.yaml` | A instância do manifesto de cohort — todas as seis cohorts (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) preenchidas com seus conjuntos de membros; `full` é a união das outras cinco. |
-| `src/apothem/schemas/plugin.schema.json` | Esquema JSON para um manifesto de plugin por pacote (`plugin.json`). |
+| `src/apothem/schemas/cohort.schema.json` | JSON Schema de um documento de manifesto de cohorts. |
+| `src/apothem/schemas/cohort-manifest.yaml` | A instância do manifesto de cohorts — todos os seis cohorts (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) preenchidos com seus conjuntos de membros; `full` é a união dos outros cinco. |
+| `src/apothem/schemas/plugin.schema.json` | JSON Schema de um manifesto de plugin por pacote (`plugin.json`). |
 | `src/apothem/lib/propagation-manifest.yaml` | **Fonte da verdade** para os alvos nativos por harness. |
 
-## Forma do manifesto de cohort
+## Forma do manifesto de cohorts
 
-O manifesto de cohort é um objeto de nível superior com três chaves:
+O manifesto de cohorts é um objeto de nível superior com três chaves:
 
 - `version` — string SemVer do manifesto.
 - `cohorts[]` — uma entrada por cohort. Cada entrada tem `id` (do conjunto
@@ -34,80 +34,89 @@ O manifesto de cohort é um objeto de nível superior com três chaves:
   `hooks`).
 - `per_harness_targets` — o contrato de resolução (abaixo).
 
-Cada identificador de membro é um nome estável em kebab-case que corresponde a um
-artefato real sob `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
-`commands/<name>.md`, `rules/<name>.md`, ou uma entrada de `hooks/`).
+Cada identificador de membro é um nome estável em kebab-case que corresponde a
+um artefato real sob `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md` ou uma entrada de hooks — seja um
+executável `hooks/<name>.py`, seja um contexto de mensagem consultivo em
+`hooks/messages/<name>.md` entregue por meio do despachante).
 
-## Enumerando cohorts
+## Enumerar os cohorts
 
 Um consumidor carrega `cohort-manifest.yaml`, valida-o contra
-`cohort.schema.json`, e então itera sobre `cohorts[]`. Para cada cohort ele lê
+`cohort.schema.json` e então percorre `cohorts[]`. Para cada cohort, ele lê
 `members.<type>` para obter os identificadores de membros de cada tipo de
 catálogo.
 
-## Resolvendo alvos nativos por harness (sem rederivação)
+## Resolver os alvos nativos por harness (sem rederivação)
 
-O manifesto de cohort **não** reafirma o mapeamento de harness. Em vez disso,
-`per_harness_targets.source` aponta para `lib/propagation-manifest.yaml`, a única
-fonte da verdade. A regra de resolução:
+O manifesto de cohorts **não** repete o mapeamento de harnesses. Em vez disso,
+`per_harness_targets.source` aponta para `lib/propagation-manifest.yaml`, a
+única fonte da verdade. A regra de resolução:
 
-> Para um membro de cohort do tipo de catálogo `T` (um de `skills`, `agents`,
+> Para um membro de cohort do tipo de catálogo `T` (um entre `skills`, `agents`,
 > `commands`, `rules`, `hooks`) e um harness de destino `H` (um dos listados em
-> `per_harness_targets.harnesses`), o alvo nativo do plugin é o campo `target` da
-> entrada em `lib/propagation-manifest.yaml` sob `harnesses.H.install` cujo
+> `per_harness_targets.harnesses`), o alvo nativo do plugin é o campo `target`
+> da entrada em `lib/propagation-manifest.yaml` sob `harnesses.H.install` cujo
 > `source` corresponde a `T/`.
 
-Por exemplo, uma skill da cohort `core` instalada para `claude_code` resolve-se
-através da entrada `harnesses.claude_code.install` com `source: "skills/"` para
-`target: "${HARNESS_ROOT}/skills/"`. A mesma skill para `opencode` resolve-se
-para `${HARNESS_ROOT}/skills/`; para `gemini_cli` para
+Por exemplo, uma skill do cohort `core` instalada para `claude_code` é resolvida
+por meio da entrada `harnesses.claude_code.install` com `source: "skills/"` para
+`target: "${HARNESS_ROOT}/skills/"`. A mesma skill para `opencode` é resolvida
+para `${HARNESS_ROOT}/skills/`; para `gemini_cli`, para
 `${PROJECT_ROOT}/.gemini/skills/`. Os consumidores nunca inventam alvos de
 harness — eles os consultam.
 
 Os marcadores de posição `${HARNESS_ROOT}` / `${PROJECT_ROOT}` são resolvidos no
-momento da instalação por cada adaptador de harness; os consumidores de cohort
+momento da instalação por cada adaptador de harness; os consumidores de cohorts
 tratam o `target` resolvido literalmente.
 
 ## Função do manifesto de plugin
 
 `plugin.schema.json` descreve um `plugin.json` — um pacote autodescritivo de
-membros de catálogo (`skills` / `commands` / `agents` / `hooks` / `rules`) com um
-`name` obrigatório, uma `version` SemVer e uma `description`. Um manifesto de
-plugin é a unidade que um adaptador de harness materializa em sua superfície de
-plugin nativa; as cohorts selecionam quais membros um plugin carrega, e o
-manifesto de propagação resolve onde cada membro aterrissa por harness.
+membros do catálogo (`skills` / `commands` / `agents` / `hooks` / `rules`) com
+um `name` obrigatório, uma `version` SemVer e uma `description`. Os metadados
+opcionais abrangem `displayName` (o nome exibido no lugar de `name`) e os campos
+de listagem do diretório de plugins: `documentationUrl`, `supportUrl`,
+`privacyPolicyUrl` e `termsOfServiceUrl`, cada um uma URL `https://`, além de um
+caminho `icon` dentro do plugin. O pacote gerado do Claude Code define
+`displayName`, `documentationUrl` e `supportUrl`. Um manifesto de plugin é a
+unidade que um adaptador de harness materializa em sua superfície de plugin
+nativa; os cohorts selecionam quais membros um plugin carrega, e o manifesto de
+propagação resolve onde esses membros chegam em cada harness.
 
-## Decisão de empacotamento — um pacote guarda-chuva, cohorts lógicas
+## Decisão de empacotamento — um pacote guarda-chuva, cohorts lógicos
 
-As cohorts são uma **camada de seleção lógica** (este manifesto), não um conjunto
-de pacotes separados e instaláveis de forma independente. O Apothem distribui
-**um pacote guarda-chuva** carregando o catálogo completo; o manifesto de cohort
-permite que um consumidor escolha um subconjunto coerente, e o manifesto de
-propagação resolve onde cada membro selecionado aterrissa por harness.
+Os cohorts são uma **camada de seleção lógica** (este manifesto), não um
+conjunto de pacotes separados e instaláveis de forma independente. O Apothem
+distribui **um pacote guarda-chuva** que carrega o catálogo completo; o
+manifesto de cohorts permite que um consumidor escolha um subconjunto coerente,
+e o manifesto de propagação resolve onde cada membro selecionado chega em cada
+harness.
 
-Dividir o catálogo em pacotes separados por cohort (p. ex., um pacote por família
-`developer` / `security` / `research`) é **alcançável sem duplicação no nível do
-repositório** via o **padrão de symlink de meta-plugin** documentado pela
-superfície de distribuição principal: um catálogo de marketplace lista várias
-cohorts de plugin, e cada diretório de plugin de cohort contém **symlinks** para
-o catálogo compartilhado de fonte única em vez de cópias. Quando uma cohort é
-instalada, o harness desreferencia cada symlink dentro do marketplace — copiando
-o conteúdo do alvo para o *cache* daquela cohort — de modo que a cohort instalada
-é autocontida, enquanto o **repositório mantém uma única fonte da verdade ligada
-por symlinks** (ligação em vez de redundância, exatamente como a disciplina de
-deduplicação prefere). A leitura anterior de que os pacotes de cohort "duplicam
+Dividir o catálogo em pacotes separados por cohort (por exemplo, um pacote por
+família `developer` / `security` / `research`) é **viável sem duplicação no
+nível do repositório** por meio do **padrão de links simbólicos de meta-plugin**
+documentado pela superfície de distribuição principal: um catálogo de
+marketplace lista vários plugins de cohort, e cada diretório de plugin de cohort
+contém **links simbólicos** para o catálogo compartilhado de fonte única em vez
+de cópias. Quando um cohort é instalado, o harness desreferencia cada link
+simbólico interno ao marketplace — copiando o conteúdo do alvo para o *cache*
+desse cohort — de modo que o cohort instalado é autocontido, enquanto o
+**repositório mantém uma única fonte da verdade ligada por links simbólicos**
+(ligação em vez de redundância, exatamente como a disciplina de deduplicação
+prefere). A leitura anterior de que os pacotes de cohort "duplicam
 mecanicamente" o catálogo confundia a duplicação do *cache no momento da
-instalação* (a cópia normal por plugin do harness) com a duplicação do
-*repositório*; o padrão de symlink evita esta última.
+instalação* (a cópia normal por plugin feita pelo harness) com a duplicação no
+*repositório*; o padrão de links simbólicos evita esta última.
 
-O Apothem atualmente distribui **um pacote guarda-chuva** porque essa é a
-superfície de distribuição mais simples, não porque as cohorts sejam
-mecanicamente impossíveis. Adotar a forma por cohort é um genuíno **trade-off de
-UX e manutenção**, não uma violação de deduplicação: a vantagem é uma experiência
-mais fina de "instalar apenas esta família"; os custos são manter N diretórios de
-symlink de cohort mais suas entradas de marketplace, uma superfície de
-conformidade / teste / golden maior, e cópias de cache no momento da instalação
-por cohort. A camada de cohort lógica acima já entrega o resultado de *seleção*
-"instale apenas o que você precisa" a partir do pacote único; o *empacotamento*
-por cohort é o próximo passo sempre que a experiência de instalação mais fina for
-desejada.
+O Apothem distribui atualmente **um pacote guarda-chuva** porque essa é a
+superfície de distribuição mais simples, não porque os cohorts sejam
+mecanicamente impossíveis. Adotar a forma por cohort é um verdadeiro
+**compromisso entre UX e manutenção**, não uma violação de deduplicação: o
+ganho é uma experiência mais granular de "instalar apenas esta família"; os
+custos são manter N diretórios de links simbólicos de cohort mais suas entradas
+de marketplace, uma superfície maior de conformidade / testes / goldens e
+cópias de cache por cohort no momento da instalação. A camada de cohorts lógicos
+acima já entrega, a partir do pacote único, o resultado de *seleção* "instalar
+apenas o que você precisa"; o *empacotamento* por cohort é o próximo passo
+sempre que a experiência de instalação mais granular for desejada.

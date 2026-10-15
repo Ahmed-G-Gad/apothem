@@ -2,40 +2,37 @@
 title: "命令"
 description: "实现计划套件流水线的斜杠命令定义，外加用于代码、架构、安全、依赖与文档评审的审计。"
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-斜杠命令定义以扁平的 `.md` 文件形式存放于 `src/apothem/commands/` 下。规范集合以架构感知的计划套件流水线为首，它作为七个一等命令交付——每个阶段一个命令，各自可直接以 `/plan-<stage>` 形式调用。不存在单一的总调度器；每个阶段都是它自己在 `src/apothem/commands/plan-<stage>.md` 处注册的命令文件。
+斜杠命令定义以扁平 `.md` 文件的形式存放在 `src/apothem/commands/` 下。规范集合以具备架构感知的计划套件流水线为首，它以七个一等命令的形式交付——每个阶段一个，各自可直接以 `/plan-<stage>` 的形式调用。不存在单体式的调度器；每个阶段都是位于 `src/apothem/commands/plan-<stage>.md` 的、独立注册的命令文件。
 
-| 调用 | 命令文件 | 描述 |
+| 调用 | 命令文件 | 说明 |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 将非结构化内容精炼为规格级别的散文 |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 从散文 / 需求物化一个计划套件 |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 将非结构化内容精炼为规格级的散文 |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 依据散文 / 需求物化一个计划套件 |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | 带评分卡的取证式审计 |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | 为承载架构的套件发出 `_inputs/design.md` |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | 带质量门地执行某个阶段 |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | 为承载架构的套件生成 `_inputs/design.md` |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | 在质量闸门下执行一个阶段 |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | 只读的进度报告 |
-| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 在不丢失已解决决策的前提下修订、扩展、精炼或回退某个既有套件 |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | 对 spec → generate → review 的闭环包裹并主动补救（正交，先于 execute） |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 修订、扩展、精炼或回退一个现有套件，而不丢失已解决的决策 |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | 对 spec → generate → review 进行带主动补救的闭环封装（正交，先于 execute） |
 
-在计划流水线之外，另有面向整个项目的工具命令随之交付——用于焕新与发布的
-`/freshify`、`/github-deploy-fresh`、`/github-deploy-next` 与 `/elevate`；用于
-多智能体评审与编排的 `/audit`、`/fortress` 与 `/workflow`；用于聊天应用项目提升的
-`/projectify`——另加十一项审计/评审通道与 `/research` 流水线：
+在计划流水线之外，面向整个项目的工具命令也随之交付——用于焕新与发布的 `/freshify`、`/github-deploy-fresh`、`/github-deploy-next` 和 `/elevate`；用于多智能体评审与编排的 `/audit`、`/fortress` 和 `/workflow`；用于聊天应用 Project 提升的 `/projectify`——另外还有十一项审计/评审扫查（code-review、code-audit、architecture-review、docs-review、security-audit、dependency-audit、supply-chain-audit、threat-model-audit、perf-audit、a11y-audit、ux-review）以及 `/research` 流水线：
 
-| 调用 | 命令文件 | 描述 |
+| 调用 | 命令文件 | 说明 |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | 将项目渲染为新鲜、无痕、可发布状态；每个破坏性步骤均经确认设门 |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` 的 GitHub 特化版，产出单个新鲜的首版发布 |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | 在 GitHub 发布面上运行一整轮下一版发布周期 |
-| `/elevate` | `src/apothem/commands/elevate.md` | 经由独立的批评工作者将项目的每个面提升至当前 SOTA，随后移交给 `/freshify` |
+| `/freshify` | `src/apothem/commands/freshify.md` | 将项目呈现为全新、无痕迹且可投入生产的状态；每个破坏性步骤都以确认为闸门 |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` 的 GitHub 特化版本，产出单个全新的首版发布 |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | 在 GitHub 发布表面上运行一次完整的下一版发布周期 |
+| `/elevate` | `src/apothem/commands/elevate.md` | 通过独立的批评智能体将项目的每个表面提升至当前 SOTA，然后移交给 `/freshify` |
 
-完整的、作为权威来源的命令集——包括审计-评审序列——即本页底部生成的清单。
+完整的、作为事实来源的命令集——包括每一项审计评审扫查——就是本页底部生成的清单。
 
 ## Frontmatter 契约
 
-每个命令文件都携带规范的八键 frontmatter。机器可读的契约是 [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)（`additionalProperties: false`）；本代码块与其镜像：
+每个命令文件都携带规范的八键 frontmatter。机器可读的契约是 [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)（`additionalProperties: false`）；以下代码块与其保持一致：
 
 ```yaml
 ---
@@ -50,13 +47,13 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-校验器的 `frontmatter-cohort` 检查（Command 分支）会在每个命令文件上核实该契约。
+校验器的 `frontmatter-cohort` 检查（Command 分支）会在每个命令文件上验证该契约。`allowed-tools` 列出命令处于活动状态时，工具可以不经询问就运行的那些工具，因此它默认保持只读：有副作用的工具（Bash、PowerShell、Write、Edit、NotebookEdit、WebFetch）只能以作用域规则的形式出现，例如 `Bash(git log *)`，而裸的 `"*"` 通配符会被 schema 拒绝。具有不可逆副作用的命令（`freshify`、`github-deploy-fresh`、`github-deploy-next`）设置 `disable-model-invocation: true`，因此只有操作者才能启动它们。
 
-## 编写规律
+## 编写纪律
 
-- **自包含工作流。** 每个命令的正文都以编号步骤列出工作流，以便harness可从冷启动开始执行。
-- **Bindings 块。** 每个命令都以规范的五方向 Bindings 块收尾。
-- **仅用领域语言。** 正文中不含计划内部引用。
+- **自包含的工作流。** 每个命令的正文都以编号步骤列出工作流，以便助手能够从冷启动开始执行。
+- **Bindings 区块。** 每个命令都以规范的五方向 Bindings 区块结尾。
+- **仅使用领域语言。** 正文中不包含计划内部引用。
 
 ## 生成的命令清单
 

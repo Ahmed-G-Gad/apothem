@@ -2,7 +2,7 @@
 title: "安全"
 description: "Apothem 的安全态势——OpenSSF Scorecard 目标、漏洞报告、加固表面。"
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,65 +10,91 @@ Apothem 的安全态势建立在五大支柱之上：供应链加固、漏洞响
 
 ## 威胁模型
 
-Apothem 是一个配置物化器。它读取一份共享配置，并将 harness 原生
-配置文件写入每个 harness 所读取的目录。该单一功能界定了
-它信任什么、不信任什么。
+Apothem 是一个配置物化器。它读取一份共享配置档案，并将工具原生配置文件写入每个工具所读取的目录。这一单一功能界定了它信任什么、不信任什么。
 
-- **Apothem 信任什么。** 你撰写的共享配置，以及安装器放置的捆绑源码
-  树。配置是你声明的意图；引擎在通过 schema 校验后将其视为权威输入。
-- **Apothem 不信任什么。** 配置内容只有在校验之后才会抵达文件系统：
-  schema 失败、未知的 harness ID、不安全的项目路径、缺失的清单来源、
-  目标遍历以及符号链接穿越，全部会在任何写入之前停止，并返回带有
-  `files_written: []` 的结构化诊断信息。
-- **物化输出永不携带什么。** 没有任何机密。配置诊断在抵达普通输出、
-  JSON、日志、文档片段或测试之前，会对类机密的键和形似令牌的值进行
-  脱敏处理，公开示例则使用虚构的占位身份与域名。物化后的配置意在被
-  提交与共享；它不携带任何凭据。
-- **通用拒绝底线。** Apothem 物化的规则携带一条不容协商的拒绝底线，
-  无论任何按 harness 划分的允许列表如何——机密路径（`.env*`、
-  `~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、
-  向受保护分支强制推送）以及对不可信输入的执行。任何允许列表都不会
-  悄然拓宽这条底线。
-- **影响半径。** 写入被限定在 harness 目录以及 Apothem 拥有的支持子树
-  范围内。现有的受管目标在替换前会被备份，共享发现目录则会逐子项合并，
-  因此无关的、由操作者撰写的文件仍保留原位。
+- **Apothem 信任什么。** 你编写的共享配置档案，以及由安装器放置的捆绑源码树。配置档案是你声明的意图；引擎在 schema 校验通过后将其视为权威输入。
+- **Apothem 不信任什么。** 配置档案内容只有在校验之后才会到达文件系统：schema 校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径遍历以及符号链接穿越，全部会在任何写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
+- **物化输出绝不携带什么。** 不携带任何机密。配置档案诊断在到达纯文本输出、JSON、日志、文档片段或测试之前，会对类似机密的键和形似令牌的值进行脱敏，公开示例使用虚构的占位身份和域名。物化后的配置旨在被提交和共享；它不携带任何凭据。
+- **通用拒绝底线。** 无论任何按工具设置的允许列表如何，Apothem 物化的规则都带有一条不可协商的拒绝底线——机密路径（`.env*`、`~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、向受保护分支强制推送）以及执行不可信输入。任何允许列表都不会悄然放宽这条底线。
+- **影响范围。** 写入被限定在工具目录和 Apothem 自有的支持子树内。现有的受管目标在被替换之前会先备份，共享发现目录按子项逐一合并，因此无关的、由操作者编写的文件会保留原位。
 
 ## 运行时安全态势
 
-Harness 生命周期与配置写入命令在写入前进行校验。配置 schema 失败、
-未知的 harness ID、不安全的项目路径、缺失的清单来源、目标遍历以及
-符号链接穿越，都会在文件系统写入之前停止，并返回带有
-`files_written: []` 的结构化诊断信息。
+工具生命周期命令和配置档案写入命令会在写入之前进行校验。配置档案 schema 校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径遍历以及符号链接穿越，都会在文件系统写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
 
-安装与更新操作通过在替换前备份现有受管目标来保留它们。共享发现目录
-会逐子项合并，因此无关的、由操作者撰写的文件仍保留原位。`--dry-run`
-执行相同的校验并报告计划中的结果，而不会创建任何目录或文件。
+安装和更新操作通过在替换之前备份现有的受管目标来保留它们。共享发现目录按子项逐一合并，因此无关的、由操作者编写的文件会保留原位。`--dry-run` 执行相同的校验并报告计划中的结果，而不创建任何目录或文件。
 
-配置诊断在抵达普通输出、JSON 输出、日志、文档片段或测试之前，会对
-类机密的键和形似令牌的值进行脱敏处理。公开示例使用虚构的占位身份
-与域名。
+配置档案诊断在到达纯文本输出、JSON 输出、日志、文档片段或测试之前，会对类似机密的键和形似令牌的值进行脱敏。公开示例使用虚构的占位身份和域名。
 
 ## 快速链接
 
-- [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target) — 逐项检查证据与已知平台限制
-- [**Webhooks 审计**](/docs/security/webhooks-audit) — webhook 密钥卫生证据
-- [**分支保护**](/docs/security/branch-protection-ruleset) — 评审关卡、状态检查与推送限制
-- [**二进制产物扫描**](/docs/security/binary-artifacts-sweep) — 源码中零二进制的发布证明
-- [安全策略](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — 漏洞报告与受支持版本
-- [OpenSSF Scorecard 徽章](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — 实时分数
+- [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target)——逐项检查证据和已知的平台限制
+- [**Webhook 审计**](/docs/security/webhooks-audit)——webhook 密钥卫生证据
+- [**分支保护**](/docs/security/branch-protection-ruleset)——拉取请求要求、必需状态检查，以及对强制推送和删除的阻止
+- [**二进制制品扫描**](/docs/security/binary-artifacts-sweep)——源码中零二进制的发布证明
+- [安全策略](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)——漏洞报告与受支持版本
+- [OpenSSF Scorecard 徽章](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)——实时分数
 
 ## 报告漏洞
 
-请在仓库的 Security 选项卡上使用 [私有漏洞报告](https://github.com/ahmed-g-gad/apothem/security)。完整策略、受支持版本矩阵以及响应时间线位于 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)。
+使用仓库 Security 标签页上的[私有漏洞报告](https://github.com/ahmed-g-gad/apothem/security)。完整策略、受支持版本矩阵和响应时间线位于 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)。
 
 ## 供应链发布证明
 
 每个发布产物都附带：
 
-- **SLSA-3 构建溯源**，经由 [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
-- **Sigstore 签名**，经由 [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **CycloneDX SBOM**，经由 [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
-- **npm 溯源声明**，经由 `@ahmed-g-gad/apothem` 上的可信发布 OIDC
+- **SLSA-3 构建出处溯源**，通过 [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) 生成
+- **Sigstore 签名**，通过 [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) 生成
+- **CycloneDX SBOM**，覆盖所发布的 wheel 和 sdist，由 `scripts/release/generate_sbom.py` 写入：包括 apothem 包、`apothem/_vendor` 下 vendored 的每个包及其许可证、已声明的运行时依赖要求，以及每个分发包的 SHA-256。SBOM 与分发包一样经过签名，并受构建出处溯源覆盖
+- **npm 出处溯源声明**，通过 `@ahmed-g-gad/apothem` 上的受信任发布 OIDC 生成
 - **GPG 签名的 git 标签**（EDDSA 密钥 `70396FED9C634163`）
 
-校验配方在 [发布周期](/docs/runbooks/release-cycle) 与 [发布恢复](/docs/runbooks/release-recovery) 中内联记录；一份专门的发布校验运行手册即将推出。
+## 验证发布
+
+将某个发布的每个产物下载到一个空目录中，然后检查签名和构建出处溯源。将 `vX.Y.Z` 和 `X.Y.Z` 替换为你下载的发布。
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` 会打印 `Verified OK`，`slsa-verifier` 会打印 `PASSED: SLSA verification passed`。对任何其他产物，使用其 `<asset>.cosign.bundle` 重复执行 `cosign` 命令（较早的发布将平台归档和 `SHA256SUMS` 的签名包命名为 `<asset>.sig`）。darwin 和 linux 归档是同一份字节、两个名称，因此 `SHA256SUMS` 会两次列出同一个摘要。在克隆的仓库中，`bash scripts/release/verify-provenance.sh <download-dir>` 会在一次运行中完成全部三项检查，包括 `SHA256SUMS` 清单。
+
+有两个细节决定了验证是否有意义：
+
+- **所有者大小写。** 身份检查区分大小写，而证书按照 GitHub 报告的形式携带所有者：`Ahmed-G-Gad`。小写的所有者会使两个工具都验证失败。
+- **确切身份。** 优先使用带有上述完整主体的 `--certificate-identity`。若要接受任意发布标签，将模式的两端都锚定：
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  未锚定的模式（例如 `github.com/Ahmed-G-Gad/apothem`）也会匹配仅包含该文本的伪造主体，例如另一个仓库中、位于以本仓库命名的分支上的某个工作流。
+
+[发布周期操作手册](/docs/runbooks/release-cycle)将相同的命令记录为维护者的发布后检查。
+
+### 重新构建发布并比较
+
+wheel 和 sdist 是可复现的：使用发布工具链重新构建该标签，会得到已发布的 SHA-256 摘要。与发布流程一样，在 Linux 上使用 Python 3.12：
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+将这些摘要与已发布的 wheel 和 sdist 进行比较。构建使用 `pyproject.toml` 固定的哈希锁定 setuptools，而 `normalize_sdist.py` 会从 sdist 中移除构建时间、文件所有者和检出时间戳。

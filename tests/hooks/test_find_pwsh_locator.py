@@ -10,13 +10,17 @@ very binary the locator is meant to find — chicken-and-egg. The
 sibling's correctness rests on structural parity with the bash locator,
 verified by the parity test below.
 
-Three behaviors are asserted:
+Four behaviors are asserted:
 
 1. WindowsApps stub rejection — when the only ``pwsh`` on PATH is a
    fake WindowsApps stub, the locator returns exit 1 (no candidate).
 2. Real-pwsh resolution — when a working pwsh exists at a non-
    WindowsApps path, the locator prints its absolute path and exits 0.
-3. Paired-template parity — find-pwsh.sh's documented contract mirrors
+3. Fake-pwsh resolution — the same positive contract without a pwsh on the
+   host: a script that prints a major version stands in for pwsh, and the
+   locator walks past a Store-stub directory, a candidate under the size
+   guard, one below the version floor, and one whose probe exits non-zero.
+4. Paired-template parity — find-pwsh.sh's documented contract mirrors
    find-python.sh's shape per CLAUDE.md §11.4.
 """
 
@@ -27,6 +31,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
@@ -100,12 +105,16 @@ def test_empty_segment_skipped_but_explicit_dot_honored(tmp_path: Path) -> None:
     # Control: an explicit "." entry resolves the cwd interpreter, establishing
     # that the host shell reports the cwd file as executable under ``[ -x ]``.
     baseline = _list_candidates(".", cwd=tmp_path)
+    # Check the exit code before the skip decision: a locator that cannot be
+    # sourced must fail here, not skip with the [ -x ] reason below.
+    assert baseline.returncode == 0, (
+        f"the locator did not run cleanly (stderr={baseline.stderr!r})"
+    )
     if "pwsh" not in baseline.stdout:
         pytest.skip(
             "host shell does not report the cwd file as executable under [ -x ]; "
             "the empty-segment contrast is untestable here"
         )
-    assert baseline.returncode == 0
 
     # The fix: a doubled (empty) PATH segment is SKIPPED, not resolved to cwd.
     # The two probe directories do not exist, so the only would-be match is cwd
@@ -132,7 +141,30 @@ def stub_only_path(tmp_path: Path) -> dict[str, str]:
     return env
 
 
+def _assert_locator_defines_find_real_pwsh(env: dict[str, str]) -> None:
+    """Fail unless find-pwsh.sh defines ``find_real_pwsh``.
+
+    An empty result from ``_run_locator`` proves nothing on its own: a locator
+    that never loaded also exits 1 with empty stdout. ``type -t`` prints
+    ``function`` only when the sourced file defined the function.
+    """
+    if _BASH is None:
+        pytest.skip(SKIP_REASON)
+    probe = subprocess.run(
+        [_BASH, "-c", f". {LOCATOR_SH.as_posix()} && type -t find_real_pwsh"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert probe.stdout.strip() == "function", (
+        "find-pwsh.sh did not define find_real_pwsh, so an empty result proves "
+        f"nothing (rc={probe.returncode}, stderr={probe.stderr!r})"
+    )
+
+
 def test_stub_only_path_returns_no_candidate(stub_only_path: dict[str, str]) -> None:
+    _assert_locator_defines_find_real_pwsh(stub_only_path)
     result = _run_locator(stub_only_path)
     assert result.returncode == 1, (
         f"Expected exit 1 when only WindowsApps stub is on PATH, got "
@@ -201,6 +233,103 @@ def test_locator_skips_stub_finds_real_pwsh(tmp_path: Path) -> None:
     assert resolved.endswith("pwsh") or resolved.endswith("pwsh.exe")
 
 
+# The locator rejects any candidate under 1024 bytes as a Store stub, so a fake
+# pwsh that is meant to reach the version probe is padded past that size.
+_STUB_SIZE_FLOOR = 1024
+
+
+def _write_fake_pwsh(
+    directory: Path, *, major: int, exit_code: int = 0, padded: bool = True
+) -> Path:
+    """Write a ``pwsh`` stand-in that answers the locator's version probe.
+
+    The locator runs ``pwsh -NoProfile -Command '$PSVersionTable...Major'`` and
+    reads the major version from stdout, so the script prints *major* and exits
+    with *exit_code*. *padded* sizes it past the locator's stub guard.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    fake = directory / "pwsh"
+    lines = ["#!/bin/sh"]
+    if padded:
+        lines.append("# " + "padding " * (_STUB_SIZE_FLOOR // 8 + 1))
+    lines += [f"printf '%s\\n' {major}", f"exit {exit_code}"]
+    fake.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    fake.chmod(0o755)
+    # Fail here, not as a confusing locator result, if the padding ever drifts.
+    assert (fake.stat().st_size >= _STUB_SIZE_FLOOR) == padded
+    return fake
+
+
+class _Decoy(NamedTuple):
+    """One unusable candidate, listed ahead of the usable fake on PATH."""
+
+    directory: str
+    major: int
+    exit_code: int = 0
+    padded: bool = True
+
+
+# Every decoy prints a version the locator would accept, apart from
+# "below-the-version-floor", so exactly one guard is responsible for rejecting it.
+_DECOYS = [
+    pytest.param(None, id="no-decoy"),
+    pytest.param(_Decoy("WindowsApps", major=7), id="store-stub-directory"),
+    pytest.param(
+        _Decoy("under-size-guard", major=7, padded=False), id="under-the-size-guard"
+    ),
+    pytest.param(_Decoy("below-floor", major=6), id="below-the-version-floor"),
+    pytest.param(
+        _Decoy("exits-nonzero", major=7, exit_code=1), id="probe-exits-nonzero"
+    ),
+]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason=(
+        "git-bash reads a multi-directory PATH through its own drive-letter "
+        "conversion, which this test does not model; the Windows runner still "
+        "covers stub rejection in test_stub_only_path_returns_no_candidate"
+    ),
+)
+@pytest.mark.parametrize("decoy", _DECOYS)
+def test_locator_resolves_fake_pwsh_past_decoys(
+    tmp_path: Path, decoy: _Decoy | None
+) -> None:
+    """A fake pwsh resolves on any POSIX host, whatever else is on the machine.
+
+    test_locator_skips_stub_finds_real_pwsh needs a real pwsh and runs on Linux
+    only, so a locator that rejects every candidate passes the other tests on a
+    host without one. This test supplies its own pwsh: PATH holds only the
+    directories built here plus the one that holds ``wc``. Each decoy case puts
+    one unusable candidate first and asserts the locator walks past it to the
+    usable fake.
+    """
+    wc = shutil.which("wc")
+    if not wc:
+        pytest.skip("No wc on this host; the locator's stub-size guard needs it")
+
+    real = _write_fake_pwsh(tmp_path / "real-pwsh-bin", major=7)
+    path_dirs = [real.parent, Path(wc).parent]
+    if decoy is not None:
+        fake_decoy = _write_fake_pwsh(
+            tmp_path / decoy.directory,
+            major=decoy.major,
+            exit_code=decoy.exit_code,
+            padded=decoy.padded,
+        )
+        path_dirs.insert(0, fake_decoy.parent)
+
+    result = _run_locator({"PATH": os.pathsep.join(str(d) for d in path_dirs)})
+    assert result.returncode == 0, (
+        f"locator found no pwsh; stdout={result.stdout!r} stderr={result.stderr!r}"
+    )
+    assert result.stdout.strip() == real.as_posix(), (
+        f"locator chose {result.stdout.strip()!r}, expected the usable fake "
+        f"{real.as_posix()!r}"
+    )
+
+
 def test_paired_template_parity_with_find_python() -> None:
     """find-pwsh.sh exports find_real_pwsh; find-python.sh exports find_real_python."""
     pwsh_text = LOCATOR_SH.read_text(encoding="utf-8")
@@ -239,6 +368,7 @@ def test_help_path_returns_no_candidate_when_pwsh_absent() -> None:
     env = {"PATH": "/nonexistent-path-fragment-for-test"}
     if "SYSTEMROOT" in os.environ:
         env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
+    _assert_locator_defines_find_real_pwsh(env)
     result = _run_locator(env)
     assert result.returncode == 1
     assert result.stdout.strip() == ""

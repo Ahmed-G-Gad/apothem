@@ -2,61 +2,86 @@
 title: "status"
 description: "Référence de la CLI pour la commande apothem status."
 machineTranslated: true
-sourceHash: "a4669e50e0d90f9f"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Signale l'état d'installation, de vérification et de dérive de chaque harness enregistré.
+Signale l'état d'installation, de vérification et de dérive de chaque
+environnement enregistré.
 
 ## Synopsis
 
 ```
-apothem status [--project PATH]
+apothem status [--profile PATH] [--project PATH]
                [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-`status` est une commande d'inspection en lecture seule. Elle parcourt chaque adaptateur de harness enregistré et signale trois faits par assistant : s'il est installé, si ses cibles gérées se vérifient et si la configuration installée a dérivé du profil partagé. Elle n'écrit rien sur le disque.
+`status` est une commande d'inspection en lecture seule. Elle parcourt chaque
+adaptateur d'environnement enregistré et signale trois faits par
+environnement : s'il est installé, si ses cibles gérées passent la
+vérification, et si la configuration installée a dérivé par rapport au profil
+partagé. Elle n'écrit rien sur le disque.
 
-Pour chaque harness, `status` signale :
+Pour chaque environnement, `status` signale :
 
 | Colonne | Signification |
 |---|---|
 | `installed` | La configuration gérée de l'adaptateur existe à son chemin cible. |
 | `verified` | Les cibles gérées de l'adaptateur sont présentes et valides. |
-| `drift` | Le verdict de fidélité du profil (voir ci-dessous). |
+| `drift` | Le verdict de fidélité au profil (voir ci-dessous). |
 
 La valeur de `drift` est l'une des suivantes :
 
 | Valeur | Signification |
 |---|---|
-| `in-sync` | La configuration installée porte textuellement le profil partagé fraîchement projeté. |
-| `drift` | Le harness est installé mais son contenu de profil projeté ne correspond plus au profil partagé actuel. Relancez `apothem install` pour reprojeter. |
-| `absent` | Le harness n'est pas installé, il n'y a donc rien à comparer. |
-| `needs-project` | Un harness à portée de projet a été signalé sans `--project`, sa cible ne peut donc pas être résolue. Passez `--project PATH` pour l'inspecter. |
+| `in-sync` | La configuration installée porte mot pour mot le profil partagé fraîchement projeté. |
+| `drift` | L'environnement est installé, mais le contenu de profil projeté ne correspond plus au profil partagé actuel. Relancez `apothem install` pour le projeter à nouveau. |
+| `absent` | L'environnement n'est pas installé ; il n'y a donc rien à comparer. |
+| `needs-project` | Un environnement à portée de projet a été signalé sans `--project` ; sa cible ne peut donc pas être résolue. Passez `--project PATH` pour l'inspecter. |
+| `unknown` | Le profil par défaut n'a pas pu être chargé ; un environnement installé n'a donc aucune base de référence à laquelle se comparer. Corrigez le profil pour rétablir le verdict de dérive. |
 
-La dérive est signalée, jamais traitée comme une erreur : `status` se termine avec 0 même lorsqu'un ou plusieurs harness signalent `drift`. La dérive est un fait sur votre configuration, pas un échec de la commande.
+La dérive est signalée, jamais traitée comme une erreur : `status` se termine
+avec 0 même lorsqu'un ou plusieurs environnements signalent `drift`. La dérive
+est un fait concernant votre configuration, et non un échec de la commande.
 
-Si le profil partagé ne peut pas être chargé, la dérive est dégradée en `absent` pour les harness installés (les faits installed/verified sont toujours signalés) plutôt que d'interrompre le balayage.
+Si le profil partagé par défaut ne peut pas être chargé, la dérive se dégrade
+en `unknown` pour les environnements installés (les faits installed/verified
+sont toujours signalés) au lieu d'interrompre le balayage. Un `--profile`
+explicite qui ne peut pas être chargé est en revanche une erreur de
+l'utilisateur et interrompt la commande avec une erreur structurée.
+
+La dégradation est toujours signalée : `status` affiche un avis qui nomme le
+profil et la correction, et l'enveloppe `--json` porte une entrée
+`drift_baseline_unavailable` correspondante dans `warnings`. Cela compte
+surtout lorsqu'aucun environnement n'est installé — chaque ligne affiche alors
+`absent` et aucune cellule `unknown` n'existe ; l'avis est donc le seul signal
+indiquant que la base de référence n'a jamais été chargée.
 
 ## Options
 
 | Option | Description |
 |---|---|
-| `--project PATH` | Racine de projet pour les harness à portée de projet. Sans elle, les harness à portée de projet signalent `needs-project`. |
+| `--profile PATH` | YAML du profil partagé qui sélectionne la base de référence de la dérive. Sans cette option, le profil par défaut (`~/.config/apothem/profile.yaml`) est utilisé. |
+| `--project PATH` | Racine de projet pour les environnements à portée de projet. Sans cette option, les environnements à portée de projet signalent `needs-project`. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
 | `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
-| `--json` | Raccourci pour `--format json`. |
+| `--json` | Raccourci de `--format json`. |
 | `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
 ## Sortie JSON
 
-L'enveloppe `--json` porte une ligne de résultat par harness enregistré. Chaque ligne porte les clés documentées `harness`, `installed`, `verified` et `drift`.
+L'enveloppe `--json` porte une ligne de résultat par environnement enregistré.
+Chaque ligne porte les clés documentées `harness`, `installed`, `verified` et
+`drift`. `warnings` est vide lors d'un balayage sans problème ; lorsque le
+profil par défaut n'a pas pu être chargé, il porte une entrée
+`drift_baseline_unavailable` avec `path`, `code`, `reason` et `fix`.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "status",
   "action": "status",
@@ -81,7 +106,10 @@ L'enveloppe `--json` porte une ligne de résultat par harness enregistré. Chaqu
 }
 ```
 
-Isolation des défaillances par adaptateur : si un seul adaptateur lève une exception en signalant son état, la ligne de cet harness porte `outcome: "error"` et un `message`, les assistants restants continuent de signaler normalement, et le processus se termine avec le code 2.
+Isolation des défaillances par adaptateur : si un seul adaptateur lève une
+exception en signalant son état, la ligne de cet environnement porte
+`outcome: "error"` et un `message`, les autres environnements continuent de
+signaler normalement, et le processus se termine avec le code 2.
 
 ## Exemples
 
@@ -95,11 +123,13 @@ apothem status --json
 
 | Code | Signification |
 |---|---|
-| 0 | État signalé (la dérive est signalée, pas une erreur) |
+| 0 | État signalé (la dérive est signalée ; ce n'est pas une erreur) |
+| 1 | Erreur de validation attendue (`--profile` invalide, ou chemin `--project` inexistant) |
 | 2 | Au moins un adaptateur n'a pas pu signaler son état |
+| 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi
 
-- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un seul harness
-- [apothem diff](/docs/cli-reference/diff) — prévisualise les changements en attente d'un harness
-- [apothem harnesses](/docs/cli-reference/harnesses) — liste et inspecte les harness enregistrés
+- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un adaptateur d'environnement
+- [apothem diff](/docs/cli-reference/diff) — prévisualise les changements en attente pour un environnement
+- [apothem harnesses](/docs/cli-reference/harnesses) — liste et inspecte les environnements enregistrés

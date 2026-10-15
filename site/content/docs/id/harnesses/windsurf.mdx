@@ -1,15 +1,19 @@
 ---
 title: "Windsurf"
-description: "Adaptor alat Apothem untuk Windsurf (GA)."
+description: "Adapter harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Codeium
+**Vendor:** Devin Desktop (sebelumnya Codeium Windsurf)
 **Nama instalasi:** `windsurf`
 **Status:** GA
 **Konfigurasi native:** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf kini bernama Devin Desktop, dan `.devin/rules/` adalah lokasi aturan
+workspace yang lebih disukai (lokasi ini lebih diutamakan daripada
+`.windsurf/rules/`).
 
 ## Instalasi
 
@@ -17,23 +21,30 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-Adaptor menulis satu berkas aturan Windsurf berlingkup proyek dari aturan bersama
-dan permukaan tata kelola Apothem.
+Adapter menulis satu berkas aturan Windsurf berlingkup proyek dari aturan dan
+permukaan tata kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.devin/rules/apothem-rules.md`
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada setiap
-jalannya `apothem install` atau `apothem update`. Profil bersama adalah sumber
-kebenaran; suntingan lokal proyek pada berkas yang dihasilkan dicadangkan sebelum
-sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+Adapter membaca profil bersama Apothem dan merender berkas aturan proyek pada
+setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
+adalah sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan
+dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
+Apothem.
+
+Berkas dibuka dengan frontmatter `trigger: always_on`-nya, yang menetapkan mode
+aktivasi aturan tersebut. Blok yang dikelola Apothem mengikutinya; teks yang
+Anda tambahkan setelah blok tersebut dipertahankan pada setiap sinkronisasi.
 
 ## Catatan kompatibilitas
 
-Permukaan aturan Windsurf saat ini berlingkup proyek di bawah `.devin/rules/`.
-Alur kerja dan memori lokal mesin dimiliki oleh operator; Apothem tidak menulisnya.
-Bentuk berkas tunggal `.windsurfrules` sengaja tidak ditulis.
+Permukaan aturan Windsurf saat ini berlingkup proyek di bawah `.devin/rules/`
+(lokasi yang lebih disukai, yang lebih diutamakan daripada fallback
+kompatibilitas mundur `.windsurf/rules/`). Alur kerja dan memori lokal-mesin
+dimiliki operator; Apothem tidak menulisnya. Bentuk berkas tunggal
+`.windsurfrules` sengaja tidak ditulis.
 
 ## Verifikasi
 
@@ -44,8 +55,10 @@ apothem verify --harness windsurf --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -53,7 +66,7 @@ Perintah verify memastikan bahwa:
 apothem update --harness windsurf --project /path/to/project
 ```
 
-Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
+Menurunkan ulang berkas aturan proyek dari keadaan profil bersama saat ini.
 
 ## Pencopotan
 
@@ -61,8 +74,12 @@ Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem, beserta frontmatter yang ditulis Apothem di atasnya, dari
+`<project>/.devin/rules/apothem-rules.md` dan mempertahankan teks lain di
+dalamnya. Berkas itu dihapus hanya ketika tidak ada lagi yang tersisa di
+dalamnya. Sebelum perubahan, salinan berkas bercap waktu disimpan di bawah
+`~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML
+profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -76,10 +93,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness windsurf --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness windsurf --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness windsurf --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness windsurf --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adapter dari CLI

@@ -2,7 +2,7 @@
 title: "CLI-Referenz"
 description: "Apothem-CLI-Referenz — alle Unterbefehle und Flags."
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,7 @@ Profils und der Harness-Adapter.
 Installiert einen Harness-Adapter aus dem gemeinsamen Profil.
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | Option | Beschreibung |
@@ -32,6 +32,8 @@ apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-ru
 | `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
 | `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
 | `--dry-run` | Vorschau der Installation ohne Schreiben von Dateien. |
+| `--clean`, `--fresh` | Opt-in für einen leeren Ausgangszustand: sichert den bisherigen Installationszustand (`~/.claude`, `~/.codex`, `~/.agents`, `~/.config/apothem`) und entfernt ihn vor der Installation. |
+| `--yes` | Überspringt die Bestätigung je Ziel beim Entfernen für den leeren Ausgangszustand (erforderlich für nicht interaktive `--clean`-Läufe). |
 
 Kanonische `--harness`-Werte:
 
@@ -43,7 +45,9 @@ codex
 cursor
 gemini-cli
 github-copilot
+glm
 hermes
+kimi-code
 kiro
 open-claw
 opencode
@@ -53,7 +57,7 @@ windsurf
 zed
 ```
 
-Verwende `--harness all --project <path>`, um die registrierungsweite Menge
+Verwenden Sie `--harness all --project <path>`, um die registryweite Menge
 auszuwählen. Die `exclude_harnesses`-Liste des Profils wird bei der
 Stapelauswahl für Installation/Aktualisierung berücksichtigt.
 
@@ -74,8 +78,8 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--dry-run` | Vorschau der Aktualisierung ohne Schreiben von Dateien. |
 
 `update` materialisiert die Harness-Ausgabe neu. Es aktualisiert nicht das Paket
-der Apothem-CLI; verwende für Paket-Upgrades den Paketmanager, mit dem Apothem
-installiert wurde.
+der Apothem-CLI; verwenden Sie für Paket-Upgrades den Paketmanager, mit dem
+Apothem installiert wurde.
 
 ### `apothem uninstall`
 
@@ -93,18 +97,60 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 
 ### `apothem verify`
 
-Prüft, ob ein Harness-Adapter installiert ist und sein Ausgabepfad vorhanden ist.
+Prüft, ob die verwalteten Ziele eines Harness-Adapters vorhanden und gültig sind.
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
 | `--harness <name>` | Name des Harness-Adapters oder `all`. Erforderlich. |
+| `--profile PATH` | YAML-Datei des gemeinsamen Profils, gegen die die Treue geprüft wird. Ohne diese Option ist die Prüfung rein strukturell. |
 | `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
 
-Der Exit-Code ist `0`, wenn der Adapter installiert ist, und `1`, wenn nicht.
+Ohne `--profile` ist die Prüfung strukturell: Jedes verwaltete Ziel muss
+vorhanden und gültig sein. Mit `--profile` verlangt sie zusätzlich Treue, sodass
+eine Installation, die existiert, aber von diesem Profil abgedriftet ist, bei
+verify durchfällt — verwenden Sie die Option, um zu bestätigen, dass ein
+bestimmtes Profil getreu installiert ist.
+
+Der Exit-Code ist `0`, wenn der Harness verifiziert ist (und, mit `--profile`,
+diesem Profil treu ist), und `1`, wenn ein Ziel fehlt oder ungültig ist oder
+wenn `--profile` angegeben ist und die Installation abgedriftet ist.
+
+### `apothem status`
+
+Meldet den Installations-, Verifizierungs- und Drift-Zustand für jeden
+registrierten Harness.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--profile PATH` | Gemeinsames Profil, das als Drift-Basislinie dient. Ein nicht lesbares Standardprofil stuft den Drift auf `unknown` herab, statt den Durchlauf abzubrechen. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. Ohne diese Option melden sie `needs-project`. |
+
+Jede Zeile kombiniert ein `installed`-Flag mit einem `verified`-Flag, und beide
+ergeben zusammen den Drift-Zustand:
+
+| Zustand | Bedeutung |
+|-------|---------|
+| `absent` | Apothem hat nicht in diesen Harness installiert. |
+| `in-sync` | Installiert und mit der Profil-Basislinie übereinstimmend. |
+| `drift` | Installiert, aber nicht mehr übereinstimmend — beheben Sie dies mit `apothem update`. |
+| `unknown` | Installiert, aber das Basislinienprofil konnte nicht gelesen werden. |
+
+`installed` beantwortet die Frage „Hat Apothem hier installiert?“, nicht „Ist
+dieser Harness auf dem Rechner vorhanden?“. Es stützt sich auf Apothems eigene
+Artefakte — den verwalteten Block innerhalb eines Anweisungsankers und Inhalte
+unter dem Apothem-eigenen `.apothem/`-Teilbaum —, niemals auf eine vendor-eigene
+Datei, die der Harness für sich selbst schreibt. Ein Harness, dessen
+Konfigurationsverzeichnis existiert, den Apothem aber nie angefasst hat, meldet
+`absent`, und einer, der deinstalliert wurde, meldet `absent`, obwohl die
+geleerten Verzeichnisse bestehen bleiben.
 
 ### `apothem profile`
 
@@ -120,9 +166,9 @@ apothem profile edit [--profile PATH]
 | Unterbefehl | Beschreibung |
 |------------|-------------|
 | `profile init` | Erstellt ein schema-gültiges minimales Profilgerüst. |
-| `profile show` | Gibt das aufgelöste Profil (YAML) auf stdout aus. |
-| `profile set <key> <value>` | Setzt ein Profilfeld. Der Wert wird als YAML geparst (Strings, Zahlen, Booleans, Listen und Mappings werden alle akzeptiert). |
-| `profile edit` | Öffnet das Profil in `$EDITOR` (fällt auf den plattformüblichen Standardeditor zurück). |
+| `profile show` | Gibt das aufgelöste Profil als JSON auf stdout aus. Mit `--json` beginnt das Dokument mit `schema_version`. |
+| `profile set <key> <value>` | Setzt ein Profilfeld. Der Wert wird als literale Zeichenkette gespeichert: Bloße Wörter werden nicht umgewandelt, sodass `no` als `"no"` erhalten bleibt und `1.0` eine Zeichenkette bleibt. Ausgenommen sind `true`/`false` sowie explizite `[...]`- und `{...}`-Eingaben für Listen und Maps. Das zusammengesetzte Profil wird vor dem Schreiben gegen das Schema validiert. |
+| `profile edit` | Öffnet das Profil in `$EDITOR` (greift ersatzweise auf den Plattformstandard zurück). |
 
 Die Option `--profile PATH` richtet jeden Unterbefehl auf eine alternative
 Profildatei aus. Standard: `~/.config/apothem/profile.yaml`.
@@ -138,8 +184,8 @@ apothem harnesses show <name>
 
 | Unterbefehl | Beschreibung |
 |------------|-------------|
-| `harnesses list` | Gibt eine Tabelle jedes registrierten Adapters mit seinem Installationsstatus-Flag und Ausgabepfad aus. |
-| `harnesses show <name>` | Gibt Name, Installationsstatus und Ausgabepfad eines Adapters aus. |
+| `harnesses list` | Gibt eine Tabelle aller registrierten Adapter mit ihrem Installationsstatus-Flag und Ausgabepfad aus. |
+| `harnesses show <name>` | Gibt Name, Installationszustand und Ausgabepfad eines Adapters aus. |
 
 ### `apothem doctor`
 
@@ -149,10 +195,7 @@ Führt Systemdiagnosen für die Apothem-Installation aus.
 apothem doctor
 ```
 
-Gibt die Apothem-Version, den Python-Interpreter, die Plattform, den aufgelösten
-Profilpfad und eine Installationsstatustabelle pro Harness aus. Der Exit-Code ist
-`0`, wenn jeder registrierte Adapter als installiert gemeldet wird; andernfalls
-`1`.
+Gibt die Apothem-Version, den Python-Interpreter, die Plattform, den aufgelösten Profilpfad und eine Installationsstatus-Tabelle je Harness aus. Der Exit-Code ist `1`, sobald eine Prüfung fehlschlägt: ein ungültiges Profil, ein installierter Harness, der nicht verifiziert, ein registrierter Hook-Befehl, der nicht starten kann, ein Adapter, der sich nicht laden oder prüfen lässt, oder ein nicht lesbares Ledger. Ein nicht installierter Harness wird gemeldet und gilt nicht als Fehler; Informationshinweise ändern den Exit-Code nicht.
 
 ## Generierte Befehls- und Flag-Referenz
 

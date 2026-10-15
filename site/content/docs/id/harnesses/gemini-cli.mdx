@@ -1,15 +1,15 @@
 ---
 title: "Gemini CLI"
-description: "Adaptor alat Apothem untuk Gemini CLI (GA)."
+description: "Adapter harness Apothem untuk Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "eed143307202f636"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Vendor:** Google
 **Nama instalasi:** `gemini-cli`
 **Status:** GA
-**Konfigurasi native:** `GEMINI.md` dan `.gemini/` lokal proyek
+**Konfigurasi native:** `GEMINI.md` dan `.gemini/` lokal-proyek
 
 ## Instalasi
 
@@ -17,10 +17,12 @@ sourceHash: "eed143307202f636"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-Adaptor ini berlingkup proyek. Ia memasang `GEMINI.md` proyek, mengonversi
-perintah Apothem menjadi perintah garis miring TOML Gemini, menormalkan definisi
-asisten lokal, dan menempatkan kumpulan dukungan non-native di bawah
-`.gemini/.apothem/support/`.
+Adapter ini berlingkup proyek. Adapter memasang `GEMINI.md` proyek, mengonversi
+command Apothem menjadi slash command TOML Gemini, menormalkan definisi helper
+lokal, dan menempatkan kohor pendukung non-native di bawah `.gemini/.apothem/support/`.
+Alat koding lain juga membaca `GEMINI.md` proyek, sehingga blok Apothem di
+dalamnya ditulis sebagai panduan untuk seluruh proyek yang tidak menyebut satu
+alat pun sebagai pembacanya.
 
 **Berkas yang ditulis:**
 
@@ -34,15 +36,34 @@ GEMINI.md
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca kumpulan bersama Apothem dan merutekan masing-masing melalui
-permukaan yang kompatibel dengan Gemini. Aturan Markdown, templat, dan material
-hook tetap berada di bawah `.gemini/.apothem/support/` karena merupakan material dukungan,
+Adapter membaca kohor bersama Apothem dan merutekan masing-masing melalui
+permukaan yang kompatibel dengan Gemini. Aturan Markdown, templat, dan materi
+hook tetap berada di bawah `.gemini/.apothem/support/` karena semuanya adalah materi pendukung,
 bukan direktori aturan native Gemini.
+Blok Apothem di `GEMINI.md` diakhiri dengan bagian berkas pendukung Apothem
+yang menyebutkan, relatif terhadap akar proyek, direktori di bawah
+`.gemini/.apothem/support/` tempat setiap kutipan bergaya repositori
+(`rules/<name>.md`, `templates/...`, `hooks/...`) di-resolve. Jalur-jalur
+tersebut relatif sehingga `GEMINI.md` yang di-commit tidak membawa jalur khusus
+mesin.
+
+Setiap command yang dikonversi di `.gemini/commands/` memuat sebuah
+`description` dan sebuah `prompt`. Prompt tersebut hanya berisi instruksi
+command; metadata Apothem di bagian atas berkas sumber (versi, daftar alat, dan
+bidang serupa) dihilangkan, sehingga model tidak pernah membacanya sebagai
+instruksi. Gemini menjalankan command kustom hanya ketika Anda mengetikkannya.
+
+Definisi helper di `.gemini/agents/` mempertahankan batas alat dan batas
+gilirannya: izin `tools` dari sumber, dikurangi `disallowedTools`, menjadi
+daftar-izin `tools` Gemini yang berisi nama-nama alat Gemini, dan `maxTurns`
+menjadi `max_turns`. Karena itu, helper read-only tidak mendapat alat
+`write_file` maupun `replace`. Tidak ada model yang disetel, sehingga setiap
+helper mewarisi model sesi.
 
 ## Catatan kompatibilitas
 
-`~/.gemini/` tetap menjadi wilayah berlingkup pengguna untuk perkakas yang
-menggunakan profil Gemini global. Adaptor Gemini CLI hanya menulis ke proyek yang
+`~/.gemini/` tetap menjadi wilayah lingkup pengguna bagi alat yang menggunakan
+profil Gemini global. Adapter Gemini CLI hanya menulis ke proyek yang
 diteruskan melalui `--project`.
 
 ## Verifikasi
@@ -54,8 +75,10 @@ apothem verify --harness gemini-cli --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama tersedia.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -63,8 +86,8 @@ Perintah verify memastikan bahwa:
 apothem update --harness gemini-cli --project /path/to/project
 ```
 
-Menyegarkan `GEMINI.md`, perintah yang dikonversi, definisi asisten lokal,
-keterampilan yang terpasang, dan pohon dukungan `.gemini/.apothem/support/`.
+Menyegarkan `GEMINI.md`, command yang dikonversi, definisi helper lokal, skill
+yang terpasang, dan pohon pendukung `.gemini/.apothem/support/`.
 
 ## Pencopotan
 
@@ -72,8 +95,14 @@ keterampilan yang terpasang, dan pohon dukungan `.gemini/.apothem/support/`.
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `<project>/GEMINI.md` dan mempertahankan teks lain
+di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
+Juga menghapus berkas Apothem di `<project>/.gemini/commands/`,
+`<project>/.gemini/skills/`, `<project>/.gemini/agents/`, dan
+`<project>/.gemini/.apothem/support/`; berkas lain di folder-folder tersebut
+tetap ada. Sebelum perubahan dilakukan, salinan setiap berkas dengan cap waktu
+disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang
+tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -87,10 +116,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness gemini-cli --project /path/to/project` |
 | Verifikasi gagal | Jalankan `apothem update --harness gemini-cli --project /path/to/project`, lalu verifikasi lagi |
-| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness gemini-cli --project /path/to/project` |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness gemini-cli --project /path/to/project` |
 
 ## Tombol konfigurasi
 
 | Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

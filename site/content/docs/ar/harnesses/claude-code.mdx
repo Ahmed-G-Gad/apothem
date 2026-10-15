@@ -1,14 +1,14 @@
 ---
 title: "Claude Code"
-description: "محوّل إطار عمل Apothem لـ Claude Code (GA)."
+description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "3e22dcf3597b4cc3"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>Anthropic</bdi>
 **اسم التثبيت:** <bdi>`claude-code`</bdi>
-**الحالة:** <bdi>GA</bdi>
+**الحالة:** إتاحة عامة
 **الإعداد الأصلي:** <bdi>`~/.claude/`</bdi>
 
 ## التثبيت
@@ -17,43 +17,88 @@ sourceHash: "3e22dcf3597b4cc3"
 apothem install --harness claude-code
 ```
 
-يقوم محوّل <bdi>`claude-code`</bdi> بتثبيت مجموعة <bdi>Apothem</bdi> المشتركة في
-شجرة الاكتشاف الأصلية لـ<bdi>Claude Code</bdi>. تُثبَّت وكلاء <bdi>Markdown</bdi>،
-والقواعد، والمهارات، وأنماط المخرجات، ومساعدات شريط الحالة، والإعدادات في مواقعها
-الأصلية؛ كما تُغلَّف مطالبات الأوامر بصورة إضافية بوصفها مهارات لتبقى سير العمل
-القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي لـ<bdi>Claude Code</bdi>.
+يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف
+الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد،
+والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر
+إلى مهارات لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في
+<bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى
+<bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط
+حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. لتفعيله، أضف
+إلى <bdi>`settings.json`</bdi> مدخل <bdi>`statusLine`</bdi> من النوع
+<bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>.
 
-**الملفات المكتوبة:** <bdi>`settings.json`</bdi>، و<bdi>`agents/`</bdi>،
-و<bdi>`rules/`</bdi>، و<bdi>`skills/`</bdi>، و<bdi>`statuslines/`</bdi>،
-و<bdi>`output-styles/`</bdi>، وشجرة الدعم الفرعية <bdi>`apothem/`</bdi>
-(<bdi>`apothem/hooks/`</bdi>، و<bdi>`apothem/conformity/`</bdi>،
-و<bdi>`apothem/schemas/`</bdi>، و<bdi>`apothem/templates/`</bdi>) تحت
-<bdi>`~/.claude/`</bdi>. تُحوَّل ملفات الأوامر إلى أدلّة مهارات فرعية. يعمل موزّع
-الخطافات وبوّابة المطابقة من نسخهما المُجسَّدة — تستدعي مدخلات الخطافات في
-<bdi>`settings.json`</bdi> الملفّ <bdi>`~/.claude/.apothem/support/hooks/dispatch.py`</bdi>
-والملفّ <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> بالمسار المطلق، لذلك لا
-حاجة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد على المضيف.
+**الملفات المكتوبة:** <bdi>`settings.json`</bdi>، وكتلة <bdi>Apothem</bdi> في
+<bdi>`CLAUDE.md`</bdi>، و<bdi>`agents/`</bdi>، و<bdi>`rules/`</bdi>،
+و<bdi>`skills/`</bdi>، و<bdi>`statuslines/`</bdi>، و<bdi>`output-styles/`</bdi>،
+وشجرة الدعم الفرعية <bdi>`.apothem/support/`</bdi>
+(<bdi>`.apothem/support/hooks/`</bdi>، و<bdi>`.apothem/support/conformity/`</bdi>،
+و<bdi>`.apothem/support/schemas/`</bdi>، و<bdi>`.apothem/support/templates/`</bdi>)
+تحت <bdi>`~/.claude/`</bdi>. تُحوَّل ملفات الأوامر إلى أدلّة مهارات فرعية. يعمل موزّع
+الخطّافات وبوابة المطابقة من نسختيهما المُجسَّدتين — تستدعي مدخلات الخطّافات في
+<bdi>`settings.json`</bdi> الملف <bdi>`~/.claude/.apothem/support/hooks/dispatch.py`</bdi>
+والملف <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> بمسارهما المطلق، لذا
+لا حاجة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد على المضيف.
 
-لا يدير المحوّل **ملفّ** <bdi>`CLAUDE.md`</bdi> — فهذا الملفّ منطقة يملكها المشغّل.
-يبلغ سطح حوكمة <bdi>Apothem</bdi> إلى <bdi>Claude Code</bdi> عبر شجرة
-<bdi>`rules/`</bdi> المُنتشَرة وخطّاف <bdi>SessionStart</bdi>، لا عبر
-<bdi>`CLAUDE.md`</bdi> مُجسَّد.
+يبقى <bdi>`~/.claude/CLAUDE.md`</bdi> ملكًا للمُشغِّل. يكتب المحوّل فيه كتلة
+<bdi>Apothem</bdi> واحدة محدَّدة بعلامات حارسة، تحمل إسقاط الملف التعريفي (الهوية،
+والتفضيلات، والقواعد، والجدّية، والسلوكيات المُختارة بالاشتراك) وقسم ملفات دعم
+<bdi>Apothem</bdi>، ويحافظ على كل سطر خارج العلامات الحارسة حرفيًا. يُسمّي قسم ملفات
+الدعم الدليل المطلق الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب المستودع في القواعد
+والمهارات والعوامل المُثبَّتة: <bdi>`rules/<name>.md`</bdi> تحت
+<bdi>`~/.claude/rules/`</bdi>، و<bdi>`templates/...`</bdi>، و<bdi>`schemas/...`</bdi>،
+و<bdi>`hooks/...`</bdi>، و<bdi>`conformity/...`</bdi> تحت
+<bdi>`~/.claude/.apothem/support/`</bdi>. ويصل بقية سطح حوكمة <bdi>Apothem</bdi> إلى
+<bdi>Claude Code</bdi> عبر شجرة <bdi>`rules/`</bdi> المُنتشِرة وخطّاف
+<bdi>SessionStart</bdi>. يُحمِّل <bdi>OpenCode</bdi> أيضًا
+<bdi>`~/.claude/CLAUDE.md`</bdi> حين لا يوجد <bdi>`~/.config/opencode/AGENTS.md`</bdi>،
+لذا لا تُسمّي الكتلة أداة واحدة بعينها قارئًا لها.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-في كل عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>، ينشر
-المحوّل مجموعة <bdi>`apothem`</bdi> المشتركة إلى <bdi>`~/.claude/`</bdi> وفق بيان
-الانتشار. يستخدم المحوّل الأدلّة الأصلية مباشرةً حيثما أمكن ويحوّل مطالبات الأوامر
-إلى مجلدات مهارات. تُحفَظ نسخة احتياطية من العناصر الفرعية المُدارة بواسطة
-<bdi>Apothem</bdi> المطابقة الموجودة قبل استبدالها؛ وتُصان المدخلات غير ذات الصلة
-التي أنشأها المشغّل. يُدمَج <bdi>`settings.json`</bdi> بحيث تبقى المفاتيح التي
-أنشأها المشغّل قابلة للاستعادة.
+في كل <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>، ينشر المحوّل متن
+<bdi>`apothem`</bdi> المشترك في <bdi>`~/.claude/`</bdi> وفق بيان الانتشار. يستخدم
+المحوّل الأدلّة الأصلية مباشرةً حيثما أمكن، ويحوّل مطالبات الأوامر إلى مجلدات مهارات.
+تُنسَخ العناصر الفرعية المطابقة الموجودة التي يديرها <bdi>Apothem</bdi> احتياطيًا قبل
+استبدالها؛ وتُحفَظ المدخلات غير ذات الصلة التي ألّفها المُشغِّل. يُدمَج
+<bdi>`settings.json`</bdi> بحيث تبقى المفاتيح التي ألّفها المُشغِّل قابلة للاستعادة.
+
+تحمل المهارات المُثبَّتة، والمهارات المُحزَّمة في إضافة <bdi>Claude Code</bdi>،
+المفتاح <bdi>`user-invocable`</bdi> بدلًا من <bdi>`userInvocable`</bdi> الوارد في متن
+المصدر، لأن <bdi>Claude Code</bdi> لا يقرأ إلا المفتاح الموصول بشرطة. تضبطه حاويتا
+القوالب (<bdi>`plan-suite`</bdi>، و<bdi>`research-suite`</bdi>) على
+<bdi>`false`</bdi>، فتبقيان خارج قائمة <bdi>`/`</bdi>. يضبط كل نمط إخراج
+<bdi>`keep-coding-instructions: true`</bdi>، فاختيار أيٍّ منها يُبقي تعليمات هندسة
+البرمجيات المدمجة في <bdi>Claude Code</bdi>.
 
 ## ملاحظات التوافق
 
-لا تحدث أي ترجمة. يتحقّق التثبيت من أنّ الملف التعريفي جيّد التكوين وأنّ جميع ارتباطات الخطافات في <bdi>settings.json</bdi> قابلة للحلّ.
+تُحوَّل مطالبات الأوامر إلى أدلّة مهارات؛ وتُنسَخ العوامل والقواعد والمهارات وأنماط
+الإخراج كما هي. يتحقّق التثبيت من أن الملف التعريفي سليم البنية وأن جميع ربطات
+الخطّافات في <bdi>settings.json</bdi> قابلة للحلّ. لا يؤلّف المحوّل أي مدخلات لخوادم
+<bdi>MCP</bdi>: سجّل الخوادم باستخدام <bdi>`claude mcp add`</bdi> (راجع
+[خوادم <bdi>MCP</bdi>](/docs/reference/mcp)).
 
-يطبّق <bdi>Claude Code</bdi> جميع ارتباطات الخطافات في <bdi>settings.json</bdi> عند كل بدء جلسة. يُتحقَّق من كل محوّل مقابل إطار عمله الأصلي الخاص — ولا يوجد إطار عمل «مرجعي» متميّز.
+يطبّق <bdi>Claude Code</bdi> جميع ربطات الخطّافات في <bdi>settings.json</bdi> عند كل بدء جلسة. يُتحقَّق من كل محوّل مقابل إطار عمله الأصلي الخاص — لا يوجد إطار عمل «مرجعي» ذو امتياز.
+
+### حدود قواعد الأذونات
+
+يرفض قالب الإعدادات <bdi>`Read(...)`</bdi> على مسارات الأسرار والذاكرة المؤقتة مثل
+<bdi>`.env*`</bdi> و<bdi>`~/.ssh/**`</bdi>. يطبّق <bdi>Claude Code</bdi> رفض
+<bdi>`Read`</bdi> على أدوات الملفات الخاصة به، وعلى أوامر الملفات التي يتعرّف عليها في
+<bdi>Bash</bdi> (<bdi>`cat`</bdi>، و<bdi>`head`</bdi>، و<bdi>`tail`</bdi>،
+و<bdi>`sed`</bdi>، و<bdi>`tee`</bdi>)، وعلى أهداف إعادة التوجيه. ولا يطبّق الرفض على
+بحث يقرأ الملفات دون تسميتها، مثل <bdi>`grep -r pattern .`</bdi>، ولا على سكربت يفتح
+الملفات بنفسه ([مرجع الأذونات](https://code.claude.com/docs/en/permissions)). على
+<bdi>macOS</bdi> و<bdi>Linux</bdi> و<bdi>WSL</bdi>، يُبقي <bdi>Claude Code</bdi> أداتي
+<bdi>`Glob`</bdi> و<bdi>`Grep`</bdi> خارج مجموعة الأدوات الافتراضية ويبحث عبر
+<bdi>Bash</bdi> بدلًا من ذلك، لذا لا تسري مدخلات السماح <bdi>`Glob`</bdi>
+و<bdi>`Grep`</bdi> في القالب إلا حيث تكون هاتان الأداتان موجودتين. لمنع كل عملية من
+قراءة مسار ما، فعّل بيئة العزل في <bdi>Claude Code</bdi>.
+
+المهارات وتعريفات المساعِدات التي تُسمّي <bdi>`TodoWrite`</bdi> تُسمّي أيضًا
+<bdi>`TaskCreate`</bdi>، و<bdi>`TaskGet`</bdi>، و<bdi>`TaskList`</bdi>،
+و<bdi>`TaskUpdate`</bdi>، لأن <bdi>Claude Code</bdi> يُعطِّل <bdi>`TodoWrite`</bdi>
+افتراضيًا لصالح تلك الأدوات.
 
 ## التحقّق
 
@@ -63,9 +108,11 @@ apothem verify --harness claude-code
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -73,10 +120,10 @@ apothem verify --harness claude-code
 apothem update --harness claude-code
 ```
 
-يعيد اشتقاق الإعداد الأصلي من الملف التعريفي المشترك الحالي. شغّله بعد تحديث حزمة
-<bdi>`apothem`</bdi> المثبّتة، حتى يعكس سطح الاتفاقيات المُنتشَر (الوكلاء، والقواعد،
-والمهارات، وأشرطة الحالة، وأنماط المخرجات) الإصدار الجديد. ملفّ <bdi>`CLAUDE.md`</bdi>
-يملكه المشغّل ولا يلمسه المحوّل أبدًا.
+يُعيد اشتقاق الإعداد الأصلي من الملف التعريفي المشترك الحالي. شغّله بعد تحديث حزمة
+<bdi>`apothem`</bdi> المُثبَّتة، حتى يعكس سطح الاصطلاحات المُنتشِر (العوامل، والقواعد،
+والمهارات، وأشرطة الحالة، وأنماط الإخراج) النسخة الجديدة. في <bdi>`CLAUDE.md`</bdi>،
+لا يُعيد التحديث كتابة سوى كتلة <bdi>Apothem</bdi> الواقعة بين علاماتها الحارسة.
 
 ## إلغاء التثبيت
 
@@ -84,10 +131,19 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
-لا تتأثّر حزمة <bdi>`apothem`</bdi> المثبّتة ولا مستودع المصدر.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.claude/CLAUDE.md`</bdi> ويُبقي أي نص آخر
+فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل المدخلات التي أضافها
+المحوّل إلى <bdi>`~/.claude/settings.json`</bdi> (تبقى قواعد الأذونات والمفاتيح
+ومعالجات الخطّافات الخاصة بك، ولا يُحذَف الملف إلا عندما يكون <bdi>Apothem</bdi> هو
+من أنشأه ولا يبقى فيه شيء يخصّك). ويُزيل كذلك ملفات <bdi>Apothem</bdi> في
+<bdi>`~/.claude/agents/`</bdi>، و<bdi>`~/.claude/rules/`</bdi>،
+و<bdi>`~/.claude/skills/`</bdi>، و<bdi>`~/.claude/statuslines/`</bdi>،
+و<bdi>`~/.claude/output-styles/`</bdi>، و<bdi>`~/.claude/.apothem/support/`</bdi>؛
+وتبقى الملفات الأخرى في تلك المجلدات. يُنسَخ كل ملف احتياطيًا تحت
+<bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو إزالته.
+لا تتأثّر حزمة <bdi>`apothem`</bdi> المُثبَّتة ولا مستودع المصدر.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -99,10 +155,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness claude-code`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness claude-code`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | أعد تشغيل <bdi>`apothem update`</bdi>؛ فالملف التعريفي <bdi>`apothem`</bdi> المشترك هو مصدر الحقيقة، لا <bdi>`~/.claude/`</bdi> |
+| محتوى إعداد غير متوقَّع | أعد تشغيل <bdi>`apothem update`</bdi>؛ فالملف التعريفي المشترك <bdi>`apothem`</bdi> هو مصدر الحقيقة، لا <bdi>`~/.claude/`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

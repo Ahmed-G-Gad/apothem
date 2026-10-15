@@ -1,22 +1,34 @@
 ---
 title: "Styles de sortie"
-description: "Profils de ton d'opérateur (Architecte Senior, Ingénieur Concis, Auditeur Forensique) activés par session via la commande /output-style."
+description: "Profils de ton de l'opérateur (Architecte senior, Ingénieur concis, Auditeur forensique) activés session par session via la commande /output-style."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Les profils de style de sortie se trouvent sous `src/apothem/output-styles/` et
-portent les consignes de ton d'opérateur par style. Le runtime de l'assistant de
-codage hôte active un style par session via `/output-style <name>`.
+portent, pour chaque style, des consignes sur le ton de l'opérateur.
+L'environnement hôte active un style session par session via
+`/output-style <name>`.
 
 ## Profils canoniques
 
 | Profil | Fichier | Ton |
 |---------|------|------|
-| Architecte par défaut | `src/apothem/output-styles/default-architect.md` | Ton d'Architecte Logiciel Senior (par défaut) |
+| Par défaut | `src/apothem/output-styles/default.md` | Ton de base que complète chacun des autres styles |
+| Architecte par défaut | `src/apothem/output-styles/default-architect.md` | Ton d'architecte logiciel senior |
 | Ingénieur concis | `src/apothem/output-styles/concise-engineer.md` | Ton d'ingénierie au format court |
 | Auditeur forensique | `src/apothem/output-styles/forensic-auditor.md` | Ton d'audit constat par constat |
+
+## Où les styles sont installés
+
+`apothem install --harness claude-code` copie les styles dans
+`~/.claude/output-styles/`. Le plugin Claude Code livre les mêmes fichiers dans
+son dossier `output-styles/`, que Claude Code parcourt à la recherche des styles
+de sortie des plugins ([référence des plugins](https://code.claude.com/docs/en/plugins-reference)) ;
+les styles sont donc sélectionnables lorsque seul le plugin est installé. Aucun
+autre environnement ne dispose d'une surface de style de sortie, si bien
+qu'aucune autre installation ne les livre.
 
 ## Contrat de frontmatter
 
@@ -24,12 +36,23 @@ codage hôte active un style par session via `/output-style <name>`.
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
+
+`name` et `description` sont requis. Chaque style livré définit aussi
+`keep-coding-instructions: true`. Claude Code exclut ses instructions intégrées
+d'ingénierie logicielle (comment délimiter les modifications, rédiger les
+commentaires et vérifier le travail) de tout style de sortie personnalisé, sauf
+si cette clé vaut `true` ; sa valeur par défaut est `false`. Les styles Apothem
+changent la façon dont le travail est présenté, et non la façon dont il est
+effectué : ils conservent donc ces instructions. Voir la
+[référence des styles de sortie de Claude Code](https://code.claude.com/docs/en/output-styles).
 
 ## Rédiger un nouveau profil
 
 Créez un nouveau fichier `<name>.md` sous `src/apothem/output-styles/` avec le
-frontmatter canonique, déclarez le ton dans le corps, et ratifiez-le en invoquant
-`/output-style <name>` au début de votre prochaine session.
+frontmatter canonique, y compris `keep-coding-instructions: true` sauf si le
+style n'est pas destiné au travail d'ingénierie, déclarez le ton dans le corps,
+puis ratifiez-le en invoquant `/output-style <name>` au début de votre prochaine
+session.

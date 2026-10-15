@@ -300,7 +300,7 @@ def test_repository_pins_pass_on_their_refresh_date(tmp_path: Path) -> None:
             "--harnesses-root",
             str(_REPO_ROOT / "src" / "apothem" / "harnesses"),
             "--today",
-            "2026-10-03",
+            "2026-10-14",
             "--output",
             str(tmp_path / "report.json"),
         ]

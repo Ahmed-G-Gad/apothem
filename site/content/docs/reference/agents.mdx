@@ -11,8 +11,11 @@ directory with the `<name>.md` suffix. The canonical path is:
 src/apothem/agents/
 ```
 
-Each helper is a research, audit, quality, or orchestration role with
-its own tool restrictions and system prompt.
+Each helper is a focused role, such as research, audit, quality,
+refactoring, or scaffolding, with its own tool restrictions and system prompt.
+
+The table and the path list below show four of the helpers. The generated
+inventory at the end of this page lists every helper definition.
 
 | Helper | File | Pattern | Model Policy |
 |-------|------|---------|--------------|
@@ -46,8 +49,8 @@ maxTurns: <integer>
 
 ## Per-harness conversion
 
-A helper whose `tools` grant, after `disallowedTools`, includes no `Write` or
-`Edit` is read-only. Each harness that converts helpers either enforces that
+A helper whose `tools` grant, after `disallowedTools`, includes no file-editing
+tool (`Write`, `Edit`, `MultiEdit`, or `NotebookEdit`) is read-only. Each harness that converts helpers either enforces that
 limit natively or drops the read-only label:
 
 | Harness | Tool limit | Turn limit | Model and effort |

@@ -1,102 +1,150 @@
 ---
-title: "الفهرس"
-description: "بوّابة المطابقة في Apothem — الجزء الآلي من بوّابة ما-قبل-الإصدار ذات الخمسة عشر حاجزًا (M1-M15) التي يجب أن يجتازها كل أثر مُصدَر."
+title: "بوابة المطابقة"
+description: "بوابة المطابقة في Apothem — الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (M1-M15) التي يجب أن يجتازها كل مُخرَج يُصدَر."
 machineTranslated: true
-sourceHash: "7cea456f84cba0d3"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-## الحواجز الخمسة عشر
+## الأشرطة الخمسة عشر
 
-| الحاجز | المُعرِّف | التفويض | صنف الفحص | الإخفاق ← الإجراء |
+| الشريط | المُعرِّف | التفويض | فئة الفحص | الإخفاق ← الإجراء |
 |---|---|---|---|---|
-| 1 | <bdi>M1</bdi> | لاأدريّة المشروع المُضيف | استدلالي | راجِع لمطابقة اصطلاحات المُضيف |
-| 2 | <bdi>M2</bdi> | الانضباط التحريري (سجلّ الإفصاح) | آلي | أضِف علامات الإفصاح |
-| 3 | <bdi>M3</bdi> | أبعاد الجودة العشرة | استدلالي | راجِع على الأبعاد المُخفِقة |
-| 4 | <bdi>M4</bdi> | التطبيق الذاتي (كتلة السجلّ الموقَّعة حاضرة) | آلي | سجّل كتلة السجلّ الموقَّعة |
-| 5 | <bdi>M5</bdi> | مبدأ السلطة (لا هوية / نقطة-نهاية / سرّ مُلفَّق) | آلي | وجِّه إلى الاستفسار |
-| 6 | <bdi>M6</bdi> | دمج الخبرة (الثغرات المُبرَزة) | استدلالي | أبرِز الثغرات؛ استشهِد بالصقل |
-| 7 | <bdi>M7</bdi> | وصم الخيارات (علامة موصًى به + مبرّر الدافع) | آلي | صِم مجموعات الخيارات |
-| 8 | <bdi>M8</bdi> | القطعية (لا تحوّط في النثر المُلزِم) | آلي | رقِّ التحوّطات إلى شروط |
-| 9 | <bdi>M9</bdi> | الرافعة البصرية (المواد البنيوية تحمل مخطّطات) | استدلالي | أنشِئ / حدِّث المخطّط |
-| 10 | <bdi>M10</bdi> | الربط ثنائي الاتّجاه (المؤشّرات الخلفية المتبادلة مُغلَقة) | آلي | أغلِق أنصاف-الحواف |
-| 11 | <bdi>M11</bdi> | السباقات الرشيقة (الهدف / قائمة الأعمال / <bdi>DoR</bdi> / <bdi>DoD</bdi> / المراجعة / الاسترجاع) | استدلالي | أعِد البِنية بوصفها سباقات |
-| 12 | <bdi>M12</bdi> | تقارير الأطوار والتخطيط الكانوني | آلي | أنشِئ التجميع؛ أعِد التموضع إلى التخطيط الكانوني |
-| 13 | <bdi>M13</bdi> | إتقان الشيفرة (<bdi>lint</bdi> / <bdi>format</bdi> / <bdi>type-check</bdi>؛ العدد السحري؛ <bdi>bare-except</bdi>) | آلي | راجِع وفق قواعد إتقان الشيفرة لكلّ لغة |
-| 14 | <bdi>M14</bdi> | النَظْميّة (تُعلِن المنبع / المصبّ / الأقران / المُنفِّذين) | استدلالي | أعلِن؛ افهرِس في السجلّات |
-| 15 | <bdi>M15</bdi> | الجاهزية للإنتاج (اختبارات + وثائق + <bdi>CHANGELOG</bdi> + commit مطابِق + <bdi>CI</bdi> خضراء + استقرار <bdi>semver</bdi>) | آلي | أضِف الأسطح الناقصة |
+| 1 | <bdi>M1</bdi> | حياد المشروع المضيف | استدلالي | راجِع لمطابقة اصطلاحات المضيف |
+| 2 | <bdi>M2</bdi> | الانضباط التحريري (سجلّ الإفصاح) | استدلالي | أضِف علامات الإفصاح |
+| 3 | <bdi>M3</bdi> | أبعاد الجودة العشرة | ميكانيكي + استدلالي | راجِع الأبعاد المُخفِقة |
+| 4 | <bdi>M4</bdi> | التطبيق الذاتي (السجلّ الموقَّع للبوابة موجود) | ميكانيكي | سجِّل كتلة السجلّ الموقَّع |
+| 5 | <bdi>M5</bdi> | مبدأ السلطة (لا هوية / نقطة نهاية / سرّ مُختلَق) | ميكانيكي | حوِّل إلى الاستفسار |
+| 6 | <bdi>M6</bdi> | دمج الخبرة (إبراز الثغرات) | استدلالي | أبرِز الثغرات؛ واستشهد بالتحسينات |
+| 7 | <bdi>M7</bdi> | التعليق التوضيحي للخيارات (علامة <bdi>Recommended</bdi> + مبرّر العامل الحاسم) | ميكانيكي | علِّق توضيحيًا على مجموعات الخيارات |
+| 8 | <bdi>M8</bdi> | الحسم (لا تحوّط في النثر التوجيهي) | ميكانيكي | حوِّل التحوّطات إلى عبارات شرطية |
+| 9 | <bdi>M9</bdi> | الرافعة البصرية (الموضوعات البنيوية تحمل مخططات) | استدلالي | ألِّف المخطط / حدِّثه |
+| 10 | <bdi>M10</bdi> | الربط ثنائي الاتجاه (المؤشرات العكسية المتبادلة مُغلَقة) | ميكانيكي | أغلِق أنصاف الحواف |
+| 11 | <bdi>M11</bdi> | السباقات الرشيقة (الهدف / قائمة الأعمال / <bdi>DoR</bdi> / <bdi>DoD</bdi> / المراجعة / الاستعراض الاسترجاعي) | استدلالي | أعِد الهيكلة في صورة سباقات |
+| 12 | <bdi>M12</bdi> | تقارير المراحل والتخطيط المرجعي | ميكانيكي + استدلالي | ألِّف التقرير التجميعي؛ وانقل إلى التخطيط المرجعي |
+| 13 | <bdi>M13</bdi> | حِرفة الشيفرة (<bdi>lint / format / type-check</bdi>؛ الأرقام السحرية؛ <bdi>bare-except</bdi>) | ميكانيكي | طبِّق قواعد حِرفة الشيفرة الخاصة بكل لغة |
+| 14 | <bdi>M14</bdi> | المنظومية (يُعلِن المنبع / المصبّ / الأقران / الفارضين) | استدلالي | أعلِن؛ وفهرِس في السجلّات |
+| 15 | <bdi>M15</bdi> | الجاهزية للإنتاج (اختبارات + وثائق + <bdi>CHANGELOG</bdi> + كوميت مطابق + <bdi>CI</bdi> أخضر + استقرار <bdi>semver</bdi>) | ميكانيكي + استدلالي | أضِف الأسطح الناقصة |
+
+لا تُشغّل البوابة إلا أدوات تحقّق قابلة للفحص الآلي. أما الحكم الاستدلالي الذي تتطلّبه الأشرطة الاستدلالية، والنصف الاستدلالي من كل شريط ميكانيكي + استدلالي، فيُقيَّم في المراجعة.
 
 ## سُلّم الخطورة
 
-| الخطورة | الأثر على البوّابة |
-|---|---|
-| **حرِجة** | البوّابة <bdi>FAIL</bdi> — الإصدار محظور بلا قيد |
-| **مهمّة** | البوّابة <bdi>FAIL</bdi> حين يُخفِق حاجزان مهمّان أو أكثر في آنٍ معًا |
-| **استشارية** | البوّابة <bdi>WARN</bdi> — تُسجَّل في السجلّ الموقَّع؛ لا تحظر الإصدار |
+لا تملك البوابة سلّمًا من المستويات حرج ومهمّ واستشاري، ولا عتبة من نتيجتين. ومن دون <bdi>`--strict`</bdi> (أو <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) تُبلغ البوابة عن النتائج وتخرج برمز <bdi>`0`</bdi>. ومع <bdi>`--strict`</bdi> يخرج فحص الملف الواحد أو فحص الخطّاف برمز <bdi>`2`</bdi> عند فشل أي مُطابِق، ويخرج تشغيل المدوّنة (<bdi>`--all`</bdi> أو <bdi>`--all-perwrite`</bdi>) برمز <bdi>`2`</bdi> عند فشل أداة تحقّق حاجبة أو مُطابِق حاجب؛ أما النتائج الاستشارية فيُبلَّغ عنها فقط. ولا يمرّر خطّاف <bdi>Write/Edit</bdi> المثبَّت <bdi>`--strict`</bdi>، فيُبلغ عن النتائج وتمضي الكتابة ما لم يُضبط <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi> في بيئته.
 
-تتخذ معظم مُطابِقات الجزء الآلي قيمة **مهمّة** افتراضيًّا. أمّا <bdi>M5</bdi> (السلطة — الأسرار، نقاط النهاية المُلفَّقة) و<bdi>M12</bdi> (المخرجات اليتيمة) فهما **حرِجان**.
+## أدوات التحقّق
 
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+يقع الجزء الميكانيكي في [<bdi>`src/apothem/conformity/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)، ويُنسِّقه [<bdi>`src/apothem/conformity/gate.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
+تعمل كل أداة تحقّق بإحدى ثلاث طرق:
 
-## مُطابِقات الجزء الآلي
+- **<bdi>per-write</bdi>**: على كل كتابة معلّقة (<bdi>`--hook`</bdi>)، أو على كل ملف متتبَّع مع <bdi>`--all-perwrite`</bdi>.
+- **<bdi>standalone</bdi>**: عبر المستودع كله مع <bdi>`--all`</bdi>، أو واحدة تلو الأخرى مع <bdi>`--check <name>`</bdi>.
+- **<bdi>change-set</bdi>**: على فرق مُجهَّز للإيداع، وتُشغَّل مباشرةً بالصيغة <bdi>`python -m apothem.conformity.semver_stability_grep --staged`</bdi>، لا عبر البوابة.
 
-يعيش الجزء الآلي في [<bdi>`src/apothem/conformity/*_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)، بتنسيق من [<bdi>`src/apothem/conformity/gate.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
+الجدول أدناه مُولَّد من وحدات أدوات التحقّق.
 
-| المُطابِق | الحاجز | الوظيفة |
-|---|---|---|
-| <bdi>`hedging_grep.py`</bdi> | <bdi>M8</bdi> | يكشف مفردات التحوّط في النثر المُلزِم |
-| <bdi>`option_annotation_grep.py`</bdi> | <bdi>M7</bdi> | يتحقّق من علامة <bdi>`**Recommended**`</bdi> + مبرّر الدافع على مجموعات الخيارات |
-| <bdi>`user_confirm_grep.py`</bdi> | <bdi>M5</bdi> | يحظر نواقل <bdi>`<USER-CONFIRM:…>`</bdi> من الإصدار |
-| <bdi>`binding_reciprocity_grep.py`</bdi> | <bdi>M10</bdi> | يكشف أنصاف-الحواف في <bdi>`## Bindings (§0.j five-direction)`</bdi> |
-| <bdi>`orphan_output_grep.py`</bdi> | <bdi>M12</bdi> | يَسِم الآثار التي لا مُستهلِك لها / لا مدخل فهرسة / لا إسناد مُنتِج |
-| <bdi>`bare_except_grep.py`</bdi> | <bdi>M13</bdi> | يكشف <bdi>`except:`</bdi> / <bdi>`except Exception:`</bdi> دون تعليق مُبرِّر |
-| <bdi>`magic_number_grep.py`</bdi> | <bdi>M13</bdi> | يكشف الحرفيات العددية في منطق الأعمال |
-| <bdi>`commented_out_code_grep.py`</bdi> | <bdi>M13</bdi> | يكشف كتل الشيفرة المُعلَّق عليها |
-| <bdi>`file_header_grep.py`</bdi> | <bdi>M13</bdi> | يتحقّق من وجود ترويسة رخصة <bdi>SPDX</bdi> أحادية السطر |
-| <bdi>`frontmatter_grep.py`</bdi> | <bdi>M14</bdi> | يتحقّق من حقول الـ frontmatter المطلوبة على دلائل التوجيه الكانونية الأربعة المُدرَجة أدناه |
-| <bdi>`semver_stability_grep.py`</bdi> | <bdi>M15</bdi> | يكشف تغييرات <bdi>API</bdi> العام الكاسرة دون رفع نسخة <bdi>MAJOR</bdi> |
-| <bdi>`production_ready_pr_grep.py`</bdi> | <bdi>M15</bdi> | يتحقّق من انضباط مجموعة-التغيير نفسها (اختبارات + وثائق + <bdi>CHANGELOG</bdi>) |
-| <bdi>`secret_leak_grep.py`</bdi> | <bdi>M15</bdi> | يكشف الأسرار / بيانات الاعتماد المُضمَّنة بالصلب |
-| <bdi>`unpinned_action_grep.py`</bdi> | <bdi>M15</bdi> | يتحقّق من تثبيت <bdi>GitHub Actions</bdi> على <bdi>commit SHA</bdi> |
-| <bdi>`always_on_budget_grep.py`</bdi> | سقف الميزانية | يُقيِّد متن القاعدة دائمة-التشغيل عند 500 <bdi>token</bdi> جوهري |
+{/* apothem:generated-reference:start */}
 
-## تشغيل البوّابة
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
-على harness مُثبَّت، تعمل البوّابة تلقائيًّا: يُوصِّل <bdi>`settings.json`</bdi>
-الخاص بـ Claude Code البوّابةَ بوصفها خطّاف <bdi>`PreToolUse`</bdi> يستدعي النسخة
-المُجسَّدة في <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> قبل كل
-<bdi>Write/Edit</bdi>. ومن استخراج المصدر، تُشغِّل صيغة الوحدة الشيفرةَ نفسها:
+| Validator | Runs | Rule anchor | What it checks |
+| --- | --- | --- | --- |
+| `agent-capability-grep` | standalone | agent-capability-discipline (per-harness capability matrix) | Verify every harness declares its agentic-capability matrix. |
+| `agents-md-coverage-grep` | standalone | rules/agents-md-convention.md | Flag stale agent-companion files under the root-only AGENTS.md convention. |
+| `agnosticism-grep` | standalone | rules/agnostic-posture.md §3 (harness neutrality) + §1 (default-off) | Flag harness bias and re-introduced enforcement presets in shipped surfaces. |
+| `always-on-budget-grep` | per-write | D1 token-budget-discipline §Always-on body budget | Body-budget conformity matcher for always-on rules. |
+| `bare-except-grep` | per-write | M13.3 error handling | Flag bare except clauses without typed exceptions or re-raise. |
+| `binding-five-direction-grep` | standalone | M10 bidirectional-binding §1 (five-direction Bindings section) | Require the five-direction Bindings section on every rule, command, agent, and skill. |
+| `binding-reciprocity-corpus-grep` | standalone | M10 bidirectional-binding §2 (↔ self-reciprocal) | Cross-file binding-reciprocity corpus walk — the ↔-symmetric half-edge check. |
+| `binding-reciprocity-grep` | per-write | M10 bidirectional-binding §Notation | Flag binding declarations using non-canonical arrow notation. |
+| `brand-mark-grep` | per-write | rules/plain-language.md (brand-mark display/identifier casing) | Flag brand-mark display/identifier form drift on brand-touched surfaces. |
+| `commented-out-code-grep` | per-write | M13.1 why-not-what comments | Flag substantial commented-out code blocks left in source. |
+| `completion-claim-grep` | per-write | rules/session-closure.md (verifiable-close output honesty) | Flag unsupported completion / guarantee claims in cohort prose. |
+| `conventional-commit-grep` | standalone | CLAUDE.md Coding Conventions — Conventional Commits | Flag HEAD commit messages that drift from the Conventional-Commits grammar. |
+| `copilot-instructions-presence-grep` | per-write | — | GitHub Copilot surface presence check. |
+| `cross-platform-matrix-grep` | standalone | cross-platform OS x Python CI matrix | Verify CI declares a cross-platform OS x Python matrix. |
+| `determinism-grep` | standalone | rules/determinism.md | Prove every command and skill surface has a deterministic output shape. |
+| `diagram-staleness-grep` | per-write | M9 visual-leverage §Fidelity | Flag diagrams whose verification date is missing or stale. |
+| `dynamism-grep` | standalone | rules/dynamism.md (static-version embeds) | Flag static-string version embeds in dynamism-required surfaces. |
+| `editorconfig-presence-grep` | standalone | supply-chain SOTA-rigor §editorconfig | Verify a canonical .editorconfig is present at the project root. |
+| `file-header-grep` | per-write | — | Authorship-header presence and canonical-form check. |
+| `freshness-token-grep` | standalone | rules/freshness-facade.md | Flag freshness-narrative phrases on shipped public surfaces. |
+| `frontmatter-grep` | per-write | the per-class frontmatter JSON Schemas (src/apothem/schemas/) | Validate per-artifact-class YAML frontmatter against required-key sets. |
+| `frontmatter-value-grep` | standalone | per-class JSON Schema enum/pattern value constraints | Validate frontmatter VALUES against the per-class JSON Schema enum/pattern constraints. |
+| `gitattributes-presence-grep` | standalone | supply-chain .gitattributes contract | Verify the repo-root ``.gitattributes`` carries the canonical contract. |
+| `harden-runner-grep` | standalone | harden-runner egress baseline | Verify every workflow job opens with a conformant harden-runner step. |
+| `hedging-grep` | per-write | M8 definitiveness §Hedging | Flag hedging vocabulary in prescriptive contexts. |
+| `license-author-consistency-grep` | per-write | — | LICENSE author-identity presence check. |
+| `link-check` | per-write | rules/code-craft-markdown.md §6 Link Discipline | Validate Markdown internal links against the on-disk reference graph. |
+| `magic-number-grep` | per-write | M13.10 magic numbers | Flag magic numbers in source code. |
+| `multi-surface-coherence-grep` | per-write | — | Shared-claim coherence across AI-conventions surfaces. |
+| `naming-grep` | standalone | CLAUDE.md Coding Conventions (kebab-case naming) | Validate filesystem paths against the canonical naming convention. |
+| `no-global-plans-grep` | standalone | CLAUDE.md Plans Discipline (no global plans) | Walk the git index for tracked plans paths; fail when found. |
+| `no-toplevel-docs-grep` | standalone | single-source-of-truth (docs live in site/, not root docs/) | Fail when a top-level ``docs/`` directory exists at the repository root. |
+| `oidc-trusted-publishing-grep` | standalone | OIDC trusted publishing | Verify release workflows use OIDC trusted publishing. |
+| `option-annotation-grep` | per-write | M7 option-annotation (H6 per-option bind) | Enforce the per-option Recommended label-to-body bind (H6). |
+| `orphan-output-grep` | per-write | M12 canonical-layout + M14 systemicity | Flag artifacts emitted to non-canonical locations or without provenance. |
+| `permissions-minimum-scope-grep` | standalone | minimum-scope workflow permissions | Verify every GitHub Actions workflow declares a minimum-scope ``permissions:`` block. |
+| `plain-language-grep` | standalone | rules/plain-language.md — user-facing prose | Flag mechanistic / harness-internal vocabulary in user-facing prose. |
+| `plan-next-step-consistency-grep` | standalone | rules/recommend-next-step.md | Advisory: flag plan-suite infra files whose Recommended-Next-Step footer drifts from the suite's recorded next pipeline stage. |
+| `plan-suite-structure-grep` | standalone | context-management-scratch 2 (suite-locality + closed vocab) + canonical-layout-reporting-tiers 2.1 (numeric-prefix discipline) | Validate plan-suite structure: suite-locality, closed vocab, numeric prefix. |
+| `plans-discipline-language-grep` | standalone | CLAUDE.md Plans Discipline (multi-surface language) | Verify the canonical Plans Discipline language reaches every required surface. |
+| `production-ready-pr-grep` | per-write | M15 production-ready §Same-change-set | Flag commits whose change-set lacks the production-ready four-class shape. |
+| `recommend-next-step-grep` | standalone | rules/recommend-next-step.md | Verify every command file carries a `## Recommended Next Step` block. |
+| `redundancy-grep` | standalone | rules/operational-mandates.md §CM-7 coherent-product non-redundancy | Flag substantively-duplicated paragraphs across the governed corpus. |
+| `reference-token-grep` | standalone | rules/own-voice-reimplementation.md | Flag leaked reference-platform branding tokens on authored surfaces. |
+| `registry-capability-consistency-grep` | standalone | rules/agent-capability-discipline.md — registry capability cells backed by evidence | Flag registry capability cells not backed by install / materializer / projection evidence. |
+| `secret-leak-grep` | per-write | M13.8 security + M15 production-ready | Block emission of artifacts containing hardcoded credentials. |
+| `semver-stability-grep` | change-set | M15 semver-stability | Semver stability matcher (M15 mechanical fraction). |
+| `smoke-install-grep` | standalone | production-ready section 8.1 paired install scripts | Smoke-test the paired install scripts at the repository root. |
+| `static-version-grep` | standalone | rules/dynamism.md §static-version-resolution | Verify version-bearing sites resolve dynamically, not as static literals. |
+| `token-efficiency-grep` | per-write | clean-room-generation §5 + token-efficiency-rewrite | Flag filler phrases, throat-clearing openers, and content-free qualifiers. |
+| `unpinned-action-grep` | per-write | M15 production-ready §Supply-chain | Flag GitHub Actions workflows that pin actions to mutable refs. |
+| `user-confirm-grep` | per-write | M5 authority-inquiry §10 | Block emission of artifacts containing unresolved authority placeholders. |
+| `workflow-concurrency-grep` | standalone | workflow concurrency + per-job timeouts | Enforce concurrency + per-job timeout discipline on GitHub workflows. |
+
+{/* apothem:generated-reference:end */}
+
+## تشغيل البوابة
+
+على إطار عمل مُثبَّت، تعمل البوابة تلقائيًا: يربطها <bdi>`settings.json`</bdi> الخاص بـ
+<bdi>Claude Code</bdi> بوصفها خطّاف <bdi>`PreToolUse`</bdi> يستدعي النسخة المُجسَّدة في
+<bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> قبل كل عملية
+<bdi>Write/Edit</bdi>. ولا تفحص البوابة حينئذٍ إلا عمليات الكتابة الواقعة ضمن نطاق خطّافها،
+وتمرّ الكتابة الواقعة خارج النطاق بصمت؛ ويسرد [تشغيل بوابة المطابقة](/docs/usage/conformity-gate)
+هذا النطاق. ومن نسخة مسحوبة من المصدر، تُشغِّل صيغة الوحدة الشيفرةَ نفسها؛
+فابدأ كل أمر <bdi>`python`</bdi> أدناه بالبادئة <bdi>`PYTHONPATH=src`</bdi>. والبوابة
+استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>. أضِف <bdi>`--strict`</bdi>
+لتخرج بالرمز <bdi>`2`</bdi> عند نتيجة حاجبة. ويخرج الأمر بالرمز <bdi>`3`</bdi> عند اسم
+أداة تحقّق غير معروف.
 
 ```shell
-# توزيع ملفّ واحد (يحاكي خطّاف PreToolUse):
+# Every standalone validator across the repository:
+python -m apothem.conformity.gate --all .
+
+# The same sweep, failing on a blocking finding (the CI form):
+python -m apothem.conformity.gate --all --strict .
+
+# Every per-write validator against every tracked file:
+python -m apothem.conformity.gate --all-perwrite .
+
+# One validator by name (names come from --list):
+python -m apothem.conformity.gate --check naming-grep .
+
+# List every registered validator as JSON:
+python -m apothem.conformity.gate --list
+
+# Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
     | python -m apothem.conformity.gate --hook
-
-# مسح مُركَّب عبر المستودع:
-python -m apothem.conformity.gate --sweep src/ site/content/docs/ rules/
 ```
 
-راجِع [تشغيل بوّابة المطابقة](/docs/usage/conformity-gate) للإجراء الكامل.
+يطبع <bdi>`python -m apothem.conformity.gate --help`</bdi> ملخّص الاستخدام.
+راجِع [تشغيل بوابة المطابقة](/docs/usage/conformity-gate) للإجراء الكامل.
 
-## مرجع
+## المراجع
 
-- [سجلّ بوّابة ما-قبل-الإصدار](/docs/governance/pre-emission-gate-registry) — تعريفات الحواجز الكانونية
-- [سجلّ المطابقة الخارجية](/docs/governance/outward-conformity-registry) — دلالات <bdi>M1-M15</bdi> التفصيلية
-- [التفويضات المتقاطعة](/docs/governance/cross-cutting-mandates) — مصدر الحقيقة للتفويضات
-- [انضباط الأداء](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/performance-discipline.md) — ميزانيات زمن التشغيل لكلّ صنف
+- [سجلّ بوابة ما قبل الإصدار](/docs/governance/pre-emission-gate-registry) — تعريفات الأشرطة المرجعية
+- [سجلّ المطابقة الخارجية](/docs/governance/outward-conformity-registry) — الدلالات التفصيلية لـ <bdi>M1-M15</bdi>
+- [التفويضات الشاملة](/docs/governance/cross-cutting-mandates) — مصدر الحقيقة للتفويضات
+- [انضباط الأداء](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/performance-discipline.md) — ميزانيات زمن التشغيل لكل فئة

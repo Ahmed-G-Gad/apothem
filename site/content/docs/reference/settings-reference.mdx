@@ -20,13 +20,14 @@ loads `~/.claude/settings.json` across supported platforms.
 ## Python-Only Runtime
 
 Every configured hook uses Claude Code's exec-form command shape. The
-shipped template carries the `${HARNESS_ROOT}` token:
+shipped template carries the `${PYTHON_BIN}` and `${HARNESS_ROOT}` tokens;
+`apothem install` replaces `${PYTHON_BIN}` with the resolved absolute interpreter:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -62,9 +63,12 @@ Read-only tools are pre-approved; write operations (`Write`, `Edit`, `NotebookEd
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | New Claude Code session | 30 seconds | Initialize context, read memory, check plan state | CM-14 |
 | **PreToolUse** | Before Write/Edit/NotebookEdit/Bash | 10 seconds | Validate CM-7 compliance + frontmatter | CM-7, CM-22 |
-| **PreCompact** | Before context compaction | 30 seconds | Externalize unexternalized state | CM-24 §2.3 |
-| **PostCompact** | After context compaction | 30 seconds | Re-bootstrap from externalized state | CM-24 §6.2 |
+| **PostToolUse** | After every tool call (matcher `*`) | 10 seconds | Proactive-compaction advisory | Context management (proactive compaction) |
 | **Stop** | Session exit | 60 seconds | Session-end externalization | CM-14/CM-22/CM-24/CM-26 |
+
+This template registers four events. It does not register `PreCompact` or
+`PostCompact`; the Codex and Qwen Code templates do, and the
+[hooks reference](/docs/reference/hooks) lists them per harness.
 
 `dispatch.py` additionally accepts `UserPromptSubmit` and `Notification` on its event
 whitelist. Neither is wired in the shipped templates; add a matcher block with the same
@@ -149,7 +153,7 @@ increasing order of precedence:
 |------|----------|------------|-----------|
 | 1. **System** | Harness defaults compiled into Claude Code itself | n/a (vendor-controlled) | The floor; every operator inherits the same baseline. |
 | 2. **Project** | `<harness-root>/settings.json` | ✅ Committed | Project-shared conventions: hooks, permissions, MCP servers, statusline wiring. The Apothem-source template lives inside the Claude Code adapter's templates directory. |
-| 3. **User-local** | `<harness-root>/settings.local.json` (gitignored) — templated as `settings.local.example.json` at the repository root | ❌ Gitignored | Operator-specific overrides: API tokens, machine-local paths, opt-in features. |
+| 3. **User-local** | `<harness-root>/settings.local.json` (gitignored) — templated as `settings.local.example.json` under `examples/harnesses/claude-code/` | ❌ Gitignored | Operator-specific overrides: API tokens, machine-local paths, opt-in features. |
 
 Higher-tier values override lower-tier values **at the leaf-key level** — when both
 the project and user-local layers declare a `permissions.allow` entry, the union is
@@ -158,7 +162,7 @@ per-key merge semantics are owned by the Claude Code harness.
 
 ### Creating a user-local override
 
-1. Copy `settings.local.example.json` (repository root) to `<harness-root>/settings.local.json`.
+1. Copy `examples/harnesses/claude-code/settings.local.example.json` to `<harness-root>/settings.local.json`.
    The `settings.local.json` filename matches the `.gitignore` pattern, so the file never
    lands in version control.
 2. Edit the local copy — keep only the keys to override; the harness composes the layers,

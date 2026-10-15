@@ -1,55 +1,130 @@
 ---
 title: "Branch-Schutz"
-description: "Apothem-Branch-Schutz auf main — Review-Gate, Gating durch Status-Checks und Push-Beschränkungen."
+description: "Apothem-Branch-Schutz auf main: die aktuell geltende Schutzregel, ihre erforderlichen Statusprüfungen und die Prüfungen, deren Aufnahme aussteht."
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Der `main`-Branch von Apothem wird nach der Veröffentlichung des einzigen frischen Release-Commits durch GitHub-Branch-Schutz geschützt. Der Schutz setzt die in `rules/production-ready-prs.md` deklarierte Change-Set-Disziplin durch und speist die OpenSSF-Scorecard-Checks **Branch-Protection** und **Code-Review** für künftige Arbeit.
+Der `main`-Branch von Apothem ist durch eine klassische GitHub-Branch-Schutzregel geschützt. Das Repository hat keine Rulesets. Der Schutz setzt die in `rules/production-ready-prs.md` deklarierte Change-Set-Disziplin durch und speist die OpenSSF-Scorecard-Prüfungen **Branch-Protection** und **Code-Review**.
 
-## Ruleset-Deklaration
+Diese Seite hält die aktuell geltenden Einstellungen exakt fest, wie sie zuletzt am 2026-10-07 aus der GitHub-API gelesen wurden. Eine Einstellung, die der Maintainer beabsichtigt, aber noch nicht angewendet hat, erscheint nur unter [Ausstehende Maintainer-Änderungen](#ausstehende-maintainer-änderungen).
 
-| Einstellung | Wert | Begründung |
+## Schutzeinstellungen
+
+| Einstellung | API-Feld | Aktueller Wert | Wirkung |
+|---|---|---|---|
+| **Pull Request vor dem Merge erforderlich** | `required_pull_request_reviews` (vorhanden) | ✅ | Änderungen erreichen `main` über einen Pull Request. |
+| **Erforderliche genehmigende Reviews** | `required_approving_review_count` | **0** | Ein Pull Request wird ohne genehmigende Review gemergt. Siehe [Solo-Maintainer-Modell](#solo-maintainer-modell). |
+| **Veraltete Genehmigungen bei neuen Commits verwerfen** | `dismiss_stale_reviews` | ✅ | Eine Genehmigung, die vor einem neuen Push erteilt wurde, zählt nicht mehr. |
+| **Review von Code Owners erforderlich** | `require_code_owner_reviews` | ❌ | Dies zu aktivieren, bevor ein zweiter Maintainer hinzukommt, führt die Pull Requests eines Solo-Maintainers in eine Sackgasse. |
+| **Genehmigung des jüngsten überprüfbaren Pushes erforderlich** | `require_last_push_approval` | ❌ | GitHub verlangt, dass diese Genehmigung von jemand anderem als der Person stammt, die gepusht hat, was ein Solo-Maintainer nicht leisten kann. |
+| **Bestehen von Statusprüfungen erforderlich** | `required_status_checks` | ✅ | Die 12 Kontexte, die unter [Erforderliche Statusprüfungen](#erforderliche-statusprüfungen) aufgeführt sind, müssen bestehen. |
+| **Branches müssen vor dem Merge aktuell sein** | `required_status_checks.strict` | ❌ | Ein Pull Request kann gemergt werden, wenn seine erforderlichen Prüfungen gegen einen älteren Stand von `main` bestanden haben. Die Workflows, die bei einem Push auf `main` laufen, testen dann das gemergte Ergebnis. |
+| **Auflösung von Konversationen vor dem Merge erforderlich** | `required_conversation_resolution` | ✅ | Offene Review-Threads blockieren den Merge. |
+| **Signierte Commits erforderlich** | `required_signatures` | ❌ | Release-Commits werden lokal signiert. Die Durchsetzung wartet, bis die Onboarding-Dokumentation für Mitwirkende die Einrichtung der SSH- oder GPG-Signierung beschreibt. |
+| **Lineare Historie erforderlich** | `required_linear_history` | ✅ | Hält die öffentliche Historie von `main` als eine einzige Linie. |
+| **Branch sperren** | `lock_branch` | ❌ | `main` nimmt Merges an. |
+| **Umgehen der obigen Einstellungen nicht zulassen** | `enforce_admins` | ❌ | Die obigen Einstellungen binden keinen Repository-Administrator. Ein Administrator kann ohne die erforderlichen Prüfungen mergen oder direkt auf `main` pushen. |
+| **Force-Pushes zulassen** | `allow_force_pushes` | ❌ | Force-Pushes auf `main` sind für alle blockiert, Administratoren eingeschlossen. |
+| **Löschungen zulassen** | `allow_deletions` | ❌ | Niemand kann `main` löschen, Administratoren eingeschlossen. |
+
+## Solo-Maintainer-Modell
+
+Das Repository hat einen Maintainer. GitHub stellt fest: „Pull-Request-Autoren können ihre eigenen Pull Requests nicht genehmigen.“ Eine erforderliche Genehmigungsanzahl über 0 würde daher jeden Pull Request des Maintainers blockieren. Die aktuell geltende Regel verlangt einen Pull Request mit 0 Genehmigungen und lässt `enforce_admins` ausgeschaltet.
+
+Für alle ohne Administratorberechtigung erfordert ein Merge weiterhin grüne erforderliche Statusprüfungen, aufgelöste Review-Konversationen und eine lineare Historie. Force-Pushes und das Löschen von `main` bleiben für jedes Konto blockiert.
+
+Wenn ein zweiter Maintainer hinzukommt, sind die stärkeren Einstellungen mindestens eine erforderliche Genehmigung, die Genehmigung des jüngsten Pushes, die CODEOWNERS-Review und eingeschaltetes `enforce_admins`. Die [Merge-Zeremonie für Solo-Maintainer](/docs/runbooks/solo-maintainer-merge) gilt nur für einen Schutz, der eine Genehmigung verlangt und sie für Administratoren durchsetzt.
+
+## Erforderliche Statusprüfungen
+
+Jeder dieser 12 Kontexte ist erforderlich, mit GitHub Actions (App-ID `15368`) als Quelle:
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| Kontext | Workflow und Job | Wie er bei jedem Pull Request meldet |
 |---|---|---|
-| **Ziel** | `main` | Schützt den öffentlichen Standard-Branch. |
-| **Durchsetzungsstatus** | `active` | Nicht im Probelauf-Modus. |
-| **Pull Request vor dem Merge erforderlich** | ✅ | Direkte Pushes auf `main` blockiert. |
-| **Erforderliche genehmigende Reviews** | **1** | Mindest-Gate für menschliche Review bei einem neuen Solo-Maintainer-Projekt. |
-| **Veraltete Genehmigungen bei neuen Commits verwerfen** | ✅ | Ein Force-Push nach der Genehmigung löst die Review erneut aus. |
-| **Review von Code Owners erforderlich** | Aufgeschoben | Dies vor dem Beitritt eines zweiten Maintainers zu aktivieren, kann Solo-Maintainer-PRs in eine Sackgasse führen. |
-| **Genehmigung des jüngsten überprüfbaren Pushes erforderlich** | ✅ | Der zuletzt gepushte Commit muss eine Genehmigung tragen. |
-| **Auflösung von Konversationen erforderlich** | ✅ | Offene Review-Threads blockieren den Merge. |
-| **Bestehen von Status-Checks erforderlich** | ✅ | CI-Workflow + Scorecard + CodeQL + pip-audit. |
-| **Erforderliche Status-Checks** | Aktuelle Kern-Checks | Die erforderliche Liste wird aus dem jüngsten grünen Release-Commit aktualisiert. |
-| **Branches müssen aktuell sein** | ✅ | Verhindert Regressionen durch veralteten Merge. |
-| **Signierte Commits erforderlich** | Empfohlen | Lokale Release-Commits sind signiert; die vollständige Durchsetzung wartet, bis die Contributor-Onboarding-Dokumentation das SSH/GPG-Setup beschreibt. |
-| **Lineare Historie erforderlich** | ✅ | Hält die einzeilige öffentliche Historie verständlich. |
-| **Force-Pushes blockieren** | ✅ | Das Umschreiben der Historie auf `main` ist blockiert. |
-| **Löschung erlauben** | ❌ | Der `main`-Branch kann nicht gelöscht werden. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, Job `quality` | `ci.yml` läuft, wenn ein Pull Request einen Code- oder Konfigurationspfad berührt. `ci-docs-stub.yml` meldet dieselben Kontexte bei einem Pull Request, der nur die Dokumentation ändert. |
+| `coverage` | `ci.yml`, Job `coverage` | Wie bei `quality`. |
+| `Require Signed-off-by` | `dco.yml`, Job `dco` | Sein Pull-Request-Trigger hat keinen `paths`-Filter, daher läuft er bei jedem Pull Request auf `main`. |
 
-## Solo-Maintainer-Einschränkung
+Die Prerelease-Matrixzelle `quality / ubuntu-latest / py3.15` läuft in `ci.yml` mit `continue-on-error` und ist nicht erforderlich. Jeder andere Workflow, einschließlich CodeQL, Scorecard und pip-audit, kann einen Status melden, aber sein Ergebnis steuert den Merge nicht, es sei denn, sein Kontext wird in diese Liste aufgenommen.
 
-GitHub erlaubt es Repository-Dateien nicht, eine menschliche Review-Historie zu erstellen. Das Repository wendet daher den stärksten, nicht in eine Sackgasse führenden Branch-Schutz für sein aktuelles Maintainer-Modell an: eine genehmigende Review, Verwerfen veralteter Reviews, Genehmigung des jüngsten Pushes, Auflösung von Konversationen, Status-Checks, lineare Historie sowie keine Branch-Löschung oder Force-Push. Wenn ein zweiter Maintainer beitritt, werden die CODEOWNERS-Review und ein Minimum von zwei Reviewern zur stärkeren Einstellung.
+## Ausstehende Maintainer-Änderungen
 
-## Anforderungen an Status-Checks
+Der Maintainer beabsichtigt, diese 25 Kontexte in die Liste der erforderlichen Prüfungen aufzunehmen. Der Header jedes Workflows deklariert den Job als erforderliche Prüfung, und sein Pull-Request-Trigger hat keinen `paths`-Filter, daher läuft er bei jedem Pull Request auf `main`. Bis ein Kontext aufgenommen ist, blockiert ein Fehlschlag darin den Merge nicht.
 
-Die vier oben deklarierten hart gatenden Status-Checks:
+`clean-install-gate.yml`, 7 Kontexte:
 
-- **`ci`** — vollständige Test-Matrix + ruff + mypy + bandit + Trivy + pip-audit auf dem aufgelösten Abhängigkeitsbaum
-- **`Scorecard`** — OpenSSF-Scorecard-Lauf ohne Regression je Check
-- **`CodeQL`** — `security-extended`-Query-Packs für `python` + `actions`
-- **`pip-audit`** — wöchentlicher + PR-weiser Schwachstellen-Scan gegen den aufgelösten Abhängigkeitsbaum
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-Jeder andere Workflow kann einen Status melden, aber sein Ergebnis gatet den Merge nicht, sofern er nicht in die Liste der erforderlichen Checks befördert wird.
+`harness-matrix.yml`, 17 Kontexte, ein `matrix (<adapter>)` pro Adapter in der Matrix des Jobs:
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`, 1 Kontext:
+
+```text
+installer-lint
+```
+
+Sobald die `harness-matrix.yml`-Kontexte erforderlich sind, fügt die Registrierung eines neuen Adapters einen `matrix (<adapter>)`-Kontext hinzu, und die Liste der erforderlichen Prüfungen erhält ihn in derselben Änderung. „Branches müssen vor dem Merge aktuell sein“ bleibt ausgeschaltet. Wenn eine ausstehende Änderung angewendet wird, verschieben Sie sie in derselben Änderung in die obigen Abschnitte zu den aktuell geltenden Einstellungen.
 
 ## Audit-Kadenz
 
-Diese Datei wird bei jedem Sicherheitsaudit und an jedem Release-Engineering-Kontrollpunkt überprüft. Eine Abweichung zwischen dieser Datei und der tatsächlichen Branch-Schutz-Konfiguration ist ein Befund mit hoher Schwere.
+Diese Datei wird bei jedem Sicherheitsaudit und an jedem Release-Engineering-Kontrollpunkt überprüft. Eine Abweichung zwischen dieser Datei und der tatsächlichen Branch-Schutz-Konfiguration ist ein Befund mit hoher Schwere. Lesen Sie die aktuell geltende Konfiguration mit:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## Referenzen
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [OpenSSF Scorecard — Branch-Protection-Prüfung](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — Informationen zu geschützten Branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — Eine Branch-Schutzregel verwalten](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — Einen Pull Request mit erforderlichen Reviews genehmigen](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
 - [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — pfadbezogenes Review-Eigentum
-- `rules/production-ready-prs.md` §1 — Same-Change-Set-Disziplin, die dieses Ruleset durchsetzt
+- [Apothem-CI-Workflows](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — die Workflows, aus denen jeder erforderliche Kontext stammt
+- `rules/production-ready-prs.md` §1 — Same-Change-Set-Disziplin, die dieser Schutz durchsetzt

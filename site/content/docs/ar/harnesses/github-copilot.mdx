@@ -1,14 +1,14 @@
 ---
 title: "GitHub Copilot"
-description: "محوّل إطار عمل Apothem لـ GitHub Copilot (GA)."
+description: "محوّل إطار عمل Apothem لـ GitHub Copilot (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "65affe4b2cf2a340"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **المورّد:** <bdi>GitHub / Microsoft</bdi>
 **اسم التثبيت:** <bdi>`github-copilot`</bdi>
-**الحالة:** <bdi>GA</bdi>
+**الحالة:** إتاحة عامة
 **الإعداد الأصلي:** <bdi>`<project>/.github/copilot-instructions.md`</bdi>
 
 ## التثبيت
@@ -17,30 +17,39 @@ sourceHash: "65affe4b2cf2a340"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-يشتقّ المحوّل ملفّ تعليمات المشروع من قواعد <bdi>Apothem</bdi> المشتركة وسطح
-الحوكمة.
+يشتقّ المحوّل ملف تعليمات المشروع من ملفك التعريفي المشترك ومن سطح القواعد
+والحوكمة المشترك في <bdi>Apothem</bdi>.
 
 **الملفات المكتوبة:** <bdi>`<project>/.github/copilot-instructions.md`</bdi>
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
-يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويعرض ملفّ تعليمات
-<bdi>Copilot</bdi> على مستوى المستودع في كل عملية <bdi>`apothem install`</bdi> أو
-<bdi>`apothem update`</bdi>. الملف التعريفي المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة
-احتياطية من التعديلات المحلية للمشروع على الملفّ المُولَّد قبل أن تستبدل المزامنة
-التالية المحتوى المُدار بواسطة <bdi>Apothem</bdi>.
+يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد ملف تعليمات
+<bdi>Copilot</bdi> على مستوى المستودع في كل تشغيل لـ <bdi>`apothem install`</bdi> أو
+<bdi>`apothem update`</bdi>. الملف التعريفي المشترك هو مصدر الحقيقة؛ وتُنسَخ
+التعديلات المحلية للمشروع على الملف المُولَّد احتياطيًا قبل أن تستبدل المزامنة التالية
+المحتوى الذي يديره <bdi>Apothem</bdi>.
+
+داخل كتلة <bdi>Apothem</bdi>، يأتي أولًا القسم المُجسَّد من ملفك التعريفي (المُشغِّل،
+والتفضيلات، والقواعد المخصّصة، والسلوكيات المُختارة بالاشتراك، وأسماء خوادم
+<bdi>MCP</bdi>)، قبل نص الحوكمة المشترك. يُشير <bdi>GitHub</bdi> إلى أن ملفات
+التعليمات الأقصر أرجح أن تُعالَج بالكامل في مراجعة الشيفرة
+([تخصيص مراجعة الشيفرة](https://docs.github.com/en/copilot/tutorials/customize-code-review))،
+لذا يتصدّر الملفَّ الجزءُ الخاص بك.
 
 ## ملاحظات التوافق
 
-لا يكشف <bdi>GitHub Copilot</bdi> عن مسار تعليمات عامّ للمستخدم قائم على الملفات
-يمكن لهذا المحوّل إدارته. يستهدف <bdi>Apothem</bdi> ملفّ تعليمات نطاق المشروع
-الموثَّق، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة في ملكية المشغّل.
+لا يكشف <bdi>GitHub Copilot</bdi> عن مسار تعليمات عامّ على مستوى المستخدم قائم على
+الملفات كي يديره هذا المحوّل. يستهدف <bdi>Apothem</bdi> ملف التعليمات الموثَّق بنطاق
+المشروع، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة ملكًا للمُشغِّل.
 
-يتعامل <bdi>Apothem</bdi> مع <bdi>`copilot-instructions.md`</bdi> بوصفه صوتًا واحدًا
-بين أسطح تعليمات المساعد في المشروع: يتحقّق فحص التماسك متعدّد الأسطح في بوّابة
-المطابقة من أنّ ادّعاءاته المشتركة تبقى متوائمة دلاليًا مع ملفات تعليمات المشروع
-الأخرى، لذا لا يتلقّى <bdi>Copilot</bdi> أبدًا إرشادًا يتعارض مع ما تقرؤه بقيّة سلسلة
-الأدوات.
+داخل مستودع <bdi>Apothem</bdi>، يُعَدّ <bdi>`.github/copilot-instructions.md`</bdi>
+صوتًا واحدًا بين أسطح تعليمات المساعد في ذلك المستودع. وفي نسخة مسحوبة من ذلك
+المستودع، يقارن فحص التماسك متعدّد الأسطح في بوابة المطابقة الادّعاءات المشتركة في
+<bdi>`AGENTS.md`</bdi> و<bdi>`CLAUDE.md`</bdi> و<bdi>`.github/copilot-instructions.md`</bdi>.
+ويُبلِغ عن ادّعاء مشترك يُغفله أحد الملفات الثلاثة، وعن ملف يناقض ادّعاءً يقوم به
+<bdi>`AGENTS.md`</bdi>. لا يقرأ الفحص ملف التعليمات الذي يكتبه <bdi>Apothem</bdi> في
+مشروعك. البوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>.
 
 ## التحقّق
 
@@ -50,9 +59,9 @@ apothem verify --harness github-copilot --project /path/to/project
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. وجود الإعداد الأصلي في المسار المتوقَّع.
-2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
-3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+1. الإعداد الأصلي موجود في المسار المتوقَّع.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
 
@@ -60,7 +69,7 @@ apothem verify --harness github-copilot --project /path/to/project
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-يعيد اشتقاق ملفّ تعليمات المشروع من حالة الملف التعريفي المشترك الحالية.
+يُعيد اشتقاق ملف تعليمات المشروع من الحالة الراهنة للملف التعريفي المشترك.
 
 ## إلغاء التثبيت
 
@@ -68,10 +77,12 @@ apothem update --harness github-copilot --project /path/to/project
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
-لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`<project>/.github/copilot-instructions.md`</bdi>
+ويُبقي أي نص خارجها. لا يُحذَف الملف إلا حين لا يتبقّى فيه شيء آخر. قبل التغيير،
+تُحفَظ نسخة بطابع زمني من الملف تحت <bdi>`~/.apothem/backups/`</bdi>. لا يتأثّر
+ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
-## بوّابة المطابقة
+## بوابة المطابقة
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,10 +94,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness github-copilot --project /path/to/project`</bdi> |
 | فشل التحقّق | شغّل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi> |
+| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness github-copilot --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 
-| العَلَم | الافتراضي | الوصف |
+| الراية | القيمة الافتراضية | الوصف |
 |------|---------|-------------|
 | <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |
+
+## انظر أيضًا
+
+- [كل أُطُر العمل](/docs/harnesses) — الفهرس الكامل للأدوات المدعومة
+- [دليل التثبيت](/docs/install) — ثبّت <bdi>Apothem</bdi> في إطار العمل هذا
+- [مرجع <bdi>`apothem harnesses`</bdi>](/docs/cli-reference/harnesses) — اسرد المحوّلات وافحصها من واجهة سطر الأوامر

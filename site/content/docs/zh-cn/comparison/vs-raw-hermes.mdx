@@ -1,42 +1,39 @@
 ---
-title: "Apothem 对比原生 Hermes 配置"
-description: "手工维护 Hermes 配置，还是经由 Apothem 的共享 profile 来管理它。"
+title: "Apothem 对比手工 Hermes 配置"
+description: "手工维护 Hermes 配置，与通过 Apothem 的共享配置档案管理它的对比。"
 machineTranslated: true
-sourceHash: "30eff4ccddef295b"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Hermes 读取 `~/.hermes/config.yaml`。Apothem 写入原生 YAML 配置（把 profile 的 MCP
-清单投影到 `auxiliary.mcp`），并在 `~/.hermes/.apothem/support/skills/` 下安装共享的命令群和
-技能群。Hermes 自己的 `skills.config` 是一个注册表包列表，因此 Apothem 不编写它。
+Hermes 读取 `~/.hermes/config.yaml`。Apothem 写入原生 YAML 配置（将配置档案的 MCP 清单投射到 `mcp_servers` 中），并在 `~/.hermes/.apothem/support/skills/` 下安装共享的命令集合和技能集合。Hermes 自己的 `skills.config` 是一个注册表包列表，因此 Apothem 不编写它。
 
 ## 状态
 
-**预览。** Hermes 适配器面向当前已文档化的配置文件和技能发现面。非技能群仍属于
-Apothem 支持材料。
+**预览。** Hermes 适配器面向当前有文档记载的配置文件和技能发现表面。非技能集合仍作为 Apothem 支持材料。
 
 ## 工作量对比
 
-| 任务 | 原生手工配置 | Apothem 管理 |
+| 任务 | 手工配置 | Apothem 托管 |
 | ---- | --------------- | --------------- |
 | 编写可复用技能 | 手工编辑配置和技能目录 | 在共享语料中编写一次 |
-| 让各环境的群保持一致 | 逐工具手动 | `apothem update` 时自动 |
+| 让集合与其他工具保持一致 | 手动，逐个工具 | 在 `apothem update` 时自动完成 |
 | 安装 / 移除配置 | 手动 | `apothem install` / `apothem uninstall` |
 | 验证配置是否正确 | 手动检查 | `apothem verify --harness hermes` |
 
 ## Apothem 管理什么
 
-Hermes 适配器写入 `config.yaml`，把 Apothem 斜杠命令封装为技能，把 Apothem 技能复制
-进被引用的支持目录，并把规则、模板、agents 与 hook 材料保留在 Apothem 支持子树下。
+Hermes 适配器写入 `config.yaml`，将 Apothem 斜杠命令封装为技能，将 Apothem 技能复制到支持目录中，并将规则、模板、委托和钩子材料保留在 Apothem 支持子树下。只有在你把 `~/.hermes/.apothem/support/skills` 添加到 `config.yaml` 中的 `skills.external_dirs` 之后，Hermes 才会加载这些技能。
 
 ## 迁移路径
 
-1. 如果尚未创建共享 profile，运行 `apothem profile init`。
-2. 把可复用的 Hermes 技能或命令提示词移入共享语料。
-3. 运行 `apothem install --harness hermes` 以渲染原生配置和支持技能目录。
-4. 运行 `apothem verify --harness hermes` 以确认配置已落地。
+1. 如果你尚未创建共享配置档案，运行 `apothem profile init` 来创建它。
+2. 将可复用的 Hermes 技能或命令提示词移入共享语料。
+3. 运行 `apothem install --harness hermes`，以渲染原生配置和支持技能目录。
+4. 将 `~/.hermes/.apothem/support/skills` 添加到 `config.yaml` 中的 `skills.external_dirs`，以便 Hermes 加载已安装的技能。`apothem update` 会保留你添加到 `config.yaml` 的键。
+5. 运行 `apothem verify --harness hermes`，以确认配置已落地。
 
-## 接着阅读
+## 接下来阅读
 
 - [Hermes 适配器参考](/docs/harnesses/hermes)
 - [对比概览](/docs/comparison)

@@ -1,12 +1,12 @@
 ---
 title: "CodeBuddy"
-description: "Tencent CodeBuddy(GA)를 위한 Apothem 하니스 어댑터."
+description: "Tencent CodeBuddy(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "b2ad522fd661cc14"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** Tencent
+**벤더:** Tencent
 **설치 이름:** `codebuddy`
 **상태:** GA
 **네이티브 구성:** `<project>/.codebuddy/rules/apothem-rules.md`
@@ -17,32 +17,37 @@ sourceHash: "b2ad522fd661cc14"
 apothem install --harness codebuddy --project /path/to/project
 ```
 
-어댑터는 공유 Apothem 규칙 및 거버넌스 표면에서 프로젝트 범위 규칙 파일 하나를
-작성합니다.
+어댑터는 공유 Apothem 규칙과 거버넌스 표면으로부터 프로젝트 범위 규칙 파일
+하나를 작성합니다.
 
 **작성되는 파일:** `<project>/.codebuddy/rules/apothem-rules.md`
 
-## 프로필에서 네이티브 구성으로의 매핑
+## 프로필-네이티브 구성 매핑
 
-어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
-실행마다 프로젝트 규칙 파일을 렌더링합니다. CodeBuddy는 `.codebuddy/rules/` 아래의
-모든 `*.md` 파일을 선택적 YAML 프런트매터(`alwaysApply`, `paths`, `enabled`)가 있는
-Markdown으로 읽습니다 —
-[CodeBuddy Rules 문서](https://www.codebuddy.ai/docs/ide/Rules) 참조. Apothem의
-파일은 `alwaysApply: true`를 담고 있으므로 거버넌스 표면이 모든 상호작용에서
-적용됩니다. 공유 프로필이 진실의 원천입니다. 생성된 파일에 대한 프로젝트 로컬 편집은
-다음 동기화가 Apothem 관리 콘텐츠를 교체하기 전에 백업됩니다.
+어댑터는 `apothem install` 또는 `apothem update`를 실행할 때마다 Apothem의
+공유 프로필을 읽고 프로젝트 규칙 파일을 렌더링합니다.
+[CodeBuddy Rules 문서](https://www.codebuddy.ai/docs/ide/Rules)에 따라
+CodeBuddy는 `.codebuddy/rules/` 아래의 모든 `*.md` 파일을 선택적 YAML
+프런트매터(`alwaysApply`, `paths`, `enabled`)가 있는 Markdown으로 읽습니다.
+Apothem의 파일은 `alwaysApply: true`를 담고 있으므로 거버넌스 표면이 모든
+상호작용에 적용됩니다. 프런트매터는 파일의 첫 콘텐츠이며 Apothem 관리 블록이
+그 뒤에 옵니다. 블록 뒤에 여러분이 추가한 텍스트는 동기화할 때마다 유지됩니다.
+공유 프로필이 진실의 원천입니다. 생성된 파일에 대한 프로젝트 로컬 편집은 다음
+동기화가 Apothem 관리 콘텐츠를 교체하기 전에 백업됩니다.
 
 ## 호환성 참고 사항
 
-CodeBuddy의 규칙 표면은 `.codebuddy/rules/` 아래에서 프로젝트 범위로 지정됩니다.
-어댑터는 운영자가 같은 디렉터리에 작성한 모든 규칙 파일과 공존하는 전용
-`apothem-rules.md` 파일을 작성합니다. `CODEBUDDY.md` 프로젝트 메모리 파일과
-`.codebuddy/settings.json`(권한, MCP)은 운영자가 소유합니다. Apothem은 이를 작성하지
-않습니다. 스킬, 명령, 에이전트, 훅은 규칙 파일 내에서 규율로 참조됩니다 — CodeBuddy는
-이들을 위한 어댑터 소유 파일 표면을 노출하지 않습니다. 어댑터가 의존하는 공급업체 표면
-규약은 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`에 고정되어 있으며,
-라이브 CodeBuddy 문서에 대해 스냅샷됩니다.
+CodeBuddy의 규칙 표면은 `.codebuddy/rules/` 아래에서 프로젝트 범위로
+지정됩니다. 어댑터는 운영자가 같은 디렉터리에 작성하는 어떤 규칙 파일과도
+공존하는 전용 `apothem-rules.md` 파일을 작성합니다. `CODEBUDDY.md` 프로젝트
+메모리 파일, `.codebuddy/settings.json`, 프로젝트 `.mcp.json`(MCP 서버)은
+운영자 소유이며, Apothem은 이를 작성하지 않습니다. CodeBuddy는 스킬, 커맨드,
+서브에이전트, 훅도 문서화하지만, 어댑터는 이 중 어느 것도 작성하지 않고 대신
+규칙 파일 안에서 해당 규율을 참조합니다. 프로젝트에 `CODEBUDDY.md`가 없으면
+CodeBuddy Code가 `AGENTS.md`를 프로젝트 메모리로 읽으므로, 다른 어댑터가 작성한
+`AGENTS.md`도 CodeBuddy에 도달합니다. 어댑터가 의존하는 벤더 표면 규약은
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`에 고정되어 있으며,
+현재 게시된 CodeBuddy 문서를 기준으로 스냅샷됩니다.
 
 ## 검증
 
@@ -53,7 +58,7 @@ apothem verify --harness codebuddy --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 관리 규칙 파일이 존재하고 비어 있지 않습니다.
+2. 관리 대상 규칙 파일이 존재하며 비어 있지 않습니다.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -63,8 +68,8 @@ apothem update --harness codebuddy --project /path/to/project
 ```
 
 현재 공유 프로필 상태에서 프로젝트 규칙 파일을 다시 도출합니다. `install`과
-`update`는 멱등적입니다 — 다시 실행하면 관리 파일이 최신 렌더링된 콘텐츠로
-덮어쓰입니다.
+`update`는 멱등적입니다 — 다시 실행하면 관리 대상 파일을 최신 렌더링 콘텐츠로
+덮어씁니다.
 
 ## 제거
 
@@ -72,8 +77,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거하고, 관리 규칙 파일을 타임스탬프가 붙은
-백업으로 이름을 변경합니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+`apothem-rules.md`에서 Apothem 블록을 제거하고 그 안의 다른 텍스트는 유지합니다. 파일에 다른 내용이 남지 않은 경우에만 파일을 삭제합니다. 변경 전에 파일의 타임스탬프가 찍힌 사본을 `~/.apothem/backups/` 아래에 저장하며, 프로젝트에는 백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
 
 ## 적합성 게이트
 
@@ -83,14 +87,20 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 해결 |
+| 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness codebuddy --project /path/to/project`를 다시 실행 |
-| 검증 실패 | `apothem update --harness codebuddy --project /path/to/project`를 실행한 다음 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness codebuddy --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness codebuddy --project /path/to/project`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness codebuddy --project /path/to/project`를 다시 실행 |
 
 ## 구성 노브
 
 | 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
+
+## 함께 보기
+
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

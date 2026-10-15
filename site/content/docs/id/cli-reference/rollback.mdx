@@ -2,11 +2,11 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "95a26e667a1ea20a"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Memulihkan asisten-pengkodean ke keadaan sebelum pemasangan tercatatnya.
+Memulihkan harness ke keadaan sebelum pemasangannya yang tercatat.
 
 ## Ringkasan
 
@@ -17,20 +17,71 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-`rollback` merekonstruksi byte pra-pemasangan setiap asisten-pengkodean yang dipilih dari root cadangan Apothem. Perintah ini me-resolve pass pemasangan tercatat — yang terbaru secara default, atau yang dinamai oleh `--install-id` — memulihkan setiap cadangan yang ditangkap pemasangan itu, lalu menambahkan catatan `rollback` ke ledger asisten-pengkodean.
+`rollback` mengembalikan setiap harness yang dipilih ke keadaan sebelum putaran
+pemasangan yang tercatat — yang terbaru secara default, atau yang disebutkan
+oleh `--install-id`. Dengan menelusuri catatan ledger pemasangan tersebut,
+dimulai dari perubahan terbaru, perintah ini:
 
-Konfirmasi diminta per asisten-pengkodean kecuali `--yes` disediakan. `--install-id` dan `--last` memilih pass pemasangan dan saling eksklusif.
+- memulihkan setiap berkas dan direktori yang ditimpa oleh pemasangan dari
+  cadangan yang ditangkap pemasangan tersebut, di jalurnya yang tercatat
+  (direktori yang diganti oleh pemasangan dipulihkan persis, tanpa berkas yang
+  ditambahkan pemasangan ke dalamnya);
+- menghapus setiap berkas dan direktori yang dibuat oleh pemasangan, dan
+  mengembalikan jalur tata letak warisan apa pun yang disingkirkan oleh
+  pemasangan;
+- menghapus penyimpanan data bersama (`memory`, `contexts`, `learning`) yang
+  dibuat oleh pemasangan, kecuali jika harness lain yang terpasang masih
+  menggunakannya;
+- menghapus direktori yang dibuat oleh pemasangan, setelah direktori tersebut
+  kosong.
+
+Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin
+ke root cadangan Apothem (`~/.apothem/backups/`), sehingga rollback itu sendiri
+dapat dibatalkan secara manual. Rollback kemudian menambahkan catatan
+`rollback` ke ledger harness. Me-rollback pemasangan yang lebih lama hanya
+memulihkan atau menghapus target yang dicatat oleh pemasangan lama tersebut, dan
+mengeluarkan setiap pemasangan sesudahnya dari daftar pemasangan aktif ledger
+pada root yang sama. Berkas yang ditambahkan oleh pemasangan yang lebih baru di
+luar target tersebut tetap berada di tempatnya.
+
+Ledger menyimpan 10 catatan pemasangan terbaru per root pemasangan (beserta
+cadangan yang dirujuknya); pemasangan yang lebih lama tidak lagi dapat
+di-rollback berdasarkan id dan melaporkan `rollback.no_record`.
+[`apothem backups prune`](/docs/cli-reference/backups) menurunkan batas itu
+sesuai permintaan, dan tidak pernah menghapus cadangan yang menjadi sumber
+pemulihan pemasangan terbaru.
+
+Catatan yang ditulis oleh rilis Apothem sebelum perilaku ini ditambahkan tidak
+mencantumkan berkas mana yang dibuat oleh pemasangan; me-rollback catatan
+semacam itu hanya memulihkan berkas yang ditimpa.
+
+Konfirmasi diminta per harness kecuali `--yes` diberikan. Ketika prompt tidak
+mungkin ditampilkan — `--format json` (teks prompt akan merusak dokumen JSON
+tunggal) atau shell non-interaktif (tanpa TTY) — perintah ini langsung menolak
+sejak awal dengan galat terstruktur `rollback.confirmation_required` (keluar 1)
+kecuali `--yes` diberikan. `--install-id` dan `--last` memilih putaran
+pemasangan dan saling eksklusif.
+
+Rollback `--harness all` sengaja dibuat menyeluruh: rollback ini mencakup setiap
+harness yang terdaftar, termasuk yang dilewati oleh `exclude_harnesses` profil
+selama pemasangan — memulihkan keadaan pra-pemasangan adalah operasi
+pembersihan, sehingga rollback ini menjangkau catatan yang mungkin ditinggalkan
+oleh pemasangan sebelumnya yang cakupannya lebih luas. Harness tanpa pemasangan
+yang tercatat gagal sebagai baris `"outcome": "error"` di `results` (lihat
+keluaran JSON), dan proses berlanjut dengan harness yang tersisa. Perintah ini
+kemudian keluar dengan kode 1, atau 2 ketika setidaknya satu target milik
+harness lain telah di-rollback.
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter asisten-pengkodean yang akan di-rollback, atau `all` untuk set selingkup-registri (wajib). |
-| `--install-id ULID` | Me-rollback pass pemasangan yang dinamai. Default-nya pemasangan terbaru yang tercatat. |
+| `--harness NAME` | Adapter harness yang akan di-rollback, atau `all` untuk himpunan selingkup-registri (wajib). |
+| `--install-id ULID` | Me-rollback putaran pemasangan yang disebutkan. Default-nya pemasangan terbaru yang tercatat. |
 | `--last` | Me-rollback pemasangan terbaru yang tercatat (default; bentuk eksplisitnya). Saling eksklusif dengan `--install-id`. |
-| `--yes` | Melewati prompt konfirmasi per asisten-pengkodean. |
-| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Wajib ketika set yang dipilih mencakup adapter berlingkup-proyek. |
-| `--quiet`, `-q` | Menekan keluaran informasional; hanya kesalahan yang dipancarkan. |
+| `--yes` | Melewati prompt konfirmasi per harness. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. Wajib ketika himpunan yang dipilih mencakup adapter berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
@@ -41,6 +92,7 @@ Konfirmasi diminta per asisten-pengkodean kecuali `--yes` disediakan. `--install
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "rollback",
   "action": "rolled_back",
@@ -55,7 +107,16 @@ Konfirmasi diminta per asisten-pengkodean kecuali `--yes` disediakan. `--install
 }
 ```
 
-Setiap target yang dipulihkan muncul di `results` dengan `"operation": "rollback"` dan `outcome` berupa `created` atau `updated` (dan di `files_written`). Target yang dibuat baru oleh pemasangan — tanpa byte sebelumnya untuk dipulihkan — dilaporkan dengan `"outcome": "skipped"`; pemulihan yang gagal adalah `"outcome": "error"`. Ketika tidak ada catatan pemasangan yang cocok, perintah melaporkan kesalahan `rollback.no_record` dengan `"status": "error"`.
+Setiap target yang dipulihkan atau dihapus muncul di `results` dengan
+`"operation": "rollback"` dan `outcome` berupa `created` atau `updated` (dan di
+`files_written`); `message` menyatakan apakah jalur tersebut dipulihkan atau
+dihapus. Pemulihan yang gagal (misalnya, cadangan yang telah dihapus) bernilai
+`"outcome": "error"`. Pemasangan yang tidak mencatat perubahan apa pun
+dilaporkan dengan `"outcome": "skipped"`. Ketika tidak ada catatan pemasangan
+yang cocok untuk satu harness yang disebutkan namanya, perintah ini melaporkan
+galat `rollback.no_record` dengan `"status": "error"`. Di bawah
+`--harness all`, harness tanpa catatan yang cocok justru menjadi baris
+`"outcome": "error"` di `results`.
 
 ## Contoh
 
@@ -69,13 +130,14 @@ apothem rollback --harness cursor --project . --last --json
 
 | Kode | Arti |
 |---|---|
-| 0 | Berhasil di-rollback, atau tidak ada yang perlu dipulihkan (pemasangan tidak menangkap cadangan) |
-| 1 | Galat yang diharapkan — tidak ada catatan pemasangan, selektor yang bertentangan, asisten-pengkodean tidak dikenal, root proyek hilang, atau konfirmasi dibatalkan |
-| 2 | Pemulihan parsial setelah setidaknya satu target di-rollback |
+| 0 | Berhasil di-rollback, atau tidak ada yang perlu di-rollback (pemasangan tidak mencatat perubahan) |
+| 1 | Galat yang diharapkan — tidak ada catatan pemasangan, selektor yang bertentangan, harness tidak dikenal, root proyek hilang, atau konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`) |
+| 2 | Hasil parsial — setidaknya satu target di-rollback dan sebuah kegagalan juga tercatat (pemulihan yang gagal atau, di bawah `--harness all`, harness tanpa catatan pemasangan) |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem install](/docs/cli-reference/install) — memasang konfigurasi asisten-pengkodean
+- [apothem install](/docs/cli-reference/install) — memasang konfigurasi harness
 - [apothem update](/docs/cli-reference/update) — memasang ulang dari profil bersama saat ini
-- [apothem uninstall](/docs/cli-reference/uninstall) — menghapus konfigurasi asisten-pengkodean
-- [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan, verifikasi, dan drift
+- [apothem uninstall](/docs/cli-reference/uninstall) — menghapus konfigurasi harness
+- [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan, verifikasi, dan penyimpangan

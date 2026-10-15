@@ -2,11 +2,12 @@
 title: "migrate-workspace"
 description: "Referência da CLI para o comando apothem migrate-workspace."
 machineTranslated: true
-sourceHash: "61e082f5e4bcbe9b"
+sourceHash: "282a9458bb23c4b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Migra um espaço de trabalho herdado por harness para o layout compartilhado `.apothem`.
+Migra um espaço de trabalho legado por harness para o layout compartilhado
+`.apothem`.
 
 ## Sinopse
 
@@ -16,25 +17,26 @@ apothem migrate-workspace [--project PATH] [--dry-run]
                           [--format plain|json] [--json] [--no-color]
 ```
 
-`migrate-workspace` colapsa um diretório de dados herdado por harness
-(`.apothem/<harness>/...`) e uma árvore `.plans/` herdada no único diretório de
-trabalho compartilhado `.apothem/{plans,memory,learning,contexts}`. A base é a raiz
-`--project` resolvida quando fornecida, caso contrário o diretório de trabalho
-atual (o padrão local do projeto).
+`migrate-workspace` consolida um diretório de dados legado por harness
+(`.apothem/<harness>/...`) e uma árvore `.plans/` legada no único diretório de
+trabalho compartilhado `.apothem/{plans,memory,learning,contexts}`. A base é a
+raiz de `--project` resolvida, quando fornecida; caso contrário, é o diretório
+de trabalho atual (o padrão local do projeto).
 
-A memória, os contextos e os armazenamentos de aprendizado por harness se fundem
-por união no armazenamento compartilhado por id; os sinais de aprendizado são
-concatenados e deduplicados; um registro em conflito (mesmo id, corpo diferente)
-é ignorado, nunca sobrescrito. Uma árvore `.plans/` herdada é movida sob
-`.apothem/plans/`. Cada fonte consumida é submetida a backup primeiro. A migração
-é idempotente — reexecutá-la sobre uma árvore já migrada é uma operação sem efeito.
+Os armazenamentos de memória, de contextos e de aprendizado por harness são
+mesclados por união no armazenamento compartilhado, por id; os sinais de
+aprendizado são concatenados e deduplicados; um registro em conflito (mesmo id,
+corpo diferente) é ignorado, nunca sobrescrito. Uma árvore `.plans/` legada é
+movida para `.apothem/plans/`. Cada origem consumida recebe backup primeiro. A
+migração é idempotente — executá-la novamente sobre uma árvore já migrada não
+tem efeito.
 
 ## Opções
 
 | Opção | Descrição |
 |---|---|
-| `--project PATH` | Raiz do projeto para os adaptadores com escopo de projeto que se materializam em uma árvore de projeto em vez de em um diretório de configuração com escopo de usuário. |
-| `--dry-run` | Detecta o layout herdado e relata o que seria migrado sem escrever. |
+| `--project PATH` | Raiz do projeto para os adaptadores com escopo de projeto que materializam em uma árvore de projeto em vez de em um diretório de configuração com escopo de usuário. |
+| `--dry-run` | Detecta o layout legado e relata o que seria migrado, sem gravar. |
 | `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
 | `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
@@ -47,15 +49,17 @@ concatenados e deduplicados; um registro em conflito (mesmo id, corpo diferente)
 O envelope `--json` carrega o resultado da migração. Em uma migração concluída,
 `status` é `success` e a carga útil relata as contagens de registros mesclados,
 se uma árvore `.plans/` foi realocada, a raiz de backup e quaisquer conflitos
-ignorados. Uma invocação `--dry-run` relata, em vez disso, `legacy_layout_detected`.
+ignorados. Uma invocação com `--dry-run` relata, em vez disso,
+`legacy_layout_detected`.
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "status": "success",
   "base": "/home/example/project",
   "migrated": true,
-  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "backup_root": "/home/example/project/.apothem/backups/migrate-20260101T120000Z",
   "memory_merged": 12,
   "contexts_merged": 4,
   "learning_merged": 7,
@@ -65,11 +69,13 @@ ignorados. Uma invocação `--dry-run` relata, em vez disso, `legacy_layout_dete
 }
 ```
 
-Quando nenhum layout herdado está presente, `migrated` é `false` e nada é escrito.
-O envelope `--dry-run` omite as contagens de resultado e relata apenas a detecção:
+Quando nenhum layout legado está presente, `migrated` é `false` e nada é
+gravado. O envelope de `--dry-run` omite as contagens de resultado e relata
+apenas a detecção:
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "base": "/home/example/project",
   "dry_run": true,
@@ -89,11 +95,12 @@ apothem migrate-workspace --dry-run --json
 
 | Código | Significado |
 |---|---|
-| 0 | Migração concluída, ou nenhum layout herdado encontrado (nada a migrar) |
+| 0 | Migração concluída, ou nenhum layout legado foi encontrado (nada a migrar) |
 | 1 | Erro esperado — um erro de validação ou de raiz de projeto, ou uma falha de migração |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 
 - [apothem install](/docs/cli-reference/install) — materializa um harness a partir do perfil compartilhado
-- [apothem status](/docs/cli-reference/status) — relata o estado de instalação, verificação e desvio
+- [apothem status](/docs/cli-reference/status) — relata o estado de instalação, de verificação e de desvio
 - [Disciplina de planos](/docs/reference/plans-discipline) — o layout compartilhado `.apothem/plans/`

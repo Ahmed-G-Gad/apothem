@@ -1,61 +1,106 @@
 ---
 title: "하니스 레지스트리"
-description: "내장 Apothem 하니스 어댑터에 대한 기술 레지스트리 레퍼런스."
+description: "내장 Apothem 하니스 어댑터에 대한 기술 레지스트리 레퍼런스입니다."
 machineTranslated: true
-sourceHash: "b555b7671a67df8c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-하니스 레지스트리는 CLI, 문서, 픽스처 테스트, 규약 핀 검증에서 사용하는 신뢰할 수 있는
-단일 출처(source-of-truth) 어댑터 인벤토리입니다. 런타임 소스는
-`src/apothem/lib/harness_registry.py`이며, 아래의 모든 행은 해당 레지스트리, 각 어댑터의
-`capabilities.yml`, 그리고 각 어댑터의 `STANDARD-CONVENTION-PIN.md`까지 추적 가능합니다.
+하니스 레지스트리는 CLI, 문서, 픽스처 테스트, 규약 핀 검증이 사용하는 진실
+공급원 어댑터 인벤토리입니다. 런타임 소스는
+`src/apothem/lib/harness_registry.py`이며, 아래의 모든 행은 그 레지스트리,
+어댑터별 `capabilities.yml`, 각 어댑터의
+`STANDARD-CONVENTION-PIN.md`까지 추적할 수 있습니다.
 
 ## 레지스트리 매트릭스
 
 | 하니스 | 설치 이름 | 범위 | 형식 | 대상 | MCP | 규약 핀 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
-| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; 네이티브 `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | native | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
-| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | native | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; 네이티브 `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
-| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | native | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
-| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/`; `<project>/.gemini/.apothem/support/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
 | GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
-| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | unsupported | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
-| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | native | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
-| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; 네이티브 `commands`, `skills`, `agents`; `.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
-| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; 네이티브 `commands`, `skills`, `agents`; `.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
-| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | native | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
-| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | unsupported | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
-| Zed | `zed` | project | markdown | `<project>/.rules` | native | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; 네이티브 `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; 네이티브 `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
 
 ## 페이로드 코호트 지원
 
-상태 값은 `native`, `converted`, `support-tree`, `profile-projected`, `unsupported`, `not-applicable`, `discovery-pending`입니다.
+상태 값은 `native`, `converted`, `support-tree`,
+`profile-projected`, `unsupported`, `not-applicable`,
+`discovery-pending`입니다.
+
+`converted` 코호트는 하니스 자체 형식으로 다시 작성되며, 일부 소스 필드는 그
+형식 안에 들어갈 자리가 없습니다. 변환된 명령, 에이전트, 규칙 코호트마다
+어댑터의 `capabilities.yml`은 모든 소스 프런트매터 필드가 어떻게 되는지
+밝히는 `conversion_losses` 맵을 담습니다.
+
+| 값 | 의미 |
+| --- | --- |
+| `native:<field>` | 하니스가 그 필드 아래에서 읽습니다. |
+| `sidecar:<path>` | 변환된 파일 옆의 별도 파일(예: Codex의 `agents/openai.yaml`)에 기록됩니다. |
+| `filename` | 파일 또는 폴더 이름이 그 값을 담습니다. |
+| `inlined` | 프롬프트 또는 본문 텍스트 안으로 옮겨집니다. |
+| `ignored` | 파일에 남지만 하니스가 읽지 않습니다. |
+| `dropped` | 제외됩니다. |
+
+테스트가 변환된 모든 파일을 렌더링하고 그 출력과 맵을 대조합니다.
 
 | 하니스 | 네이티브 또는 변환된 페이로드 | 지원 트리 페이로드 | 미지원 또는 보류 경고 |
 | --- | --- | --- | --- |
-| Antigravity | 변환된 명령어 및 위임 워커; 네이티브 스킬, 서브워커 디스패치, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 훅, 규칙, 템플릿 | 상태표시줄, 출력 스타일; MCP 및 메모리 디스커버리 보류 |
-| Claude Code | 변환된 명령어; 네이티브 스킬, 훅, 위임 워커, 규칙, 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치, 도구 제한, 메모리 | 템플릿 | `CLAUDE.md`는 계속 운영자 소유; 어댑터가 작성하는 시스템 프롬프트 템플릿 없음 |
-| CodeBuddy | 네이티브 규칙, MCP, 시스템 프롬프트 템플릿, 메모리; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, 서브워커 디스패치 |
-| Codex | 변환된 명령어 및 위임 워커; 네이티브 스킬, 훅, 서브워커 디스패치, 시스템 프롬프트 템플릿, 메모리; 프로필에서 투영된 도구 제한 | 규칙, 템플릿 | 상태표시줄, 출력 스타일; Apothem이 `config.toml`을 덮어쓰지 않으므로 MCP 디스커버리 보류 |
-| Cursor | 네이티브 규칙, MCP, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, 서브워커 디스패치, 메모리 |
-| Gemini CLI | 변환된 명령어 및 위임 워커; 네이티브 스킬, 서브워커 디스패치, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 훅, 규칙, 템플릿 | 상태표시줄, 출력 스타일; MCP 및 메모리 디스커버리 보류 |
-| GitHub Copilot | 네이티브 규칙 및 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치, 메모리 |
-| GLM (Z.ai) | 없음 | 없음 | 명령어, 스킬, 훅, 위임 워커, 규칙, 템플릿, 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치, 도구 제한, 시스템 프롬프트 템플릿, 메모리 — GLM은 네이티브 구성 표면이 없는 모델 백엔드입니다 |
-| Hermes | 변환된 명령어; 네이티브 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 스킬, 훅, 위임 워커, 규칙, 템플릿 | 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치 |
-| Kimi Code | 네이티브 서브워커 디스패치, 시스템 프롬프트 템플릿, 메모리 | 명령어, 스킬, 훅, 위임 워커, 규칙, 템플릿 | 상태표시줄, 출력 스타일; MCP 및 도구 제한 디스커버리 보류 |
-| Kiro | 네이티브 규칙, MCP, 시스템 프롬프트 템플릿, 메모리; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, 서브워커 디스패치 |
-| Open-Claw | 변환된 명령어; 네이티브 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 스킬, 훅, 위임 워커, 규칙, 템플릿 | 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치 |
-| OpenCode | 변환된 명령어 및 위임 워커; 네이티브 스킬, MCP, 서브워커 디스패치, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 훅, 규칙, 템플릿 | 상태표시줄, 출력 스타일 |
-| Qwen Code | 변환된 명령어 및 위임 워커; 네이티브 스킬, 훅, MCP, 서브워커 디스패치, 시스템 프롬프트 템플릿, 메모리; 프로필에서 투영된 도구 제한 | 규칙, 템플릿 | 상태표시줄, 출력 스타일 |
-| Trae | 네이티브 규칙, MCP, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, 서브워커 디스패치, 메모리 |
-| Windsurf | 네이티브 규칙 및 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, MCP, 서브워커 디스패치, 메모리 |
-| Zed | 네이티브 규칙, MCP, 시스템 프롬프트 템플릿; 프로필에서 투영된 도구 제한 | 없음 | 명령어, 스킬, 훅, 위임 워커, 상태표시줄, 출력 스타일, 서브워커 디스패치, 메모리 |
+| Antigravity | 변환된 명령, 에이전트, 규칙; 네이티브 스킬, 하위 에이전트 디스패치, 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 훅, 템플릿 | 상태 표시줄, 출력 스타일; MCP 및 메모리 디스커버리 보류 |
+| Claude Code | 변환된 명령; 네이티브 스킬, 훅, 에이전트, 규칙, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치, 도구 제한, 메모리 | 템플릿 | `CLAUDE.md`는 운영자 소유로 유지됨; 어댑터가 작성하는 시스템 프롬프트 템플릿 없음; MCP 디스커버리 보류 |
+| CodeBuddy | 네이티브 규칙, 시스템 프롬프트 템플릿, 메모리; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치; MCP 디스커버리 보류 |
+| Codex | 변환된 명령 및 에이전트; 네이티브 스킬, 훅, 하위 에이전트 디스패치, 시스템 프롬프트 템플릿, 메모리; 프로필 투영 도구 제한 | 규칙, 템플릿 | 상태 표시줄, 출력 스타일; Apothem이 `config.toml`을 덮어쓰지 않으므로 MCP 디스커버리 보류 |
+| Cursor | 네이티브 규칙, 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치, 메모리; MCP 디스커버리 보류 |
+| Gemini CLI | 변환된 명령 및 에이전트; 네이티브 스킬, 하위 에이전트 디스패치, 시스템 프롬프트 템플릿, 메모리; 프로필 투영 도구 제한 | 훅, 규칙, 템플릿 | 상태 표시줄, 출력 스타일; MCP 디스커버리 보류 |
+| GitHub Copilot | 네이티브 규칙 및 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, MCP, 하위 에이전트 디스패치, 메모리 |
+| GLM (Z.ai) | 없음 | 없음 | 명령, 스킬, 훅, 에이전트, 규칙, 템플릿, 상태 표시줄, 출력 스타일, MCP, 하위 에이전트 디스패치, 도구 제한, 시스템 프롬프트 템플릿, 메모리 — GLM은 네이티브 구성 표면이 없는 모델 백엔드입니다 |
+| Hermes | 변환된 명령; 네이티브 시스템 프롬프트 템플릿, MCP; 프로필 투영 도구 제한 | 스킬, 훅, 에이전트, 규칙, 템플릿 | 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치 |
+| Kimi Code | 네이티브 하위 에이전트 디스패치, 시스템 프롬프트 템플릿, 메모리 | 명령, 스킬, 훅, 에이전트, 규칙, 템플릿 | 상태 표시줄, 출력 스타일; MCP 및 도구 제한 디스커버리 보류 |
+| Kiro | 네이티브 규칙, 시스템 프롬프트 템플릿, 메모리; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치; MCP 디스커버리 보류 |
+| Open-Claw | 변환된 명령; 네이티브 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 스킬, 훅, 에이전트, 규칙, 템플릿 | 상태 표시줄, 출력 스타일, MCP, 하위 에이전트 디스패치 |
+| OpenCode | 변환된 명령 및 에이전트; 네이티브 스킬, MCP, 하위 에이전트 디스패치, 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 훅, 규칙, 템플릿 | 상태 표시줄, 출력 스타일 |
+| Qwen Code | 변환된 명령 및 에이전트; 네이티브 스킬, 훅, MCP, 하위 에이전트 디스패치, 시스템 프롬프트 템플릿, 메모리; 프로필 투영 도구 제한 | 규칙, 템플릿 | 상태 표시줄, 출력 스타일 |
+| Trae | 네이티브 규칙, 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치, 메모리; MCP 디스커버리 보류 |
+| Windsurf | 네이티브 규칙 및 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치, 메모리; MCP 디스커버리 보류 |
+| Zed | 네이티브 규칙, 시스템 프롬프트 템플릿; 프로필 투영 도구 제한 | 없음 | 명령, 스킬, 훅, 에이전트, 상태 표시줄, 출력 스타일, 하위 에이전트 디스패치, 메모리; MCP 디스커버리 보류 |
+
+## 공유 루트
+
+일부 설치 대상은 그 대상을 쓰는 하니스가 아닌 다른 하니스가 로드합니다.
+레지스트리는 그런 경로마다 `SHARED_ROOTS`에 소유자 하나(그 경로를 쓰는 유일한
+어댑터)와, 벤더 문서에서 기본적으로 그 경로를 로드하는 리더를 기록하며, 그
+사실을 보여 주는 벤더 페이지와 그 페이지를 가져온 날짜도 함께 기록합니다.
+소유자를 설치하면 모든 리더 앞에 Apothem 콘텐츠가 놓이고, 소유자를 제거하면
+모든 리더에서 그 콘텐츠가 제거됩니다.
+
+| 경로 | 소유자 | 리더 |
+| --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
+| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+
+소유자가 공유 지침 파일에 쓰는 Apothem 블록은 어느 단일 도구도 자신의
+리더로 지명하지 않습니다. `tests/unit/test_shared_roots.py`는 두 어댑터가 같은
+레지스트리 대상을 쓰는 경우, 그리고 도구 간 지침 파일(`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `copilot-instructions.md`)처럼 이름이 붙은 레지스트리 대상에
+선언된 소유자가 없는 경우에 실패합니다. 유일한 예외는 `~/.codex/AGENTS.md`이며,
+등록된 다른 하니스는 이 파일을 로드한다고 문서화하지 않습니다.
 
 ## 검증 훅
 
@@ -63,7 +108,8 @@ sourceHash: "b555b7671a67df8c"
 
 | 검사 | 목적 |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 각 어댑터가 최신 규약 핀을 가지고 있고 레지스트리가 여전히 열일곱 개의 어댑터를 열거하는지 확인합니다. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 각 어댑터에 작성된 지 90일 이내이고, 벤더 URL을 하나 이상 인용하며, 기한이 지난 디스커버리 대상이 없는 규약 핀이 있는지 확인합니다. CI가 모든 풀 리퀘스트마다, 매주, 그리고 릴리스 전에 실행합니다. |
+| `python scripts/dev/check_vendor_urls.py` | 핀과 하니스 템플릿이 인용하는 모든 벤더 URL을 가져와, 이동했거나 사라진 페이지가 있으면 실패합니다. 더 이상 해석되지 않는 호스트 이름이나 검증에 실패하는 인증서도 여기에 포함됩니다. 타임아웃, 거부되거나 재설정된 연결, 5xx 서버 오류는 도달 불가로 보고되며 검사를 실패시키지 않습니다. 주간 규약 모니터가 이를 실행합니다. |
 | `python -m apothem.conformity.gate --all .` | 문서 및 구현 적합성 검사를 실행합니다. |
 | `python -m pytest` | 레지스트리 픽스처 테스트와 어댑터 계약 테스트를 실행합니다. |
 
