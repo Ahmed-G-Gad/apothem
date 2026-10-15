@@ -101,8 +101,14 @@ package.
 apothem uninstall --harness antigravity
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block from `~/.gemini/GEMINI.md` and keeps any other text
+in it. The file is deleted only when nothing else remains in it. Also removes
+Apothem's keys from `plugin.json` in the plugin folder
+`~/.gemini/antigravity-cli/plugins/apothem/` and keeps yours, and removes the
+Apothem files in that folder's `skills/`, `rules/`, `agents/`, and
+`.apothem/support/` subfolders; other files there stay. Each file is backed up
+under `~/.apothem/backups/` before it is changed or removed. The shared profile
+YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 

@@ -68,8 +68,12 @@ Re-derives the project steering file from the current shared profile state.
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the Apothem block, and the front matter Apothem wrote above it, from
+`<project>/.kiro/steering/apothem-rules.md` and keeps any other text in it. The
+file is deleted only when nothing else remains in it. Before the change, a
+timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
+file is left in the project. The shared profile YAML and Apothem engine are
+unaffected.
 
 ## Conformity gate
 

@@ -76,8 +76,16 @@ the Apothem support tree.
 apothem uninstall --harness qwen-code
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the entries the adapter added to `~/.qwen/settings.json` (your own
+keys, MCP servers, and hook handlers stay, and the file is deleted only when
+Apothem created it and nothing of yours is left). Removes the Apothem block from
+`~/.qwen/QWEN.md` and from the profile document
+`~/.qwen/apothem/rules/00-apothem-profile.md` and keeps any other text in them;
+each file is deleted only when nothing else remains in it. Also removes the
+Apothem files in `~/.qwen/commands/`, `~/.qwen/skills/`, `~/.qwen/agents/`, and
+`~/.qwen/.apothem/support/`; other files in those folders stay. Each file is
+backed up under `~/.apothem/backups/` before it is changed or removed. The
+shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 

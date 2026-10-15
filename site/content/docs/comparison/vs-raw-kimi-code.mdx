@@ -28,9 +28,11 @@ against managing it with Apothem.
 The kimi-code adapter renders the shared rules and governance surface into the
 project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
 agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
-instruction surface drives the project directly. Every change to the shared
-rules re-renders the files on the next `apothem update`.
+author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. Kimi Code
+reads project instructions from `AGENTS.md` or `.kimi-code/AGENTS.md`; the
+adapter writes only the project-root `AGENTS.md`, and the Kimi Code
+documentation does not say which of the two files wins when both exist. Every
+change to the shared rules re-renders the files on the next `apothem update`.
 
 ## Migration path
 

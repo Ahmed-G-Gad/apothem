@@ -91,8 +91,17 @@ Apothem support tree.
 apothem uninstall --harness opencode
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes the entries the adapter added to `~/.config/opencode/opencode.json`
+(your own keys, MCP servers, and `instructions` entries stay, and the file is
+deleted only when Apothem created it and nothing of yours is left). Removes the
+Apothem block from the profile document
+`~/.config/opencode/apothem/rules/00-apothem-profile.md` and keeps any other
+text in it; that file is deleted only when nothing else remains in it. Also
+removes the Apothem files in `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/`, and
+`~/.config/opencode/.apothem/support/`; other files in those folders stay.
+Each file is backed up under `~/.apothem/backups/` before it is changed or
+removed. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate
 
