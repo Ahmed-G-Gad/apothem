@@ -39,6 +39,7 @@ each type.
 - Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave `version` unchanged. Only a behavioral change bumps it.
 - `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump, and it changes on a non-version-bumping typo or link fix as well.
 - New artifacts seed at `v0.Y.Z`. Promotion to `vX.Y.Z` indicates the artifact's contract is stable enough to be a public commitment.
+- Plan suites are outside this convention. A typo fix to a plan suite bumps the PATCH number of the suite's version (`vX.Y.Z` to `vX.Y.(Z+1)`) and appends a Revision History row. The [developer guide](/docs/developer-guide) describes the plan-suite rule in its plan-suite revisions section.
 
 ---
 

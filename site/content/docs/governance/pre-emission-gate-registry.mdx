@@ -1,12 +1,12 @@
 ---
 title: "Pre-Emission Gate Registry — Mandatory Fifteen-Bar Check"
-description: "Mandatory fifteen-bar conformity check run before emission of meaningful scope, with failure-action mappings and release-proof schema."
+description: "Mandatory fifteen-bar conformity check run before emission of meaningful scope, with failure-action mappings and the gate result schema."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical registry of the fifteen-bar pre-emission gate.** This document carries the full fifteen-bar gate table and the release-proof schema YAML block; the substantive table and schema live here, operationalized by `src/apothem/rules/pre-emission-gate.md`.
+> **Canonical registry of the fifteen-bar pre-emission gate.** This document carries the full fifteen-bar gate table and the gate result schema YAML block; the substantive table and schema live here, operationalized by `src/apothem/rules/pre-emission-gate.md`.
 
-Before any artifact emission of meaningful scope (per the trivial-vs-non-trivial threshold at `site/content/docs/governance/outward-conformity-registry.mdx` §1), run the fifteen-bar pre-emission gate. Mechanise via PreToolUse hooks where possible (the mechanical greps at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`); reason through where mechanisation is impossible. **Failure of any single bar blocks emission; revise until every bar passes; emit with the gate release-proof recorded.**
+Before any artifact emission of meaningful scope (per the trivial-vs-non-trivial threshold at `site/content/docs/governance/outward-conformity-registry.mdx` §1), run the fifteen-bar pre-emission gate. Mechanise via PreToolUse hooks where possible (the mechanical greps at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`); reason through where mechanisation is impossible. **Failure of any single bar blocks emission; revise until every bar passes; emit with the gate result recorded.**
 
 | # | Bar | Check kind | Failure → action |
 | - | --- | ---------- | ---------------- |
@@ -26,7 +26,7 @@ Before any artifact emission of meaningful scope (per the trivial-vs-non-trivial
 | 14 | M14 systemicity | mixed (mechanical: producer provenance; reasoned: declares upstream / downstream / peers / enforcers) | declare; index |
 | 15 | M15 production-ready | mechanical (production-ready-pr grep) + reasoned | add tests / docs / CHANGELOG |
 
-## 1. Release-Proof Schema
+## 1. Gate Result Schema
 
 Every gate run records the result in the artifact's working trace (a hidden comment, a metadata block, a separate emission-log file — whichever the host's conventions allow):
 
@@ -56,4 +56,4 @@ conformity-attestation:
   date: <ISO-8601>
 ```
 
-`n/a` markings are explicit and reasoned — never silent skips. The `ecosystem-version` field anchors the release proof to a reproducible state of the user-scope ecosystem (the active Apothem source-tree git commit when the gate ran — e.g. the `~/.claude/` checkout for the Claude Code adapter), so future audits can replay the gate against the same rule bodies.
+`n/a` markings are explicit and reasoned — never silent skips. The `ecosystem-version` field anchors the gate result to a reproducible state of the user-scope ecosystem (the active Apothem source-tree git commit when the gate ran — e.g. the `~/.claude/` checkout for the Claude Code adapter), so future audits can replay the gate against the same rule bodies.
