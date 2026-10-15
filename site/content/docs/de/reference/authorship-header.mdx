@@ -2,7 +2,7 @@
 title: "Autorschafts-Header — SPDX-Lizenzzeile pro Datei"
 description: "Definieren und erzwingen Sie SPDX-Lizenzbezeichner-Marker pro Datei mit kanonischen einzeiligen Headern in der für jeden Dateityp passenden Kommentarsyntax."
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Der kanonische Text — hier in seiner `#`-Kommentarsyntax-Form geschrieben — 
 # SPDX-License-Identifier: MIT
 ```
 
-Dieser Text ist die **einzige** maßgebliche Quelle. Der Validator `file-header` (§8) prüft Dateien gegen diese byte-genaue Vorlage. Jede Abweichung zwischen der Header-Zeile einer Datei und dieser Vorlage (unter der Syntaxsubstitution gemäß §2) wird als Befund gemeldet. Der Validator ist nur beratend; daher lässt ein Befund den Build nicht fehlschlagen (§8).
+Dieser Text ist die **einzige** maßgebliche Quelle. Der Validator `file-header` (§8) prüft Dateien gegen diese byte-genaue Vorlage. Jede Abweichung zwischen der Header-Zeile einer Datei und dieser Vorlage (unter der Syntaxsubstitution gemäß §2) wird als Befund gemeldet. Der Validator ist blockierend: Unter `--strict`, so wie CI und der Pre-Commit-Hook ihn ausführen, lässt ein Befund den Lauf fehlschlagen (§8).
 
 ---
 
@@ -69,9 +69,10 @@ Die folgenden Klassen sind von der SPDX-Header-Zeile **ausgenommen**. Der Valida
 - **JSON-Dateien (`.json`)** — JSON hat keine Kommentarsyntax. Wo für eine JSON-Konfiguration eine Zuschreibung erforderlich ist, legen Sie eine danebenliegende `<file>.NOTICE.md` an.
 - **Lockfiles** — jede Datei `*.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` und `go.sum`. Diese Dateien werden maschinell verwaltet.
 - **Generierte und minifizierte Dateien** — jede Datei unter einem Verzeichnis `generated/` sowie minifizierte Bundles (`*.min.js`, `*.min.css`).
-- **Vendorierte Inhalte Dritter** — Dateien unter `_vendor/`, `vendor/`, `third_party/` und `node_modules/`. Sie tragen die eigene Lizenz bzw. den eigenen Hinweis des Upstreams; unseren Marker über die Zuschreibung des Upstreams zu setzen, ist eine Lizenzverletzung.
+- **Vendorierte Inhalte Dritter** — Dateien unter `_vendor/`, `vendor/`, `third_party/` und `node_modules/`. Sie tragen die eigene Lizenz bzw. den eigenen Hinweis des Upstreams. Unseren Marker über die Zuschreibung des Upstreams zu setzen, ist eine Lizenzverletzung.
 - **Audit-, Planungs- und Harness-Zustand** — alles unter `.audit/` und `.apothem/`, das Pläne, Speicher, Lerndaten und Kontexte enthält. Ebenso `projects/` und `memory/` im Wurzelverzeichnis des Arbeitsbaums, die der Harness verwaltet. Diese Verzeichnisse sind von git ignoriert oder liegen in der Hoheit des Operators und stehen außerhalb des veröffentlichten Baums. Plan-Dateien werden über ihr Frontmatter herkunftsverfolgt (siehe [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
 - **Testdaten-Fixtures** — `.yaml`-, `.yml`-, `.txt`- und `.json`-Dateien unter `tests/fixtures/`. Testquelldateien in diesem Baum tragen weiterhin den Header.
+- **Injektor-Smoke-Test-Eingaben** — die Dateien unter `tests/conformity-scenarios/fixtures/F-13-injector-smoke/`. Sie bleiben ohne Header, weil der Injektor-Test prüft, dass der Injektor den Header in sie einfügt.
 - **Paketierung und leere Marker** — `.SRCINFO`, das ein Paketierungs-Parser streng liest, sowie die Null-Byte-Marker `.keep`, `.gitkeep` und `py.typed`.
 - **Binärdateien** — die Suffixe für Bilder, Schriften, Archive, Medien und kompilierte Objekte, die in der Fixture aufgeführt sind. Ein Suffix, das die Varianten-Tabelle des Validators nicht abbildet, ist standardmäßig ausgenommen.
 
@@ -129,7 +130,7 @@ Der Injektor wird vom Make-Ziel `make headers-fix` aufgerufen, das `scripts/inje
 
 Liegt unter [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Für jede Datei im Arbeitsbaum ermittelt der Validator deren Anwendbarkeit (gemäß §3) und prüft, sofern sie zutrifft, ob die kanonische SPDX-Zeile an der Einfügestelle vorhanden ist. Bei den meisten Familien ist diese Stelle der Kopf der Datei, nach einem optionalen Shebang. Bei Markdown- und MDX-Dateien wird zuerst ein YAML-Frontmatter-Block übersprungen, sodass die kanonische Zeile, wie §5 verlangt, nach der schließenden Frontmatter-Begrenzung stehen kann. MDX-Dateien werden auf die Form `{/* */}` (§2) aufgelöst und gegen sie geprüft. Validator und Injector setzen den kanonischen Block an denselben Index.
 
-Gestützt auf die byte-genaue Vorlage unter [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Der Korpus-Lauf meldet eine Anzahl an Befunden und eine Stichprobe markierter Dateien für diesen Matcher. Er gibt kein Diff pro Datei und keine Abdeckung in Prozent aus. Der Matcher ist nur beratend: Seine Befunde werden gemeldet und lassen den Build nicht fehlschlagen, weder unter `--strict` noch anderweitig.
+Gestützt auf die byte-genaue Vorlage unter [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Der Korpus-Lauf meldet für diesen Matcher eine Anzahl an Befunden und eine Stichprobe markierter Dateien. Er gibt weder ein Diff pro Datei noch eine Abdeckung in Prozent aus. Der Matcher ist blockierend: Unter `--strict`, das CI und der Pre-Commit-Hook verwenden, lässt ein Befund den Lauf fehlschlagen. Ohne `--strict` meldet das Gate den Befund und beendet sich mit `0`.
 
 ---
 
@@ -139,9 +140,9 @@ Die Disziplin muss jede künftige Sitzung und jeden künftigen Mitwirkenden übe
 
 1. **`src/apothem/schemas/authorship-header.txt`** — die byte-genaue kanonische Vorlage; eine einzige Quelle der Wahrheit.
 2. **`scripts/inject-header.{sh,py}`** — der mechanische Injektor (§7).
-3. **Validator `file-header`** (§8) — meldet Abweichungen als beratende Befunde; er lässt den Build nicht fehlschlagen.
-4. **Pre-Commit-Hook** — der Hook `conformity-corpus-perwrite` führt jeden Matcher pro Schreibvorgang über den versionierten Baum mit `--strict` aus, einschließlich des Validators `file-header` (§8). Der Matcher `file-header` ist nur beratend; seine Befunde werden daher gemeldet und blockieren keinen Commit. Der Hook prüft nur. Er hat keinen Korrekturmodus und startet den Injektor (§7) nie; dieser läuft über `make headers-fix`.
-5. **`CLAUDE.md`-Block für verbindliches Verhalten** — weist den Assistenten an, die kanonische SPDX-Zeile zu injizieren, sobald er eine zutreffende Datei anlegt.
+3. **Validator `file-header`** (§8) — meldet Abweichungen als blockierenden Befund, der einen `--strict`-Lauf fehlschlagen lässt.
+4. **Pre-Commit-Hook** — der Hook `conformity-corpus-perwrite` führt jeden Matcher pro Schreibvorgang über den versionierten Baum mit `--strict` aus, einschließlich des Validators `file-header` (§8). Der Matcher `file-header` ist blockierend, daher blockiert ein Befund den Commit. Der Hook prüft nur. Er hat keinen Korrekturmodus und startet den Injektor (§7) nie; dieser läuft über `make headers-fix`.
+5. **Block `CLAUDE.md` für verbindliches Verhalten** — weist den Assistenten an, die kanonische SPDX-Zeile zu injizieren, sobald er eine zutreffende Datei anlegt.
 6. **Die Anweisungsdatei von GitHub Copilot** unter `.github/copilot-instructions.md` — weist Copilot an, bei der Dateierzeugung dasselbe zu tun.
 7. **PreToolUse-Hooks** unter `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — fangen Write- und Edit-Tool-Aufrufe auf zutreffenden Pfaden ab, damit die SPDX-Zeile bei der Dateierstellung injiziert wird, statt später als Befund des Validators entdeckt zu werden.
 8. **Checkbox in der PR-Vorlage** — die an Mitwirkende gerichtete Zusicherung, dass jede neue Datei die kanonische SPDX-Zeile trägt.

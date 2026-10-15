@@ -699,7 +699,7 @@ def process_file(
         )
 
     try:
-        original = absolute_path.read_text(encoding="utf-8")
+        raw = absolute_path.read_bytes().decode("utf-8")
     except (OSError, UnicodeDecodeError):
         return FileVerdict(
             relative_path=relative_path,
@@ -709,6 +709,10 @@ def process_file(
             diff="",
         )
 
+    # Work on LF text and write the file back with its own line ending, so a
+    # rewrite never converts an LF file to CRLF (or the reverse) on any host.
+    eol = "\r\n" if "\r\n" in raw else "\n"
+    original = raw.replace("\r\n", "\n")
     new_content, changed = inject_banner(original, banner, variant)
     if not changed:
         return FileVerdict(
@@ -722,7 +726,7 @@ def process_file(
     diff = make_unified_diff(relative_path, original, new_content)
 
     if mode == MODE_FIX:
-        absolute_path.write_text(new_content, encoding="utf-8")
+        absolute_path.write_bytes(new_content.replace("\n", eol).encode("utf-8"))
         return FileVerdict(
             relative_path=relative_path,
             applicable=True,

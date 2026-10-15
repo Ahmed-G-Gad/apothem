@@ -17,6 +17,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   generated suite exists, and then points at `/plan-spec`. Its argument hint
   and page no longer offer `--from`, `--remediate` and `--maintenance`, which
   the command never defined; `--cap N` and `--dry-run` remain.
+- **The file-header check blocks.** It reported advisory findings until the
+  tracked tree had none. The last two files now carry the header, and the
+  injector smoke-test inputs, which stay header-less on purpose, are on the
+  exception list. Under `--strict`, as CI and the pre-commit hook run it, a
+  file without the SPDX header line now fails the run.
 
 ### Fixed
 
@@ -32,6 +37,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   checklist are corrected. In the code, the Claude Code and Kimi Code
   capability notes, the compatibility matrix and the adapter-shape rule now
   match what the adapters do.
+- **The header injector keeps line endings.** `scripts/inject-header.py
+  --mode fix-in-place` rewrote an LF file with CRLF line endings on Windows.
+  It now writes each file back with the line ending it had.
 
 ## [1.2.0] - 2026-10-15
 

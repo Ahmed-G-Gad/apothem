@@ -409,6 +409,7 @@ _BLOCKING_PER_WRITE_GREPS: Final[frozenset[str]] = frozenset(
         "option_annotation_grep",
         "completion_claim_grep",
         "unpinned_action_grep",
+        "file_header_grep",
     }
 )
 
@@ -476,17 +477,6 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "change-set-scoped matcher; returns clean per-file by design, so it "
         "carries no corpus verdict and is non-gating in per-file corpus mode",
         "n/a (change-set granularity, not per-file)",
-    ),
-    "file_header_grep": (
-        "the matcher models YAML frontmatter and MDX; the remaining corpus "
-        "findings are real but non-gating: five deliberately header-less "
-        "injector smoke-test inputs under tests/conformity-scenarios/fixtures/, "
-        "one hand-maintained plugin skill copy with no header, and one "
-        "file whose SPDX line lacks the mandatory trailing blank line",
-        "exempt the injector smoke-test inputs through the ratified exception "
-        "list; add the header to the plugin skill copy and the trailing blank "
-        "line to SECURITY-INSIGHTS.yml; the matcher joins the blocking set at "
-        "zero findings",
     ),
     "copilot_instructions_presence_grep": (
         "single-target surface matcher (.github/copilot-instructions.md); in "

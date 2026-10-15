@@ -35,7 +35,7 @@ cited rules:
 | unpinned-action-grep | M15 production-ready §Supply-chain | blocking |
 | hedging-grep | M8 definitiveness §Hedging | advisory |
 | secret-leak-grep | M13.8 + M15 production-ready | advisory |
-| file-header-grep | SPDX authorship-header policy | advisory |
+| file-header-grep | SPDX authorship-header policy | blocking |
 | always-on-budget-grep | token-budget-discipline §Always-on body budget | advisory |
 
 The blocking-vs-advisory classification is asserted at import time
