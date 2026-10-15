@@ -120,7 +120,7 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave the Claude Code configuration root free of Apothem-materialized files; the `apothem` shim is removed (`~/.local/bin/apothem` on POSIX, `apothem.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps` on Windows).
+**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave the Claude Code configuration root free of Apothem-materialized files; the `apothem` shim is removed (`~/.local/bin/apothem`; the `apothem.cmd` shim in `%LOCALAPPDATA%\Microsoft\WindowsApps` is removed only by `uninstall.ps1`).
 
 ## 6. Safety-Guard Verification
 

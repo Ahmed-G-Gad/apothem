@@ -80,7 +80,7 @@ apothem verify --harness all
 
 `profile show` reflects your edit.
 
-`apothem verify --harness all` checks every registered harness, so it exits non-zero unless all of them are installed. Project-scope harnesses also need `--project PATH`; without it the batch stops with a `project.required` error. To check only the harness you updated, run the same command with that harness's name:
+`apothem verify --harness all` checks every registered harness except those the profile's `exclude_harnesses` lists, so it exits non-zero unless all of the others are installed. Project-scope harnesses also need `--project PATH`; without it the batch stops with a `project.required` error. To check only the harness you updated, run the same command with that harness's name:
 
 ```bash
 apothem verify --harness <name>

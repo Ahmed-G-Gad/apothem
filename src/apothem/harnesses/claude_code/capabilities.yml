@@ -5,8 +5,10 @@
 # ~/.claude.json (user/local scope) + project-level .mcp.json — NOT
 # settings.json (confirmed live 2026-05-31); sub-agents in ~/.claude/agents/;
 # auto-memory at ~/.claude/projects/<project>/memory/; system-prompt projects
-# through CLAUDE.md (operator-owned; adapter does not manage). Apothem names
-# the native MCP surface but does not author MCP server entries.
+# through a sentinel-delimited managed block in ~/.claude/CLAUDE.md (an
+# operator-owned file: the adapter writes only that block and keeps operator
+# prose outside it). Apothem names the native MCP surface but does not author
+# MCP server entries.
 
 mcp_servers:
   - claude.json-user-local-scope-via-claude-mcp-add

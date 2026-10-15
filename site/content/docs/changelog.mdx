@@ -19,6 +19,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **`/plan-audit` runs on a suite that has only a spec.** Its Sequence Gate
+  required a generated suite, while its own steps delegate a missing suite to
+  `/plan-generate`. It now refuses only when neither an authored spec nor a
+  generated suite exists, and then points at `/plan-spec`.
+
+### Fixed
+
+- **More documentation and metadata match the code.** The pipeline pages for
+  `/plan-audit`, `/plan-execute`, `/research-analysis`, `/research-paper`,
+  `/research-publish` and `/security-audit` now state the gates, outputs and
+  options their commands have. The CLI reference covers how `--harness all`
+  treats `exclude_harnesses`, every token prefix the MCP warning flags, what a
+  dry run reports, and that `--verbose` adds nothing to `doctor` and
+  `uninstall`. The Claude Code page warns which `~/.claude/` folders every
+  install removes and how to restore them. Pages on CI, the self-contained
+  runtime, the release cycle, uninstalling, troubleshooting and the deployment
+  checklist are corrected. In the code, the Claude Code and Kimi Code
+  capability notes, the compatibility matrix and the adapter-shape rule now
+  match what the adapters do.
+
 ## [1.2.0] - 2026-10-15
 
 ### Added

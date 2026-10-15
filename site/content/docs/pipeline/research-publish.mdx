@@ -38,7 +38,7 @@ The venue-formatted submission package at a host-natural location (the formatted
 The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read the paper and the review report.
-2. **Verify the Sequence Gate** — Confirm `_outputs/review-report.md` exists; otherwise halt with `Blocked: run /research-review first`.
+2. **Verify the Sequence Gate** — Confirm `_outputs/review-report.md` exists and its HIGH-severity revisions are resolved (or the operator has explicitly accepted the residual risk); otherwise halt with `Blocked: run /research-review first`.
 3. **Format & package** — Apply the venue template; assemble supplementary, data/code availability, cover letter, ethics / COI declarations.
 4. **Plan the preprint / archival** — Record the preprint and DOI plan; build the submission checklist.
 5. **Update the handoff manifest** — Record the submission package and the publication record.
@@ -52,7 +52,7 @@ Formatting honors staged disclosure: for a double-blind venue, author, instituti
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
-| Blocked: run /research-review first | No review report | Run `/research-review` to produce `_outputs/review-report.md` |
+| Blocked: run /research-review first | No review report, or open HIGH-severity revisions | Run `/research-review` to produce `_outputs/review-report.md`, or resolve the open HIGH revisions and re-run `/research-review`, or explicitly accept the residual risk |
 | Unaddressed HIGH revision | Review finding skipped | Address the revision and re-run `/research-review` |
 | Missing data/code availability | Reproducibility surface absent | Add the data / code-availability statement before submission |
 

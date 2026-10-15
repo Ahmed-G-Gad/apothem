@@ -64,6 +64,28 @@ backed up before replacement; unrelated operator-authored entries are
 preserved. `settings.json` is merged so operator-authored keys remain
 recoverable.
 
+Operator-authored files are kept only outside the folders below. Every install
+and update removes each of these folders under `~/.claude/` that exists,
+whether or not Apothem wrote it: `src/`, `conformity/`, `schemas/`, `hooks/`,
+`config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`,
+`packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/`, and
+`commands/`. It also removes `statuslines/__init__.py` and the `AGENTS.md`
+files in `agents/`, `rules/`, `skills/`, `statuslines/`, and `output-styles/`.
+A removed folder goes whole, including the files you placed in it. Slash
+commands you keep in `commands/` are removed too, and Apothem installs its own
+command prompts as skills under `skills/`. A hook script you keep in `hooks/`
+is removed, which leaves any `settings.json` entry that calls it pointing at
+nothing. The sweep runs before the install writes its own files. Each removed
+path is copied to `~/.apothem/backups/` first, and the install record names
+that copy. Uninstall does not restore it. To restore a removed path, run
+`apothem rollback --harness claude-code --install-id ID` for the install that
+removed it, as described in the
+[rollback reference](/docs/cli-reference/rollback). A plain
+`apothem rollback` reverses only the latest install. Install records and their
+copies are kept for the newest 10 installs, so a removed path can be restored
+only while its install is among them. `apothem diff --harness claude-code`
+lists these removals as `Prune stale files` before you install.
+
 Installed skills, and the skills bundled in the Claude Code plugin, carry
 `user-invocable` instead of the source corpus's `userInvocable`, because Claude
 Code reads only the hyphenated key. The two template containers

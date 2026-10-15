@@ -86,8 +86,12 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install finds no harnesses
 
-Run apothem doctor to list detected harness directories. If none are found, ensure your
-harness is installed and has been launched at least once.
+Run apothem doctor to read its Harness Status table, which has one row per
+harness. A row marked `not installed` means Apothem found no install for that
+harness. A row marked `needs --project` is a project-scope harness, which doctor
+checks only when you pass `--project <path>`. If doctor reports
+`No harness is installed yet`, ensure your harness is installed, then run
+`apothem install --harness <name>`.
 
 ### apothem verify reports a failing adapter
 

@@ -34,11 +34,11 @@ flowchart LR
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
         CHAOS["chaos_pass.py (CI quality job)"]
-        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
+        BENCH["src/apothem/benchmarks/ (unit tests in CI, bench_hooks in metrics job)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
-        SBOM["SBOM generation"]
+        SBOM["SBOM generation (tags only)"]
         LICENSE["License audit"]
     end
     subgraph Publish["Publish lane (tags only)"]
@@ -78,11 +78,19 @@ flowchart LR
   full event matrix; `validate_ecosystem.py` is the primary structural gate
   for cross-artifact consistency; `chaos_pass.py` runs in the CI quality job on
   pushes and pull requests to `main` (path-filtered) to catch degradation under
-  degraded inputs. The per-class benchmark suite under `src/apothem/benchmarks/`
-  runs in no CI workflow.
-- **Security lane** — secret scanning catches accidental committed
-  credentials; SBOM generation and license audits gate the supply-chain
-  surface for any production-readiness install.
+  degraded inputs. The per-class benchmark drivers under
+  `src/apothem/benchmarks/` run in CI through the pytest suite and through
+  the `metrics` job. Each full pytest run in CI collects
+  `tests/unit/test_benchmarks.py`, which calls every driver except
+  `bench_install.py`. The `metrics` job runs
+  `scripts/dev/collect_metrics.py`, which runs `bench_hooks.py --json` and
+  records the result as `hook_e2e_ms`. `bench_tests.py` and `bench_install.py`
+  time real runs only under `make benchmarks`. No workflow runs
+  `make benchmarks`.
+- **Security lane** — gitleaks in `ci.yml` catches accidental committed
+  credentials. The license audit (`license-audit.yml`) fails on a dependency
+  license outside its allowlist. It runs weekly and when dependency or license
+  files change. `release.yml` generates the SBOM for each tagged release.
 - **Publish lane** — the release workflows are triggered by tag pushes; the npm
   and VS Code publishers can also be re-run by manual dispatch for an existing
   tag. Signed-tag verification confirms release-branch provenance; release notes
