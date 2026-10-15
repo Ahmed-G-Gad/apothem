@@ -19,8 +19,10 @@ It reads a shared profile (`~/.config/apothem/profile.yaml`) and materializes
 harness-native config files for the seventeen registered adapters —
 Antigravity, Claude Code, CodeBuddy, Codex, Cursor, Gemini CLI,
 GitHub Copilot, Hermes, Kimi Code, Kiro, Open-Claw, OpenCode, Qwen Code, Trae,
-Windsurf, Zed, and GLM (Z.ai). The shared profile carries rules, slash-commands, skills, hooks,
-output-styles, settings, schemas, and docs. The
+Windsurf, Zed, and GLM (Z.ai). The shared profile carries rules, skills, subagents, slash-commands,
+hooks, output-styles, statuslines, templates, conformity validators,
+schemas, per-harness instruction templates, and the Claude Code
+settings template. The
 engine is invoked as `python -m apothem`; the Claude Code plugin, the npm
 shim (`npx @ahmed-g-gad/apothem`), and the one-shot script installers run the
 same module surface. From a checkout, `PYTHONPATH=src python -m apothem` puts

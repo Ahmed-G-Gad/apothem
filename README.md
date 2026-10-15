@@ -55,7 +55,7 @@
   </a>
 </p>
 
-**Apothem** authors one shared profile — rules, slash-commands, skills, hooks, output-styles, settings (including MCP servers), schemas, and docs — and materializes that *whole synced unit* into all seventeen supported harnesses' native configuration directories through per-harness adapters. Edit the profile once; every tool picks up the change from a single command. One source of truth, seventeen destinations, zero hand-maintained drift — with a mechanized conformity gate keeping every materialized surface in line.
+**Apothem** authors one shared profile — rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template — and materializes that *whole synced unit* into all seventeen supported harnesses' native configuration directories through per-harness adapters. The profile also carries MCP server definitions. Edit the profile once; every tool picks up the change from a single command. One source of truth, seventeen destinations, zero hand-maintained drift — with a mechanized conformity gate keeping every materialized surface in line.
 
 <details>
 <summary><b>Table of contents</b></summary>
@@ -83,7 +83,7 @@ Supported harnesses proliferate; each one parks its configuration in a different
 
 Apothem cuts the drift at the root, and goes wider than file-copying or rules-only sync:
 
-- **One profile, seventeen destinations.** Author your rules, slash-commands, skills, hooks, output-styles, settings (MCP servers included), schemas, and docs once. Push the whole unit to every harness with one command.
+- **One profile, seventeen destinations.** Author your rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template once. Push the whole unit to every harness with one command.
 - **A wide synced unit, not rules alone.** Every primitive travels as a first-class citizen — translated into each harness's native schema, never flattened to a lowest common denominator.
 - **A mechanized governance gate.** `python -m apothem.conformity.gate` runs multi-bar pre-emission checks — authorship headers, naming, code-craft, hedging, binding reciprocity — so every materialized surface stays conformant.
 - **Deterministic pipelines.** A review pipeline (`/plan-spec → /plan-generate → /plan-review → /plan-design → /plan-execute`, where `/plan-design` runs only for architecture-bearing suites), a thirteen-stage `/research` pipeline, and an eleven-command audit fortress apply to every change to the profile itself.
@@ -96,7 +96,7 @@ Apothem cuts the drift at the root, and goes wider than file-copying or rules-on
 | | Capability | What it gives you |
 |---|---|---|
 | 🎯 | **One profile → seventeen native configs** | Author once; install everywhere. Each harness receives the profile translated into its own native schema — no lowest-common-denominator flattening. |
-| 🧩 | **A wide synced unit** | Rules · slash-commands · skills · hooks · output-styles · settings (with MCP servers) · schemas · docs travel together as first-class primitives — not rules alone. |
+| 🧩 | **A wide synced unit** | Rules · skills · subagents · slash-commands · hooks · output-styles · statuslines · templates · conformity validators · schemas · per-harness instruction templates · Claude Code settings template travel together as first-class primitives — not rules alone. |
 | 🛡️ | **Mechanized governance gate** | `python -m apothem.conformity.gate` runs multi-bar pre-emission checks — authorship headers, naming, code-craft, hedging, binding reciprocity — across every materialized surface; a behavior-diff golden corpus regression-locks each adapter's output, so any unintended change to what a harness receives is caught. |
 | 🧭 | **Deterministic pipelines** | A staged `/plan` review pipeline and a thirteen-stage `/research` pipeline apply the same discipline to every change to the profile itself. |
 | 🏰 | **Eleven-command audit fortress** | Security · code · accessibility · performance · dependency · supply-chain · threat-model · architecture · code-review · docs-review · UX audits on demand. |
@@ -115,7 +115,7 @@ Other tools solve adjacent slices of this problem. File-based config managers li
 | Capability | Apothem | File config managers<br>(chezmoi, Stow) | Cross-tool rule sync<br>(rulesync) | Per-tool native config |
 |---|:---:|:---:|:---:|:---:|
 | One source → many tools' native schemas | ✅ seventeen harness adapters | ❌ copy / symlink, no translation | ✅ | ❌ single tool |
-| Synced unit | rules · slash-commands · skills · hooks · output-styles · settings (MCP) · schemas · docs | arbitrary files | rules · ignore · MCP · commands · subagents · skills · hooks · permissions | — |
+| Synced unit | rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template | arbitrary files | rules · ignore · MCP · commands · subagents · skills · hooks · permissions | — |
 | Mechanized governance gate | ✅ `python -m apothem.conformity.gate` | ❌ | ❌ | ❌ |
 | Deterministic `/plan` + thirteen-stage `/research` pipelines | ✅ | ❌ | ❌ | ❌ |
 | Eleven-command audit fortress | ✅ security · perf · a11y · supply-chain · … | ❌ | ❌ | ❌ |
@@ -565,11 +565,11 @@ Apothem decouples *what* you want every supported tool to do (your shared profil
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-08-14 %%
+%% verified: 2026-10-15 %%
 %% provenance: README.md §How it works — apothem's seventeen-harness materialization fan-out %%
 %% cross-reference: src/apothem/lib/harness_registry_data.py (the authoritative adapter registry) %%
 graph LR
-    P["shared profile<br/>rules · slash-commands · skills · hooks<br/>output-styles · settings (MCP servers) · schemas · docs"]
+    P["shared profile<br/>rules · skills · subagents · slash-commands · hooks<br/>output-styles · statuslines · templates · conformity validators<br/>schemas · per-harness instruction templates · Claude Code settings template"]
     A["apothem<br/>core CLI"]
     P --> A
     A --> AG["~/.gemini/GEMINI.md + antigravity-cli plugin<br/>Antigravity"]
