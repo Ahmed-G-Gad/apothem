@@ -2,7 +2,7 @@
 title: "completion"
 description: "CLI-Referenz für den Befehl apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,10 +35,12 @@ unterstützten Shells.
 
 ## Vervollständigung je Shell aktivieren
 
-Der Befehl `apothem` muss zuerst in Ihrem `PATH` liegen (die
-Ein-Schritt-Installer legen ihn dort ab). Aktivieren Sie die Vervollständigung
-dann, indem Sie das Skript an die Vervollständigungsdatei der Shell anhängen und
-die Shell neu starten:
+Der Befehl `apothem` muss zuerst in Ihrem `PATH` liegen. Die Ein-Schritt-Installer
+schreiben einen `apothem`-Shim nach `$HOME/.local/bin` (POSIX) oder
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) und bearbeiten Ihren `PATH`
+niemals; fügen Sie dieses Verzeichnis daher hinzu, falls es noch nicht
+aufgeführt ist. Aktivieren Sie die Vervollständigung dann, indem Sie das Skript
+an die Vervollständigungsdatei der Shell anhängen und die Shell neu starten:
 
 ```bash
 # bash — append to your bashrc

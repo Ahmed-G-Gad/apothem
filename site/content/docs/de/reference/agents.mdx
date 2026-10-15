@@ -1,8 +1,8 @@
 ---
 title: "Helfer"
-description: "Persistente Helfer-Agents für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
+description: "Persistente Helfer-Agenten für Recherche, Audit, Qualität und Orchestrierung mit Frontmatter-Verträgen und Isolationsprotokollen für die Bereitstellung."
 machineTranslated: true
-sourceHash: "b44b145680fe03f7"
+sourceHash: "18a785a98f21c750"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,12 @@ kanonischen Helfer-Verzeichnis. Der kanonische Pfad ist:
 src/apothem/agents/
 ```
 
-Jeder Helfer ist eine Rolle für Recherche, Audit, Qualität oder Orchestrierung
-mit eigenen Werkzeugbeschränkungen und eigenem System-Prompt.
+Jeder Helfer ist eine klar umrissene Rolle, etwa Recherche, Audit, Qualität,
+Refactoring oder Gerüsterstellung, mit eigenen Werkzeugbeschränkungen und
+eigenem System-Prompt.
+
+Die Tabelle und die Pfadliste unten zeigen vier der Helfer. Das generierte
+Inventar am Ende dieser Seite listet jede Helferdefinition auf.
 
 | Helfer | Datei | Muster | Modellrichtlinie |
 |-------|------|---------|--------------|
@@ -49,8 +53,8 @@ maxTurns: <integer>
 ## Konvertierung je Harness
 
 Ein Helfer, dessen `tools`-Freigabe nach Abzug von `disallowedTools` kein
-Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`, `MultiEdit` oder `NotebookEdit`)
-enthält, ist schreibgeschützt. Jeder Harness, der Helfer
+Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`, `MultiEdit` oder
+`NotebookEdit`) enthält, ist schreibgeschützt. Jeder Harness, der Helfer
 konvertiert, setzt diese Beschränkung entweder nativ durch oder lässt die
 Kennzeichnung als schreibgeschützt weg:
 
@@ -78,7 +82,7 @@ src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## Generiertes Agent-Inventar
+## Generiertes Agenten-Inventar
 
 {/* apothem:generated-reference:start */}
 

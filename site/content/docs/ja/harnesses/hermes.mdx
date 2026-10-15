@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,11 +38,8 @@ apothem install --harness hermes
 Hermes は、サポートツリーもプロファイルドキュメントも自ら読み込みません。`config.yaml` 内のどの設定も、Hermes が読み取るどのコンテキストファイルもそこを指していないため、インストール後の Hermes は Apothem のルール、スキル、フックなしで動作します。
 Hermes は `~/.hermes/skills/` と、`config.yaml` の `skills.external_dirs` 配下に列挙されたすべてのフォルダーからスキルを読み取ります。Apothem のスキルを使うには、`~/.hermes/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、あなたが `config.yaml` に追加したキーを保持します。
 アダプターはプロファイルの MCP インベントリを、Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
-以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と `apothem uninstall` はどちらも、そのブロックが、そうしたリリースがあなたの共有プロファイルから書き込むであろう内容と一致している間は、そのブロックを削除します（[アンインストール](#アンインストール)を参照）。
-（Hermes の振る舞いは、Hermes のユーザーガイドの
-[スキル](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
-と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)
-に関するページに基づき、2026-10-02 に参照したものです。）
+以前の Apothem リリースはそれを `auxiliary.mcp` の下に書き込んでいましたが、Hermes はこれを MCP ツールのディスパッチ用の補助モデルとして読み取ります。`apothem update` と `apothem uninstall` はどちらも、そのブロックが、そうしたリリースがあなたの現在の共有プロファイルから書き込むであろう内容と一致している場合は、そのブロックを削除します（そのブロックが残る場合については[アンインストール](#アンインストール)を参照）。
+（Hermes の振る舞いは、Hermes のユーザーガイドの[スキル](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)と [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) に関するページに基づき、2026-10-02 に参照したものです。）
 
 ## 検証
 

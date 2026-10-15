@@ -2,7 +2,7 @@
 title: "Registro de harnesses"
 description: "Referência técnica do registro dos adaptadores de harness integrados do Apothem."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -82,9 +82,10 @@ Um teste renderiza cada arquivo convertido e confere os mapas contra a saída.
 Alguns alvos de instalação são carregados por harnesses diferentes daquele que
 os grava. O registro anota cada um desses caminhos em `SHARED_ROOTS` com um
 proprietário (o único adaptador que o grava) e os leitores cuja documentação do
-fornecedor o carrega por padrão, com as páginas do fornecedor como evidência.
-Instalar o proprietário coloca o conteúdo do Apothem diante de cada leitor, e
-desinstalar o proprietário o remove de cada leitor.
+fornecedor o carrega por padrão, além das páginas do fornecedor que o mostram e
+da data em que foram obtidas. Instalar o proprietário coloca o conteúdo do
+Apothem diante de cada leitor, e desinstalar o proprietário o remove de cada
+leitor.
 
 | Caminho | Proprietário | Leitores |
 | --- | --- | --- |
@@ -98,10 +99,12 @@ desinstalar o proprietário o remove de cada leitor.
 
 O bloco do Apothem que um proprietário grava em um arquivo de instruções
 compartilhado não nomeia nenhuma ferramenta específica como sua leitora.
-`tests/unit/test_shared_roots.py` falha quando um alvo do registro é gravado por
-dois adaptadores, ou tem nome de arquivo de instruções entre ferramentas
-(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`), sem um proprietário declarado.
+`tests/unit/test_shared_roots.py` falha quando dois adaptadores gravam o mesmo
+alvo do registro, e quando um alvo do registro cujo nome é o de um arquivo de
+instruções entre ferramentas (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`copilot-instructions.md`) não tem um proprietário declarado. A única exceção é
+`~/.codex/AGENTS.md`, cujo carregamento nenhum outro harness registrado
+documenta.
 
 ## Hooks de validação
 
@@ -109,8 +112,8 @@ O registro permanece sincronizado por meio destas verificações:
 
 | Verificação | Propósito |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tem um pin de convenção com menos de 90 dias que cita pelo menos uma URL do fornecedor e não tem nenhum alvo de descoberta vencido. A CI o executa em cada pull request, semanalmente e antes de um lançamento. |
-| `python scripts/dev/check_vendor_urls.py` | Busca cada URL de fornecedor que os pins e os templates de harness citam e falha diante de uma página movida ou inativa, incluindo um nome de host que não resolve mais ou um certificado que falha na verificação; um timeout, uma conexão recusada ou redefinida, ou um erro de servidor 5xx é relatado como inacessível e não o faz falhar. O monitor semanal de convenções o executa. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tem um pin de convenção que não tem mais de 90 dias de idade, cita pelo menos uma URL do fornecedor e não tem nenhum alvo de descoberta vencido. A CI o executa em cada pull request, semanalmente e antes de um lançamento. |
+| `python scripts/dev/check_vendor_urls.py` | Busca cada URL de fornecedor que os pins e os templates de harness citam e falha diante de uma página movida ou inativa, incluindo um nome de host que não resolve mais ou um certificado que falha na verificação; um tempo limite esgotado, uma conexão recusada ou redefinida, ou um erro de servidor 5xx é relatado como inacessível e não o faz falhar. O monitor semanal de convenções o executa. |
 | `python -m apothem.conformity.gate --all .` | Executa as verificações de conformidade de documentação e de implementação. |
 | `python -m pytest` | Exercita os testes de fixtures do registro e os testes de contrato dos adaptadores. |
 

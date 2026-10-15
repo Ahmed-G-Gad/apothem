@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,8 +106,14 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+`~/.gemini/GEMINI.md` से Apothem ब्लॉक हटाता है और उसमें मौजूद बाकी सारा पाठ रहने
+देता है। फ़ाइल तभी हटाई जाती है जब उसमें और कुछ शेष न बचे। साथ ही प्लगइन फ़ोल्डर
+`~/.gemini/antigravity-cli/plugins/apothem/` में `plugin.json` से Apothem की
+कुंजियाँ हटाता है और आपकी कुंजियाँ रहने देता है, और उस फ़ोल्डर के `skills/`,
+`rules/`, `agents/` तथा `.apothem/support/` उप-फ़ोल्डरों में मौजूद Apothem फ़ाइलें
+हटाता है; वहाँ की अन्य फ़ाइलें बनी रहती हैं। प्रत्येक फ़ाइल को बदले या हटाए जाने से
+पहले `~/.apothem/backups/` के अंतर्गत उसका बैकअप लिया जाता है। साझा प्रोफ़ाइल YAML
+और Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

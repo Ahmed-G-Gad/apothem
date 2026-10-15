@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptateur d'environnement Apothem pour Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,7 +77,10 @@ apothem verify --harness gemini-cli --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -96,8 +99,15 @@ locaux, les skills installés et l'arborescence de support
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime le bloc Apothem de `<project>/GEMINI.md` et conserve tout autre texte
+qui s'y trouve. Le fichier n'est supprimé que lorsqu'il n'y reste plus rien
+d'autre. Supprime aussi les fichiers Apothem de `<project>/.gemini/commands/`,
+`<project>/.gemini/skills/`, `<project>/.gemini/agents/` et
+`<project>/.gemini/.apothem/support/` ; les autres fichiers de ces dossiers
+restent en place. Avant la modification, une copie horodatée de chaque fichier
+est enregistrée sous `~/.apothem/backups/` ; aucun fichier de sauvegarde n'est
+laissé dans le projet. Le YAML du profil partagé et le moteur Apothem ne sont
+pas affectés.
 
 ## Portail de conformité
 

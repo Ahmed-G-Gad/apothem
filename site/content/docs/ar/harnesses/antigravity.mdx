@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "محوّل إطار عمل Apothem لـ Antigravity (معاينة)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,8 +43,8 @@ apothem install --harness antigravity
 <bdi>`trigger: glob`</bdi> مع الأنماط نفسها في <bdi>`globs`</bdi>؛ وتحصل أي قاعدة
 أخرى على <bdi>`trigger: model_decision`</bdi>. وتحتفظ كل قاعدة بحقل
 <bdi>`description`</bdi> الخاص بها. يتقاسم <bdi>Antigravity</bdi> ميزانية قدرها
-20,000 رمز مميّز بين القواعد الدائمة التفعيل، ويحوّل أكبرها إلى مؤشّرات تُحمَّل عند
-الطلب بعد تجاوز تلك الميزانية.
+20,000 رمز مميّز بين القواعد الدائمة التفعيل، ويحوّل أكبرها إلى مؤشّرات عند الطلب
+بعد تجاوز تلك الميزانية.
 
 **بيان الإضافة.** لا يحمل <bdi>`plugin.json`</bdi> إلا <bdi>`name`</bdi>
 و<bdi>`description`</bdi>، وهما المفتاحان اللذان يقبلهما مخطط الإضافات في
@@ -90,7 +90,9 @@ apothem verify --harness antigravity
 يؤكّد أمر التحقّق ما يلي:
 
 1. ملف السياق الأصلي موجود في المسار المتوقَّع.
-2. ملف بيان الإضافة <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه <bdi>JSON</bdi>. ولا يتحقّق <bdi>`verify`</bdi> من اسم الإضافة؛ افحص هذا الحقل بنفسك بعد تغييره.
+2. ملف بيان الإضافة <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه
+   <bdi>JSON</bdi>. ولا يتحقّق أمر التحقّق من اسم الإضافة؛ افحص هذا الحقل بنفسك
+   بعد تغييره.
 
 ## التحديث
 
@@ -108,8 +110,15 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.gemini/GEMINI.md`</bdi> ويُبقي أي نص آخر
+فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل أيضًا مفاتيح
+<bdi>Apothem</bdi> من <bdi>`plugin.json`</bdi> في مجلد الإضافة
+<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> ويُبقي مفاتيحك، ويُزيل ملفات
+<bdi>Apothem</bdi> في المجلدات الفرعية <bdi>`skills/`</bdi> و<bdi>`rules/`</bdi>
+و<bdi>`agents/`</bdi> و<bdi>`.apothem/support/`</bdi> لذلك المجلد؛ وتبقى الملفات
+الأخرى فيها. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره
+أو إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

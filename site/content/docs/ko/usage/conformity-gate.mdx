@@ -2,15 +2,15 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트를 실행하여 생태계 상태를 검증합니다."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `src/apothem/conformity/gate.py`에 있는 적합성 게이트는 운영자가 작성하는 모든
 아티팩트에 대해 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분을 실행합니다.
 
-이 페이지의 명령은 Apothem 체크아웃을 전제로 하므로, 각 명령 앞에
-`PYTHONPATH=src`를 붙이세요. 스크립트로 설치한 뒤에는 `src` 대신
+이 페이지의 명령은 Apothem 체크아웃을 전제로 하므로, 실행하는 각 명령 앞에
+`PYTHONPATH=src`를 붙이세요. 스크립트로 설치한 뒤에는 `PYTHONPATH=src` 대신
 `PYTHONPATH="$HOME/.apothem/src"`를 사용하세요.
 
 ## 게이트 실행
@@ -39,11 +39,11 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 `--all .`과 `--all "$PWD"`는 같은 트리를 검사합니다. 각 검증기는 검사한 대상의
 수인 `inspected`를 보고하며, `--all`은 그 수를 모든 결과 항목에 복사합니다.
 아무것도 검사하지 않은 검증기는 `passed: false`를 보고하므로, 잘못된 작업
-디렉터리가 조용히 통과할 수 없습니다. 두 플랜 스위트 검증기는 예외입니다. 플랜
+디렉터리가 조용히 통과할 수 없습니다. 두 플랜 스위트 검증기는 예외 중 하나입니다. 플랜
 스위트는 gitignore된 `.apothem/plans/` 트리에 있으므로, 이 두 검증기는 깨끗한
 체크아웃에서 `empty_scope_expected: true`를 보고하고도 통과합니다. 워크플로
 검증기도 프로젝트에 아직 `.github/workflows/` 디렉터리가 없을 때 같은 방식으로
-동작하며, 커밋 제목 검증기는 디렉터리에 커밋 기록이 없을 때 같은 방식으로
+동작하며, 커밋 제목 검증기는 루트에 커밋 기록이 없을 때 같은 방식으로
 동작합니다.
 
 ## 게이트 막대
@@ -86,9 +86,14 @@ PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 
 훅 모드는 **일련의 디렉터리로 범위가 한정됩니다**. 대상이 그중 하나의 아래에
 있는 쓰기에 대해서만 매처 체인을 실행하며, 모든 범위 바깥의 쓰기는 즉시 조용한
-통과로 처리됩니다. 기본값은 Apothem이 설치되는 훅 지원 사용자 범위 하니스
-루트들이며, 하니스 섹션 아래의 각 하니스 페이지가 자신의 루트를 명시합니다. 이
-기본값을 교체하려면 `APOTHEM_CONFORMITY_SCOPE`를 디렉터리로 설정하세요.
+통과로 처리됩니다. 기본값은 두 개의 루트입니다.
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+이를 교체하려면 `APOTHEM_CONFORMITY_SCOPE`를 디렉터리로 설정하세요.
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

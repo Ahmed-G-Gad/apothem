@@ -27,7 +27,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -68,9 +67,11 @@ flowchart LR
 ## Lane roles
 
 - **Static analysis lane** — fast feedback. Ruff covers Python style and a
-  curated rule set; mypy enforces type discipline at strict; markdownlint
-  policies the documentation surface; the frontmatter validator gates
-  artifact-schema compliance for rules, skills, delegated workers, and commands.
+  curated rule set; mypy enforces type discipline at strict; the frontmatter
+  validator gates artifact-schema compliance for rules, skills, delegated
+  workers, and commands. markdownlint is not in this lane: it runs only as a
+  pre-commit hook, and CI does not run it (see
+  [Markdown conventions](/docs/reference/markdown-conventions)).
 - **Test lane** — `pytest tests/hooks` exercises the hook runtime against the
   full event matrix; `validate_ecosystem.py` is the primary structural gate
   for cross-artifact consistency; `chaos_pass.py` and the per-class benchmark

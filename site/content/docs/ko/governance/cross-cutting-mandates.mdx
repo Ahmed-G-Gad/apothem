@@ -2,7 +2,7 @@
 title: "횡단 맨데이트 레지스트리 (CM-1–CM-28)"
 description: "모든 상호작용과 파이프라인 작업을 규율하는 생태계 내부 횡단 맨데이트(CM-1–CM-28)의 전체 레지스트리와 정의입니다."
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "4e3a5448c3273d05"
 
 ## 네임스페이스
 
-`CM-N` = 구성 맨데이트(여기에서 정의되거나, 아티팩트 레지스트리의 규칙 행에 따라 `src/apothem/rules/*.md`에서 정의됨), `TM-N` = 템플릿 맨데이트(`src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28에서 정의됨), `CP-N` = 핵심 원칙(같은 템플릿 §6 "Core Principles", CP-1–27에서 정의됨)입니다. 플랜 스위트 템플릿이 표준 TM/CP 레지스트리이며, `/plan` 명령은 그 파일을 통해 상호 참조를 해석합니다. 헬퍼 아티팩트(규칙, 헬퍼, 명령, 훅)는 이 레지스트리를 참조로 인용합니다.
+`CM-N` = 구성 맨데이트(여기에서 정의되거나, `site/content/docs/reference/rules.mdx`의 규칙 표에 따라 `src/apothem/rules/*.md`에서 정의됨), `TM-N` = 템플릿 맨데이트(`src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28에서 정의됨), `CP-N` = 핵심 원칙(같은 템플릿 §6 "Core Principles", CP-1–27에서 정의됨)입니다. 플랜 스위트 템플릿이 표준 TM/CP 레지스트리이며, `/plan` 명령은 그 파일을 통해 상호 참조를 해석합니다. 헬퍼 아티팩트(규칙, 헬퍼, 명령, 훅)는 이 레지스트리를 참조로 인용합니다.
 
 ## 활성화
 
@@ -28,7 +28,7 @@ CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-1
 
 > 이것은 CM-7의 코드베이스 측면입니다. 제품 완결성 측면은 `src/apothem/rules/operational-mandates.md §CM-7`에 **일관된 제품(→TM-11)** 항목으로 문서화되어 있습니다. 두 레이블은 같은 맨데이트를 가리킵니다.
 
-코드베이스 아티팩트는 플랜 내부 참조를 절대(NEVER) 포함해서는 안 됩니다. **금지 용어(표준 블록 — 형제 소비자는 이 열거를 상호 참조함):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", 단계 폴더 이름, 플랜 스위트 파일 이름(PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), 심각도 등급 이름(EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **보호 대상 아티팩트:** 소스 코드, 테스트, 구성, 스키마, 빌드 스크립트, 데이터, 자산, 커밋 메시지, 브랜치 이름, PR 제목/설명, README, CONTRIBUTING, API 문서, 변경 로그 등 Apothem 소스 트리 밖에서 보이는 모든 아티팩트(Claude Code의 `~/.claude/` 같은 하니스별 설치 대상 포함). 자연스러운 도메인 언어만 사용합니다. **형제 소비자**(각각 이 블록을 다시 열거하지 않고 참조로 인용함): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 위반 지표.
+코드베이스 아티팩트는 플랜 내부 참조를 절대(NEVER) 포함해서는 안 됩니다. **금지 용어(표준 블록 — 형제 소비자는 이 열거를 상호 참조함):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", 단계 폴더 이름, 플랜 스위트 파일 이름(PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), 심각도 등급 이름(EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **보호 대상 아티팩트:** 소스 코드, 테스트, 구성, 스키마, 빌드 스크립트, 데이터, 자산, 커밋 메시지, 브랜치 이름, PR 제목/설명, README, CONTRIBUTING, API 문서, 변경 로그 등 Apothem 소스 트리 밖에서 보이는 모든 아티팩트(하니스별 설치 대상, 예를 들어 Claude Code의 `~/.claude/`). 자연스러운 도메인 언어만 사용합니다. **형제 소비자**(각각 이 블록을 다시 열거하지 않고 참조로 인용함): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 위반 지표.
 
 ## CM-11 (플랜 무결성)
 
@@ -54,7 +54,7 @@ CM-1–10과 인지적 정체성은 모든 상호작용을 규율합니다. CM-1
 
 ## CM-15–21 (파이프라인)
 
-CM-15와 CM-16은 여기에서 인라인으로 정의됩니다(별도 규칙 없음). CM-17–21은 아티팩트 레지스트리의 규칙 표에 따라 규칙에 위임됩니다.
+CM-15와 CM-16은 여기에서 인라인으로 정의됩니다(별도 규칙 없음). CM-17–21은 `site/content/docs/reference/rules.mdx`의 규칙 표에 따라 규칙에 위임됩니다. 이 헤딩은 주제별로 이 맨데이트들을 묶은 것이며, 각 맨데이트의 적용 범위는 활성화 단락을 따릅니다. CM-15, CM-16, CM-20은 `/plan` 파이프라인 안에서만 적용되고, CM-17–19와 CM-21은 보편적으로 적용됩니다.
 
 - **CM-15 집합적 일관성:** 수정 후에도 플랜 아티팩트가 일관성을 유지하는지 검증합니다.
 - **CM-16 자율 실행:** SHARED+에서는 단계 사이에서 절대 멈추지 않습니다. 단계 전환 시 압축은 필수입니다(PERSONAL_USE+).
@@ -78,12 +78,12 @@ CM-15와 CM-16은 여기에서 인라인으로 정의됩니다(별도 규칙 없
 
 ## 규칙 위임 맨데이트와 인라인 정의 맨데이트
 
-- **규칙 위임**(전체 사양은 `src/apothem/rules/`에 있음): 아티팩트 레지스트리 규칙 표의 "Implements" 열을 참조하세요. CM-1–10, CM-12, CM-14, CM-17–28을 포함합니다.
-- **인라인 정의**(전체 사양은 여기에 있으며 별도 규칙 없음): CM-11(플랜 무결성), CM-13(커밋), CM-15(집합적 일관성), CM-16(자율 실행).
+- **규칙 위임**(전체 사양은 `src/apothem/rules/`에 있음): `site/content/docs/reference/rules.mdx`의 규칙 표 "Implements" 열을 참조하세요. CM-1–10, CM-12, CM-14, CM-17–28을 포함합니다.
+- **인라인 정의**(전체 사양은 여기에 있으며 별도 규칙 없음): CM-11(플랜 무결성), CM-13(커밋; 하위 규칙 D와 E는 상세 사양을 규칙 파일에서 인용함), CM-15(집합적 일관성), CM-16(자율 실행).
 
 ## 하위 참조 규약
 
-명령은 맨데이트 안의 특정 하위 섹션을 참조하기 위해 문자 접미사를 사용합니다. 패턴: `CM-N` + 접미사 문자 = 규칙 섹션. **대소문자 규약:** 대문자 접미사는 맨데이트 안의 구조적 하위 섹션을 나타내고, 소문자 접미사는 관리(Stewardship) 계층 안의 더 세분화된 지시를 나타냅니다. 표준 하위 참조 키 매핑 표(레지스트리 내부 정의)는 아래 펜스 블록에 원문 그대로 보존되어 있습니다.
+명령은 맨데이트 안의 특정 하위 섹션을 참조하기 위해 문자 접미사를 사용합니다. 패턴: `CM-N` + 접미사 문자 = 규칙 섹션. **대소문자 규약:** 대문자 접미사는 맨데이트 안의 구조적 하위 섹션을 나타내고, 소문자 접미사는 관리(Stewardship) 계층 안의 더 세분화된 지시를 나타냅니다. 표준 하위 참조 키 매핑 표(레지스트리 내부 정의)는 아래 펜스 블록에 있습니다.
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

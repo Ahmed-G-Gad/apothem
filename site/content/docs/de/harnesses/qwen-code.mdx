@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Apothem-Harness-Adapter für Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,24 +20,28 @@ apothem install --harness qwen-code
 Der Adapter schreibt die Einstellungen von Qwen Code, installiert einen
 `QWEN.md`-Kontextanker, registriert Apothem-Hook-Dispatcher, konvertiert
 Apothem-Commands in Markdown-Command-Dateien von Qwen, installiert Skills als
-SKILL.md-Verzeichnisse und passt Helfer-Definitionen als Qwen-Subagents an.
+SKILL.md-Verzeichnisse und passt Helferdefinitionen als Qwen-Subagenten an.
 
 **Geschriebene Dateien:**
 
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Die Datei `~/.qwen/apothem/rules/00-apothem-profile.md` ist das Profildokument.
+Es trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil.
+
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter rendert dokumentierte `settings.json`-Schlüssel für Kontext und
 Hooks, schreibt `QWEN.md` und verteilt Apothem-Commands, -Skills und
-Helfer-Definitionen über die nativen Discovery-Verzeichnisse von Qwen Code.
+Helferdefinitionen über die nativen Discovery-Verzeichnisse von Qwen Code.
 Regeln, Templates und Hook-Quellmaterial bleiben Unterstützungsmaterial unter
 `~/.qwen/.apothem/support/`.
 
@@ -48,7 +52,7 @@ die Hook-Befehle in den Einstellungen verweisen; es ist kein anbietereigener
 Discovery-Namensraum.
 Der Apothem-Block in `QWEN.md` endet mit einem Abschnitt zu den
 Apothem-Unterstützungsdateien, der das absolute Verzeichnis unter
-`~/.qwen/.apothem/support/` nennt, gegen das jedes Zitat im Repository-Stil
+`~/.qwen/.apothem/support/` nennt, gegen das jeder Verweis im Repository-Stil
 (`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst wird.
 
 ## Verifizierung
@@ -57,10 +61,13 @@ Apothem-Unterstützungsdateien, der das absolute Verzeichnis unter
 apothem verify --harness qwen-code
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -69,7 +76,7 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness qwen-code
 ```
 
-Aktualisiert `settings.json`, `QWEN.md`, native Commands, Skills, Subagents und
+Aktualisiert `settings.json`, `QWEN.md`, native Commands, Skills, Subagenten und
 den Apothem-Unterstützungsbaum.
 
 ## Deinstallation
@@ -78,8 +85,18 @@ den Apothem-Unterstützungsbaum.
 apothem uninstall --harness qwen-code
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt die Einträge, die der Adapter zu `~/.qwen/settings.json` hinzugefügt
+hat (Ihre eigenen Schlüssel, MCP-Server und Hook-Handler bleiben erhalten, und
+die Datei wird nur gelöscht, wenn Apothem sie angelegt hat und nichts von Ihnen
+übrig ist). Entfernt den Apothem-Block aus `~/.qwen/QWEN.md` und aus dem
+Profildokument `~/.qwen/apothem/rules/00-apothem-profile.md` und behält jeden
+anderen Text darin; jede dieser Dateien wird nur gelöscht, wenn darin nichts
+anderes mehr übrig ist. Entfernt außerdem die Apothem-Dateien in
+`~/.qwen/commands/`, `~/.qwen/skills/`, `~/.qwen/agents/` und
+`~/.qwen/.apothem/support/`; andere Dateien in diesen Ordnern bleiben bestehen.
+Jede Datei wird unter `~/.apothem/backups/` gesichert, bevor sie geändert oder
+entfernt wird. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine
+bleiben unberührt.
 
 ## Konformitäts-Gate
 
@@ -99,7 +116,7 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
 
 ## Siehe auch
 

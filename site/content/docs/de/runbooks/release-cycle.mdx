@@ -1,8 +1,8 @@
 ---
 title: "Runbook zum Release-Zyklus"
-description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zum optionalen npm-Veröffentlichungs-Dispatch."
+description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -149,15 +149,19 @@ GitHub Release aus. Der Maintainer durchsucht das Protokoll des Jobs
 
 ### 2.4 Die npm-Veröffentlichung bestätigen
 
-Der Tag-Push führt auch `publish-npm.yml` aus. Genehmigen Sie das Deployment
-der Umgebung `release`, wenn Sie dazu aufgefordert werden. Der Workflow
-veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z` über npm Trusted Publishing (OIDC)
-auf npmjs.com; im Repository ist kein Registry-Token gespeichert. Bestätigen
-Sie dann die Bereitschaft:
+Der Tag-Push führt auch `publish-npm.yml` neben `release.yml` aus. Der
+npm-Workflow wartet nicht auf den Release-Workflow; die Genehmigung der
+Umgebung `release` ist das Gate. Sobald der Release-Workflow aus §2.3
+abgeschlossen ist, bestätigen Sie die Bereitschaft:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Genehmigen Sie dann das Deployment der Umgebung `release`, wenn Sie dazu
+aufgefordert werden. Der Workflow veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z`
+über npm Trusted Publishing (OIDC) auf npmjs.com; im Repository ist kein
+Registry-Token gespeichert.
 
 Um nach einem fehlgeschlagenen Lauf erneut zu veröffentlichen, starten Sie den
 Workflow für dasselbe Tag
@@ -307,8 +311,8 @@ defekte in einem Patch-Release behoben wird.
   folgt demselben additiven Modell: Es stellt ein fehlgeschlagenes Tag oder
   einen fehlgeschlagenen Publisher Stufe für Stufe wieder her und rollt zurück,
   indem es die Korrektur als neue Patch-Version veröffentlicht, niemals durch
-  Löschen oder Neuausrichten eines veröffentlichten Tags, Release oder einer
-  npm-Version.
+  Löschen oder Neuausrichten eines veröffentlichten Tags, eines Releases oder
+  einer npm-Version.
 - **Pages-Aktivierung.** Der Workflow `publish-static-site.yml` validiert und
   deployt die Projekt-Website auf die benutzerdefinierte Domain; das
   Pages-Aktivierungs-Runbook (`site/content/docs/runbooks/pages-enablement.mdx`)

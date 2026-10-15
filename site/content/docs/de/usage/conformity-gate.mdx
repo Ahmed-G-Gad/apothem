@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,9 @@ mechanischen Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) gegen jede
 Artefakt aus, das der Operator verfasst.
 
 Die Befehle auf dieser Seite setzen einen Apothem-Checkout voraus; stellen Sie
-daher jedem Befehl `PYTHONPATH=src` voran. Nach einer Skript-Installation
-verwenden Sie `PYTHONPATH="$HOME/.apothem/src"` anstelle von `src`.
+daher jedem Befehl, den Sie ausführen, `PYTHONPATH=src` voran. Nach einer
+Skript-Installation verwenden Sie `PYTHONPATH="$HOME/.apothem/src"` anstelle von
+`PYTHONPATH=src`.
 
 ## Das Gate ausführen
 
@@ -43,11 +44,11 @@ Baum untersuchen. Jeder Validator meldet `inspected` — wie viele Ziele er
 untersucht hat —, und `--all` kopiert diese Zahl in jeden Ergebniseintrag. Ein
 Validator, der nichts untersucht hat, meldet `passed: false`, sodass ein falsches
 Arbeitsverzeichnis nicht still bestehen kann. Die beiden Plan-Suite-Validatoren
-sind die Ausnahme: Plan-Suites liegen im per gitignore ausgeschlossenen Baum
+sind eine Ausnahme: Plan-Suites liegen im per gitignore ausgeschlossenen Baum
 `.apothem/plans/`, daher melden sie bei einem sauberen Checkout
 `empty_scope_expected: true` und bestehen dennoch. Die Workflow-Validatoren tun
 dasselbe, wenn das Projekt noch kein Verzeichnis `.github/workflows/` hat, und der
-Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
+Commit-Subject-Validator, wenn das Stammverzeichnis keine Commit-Historie hat.
 
 ## Gate-Stufen
 
@@ -91,11 +92,14 @@ ausstehenden Schreibvorgang aus. Dies ist die Form, die der bereitgestellte
 Der Hook-Modus ist **auf eine Menge von Verzeichnissen beschränkt**. Er führt die
 Matcher-Kette nur bei Schreibvorgängen aus, deren Ziel unter eines davon fällt;
 ein Schreibvorgang außerhalb aller Geltungsbereiche wird sofort als stilles
-Bestehen abgeschlossen. Die Standardwerte sind die Hook-fähigen
-Harness-Stammverzeichnisse mit Benutzergeltungsbereich, in die Apothem
-installiert — die Seite jedes Harness unter Harnesses nennt dessen eigenes
-Stammverzeichnis. Setzen Sie `APOTHEM_CONFORMITY_SCOPE` auf ein Verzeichnis, um
-sie zu ersetzen:
+Bestehen abgeschlossen. Die Standardwerte sind zwei Stammverzeichnisse:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Setzen Sie `APOTHEM_CONFORMITY_SCOPE` auf ein Verzeichnis, um sie zu ersetzen:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

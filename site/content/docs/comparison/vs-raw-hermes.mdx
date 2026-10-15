@@ -37,7 +37,10 @@ loads those skills only after you add `~/.hermes/.apothem/support/skills` to
 2. Move reusable Hermes skills or command prompts into the shared corpus.
 3. Run `apothem install --harness hermes` to render the native config and
    support skill directory.
-4. Run `apothem verify --harness hermes` to confirm the config landed.
+4. Add `~/.hermes/.apothem/support/skills` to `skills.external_dirs` in
+   `config.yaml` so Hermes loads the installed skills. `apothem update` keeps
+   keys you add to `config.yaml`.
+5. Run `apothem verify --harness hermes` to confirm the config landed.
 
 ## Read next
 

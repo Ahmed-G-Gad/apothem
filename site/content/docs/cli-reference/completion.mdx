@@ -31,9 +31,11 @@ Requesting any other shell exits `64` with the supported-shell list.
 
 ## Enabling completion per shell
 
-The `apothem` command must be on your `PATH` first (the one-shot installers place
-it there). Then enable completion by appending the script to the shell's
-completion file and restarting the shell:
+The `apothem` command must be on your `PATH` first. The one-shot installers
+write an `apothem` shim into `$HOME/.local/bin` (POSIX) or
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) and never edit your `PATH`, so
+add that directory if it is not already listed. Then enable completion by
+appending the script to the shell's completion file and restarting the shell:
 
 ```bash
 # bash — append to your bashrc

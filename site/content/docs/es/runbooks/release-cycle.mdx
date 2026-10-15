@@ -1,8 +1,8 @@
 ---
 title: "Runbook del ciclo de lanzamiento"
-description: "Flujo de lanzamiento completo, desde las puertas locales, pasando por el GitHub Release firmado, hasta el despacho opcional de la publicación en npm."
+description: "Flujo de lanzamiento completo, desde las puertas locales, pasando por el GitHub Release firmado, hasta la publicación en npm."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -146,21 +146,25 @@ GitHub Release. El mantenedor revisa el registro del trabajo
 
 ### 2.4 Confirmar la publicación en npm
 
-El push de la etiqueta también ejecuta `publish-npm.yml`. Aprueba el despliegue
-del entorno `release` cuando se te solicite. El flujo de trabajo publica
-`@ahmed-g-gad/apothem@X.Y.Z` en npmjs.com mediante la publicación de confianza
-de npm (OIDC); no se almacena ningún token de registro en el repositorio.
-Después confirma que todo está listo:
+El push de la etiqueta también ejecuta `publish-npm.yml` junto a `release.yml`.
+El flujo de trabajo de npm no espera al flujo de trabajo de lanzamiento; la
+aprobación del entorno `release` es la puerta. Cuando el flujo de trabajo de
+lanzamiento de §2.3 haya terminado, confirma que todo está listo:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
 
+Después aprueba el despliegue del entorno `release` cuando se te solicite. El
+flujo de trabajo publica `@ahmed-g-gad/apothem@X.Y.Z` en npmjs.com mediante la
+publicación de confianza de npm (OIDC); no se almacena ningún token de registro
+en el repositorio.
+
 Para volver a publicar después de una ejecución fallida, despacha el flujo de
 trabajo para la misma etiqueta
-(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). El flujo de trabajo
-omite la publicación cuando la versión ya está en el registro, porque las
-versiones de npm son inmutables.
+(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Omite la publicación
+cuando la versión ya está en el registro, porque las versiones de npm son
+inmutables.
 
 ## 3. Superficies de distribución
 

@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,8 +22,8 @@ conjunto `all` de todo el registro, valida el plan de materialización y escribe
 la configuración nativa del entorno junto con las cohortes de soporte. Los
 adaptadores de alcance de proyecto requieren `--project PATH`.
 
-El alias en forma continua `apothem installing` se resuelve en el mismo
-manejador.
+El alias en forma continua `apothem installing` (que también se acepta como
+`apothem Installing`) se resuelve en el mismo manejador.
 
 ## Primera ejecución sin perfil
 
@@ -50,7 +50,16 @@ fuera de esa raíz. Antes de escribir cualquier archivo, el comando imprime los
 destinos concretos agrupados bajo dos encabezados: los que están dentro de la
 raíz del proyecto y los que están bajo tu directorio personal.
 
-Cuando la selección escribe fuera de la raíz del proyecto, una confirmación interactiva protege las escrituras con raíz en el directorio personal. `--yes`, una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la vista previa y la solicitud de confirmación, pero aun así realiza las escrituras. Rechazar la solicitud del directorio personal aborta antes de las escrituras de la instalación. Con `--clean`, el paso de limpieza completa se ejecuta primero bajo su propia confirmación por destino: escribe una copia de seguridad en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
+Cuando la selección escribe fuera de la raíz del proyecto, una confirmación
+interactiva protege las escrituras con raíz en el directorio personal. `--yes`,
+una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada
+uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la
+vista previa y la solicitud de confirmación, pero aun así realiza las escrituras.
+Rechazar la solicitud del directorio personal aborta antes de las escrituras de
+la instalación. Con `--clean`, el paso de borrón y cuenta nueva se ejecuta
+primero bajo su propia confirmación por destino: escribe una copia de seguridad
+en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y
+la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
 
 ## Notas sobre capacidades
 
@@ -62,13 +71,13 @@ con `--verbose`, cada capacidad imprime su propia línea de justificación.
 Cualquier otra advertencia del adaptador se imprime también en modo plain en su
 propia línea `Warning:`, por ejemplo la advertencia de Zed que nombra un archivo
 de instrucciones que el nuevo `.rules` oculta. El sobre de `--format json`
-siempre lleva el arreglo `warnings` completo, independientemente del nivel de
+siempre lleva la lista `warnings` completa, independientemente del nivel de
 detalle.
 
-Install y update también imprimen avisos como líneas `Note:`. Un aviso nunca
-cambia lo que escribe la instalación. Cuando una instalación escribe una raíz
-compartida, una ruta que otras herramientas también cargan (por ejemplo la
-carpeta de skills `~/.agents/skills/`), la nota nombra esas herramientas.
+La instalación y la actualización también imprimen avisos como líneas `Note:`. Un
+aviso nunca cambia lo que escribe la instalación. Cuando una instalación escribe
+una raíz compartida, una ruta que otras herramientas también cargan (por ejemplo
+la carpeta de skills `~/.agents/skills/`), la nota nombra esas herramientas.
 Cuando una instalación apunta a una herramienta que ya carga contenido de
 Apothem desde la raíz compartida de otra instalación, la nota nombra esa
 instalación. En el sobre de `--format json`, cada aviso es una entrada de

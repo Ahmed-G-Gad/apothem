@@ -1,12 +1,12 @@
 ---
 title: "Convenciones de Markdown"
-description: "Estandariza la variante de Markdown, la estructura de encabezados, las declaraciones de los bloques de código, los formatos de enlaces internos, los banners de autoría y su aplicación por los validadores."
+description: "Estandariza la variante de Markdown, la estructura de encabezados, las declaraciones de los bloques de código, los formatos de enlaces internos, los encabezados de autoría y su aplicación por los validadores."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referencia canónica de la forma y el formato de Markdown en todo artefacto `.md` redactado.** El resumen de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) en Conventions es la declaración en línea; esta página es la referencia independiente que citan los colaboradores posteriores.
+> **Referencia canónica de la forma y el formato de Markdown en todo artefacto `.md` y `.mdx` redactado.** El resumen de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) en Conventions es la declaración en línea; esta página es la referencia independiente que citan los colaboradores posteriores.
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown (GFM) es la variante del host. Todo artefacto se render
 
 ## 2. Jerarquía de encabezados
 
-Un H1 por archivo. Los encabezados siguientes descienden de forma monótona (H2 → H3 → H4) sin saltar niveles. Encabezados con mayúscula solo al inicio de la oración; nada de TODO EN MAYÚSCULAS, nada de Mayúscula Inicial En Cada Palabra. El H1 lleva el título principal del documento y ES el ancla del documento en la navegación del sitio de documentación.
+Un H1 por archivo. Los encabezados siguientes descienden de forma monótona (H2 → H3 → H4) sin saltar niveles. Encabezados con mayúscula solo al inicio de la oración; nada de TODO EN MAYÚSCULAS, nada de Mayúscula Inicial En Cada Palabra. El H1 lleva el título principal del documento. En una página del sitio de documentación, el `title` del frontmatter se renderiza como el H1 y es el ancla de la página en la navegación del sitio de documentación, por lo que el cuerpo de la página comienza en H2.
 
 ## 3. Bloques de código
 
@@ -30,9 +30,9 @@ Estas rutas `/docs/...` desde la raíz del sitio — y la forma `/<locale>/docs/
 
 Los enlaces externos a referencias mutables (`main`, `master`, `latest`, `HEAD`) se fijan a SHA de commit o a etiquetas de lanzamiento siempre que importe la estabilidad del contenido enlazado; las referencias volátiles se documentan como tales con un comentario adyacente `{/* volatile */}`.
 
-## 5. Banner de autoría
+## 5. Encabezado de autoría
 
-Todo artefacto Markdown (con las excepciones enumeradas en [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) lleva el banner canónico del encabezado de autoría en la variante de comentario HTML según [Encabezado de autoría](/docs/reference/authorship-header). Sin frontmatter, el banner es la línea 1. Con frontmatter YAML, el frontmatter permanece en el byte 0 y el banner sigue al `---` de cierre.
+Todo artefacto Markdown (con las excepciones enumeradas en [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) lleva el encabezado de autoría canónico, la única línea `SPDX-License-Identifier: MIT`, en la variante de comentario correspondiente a su tipo de archivo según [Encabezado de autoría](/docs/reference/authorship-header): un comentario HTML en los archivos `.md` y un comentario `{/* ... */}` en los archivos `.mdx`. Sin frontmatter, la línea del encabezado es la línea 1. Con frontmatter YAML, el frontmatter permanece en el byte 0 y la línea del encabezado sigue al `---` de cierre.
 
 ## 6. Validadores
 

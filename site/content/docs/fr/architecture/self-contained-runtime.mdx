@@ -1,24 +1,24 @@
 ---
 title: "Runtime autonome"
-description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances internalisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
+description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances vendorisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 # Runtime autonome
 
 Le moteur d'Apothem est un runtime autonome : il s'exécute sans registre,
-directement depuis n'importe quel checkout ou arbre de code déposé, parce que ses
-dépendances tierces voyagent avec lui. Deux pièces rendent cela possible — un
-arbre de dépendances internalisées et un modèle d'invocation `python -m` qui n'a
-besoin d'aucun script de console installé.
+directement depuis n'importe quel checkout ou arbre de code source déposé, parce
+que ses dépendances tierces voyagent avec lui. Deux pièces rendent cela
+possible — un arbre de dépendances vendorisées et un modèle d'invocation
+`python -m` qui n'a besoin d'aucun script de console installé.
 
-## Arbre de dépendances internalisées
+## Arbre de dépendances vendorisées
 
-La pile de validation et de sérialisation est internalisée sous forme de code
-source Python pur sous `src/apothem/_vendor/`, chaque paquet à côté du fichier
-de licence de son projet d'origine :
+La pile de validation et de sérialisation est vendorisée sous forme de code
+source en Python pur sous `src/apothem/_vendor/`, chaque paquet accompagné du
+fichier de licence de son projet amont :
 
 - `yaml` (le parseur/émetteur en Python pur ; l'extension C optionnelle libyaml
   n'est pas embarquée)
@@ -26,16 +26,17 @@ de licence de son projet d'origine :
   `referencing` et `jsonschema_specifications`
 - `rpds` — un shim en Python pur qui réimplémente la surface `HashTrieMap`,
   `HashTrieSet` et `List` qu'utilisent `jsonschema` et `referencing`, adossé à
-  des types intégrés, de sorte que la pile s'exécute avec zéro extension compilée
+  des types intégrés, de sorte que la pile s'exécute sans aucune extension
+  compilée
 - `typing_extensions`
 
-Les copies internalisées priment sur toute version installée sur le système : le
+Les copies vendorisées priment sur toute version installée sur le système : le
 bootstrap du plugin, le shim npm, les installateurs et le point d'entrée
-`python -m apothem` lui-même placent chacun le répertoire du vendor dans
-`sys.path` devant site-packages. La politique de sélection — ce qui est
-internalisé, ce qui ne l'est pas et comment les paquets internalisés sont
-rafraîchis — est documentée dans la
-[stratégie d'internalisation des dépendances](/docs/architecture/vendoring-strategy).
+`python -m apothem` lui-même placent chacun le répertoire vendor dans `sys.path`
+devant site-packages. La politique de sélection — ce qui est vendorisé, ce qui
+ne l'est pas et comment les paquets vendorisés sont rafraîchis — est documentée
+dans la
+[stratégie de vendorisation des dépendances](/docs/architecture/vendoring-strategy).
 
 Deux dépendances restent hors de l'arbre : **`click`** et **`rich`**, les
 bibliothèques orientées terminal qu'importe la CLI. Elles doivent être
@@ -57,7 +58,7 @@ un. Le moteur dispose plutôt de deux surfaces d'invocation :
 
 | Surface | Invocation | Contexte |
 | ------- | ---------- | ------- |
-| CLI du moteur | `python -m apothem <command>` | Un arbre de code avec `src/` sur le `PYTHONPATH` (checkout, cache npx, arbre du plugin) |
+| CLI du moteur | `python -m apothem <command>` | Un arbre de code source avec `src/` sur le `PYTHONPATH` (checkout, cache npx, arbre du plugin) |
 | Runtime des hooks | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | La copie matérialisée sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
 
 - `python -m apothem` exécute `src/apothem/__main__.py`, qui place
@@ -92,16 +93,16 @@ C'est exactement l'invocation que l'installateur en une étape affiche à la fin
 Le plugin Claude Code embarque le moteur sous `<plugin_root>/lib/apothem` plutôt
 que de s'appuyer sur `PYTHONPATH`. Le module de bootstrap
 `apothem.lib.plugin_bootstrap` expose `bootstrap_syspath`, qui place de façon
-idempotente `<plugin_root>/lib` et le répertoire du vendor en tête de `sys.path`
-afin qu'`import apothem` et chaque dépendance internalisée se résolvent depuis
+idempotente `<plugin_root>/lib` et le répertoire vendor en tête de `sys.path`
+afin qu'`import apothem` et chaque dépendance vendorisée se résolvent depuis
 l'arbre du plugin. Un arbre malformé (sans `lib/`) lève `PluginBootstrapError`
 plutôt que d'importer silencieusement une copie système périmée.
 
 ## Ce que l'installateur dépose sur le disque
 
-Les installateurs par script déposent un clone git de l'arbre de code à
-`~/.apothem` (remplaçable par `APOTHEM_HOME`) et exécutent le moteur depuis lui —
-aucun paquet Python n'est installé dans `site-packages` au-delà de la
+Les installateurs par script déposent un clone git de l'arbre de code source à
+`~/.apothem` (remplaçable par `APOTHEM_HOME`) et exécutent le moteur depuis
+lui — aucun paquet Python n'est installé dans `site-packages` au-delà de la
 proposition optionnelle des prérequis `click` / `rich`. Le clone est le dépôt
 complet, y compris la suite de tests et le site de documentation que le runtime
 n'importe jamais, pour deux raisons délibérées : le moteur **matérialise ses
@@ -122,13 +123,16 @@ vérifiable plutôt qu'un espace disque minimal.
 
 ## Comment le runtime trouve Python
 
-Les installateurs en une étape et le shim npx localisent un interpréteur de la
-même façon : ils sondent `python3`, `python`, les noms versionnés (`python3.14`
-jusqu'à `python3.10`) et `py -3` sous Windows ; ils rejettent les shims du
-lanceur Microsoft Store ; et ils acceptent le premier candidat qui signale la
-version 3.10 ou une version plus récente. Lorsqu'ils sont exécutés depuis un
-arbre de code source, les installateurs réutilisent le localisateur embarqué
-`hooks/lib/find-python`, qui applique le même plancher.
+Les installateurs en une étape et le shim npx sondent des noms différents et
+appliquent les mêmes règles. Les installateurs sondent `python3`, `python` et
+les noms versionnés (`python3.14` jusqu'à `python3.10`). Le shim npx sonde
+`APOTHEM_PYTHON` lorsqu'elle est définie, puis `python3`, `python` et `py -3` ;
+il n'a aucun nom versionné. Tous deux rejettent les shims du lanceur Microsoft
+Store et acceptent le premier candidat signalant la version 3.10 ou une version
+plus récente.
+Lorsqu'ils sont exécutés depuis un arbre de code source, les installateurs
+réutilisent le localisateur embarqué `hooks/lib/find-python`, qui applique le
+même plancher.
 
 ## Prochaine étape recommandée
 

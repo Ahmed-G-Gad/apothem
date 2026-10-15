@@ -2,7 +2,7 @@
 title: "自己完結型ランタイム"
 description: "Apothem のエンジンが任意のチェックアウトからどのように実行されるか — ベンダリングされた依存関係、PYTHONPATH=src による呼び出しモデル、プラグインツリーのブートストラップ。"
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,10 +106,11 @@ Claude Code プラグインは、`PYTHONPATH` に頼るのではなく、エン�
 
 ## ランタイムが Python を見つける方法
 
-ワンショットインストーラーと npx シムは、同じ方法でインタープリターを特定します。
-`python3`、`python`、バージョン付きの名前（`python3.14` から `python3.10` まで）、
-Windows では `py -3` を探索し、Microsoft Store のランチャーシムを除外し、
-バージョン 3.10 以降を報告する最初の候補を受け入れます。
+ワンショットインストーラーと npx シムは、探索する名前は異なりますが、適用する規則は同じです。
+インストーラーは `python3`、`python`、およびバージョン付きの名前（`python3.14` から `python3.10` まで）を探索します。
+npx シムは、`APOTHEM_PYTHON` が設定されている場合はまずそれを探索し、続いて `python3`、`python`、`py -3` を探索します。
+バージョン付きの名前は探索しません。
+どちらも Microsoft Store のランチャーシムを除外し、バージョン 3.10 以降を報告する最初の候補を受け入れます。
 ソースツリーから実行される場合、インストーラーはバンドルされた
 `hooks/lib/find-python` ロケーターを再利用し、これは同じ下限を適用します。
 

@@ -7,10 +7,12 @@ description: "Configure the npmjs.com trusted publisher for @ahmed-g-gad/apothem
 This runbook configures the publisher side of the release surface. The
 distribution story has one registry: the scoped npm package
 `@ahmed-g-gad/apothem` on npmjs.com, published by the `publish-npm.yml`
-workflow (it runs on the `v*.*.*` tag push; a manual dispatch with a `tag`
-input is the fallback) after the GitHub Release, Pages, CI, conformity,
-and harness workflows are green. Every other artifact ships on the GitHub
-Release page itself and needs no external publisher account.
+workflow. The workflow runs on the `v*.*.*` tag push beside `release.yml` and
+does not wait for it (a manual dispatch with a `tag` input is the fallback).
+The `release` environment approval is the gate: the operator approves it after
+the GitHub Release, Pages, CI, conformity, and harness workflows are green.
+Every other artifact ships on the GitHub Release page itself and needs no
+external publisher account.
 
 ## Identity Map
 
@@ -69,11 +71,12 @@ package name, not the maintainer account name.
 No `NPM_TOKEN`, username, or password secret is required. The workflow
 publishes through npm Trusted Publishing (OIDC) with the Node version and the
 npm CLI OIDC floor pinned inside `.github/workflows/publish-npm.yml`. It runs
-`npm publish --access public` against npmjs.com; npm automatically emits
-provenance for public packages published from a public GitHub Actions
-workflow. A registry `404` during `PUT` means the npm-side trusted publisher,
-package scope, or account authorization is not aligned yet; fix the npm
-package settings before retrying the workflow.
+`npm publish --provenance --access public` against npmjs.com, so the
+Sigstore provenance statement is explicit; npm also emits provenance by default
+for public packages published from a public GitHub Actions workflow. A
+registry `404` during `PUT` means the npm-side trusted publisher, package
+scope, or account authorization is not aligned yet; fix the npm package
+settings before retrying the workflow.
 
 Once a trusted publish has succeeded, close the token path for good: in the
 package's **Settings → Publishing access** on npmjs.com, select **Require

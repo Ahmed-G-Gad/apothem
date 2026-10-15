@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,8 +22,8 @@ registry-weite Menge `all` aus, validiert den Materialisierungsplan und schreibt
 die harness-native Konfiguration sowie die Unterstützungs-Kohorten. Adapter mit
 Projekt-Geltungsbereich erfordern `--project PATH`.
 
-Der Alias in Verlaufsform `apothem installing` wird auf denselben Handler
-aufgelöst.
+Der Alias in Verlaufsform `apothem installing` (auch als `apothem Installing`
+akzeptiert) wird auf denselben Handler aufgelöst.
 
 ## Erster Lauf ohne Profil
 
@@ -50,7 +50,17 @@ schreiben — außerhalb dieser Wurzel. Bevor eine Datei geschrieben wird, gibt 
 Befehl die konkreten Ziele aus, gruppiert unter zwei Überschriften: die Ziele
 innerhalb der Projektwurzel und die Ziele unter Ihrem Home-Verzeichnis.
 
-Wenn die Auswahl außerhalb der Projektwurzel schreibt, schützt eine interaktive Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht interaktive Shell (kein TTY), `--dry-run` und `--format json` fahren jeweils ohne Nachfrage fort. Nur `--dry-run` schreibt nichts; `--format json` überspringt die Vorschau und die Bestätigungsabfrage, führt die Schreibvorgänge aber dennoch aus. Lehnen Sie die Abfrage zum Home-Verzeichnis ab, bricht die Installation ab, bevor sie schreibt. Mit `--clean` läuft der Bereinigungsschritt zuerst, mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter `~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage abgelehnt wird.
+Wenn die Auswahl außerhalb der Projektwurzel schreibt, schützt eine interaktive
+Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht
+interaktive Shell (kein TTY), `--dry-run` und `--format json` fahren jeweils ohne
+Nachfrage fort. Nur `--dry-run` schreibt nichts; `--format json` überspringt die
+Vorschau und die Bestätigungsabfrage, führt die Schreibvorgänge aber dennoch aus.
+Lehnen Sie die Abfrage zum Home-Verzeichnis ab, bricht die Installation ab, bevor
+sie schreibt. Mit `--clean` läuft der Schritt für den sauberen Neuanfang zuerst,
+mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter
+`~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese
+Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage
+abgelehnt wird.
 
 ## Hinweise zu Fähigkeiten
 
@@ -62,18 +72,18 @@ verworfen. Im Plain-Modus ist dies ein einzelner gruppierter Hinweis je Harness
 unter `--verbose` gibt jede Fähigkeit ihre eigene Begründungszeile aus. Jede
 andere Adapterwarnung wird auch im Plain-Modus in einer eigenen `Warning:`-Zeile
 ausgegeben, zum Beispiel die Zed-Warnung, die eine Anweisungsdatei benennt, die
-von der neuen `.rules`-Datei verdeckt wird. Der `--format json`-Umschlag trägt unabhängig von der
-Ausführlichkeit immer das vollständige `warnings`-Array.
+von der neuen `.rules`-Datei verdeckt wird. Der `--format json`-Umschlag trägt
+unabhängig von der Ausführlichkeit immer das vollständige `warnings`-Array.
 
-Installation und Aktualisierung geben außerdem Empfehlungshinweise als `Note:`-Zeilen aus.
-Ein Empfehlungshinweis ändert niemals, was die Installation schreibt. Wenn eine
-Installation in ein gemeinsames Wurzelverzeichnis schreibt, also einen Pfad, den
-auch andere Werkzeuge laden (zum Beispiel den Skills-Ordner `~/.agents/skills/`),
-benennt der Hinweis diese Werkzeuge. Wenn eine Installation auf ein Werkzeug
-zielt, das bereits Apothem-Inhalte aus dem gemeinsamen Wurzelverzeichnis einer
-anderen Installation lädt, benennt der Hinweis diese Installation. Im
-`--format json`-Umschlag ist jeder Empfehlungshinweis ein `warnings`-Eintrag mit
-`"outcome": "advisory"` und `"operation": "shared_root"`.
+Installation und Aktualisierung geben außerdem Empfehlungshinweise als
+`Note:`-Zeilen aus. Ein Empfehlungshinweis ändert niemals, was die Installation
+schreibt. Wenn eine Installation in ein gemeinsames Wurzelverzeichnis schreibt,
+also einen Pfad, den auch andere Werkzeuge laden (zum Beispiel den Skills-Ordner
+`~/.agents/skills/`), benennt der Hinweis diese Werkzeuge. Wenn eine Installation
+auf ein Werkzeug zielt, das bereits Apothem-Inhalte aus dem gemeinsamen
+Wurzelverzeichnis einer anderen Installation lädt, benennt der Hinweis diese
+Installation. Im `--format json`-Umschlag ist jeder Empfehlungshinweis ein
+`warnings`-Eintrag mit `"outcome": "advisory"` und `"operation": "shared_root"`.
 
 Die MCP-Server des Profils erhalten drei Empfehlungshinweise, die jeweils das
 Profilfeld benennen:
@@ -81,7 +91,7 @@ Profilfeld benennen:
 | Operation | Bedingung | Behebung |
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (die MCP-Spezifikation erklärt HTTP+SSE für veraltet) | Verwenden Sie `streamable-http`, wenn der Server es unterstützt. |
-| `mcp_plain_http` | eine `http://`-URL zu einem Host, der nicht Loopback ist | Verwenden Sie eine `https://`-URL. |
+| `mcp_plain_http` | eine `http://`-URL zu einem Host, der keine Loopback-Adresse ist | Verwenden Sie eine `https://`-URL. |
 | `mcp_literal_credential` | ein `headers`- oder `env`-Wert, der wie ein Token geformt ist (`ghp_`, `github_pat_`, `sk-`, `xox*-` oder `Bearer` mit einem langen Token) | Bewahren Sie das Geheimnis in einer Umgebungsvariable auf und schreiben Sie Referenzen im Stil von `${GITHUB_TOKEN}`. |
 
 Der Empfehlungshinweis zu Anmeldedaten gibt niemals den gefundenen Wert aus. Ein
@@ -169,7 +179,7 @@ bearbeiten, mit dem Unified Diff in `detail.diff` — derselbe Plan, den
 
 Wenn `--clean` angegeben wird, trägt der Umschlag zusätzlich ein `clean`-Objekt,
 das die Entfernungsphase beschreibt — die Liste der Dispositionen je Ziel, ob der
-Lauf eine Vorschau war, und das mit Zeitstempel versehene Backup-Verzeichnis
+Lauf eine Vorschau war, und das mit Zeitstempel versehene Sicherungsverzeichnis
 (`null` bei einem Dry-Run):
 
 ```json
@@ -189,9 +199,9 @@ Lauf eine Vorschau war, und das mit Zeitstempel versehene Backup-Verzeichnis
 }
 ```
 
-Ein Dry-Run mit sauberem Neuanfang zeigt beide Phasen in einem Dokument in der Vorschau: die
-Entfernungsvorschau unter `clean` und die Vorschau der neuen Schreibvorgänge
-unter `results`.
+Ein Dry-Run mit sauberem Neuanfang zeigt beide Phasen in einem Dokument in der
+Vorschau: die Entfernungsvorschau unter `clean` und die Vorschau der neuen
+Schreibvorgänge unter `results`.
 
 Erwartete Validierungsfehler verwenden denselben Umschlag und enthalten ein
 Fehlerobjekt:

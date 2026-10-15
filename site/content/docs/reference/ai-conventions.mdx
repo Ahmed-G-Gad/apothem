@@ -14,7 +14,7 @@ A modern engineering surface is touched by multiple harnesses — chat consoles,
 
 The cost of a missing surface is **silent drift in machine-generated code** — the worst class of defect because it accumulates invisibly. Every machine-generated artifact compounds the divergence; by the time a human reviewer spots the contradiction, the codebase carries weeks of inconsistent conventions.
 
-Harness-runtime configuration is plural by deployment reality. The published ecosystem MUST ship a behavioural-memory file for the chat-console runtime AND a repo-scoped instructions file for the in-IDE completion runtime. The two surfaces MUST be mutually coherent — no contradiction, no drift — and MUST jointly encode the same disciplines.
+Harness-runtime configuration is plural by deployment reality. The published ecosystem MUST ship the three mandatory surfaces in §3: `AGENTS.md`, a behavioural-memory file for the chat-console runtime (`CLAUDE.md`), and a repo-scoped instructions file for the in-IDE completion runtime. The surfaces MUST be mutually coherent — no contradiction, no drift — and MUST jointly encode the same disciplines.
 
 ---
 
@@ -27,7 +27,7 @@ Every convention surface in scope (§3) is a *channel* expressing the project's 
 
 The `multi-surface-coherence` validator (§7) runs on every CI run and on pre-commit, asserting the contract.
 
-The two (or more) surfaces are different *channels* expressing one *specification*. Shared sections MUST match — semantically and, where possible, lexically — across surfaces. Surface-specific sections MUST NOT contradict shared sections.
+The surfaces are different *channels* expressing one *specification*. Shared sections MUST match — semantically and, where possible, lexically — across surfaces. Surface-specific sections MUST NOT contradict shared sections.
 
 ---
 
@@ -37,12 +37,12 @@ The two (or more) surfaces are different *channels* expressing one *specificatio
 |---|---|---|---|
 | `AGENTS.md` | repo root (and/or `.codex/AGENTS.md`) | **MUST** | AGENTS-aware harnesses |
 | `CLAUDE.md` | repo root (and/or `.claude/CLAUDE.md`) | **MUST** | Claude Code |
-| `.github/`-rooted instructions file | `.github/`-rooted instructions file | **MUST** | in-IDE completion runtime |
+| `.github/`-rooted instructions file | `.github/copilot-instructions.md` | **MUST** | in-IDE completion runtime |
 | `site/content/docs/architecture/`-rooted helpers manifest | `site/content/docs/architecture/agents.mdx` | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
 | `.cursorrules` | repo root | **MAY** (opt-in) | in-IDE editor runtime |
 | `.windsurfrules` | repo root | **MAY** (opt-in) | in-IDE companion runtime |
 
-For this engagement the operator opted in to the optional assistant surfaces recorded by the fixture. Unused vendor-specific root configs are intentionally absent; a tool-specific config file is added only when that tool is an active editing surface for this repository.
+For this repository the opt-in surfaces are the ones the claim-list fixture ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) lists under `optional-in`. Unused vendor-specific root configs are intentionally absent; a tool-specific config file is added only when that tool is an active editing surface for this repository.
 
 ---
 
@@ -60,7 +60,7 @@ The repo-scoped instructions file under `.github/` MUST contain, in this order, 
 6. **Forbidden Patterns** — explicit don'ts: no marketing adjectives, no hedging filler, no console.log debug detritus, no hard-coded absolute paths to user home, no committing secrets, no committing files under `.apothem/plans/` (or the legacy `.plans/`), no contradicting the canonical project instruction file.
 7. **Output Format** — generated code/prose conforms to the unified conversational output conventions: definitiveness, uniform sectioning, density, summary discipline, citations. For code: documented public surface, typed where the language supports types, tested where a test scaffolding exists.
 8. **Review Checklist** — what a reviewer (human or runtime in PR-review mode) MUST verify before approving: header present, naming compliant, no `.apothem/plans/` writes, no contradictions with the canonical project instruction file, validators green locally.
-9. **Pointers** — links to `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, this conventions document, `schemas/`, and `CONTRIBUTING.md`.
+9. **Pointers** — links to `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, this conventions document, `src/apothem/schemas/`, and `CONTRIBUTING.md`.
 
 The file begins with the canonical authorship-header SPDX line (Markdown variant) per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — visible-or-invisible per the project's chosen header-visibility policy.
 
@@ -114,7 +114,7 @@ Three validators co-implement the coherence contract:
 
 - The first asserts the in-IDE instructions file exists, parses, contains every canonical section enumerated in §4, and begins with the canonical `SPDX-License-Identifier: MIT` line (Markdown variant).
 - The second parses each surface's canonical sections; asserts shared sections are mutually consistent under a normalized comparator (case-insensitive, whitespace-tolerant, allow lexical paraphrase but require semantic equivalence on the fixture-defined claim list).
-- The third asserts the root LICENSE carries a parseable `Copyright (c) <name>` line; per-file headers carry no author name.
+- The third asserts only that the root LICENSE carries a parseable `Copyright (c) <name>` line. It does not read per-file headers, which carry no author name.
 
 ---
 

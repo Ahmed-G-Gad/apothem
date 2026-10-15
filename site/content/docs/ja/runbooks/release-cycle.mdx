@@ -1,8 +1,8 @@
 ---
 title: "リリースサイクルランブック"
-description: "ローカルゲートから、署名済みの GitHub Release を経て、任意の npm 公開ディスパッチに至るまでの完全なリリースワークフロー。"
+description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -121,14 +121,16 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 npm 公開を確認する
 
-タグのプッシュは `publish-npm.yml` も実行します。
-プロンプトが表示されたら、`release` 環境のデプロイを承認します。
-ワークフローは npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。
-その後、準備状態を確認します。
+タグのプッシュは、`release.yml` と並行して `publish-npm.yml` も実行します。
+npm のワークフローはリリースワークフローの完了を待たず、`release` 環境の承認がゲートです。
+§2.3 のリリースワークフローが完了したら、準備状態を確認します。
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+その後、プロンプトが表示されたら、`release` 環境のデプロイを承認します。
+ワークフローは npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。
 
 実行が失敗した後に再度公開するには、同じタグに対してワークフローをディスパッチします
 （`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。

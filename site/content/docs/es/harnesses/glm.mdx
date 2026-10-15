@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adaptador de entorno de Apothem para GLM (Z.ai) como backend de modelos configurable."
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,10 +11,12 @@ sourceHash: "3e05b3a651ffe5da"
 **Estado:** GA
 **Configuración nativa:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) es un **backend de modelos**, no un entorno. Z.ai no distribuye
-ninguna línea de comandos de GLM propia; en su lugar, una herramienta que habla
-el protocolo compatible con Anthropic o el compatible con OpenAI se dirige a
-GLM estableciendo una URL base de backend y una clave. El adaptador `glm`
+GLM (Z.ai) es un **backend de modelos**, no una herramienta de programación
+propia. Z.ai no distribuye ninguna línea de comandos de GLM propia; en su lugar,
+una herramienta que habla el protocolo compatible con Anthropic o el compatible
+con OpenAI se dirige a GLM estableciendo una URL base de backend y una clave.
+Apothem sigue contando a GLM entre sus adaptadores de entorno, así que lo
+seleccionas con `--harness glm` como a cualquier otro. El adaptador `glm`
 escribe un archivo de configuración de proveedor que registra ambas superficies
 de compatibilidad, de modo que cualquier herramienta compatible pueda
 conectarse a la familia de modelos GLM.
@@ -37,25 +39,25 @@ El archivo de proveedor registra dos backends. El backend compatible con
 Anthropic usa la URL base `https://api.z.ai/api/anthropic`; una herramienta que
 habla el protocolo de Anthropic se enruta a GLM estableciendo
 `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` y, opcionalmente,
-`API_TIMEOUT_MS`. La misma tabla env lista
-`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL` y
-`ANTHROPIC_DEFAULT_HAIKU_MODEL`, que asignan los roles opus, sonnet y haiku de
-la herramienta a modelos GLM. El backend compatible con OpenAI usa la URL base
-`https://api.z.ai/api/coding/paas/v4`. El token de autenticación es un marcador
-de posición que reemplazas con tu propia clave de Z.ai: Apothem nunca escribe un
-secreto real. Los ID de modelo cambian entre versiones, así que Apothem no fija
-ninguno; el archivo lleva marcadores de posición `<GLM_MODEL_ID>` que completas
-a partir de la
+`API_TIMEOUT_MS`. La tabla `[backends.anthropic_compatible.env]` del archivo
+lista esas variables y también `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+`ANTHROPIC_DEFAULT_SONNET_MODEL` y `ANTHROPIC_DEFAULT_HAIKU_MODEL`, que asignan
+los roles opus, sonnet y haiku de la herramienta a modelos GLM. El backend
+compatible con OpenAI usa la URL base `https://api.z.ai/api/coding/paas/v4`. El
+token de autenticación es un marcador de posición que reemplazas con tu propia
+clave de Z.ai: Apothem nunca escribe un secreto real. Los ID de modelo cambian
+entre versiones, así que Apothem no fija ninguno; el archivo lleva marcadores de
+posición `<GLM_MODEL_ID>` que completas a partir de la
 [documentación de Z.ai](https://docs.z.ai/devpack/tool/claude) actual. Nada del
 perfil compartido se incorpora a este archivo; es una plantilla fija.
 
 ## Notas de compatibilidad
 
-Como GLM es un backend y no un entorno, no expone ninguna superficie para
-reglas, comandos, skills ni hooks: el adaptador escribe solo el archivo de
-proveedor del backend y nada más. Tu clave de Z.ai y tus elecciones de ID de
-modelo siguen siendo propiedad del operador. Las convenciones de la superficie
-del proveedor en las que se apoya el adaptador están fijadas en
+Como GLM es un backend y no una herramienta de programación, no expone ninguna
+superficie para reglas, comandos, skills ni hooks: el adaptador escribe solo el
+archivo de proveedor del backend y nada más. Tu clave de Z.ai y tus elecciones de
+ID de modelo siguen siendo propiedad del operador. Las convenciones de la
+superficie del proveedor en las que se apoya el adaptador están fijadas en
 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, capturadas en una
 instantánea frente a la documentación en vivo de Z.ai.
 
@@ -82,10 +84,10 @@ El comando verify confirma que:
 apothem update --harness glm --project /path/to/project
 ```
 
-El archivo de proveedor es tuyo una vez que existe. `install` escribe la
-plantilla solo cuando `.apothem/providers/glm.toml` no existe, y ni `install`
-ni `update` lo sobrescriben nunca después, así que tu referencia de clave y tus
-elecciones de modelo se conservan en cada nueva ejecución. Para obtener una
+El archivo de proveedor es tuyo una vez que existe. `install` y `update`
+escriben la plantilla solo cuando `.apothem/providers/glm.toml` no existe, y
+ninguno de los dos lo sobrescribe nunca después, así que tu referencia de clave y
+tus elecciones de modelo se conservan en cada nueva ejecución. Para obtener una
 plantilla más reciente, aparta tu archivo, ejecuta `update` y copia tus valores
 en el archivo nuevo.
 

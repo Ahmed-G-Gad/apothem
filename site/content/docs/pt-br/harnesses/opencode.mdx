@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adaptador de harness do Apothem para o OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,7 @@ Apothem como subauxiliares do OpenCode.
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -77,7 +78,9 @@ apothem verify --harness opencode
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -95,8 +98,18 @@ auxiliares e a árvore de suporte do Apothem.
 apothem uninstall --harness opencode
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove as entradas que o adaptador adicionou a
+`~/.config/opencode/opencode.json` (as suas próprias chaves, os servidores MCP e
+as entradas de `instructions` permanecem, e o arquivo é excluído somente quando
+o Apothem o criou e nada seu restou). Remove o bloco do Apothem do documento de
+perfil `~/.config/opencode/apothem/rules/00-apothem-profile.md` e mantém
+qualquer outro texto nele; esse arquivo é excluído somente quando nada mais
+resta nele. Também remove os arquivos do Apothem em
+`~/.config/opencode/commands/`, `~/.config/opencode/skills/`,
+`~/.config/opencode/agents/` e `~/.config/opencode/.apothem/support/`; os
+demais arquivos dessas pastas permanecem. Cada arquivo recebe backup em
+`~/.apothem/backups/` antes de ser alterado ou removido. O YAML do perfil
+compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

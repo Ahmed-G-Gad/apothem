@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptador de harness do Apothem para o Windsurf (GA)."
 machineTranslated: true
-sourceHash: "454c37fe1917092f"
+sourceHash: "8d3f64199c281e2a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,10 +41,9 @@ você adiciona depois do bloco é mantido a cada sincronização.
 
 A superfície de regras atual do Windsurf tem escopo de projeto sob
 `.devin/rules/` (o local preferido, que tem precedência sobre a alternativa de
-compatibilidade retroativa `.windsurf/rules/`). Os fluxos de trabalho
-(workflows) e as memórias locais da máquina pertencem ao operador; o Apothem não
-os grava. A forma de arquivo único `.windsurfrules` intencionalmente não é
-gravada.
+compatibilidade retroativa `.windsurf/rules/`). Os fluxos de trabalho e as
+memórias locais da máquina pertencem ao operador; o Apothem não os grava. A
+forma de arquivo único `.windsurfrules` intencionalmente não é gravada.
 
 ## Verificação
 
@@ -55,7 +54,9 @@ apothem verify --harness windsurf --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -73,8 +74,12 @@ perfil compartilhado.
 apothem uninstall --harness windsurf --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem, e o frontmatter que o Apothem gravou acima dele, de
+`<project>/.devin/rules/apothem-rules.md` e mantém qualquer outro texto nele. O
+arquivo é excluído somente quando nada mais resta nele. Antes da alteração, uma
+cópia do arquivo com carimbo de data e hora é salva em `~/.apothem/backups/`;
+nenhum arquivo de backup é deixado no projeto. O YAML do perfil compartilhado e
+o motor do Apothem não são afetados.
 
 ## Conformity gate
 

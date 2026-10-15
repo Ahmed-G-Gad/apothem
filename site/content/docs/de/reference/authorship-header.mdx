@@ -2,7 +2,7 @@
 title: "Autorschafts-Header — SPDX-Lizenzzeile pro Datei"
 description: "Definieren und erzwingen Sie SPDX-Lizenzbezeichner-Marker pro Datei mit kanonischen einzeiligen Headern in der für jeden Dateityp passenden Kommentarsyntax."
 machineTranslated: true
-sourceHash: "85913a76c08d9a66"
+sourceHash: "be2cac4bcbaa4744"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "85913a76c08d9a66"
 
 ## 1. Die kanonische Header-Zeile
 
-Jede zutreffende Datei im Ökosystem MUSS mit einer einzigen kanonischen SPDX-Lizenzbezeichner-Zeile beginnen, in der Kommentarsyntax ihrer Dateityp-Familie. Die Zeile ist der maschinenlesbare Lizenzmarker der Datei; ihr Vorhandensein ist für nicht ausgenommene Dateien nicht verhandelbar, und ihr Inhalt wird von einer einzigen Quelle der Wahrheit geregelt und nicht von Datei zu Datei improvisiert. Das vollständige Copyright-Instrument liegt einmalig in der Datei [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) in der Repository-Wurzel — es wird nicht in jede Quelldatei dupliziert.
+Jede zutreffende Datei im Ökosystem MUSS mit einer einzigen kanonischen SPDX-Lizenzbezeichner-Zeile beginnen, in der Kommentarsyntax ihrer Dateityp-Familie; ihr darf nur ein Shebang oder, bei Markdown-Dateien, YAML-Frontmatter vorausgehen (§5). Die Zeile ist der maschinenlesbare Lizenzmarker der Datei; ihr Vorhandensein ist für nicht ausgenommene Dateien nicht verhandelbar, und ihr Inhalt wird von einer einzigen Quelle der Wahrheit geregelt und nicht von Datei zu Datei improvisiert. Das vollständige Copyright-Instrument liegt einmalig in der Datei [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) in der Repository-Wurzel — es wird nicht in jede Quelldatei dupliziert.
 
 ### 1.1 Informationsgehalt (Invariante)
 
@@ -30,7 +30,7 @@ Der kanonische Text — hier in seiner `#`-Kommentarsyntax-Form geschrieben — 
 # SPDX-License-Identifier: MIT
 ```
 
-Dieser Text ist die **einzige** maßgebliche Quelle. Der Validator `file-header` (§7) läuft gegen diese byte-genaue Vorlage. Jede Drift zwischen der Header-Zeile einer Datei und dieser Vorlage (unter der Syntaxsubstitution gemäß §2) ist ein CI-Fehlschlag.
+Dieser Text ist die **einzige** maßgebliche Quelle. Der Validator `file-header` (§8) läuft gegen diese byte-genaue Vorlage. Jede Drift zwischen der Header-Zeile einer Datei und dieser Vorlage (unter der Syntaxsubstitution gemäß §2) ist ein CI-Fehlschlag.
 
 ---
 
@@ -40,12 +40,12 @@ Der *Informationsgehalt* der Zeile ist invariant; nur ihre *Kommentarsyntax* var
 
 | Dateityp-Familie | Kommentarsyntax | Darstellung der Variante |
 |---|---|---|
-| `#`-Familie — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, erweiterungslose Shell-Einstiegspunkte wie `scripts/apothem` | `#`-Zeilenkommentar | `# SPDX-License-Identifier: MIT` |
-| `//`-Familie — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.cs`, `.scala`, `.dart`, `.jsonc` | `//`-Zeilenkommentar | `// SPDX-License-Identifier: MIT` |
+| `#`-Familie — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.cfg`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, erweiterungslose Shell-Einstiegspunkte wie `scripts/apothem` | `#`-Zeilenkommentar | `# SPDX-License-Identifier: MIT` |
+| `//`-Familie — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.cs`, `.scala`, `.dart`, `.jsonc` | `//`-Zeilenkommentar | `// SPDX-License-Identifier: MIT` |
 | Blockkommentar-Familie — `.html`, `.htm`, `.md`, `.markdown`, `.xml`, `.vue` (Template-Bereich), `.php` (Template-Bereich) | `<!-- ... -->` | `<!-- SPDX-License-Identifier: MIT -->` |
 | MDX (`.mdx`) | `{/* ... */}` (JSX-Ausdruckskommentar) | `{/* SPDX-License-Identifier: MIT */}` |
-| C-Block-Familie — `.css`, `.scss`, `.less`, `.sql` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
-| `;`-Familie — `.ini`, `.cfg`, einige `.lisp`/`.scm` | `;`-Zeilenkommentar | `; SPDX-License-Identifier: MIT` |
+| C-Block-Familie — `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.css`, `.scss`, `.less` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
+| `;`-Familie — `.ini`, einige `.lisp`/`.scm` | `;`-Zeilenkommentar | `; SPDX-License-Identifier: MIT` |
 | `--`-Familie — `.sql`, `.lua`, `.hs`, `.elm`, `.ada` | `--`-Zeilenkommentar | `-- SPDX-License-Identifier: MIT` |
 | Lockfile / generiert / JSON | keine / nicht anwendbar | **Ausgenommen.** Siehe §3 Ausnahmeliste. |
 
@@ -65,7 +65,6 @@ Die folgenden Klassen sind von der SPDX-Header-Zeile **ausgenommen**. Die Anwend
 
 - **`LICENSE`** — selbst das rechtliche Instrument; trägt die maßgebliche Copyright-Zeile, deren Vorhandensein der Validator `license-author-consistency` bestätigt.
 - **`*.svg`-Assets** — XML-Kommentare sind für Zeilenkommentar-Marker fragil, daher wird die SVG-Herkunft vom Asset-README und von den generierten Rasterausgaben getragen.
-- **`CHANGELOG.md`** — formatgebundenes Release-Notes-Dokument; die SPDX-Zeile erscheint als einzelner HTML-Kommentar über der Changelog-Überschrift, nicht in das Format eingeflochten.
 - **JSON-Dateien (`.json`)** — JSON hat keine Kommentarsyntax. Wo für eine JSON-Konfiguration eine Zuschreibung erforderlich ist, legen Sie eine danebenliegende `<file>.NOTICE.md` an.
 - **Lockfiles** — `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `Pipfile.lock`, `poetry.lock`, `go.sum` usw. (maschinenverwaltet).
 - **Generierte Dateien** — alles mit einem Marker `# Generated by ...` oder `// Generated by ...` oder alles, was in `.gitattributes` auf `linguist-generated=true` passt.
@@ -96,8 +95,8 @@ Die SPDX-Zeile deklariert die Lizenz des Projekts maschinenlesbar; die LICENSE-D
 
 ## 5. Einfügeposition
 
-- Die SPDX-Zeile ist der **erste Inhalt** der Datei, mit einer und nur einer Ausnahme: einer Shebang-Zeile (`#!/usr/bin/env bash`, `#!/usr/bin/env python3` usw.), die stets Zeile 1 bleibt; die SPDX-Zeile beginnt in Zeile 2.
-- Bei Markdown- / MDX-Dateien mit YAML-Frontmatter bleibt das Frontmatter bei Byte 0, damit Tooling es parsen kann, und der SPDX-Kommentar folgt auf das schließende `---`, danach das H1 und der Rumpf. `scripts/inject-header.py` platziert den Kommentar auf diese Weise.
+- Die SPDX-Zeile ist der **erste Inhalt** der Datei, mit zwei Ausnahmen. Eine Shebang-Zeile (`#!/usr/bin/env bash`, `#!/usr/bin/env python3` usw.) bleibt stets Zeile 1, und die SPDX-Zeile beginnt in Zeile 2. Bei Markdown- / MDX-Dateien mit YAML-Frontmatter steht das Frontmatter zuerst (nächster Aufzählungspunkt).
+- Bei Markdown- / MDX-Dateien mit YAML-Frontmatter bleibt das Frontmatter bei Byte 0, damit Tooling es parsen kann, und der SPDX-Kommentar folgt auf das schließende `---`, danach der Rumpf, der bei Dateien mit einem H1 mit diesem beginnt. `scripts/inject-header.py` platziert den Kommentar auf diese Weise.
 - Eine einzelne Leerzeile trennt die SPDX-Zeile vom nächsten Inhalt (dem H1, dem Rumpf usw.).
 
 ---
@@ -126,7 +125,7 @@ Der Injektor wird vom Make-Ziel `make headers-fix` aufgerufen, das `scripts/inje
 
 ## 8. Der Validator — `file-header` (CI)
 
-Liegt unter [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Für jede Datei im Arbeitsbaum schlägt der Validator ihre Anwendbarkeit nach (gemäß §3) und prüft, falls sie zutrifft, per Assertion, dass die kanonische SPDX-Zeile am Kopf der Datei steht — vor allem anderen Inhalt, wobei der einzige erlaubte Inhalt davor ein Shebang ist (§5).
+Liegt unter [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Für jede Datei im Arbeitsbaum schlägt der Validator ihre Anwendbarkeit nach (gemäß §3) und prüft, falls sie zutrifft, per Assertion, dass die kanonische SPDX-Zeile am Kopf der Datei steht — vor allem anderen Inhalt, wobei ein Shebang der einzige Inhalt vor der Zeile ist, den er zulässt (§5). Er liest nicht über das Markdown-Frontmatter hinaus.
 
 Gestützt auf die byte-genaue Vorlage unter [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Meldet in der CI-Zusammenfassung das Diff pro Datei und die aggregierte Abdeckung in %. Lässt den Build bei jeder Abweichung fehlschlagen.
 
@@ -139,9 +138,9 @@ Die Disziplin muss jede künftige Sitzung und jeden künftigen Mitwirkenden übe
 1. **`src/apothem/schemas/authorship-header.txt`** — die byte-genaue kanonische Vorlage; eine einzige Quelle der Wahrheit.
 2. **`scripts/inject-header.{sh,py}`** — der mechanische Injektor (§7).
 3. **`file-header`-CI-Validator** (§8) — lässt den Build bei jeder Abweichung fehlschlagen.
-4. **Pre-Commit-Hook** — führt den Validator mit `--fix` auf den gestageten Dateien aus, an den Injektor angebunden.
+4. **Pre-Commit-Hook** — der Hook `conformity-corpus-perwrite` führt den Validator `file-header` (§8) über den versionierten Baum aus. Er prüft nur; der Injektor (§7) schreibt die Dateien um, und zwar über `make headers-fix`.
 5. **`CLAUDE.md`-Block für verbindliches Verhalten** — weist den Assistenten an, die kanonische SPDX-Zeile immer dann zu injizieren, wenn er eine zutreffende Datei erstellt.
-6. **Die Anweisungsdatei des unterstützten Harnesses** am kanonischen `.github/`-Pfad — weist den Harness an, bei der Dateierzeugung dasselbe zu tun.
+6. **Die Anweisungsdatei von GitHub Copilot** unter `.github/copilot-instructions.md` — weist Copilot an, bei der Dateierzeugung dasselbe zu tun.
 7. **PreToolUse-Hooks** unter `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — fangen Write/Edit-Tool-Aufrufe auf zutreffenden Pfaden ab, damit die SPDX-Zeile bei der Dateierstellung injiziert wird, statt später als CI-Fehlschlag entdeckt zu werden.
 8. **Checkbox in der Pull-Request-Vorlage** — die an Mitwirkende gerichtete Zusicherung, dass jede neue Datei die kanonische SPDX-Zeile trägt.
 9. **Dieses Dokument** (`site/content/docs/reference/authorship-header.mdx`) — der kanonische, normative Erklärtext.

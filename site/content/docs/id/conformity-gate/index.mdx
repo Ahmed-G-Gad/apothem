@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Gerbang konformitas Apothem — bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) yang harus dilalui setiap artefak yang dipancarkan."
 machineTranslated: true
-sourceHash: "56cca9f8f53e7f52"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,9 +26,11 @@ sourceHash: "56cca9f8f53e7f52"
 | 14 | M14 | Sistemisitas (mendeklarasikan hulu / hilir / sejawat / penegak) | Bernalar | Deklarasikan; indeks di registri |
 | 15 | M15 | Siap Produksi (pengujian + dokumentasi + CHANGELOG + commit yang patuh + CI hijau + stabilitas semver) | Mekanis + bernalar | Tambahkan permukaan yang hilang |
 
+Gerbang hanya menjalankan validator yang dapat diperiksa mesin. Pertimbangan bernalar yang dituntut oleh bar Bernalar, beserta separuh bernalar dari setiap bar Mekanis + bernalar, dievaluasi dalam tinjauan.
+
 ## Tangga tingkat keparahan
 
-Gerbang ini tidak memiliki tangga Kritis, Penting, atau Advisori dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all-perwrite`) keluar dengan `2` ketika matcher pemblokir gagal; matcher advisori hanya dilaporkan. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
+Gerbang ini tidak memiliki tangga Kritis, Penting, atau Advisori dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all` atau `--all-perwrite`) keluar dengan `2` ketika validator atau matcher pemblokir gagal; temuan advisori hanya dilaporkan. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
 
 ## Validator
 
@@ -108,8 +110,12 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 Pada harness yang terpasang, gerbang berjalan secara otomatis: `settings.json`
 milik Claude Code merangkainya sebagai hook `PreToolUse` yang memanggil salinan
 termaterialisasi di `~/.claude/.apothem/support/conformity/gate.py` sebelum
-setiap Write/Edit. Dari checkout sumber, bentuk modul menjalankan kode yang
-sama. Gerbang bersifat advisori secara default: gerbang melaporkan temuan dan
+setiap Write/Edit. Gerbang kemudian hanya memeriksa penulisan yang berada di
+bawah cakupan hook-nya, dan penulisan di luar cakupan itu lolos secara
+diam-diam; [Menjalankan gerbang konformitas](/docs/usage/conformity-gate)
+mencantumkan cakupannya. Dari checkout sumber, bentuk modul menjalankan kode yang
+sama; awali setiap perintah `python` di bawah ini dengan `PYTHONPATH=src`. Gerbang
+bersifat advisori secara default: gerbang melaporkan temuan dan
 keluar dengan `0`. Tambahkan `--strict` untuk keluar dengan `2` pada temuan yang
 memblokir. Nama validator yang tidak dikenal keluar dengan `3`.
 

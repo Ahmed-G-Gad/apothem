@@ -1,12 +1,12 @@
 ---
 title: "Markdown परिपाटियाँ"
-description: "Markdown फ़्लेवर, शीर्षक संरचना, कोड फ़ेंस घोषणाओं, आंतरिक लिंक प्रारूपों, लेखकत्व बैनरों और वैलिडेटर प्रवर्तन को मानकीकृत करें।"
+description: "Markdown फ़्लेवर, शीर्षक संरचना, कोड फ़ेंस घोषणाओं, आंतरिक लिंक प्रारूपों, लेखकत्व हेडर और वैलिडेटर प्रवर्तन को मानकीकृत करें।"
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **हर लिखित `.md` आर्टिफ़ैक्ट में Markdown के आकार और फ़ॉर्मैटिंग के लिए कैनोनिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) के Conventions में दिया सारांश इनलाइन घोषणा है; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे डाउनस्ट्रीम योगदानकर्ता उद्धृत करते हैं।
+> **हर लिखित `.md` और `.mdx` आर्टिफ़ैक्ट में Markdown के आकार और फ़ॉर्मैटिंग के लिए कैनोनिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) के Conventions में दिया सारांश इनलाइन घोषणा है; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे डाउनस्ट्रीम योगदानकर्ता उद्धृत करते हैं।
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown (GFM) होस्ट फ़्लेवर है। �
 
 ## 2. शीर्षक पदानुक्रम
 
-प्रति फ़ाइल एक H1। बाद के शीर्षक स्तर छोड़े बिना क्रमशः नीचे उतरते हैं (H2 → H3 → H4)। वाक्य-केस शीर्षक; कोई ALL-CAPS नहीं, कोई Title Case Across Every Word नहीं। H1 दस्तावेज़ का प्राथमिक शीर्षक वहन करता है और दस्तावेज़-साइट नेविगेशन में दस्तावेज़ का एंकर है।
+प्रति फ़ाइल एक H1। बाद के शीर्षक स्तर छोड़े बिना क्रमशः नीचे उतरते हैं (H2 → H3 → H4)। वाक्य-केस शीर्षक; कोई ALL-CAPS नहीं, कोई Title Case Across Every Word नहीं। H1 दस्तावेज़ का प्राथमिक शीर्षक वहन करता है। किसी दस्तावेज़-साइट पृष्ठ पर frontmatter का `title` H1 के रूप में रेंडर होता है और दस्तावेज़-साइट नेविगेशन में पृष्ठ का एंकर है, इसलिए पृष्ठ की बॉडी H2 से शुरू होती है।
 
 ## 3. कोड ब्लॉक
 
@@ -26,16 +26,16 @@ GitHub-Flavored Markdown (GFM) होस्ट फ़्लेवर है। �
 
 आंतरिक क्रॉस-संदर्भ **साइट-रूट पथ** का उपयोग करते हैं (उदाहरण के लिए, `[Authorship header](/docs/reference/authorship-header)`)। `.md`/`.mdx` एक्सटेंशन वाले सादे रिपॉज़िटरी-सापेक्ष पथ (`/docs/foo.md`) और उसी रिपॉज़िटरी के पूर्ण URL (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) साइट-आंतरिक लिंक के लिए टाले जाते हैं, क्योंकि वे पृष्ठ-नाम परिवर्तनों और अनुभाग-पुनर्गठनों का प्रतिरोध करते हैं।
 
-ये `/docs/...` साइट-रूट पथ — और गैर-डिफ़ॉल्ट समूह लोकेल के लिए `/<locale>/docs/...` रूप — `link-check` वैलिडेटर द्वारा `site/content/docs/` के अंतर्गत डिस्क पर मौजूद पृष्ठ-समुच्चय के विरुद्ध हल किए जाते हैं: `/docs/a/b` का मिलान `site/content/docs/a/b.mdx` या फ़ोल्डर इंडेक्स `site/content/docs/a/b/index.mdx` से होता है, और लोकेल रूप `site/content/docs/<locale>/` उप-वृक्ष के अंतर्गत मैप होता है। किसी हटाए गए या नाम बदले गए रूट का लिंक इनमें से किसी भी फ़ाइल पर हल नहीं होता और `link-check` द्वारा, जो एक सलाहकारी मैचर है और रन को विफल नहीं करता (देखें §6), मृत रूट (उपयोगकर्ता को दिखने वाला 404) के रूप में रिपोर्ट किया जाता है।
+ये `/docs/...` साइट-रूट पथ — और गैर-डिफ़ॉल्ट समूह लोकेल के लिए `/<locale>/docs/...` रूप — `link-check` वैलिडेटर द्वारा `site/content/docs/` के अंतर्गत डिस्क पर मौजूद पृष्ठ-समुच्चय के विरुद्ध हल किए जाते हैं: `/docs/a/b` का मिलान `site/content/docs/a/b.mdx` या फ़ोल्डर इंडेक्स `site/content/docs/a/b/index.mdx` से होता है, और लोकेल रूप `site/content/docs/<locale>/` उप-वृक्ष के अंतर्गत मैप होता है। किसी हटाए गए या नाम बदले गए रूट का लिंक इनमें से किसी भी फ़ाइल पर हल नहीं होता और `link-check` द्वारा, जो एक परामर्शी मैचर है और रन को विफल नहीं करता (देखें §6), मृत रूट (उपयोगकर्ता को दिखने वाला 404) के रूप में रिपोर्ट किया जाता है।
 
 परिवर्तनशील रेफ़ (`main`, `master`, `latest`, `HEAD`) के बाहरी लिंक, जब भी लिंक की गई सामग्री की स्थिरता मायने रखती हो, कमिट SHA या रिलीज़ टैग पर पिन किए जाते हैं; अस्थिर संदर्भों को निकटवर्ती `{/* volatile */}` टिप्पणी के साथ अस्थिर के रूप में प्रलेखित किया जाता है।
 
-## 5. लेखकत्व बैनर
+## 5. लेखकत्व हेडर
 
-हर Markdown आर्टिफ़ैक्ट ([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) में सूचीबद्ध अपवादों को छोड़कर) [लेखकत्व हेडर](/docs/reference/authorship-header) के अनुसार HTML-टिप्पणी रूप में कैनोनिकल लेखकत्व-हेडर बैनर वहन करता है। frontmatter के बिना, बैनर पंक्ति 1 पर होता है। YAML frontmatter होने पर, frontmatter बाइट 0 पर रहता है और बैनर समापन `---` के बाद आता है।
+हर Markdown आर्टिफ़ैक्ट ([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) में सूचीबद्ध अपवादों को छोड़कर) कैनोनिकल लेखकत्व हेडर, यानी एकल `SPDX-License-Identifier: MIT` पंक्ति, अपने फ़ाइल-प्रकार के टिप्पणी रूप में वहन करता है, [लेखकत्व हेडर](/docs/reference/authorship-header) के अनुसार: `.md` फ़ाइलों पर HTML टिप्पणी और `.mdx` फ़ाइलों पर `{/* ... */}` टिप्पणी। frontmatter के बिना, हेडर की पंक्ति ही पंक्ति 1 है। YAML frontmatter होने पर, frontmatter बाइट 0 पर रहता है और हेडर पंक्ति समापन `---` के बाद आती है।
 
 ## 6. वैलिडेटर
 
 [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) में pre-commit `markdownlint` हुक [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) की नियम नीति के साथ `markdownlint-cli` चलाता है और §§1–4 के अधिकांश नियम लागू करता है। CI markdownlint नहीं चलाता, इसलिए यह हुक ही वह जगह है जहाँ वह चलता है। नीति MD013 (पंक्ति की लंबाई), MD033 (इनलाइन HTML) और MD041 (पहली-पंक्ति शीर्षक) को बंद करती है। यह MD038 को भी बंद करती है, क्योंकि कैनोनिकल विकल्प-लेबल पोस्टफ़िक्स ` (Recommended)` अपना अग्रणी स्पेस कोड स्पैन के भीतर रखता है, और MD060 को भी, क्योंकि कोई भी तालिका-स्तंभ शैली उन संक्षिप्त-सेल तालिकाओं को स्वीकार नहीं करती जिनकी `|---|` सीमांकक पंक्ति सटी हुई होती है और जिन्हें कॉर्पस उपयोग करता है। MD024 केवल सहोदर शीर्षकों की जाँच करता है, इसलिए `CHANGELOG.md` में हर रिलीज़ में दोहराए जाने वाले Added, Changed, Fixed और Security शीर्षक पास हो जाते हैं। हर चुनाव के कारण हुक के बगल में दर्ज हैं। हुक परीक्षण-फ़िक्स्चर वृक्षों `tests/fixtures/`, `tests/conformity/`, `tests/conformity-scenarios/fixtures/` और `tests/scripts/inject-header/fixtures/` को छोड़ देता है, जिनके बाइट परीक्षण तय करते हैं। यह फिर भी `plugins/claude-code/` को लिंट करता है, जो `src/apothem/` से जनरेट किया जाता है, इसलिए वहाँ के किसी निष्कर्ष को उसके `src/apothem/` स्रोत पर ठीक करें और `python scripts/dev/assemble_plugin_tree.py` से प्लगइन ट्री को पुनः जनरेट करें।
 
-`src/apothem/conformity/file_header_grep.py` पर `file-header-grep` §5 की जाँच करता है। `src/apothem/conformity/link_check.py` पर `link-check` वैलिडेटर §4 के लिंक-समाधान अनुशासन की जाँच करता है — यह सापेक्ष लिंक को स्रोत फ़ाइल की डायरेक्टरी के विरुद्ध, और `/docs/...` (तथा `/<locale>/docs/...`) साइट रूट को `site/content/docs/` पृष्ठ-समुच्चय के विरुद्ध हल करता है, और ऐसे हर लिंक को चिह्नित करता है जो डिस्क पर किसी पृष्ठ पर हल नहीं होता। दोनों सलाहकारी प्रति-Write मैचर हैं। वे pre-commit `conformity-corpus-perwrite` हुक में और [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) पर Conformity वर्कफ़्लो के `corpus-perwrite-gate` जॉब में चलते हैं, और दोनों जगह वे रन को विफल किए बिना निष्कर्ष रिपोर्ट करते हैं। [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) पर CI गुणवत्ता जॉब का `python -m apothem.conformity.gate --all . --strict` केवल स्टैंडअलोन वैलिडेटरों को कवर करता है, इसलिए यह इन दोनों में से कोई भी नहीं चलाता।
+`src/apothem/conformity/file_header_grep.py` पर `file-header-grep` §5 की जाँच करता है। `src/apothem/conformity/link_check.py` पर `link-check` वैलिडेटर §4 के लिंक-समाधान अनुशासन की जाँच करता है — यह सापेक्ष लिंक को स्रोत फ़ाइल की डायरेक्टरी के विरुद्ध, और `/docs/...` (तथा `/<locale>/docs/...`) साइट रूट को `site/content/docs/` पृष्ठ-समुच्चय के विरुद्ध हल करता है, और ऐसे हर लिंक को चिह्नित करता है जो डिस्क पर किसी पृष्ठ पर हल नहीं होता। दोनों परामर्शी प्रति-Write मैचर हैं। वे pre-commit `conformity-corpus-perwrite` हुक में और [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) पर Conformity वर्कफ़्लो के `corpus-perwrite-gate` जॉब में चलते हैं, और दोनों जगह वे रन को विफल किए बिना निष्कर्ष रिपोर्ट करते हैं। [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) पर CI गुणवत्ता जॉब का `python -m apothem.conformity.gate --all . --strict` केवल स्टैंडअलोन वैलिडेटरों को कवर करता है, इसलिए यह इन दोनों में से कोई भी नहीं चलाता।

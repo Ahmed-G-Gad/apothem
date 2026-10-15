@@ -2,7 +2,7 @@
 title: "Zu Apothem beitragen — Entwicklerhandbuch"
 description: "Pflegen und erweitern Sie das Apothem-Ökosystem, indem Sie Regeln, Befehle, Helfer, Skills und Hooks mit kanonischen Schemas, Frontmatter-Anforderungen und Validierungsverfahren verfassen."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,12 @@ SOTA-Qualitätsstandards zu pflegen und zu erweitern.
 
 ## Schnellreferenz: Artefakttypen
 
-Das Apothem-Ökosystem enthält fünf Artefakttypen, jeder mit eigenen Zwecken
-und Frontmatter-Anforderungen.
+Dieses Handbuch behandelt fünf Artefakttypen, jeder mit einem bestimmten Zweck.
+Regeln, Befehle, Helfer und Skills tragen YAML-Frontmatter; Hooks werden in
+`hooks.json` und `settings.json` registriert und tragen keines. Output-Styles
+sind eine weitere Artefaktklasse mit zwei erforderlichen Frontmatter-Schlüsseln,
+`name` und `description`; siehe das
+[Frontmatter-Schema](/docs/reference/frontmatter-schema).
 
 | Artefakt | Pfad | Zweck | Wann erstellen |
 | -------- | ---- | ------- | -------------- |
@@ -126,21 +130,24 @@ Unterstriche.
 - **Befehle:** `{name}.md`
 - **Helfer:** `{name}.md`
 - **Skills:** Im Ordner `src/apothem/skills/{name}/SKILL.md` (exakte Schreibweise: `SKILL.md`)
-- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Ereignis-Handler sind Python-Skripte. Jeder
-  Hook-Befehl in der `settings.json`-Vorlage für Claude Code verwendet die Exec-Form: `command`
-  ist der Interpreter-Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird, und
-  `args` enthält den Skriptpfad und seine Argumente. Diese Vorlage ruft
+- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Ereignis-Handler sind in Python
+  geschrieben. Jeder Hook-Befehl in der `settings.json`-Vorlage für Claude Code
+  verwendet die Exec-Form: `command` ist der Interpreter-Platzhalter
+  `${PYTHON_BIN}`, der bei der Installation aufgelöst wird, und `args` enthält
+  den Skriptpfad und seine Argumente. Diese Vorlage ruft
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` und
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` über absolute Pfade auf, daher
-  benötigt die installierte Kopie kein importierbares `apothem`-Paket. Das Claude Code-Plugin
-  registriert Hooks stattdessen in `src/apothem/hooks/hooks.json`, und zwar als Shell-Befehle,
-  die `hooks/lib/bootstrap.sh` über `bash` ausführen. Registrieren Sie einen neuen Hook in
-  `hooks.json` und in der `settings.json`-Vorlage für Claude Code. `dispatch.py` leitet
-  `SessionStart` an `session_start_bootstrap.main()` weiter und jedes andere zugelassene Ereignis
-  an `emit_hook_context.main()`. Die einzigen Shell-Stubs, die unter `src/apothem/hooks/` oder
-  `scripts/` zulässig sind, sind die sechs Locator- und Bootstrap-Dateien (`find-python.{ps1,sh}`,
-  `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); jede andere `.ps1`- oder `.sh`-Datei fällt bei der
-  Hygieneprüfung `scripts/dev/validate_hooks.py` durch.
+  benötigt die installierte Kopie kein importierbares `apothem`-Paket. Das Plugin für
+  Claude Code registriert Hooks stattdessen in `src/apothem/hooks/hooks.json`, und zwar als
+  Shell-Befehle, die `hooks/lib/bootstrap.sh` über `bash` ausführen; dieser Stub findet
+  Python und führt `dispatch.py` aus, sodass die Handler in Python bleiben. Registrieren Sie
+  einen neuen Hook in `hooks.json` und in der `settings.json`-Vorlage für Claude Code.
+  `dispatch.py` leitet `SessionStart` an `session_start_bootstrap.main()` weiter und jedes
+  andere zugelassene Ereignis an `emit_hook_context.main()`. Die einzigen Shell-Stubs, die
+  unter `src/apothem/hooks/` oder `scripts/` zulässig sind, sind die sechs Locator- und
+  Bootstrap-Dateien (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`);
+  jede andere `.ps1`- oder `.sh`-Datei fällt bei der Hygieneprüfung
+  `scripts/dev/validate_hooks.py` durch.
 
 ### Querverweise
 
@@ -155,11 +162,11 @@ Verwenden Sie im Fließtext niemals Dateipfade oder gekürzte Namen.
 
 ## Portabilität: Windows vs. Unix
 
-Jeder Befehl MUSS seinen Portabilitätsstatus im Feld `portability` ausdrücklich
-deklarieren, ein Helfer KANN dies tun. Skills, Regeln und Output-Styles tragen kein
-Feld `portability`.
+Jeder Befehl MUSS seinen Portabilitätsstatus ausdrücklich im Feld
+`portability` deklarieren. Ein Helfer KANN ihn deklarieren. Skills, Regeln und
+Output-Styles tragen kein Feld `portability`.
 
-### Universal (Standard)
+### Universal
 
 - Funktioniert identisch unter Windows, macOS und Linux
 - Keine Shell-Annahmen
@@ -232,7 +239,7 @@ Beispiele:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: Tippfehlerkorrektur)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: neuen optionalen Abschnitt hinzugefügt)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: Vertrag als stabil deklariert)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: Vertrag als stabil deklariert; neue Artefakte beginnen bei `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: verpflichtendes Frontmatter-Feld entfernt)
 
 Heben Sie `version` und `updated` bei jeder verhaltensändernden Bearbeitung
@@ -353,8 +360,9 @@ Befehle sind Slash-Befehle wie `/plan-spec`, `/plan-execute`, `/security-audit` 
 
 ### 1. Rolle bestimmen
 
-Befehle sind **niemals** dafür gedacht, vom Harness isoliert aufgerufen zu
-werden. Sie sind vom Benutzer ausgelöste Workflows. Fragen Sie:
+Befehle sind vom Benutzer ausgelöste Workflows. Das Modell führt einen Befehl
+nur dann von sich aus aus, wenn seine Einstellung `disable-model-invocation`
+den Wert `false` hat (Schritt 2). Fragen Sie:
 
 - Ist dies ein Workflow, den der Benutzer als `/command-name` eingibt?
 - Orchestriert er mehrere Schritte?
@@ -386,14 +394,15 @@ allowed-tools: "Read, Glob, Grep"
 `disable-model-invocation: true` macht einen Befehl ausschließlich vom
 Operator aufrufbar; mit `false` darf das Modell ihn ausführen, wenn eine
 Anfrage seiner Beschreibung entspricht. Die meisten Befehle verwenden `true`,
-die meisten Stufen der Plan- und Forschungs-Pipeline jedoch `false`.
+die meisten Stufen der Plan- und der Forschungs-Pipeline jedoch `false`.
 Die Aufruftabelle in `src/apothem/commands/README.md` listet die Einstellung
 jedes Befehls auf; fügen Sie für einen neuen Befehl eine Zeile hinzu. Halten
-Sie `allowed-tools` auf lesende Werkzeuge beschränkt: Ein Harness, der es
-beachtet, führt diese Werkzeuge ohne Rückfrage aus. Gewähren Sie ein Werkzeug
-mit Seiteneffekten nur als eingegrenzte Regel, etwa `Bash(git log *)`; das
-Schema lehnt `"*"` sowie bloßes `Bash`, `PowerShell`, `Write`, `Edit`,
-`NotebookEdit` und `WebFetch` ab.
+Sie `allowed-tools` auf lesende Werkzeuge beschränkt: Ein Harness, der dieses
+Feld beachtet, führt diese Werkzeuge ohne Rückfrage aus. Gewähren Sie ein
+Werkzeug mit Seiteneffekten nur als eingegrenzte Regel, etwa
+`Bash(git log *)`; das Schema lehnt `"*"` und jedes der Werkzeuge `Bash`,
+`PowerShell`, `Write`, `Edit`, `NotebookEdit` oder `WebFetch` ab, wenn es ohne
+Eingrenzung geschrieben ist.
 
 ### 3. Inhalt schreiben
 
@@ -407,7 +416,7 @@ Struktur:
 
 ### 4. README und CHANGELOG.md aktualisieren
 
-Fügen Sie der passenden Befehlstabelle in `src/apothem/commands/README.md` eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
+Fügen Sie der Tabelle für den Abschnitt des Befehls in `src/apothem/commands/README.md` eine Zeile hinzu, zusätzlich zur Zeile der Aufruftabelle aus Schritt 2; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
 
 ### 5. Validieren
 
@@ -456,9 +465,9 @@ portability: "universal"
 ```
 
 Lassen Sie `model`, `effort` und `permissionMode` weg, damit der Helfer die
-Einstellungen der Sitzung erbt (die agnostische Haltung), und lassen Sie
-`memory` weg, es sei denn, der Helfer benötigt einen Geltungsbereich für
-persistenten Speicher (`user`, `project` oder `local`).
+Vorgaben der Sitzung erbt (die agnostische Haltung), und lassen Sie `memory`
+weg, es sei denn, der Helfer benötigt einen Geltungsbereich für persistenten
+Speicher (`user`, `project` oder `local`).
 
 ### 3. Inhalt schreiben
 
@@ -537,7 +546,7 @@ Inhaltsstruktur:
 
 ### 4. README und CHANGELOG.md aktualisieren
 
-Fügen Sie den Tabellen Index und Folder contents in `src/apothem/skills/README.md` eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
+Fügen Sie in `src/apothem/skills/README.md` der Tabelle Index eine Zeile und der Tabelle Folder contents für jede Datei des Skills eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
 
 ### 5. Validieren
 
@@ -554,7 +563,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Das Feld `name` verwendet kebab-case
 - [ ] `version` (nur versionierte Klassen; Regeln tragen keine) ist semantisch (`MAJOR.MINOR.PATCH`) und wurde angehoben, falls sich das Verhalten geändert hat
 - [ ] `updated` entspricht dem heutigen Datum für jedes Artefakt, das Sie bearbeitet haben und das das Feld trägt
-- [ ] Feld `portability` gesetzt und gültig (nur Befehle und Helfer)
+- [ ] Feld `portability` gesetzt und gültig (bei Befehlen erforderlich, bei Helfern optional)
 - [ ] CHANGELOG.md führt die Änderung in der passenden Kategorie unter dem Abschnitt des nächsten Releases
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
 - [ ] Querverweise sind mit anderen Artefakten konsistent
@@ -723,9 +732,9 @@ Sie nach dem Bearbeiten einer immer aktiven Regel, die ein Paar hat,
 ### Benchmarks
 
 `make benchmarks` führt die klassenbezogenen Treiber unter
-`src/apothem/benchmarks/` aus. Jeder endet mit `0` bestanden, `1` über dem
-Budget, `2` Fehler (der gemessene Lauf wurde nicht ausgeführt) oder `3` nicht
-gemessen.
+`src/apothem/benchmarks/` aus, mit Ausnahme von `bench_agents.py`. Jeder
+Treiber endet mit `0` bestanden, `1` über dem Budget, `2` Fehler (der
+gemessene Lauf wurde nicht ausgeführt) oder `3` nicht gemessen.
 
 - `bench_hooks.py` führt jeden `shell: bash`-Befehl, den `hooks/hooks.json`
   registriert, wie geschrieben mit einer realen Payload pro Ereignis und

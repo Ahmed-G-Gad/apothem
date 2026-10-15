@@ -2,7 +2,7 @@
 title: "Registre des mandats transversaux (CM-1–CM-28)"
 description: "Registre complet et définitions des mandats transversaux internes à l'écosystème (CM-1–CM-28) qui régissent toutes les interactions et les opérations du pipeline."
 machineTranslated: true
-sourceHash: "4e3a5448c3273d05"
+sourceHash: "ed82dc2de7476ce6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ Ce document EST le registre canonique CM-N — c'est la source où les jetons `C
 
 ## Espaces de noms
 
-`CM-N` = mandat de configuration (défini ici, ou dans `src/apothem/rules/*.md` selon la ligne des règles des registres d'artefacts) ; `TM-N` = mandat de template (défini dans `src/apothem/skills/plan-suite/master-template.md` §4 « General Mandates », TM-1–28) ; `CP-N` = principe fondamental (défini dans le même template, §6 « Core Principles », CP-1–27). Le template de la suite de planification est le registre canonique des TM/CP — les commandes `/plan` résolvent les références croisées via ce fichier. Les artefacts auxiliaires (règles, auxiliaires, commandes, hooks) citent ce registre par référence.
+`CM-N` = mandat de configuration (défini ici, ou dans `src/apothem/rules/*.md` selon la table des règles de `site/content/docs/reference/rules.mdx`) ; `TM-N` = mandat de template (défini dans `src/apothem/skills/plan-suite/master-template.md` §4 « General Mandates », TM-1–28) ; `CP-N` = principe fondamental (défini dans le même template, §6 « Core Principles », CP-1–27). Le template de la suite de planification est le registre canonique des TM/CP — les commandes `/plan` résolvent les références croisées via ce fichier. Les artefacts auxiliaires (règles, auxiliaires, commandes, hooks) citent ce registre par référence.
 
 ## Activation
 
@@ -38,7 +38,7 @@ Les artefacts de la base de code ne doivent JAMAIS contenir de références inte
 
 ## CM-12 (Gérance du contexte)
 
-Gestion allégée du contexte en permanence — voir la règle CM-24. Quatre sous-paliers sont énumérés dans la section Convention de sous-référence ci-dessous. La discipline de compactage (CM-19) régit l'action ; CM-12 régit la discipline en régime permanent.
+Gestion allégée du contexte en permanence — voir la règle CM-24. Quatre sous-paliers sont énumérés dans la section Convention de sous-référence ci-dessous. La discipline de compactage (CM-19) régit l'acte de compacter ; CM-12 régit la discipline en régime permanent.
 
 ## CM-13 (Commits)
 
@@ -54,7 +54,7 @@ Gestion allégée du contexte en permanence — voir la règle CM-24. Quatre sou
 
 ## CM-15–21 (Pipeline)
 
-CM-15 et CM-16 sont définis en ligne ici (sans règle séparée) ; CM-17–21 délèguent à des règles selon la table des règles des registres d'artefacts.
+CM-15 et CM-16 sont définis en ligne ici (sans règle séparée) ; CM-17–21 délèguent à des règles selon la table des règles de `site/content/docs/reference/rules.mdx`. Le titre regroupe ces mandats par thème ; leur portée suit le paragraphe Activation : CM-15, CM-16 et CM-20 ne s'appliquent qu'au sein du pipeline `/plan`, et CM-17–19 et CM-21 s'appliquent universellement.
 
 - **CM-15 Cohérence collective :** Vérifier que les artefacts du plan restent cohérents après une modification.
 - **CM-16 Exécution autonome :** À SHARED+, ne jamais s'arrêter entre les phases. Compactage obligatoire aux transitions de phase (PERSONAL_USE+).
@@ -78,12 +78,12 @@ Ancres d'une ligne pour les mandats délégués à des règles (les spécificati
 
 ## Mandats délégués à des règles vs. mandats définis en ligne
 
-- **Délégués à des règles** (spécification complète dans `src/apothem/rules/`) : voir la colonne « Implements » de la table des règles des registres d'artefacts. Couvre CM-1–10, CM-12, CM-14, CM-17–28.
-- **Définis en ligne** (spécification complète ici, sans règle séparée) : CM-11 (Intégrité du plan), CM-13 (Commits), CM-15 (Cohérence collective), CM-16 (Exécution autonome).
+- **Délégués à des règles** (spécification complète dans `src/apothem/rules/`) : voir la colonne « Implements » de la table des règles de `site/content/docs/reference/rules.mdx`. Couvre CM-1–10, CM-12, CM-14, CM-17–28.
+- **Définis en ligne** (spécification complète ici, sans règle séparée) : CM-11 (Intégrité du plan), CM-13 (Commits ; les sous-règles D et E renvoient à des fichiers de règles pour leur spécification détaillée), CM-15 (Cohérence collective), CM-16 (Exécution autonome).
 
 ## Convention de sous-référence
 
-Les commandes utilisent des suffixes alphabétiques pour référencer des sous-sections précises au sein des mandats. Schéma : `CM-N` + lettre de suffixe = section de règle. **Convention de casse :** Les suffixes en majuscule désignent des sous-sections structurelles au sein d'un mandat ; les suffixes en minuscule désignent des directives plus fines au sein d'un palier de gérance. La table canonique de correspondance des clés de sous-référence (définitions internes au registre) est conservée mot pour mot dans le bloc délimité ci-dessous :
+Les commandes utilisent des suffixes alphabétiques pour référencer des sous-sections précises au sein des mandats. Schéma : `CM-N` + lettre de suffixe = section de règle. **Convention de casse :** Les suffixes en majuscule désignent des sous-sections structurelles au sein d'un mandat ; les suffixes en minuscule désignent des directives plus fines au sein d'un palier de gérance. La table canonique de correspondance des clés de sous-référence (définitions internes au registre) figure dans le bloc délimité ci-dessous :
 
 ```text
 CM-11A = Prose Fidelity
@@ -98,6 +98,8 @@ CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified
 CM-13A = per-task commits
 CM-13B = quality / remediation commits
 CM-13C = end-of-phase commit gate
+CM-13D = human-only authorship
+CM-13E = numeric-prefix discipline on git mv / git rm targets
 
 CM-23A = pre-generation size assessment (§1)
 CM-23B = incremental generation protocol (§2)

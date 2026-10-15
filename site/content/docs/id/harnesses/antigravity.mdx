@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adapter harness Apothem untuk Antigravity (Pratinjau)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,7 +87,9 @@ apothem verify --harness antigravity
 Perintah verify memastikan bahwa:
 
 1. Berkas konteks native ada di jalur yang diharapkan.
-2. Manifest plugin `plugin.json` ada, tidak kosong, dan dapat diurai sebagai JSON. Verifikasi tidak memeriksa nama plugin; periksa bidang tersebut sendiri setelah mengubahnya.
+2. Manifest plugin `plugin.json` ada, tidak kosong, dan dapat diurai sebagai
+   JSON. Verifikasi tidak memeriksa nama plugin; periksa sendiri bidang
+   tersebut setelah mengubahnya.
 
 ## Pembaruan
 
@@ -105,8 +107,14 @@ paket Apothem yang terpasang.
 apothem uninstall --harness antigravity
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `~/.gemini/GEMINI.md` dan mempertahankan teks lain
+di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
+Juga menghapus kunci milik Apothem dari `plugin.json` di folder plugin
+`~/.gemini/antigravity-cli/plugins/apothem/` dan mempertahankan kunci milik
+Anda, serta menghapus berkas Apothem di subfolder `skills/`, `rules/`,
+`agents/`, dan `.apothem/support/` milik folder itu; berkas lain di sana tetap
+ada. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah
+atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

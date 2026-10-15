@@ -2,7 +2,7 @@
 title: "헬퍼"
 description: "프런트매터 계약과 배포 격리 프로토콜을 갖춘, 리서치·감사·품질·오케스트레이션을 위한 영속적 헬퍼 에이전트입니다."
 machineTranslated: true
-sourceHash: "b44b145680fe03f7"
+sourceHash: "18a785a98f21c750"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,8 +13,11 @@ sourceHash: "b44b145680fe03f7"
 src/apothem/agents/
 ```
 
-각 헬퍼는 자체 도구 제한과 시스템 프롬프트를 가진 리서치, 감사, 품질,
-또는 오케스트레이션 역할입니다.
+각 헬퍼는 리서치, 감사, 품질, 리팩터링, 스캐폴딩 같은 특정 업무에 집중한 역할이며,
+자체 도구 제한과 시스템 프롬프트를 가집니다.
+
+아래의 표와 경로 목록은 헬퍼 중 네 개를 보여 줍니다. 이 페이지 끝의 생성된
+인벤토리는 모든 헬퍼 정의를 나열합니다.
 
 | 헬퍼 | 파일 | 패턴 | 모델 정책 |
 |-------|------|---------|--------------|
@@ -60,7 +63,7 @@ maxTurns: <integer>
 | Gemini CLI | Gemini 도구 이름으로 된 `tools` 허용 목록 | `max_turns` | 상속(설정하지 않음) |
 | Qwen Code | Qwen 도구 이름으로 된 `tools` / `disallowedTools` | 매핑되지 않음 | `model: inherit` |
 | OpenCode | `permission`(도구별 `allow` / `deny`) | 매핑되지 않음 | 상속(설정하지 않음) |
-| Antigravity | 아무것도 방출하지 않음. 설명에서 "read-only"가 빠짐 | 사용할 수 없음 | 상속(설정하지 않음) |
+| Antigravity | 방출되는 것 없음. 설명에서 "read-only"가 빠짐 | 사용할 수 없음 | 상속(설정하지 않음) |
 
 Hermes, Open-Claw, Kimi Code는 헬퍼 파일을 네이티브 헬퍼가 아니라 지원
 자료로 받습니다.

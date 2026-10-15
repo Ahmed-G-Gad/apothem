@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ apothem install --harness hermes
 
 ## 兼容性说明
 
-预览版适配器。Hermes 不会自行加载支持树或配置档案文档：`config.yaml` 中没有任何内容指向那里，Hermes 读取的上下文文件也没有任何一个指向那里，因此安装之后，Hermes 运行时不带有 Apothem 的规则、技能或钩子。Hermes 从 `~/.hermes/skills/` 以及 `config.yaml` 中 `skills.external_dirs` 下列出的每个文件夹读取技能；要使用 Apothem 技能，请自行将 `~/.hermes/.apothem/support/skills` 添加到该列表中；`apothem update` 会保留你添加到 `config.yaml` 中的键。适配器将配置档案的 MCP 清单写在顶层 `mcp_servers` 键下，Hermes 从该处读取 MCP 服务器。较早的 Apothem 发布将其写在 `auxiliary.mcp` 下，而 Hermes 会将该处读取为用于 MCP 工具分派的辅助模型；只要该区块仍与此类发布会根据你的共享配置档案写入的内容相符，`apothem update` 和 `apothem uninstall` 都会将其移除（参见[卸载](#卸载)）。（Hermes 的行为依据其用户指南中关于[技能](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)和 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) 的页面，于 2026-10-02 查阅。）
+预览版适配器。Hermes 不会自行加载支持树或配置档案文档：`config.yaml` 中没有任何内容指向那里，Hermes 读取的上下文文件也没有任何一个指向那里，因此安装之后，Hermes 运行时不带有 Apothem 的规则、技能或钩子。Hermes 从 `~/.hermes/skills/` 以及 `config.yaml` 中 `skills.external_dirs` 下列出的每个文件夹读取技能；要使用 Apothem 技能，请自行将 `~/.hermes/.apothem/support/skills` 添加到该列表中；`apothem update` 会保留你添加到 `config.yaml` 中的键。适配器将配置档案的 MCP 清单写在顶层 `mcp_servers` 键下，Hermes 从该处读取 MCP 服务器。较早的 Apothem 发布将其写在 `auxiliary.mcp` 下，而 Hermes 会将该处读取为用于 MCP 工具分派的辅助模型；当该区块仍与此类发布会根据你当前的共享配置档案写入的内容相符时，`apothem update` 和 `apothem uninstall` 都会将其移除（该区块在何种情况下会保留，参见[卸载](#卸载)）。（Hermes 的行为依据其用户指南中关于[技能](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)和 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) 的页面，于 2026-10-02 查阅。）
 
 ## 验证
 

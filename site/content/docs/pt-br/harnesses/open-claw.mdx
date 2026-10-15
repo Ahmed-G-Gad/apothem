@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptador de harness do Apothem para o Open-Claw (Prévia)."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -89,8 +89,10 @@ atualizar o pacote do Apothem instalado.
 apothem uninstall --harness open-claw
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o que o adaptador adicionou: o documento de perfil e a árvore de suporte.
+As suas próprias chaves em `openclaw.json` permanecem, e o arquivo é excluído
+somente quando o Apothem o criou e nada seu restou. O YAML do perfil
+compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

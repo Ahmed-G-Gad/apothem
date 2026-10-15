@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,10 +14,11 @@ berjalan dari checkout pada Python sistem 3.10 atau yang lebih baru (lihat
 
 **Dua prasyarat berlaku untuk setiap jalur:** **Python 3.10 atau lebih baru**
 milik sistem pada `PATH`, dengan paket `click` dan `rich` yang dapat diimpor di
-bawahnya. Jalur shim npm dan plugin alat juga membutuhkan **Node.js 18 atau
-lebih baru** untuk menjalankan `npx`. Python 3.10 serta Node.js 18 dan 20 telah
-melewati akhir masa pakai (end of life) di upstream; ketiganya tetap didukung
-dan diuji, tetapi versi yang lebih baru lebih disarankan (lihat
+bawahnya. Shim npm (kanal 2), ekstensi keluarga VS Code (kanal 4), dan bootstrap
+baris perintah (kanal 5–7) juga membutuhkan **Node.js 18 atau lebih baru** untuk
+menjalankan `npx`. Python 3.10 serta Node.js 18 dan 20 telah melewati akhir masa
+pakai (end of life) di upstream; ketiganya tetap didukung dan diuji, tetapi
+versi yang lebih baru lebih disarankan (lihat
 [Prasyarat sekilas](#prasyarat-sekilas)). Bagian masing-masing kanal di bawah
 ini mengulang prasyarat persisnya, satu perintah siap-salin, dan langkah
 verifikasi.
@@ -56,7 +57,7 @@ keadaan yang sama.
 **Prasyarat:** Claude Code, dan Python sistem 3.10+ pada `PATH`.
 
 Jalur plugin berjalan sepenuhnya di dalam Claude Code. Jalur ini membundel
-mesin Apothem bersama perintah slash, worker terdelegasi, skill, aturan, dan
+mesin Apothem bersama perintah slash, pekerja terdelegasi, skill, aturan, dan
 hook-nya, yang semuanya dapat dijalankan dari pohon plugin mandiri:
 
 ```text title="Inside Claude Code"
@@ -64,7 +65,7 @@ hook-nya, yang semuanya dapat dijalankan dari pohon plugin mandiri:
 /plugin install apothem@apothem
 ```
 
-Setelah instalasi, set perintah Apothem, worker terdelegasi yang disertakan,
+Setelah instalasi, set perintah Apothem, pekerja terdelegasi yang disertakan,
 skill, dan empat [gaya keluaran](/docs/reference/output-styles) (pilih salah
 satu dengan `/output-style` atau dari `/config`) tersedia di setiap sesi Claude
 Code. Perintah plugin membawa awalan plugin: `/apothem:plan-spec`,
@@ -78,7 +79,8 @@ Claude Code alih-alih plugin, perintah menjadi skill pribadi di bawah
 `/code-review` bawaan (aliasnya, `/review`, tetap menjalankan yang bawaan). Dua
 nama, `projectify` dan `workflow`, dikirim sebagai perintah sekaligus skill;
 Claude Code menjalankan skill bila keduanya ada, sehingga plugin menjalankan
-skill tersebut dan instalasi mesin menulis skill ke slot itu. Lihat
+skill tersebut dan instalasi mesin hanya menulis skill, bukan skill yang
+diturunkan dari perintah, ke `~/.claude/skills/<name>/`. Lihat
 [Perintah slash](/docs/reference/commands) untuk katalog perintah lengkap.
 
 **Verifikasi:** jalankan `/plugin` di dalam Claude Code dan konfirmasikan bahwa
@@ -250,14 +252,14 @@ Ekstensi **Apothem** dipasang dari paket `apothem.vsix`:
 `code --install-extension apothem.vsix`, atau perintah *Install from VSIX…*
 milik editor. Alur kerja rilis menandatangani paket tersebut dan
 melampirkannya ke setiap GitHub Release. Rilis yang dipublikasikan sebelum alur
-kerja mengemas ekstensi tidak menyertakannya; jika rilis terbaru tidak
+kerja mengemas ekstensi tidak menyertakan `.vsix`; jika rilis terbaru tidak
 memilikinya, bangun paket dari checkout dengan rilis vsce yang dikunci di
-`.github/vsce/`, yang memerlukan Node.js 22 atau lebih baru: jalankan
-`npm ci --prefix .github/vsce --ignore-scripts`, lalu
+`.github/vsce/` (rilis vsce itu memerlukan Node.js 22 atau lebih baru):
+jalankan `npm ci --prefix .github/vsce --ignore-scripts`, lalu
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Listing di [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-belum dipublikasikan. Satu ekstensi mencakup VS Code dan permukaan asisten
-pendampingnya di dalam editor. Perintah paletnya (`Apothem: Install`, `Verify`,
+belum dipublikasikan. Satu ekstensi mencakup editor-editor dalam keluarga VS
+Code. Perintah paletnya (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) menjalankan mesin yang sama melalui runner
 yang dikonfigurasi (`npx @ahmed-g-gad/apothem@<extension version>` secara
 default, sehingga ekstensi menjalankan versi mesin yang dikirim bersamanya;
@@ -396,14 +398,19 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 Ganti nama harness dengan adapter mana pun yang Anda pasang; lihat
 [daftar harness](/docs/harnesses) untuk semua nama yang didukung. Untuk
 memeriksa setiap adapter yang terpasang sekaligus (verifikasinya dan perintah
-hook-nya), jalankan `apothem doctor` (atau `npx @ahmed-g-gad/apothem doctor`)
-dalam bentuk yang sama. Untuk jalur plugin, jalankan `/plugin` di dalam Claude
-Code dan konfirmasikan bahwa **apothem** tercantum sebagai terpasang.
+hook-nya), jalankan `doctor` sebagai pengganti `verify --harness NAME`, dalam
+bentuk mana pun yang Anda gunakan di atas: `apothem doctor`,
+`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`, atau
+`npx @ahmed-g-gad/apothem doctor`. Untuk jalur plugin, jalankan
+`/plugin` di dalam Claude Code dan konfirmasikan bahwa **apothem** tercantum
+sebagai terpasang.
 
 ## Prasyarat sekilas
 
-- **Python 3.10 atau lebih baru** — setiap jalur yang menjalankan mesin
-  mencarinya (`python3`, `python`, nama-nama berversi, dan `py -3` di Windows).
+- **Python 3.10 atau lebih baru** — jalur yang menemukannya melakukannya
+  berdasarkan nama, dan namanya berbeda per jalur. Shim npm mencoba `python3`,
+  `python`, lalu `py -3`. Pemasang mencoba `python3`, `python`, dan nama
+  berversi `python3.14` turun hingga `python3.10`.
 - **`click` dan `rich` dapat diimpor** di bawah interpreter itu — dua
   dependensi yang berhadapan dengan terminal yang tidak di-vendor oleh mesin.
   Pemasang memeriksa keduanya, menyebutkan apa pun yang hilang, dan menawarkan
@@ -414,7 +421,8 @@ Code dan konfirmasikan bahwa **apothem** tercantum sebagai terpasang.
   ditemukannya, dengan batasan versi yang diuji oleh Apothem
   (`<interpreter> -m pip install "click==…" "rich>=…"`); dengan `--json`, galat
   yang sama tiba sebagai amplop JSON dengan kode `runtime.dependency_missing`.
-- **Node.js 18 atau lebih baru** — hanya jalur shim npm dan plugin alat.
+- **Node.js 18 atau lebih baru** — hanya jalur yang menjalankan `npx`: shim npm
+  (2), ekstensi keluarga VS Code (4), dan bootstrap baris perintah (5–7).
 - **Runtime yang telah mencapai akhir masa pakai.** Python 3.10 mencapai akhir
   masa pakai di upstream pada 2026-10-01, dan Node.js 18 dan 20 pada 2025-04-30
   dan 2026-04-30. Apothem masih mendukung ketiganya sebagai batas bawah yang

@@ -1,8 +1,8 @@
 ---
 title: "发布周期操作手册"
-description: "从本地闸门、经签名的 GitHub Release，到可选的 npm 发布调度的完整发布工作流。"
+description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -97,11 +97,13 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 确认 npm 发布
 
-标签推送也会运行 `publish-npm.yml`。出现提示时，批准 `release` 环境部署。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。然后确认就绪状态：
+标签推送也会与 `release.yml` 并行运行 `publish-npm.yml`。npm 工作流不等待发布工作流；`release` 环境批准是把关点。待 §2.3 中的发布工作流完成之后，确认就绪状态：
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+然后在出现提示时批准 `release` 环境部署。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。
 
 若要在一次失败的运行之后再次发布，为同一标签调度该工作流（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。当该版本已在注册表上时，它会跳过发布，因为 npm 版本不可变。
 

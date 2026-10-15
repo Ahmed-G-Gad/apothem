@@ -2,7 +2,7 @@
 title: "Desinstalación"
 description: "Elimina Apothem y limpia las configuraciones de entorno."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,18 +23,19 @@ Pasa `--yes` para omitir la solicitud de confirmación por entorno.
 
 ## Elimina el motor
 
-La eliminación depende del canal de instalación que usaste:
+La eliminación depende del canal de instalación que usaste. Los números de canal
+son los de la [tabla de canales de instalación](/docs/install#elige-un-canal):
 
-- **Plugin de Claude Code** — elimina el plugin desde dentro de Claude Code:
+- **Plugin de Claude Code (canal 1)** — elimina el plugin desde dentro de Claude Code:
   `/plugin uninstall apothem@apothem` (la entrada del marketplace se puede
   eliminar con `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — no hay nada que eliminar; `npx` se ejecuta desde su caché. Vacíala
+- **npx (canal 2)** — no hay nada que eliminar; `npx` se ejecuta desde su caché. Vacíala
   con `npm cache clean --force` si quieres que desaparezca la copia en caché.
-- **Instalador de un solo paso** — ejecuta el script de desinstalación
+- **Instalador de un solo paso (canal 3)** — ejecuta el script de desinstalación
   correspondiente desde el checkout: `scripts/installer/uninstall.sh` (POSIX) o
   `scripts/installer/uninstall.ps1` (PowerShell). Ambos piden confirmación antes
   de eliminar y rechazan destinos inseguros.
-- **Extensión de la familia VS Code** — ejecuta primero **Apothem: Uninstall**
+- **Extensión de la familia VS Code (canal 4)** — ejecuta primero **Apothem: Uninstall**
   desde la paleta de comandos para eliminar las configuraciones de entorno y,
   después, elimina la extensión desde la vista de Extensiones o con
   `code --uninstall-extension ahmed-g-gad.apothem`. De forma predeterminada, la
@@ -42,17 +43,25 @@ La eliminación depende del canal de instalación que usaste:
   cubre la caché.
 - **Arranques de línea de comandos (canales 5–7)** — elimina la extensión o el
   plugin con la herramienta anfitriona correspondiente una vez que las
-  configuraciones de entorno ya no estén. El arranque solo añade contexto de
-  asistente (un archivo de contexto, un comando o una skill) que llama al motor
-  mediante `npx`, así que no queda nada más. Los hosts de extensión de los
-  canales 5 y 6 admiten un comando de desinstalación; para el host de plugin del
-  canal 7, desinstala `apothem` en su explorador de plugins.
+  configuraciones de entorno ya no estén. Los hosts:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  El arranque solo añade contexto de asistente (un archivo de contexto, un
+  comando o una skill) que llama al motor mediante `npx`, así que no queda nada
+  más. Los hosts de extensión de los canales 5 y 6 admiten un comando de
+  desinstalación; para el host de plugin del canal 7, desinstala `apothem` en su
+  explorador de plugins.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Motor directo** — no hay nada que desinstalar; elimina el clon una vez que
+- **Motor directo (canal 8)** — no hay nada que desinstalar; elimina el clon una vez que
   las configuraciones de entorno ya no estén.
 - **Copias de seguridad y estado** — las copias de seguridad de instalación
   residen bajo `~/.apothem/backups/` y el historial de instalaciones bajo
@@ -79,6 +88,11 @@ La eliminación depende del canal de instalación que usaste:
   La desinstalación elimina solo las claves y las entradas de lista que el
   historial de instalaciones registra como de Apothem (consulta
   [Configuración](/docs/reference/settings#fusión-con-tu-propio-archivo-de-ajustes)).
+- Los almacenes de datos compartidos bajo `.apothem/` en la raíz de instalación
+  (`memory/`, `contexts/`, `learning/`) permanecen mientras otro entorno
+  instalado en la misma raíz los siga usando. Al desinstalar el último entorno de
+  esa raíz, cada almacén se copia primero en `~/.apothem/backups/` y después se
+  elimina con todo su contenido.
 - Las suites de plan bajo `<project>/.apothem/plans/` (y el heredado `<project>/.plans/`) no se ven afectadas.
 
 ## Directorios
@@ -92,4 +106,4 @@ antes de la instalación nunca se eliminan.
 Para limpiar por completo la raíz de un entorno, elimina la ruta nativa del
 entorno documentada en las [páginas de referencia de entornos](/docs/harnesses)
 después de confirmar que has hecho una copia de seguridad de cualquier regla,
-utilidad o archivo de perfil personalizado que quieras conservar.
+trabajador delegado o archivo de perfil personalizado que quieras conservar.

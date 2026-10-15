@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptateur d'environnement Apothem pour Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,7 @@ sous `<project>/.kimi-code/`. La surface `<project>/.kimi-code/mcp.json` est
 détenue par l'opérateur ; Apothem la nomme mais n'y rédige aucune entrée.
 
 **Fichiers écrits :** `<project>/AGENTS.md` (bloc géré) et les cohortes de
-commandes, de skills, de hooks, d'agents, de règles et de templates sous
+commandes, de skills, de hooks, d'auxiliaires, de règles et de templates sous
 `<project>/.kimi-code/.apothem/support/`.
 
 ## Correspondance entre le profil et la configuration native
@@ -41,11 +41,11 @@ L'adaptateur lit le profil partagé d'Apothem et rend la surface d'instructions
 `AGENTS.md` à la racine du projet à chaque exécution de `apothem install` ou de
 `apothem update`. Les règles comportementales et le corpus de gouvernance
 atterrissent dans le bloc géré de `AGENTS.md` ; les cohortes de commandes, de
-skills, de hooks, d'agents, de règles et de templates sont placées sous
+skills, de hooks, d'auxiliaires, de règles et de templates sont placées sous
 `.kimi-code/.apothem/support/` et référencées depuis la surface d'instructions.
 Il s'agit de la disposition choisie par l'adaptateur, et non d'une lacune de
 Kimi Code : Kimi Code charge les skills depuis `.kimi-code/skills/` et
-`.agents/skills/`, les assistants personnalisés depuis `.kimi-code/agents/` et
+`.agents/skills/`, les auxiliaires personnalisés depuis `.kimi-code/agents/` et
 `.agents/agents/`, et les hooks depuis le tableau `[[hooks]]` de
 `~/.kimi-code/config.toml`, mais il ne les charge pas depuis l'arborescence de
 support ; les copies Apothem qui s'y trouvent sont donc du matériel de
@@ -57,7 +57,7 @@ auquel se résout chaque citation de style dépôt (`rules/<name>.md`,
 chemin propre à une machine. (Comportement de Kimi Code selon ses pages de
 personnalisation consacrées aux
 [skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
-aux [sous-assistants](https://moonshotai.github.io/kimi-code/en/customization/agents) et
+aux [sous-auxiliaires](https://moonshotai.github.io/kimi-code/en/customization/agents) et
 aux [hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks),
 consultées le 2026-10-02.)
 
@@ -66,9 +66,12 @@ consultées le 2026-10-02.)
 Kimi Code lit les instructions du projet depuis `AGENTS.md` ou
 `.kimi-code/AGENTS.md` et reconnaît `.kimi-code/mcp.json` comme la surface MCP
 détenue par l'opérateur ; Apothem nomme cette surface mais n'y rédige aucune
-entrée. La surface d'instructions rendue pilote directement le projet. Kimi Code
-n'expose aucune surface de fichier pour la ligne d'état ni pour les
-output-styles ; ces cohortes ne sont donc pas matérialisées.
+entrée. Des deux fichiers d'instructions, l'adaptateur n'écrit que le
+`AGENTS.md` à la racine du projet, que Kimi Code lit comme instructions du
+projet ; la documentation de Kimi Code ne précise pas lequel des deux fichiers
+l'emporte lorsque les deux existent. Kimi Code n'expose aucune surface de
+fichier pour la ligne d'état ni pour les output-styles ; ces cohortes ne sont
+donc pas matérialisées.
 
 Kimi Code s'exécute sur la famille de modèles Kimi de Moonshot ; consultez la
 [référence de configuration de l'éditeur](https://moonshotai.github.io/kimi-code/en/configuration/config-files)

@@ -2,7 +2,7 @@
 title: "アーティファクトスキーマ仕様"
 description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールを含みます。"
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ Apothem ソースツリー内（`src/apothem/` 配下とルートの設定面）
 **普遍的なルール:**
 
 - フロントマターは YAML 1.2 に準拠する
-- すべての文字列値は、空の場合を除きダブルクォートを使用する
+- すべての文字列値はダブルクォートを使用し、空文字列は `""` と書く
 - フィールドの順序: 必須フィールドを先頭に置き、任意フィールドは関連性ごとにグループ化する
 - フロントマター内のコメントは、スペースを伴う `#` を使用する: `# comment`
 - パス値は相対パス（先頭に `/` を付けない）でなければならず、クロスプラットフォーム互換性のためにスラッシュ（`/`）を使用しなければならない
@@ -140,7 +140,7 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**目的:** 並列探索、監査、品質ゲートのための永続的なヘルパー定義。
+**目的:** 並列探索、監査、品質ゲートのための永続的なヘルパー定義（委任ワーカーとも呼ばれます）。
 
 ### 必須フィールド
 
@@ -299,7 +299,7 @@ argument-hint: "[--focus area] [--fix]"
 
 ### 必須イベント
 
-Claude Code テンプレートは SessionStart、PreToolUse、PostToolUse、Stop を登録します。PreCompact と PostCompact は Claude Code には登録されておらず（[フックのリファレンス](/docs/reference/hooks)）、`scripts/dev/validate_hooks.py` は、それぞれが欠けていることを警告として報告します。次の表は、`validate_hooks.py` が確認する 5 つのイベントを示しています。
+Claude Code テンプレートは、SessionStart、PreToolUse、PostToolUse、Stop の 4 つのイベントを登録します。`scripts/dev/validate_hooks.py` は、下の表にある 5 つのイベント（先の 4 つとは異なる集合）について `settings.json` を確認し、見つからなかったイベントをそれぞれ、失敗ではなく警告として報告します。PostToolUse は登録されていますが、その 5 つには含まれません。PreCompact と PostCompact はその 5 つに含まれますが、Claude Code には登録されていない（[フックのリファレンス](/docs/reference/hooks)）ため、チェッカーは Claude Code ではこの 2 つについて警告します。
 
 > **タイムアウト値は正規のフックイベント予算を反映しています** — 下の表は読者の便宜のためにそれらを再掲したものであり、正規のソースが優先されます。
 
@@ -329,7 +329,7 @@ Claude Code テンプレートは SessionStart、PreToolUse、PostToolUse、Stop
 
 `scripts/dev/validate_hooks.py` は、フック契約を強制します:
 
-- `settings.json` が JSON としてパースでき、すべての必須イベントを宣言している。
+- `settings.json` が JSON としてパースでき、表にある 5 つのイベントのそれぞれを宣言している。欠けているイベントは失敗ではなく警告となる。
 - 3 つの Python スクリプトがすべて存在し、有効な Python としてパースできる。
 - `--context-file` 引数によって参照されるすべてのメッセージファイルが存在する。
 - ハードコードされた絶対ユーザーパス（`C:\Users\...` など）が `src/apothem/hooks/**.py` に現れない。
@@ -380,7 +380,7 @@ portability: "project-local"
 
 ### コンテンツの検証
 
-- [ ] コンテンツが、閉じる `---` の後の新しい行から始まる。Markdown 系のファイルでは、その直後の最初のコンテンツが著作者ヘッダーのバナーである
+- [ ] コンテンツが、閉じる `---` の後の新しい行から始まる。Markdown 系のファイルでは、その直後の最初のコンテンツが正規の SPDX ヘッダー行である
 - [ ] プラン内部への参照がない（CM-7 準拠）
 - [ ] 相互参照が解決する（他のアーティファクトを列挙する場合）
 - [ ] リンクがスラッシュ区切りの相対パスを使用している

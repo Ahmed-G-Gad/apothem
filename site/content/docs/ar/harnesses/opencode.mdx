@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "محوّل إطار عمل Apothem لـ OpenCode (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,7 @@ apothem install --harness opencode
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -93,8 +94,18 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل المُدخَلات التي أضافها المحوّل إلى <bdi>`~/.config/opencode/opencode.json`</bdi>
+(تبقى مفاتيحك الخاصة وخوادم <bdi>MCP</bdi> ومُدخَلات <bdi>`instructions`</bdi> الخاصة
+بك، ولا يُحذَف الملف إلا إذا كان <bdi>Apothem</bdi> هو من أنشأه ولم يتبقَّ فيه شيء
+يخصّك). ويُزيل كتلة <bdi>Apothem</bdi> من وثيقة الملف التعريفي
+<bdi>`~/.config/opencode/apothem/rules/00-apothem-profile.md`</bdi> ويُبقي أي نص آخر
+فيها؛ ولا يُحذَف ذلك الملف إلا حين لا يتبقى فيه شيء آخر. ويُزيل كذلك ملفات
+<bdi>Apothem</bdi> في <bdi>`~/.config/opencode/commands/`</bdi>
+و<bdi>`~/.config/opencode/skills/`</bdi> و<bdi>`~/.config/opencode/agents/`</bdi>
+و<bdi>`~/.config/opencode/.apothem/support/`</bdi>؛ وتبقى الملفات الأخرى في تلك
+المجلّدات. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو
+إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "适用于 Qwen Code（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,11 +24,14 @@ apothem install --harness qwen-code
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
+
+文件 `~/.qwen/apothem/rules/00-apothem-profile.md` 是配置档案文档。它携带共享配置档案中你的身份和偏好。
 
 ## 配置档案到原生配置的映射
 
@@ -36,7 +39,7 @@ apothem install --harness qwen-code
 
 ## 兼容性说明
 
-`~/.qwen/.apothem/support/` 是由 `QWEN.md` 和设置中的钩子命令引用的支持材料；它不是厂商拥有的发现命名空间。`QWEN.md` 中的 Apothem 块以一个 Apothem 支持文件部分结尾，该部分指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `~/.qwen/.apothem/support/` 下的绝对目录。
+`~/.qwen/.apothem/support/` 是由 `QWEN.md` 和设置中的钩子命令引用的支持材料；它不是厂商拥有的发现命名空间。`QWEN.md` 中的 Apothem 块以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.qwen/.apothem/support/` 下的绝对目录。
 
 ## 验证
 
@@ -64,7 +67,7 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加到 `~/.qwen/settings.json` 的条目（你自己的键、MCP 服务器和钩子处理程序会保留；只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件）。从 `~/.qwen/QWEN.md` 和配置档案文档 `~/.qwen/apothem/rules/00-apothem-profile.md` 中移除 Apothem 块，并保留其中的其他任何文本；每个文件只有在其中不再剩下其他内容时，才会被删除。同时移除 `~/.qwen/commands/`、`~/.qwen/skills/`、`~/.qwen/agents/` 和 `~/.qwen/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件会保留。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

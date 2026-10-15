@@ -2,7 +2,7 @@
 title: "제거"
 description: "Apothem을 제거하고 하니스 구성을 정리합니다."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,32 +22,42 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## 엔진 제거
 
-제거 방법은 사용한 설치 채널에 맞춰 달라집니다.
+제거 방법은 사용한 설치 채널에 맞춰 달라집니다. 채널 번호는
+[설치 채널 표](/docs/install#채널-선택)의 번호입니다.
 
-- **Claude Code 플러그인** — Claude Code 내부에서 플러그인을 제거하세요:
+- **Claude Code 플러그인(채널 1)** — Claude Code 내부에서 플러그인을 제거하세요:
   `/plugin uninstall apothem@apothem`(마켓플레이스 항목은
   `/plugin marketplace remove ahmed-g-gad/apothem`으로 제거할 수 있습니다).
-- **npx** — 제거할 것이 없습니다. `npx`는 자체 캐시에서 실행됩니다. 캐시된 사본을
-  없애려면 `npm cache clean --force`로 캐시를 지우세요.
-- **원샷 설치 프로그램** — 체크아웃에서 해당하는 제거 스크립트를 실행하세요:
+- **npx(채널 2)** — 제거할 것이 없습니다. `npx`는 자체 캐시에서 실행됩니다. 캐시된
+  사본을 없애려면 `npm cache clean --force`로 캐시를 지우세요.
+- **원샷 설치 프로그램(채널 3)** — 체크아웃에서 해당하는 제거 스크립트를 실행하세요:
   `scripts/installer/uninstall.sh`(POSIX) 또는
   `scripts/installer/uninstall.ps1`(PowerShell). 두 스크립트 모두 제거 전에 확인을
   받으며 안전하지 않은 대상은 거부합니다.
-- **VS Code 계열 확장** — 먼저 명령 팔레트에서 **Apothem: Uninstall**을 실행하여
-  하니스 구성을 제거한 다음, 확장 보기에서 또는
+- **VS Code 계열 확장(채널 4)** — 먼저 명령 팔레트에서 **Apothem: Uninstall**을
+  실행하여 하니스 구성을 제거한 다음, 확장 보기에서 또는
   `code --uninstall-extension ahmed-g-gad.apothem`으로 확장을 제거하세요. 기본적으로
   이 확장은 `npx`를 통해 엔진을 실행하므로, 캐시는 위의 **npx** 항목이 다룹니다.
 - **명령줄 부트스트랩(채널 5–7)** — 하니스 구성이 모두 제거된 뒤에 호스트 도구로
-  확장 또는 플러그인을 제거하세요. 부트스트랩은 `npx`를 통해 엔진을 호출하는
-  어시스턴트 컨텍스트(컨텍스트 파일, 커맨드, 또는 스킬)만 추가하므로, 그 밖에
-  남는 것은 없습니다. 채널 5와 6의 확장 호스트는 제거 명령을 제공하며, 채널 7의
-  플러그인 호스트에서는 해당 플러그인 브라우저에서 `apothem`을 제거하세요.
+  확장 또는 플러그인을 제거하세요. 호스트는 다음과 같습니다.
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  부트스트랩은 `npx`를 통해 엔진을 호출하는 어시스턴트 컨텍스트(컨텍스트 파일,
+  커맨드, 또는 스킬)만 추가하므로, 그 밖에 남는 것은 없습니다. 채널 5와 6의 확장
+  호스트는 제거 명령을 제공하며, 채널 7의 플러그인 호스트에서는 해당 플러그인
+  브라우저에서 `apothem`을 제거하세요.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **직접 엔진** — 제거할 것이 없습니다. 하니스 구성이 제거되면 클론을 삭제하세요.
+- **직접 엔진(채널 8)** — 제거할 것이 없습니다. 하니스 구성이 제거되면 클론을
+  삭제하세요.
 - **백업 및 상태** — 설치 백업은 `~/.apothem/backups/` 아래에, 설치 원장은
   `~/.apothem/state/` 아래에 있습니다. 둘 다 크기가 제한됩니다. 설치, 제거, 롤백을
   할 때마다 Apothem은 설치 루트별로 최신 설치 기록 10개와 하니스별로 최신 백업
@@ -67,6 +77,10 @@ apothem uninstall --harness all --project /path/to/project --yes
   MCP 서버, 훅 핸들러는 그대로 남습니다. 제거는 설치 원장이 Apothem의 것으로
   기록한 키와 목록 항목만 제거합니다
   ([설정](/docs/reference/settings#여러분의-설정-파일에-병합하기) 참조).
+- 설치 루트의 `.apothem/` 아래에 있는 공유 데이터 저장소(`memory/`, `contexts/`,
+  `learning/`)는 같은 루트에 설치된 다른 하니스가 아직 사용하는 동안에는 남습니다.
+  그 루트에서 마지막 하니스를 제거하면 각 저장소를 먼저 `~/.apothem/backups/`에
+  복사한 다음, 그 안의 모든 내용과 함께 저장소를 제거합니다.
 - `<project>/.apothem/plans/`(및 레거시 `<project>/.plans/`) 아래의 플랜 스위트는
   영향을 받지 않습니다.
 

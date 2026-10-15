@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referência da CLI para o comando apothem uninstall."
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,13 +26,21 @@ TTY) — o comando recusa de antemão com um erro estruturado
 fornecido. Se um harness selecionado não estiver instalado, o comando é
 concluído com sucesso (saída 0) com um aviso "nada a remover".
 
+Os armazenamentos de dados compartilhados em `.apothem/`, na raiz da instalação
+(`memory/`, `contexts/`, `learning/`), permanecem enquanto outro harness
+instalado na mesma raiz ainda os usar. Quando o harness que você remove é o
+último nessa raiz, o comando primeiro copia cada armazenamento para a raiz de
+backups do Apothem (`~/.apothem/backups/`) e depois o remove com tudo o que há
+nele. Tudo o que você mantém em `plans/` nunca é removido.
+
 Uma remoção com `--harness all` é deliberadamente exaustiva: ela abrange todos
 os harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula
 durante a instalação — a limpeza alcança o estado que uma instalação anterior
 mais ampla possa ter deixado para trás. Os harnesses que nunca foram instalados
 relatam "nada a remover".
 
-O alias na forma contínua `apothem uninstalling` resolve para o mesmo manipulador.
+O alias na forma contínua `apothem uninstalling` (também aceito como
+`apothem Uninstalling`) resolve para o mesmo manipulador.
 
 ## Opções
 

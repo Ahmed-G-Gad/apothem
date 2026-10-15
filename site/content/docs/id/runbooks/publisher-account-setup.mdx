@@ -2,18 +2,19 @@
 title: "Penyiapan Akun Penerbit"
 description: "Konfigurasikan penerbit tepercaya npmjs.com untuk @ahmed-g-gad/apothem dan prasyarat rilis di sisi GitHub."
 machineTranslated: true
-sourceHash: "4f750a0f9fdb2429"
+sourceHash: "ee07a06a98f62864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Runbook ini mengonfigurasi sisi penerbit dari permukaan rilis. Alur distribusi
 memiliki satu registri: paket npm bercakupan `@ahmed-g-gad/apothem` di
-npmjs.com, yang dipublikasikan oleh alur kerja `publish-npm.yml` (alur kerja
-ini berjalan saat tag `v*.*.*` di-push; dispatch manual dengan input `tag`
-adalah jalur cadangannya) setelah alur kerja GitHub Release, Pages, CI,
-konformitas, dan harness berstatus hijau. Setiap artefak lainnya dirilis di
-halaman GitHub Release itu sendiri dan tidak memerlukan akun penerbit
-eksternal.
+npmjs.com, yang dipublikasikan oleh alur kerja `publish-npm.yml`. Alur kerja
+ini berjalan saat tag `v*.*.*` di-push, di samping `release.yml`, dan tidak
+menunggunya (dispatch manual dengan input `tag` adalah jalur cadangannya).
+Persetujuan environment `release` adalah gerbangnya: operator menyetujuinya
+setelah alur kerja GitHub Release, Pages, CI, konformitas, dan harness
+berstatus hijau. Setiap artefak lainnya dirilis di halaman GitHub Release itu
+sendiri dan tidak memerlukan akun penerbit eksternal.
 
 ## Peta Identitas
 
@@ -74,11 +75,12 @@ Tidak diperlukan rahasia `NPM_TOKEN`, nama pengguna, atau kata sandi. Alur
 kerja memublikasikan melalui npm Trusted Publishing (OIDC) dengan versi Node
 dan batas bawah OIDC npm CLI yang dipatok di dalam
 `.github/workflows/publish-npm.yml`. Alur kerja menjalankan
-`npm publish --access public` terhadap npmjs.com; npm secara otomatis
-memancarkan provenance untuk paket publik yang dipublikasikan dari alur kerja
-GitHub Actions publik. `404` registri selama `PUT` berarti penerbit tepercaya
-di sisi npm, cakupan paket, atau otorisasi akun belum selaras; perbaiki
-pengaturan paket npm sebelum mencoba alur kerja lagi.
+`npm publish --provenance --access public` terhadap npmjs.com, sehingga
+pernyataan provenance Sigstore bersifat eksplisit; npm juga memancarkan
+provenance secara default untuk paket publik yang dipublikasikan dari alur
+kerja GitHub Actions publik. `404` registri selama `PUT` berarti penerbit
+tepercaya di sisi npm, cakupan paket, atau otorisasi akun belum selaras;
+perbaiki pengaturan paket npm sebelum mencoba alur kerja lagi.
 
 Setelah sebuah publikasi tepercaya berhasil, tutup jalur token untuk
 selamanya: di **Settings → Publishing access** milik paket di npmjs.com, pilih

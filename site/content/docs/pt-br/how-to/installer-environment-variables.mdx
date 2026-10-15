@@ -2,7 +2,7 @@
 title: "Variáveis de ambiente do instalador"
 description: "Controle o instalador por script (destino, origem, harness, perfil, verificação) com variáveis de ambiente."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ variáveis de ambiente antes de executá-lo.
 | `APOTHEM_HOME` | Destino de instalação da árvore de código-fonte clonada | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Remoto do Git a clonar | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Ref do Git para fazer checkout; sem definir, resolve a tag `vMAJOR.MINOR.PATCH` assinada mais recente, um valor de tag a fixa, `main` seleciona a branch móvel. Uma ref que não seja tag, como `main`, aborta a operação, a menos que `APOTHEM_ALLOW_UNVERIFIED=1` esteja definido. | não definida (tag assinada mais recente) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Rebaixa uma falha na verificação da assinatura da tag, de um aborto fatal para um aviso, quando definida como `1` | `0` (verifica, fail-closed) |
+| `APOTHEM_ALLOW_UNVERIFIED` | Rebaixa uma falha na verificação da assinatura da tag, de um aborto fatal para um aviso, quando definida como `1` | `0` (verifica; na falha, bloqueia) |
 | `APOTHEM_VERIFY` | `signature` verifica a assinatura GPG da tag de lançamento; `checksum` instala o arquivo da plataforma do lançamento depois de conferir o SHA-256 dele com o `SHA256SUMS` do lançamento (integridade, não prova de quem o publicou) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de download para o modo checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Árvore de código-fonte local explícita a usar em vez de clonar | não definida (clona) |
@@ -55,11 +55,14 @@ instalação. Uma tag assinada cuja chave pública do mantenedor está ausente d
 chaveiro local, em vez disso, aborta com orientações para importar a chave —
 importe a chave e confira a impressão digital dela com o valor publicado no
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Fixe um lançamento conhecido com `APOTHEM_REF=<tag>` (também verificada; uma
-tag da [página de lançamentos](https://github.com/ahmed-g-gad/apothem/releases)),
-selecione a branch móvel com `APOTHEM_REF=main` (não verificada) ou defina
-`APOTHEM_ALLOW_UNVERIFIED=1` para prosseguir após uma falha de verificação com
-um aviso (uso air-gapped, local ou anterior aos lançamentos assinados).
+Fixe um lançamento conhecido com `APOTHEM_REF=<tag>`, obtendo a tag na
+[página de lançamentos](https://github.com/ahmed-g-gad/apothem/releases); uma
+tag fixada é verificada da mesma forma. Selecione a branch móvel com
+`APOTHEM_REF=main` junto com `APOTHEM_ALLOW_UNVERIFIED=1`; essa instalação não é
+verificada, e `main` sozinha aborta porque uma branch não é uma tag assinada.
+Defina `APOTHEM_ALLOW_UNVERIFIED=1` sozinha para prosseguir após uma falha de
+verificação com um aviso (uso air-gapped, local ou anterior aos lançamentos
+assinados).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

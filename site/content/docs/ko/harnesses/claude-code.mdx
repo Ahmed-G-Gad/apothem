@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -100,7 +100,9 @@ apothem verify --harness claude-code
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -120,8 +122,15 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거하고 `CLAUDE.md`에서 Apothem 블록을
-걷어 내며, 여러분이 작성한 내용은 그대로 둡니다.
+`~/.claude/CLAUDE.md`에서 Apothem 블록을 제거하고, 그 안의 나머지 텍스트는
+그대로 둡니다. 파일은 그 안에 다른 내용이 하나도 남지 않은 경우에만 삭제됩니다.
+어댑터가 `~/.claude/settings.json`에 추가한 항목을 제거합니다(여러분이 작성한
+권한 규칙, 키, 훅 핸들러는 그대로 남으며, 파일은 Apothem이 만들었고 여러분의
+내용이 하나도 남지 않은 경우에만 삭제됩니다). 또한 `~/.claude/agents/`,
+`~/.claude/rules/`, `~/.claude/skills/`, `~/.claude/statuslines/`,
+`~/.claude/output-styles/`, `~/.claude/.apothem/support/`에 있는 Apothem 파일을
+제거하며, 그 폴더들의 다른 파일은 그대로 남습니다. 각 파일은 변경 또는 제거되기
+전에 `~/.apothem/backups/` 아래에 백업됩니다.
 설치된 `apothem` 패키지와 소스 저장소는 영향을 받지 않습니다.
 
 ## 적합성 게이트

@@ -2,7 +2,7 @@
 title: "Trae"
 description: "محوّل إطار عمل Apothem لـ Trae (إصدار عام)."
 machineTranslated: true
-sourceHash: "f40933a9d485e4be"
+sourceHash: "0e9e61064d66a5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,8 +69,12 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi>، والبيانات الأمامية التي كتبها <bdi>Apothem</bdi> فوقها،
+من <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi> ويُبقي أي نص آخر فيه. ولا
+يُحذَف الملف إلا حين لا يتبقى فيه شيء آخر. قبل التغيير تُحفَظ نسخة مختومة بالوقت من
+الملف تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترَك أي ملف نسخة احتياطية في
+المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "96531a4a5fa4a15e"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,23 +39,23 @@ elle :
 
 Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de
 sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même
-être annulé à la main. Il ajoute ensuite un enregistrement `rollback` au journal
-de l'environnement. Annuler une installation plus ancienne ne restaure ou ne
-supprime que les cibles enregistrées par cette installation, et retire de
-l'enregistrement actif, à la même racine, chaque installation qui l'a suivie.
-Les fichiers qu'une installation ultérieure a ajoutés en dehors de ces cibles
-restent en place.
+être annulé à la main. Le rollback ajoute ensuite un enregistrement `rollback`
+au journal de l'environnement. Annuler une installation plus ancienne ne
+restaure ou ne supprime que les cibles enregistrées par cette installation
+plus ancienne, et retire chaque installation qui l'a suivie des installations
+actives du journal, à la même racine. Les fichiers qu'une installation
+ultérieure a ajoutés en dehors de ces cibles restent en place.
 
 Le journal conserve les 10 enregistrements d'installation les plus récents par
 racine d'installation (avec les sauvegardes qu'ils référencent) ; une
 installation plus ancienne ne peut plus être annulée par son id et signale
 `rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/backups)
-abaisse cette limite à la demande, et ne supprime jamais la sauvegarde que
-l'annulation de la dernière installation utilise pour restaurer.
+abaisse cette limite à la demande, et ne supprime jamais la sauvegarde à partir
+de laquelle la dernière installation est restaurée.
 
-Les enregistrements écrits par une version d'Apothem antérieure à l'ajout de ce
-comportement ne listent pas les fichiers que l'installation a créés ; annuler
-un tel enregistrement ne restaure que les fichiers écrasés.
+Les enregistrements écrits par une publication d'Apothem antérieure à l'ajout
+de ce comportement ne listent pas les fichiers que l'installation a créés ;
+annuler un tel enregistrement ne restaure que les fichiers écrasés.
 
 La confirmation est demandée pour chaque environnement, sauf si `--yes` est
 fourni. Lorsqu'aucune invite n'est possible — `--format json` (le texte de
@@ -70,10 +70,11 @@ environnement enregistré, y compris ceux que le champ `exclude_harnesses` du
 profil ignore lors de l'installation — restaurer l'état antérieur à
 l'installation est une opération de nettoyage ; elle atteint donc les
 enregistrements qu'une installation antérieure plus large a pu laisser. Un
-environnement sans installation enregistrée échoue avec `rollback.no_record`
-(une ligne `"outcome": "error"` dans `results`), et l'exécution se poursuit avec
-les environnements restants. La commande se termine ensuite avec le code 1, ou
-2 lorsqu'un autre environnement a été restauré.
+environnement sans installation enregistrée échoue sous la forme d'une ligne
+`"outcome": "error"` dans `results` (voir la sortie JSON), et l'exécution se
+poursuit avec les environnements restants. La commande se termine ensuite avec
+le code 1, ou 2 lorsqu'au moins une cible d'un autre environnement a été
+annulée.
 
 ## Options
 
@@ -116,8 +117,10 @@ que dans `files_written`) ; le `message` indique si le chemin a été restauré 
 supprimé. Une restauration en échec (par exemple, une sauvegarde qui a été
 supprimée) vaut `"outcome": "error"`. Une installation qui n'a enregistré aucun
 changement est signalée avec `"outcome": "skipped"`. Lorsqu'aucun
-enregistrement d'installation correspondant n'existe, la commande signale une
-erreur `rollback.no_record` avec `"status": "error"`.
+enregistrement d'installation correspondant n'existe pour un seul environnement
+nommé, la commande signale une erreur `rollback.no_record` avec
+`"status": "error"`. Sous `--harness all`, un environnement sans enregistrement
+correspondant est plutôt une ligne `"outcome": "error"` dans `results`.
 
 ## Exemples
 
@@ -133,7 +136,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | Annulation réussie, ou rien à annuler (l'installation n'a enregistré aucun changement) |
 | 1 | Erreur attendue — aucun enregistrement d'installation, sélecteurs en conflit, environnement inconnu, racine de projet manquante, ou confirmation refusée ou impossible (mode non interactif ou JSON sans `--yes`) |
-| 2 | Restauration partielle après l'annulation d'au moins une cible |
+| 2 | Résultat partiel — au moins une cible a été annulée et un échec a aussi été enregistré (une restauration en échec ou, sous `--harness all`, un environnement sans enregistrement d'installation) |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi

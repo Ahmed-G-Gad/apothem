@@ -2,7 +2,7 @@
 title: "Apothem 대 수동 Hermes 구성"
 description: "Hermes 구성을 손으로 유지하는 것과 Apothem의 공유 프로필을 통해 관리하는 것의 비교."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,10 @@ Apothem 지원 하위 트리 아래에 둡니다. Hermes는
 2. 재사용 가능한 Hermes 스킬이나 명령 프롬프트를 공유 코퍼스로 옮깁니다.
 3. `apothem install --harness hermes`를 실행해 네이티브 구성과 지원 스킬
    디렉터리를 렌더링합니다.
-4. `apothem verify --harness hermes`를 실행해 구성이 안착했는지 확인합니다.
+4. Hermes가 설치된 스킬을 로드하도록 `~/.hermes/.apothem/support/skills`를
+   `config.yaml`의 `skills.external_dirs`에 추가합니다. `apothem update`는
+   `config.yaml`에 여러분이 추가한 키를 그대로 유지합니다.
+5. `apothem verify --harness hermes`를 실행해 구성이 안착했는지 확인합니다.
 
 ## 다음으로 읽기
 

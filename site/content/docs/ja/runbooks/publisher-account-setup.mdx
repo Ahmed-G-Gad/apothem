@@ -2,13 +2,14 @@
 title: "パブリッシャーアカウントのセットアップ"
 description: "@ahmed-g-gad/apothem 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。"
 machineTranslated: true
-sourceHash: "4f750a0f9fdb2429"
+sourceHash: "ee07a06a98f62864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 このランブックは、リリース面のパブリッシャー側を構成します。
-配布の構成にはレジストリが 1 つだけあります。npmjs.com 上のスコープ付き npm パッケージ `@ahmed-g-gad/apothem` で、GitHub Release、Pages、CI、コンフォーミティ、ハーネスの各ワークフローがグリーンになった後に、`publish-npm.yml` ワークフローによって公開されます。
-このワークフローは `v*.*.*` のタグのプッシュで実行されます。`tag` 入力を指定した手動ディスパッチは、そのフォールバックです。
+配布の構成にはレジストリが 1 つだけあります。npmjs.com 上のスコープ付き npm パッケージ `@ahmed-g-gad/apothem` で、`publish-npm.yml` ワークフローによって公開されます。
+このワークフローは、`v*.*.*` のタグのプッシュ時に `release.yml` と並行して実行され、その完了を待ちません（`tag` 入力を指定した手動ディスパッチは、そのフォールバックです）。
+`release` 環境の承認がゲートです。オペレーターは、GitHub Release、Pages、CI、コンフォーミティ、ハーネスの各ワークフローがグリーンになった後に、これを承認します。
 その他のすべての成果物は GitHub Release ページ自体で配布され、外部のパブリッシャーアカウントを必要としません。
 
 ## アイデンティティマップ
@@ -65,7 +66,7 @@ GitHub のオーナーは、将来変わることが許容されています。
 
 `NPM_TOKEN`、ユーザー名、パスワードのシークレットは必要ありません。
 ワークフローは、Node のバージョンと npm CLI の OIDC 下限を `.github/workflows/publish-npm.yml` 内にピン留めした状態で、npm Trusted Publishing（OIDC）を通じて公開します。
-ワークフローは npmjs.com に対して `npm publish --access public` を実行します。npm は、パブリックな GitHub Actions ワークフローから公開されたパブリックパッケージに対して、来歴を自動的に発行します。
+ワークフローは npmjs.com に対して `npm publish --provenance --access public` を実行するため、Sigstore の来歴ステートメントが明示的に生成されます。また npm は、パブリックな GitHub Actions ワークフローから公開されたパブリックパッケージに対して、デフォルトでも来歴を発行します。
 `PUT` 中のレジストリ `404` は、npm 側の信頼済みパブリッシャー、パッケージスコープ、またはアカウントの認可がまだ整合していないことを意味します。ワークフローを再試行する前に、npm のパッケージ設定を修正してください。
 
 信頼済み公開が一度成功したら、トークンの経路を完全に閉じてください。

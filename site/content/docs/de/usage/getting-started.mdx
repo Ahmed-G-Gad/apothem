@@ -1,25 +1,25 @@
 ---
 title: "Kern-Workflows"
-description: "Die vier Kern-Workflows von Apothem — Profil, Regeln, Pläne und das Konformitätsgate."
+description: "Die vier Kern-Workflows von Apothem — Profil, Regeln, Pläne und das Konformitäts-Gate."
 machineTranslated: true
-sourceHash: "53658e5bd065d27f"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem bietet vier Kernfähigkeiten: ein gemeinsames Governance-Profil, einen
-Regelkorpus, eine strukturierte Planungs-Pipeline und ein Konformitätsgate in
+Regelkorpus, eine strukturierte Planungs-Pipeline und ein Konformitäts-Gate in
 Echtzeit.
 
 <Callout title="Neu hier?">
-  Für eine geführte Tour von null bis zum ersten Lauf beginne mit dem
+  Für eine geführte Tour von null bis zum ersten Lauf beginnen Sie mit dem
   [Erste-Schritte-Tutorial](/docs/tutorials/getting-started). Diese Seite ist
-  eine Schnellreferenz zu den vier Kern-Workflows, sobald du eingerichtet bist.
+  eine Schnellreferenz zu den vier Kern-Workflows, sobald Sie eingerichtet sind.
 </Callout>
 
 ## Das gemeinsame Profil
 
-Dein Apothem-Profil liegt unter `~/.config/apothem/profile.yaml`, sofern du
-nicht `--profile PATH` übergibst. Es ist die einzige Quelle der Wahrheit, aus der
+Ihr Apothem-Profil liegt unter `~/.config/apothem/profile.yaml`, sofern Sie
+nicht `--profile PATH` übergeben. Es ist die einzige Quelle der Wahrheit, aus der
 jeder Harness-Adapter seine native Konfiguration ableitet:
 
 ```yaml
@@ -31,7 +31,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-Erstelle und prüfe das Profil:
+Erstellen Sie das Profil, falls es noch nicht existiert, und prüfen Sie es dann.
+Die Ein-Schritt-Installer und `apothem install` schreiben bei einem ersten Lauf
+bereits ein Starter-Profil, und `profile init` bricht mit einem Fehler ab und
+lässt eine bestehende Datei unverändert, sofern Sie nicht `--force` übergeben.
 
 ```bash
 apothem profile init
@@ -40,10 +43,10 @@ apothem profile show --json
 
 ## Erste Regel
 
-Füge dem Profil-YAML gemeinsame Regeln hinzu und materialisiere anschließend den
-ausgewählten Harness neu. Enthalten diese Regeln Beispieldaten, verwende fiktive
-Platzhalter, damit keine echte Identität und keine echten Anmeldedaten in einem
-geteilten Profil oder einem CI-Lauf landen.
+Fügen Sie dem Profil-YAML gemeinsame Regeln hinzu und materialisieren Sie
+anschließend den ausgewählten Harness neu. Enthalten diese Regeln Beispieldaten,
+verwenden Sie fiktive Platzhalter, damit keine echte Identität und keine echten
+Anmeldedaten in einem geteilten Profil oder einem CI-Lauf landen.
 
 ```bash
 apothem profile set rules '["Always include a brief summary at the end of every response."]'
@@ -53,22 +56,22 @@ apothem verify --harness claude-code
 
 ## Erster Plan
 
-Die `/plan`-Pipeline läuft innerhalb deines Harness als
+Die `/plan`-Pipeline läuft innerhalb Ihres Harness als
 Slash-Befehle, nicht über die `apothem`-Binärdatei. Sobald ein Harness
-installiert ist, starte einen Plan aus dem Chat des Werkzeugs:
+installiert ist, starten Sie einen Plan aus dem Chat des Werkzeugs:
 
 ```text
 /plan-spec
 ```
 
-`/plan-spec` verfeinert deinen Fließtext zu einer Spezifikation, und
+`/plan-spec` verfeinert Ihren Fließtext zu einer Spezifikation, und
 `/plan-generate` materialisiert eine Plan-Suite unter
-`<project-root>/.apothem/plans/{suite}/`. Den vollständigen Ablauf findest du in der
-[Pipeline-Befehlsreferenz](/docs/pipeline).
+`<project-root>/.apothem/plans/{suite}/`. Den vollständigen Ablauf finden Sie in
+der [Pipeline-Befehlsreferenz](/docs/pipeline).
 
-## Konformitätsgate
+## Konformitäts-Gate
 
-Führen Sie vom Apothem-Checkout aus Folgendes aus:
+Führen Sie von einem Apothem-Checkout aus Folgendes aus:
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
@@ -81,4 +84,4 @@ PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Führt alle mechanischen Konformitätsprüfungen aus und meldet bestanden/nicht
-bestanden pro Schranke.
+bestanden pro Stufe.

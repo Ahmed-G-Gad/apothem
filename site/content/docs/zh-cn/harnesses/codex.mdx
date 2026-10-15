@@ -2,7 +2,7 @@
 title: "Codex"
 description: "适用于 Codex（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ apothem install --harness codex
 
 适配器读取 Apothem 的共享集合，并将每个集合安装到正确的 Codex 表面：指令安装到 `AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体转换为 TOML，技能安装到 `~/.agents/skills/`，非原生的 Markdown 规则/模板则作为支持材料安装到 `~/.config/apothem/`。
 
-每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权在扣除其拒绝列表之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。`Bash` 不算作文件编辑工具，因此被授予 `Bash` 而不含上述任何工具的辅助程序仍然是只读的。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
+每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权在去掉其自身 `disallowedTools` 列表中的工具之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。`Bash` 不算作文件编辑工具，因此被授予 `Bash` 而不含上述任何工具的辅助程序仍然会得到该设置。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
 
 ## 兼容性说明
 
@@ -64,8 +64,7 @@ apothem update --harness codex
 apothem uninstall --harness codex
 ```
 
-移除适配器写入的原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `~/.codex/AGENTS.md` 中移除 Apothem 区块并保留该区块之外的任何文本，并从 `~/.codex/hooks.json` 中移除 Apothem 的条目并保留你自己的条目。同时移除 `~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/` 和 `~/.config/apothem/{rules,templates}/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。从 `~/.agents/skills/` 中移除的技能，也会从其他加载该目录的工具中消失（参见[兼容性说明](#兼容性说明)）。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

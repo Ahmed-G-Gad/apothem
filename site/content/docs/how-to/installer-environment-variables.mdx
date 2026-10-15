@@ -54,11 +54,13 @@ key-import guidance instead - import the key and check its fingerprint
 against the value published in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 Pin a known
-release with `APOTHEM_REF=<tag>` (also verified; a tag from the
-[releases page](https://github.com/ahmed-g-gad/apothem/releases)), select the
-moving branch with `APOTHEM_REF=main` (unverified), or set
-`APOTHEM_ALLOW_UNVERIFIED=1` to proceed past a verification failure with a
-warning (air-gapped, local, or pre-signed-release use).
+release with `APOTHEM_REF=<tag>`, taking the tag from the
+[releases page](https://github.com/ahmed-g-gad/apothem/releases); a pinned tag
+is verified the same way. Select the moving branch with `APOTHEM_REF=main` plus
+`APOTHEM_ALLOW_UNVERIFIED=1`; that install is unverified, and `main` alone
+aborts because a branch is not a signed tag. Set `APOTHEM_ALLOW_UNVERIFIED=1` on
+its own to proceed past a verification failure with a warning (air-gapped,
+local, or pre-signed-release use).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

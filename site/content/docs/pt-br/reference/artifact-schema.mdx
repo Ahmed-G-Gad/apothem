@@ -2,7 +2,7 @@
 title: "Especificação do schema de artefatos"
 description: "Schema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de código-fonte do Apothem, com templates por classe e regras de validação."
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ cada tipo.
 **Regras universais:**
 
 - O frontmatter está em conformidade com YAML 1.2
-- Todos os valores de string usam aspas duplas, a menos que estejam vazios
+- Todos os valores de string usam aspas duplas, e uma string vazia é escrita como `""`
 - Ordem dos campos: campos obrigatórios primeiro, campos opcionais agrupados por relevância
 - Comentários no frontmatter usam `#` seguido de espaço: `# comment`
 - Valores de caminho devem ser relativos (sem `/` inicial) e usar barras normais (`/`) para compatibilidade entre plataformas
@@ -150,8 +150,9 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Propósito:** Definições persistentes de auxiliares para exploração paralela,
-auditoria e portões de qualidade.
+**Propósito:** Definições persistentes de auxiliares (também chamados de
+trabalhadores delegados) para exploração paralela, auditoria e portões de
+qualidade.
 
 ### Campos obrigatórios
 
@@ -313,7 +314,7 @@ A forma `-m apothem.hooks.dispatch` serve ao desenvolvimento a partir de um chec
 
 ### Eventos obrigatórios
 
-O template do Claude Code registra SessionStart, PreToolUse, PostToolUse e Stop. PreCompact e PostCompact não são registrados no Claude Code ([referência de hooks](/docs/reference/hooks)), e `scripts/dev/validate_hooks.py` relata cada um como ausente, em forma de aviso. A tabela lista os cinco eventos que `validate_hooks.py` verifica:
+O template do Claude Code registra quatro eventos: SessionStart, PreToolUse, PostToolUse e Stop. `scripts/dev/validate_hooks.py` verifica em `settings.json` os cinco eventos da tabela abaixo, um conjunto diferente, e relata cada um que não encontra como aviso, e não como falha. PostToolUse está registrado, mas não é um dos cinco. PreCompact e PostCompact estão entre os cinco, mas não são registrados no Claude Code ([referência de hooks](/docs/reference/hooks)), de modo que, no Claude Code, o verificador emite um aviso sobre ambos.
 
 > **Os valores de timeout espelham os orçamentos canônicos dos eventos de hook** — a
 > tabela abaixo os reproduz para conveniência do leitor; a fonte canônica prevalece.
@@ -346,7 +347,7 @@ Todo comando de hook passa pelo mesmo despachante Python:
 
 `scripts/dev/validate_hooks.py` impõe o contrato de hooks:
 
-- `settings.json` é analisado como JSON e declara todos os eventos obrigatórios.
+- `settings.json` é analisado como JSON e declara cada um dos cinco eventos da tabela; um evento ausente é um aviso, não uma falha.
 - Os três scripts Python existem e são analisados como Python válido.
 - Todos os arquivos de mensagem referenciados pelos argumentos `--context-file` existem.
 - Nenhum caminho absoluto de usuário fixo no código (`C:\Users\...` etc.) aparece em `src/apothem/hooks/**.py`.
@@ -397,7 +398,7 @@ Todo artefato deve satisfazer estas verificações:
 
 ### Validação do conteúdo
 
-- [ ] O conteúdo começa em uma nova linha após o `---` de fechamento; nos arquivos da família Markdown, o banner do cabeçalho de autoria é o primeiro conteúdo depois dele
+- [ ] O conteúdo começa em uma nova linha após o `---` de fechamento; nos arquivos da família Markdown, a linha SPDX canônica do cabeçalho é o primeiro conteúdo depois dele
 - [ ] Nenhuma referência interna de planos (conformidade com CM-7)
 - [ ] As referências cruzadas se resolvem (se listarem outros artefatos)
 - [ ] Os links usam caminhos relativos com barras normais

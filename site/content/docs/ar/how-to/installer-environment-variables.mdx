@@ -2,11 +2,11 @@
 title: "متغيّرات بيئة المُثبِّت"
 description: "تحكّم في مُثبِّت السكربت (الوجهة، والمصدر، وإطار العمل، والملف التعريفي، والتحقّق) بمتغيّرات البيئة."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-الهدف: قيادة <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> دون تحرير السكربت،
+الهدف: التحكّم في <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> دون تحرير السكربت،
 بضبط متغيّرات البيئة قبل تشغيله.
 
 ## المتطلّبات المسبقة
@@ -25,8 +25,8 @@ sourceHash: "ac08049d8506b135"
 | --- | --- | --- |
 | <bdi>`APOTHEM_HOME`</bdi> | وجهة التثبيت لشجرة المصدر المُستنسَخة | <bdi>`$HOME/.apothem`</bdi> |
 | <bdi>`APOTHEM_REPO`</bdi> | مستودع <bdi>Git</bdi> البعيد المراد استنساخه | <bdi>`https://github.com/ahmed-g-gad/apothem`</bdi> |
-| <bdi>`APOTHEM_REF`</bdi> | مرجع <bdi>Git</bdi> المراد سحبه؛ وغير المضبوط يَحُلّ أحدث وسم <bdi>`vMAJOR.MINOR.PATCH`</bdi> موقَّع، وقيمة الوسم تثبّته، و<bdi>`main`</bdi> يختار الفرع المتحرّك. ويُجهِض التثبيتَ أي مرجع ليس وسمًا، مثل <bdi>`main`</bdi>، ما لم يُضبَط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> | غير مضبوط (أحدث وسم موقَّع) |
-| <bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi> | يُخفِّض فشل التحقّق من توقيع الوسم من خطأ فادح يُجهِض التثبيت إلى تحذير عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يتحقّق، ويرفض عند الفشل) |
+| <bdi>`APOTHEM_REF`</bdi> | مرجع <bdi>Git</bdi> المراد سحبه؛ وغير المضبوط يَحُلّ أحدث وسم <bdi>`vMAJOR.MINOR.PATCH`</bdi> موقَّع، وقيمة الوسم تثبّته، و<bdi>`main`</bdi> يختار الفرع المتحرّك. ويُجهَض التثبيت عند أي مرجع ليس وسمًا، مثل <bdi>`main`</bdi>، ما لم يُضبَط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> | غير مضبوط (أحدث وسم موقَّع) |
+| <bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi> | يُخفِّض فشل التحقّق من توقيع الوسم من إجهاض فادح إلى تحذير عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يتحقّق، ويرفض عند الفشل) |
 | <bdi>`APOTHEM_VERIFY`</bdi> | <bdi>`signature`</bdi> يتحقّق من توقيع <bdi>GPG</bdi> لوسم الإصدار؛ و<bdi>`checksum`</bdi> يُثبِّت أرشيف المنصّة الخاص بالإصدار بعد فحص بصمة <bdi>SHA-256</bdi> الخاصة به مقابل ملف <bdi>`SHA256SUMS`</bdi> الخاص بالإصدار (سلامة، لا إثبات لهوية من نشره) | <bdi>`signature`</bdi> |
 | <bdi>`APOTHEM_RELEASE_BASE`</bdi> | قاعدة التنزيل لوضع التحقّق بالمجموع الاختباري | <bdi>`<APOTHEM_REPO>/releases/download`</bdi> |
 | <bdi>`APOTHEM_SOURCE`</bdi> | شجرة مصدر محلية صريحة تُستخدَم بدلًا من الاستنساخ | غير مضبوط (استنساخ) |
@@ -52,15 +52,17 @@ sourceHash: "ac08049d8506b135"
 
 حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يَحُلّ المُثبِّت أحدث وسم إصدار
 موقَّع ويتحقّق من توقيعه بالأمر <bdi>`git verify-tag`</bdi> قبل تجسيد أي إعداد؛
-والوسم غير الموقَّع أو المُتلاعَب به يُوقِف التثبيت. أما الوسم الموقَّع الذي يغيب
-المفتاح العام لمشرفه عن حلقة المفاتيح المحلية فيُوقِف التثبيت بدلًا من ذلك مع
-إرشادات لاستيراد المفتاح — استورِد المفتاح وافحص بصمته مقابل القيمة المنشورة في
+والوسم غير الموقَّع أو المُتلاعَب به يُجهِض التثبيت. أما الوسم الموقَّع الذي يغيب
+المفتاح العام لمشرفه عن حلقة المفاتيح المحلية فيُجهِض التثبيت بدلًا من ذلك مع
+إرشادات لاستيراد المفتاح — استورِد المفتاح وطابِق بصمته مع القيمة المنشورة في
 [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-قيِّد التثبيت بإصدار معروف عبر <bdi>`APOTHEM_REF=<tag>`</bdi> (يُتحقَّق منه أيضًا؛
-وسم من [صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases))، أو اختر
-الفرع المتحرّك عبر <bdi>`APOTHEM_REF=main`</bdi> (دون تحقّق)، أو اضبط
-<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> للمضيّ بعد فشل التحقّق مع تحذير (للاستخدام
-المعزول عن الشبكة، أو المحلي، أو مع الإصدارات السابقة لاعتماد التوقيع).
+ثبِّت إصدارًا معروفًا عبر <bdi>`APOTHEM_REF=<tag>`</bdi>، آخذًا الوسم من
+[صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases)؛ ويُتحقَّق من
+الوسم المثبَّت بالطريقة نفسها. اختر الفرع المتحرّك عبر <bdi>`APOTHEM_REF=main`</bdi>
+مع <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>؛ ذلك التثبيت غير مُتحقَّق منه، ويُجهِض
+<bdi>`main`</bdi> وحده التثبيت لأن الفرع ليس وسمًا موقَّعًا. اضبط
+<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> وحده للمضيّ بعد فشل التحقّق مع تحذير
+(للاستخدام المعزول عن الشبكة، أو المحلي، أو مع الإصدارات السابقة لاعتماد التوقيع).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

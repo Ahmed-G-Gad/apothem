@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Apothem-Harness-Adapter für Cursor (GA)."
 machineTranslated: true
-sourceHash: "79efcc04715286ff"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,13 @@ benutzerweite globale Regeln, den dieser Adapter verwalten könnte.
 apothem verify --harness cursor --project /path/to/project
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -73,8 +76,13 @@ neu ab.
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block und das Frontmatter, das Apothem darüber geschrieben
+hat, aus `<project>/.cursor/rules/apothem-rules.mdc` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig
+ist. Vor der Änderung wird eine mit Zeitstempel versehene Kopie der Datei unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
 ## Konformitäts-Gate
 

@@ -2,7 +2,7 @@
 title: "合规闸门"
 description: "Apothem 合规闸门——每个发布的工件都必须通过的十五道预发布闸门关卡（M1-M15）中的机械部分。"
 machineTranslated: true
-sourceHash: "56cca9f8f53e7f52"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,9 +26,11 @@ sourceHash: "56cca9f8f53e7f52"
 | 14 | M14 | 系统性（声明上游 / 下游 / 同级 / 执行者） | 推理判断 | 声明；在登记册中编入索引 |
 | 15 | M15 | 生产就绪（测试 + 文档 + CHANGELOG + 合规提交 + CI 绿色 + semver 稳定性） | 机械 + 推理判断 | 补齐缺失的表面 |
 
+闸门只运行可由机器检查的校验器。推理判断类关卡所要求的推理判断，以及每个机械 + 推理判断类关卡中的推理判断部分，都在评审中评估。
+
 ## 严重级别阶梯
 
-闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all-perwrite`）在阻断性匹配器失败时以 `2` 退出；建议性匹配器只报告。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
+闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现项，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all` 或 `--all-perwrite`）在某个阻断性校验器或匹配器失败时以 `2` 退出；建议性发现项只报告。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现项，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
 
 ## 校验器
 
@@ -104,7 +106,7 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 
 ## 运行闸门
 
-在已安装的工具上，闸门会自动运行：Claude Code 的 `settings.json` 将其接入为一个 `PreToolUse` 钩子，在每次 Write/Edit 之前调用位于 `~/.claude/.apothem/support/conformity/gate.py` 的物化副本。在源码检出中，模块形式驱动同一套代码。闸门默认是建议性的：它报告发现项并以 `0` 退出。添加 `--strict` 可在出现阻断性发现项时以 `2` 退出。未知的校验器名称以 `3` 退出。
+在已安装的工具上，闸门会自动运行：Claude Code 的 `settings.json` 将其接入为一个 `PreToolUse` 钩子，在每次 Write/Edit 之前调用位于 `~/.claude/.apothem/support/conformity/gate.py` 的物化副本。随后闸门只检查其钩子范围内的写入，范围之外的写入会无声通过；该范围列于[运行合规闸门](/docs/usage/conformity-gate)。在源码检出中，模块形式驱动同一套代码；请在下面每条 `python` 命令前加上 `PYTHONPATH=src`。闸门默认是建议性的：它报告发现项并以 `0` 退出。添加 `--strict` 可在出现阻断性发现项时以 `2` 退出。未知的校验器名称以 `3` 退出。
 
 ```shell
 # Every standalone validator across the repository:

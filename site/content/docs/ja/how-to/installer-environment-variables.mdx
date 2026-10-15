@@ -2,7 +2,7 @@
 title: "インストーラーの環境変数"
 description: "環境変数でスクリプトインストーラー（インストール先、ソース、ハーネス、プロファイル、検証）を制御します。"
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "ac08049d8506b135"
 | --- | --- | --- |
 | `APOTHEM_HOME` | クローンしたソースツリーのインストール先 | `$HOME/.apothem` |
 | `APOTHEM_REPO` | クローンする Git リモート | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決します。タグの値を指定するとそのタグに固定され、`main` は移動するブランチを選びます。`main` のような、タグではない ref は、`APOTHEM_ALLOW_UNVERIFIED=1` が設定されていない限り中止します | 未設定（最新の署名付きタグ） |
+| `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決します。タグの値を指定するとそのタグに固定され、`main` は移動するブランチを選びます。`main` のような、タグではない ref は、`APOTHEM_ALLOW_UNVERIFIED=1` が設定されていない限り中止します。 | 未設定（最新の署名付きタグ） |
 | `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、タグ署名の検証失敗を、致命的な中断から警告へ格下げします | `0`（検証する、フェイルクローズ） |
 | `APOTHEM_VERIFY` | `signature` は、リリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォーム用アーカイブを、その SHA-256 をリリースの `SHA256SUMS` と照合したうえでインストールします（完全性を確認するものであり、誰が公開したかの証明ではありません） | `signature` |
 | `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
@@ -41,7 +41,9 @@ sourceHash: "ac08049d8506b135"
 
 `APOTHEM_REF` が設定されていない場合、インストーラーは最新の署名付きリリースタグを解決し、いずれかの構成をマテリアライズする前に `git verify-tag` でその署名を検証します。署名されていないタグや改ざんされたタグは、インストールを中断させます。
 メンテナーの公開鍵がローカルのキーリングにない署名付きタグの場合は、代わりに鍵のインポート手順を案内して中断します — 鍵をインポートし、そのフィンガープリントを [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) で公開されている値と照合してください。
-`APOTHEM_REF=<tag>` で既知のリリースを固定する（これも検証されます。[リリースページ](https://github.com/ahmed-g-gad/apothem/releases)にあるタグを指定します）か、`APOTHEM_REF=main` で移動するブランチを選択する（検証なし）か、`APOTHEM_ALLOW_UNVERIFIED=1` を設定して検証の失敗を警告付きで通過させます（エアギャップ環境、ローカル、または署名付きリリース以前の用途）。
+既知のリリースを固定するには `APOTHEM_REF=<tag>` を使い、タグは[リリースページ](https://github.com/ahmed-g-gad/apothem/releases)から取得します。固定したタグも同じ方法で検証されます。
+移動するブランチを選ぶには、`APOTHEM_REF=main` に加えて `APOTHEM_ALLOW_UNVERIFIED=1` を指定します。このインストールは検証されません。`main` だけを指定すると、ブランチは署名付きタグではないため中止します。
+検証の失敗を警告付きで通過させるには、`APOTHEM_ALLOW_UNVERIFIED=1` だけを設定します（エアギャップ環境、ローカル、または署名付きリリース以前の用途）。
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
@@ -104,7 +106,7 @@ pwsh -NoProfile -File install.ps1
 ## 検証
 
 インストーラーは `✓ Harness <name> installed` を出力し、続いて（`APOTHEM_SKIP_VERIFY=1` でない限り）`✓ verify passed` を出力します。
-個別に確認します。
+インストーラーとは別に確認するには、次を実行します。
 
 ```bash
 apothem verify --harness cursor

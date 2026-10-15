@@ -2,22 +2,22 @@
 title: "Konzepte"
 description: "Glossar mit Definitionen für gemeinsame Profile, Harness-Adapter, Regeln, Hooks, Konformitäts-Gates, Skills und delegierte Worker in Apothem."
 machineTranslated: true
-sourceHash: "62dff0efc0d0f672"
+sourceHash: "1a84322c09beb863"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Eine Kurzreferenz für die Begriffe, denen du in der gesamten Apothem-Dokumentation begegnest.
+Eine Kurzreferenz für die Begriffe, denen Sie in der gesamten Apothem-Dokumentation begegnen.
 
 ## Gemeinsames Profil
 
 Eine schema-validierte YAML-Datei unter `~/.config/apothem/profile.yaml` (mit `--profile PATH` überschreibbar).
-Sie ist die einzige Quelle der Wahrheit für deine Identität, Präferenzen und Konfiguration; jeder
+Sie ist die einzige Quelle der Wahrheit für Ihre Identität, Präferenzen und Konfiguration; jeder
 Harness-Adapter liest sie bei der Installation und leitet daraus die native Konfiguration dieses Harness ab.
 
 ## Harness-Adapter
 
 Ein plattformspezifischer Adapter, der das gemeinsame Profil in das native Konfigurationsformat eines
-bestimmten Harness übersetzt. Die unterstützten Harnesses sind aufgeführt in:
+bestimmten Harness übersetzt. Die unterstützten Laufzeitumgebungen sind aufgeführt in:
 
 ```text
 Claude Code, Cursor, Gemini CLI, etc.
@@ -41,8 +41,9 @@ Adapter für Harnesses ohne Hook-Mechanismus lassen es einfach weg.
 
 ## Konformitäts-Gate
 
-Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) — die eigenständigen Validatoren,
-die bestehen müssen, bevor ein Artefakt ausgegeben wird. Das Pre-Emission-Gate ist die Qualitätsuntergrenze; das
+Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) — die maschinell prüfbaren
+Validatoren, die vor der Ausgabe eines Artefakts laufen; standardmäßig beratend, blockierend
+unter `--strict`. Das Pre-Emission-Gate ist die Qualitätsuntergrenze; das
 Konformitäts-Gate führt seine maschinell prüfbaren Stufen aus, und Hooks erzwingen einzelne Stufen in Echtzeit.
 
 ## Plan-Suite

@@ -10,12 +10,14 @@ Solutions for common Apothem install and runtime issues.
 
 ### No Python 3.10+ found
 
-The installers and the npx shim probe `python3`, `python`, the versioned
-names (`python3.14` through `python3.10`), and `py -3` on Windows — rejecting
-Microsoft Store launcher shims — and stop with `No Python >= 3.10 found in
-PATH` when no candidate meets the 3.10 floor. Install CPython 3.10 or newer
-from python.org or your OS package repository, confirm `python3 --version`
-(or `py -3 --version` on Windows) reports at least 3.10, then re-run.
+The installers probe `python3`, `python`, and the versioned names (`python3.14`
+through `python3.10`) — rejecting Microsoft Store launcher shims — and stop with
+`No Python >= 3.10 found in PATH` when no candidate meets the 3.10 floor. The
+npx shim probes `APOTHEM_PYTHON` when it is set, then `python3`, `python`, and
+`py -3`, and exits 1 with its own message when none qualifies. Install CPython
+3.10 or newer from python.org or your OS package repository, confirm
+`python3 --version` (or `py -3 --version` on Windows) reports at least 3.10,
+then re-run.
 
 ### Missing runtime dependencies: click, rich
 

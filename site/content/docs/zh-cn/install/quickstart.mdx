@@ -2,13 +2,13 @@
 title: "快速开始"
 description: "安装 Apothem、编写配置档案、物化你的第一个工具并验证它——一份可复制粘贴的导览，附预期输出。"
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 这是从零到一份经过验证的工具配置的快速路径：安装、编写共享配置档案、物化一个工具的原生配置、确认它，并完成你的第一次编辑。每条命令都是真实的，可以复制粘贴运行，每一步都会展示一次干净运行所打印的内容。安装本身在两分钟内完成；编辑配置档案是唯一一个耗时由你自己决定的环节。
 
-读完本页，你将拥有一份由你自己编写的配置档案生成的可用工具配置——并且你会知道那一条将配置档案的变更推送回每个工具的命令。
+读完本页，你将拥有一份由你自己编写的配置档案生成的可用工具配置——并且你会知道那一条把配置档案的变更推送回某一个工具或全部工具的命令。
 
 <Callout title="想要节奏更慢、带讲解的版本？">
   [入门教程](/docs/tutorials/getting-started)覆盖同样的内容，并对每一步及其重要性给出更多解释。本页是简洁、以输出为先的导览。
@@ -28,7 +28,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-安装器要求系统中有可导入 `click` 和 `rich` 的 Python 3.10+，网络形式还需要 `git`。它会检查前置条件，将引擎放置在 `~/.apothem` 下，并在完成时打印适用于你所用 shell 的确切引擎调用方式：
+安装器要求系统中有 Python 3.10+，网络形式还需要 `git`。它会检查前置条件，并将引擎放置在 `~/.apothem` 下。当缺少 `click` 或 `rich` 时，它会在你确认后安装该软件包，或者在传入 `--yes`（PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 时直接安装，否则会停止并给出需要运行的 pip 命令（参见[前置条件一览](/docs/install#前置条件一览)）。完成时它会打印一份后续步骤横幅；在 POSIX 上，当垫片所在的目录已在 `PATH` 中时，横幅如下所示：
 
 ```text
 Installation complete.
@@ -45,14 +45,14 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="`apothem` 命令">
-  安装器会在你的 `PATH` 上放置一个 `apothem` 垫片，因此你可以直接以 `apothem <command>` 的形式运行引擎。如果该垫片所在的目录尚未加入 `PATH`，横幅会打印一个无需垫片的自包含回退方式——`PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`——请将你的横幅所打印的确切前缀加在每条命令之前。
+  安装器会将一个 `apothem` 垫片写入 `$HOME/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows），并且绝不会修改你的 `PATH`。一旦该目录已加入 `PATH`，你就可以直接以 `apothem <command>` 的形式运行引擎。如果它尚未加入 `PATH`，横幅会打印一个自包含的回退方式——`PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`——它无需垫片；请将你的横幅所打印的确切前缀加在每条命令之前。
 </Callout>
 
-[安装指南](/docs/install)介绍了其他安装路径——Claude Code 插件（先运行 `/plugin marketplace add ahmed-g-gad/apothem`，再运行 `/plugin install apothem@apothem`）；VS Code 系列扩展以及其他工具原生扩展；以及按需运行的 npx 形式（`npx @ahmed-g-gad/apothem <command>`）——同时还介绍了各项环境变量选项。
+[安装指南](/docs/install)介绍了其他安装路径——Claude Code 插件（先运行 `/plugin marketplace add ahmed-g-gad/apothem`，再运行 `/plugin install apothem@apothem`）；VS Code 系扩展以及其他工具原生扩展；以及按需运行的 npx 形式（`npx @ahmed-g-gad/apothem <command>`）——同时还介绍了各项环境变量选项。
 
 ## 2. 创建共享配置档案
 
-`apothem profile init` 会将最小的、符合 schema 的配置档案写入 `~/.config/apothem/profile.yaml`。当你将某个项目专用或 CI 专用的配置档案保存在别处时，传入 `--profile PATH`。
+`apothem profile init` 会将最小的、符合 schema 的配置档案写入 `~/.config/apothem/profile.yaml`。如果该位置已经有一份配置档案，例如第 1 步中的安装器复制了示例的情况，`init` 会报错停止，并保持该文件不变；传入 `--force` 可覆盖它，或者保留该文件并按下文所示编辑它。当你将某个项目专用或 CI 专用的配置档案保存在别处时，传入 `--profile PATH`。
 
 ```bash
 apothem profile init
@@ -116,23 +116,25 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-如果受管目标缺失、受管文件为空，或 JSON 或 YAML 配置无法解析，`verify` 会以非零状态退出。添加 `--profile PATH` 后，若已安装的文件与该配置档案不同，`verify` 也会失败，此时它就成为一项漂移检查；未添加时，过期的配置仍会通过验证。因此它可以在配置脚本中充当闸门。要对每个已注册的适配器进行整机健康检查，请运行：
+如果受管目标缺失、受管文件为空，或 JSON 或 YAML 配置无法解析，`verify` 会以非零状态退出。添加 `--profile PATH` 后，若已安装的文件与该配置档案不同，`verify` 也会失败，此时它就成为一项漂移检查；未添加时，过期的配置仍会通过验证。这个非零退出码使 `verify` 可以在配置脚本中充当闸门。要对每个已注册的适配器进行整机健康检查，请运行：
 
 ```bash
 apothem doctor
 ```
 
-`doctor` 会检查每个已安装的工具：它必须通过验证，并且其安装所注册的每条钩子命令都必须能够启动。你尚未安装的工具会被列出，但不算失败，因此在只有一个健康工具的情况下，`doctor` 以 0 退出。
+`doctor` 会检查每个已安装的工具：它必须通过验证，并且其安装所注册的每条钩子命令都必须能够启动。你尚未安装的工具会被列出，但不算失败，因此只要没有任何检查失败，`doctor` 就以 0 退出，即使只安装了一个工具。
 
 ## 5. 你的第一次运行
 
-打开你刚配置好的工具——本例中是 Claude Code——并在任意项目中启动一个会话。你在第 2 步中写入配置档案的规则和偏好，现在已成为该工具行为的一部分。这就是一次可用的首次运行：一份配置档案，塑造一次真实的会话。
+打开你刚配置好的工具——本例中是 Claude Code——并在任意项目中启动一个会话。你在第 2 步中设置的配置档案，现在已成为该工具行为的一部分。这就是一次可用的首次运行：一份配置档案，塑造一次真实的会话。
 
 之后修改配置档案时，无需重新安装即可重新应用它：
 
 ```bash
 apothem update --harness claude-code
 ```
+
+指定另一个适配器，即可将配置档案重新应用到那个工具（对于项目作用域的适配器，需添加 `--project PATH`），或者传入 `--harness all --project .`，将其重新应用到每个受支持的工具。
 
 ## 后续步骤
 

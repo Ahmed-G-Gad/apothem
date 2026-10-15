@@ -2,7 +2,7 @@
 title: "Schnellstart"
 description: "Apothem installieren, ein Profil verfassen, den ersten Harness materialisieren und verifizieren — eine Tour zum Kopieren und Einfügen mit erwarteter Ausgabe."
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,8 @@ Teil, der so lange dauert, wie Sie möchten.
 
 Am Ende haben Sie eine funktionierende Harness-Konfiguration, die aus einem von
 Ihnen geschriebenen Profil erzeugt wurde — und Sie kennen den einen Befehl, der
-eine Profiländerung wieder an jedes Werkzeug ausspielt.
+eine Profiländerung wieder an ein einzelnes Werkzeug oder an alle Werkzeuge
+ausspielt.
 
 <Callout title="Lieber die langsame, kommentierte Version?">
   Das [Einstiegs-Tutorial](/docs/tutorials/getting-started) geht denselben Weg
@@ -43,10 +44,15 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Der Installer setzt ein System-Python 3.10+ voraus, in dem `click` und `rich`
-importierbar sind, sowie `git` für die Netzwerkform. Er prüft die
-Voraussetzungen, legt die Engine unter `~/.apothem` ab und gibt nach Abschluss
-den exakten Engine-Aufruf für Ihre Shell aus:
+Der Installer setzt ein System-Python 3.10+ voraus, dazu `git` für die
+Netzwerkform. Er prüft die Voraussetzungen und legt die Engine unter
+`~/.apothem` ab. Fehlt `click` oder `rich`, installiert er das Paket nach Ihrer
+Bestätigung, bei Angabe von `--yes` (`-Yes` unter PowerShell) oder bei gesetztem
+`APOTHEM_AUTO_INSTALL_DEPS=1`; andernfalls bricht er mit dem auszuführenden
+pip-Befehl ab (siehe
+[Voraussetzungen auf einen Blick](/docs/install#voraussetzungen-auf-einen-blick)).
+Nach Abschluss gibt er ein Banner mit den nächsten Schritten aus; unter POSIX
+sieht das Banner, wenn das Verzeichnis des Shims bereits im `PATH` liegt, so aus:
 
 ```text
 Installation complete.
@@ -68,9 +74,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="Der Befehl `apothem`">
-  Der Installer legt einen `apothem`-Shim in Ihren `PATH`, sodass Sie die Engine
-  direkt als `apothem <command>` ausführen. Wenn das Verzeichnis des Shims noch
-  nicht im `PATH` liegt, gibt das Banner eine eigenständige Ausweichlösung aus —
+  Der Installer schreibt einen `apothem`-Shim nach `$HOME/.local/bin` (POSIX)
+  bzw. `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) und ändert Ihren `PATH`
+  niemals. Sobald dieses Verzeichnis im `PATH` liegt, führen Sie die Engine
+  direkt als `apothem <command>` aus. Liegt es noch nicht im `PATH`, gibt das
+  Banner eine eigenständige Ausweichlösung aus —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` —, die keinen
   Shim benötigt; stellen Sie jedem Befehl das exakte Präfix voran, das Ihr Banner
   ausgegeben hat.
@@ -87,8 +95,12 @@ Umgebungsvariablen.
 ## 2. Das gemeinsame Profil erstellen
 
 `apothem profile init` schreibt das kleinste schemagültige Profil nach
-`~/.config/apothem/profile.yaml`. Übergeben Sie `--profile PATH`, wenn Sie ein
-projekt- oder CI-spezifisches Profil an anderer Stelle führen.
+`~/.config/apothem/profile.yaml`. Liegt dort bereits ein Profil, etwa weil der
+Installer in Schritt 1 das Beispielprofil kopiert hat, bricht `init` mit einem
+Fehler ab und lässt die Datei unverändert; übergeben Sie `--force`, um sie zu
+überschreiben, oder behalten Sie die Datei und bearbeiten Sie sie wie unten
+gezeigt. Übergeben Sie `--profile PATH`, wenn Sie ein projekt- oder
+CI-spezifisches Profil an anderer Stelle führen.
 
 ```bash
 apothem profile init
@@ -174,9 +186,10 @@ eine verwaltete Datei leer ist oder eine JSON- oder YAML-Konfiguration nicht
 geparst werden kann. Fügen Sie `--profile PATH` hinzu, damit die Prüfung
 außerdem fehlschlägt, wenn sich eine installierte Datei von diesem Profil
 unterscheidet; damit wird `verify` zu einer Drift-Prüfung. Ohne diese Angabe
-besteht eine veraltete Konfiguration die Prüfung weiterhin. So kann es als Gate
-in einem Einrichtungsskript dienen. Für eine Zustandsprüfung der gesamten
-Maschine über jeden registrierten Adapter führen Sie Folgendes aus:
+besteht eine veraltete Konfiguration die Prüfung weiterhin. Der Exit-Code
+ungleich null erlaubt es, `verify` als Gate in einem Einrichtungsskript
+einzusetzen. Für eine Zustandsprüfung der gesamten Maschine über jeden
+registrierten Adapter führen Sie Folgendes aus:
 
 ```bash
 apothem doctor
@@ -185,15 +198,16 @@ apothem doctor
 `doctor` prüft jeden installierten Harness: Er muss die Verifizierung bestehen,
 und jeder Hook-Befehl, den seine Installation registriert hat, muss starten. Ein
 Harness, den Sie nicht installiert haben, wird aufgeführt, gilt aber nicht als
-Fehlschlag, sodass `doctor` bei einem gesunden Harness mit Exit-Code 0 endet.
+Fehlschlag, sodass `doctor` mit Exit-Code 0 endet, wenn keine Prüfung
+fehlschlägt, auch wenn nur ein einziger Harness installiert ist.
 
 ## 5. Ihr erster Lauf
 
 Öffnen Sie den Harness, den Sie gerade konfiguriert haben — in diesem Beispiel
-Claude Code —, und starten Sie eine Sitzung in einem beliebigen Projekt. Die
-Regeln und Präferenzen, die Sie in Schritt 2 in das Profil geschrieben haben,
-sind nun Teil des Verhaltens dieses Werkzeugs. Das ist der funktionierende erste
-Lauf: ein Profil, das eine echte Sitzung prägt.
+Claude Code —, und starten Sie eine Sitzung in einem beliebigen Projekt. Das
+Profil, das Sie in Schritt 2 eingerichtet haben, ist nun Teil des Verhaltens
+dieses Werkzeugs. Das ist der funktionierende erste Lauf: ein Profil, das eine
+echte Sitzung prägt.
 
 Wenn Sie das Profil später ändern, wenden Sie es erneut an, ohne neu zu
 installieren:
@@ -201,6 +215,11 @@ installieren:
 ```bash
 apothem update --harness claude-code
 ```
+
+Nennen Sie einen anderen Adapter, um das Profil erneut auf dieses Werkzeug
+anzuwenden (fügen Sie bei einem Adapter mit Projektbereich `--project PATH`
+hinzu), oder übergeben Sie `--harness all --project .`, um es erneut auf jeden
+unterstützten Harness anzuwenden.
 
 ## Nächste Schritte
 

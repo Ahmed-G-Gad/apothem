@@ -2,7 +2,7 @@
 title: "بيان تثبيت الاعتماديات"
 description: "سياسة الإعلان عن الاعتماديات تغطي نطاقات بيئة تشغيل Python، وأدوات التطوير، وملفات قفل أدوات الإصدار، والحدود الدنيا للإصدارات المُصادَق عليها لكل سطح بناء."
 machineTranslated: true
-sourceHash: "6a526875e42d6686"
+sourceHash: "bde46b3dc263b56e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ sourceHash: "6a526875e42d6686"
 |---|---|---|
 | اعتماديات وقت تشغيل <bdi>Python</bdi> | <bdi>`[project.dependencies]`</bdi> في <bdi>`pyproject.toml`</bdi> | نطاقات بحد أدنى؛ بلا قفل وقت تشغيل <bdi>Python</bdi> مُودَع |
 | أدوات التطوير / الأمان | <bdi>extras</bdi> الخاصة بـ<bdi>`[project.optional-dependencies]`</bdi> | نطاقات بحد أدنى؛ يُثبِّت <bdi>CI</bdi> الإصدارات المطابقة الحالية |
-| أدوات الإصدار | <bdi>`scripts/release/requirements-build-linux.txt`</bdi> | مقفولة بالتجزئة لسير عمل الإصدار؛ مُولَّدة من إغلاق أدوات الإصدار |
+| أدوات الإصدار | <bdi>`scripts/release/requirements-build-linux.txt`</bdi> لسير عمل الإصدار؛ و<bdi>extra</bdi> <bdi>`release`</bdi> في <bdi>`[project.optional-dependencies]`</bdi> لعمليات البناء المحلية | مقفولة بالتجزئة لسير عمل الإصدار؛ مُولَّدة من إغلاق أدوات الإصدار. أما <bdi>extra</bdi> <bdi>`release`</bdi> فنطاق بحد أدنى |
 | أدوات <bdi>CI</bdi> فقط | <bdi>`.github/workflows/*.yml`</bdi> | تستخدم أدوات <bdi>pip</bdi> الخاصة بسير العمل تثبيتات دقيقة (<bdi>`pip`</bdi>، <bdi>`bandit`</bdi>، <bdi>`pip-audit`</bdi>، <bdi>`pip-licenses`</bdi>، <bdi>`pyinstaller`</bdi>) |
 | موقع التوثيق | <bdi>`site/package.json`</bdi> | <bdi>`site/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
 | <bdi>GitHub Actions</bdi> | مراجع <bdi>`uses:`</bdi> مُثبَّتة بـ<bdi>SHA</bdi> مع تعليقات الإصدار | يقترح <bdi>Renovate</bdi> التحديثات؛ وتحمل الاستثناءات علامات <bdi>`action-pinning-exempt:`</bdi> |
@@ -35,8 +35,8 @@ sourceHash: "6a526875e42d6686"
 | أدوات الأمان | تعيش الحدود الدنيا الحالية في <bdi>extra</bdi> <bdi>`security`</bdi> من <bdi>`pyproject.toml`</bdi> | حدود دنيا حالية للماسحات مُصادَق عليها قبل الإصدار |
 | أدوات الإصدار | يعيش الإغلاق المقفول بالتجزئة في <bdi>`scripts/release/requirements-build-linux.txt`</bdi> | يُثبِّت سير عمل الإصدار بـ<bdi>`--require-hashes`</bdi>؛ وتشترط السكربتات المحلية وجود <bdi>`build`</bdi> مسبقًا بدلًا من تثبيت اعتماديات متحركة بصمت |
 | أدوات التوثيق | تعيش النطاقات الحالية في <bdi>`site/package.json`</bdi>؛ ويعيش الحلّ الدقيق في <bdi>`site/package-lock.json`</bdi> | لا يُرجِع <bdi>`npm outdated`</bdi> أي اعتمادية توثيق متقادمة بعد تحديث ملف القفل |
-| <bdi>GitHub Actions</bdi> | تُستبقى تثبيتات <bdi>SHA</bdi> الموجودة للإصدار الحالي؛ ويبقى سير عمل <bdi>SLSA</bdi> القابل لإعادة الاستخدام الاستثناءَ المُوثَّق المُثبَّت بوسم | إعادة تشغيل <bdi>CI</bdi> العام خضراء؛ وتُترَك ترقيات <bdi>actions</bdi> الواسعة إلى إصدارات رئيسية جديدة عمدًا لطلبات سحب أتمتة الاعتماديات لتفادي اضطراب سطح الإصدار |
-| تحزيم <bdi>npm</bdi> | يعمل سير عمل <bdi>`publish-npm.yml`</bdi> عند دفع الوسم <bdi>`v*.*.*`</bdi>، مع <bdi>`workflow_dispatch`</bdi> بديلًا احتياطيًا | الحزمة <bdi>npm</bdi> العامة الوحيدة هي <bdi>`@ahmed-g-gad/apothem`</bdi>؛ ويُشغَّل النشر بعد اجتياز جاهزية الإصدار |
+| <bdi>GitHub Actions</bdi> | تُستبقى تثبيتات <bdi>SHA</bdi> الموجودة للإصدار الحالي؛ ويبقى سير عمل <bdi>SLSA</bdi> القابل لإعادة الاستخدام الاستثناءَ المُوثَّق المُثبَّت بوسم | إعادة تشغيل <bdi>CI</bdi> العام خضراء؛ وتُترَك عمدًا ترقيات الإصدارات الرئيسية الواسعة لـ<bdi>actions</bdi> إلى طلبات سحب أتمتة الاعتماديات لتفادي اضطراب سطح الإصدار |
+| تحزيم <bdi>npm</bdi> | يعمل سير عمل <bdi>`publish-npm.yml`</bdi> عند دفع الوسم <bdi>`v*.*.*`</bdi>، مع <bdi>`workflow_dispatch`</bdi> بديلًا احتياطيًا | الحزمة <bdi>npm</bdi> العامة الوحيدة هي <bdi>`@ahmed-g-gad/apothem`</bdi>؛ وينتظر النشر موافقة المُشغِّل على بيئة <bdi>`release`</bdi>، وتُمنَح هذه الموافقة بعد اجتياز <bdi>`scripts/release/check-release-ready.sh`</bdi> |
 
 ## القفل
 

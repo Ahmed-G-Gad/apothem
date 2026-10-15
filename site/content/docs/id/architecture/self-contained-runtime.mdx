@@ -2,7 +2,7 @@
 title: "Runtime mandiri"
 description: "Cara mesin Apothem berjalan dari checkout mana pun — dependensi yang di-vendor, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -121,10 +121,12 @@ minimal.
 
 ## Cara runtime menemukan Python
 
-Pemasang sekali-jalan dan shim npx menemukan interpreter dengan cara yang sama:
-memeriksa `python3`, `python`, nama-nama berversi (`python3.14` hingga
-`python3.10`), dan `py -3` di Windows; menolak shim peluncur Microsoft Store;
-dan menerima kandidat pertama yang melaporkan versi 3.10 atau yang lebih baru.
+Pemasang sekali-jalan dan shim npx memeriksa nama yang berbeda dan menerapkan
+aturan yang sama. Pemasang memeriksa `python3`, `python`, dan nama-nama berversi
+(`python3.14` hingga `python3.10`). Shim npx memeriksa `APOTHEM_PYTHON` bila
+variabel itu ditetapkan, lalu `python3`, `python`, dan `py -3`; shim itu tidak
+memiliki nama berversi. Keduanya menolak shim peluncur Microsoft Store dan
+menerima kandidat pertama yang melaporkan versi 3.10 atau yang lebih baru.
 Ketika dijalankan dari pohon sumber, pemasang menggunakan ulang pelokasi
 `hooks/lib/find-python` yang terbundel, yang menerapkan batas bawah yang sama.
 

@@ -1,12 +1,12 @@
 ---
 title: "Markdown 規約"
-description: "Markdown のフレーバー、見出し構造、コードフェンスの宣言、内部リンクの形式、著作者バナー、バリデーターによる強制を標準化します。"
+description: "Markdown のフレーバー、見出し構造、コードフェンスの宣言、内部リンクの形式、著作者ヘッダー、バリデーターによる強制を標準化します。"
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **執筆されるすべての `.md` アーティファクトにわたる、Markdown の形と書式の正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の Conventions にある要約はインラインの宣言であり、このページは下流のコントリビューターが引用する独立したリファレンスです。
+> **執筆されるすべての `.md` および `.mdx` アーティファクトにわたる、Markdown の形と書式の正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の Conventions にある要約はインラインの宣言であり、このページは下流のコントリビューターが引用する独立したリファレンスです。
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown（GFM）がホストのフレーバーです。すべ�
 
 ## 2. 見出しの階層
 
-H1 はファイルごとに 1 つです。後続の見出しは、レベルを飛ばさずに単調に下っていきます（H2 → H3 → H4）。見出しはセンテンスケースにします。すべて大文字（ALL-CAPS）にはせず、すべての単語を大文字で始めるタイトルケース（Title Case Across Every Word）にもしません。H1 はドキュメントの主たるタイトルを担い、ドキュメントサイトのナビゲーションにおけるドキュメントのアンカーそのものです。
+H1 はファイルごとに 1 つです。後続の見出しは、レベルを飛ばさずに単調に下っていきます（H2 → H3 → H4）。見出しはセンテンスケースにします。すべて大文字（ALL-CAPS）にはせず、すべての単語を大文字で始めるタイトルケース（Title Case Across Every Word）にもしません。H1 はドキュメントの主たるタイトルを担います。ドキュメントサイトのページでは、フロントマターの `title` が H1 としてレンダリングされ、ドキュメントサイトのナビゲーションにおけるそのページのアンカーとなるため、ページの本文は H2 から始まります。
 
 ## 3. コードブロック
 
@@ -30,9 +30,9 @@ H1 はファイルごとに 1 つです。後続の見出しは、レベルを�
 
 変更されうる参照（`main`、`master`、`latest`、`HEAD`）への外部リンクは、リンク先の内容の安定性が重要な場合は常に、コミット SHA またはリリースタグにピン留めされます。揮発性の参照は、隣接する `{/* volatile */}` コメントによって、その旨が記録されます。
 
-## 5. 著作者バナー
+## 5. 著作者ヘッダー
 
-すべての Markdown アーティファクトは（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) に列挙された例外を除く）、[著作者ヘッダー](/docs/reference/authorship-header)に従い、HTML コメント形式の正規の著作者ヘッダーバナーを持ちます。フロントマターがない場合、バナーは 1 行目です。YAML フロントマターがある場合、フロントマターはバイト 0 に置かれ、バナーは閉じの `---` の後に続きます。
+すべての Markdown アーティファクトは（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) に列挙された例外を除く）、正規の著作者ヘッダー、すなわち `SPDX-License-Identifier: MIT` の 1 行を、[著作者ヘッダー](/docs/reference/authorship-header)に従って、そのファイルタイプに対応する形式のコメントで持ちます。`.md` ファイルでは HTML コメント、`.mdx` ファイルでは `{/* ... */}` コメントです。フロントマターがない場合、ヘッダー行は 1 行目です。YAML フロントマターがある場合、フロントマターはバイト 0 に置かれ、ヘッダー行は閉じの `---` の後に続きます。
 
 ## 6. バリデーター
 

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex（ベータ）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,8 @@ Codex のインストールは `schemas/` ツリーも `conformity/` ツリー�
 命令は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは TOML へ、スキルは `~/.agents/skills/` へ、ネイティブでない Markdown のルール/テンプレートはサポート素材として `~/.config/apothem/` へインストールされます。
 
 変換された各ヘルパーは `name`、`description`、`developer_instructions` を設定します。
-拒否リストを適用した後のツール付与にファイル編集ツール（`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、Codex 独自の書き込み制限である `sandbox_mode = "read-only"` も設定します。
-`Bash` はファイル編集ツールに数えられないため、`Bash` を付与され、それらのツールを 1 つも付与されていないヘルパーも、引き続き読み取り専用です。
+ヘルパー自身の `disallowedTools` リストに挙げられたツールを取り除いた後のツール付与に、ファイル編集ツール（`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、Codex 独自の書き込み制限である `sandbox_mode = "read-only"` も設定します。
+`Bash` はファイル編集ツールに数えられないため、`Bash` を付与され、それらのツールを 1 つも付与されていないヘルパーにも、引き続きその設定が適用されます。
 モデルも推論エフォートも設定されないため、各ヘルパーはセッションの選択を継承します。
 Codex にはヘルパーごとのツールリストもターン数の上限もないため、ヘルパーの `tools` と `maxTurns` は引き継がれません。
 
@@ -79,7 +79,10 @@ Codex のブートストラップ、変換されたエージェント、スキ�
 apothem uninstall --harness codex
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+`~/.codex/AGENTS.md` から Apothem ブロックを取り除き、その外側にあるテキストはそのまま残します。また、`~/.codex/hooks.json` から Apothem のエントリを取り除き、あなた自身のエントリは残します。
+さらに、`~/.codex/hooks/`、`~/.codex/agents/`、`~/.agents/skills/`、`~/.config/apothem/{rules,templates}/` 内にある Apothem のファイルを取り除きます。これらのフォルダー内の他のファイルはそのまま残ります。
+`~/.agents/skills/` から取り除かれたスキルは、これを読み込む他のツールからも消えます（[互換性に関する注意](#互換性に関する注意)を参照）。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

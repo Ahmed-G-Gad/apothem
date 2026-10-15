@@ -2,7 +2,7 @@
 title: "Spécification du schéma d'artefacts"
 description: "Schéma canonique de frontmatter YAML et champs requis pour tous les types d'artefacts de l'arbre des sources d'Apothem, avec modèles par classe et règles de validation."
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,7 @@ sourceHash: "6c16d090e185c86c"
 > (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), chacun
 > déclarant `additionalProperties` afin que le portail de conformité rejette les
 > clés inconnues. Cette page et [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
-> sont les deux projections lisibles par un humain de ces schémas : cette page
+> sont les deux projections lisibles par un humain de ces schémas — cette page
 > porte les **modèles et exemples détaillés** par classe, frontmatter-schema
 > l'**index concis des clés requises**. Lorsqu'une page contredit les JSON
 > Schemas, les schémas l'emportent.
@@ -29,7 +29,7 @@ chaque type.
 **Règles universelles :**
 
 - Le frontmatter est conforme à YAML 1.2
-- Toutes les valeurs de chaîne utilisent des guillemets doubles, sauf lorsqu'elles sont vides
+- Toutes les valeurs de chaîne utilisent des guillemets doubles, et une chaîne vide s'écrit `""`
 - Ordre des champs : les champs obligatoires d'abord, les champs optionnels regroupés par pertinence
 - Les commentaires dans le frontmatter utilisent `#` suivi d'un espace : `# comment`
 - Les valeurs de chemin doivent être relatives (sans `/` initial) et utiliser des barres obliques (`/`) pour la compatibilité multiplateforme
@@ -150,8 +150,8 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Objectif :** Définitions d'assistants persistants pour l'exploration
-parallèle, l'audit et les portails de qualité.
+**Objectif :** Définitions d'assistants persistants (aussi appelés travailleurs
+délégués) pour l'exploration parallèle, l'audit et les portails de qualité.
 
 ### Champs obligatoires
 
@@ -315,7 +315,7 @@ La forme `-m apothem.hooks.dispatch` est destinée au développement depuis un c
 
 ### Événements requis
 
-Le modèle Claude Code enregistre SessionStart, PreToolUse, PostToolUse et Stop. PreCompact et PostCompact ne sont pas enregistrés sur Claude Code ([référence des hooks](/docs/reference/hooks)), et `scripts/dev/validate_hooks.py` signale chacun d'eux comme manquant, sous forme d'avertissement. Le tableau suivant liste les cinq événements que `validate_hooks.py` vérifie :
+Le modèle Claude Code enregistre quatre événements : SessionStart, PreToolUse, PostToolUse et Stop. `scripts/dev/validate_hooks.py` vérifie dans `settings.json` les cinq événements du tableau ci-dessous, un ensemble différent, et signale chacun de ceux qu'il ne trouve pas comme un avertissement, et non comme un échec. PostToolUse est enregistré mais ne fait pas partie des cinq. PreCompact et PostCompact font partie des cinq mais ne sont pas enregistrés sur Claude Code ([référence des hooks](/docs/reference/hooks)), de sorte que le vérificateur avertit à leur sujet sur Claude Code.
 
 > **Les valeurs de timeout reprennent les budgets canoniques des événements de hook** : le
 > tableau ci-dessous les reproduit pour la commodité du lecteur ; la source canonique fait foi.
@@ -329,9 +329,9 @@ Le modèle Claude Code enregistre SessionStart, PreToolUse, PostToolUse et Stop.
 | `Stop` | 60 secondes | Externalisation de fin de session : état de reprise, sorties, décisions |
 
 `dispatch.py` accepte aussi `UserPromptSubmit` et `Notification` dans sa liste
-blanche d'événements, pour la compatibilité ascendante ; aucun des deux n'est
-câblé dans les modèles livrés. Pour les activer, ajoutez un bloc de matcher
-suivant le même motif sous forme exec.
+d'autorisation d'événements, pour assurer la compatibilité avec les évolutions
+futures ; aucun des deux n'est câblé dans les modèles livrés. Pour les activer,
+ajoutez un bloc de matcher suivant le même motif sous forme exec.
 
 ### Couche Python
 
@@ -339,7 +339,7 @@ Chaque commande de hook passe par le même répartiteur Python :
 
 | Fichier | Rôle |
 | ---- | ---- |
-| `src/apothem/hooks/dispatch.py` | Achemine `SessionStart` vers `session_start_bootstrap.main()` et chaque autre événement de la liste blanche vers `emit_hook_context.main()`. Se termine toujours avec le code 0. |
+| `src/apothem/hooks/dispatch.py` | Achemine `SessionStart` vers `session_start_bootstrap.main()` et chaque autre événement de la liste d'autorisation vers `emit_hook_context.main()`. Se termine toujours avec le code 0. |
 | `src/apothem/hooks/session_start_bootstrap.py` | Script de hook de démarrage de session : émet un contexte de synthèse de la mémoire et de la suite de plan. |
 | `src/apothem/hooks/emit_hook_context.py` | Émetteur de hook par défaut : écrit une enveloppe valide portant la charge utile `--context-file` enregistrée. |
 | `src/apothem/hooks/messages/*.md` | Charge utile de contexte statique référencée par `--context-file`. |
@@ -348,7 +348,7 @@ Chaque commande de hook passe par le même répartiteur Python :
 
 `scripts/dev/validate_hooks.py` applique le contrat des hooks :
 
-- `settings.json` s'analyse comme du JSON et déclare chaque événement requis.
+- `settings.json` s'analyse comme du JSON et déclare chacun des cinq événements du tableau ; un événement manquant est un avertissement, et non un échec.
 - Les trois scripts Python existent et s'analysent comme du Python valide.
 - Tous les fichiers de message référencés par des arguments `--context-file` existent.
 - Aucun chemin utilisateur absolu codé en dur (`C:\Users\...`, etc.) n'apparaît dans `src/apothem/hooks/**.py`.
@@ -399,7 +399,7 @@ Chaque artefact doit satisfaire les vérifications suivantes :
 
 ### Validation du contenu
 
-- [ ] Le contenu commence sur une nouvelle ligne après le `---` de fermeture ; dans les fichiers de la famille Markdown, la bannière d'en-tête de paternité est le premier contenu après celui-ci
+- [ ] Le contenu commence sur une nouvelle ligne après le `---` de fermeture ; dans les fichiers de la famille Markdown, la ligne d'en-tête SPDX canonique est le premier contenu après celui-ci
 - [ ] Aucune référence interne au plan (conformité CM-7)
 - [ ] Les références croisées se résolvent (si d'autres artefacts sont listés)
 - [ ] Les liens utilisent des chemins relatifs avec des barres obliques

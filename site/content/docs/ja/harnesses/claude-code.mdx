@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,78 +17,53 @@ sourceHash: "2d1e8e48ff1f54c6"
 apothem install --harness claude-code
 ```
 
-`claude-code` アダプターは、共有の Apothem コーパスを Claude Code のネイティブな検出ツリーに
-インストールします。Markdown のエージェント、ルール、スキル、出力スタイル、設定は、それぞれの
-ネイティブな場所にインストールされます。コマンドプロンプトはスキルに変換されるため、再利用可能な
-ワークフローは現在の Claude Code のスキル面を通じて見える状態に保たれます。ステータスライン
-レンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code は
-ステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
-有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の
-`statusLine` エントリを `settings.json` に追加してください。
+`claude-code` アダプターは、共有の Apothem コーパスを Claude Code のネイティブな検出ツリーにインストールします。
+Markdown のエージェント、ルール、スキル、出力スタイル、設定は、それぞれのネイティブな場所にインストールされます。
+コマンドプロンプトはスキルに変換されるため、再利用可能なワークフローは現在の Claude Code のスキル面を通じて見える状態に保たれます。
+ステータスラインレンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code はステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
+有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の `statusLine` エントリを `settings.json` に追加してください。
 
 **書き込まれるファイル：** `~/.claude/` 配下の `settings.json`、`CLAUDE.md` 内の Apothem ブロック、
 `agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`、および `.apothem/support/`
 サポートサブツリー（`.apothem/support/hooks/`、`.apothem/support/conformity/`、
 `.apothem/support/schemas/`、`.apothem/support/templates/`）。
-コマンドファイルは子スキルディレクトリに変換されます。フックディスパッチャーとコンフォーミティ
-ゲートは、それぞれのマテリアライズされたコピーから実行されます。`settings.json` のフックエントリは
-`~/.claude/.apothem/support/hooks/dispatch.py` と
-`~/.claude/.apothem/support/conformity/gate.py` を絶対パスで呼び出すため、ホスト上にインポート
-可能な `apothem` パッケージは必要ありません。
+コマンドファイルは子スキルディレクトリに変換されます。
+フックディスパッチャーとコンフォーミティゲートは、それぞれのマテリアライズされたコピーから実行されます。`settings.json` のフックエントリは `~/.claude/.apothem/support/hooks/dispatch.py` と `~/.claude/.apothem/support/conformity/gate.py` を絶対パスで呼び出すため、ホスト上にインポート可能な `apothem` パッケージは必要ありません。
 
-`~/.claude/CLAUDE.md` は引き続きオペレーターの所有です。アダプターはそこに、センチネルで区切られた
-Apothem ブロックを 1 つ書き込み、センチネルの外側のすべての行を一字一句そのまま保持します。この
-ブロックには、プロファイルの投影（アイデンティティ、プリファレンス、ルール、シリアスネス、
-オプトインした振る舞い）と Apothem サポートファイルのセクションが含まれます。サポートファイルの
-セクションは、インストールされたルール、スキル、エージェント内にあるリポジトリ形式の各参照が
-解決される先の絶対ディレクトリを示します。`rules/<name>.md` は `~/.claude/rules/` 配下に、
-`templates/...`、`schemas/...`、`hooks/...`、`conformity/...` は
-`~/.claude/.apothem/support/` 配下に解決されます。Apothem のガバナンス面の残りは、伝播された
-`rules/` ツリーと SessionStart フックを通じて Claude Code に届きます。OpenCode も、
-`~/.config/opencode/AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込むため、
-このブロックは単一のツールを読み手として名指ししません。
+`~/.claude/CLAUDE.md` は引き続きオペレーターの所有です。
+アダプターはそこに、センチネルで区切られた Apothem ブロックを 1 つ書き込み、センチネルの外側のすべての行を一字一句そのまま保持します。このブロックには、プロファイルの投影（アイデンティティ、プリファレンス、ルール、シリアスネス、オプトインした振る舞い）と Apothem サポートファイルのセクションが含まれます。
+サポートファイルのセクションは、インストールされたルール、スキル、エージェント内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` は `~/.claude/rules/` 配下に、`templates/...`、`schemas/...`、`hooks/...`、`conformity/...` は `~/.claude/.apothem/support/` 配下に解決されます。
+Apothem のガバナンス面の残りは、伝播された `rules/` ツリーと SessionStart フックを通じて Claude Code に届きます。
+OpenCode も、`~/.config/opencode/AGENTS.md` が存在しない場合には `~/.claude/CLAUDE.md` を読み込むため、このブロックは単一のツールを読み手として名指ししません。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-`apothem install` または `apothem update` のたびに、アダプターは伝播マニフェストに従って
-共有の `apothem` コーパスを `~/.claude/` に伝播します。アダプターは可能な場合はネイティブ
-ディレクトリを直接使用し、コマンドプロンプトをスキルフォルダーに変換します。Apothem が管理する
-既存の一致する子要素は、置き換えの前にバックアップされます。無関係なオペレーター作成のエントリは
-保持されます。`settings.json` はマージされるため、オペレーターが作成したキーは復元可能なままです。
+`apothem install` または `apothem update` のたびに、アダプターは伝播マニフェストに従って共有の `apothem` コーパスを `~/.claude/` に伝播します。
+アダプターは可能な場合はネイティブディレクトリを直接使用し、コマンドプロンプトをスキルフォルダーに変換します。
+Apothem が管理する既存の一致する子要素は、置き換えの前にバックアップされます。無関係なオペレーター作成のエントリは保持されます。
+`settings.json` はマージされるため、オペレーターが作成したキーは復元可能なままです。
 
-インストールされたスキルと、Claude Code プラグインに同梱されたスキルは、ソースコーパスの
-`userInvocable` の代わりに `user-invocable` を持ちます。Claude Code はハイフン付きのキーしか
-読み取らないためです。2 つのテンプレートコンテナー（`plan-suite`、`research-suite`）はこれを
-`false` に設定しているため、`/` メニューには表示されません。すべての出力スタイルは
-`keep-coding-instructions: true` を設定しているため、いずれかを選択しても Claude Code の
-組み込みのソフトウェアエンジニアリング指示は維持されます。
+インストールされたスキルと、Claude Code プラグインに同梱されたスキルは、ソースコーパスの `userInvocable` の代わりに `user-invocable` を持ちます。Claude Code はハイフン付きのキーしか読み取らないためです。
+2 つのテンプレートコンテナー（`plan-suite`、`research-suite`）はこれを `false` に設定しているため、`/` メニューには表示されません。
+すべての出力スタイルは `keep-coding-instructions: true` を設定しているため、いずれかを選択しても Claude Code の組み込みのソフトウェアエンジニアリング指示は維持されます。
 
 ## 互換性に関する注意
 
-コマンドプロンプトはスキルディレクトリに変換されます。エージェント、ルール、スキル、出力スタイルは
-そのままコピーされます。インストールでは、プロファイルが整形式であること、および settings.json 内の
-すべてのフックバインディングが解決可能であることを検証します。アダプターは MCP サーバーの
-エントリを一切作成しません。サーバーは `claude mcp add` で登録してください
-（[MCP サーバー](/docs/reference/mcp)を参照）。
+コマンドプロンプトはスキルディレクトリに変換されます。エージェント、ルール、スキル、出力スタイルはそのままコピーされます。
+インストールでは、プロファイルが整形式であること、および settings.json 内のすべてのフックバインディングが解決可能であることを検証します。
+アダプターは MCP サーバーのエントリを一切作成しません。サーバーは `claude mcp add` で登録してください（[MCP サーバー](/docs/reference/mcp)を参照）。
 
 Claude Code は、すべてのセッション開始時に settings.json 内のすべてのフックバインディングを適用します。各アダプターは、それぞれのネイティブなハーネスに対して検証されます。特権的な「参照」ハーネスは存在しません。
 
 ### 権限ルールの制限
 
-設定テンプレートは、`.env*` や `~/.ssh/**` などのシークレットとキャッシュのパスに対する
-`Read(...)` を拒否します。Claude Code は `Read` の拒否を、自身のファイルツール、Bash 内で認識する
-ファイルコマンド（`cat`、`head`、`tail`、`sed`、`tee`）、およびリダイレクト先に適用します。
-ファイル名を指定せずにファイルを読み取る検索（`grep -r pattern .` など）や、自分でファイルを
-開くスクリプトには、この拒否を適用しません
-（[権限リファレンス](https://code.claude.com/docs/en/permissions)）。macOS、Linux、WSL では、
-Claude Code は `Glob` ツールと `Grep` ツールをデフォルトのツールセットから外し、代わりに Bash を
-通じて検索します。そのため、テンプレートの `Glob` と `Grep` の許可エントリは、これらのツールが
-存在する環境でのみ有効になります。あらゆるプロセスによるパスの読み取りをブロックするには、
-Claude Code のサンドボックスを有効にしてください。
+設定テンプレートは、`.env*` や `~/.ssh/**` などのシークレットとキャッシュのパスに対する `Read(...)` を拒否します。
+Claude Code は `Read` の拒否を、自身のファイルツール、Bash 内で認識するファイルコマンド（`cat`、`head`、`tail`、`sed`、`tee`）、およびリダイレクト先に適用します。
+ファイル名を指定せずにファイルを読み取る検索（`grep -r pattern .` など）や、自分でファイルを開くスクリプトには、この拒否を適用しません（[権限リファレンス](https://code.claude.com/docs/en/permissions)）。
+macOS、Linux、WSL では、Claude Code は `Glob` ツールと `Grep` ツールをデフォルトのツールセットから外し、代わりに Bash を通じて検索します。そのため、テンプレートの `Glob` と `Grep` の許可エントリは、これらのツールが存在する環境でのみ有効になります。
+あらゆるプロセスによるパスの読み取りをブロックするには、Claude Code のサンドボックスを有効にしてください。
 
-`TodoWrite` を名指しするスキルとヘルパー定義は、`TaskCreate`、`TaskGet`、`TaskList`、
-`TaskUpdate` も名指しします。Claude Code は、これらのツールを優先して `TodoWrite` をデフォルトで
-無効にしているためです。
+`TodoWrite` を名指しするスキルとヘルパー定義は、`TaskCreate`、`TaskGet`、`TaskList`、`TaskUpdate` も名指しします。Claude Code は、これらのツールを優先して `TodoWrite` をデフォルトで無効にしているためです。
 
 ## 検証
 
@@ -108,10 +83,9 @@ verify コマンドは次のことを確認します。
 apothem update --harness claude-code
 ```
 
-現在の共有プロファイルからネイティブ設定を再導出します。インストール済みの `apothem` パッケージが
-更新された後に実行し、伝播された規約面（エージェント、ルール、スキル、ステータスライン、
-出力スタイル）が新しいバージョンを反映するようにしてください。`CLAUDE.md` では、update は
-センチネルの間にある Apothem ブロックのみを書き換えます。
+現在の共有プロファイルからネイティブ設定を再導出します。
+インストール済みの `apothem` パッケージが更新された後に実行し、伝播された規約面（エージェント、ルール、スキル、ステータスライン、出力スタイル）が新しいバージョンを反映するようにしてください。
+`CLAUDE.md` では、update はセンチネルの間にある Apothem ブロックのみを書き換えます。
 
 ## アンインストール
 
@@ -119,8 +93,11 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除し、`CLAUDE.md` から Apothem ブロックを
-取り除いて、あなた自身の文章はそのまま残します。
+`~/.claude/CLAUDE.md` から Apothem ブロックを取り除き、その中にある他のテキストはそのまま残します。
+ファイルが削除されるのは、中に他に何も残っていない場合のみです。
+アダプターが `~/.claude/settings.json` に追加したエントリを取り除きます（あなた自身の権限ルール、キー、フックハンドラーは残り、ファイルが削除されるのは、Apothem が作成したファイルで、かつあなたのものが何も残っていない場合のみです）。
+また、`~/.claude/agents/`、`~/.claude/rules/`、`~/.claude/skills/`、`~/.claude/statuslines/`、`~/.claude/output-styles/`、`~/.claude/.apothem/support/` 内にある Apothem のファイルを取り除きます。これらのフォルダー内の他のファイルはそのまま残ります。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 インストール済みの `apothem` パッケージとソースリポジトリには影響しません。
 
 ## コンフォーミティゲート

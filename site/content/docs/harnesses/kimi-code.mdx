@@ -58,9 +58,12 @@ resolves against, so a committed `AGENTS.md` carries no machine-specific path. (
 Kimi Code reads project instructions from `AGENTS.md` or
 `.kimi-code/AGENTS.md` and recognizes `.kimi-code/mcp.json` as the
 operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+surface but authors no entries into it. Of the two instruction files, the adapter
+writes only the project-root `AGENTS.md`, which Kimi Code reads as project
+instructions; the Kimi Code documentation does not say which of the two files
+wins when both exist. Kimi Code
+exposes no statusline or output-style file surface, so those cohorts are not
+materialized.
 
 Kimi Code runs on the Kimi model family from Moonshot; see the
 [vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
