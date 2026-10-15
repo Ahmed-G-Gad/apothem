@@ -37,6 +37,10 @@ On `apothem uninstall --harness X`:
 1. Call `Adapter.uninstall()`.
 2. The adapter removes only the files it wrote; the shared profile YAML and
    unrelated operator-authored files are untouched.
+3. The shared working directory's memory, contexts, and learning stores are
+   backed up and removed when this is the last harness installed there. They
+   are removed at the location the install recorded. The `plans/` directory is
+   never removed.
 
 ## Scope resolution
 

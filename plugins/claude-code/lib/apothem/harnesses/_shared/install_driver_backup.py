@@ -440,6 +440,20 @@ def backup_ledger_targets(
     return tuple(targets)
 
 
+def _written_data_home(run: MaterializationRun) -> str | None:
+    """Return the shared data home *run* wrote its data stores under, if any.
+
+    The data-surface results carry the home they resolved and materialized (see
+    ``_materialize_data_surfaces``). Data-surface results are excluded from the
+    ledger targets, so the home travels on the record as its own field. Returns
+    ``None`` when the pass wrote no data surface (an error or warning pass).
+    """
+    for result in run.results:
+        if result.operation == "data_surface" and "data_home" in result.detail:
+            return result.detail["data_home"]
+    return None
+
+
 def record_install(
     run: MaterializationRun,
     *,
@@ -472,6 +486,7 @@ def record_install(
         created_dirs=tuple(
             sorted(str(path) for path in missing_before if path.is_dir())
         ),
+        data_home=_written_data_home(run),
     )
     install_ledger.append_record(record)
     apply_retention(run.harness)
