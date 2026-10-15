@@ -3,11 +3,10 @@
 
 """Deterministic authorship-header injector.
 
-Reads ``src/apothem/schemas/authorship-header.txt`` for the canonical banner,
-``src/apothem/schemas/header-exceptions.txt`` for applicability, and
-``src/apothem/schemas/header-visibility.yaml`` for the per-class Markdown visibility
-policy. For each input file path resolves the variant family, detects
-the existing header state (canonical / malformed / absent), and either
+Reads ``src/apothem/schemas/authorship-header.txt`` for the canonical banner and
+``src/apothem/schemas/header-exceptions.txt`` for applicability. For each input
+file path resolves the variant family, detects the existing header state
+(canonical / malformed / absent), and either
 writes the canonical banner in-place, prints a unified diff, or exits
 non-zero on any divergence.
 
@@ -23,7 +22,8 @@ full copyright instrument. The hash-form reference rendering lives at
 ``src/apothem/schemas/authorship-header.txt`` (``# SPDX-License-Identifier: MIT``).
 Per-filetype variants are derived deterministically: hash / double-slash /
 semicolon / double-dash by leading-marker substitution; html as
-``<!-- ... -->`` and c-block as ``/* ... */`` single-line wrappers. The
+``<!-- ... -->``, mdx as ``{/* ... */}``, and c-block as ``/* ... */``
+single-line wrappers. The
 injector still recognises and strips the retired multi-line banner (keyed on
 the legacy ``Copyright (c) ...`` author line) so a migration run reduces every
 legacy header to the SPDX line in one idempotent pass.
@@ -51,16 +51,26 @@ from typing import Final
 VARIANT_HASH: Final[str] = "hash"
 VARIANT_DOUBLE_SLASH: Final[str] = "double-slash"
 VARIANT_HTML: Final[str] = "html"
+VARIANT_MDX: Final[str] = "mdx"
 VARIANT_C_BLOCK: Final[str] = "c-block"
 VARIANT_SEMICOLON: Final[str] = "semicolon"
 VARIANT_DOUBLE_DASH: Final[str] = "double-dash"
 VARIANT_EXEMPT: Final[str] = "exempt"
 
+# Variants written as a comment wrapper around the SPDX text, not as a line
+# comment. The insertion and legacy-banner logic treats them alike.
+_WRAPPER_VARIANTS: Final[tuple[str, ...]] = (
+    VARIANT_HTML,
+    VARIANT_MDX,
+    VARIANT_C_BLOCK,
+)
+
 # Suffix → variant family. Mirrors the resolution table in
 # ``src/apothem/audit/scan_header_coverage.py`` so the injector and the
-# coverage scanner converge on identical applicability verdicts. Drift
-# between the two tables is a CI failure surfaced by the file-header
-# validator at the next phase.
+# coverage scanner converge on identical applicability verdicts. No test
+# compares the two tables, so keep them in step by hand. ``.mdx`` is listed
+# here only: the coverage scanner and the file-header validator do not resolve
+# it yet, so both still treat MDX files as exempt.
 SUFFIX_VARIANT: Final[dict[str, str]] = {
     ".sh": VARIANT_HASH,
     ".bash": VARIANT_HASH,
@@ -97,6 +107,7 @@ SUFFIX_VARIANT: Final[dict[str, str]] = {
     ".md": VARIANT_HTML,
     ".markdown": VARIANT_HTML,
     ".mdc": VARIANT_HTML,
+    ".mdx": VARIANT_MDX,
     ".xml": VARIANT_HTML,
     ".vue": VARIANT_HTML,
     ".php": VARIANT_HTML,
@@ -262,7 +273,7 @@ def render_variant(banner: CanonicalBanner, variant: str) -> list[str]:
         line (``# SPDX-License-Identifier: MIT``); double-slash, semicolon,
         and double-dash variants substitute the leading marker via
         ``_replace_marker``; html wraps the SPDX text in ``<!-- ... -->``;
-        c-block wraps it in ``/* ... */``.
+        mdx wraps it in ``{/* ... */}``; c-block wraps it in ``/* ... */``.
 
     Raises:
         ValueError: When ``variant`` is unknown or is ``VARIANT_EXEMPT``.
@@ -277,6 +288,8 @@ def render_variant(banner: CanonicalBanner, variant: str) -> list[str]:
         return [_replace_marker(banner.hash_form_line, "#", "--")]
     if variant == VARIANT_HTML:
         return [f"<!-- {banner.spdx_text} -->"]
+    if variant == VARIANT_MDX:
+        return [f"{{/* {banner.spdx_text} */}}"]
     if variant == VARIANT_C_BLOCK:
         return [f"/* {banner.spdx_text} */"]
     raise ValueError(f"variant not renderable: {variant}")
@@ -442,12 +455,12 @@ def determine_insertion_index(lines: list[str], variant: str) -> int:
     """Return the zero-based line index at which the banner is inserted.
 
     The banner is the first file content except for a shebang and, for
-    Markdown/MDX HTML-comment banners, YAML frontmatter. Frontmatter must
+    Markdown/MDX comment banners, YAML frontmatter. Frontmatter must
     remain byte-first so static-site and documentation generators can parse
     collection metadata before reading the Markdown body.
     """
     insertion_index = 1 if lines and lines[0].startswith("#!") else 0
-    if variant == VARIANT_HTML:
+    if variant in (VARIANT_HTML, VARIANT_MDX):
         frontmatter_end = _frontmatter_close_index(lines, insertion_index)
         if frontmatter_end is not None:
             insertion_index = frontmatter_end + 1
@@ -534,17 +547,17 @@ def _strip_existing_banner(
     # author line in the new form (line variants) or two rows above in
     # wrapper variants (the wrapper's opener intervenes).
     new_form_line_variant = (
-        variant not in (VARIANT_HTML, VARIANT_C_BLOCK)
+        variant not in _WRAPPER_VARIANTS
         and author_line_index > insertion_index
         and SPDX_PREFIX_TEXT in lines[author_line_index - 1]
     )
     new_form_wrapper_variant = (
-        variant in (VARIANT_HTML, VARIANT_C_BLOCK)
+        variant in _WRAPPER_VARIANTS
         and author_line_index > insertion_index + 1
         and SPDX_PREFIX_TEXT in lines[author_line_index - 1]
     )
 
-    if variant in (VARIANT_HTML, VARIANT_C_BLOCK):
+    if variant in _WRAPPER_VARIANTS:
         if new_form_wrapper_variant:
             # Eight lines: wrapper-open + SPDX + 5 contact + wrapper-close.
             # author_line is row 3 of the eight (wrapper-open at row 1,
@@ -571,6 +584,27 @@ def _strip_existing_banner(
     return lines[:block_start] + lines[block_end_exclusive:]
 
 
+def _strip_bare_canonical_line(
+    lines: list[str],
+    insertion_index: int,
+    canonical_line: str,
+) -> list[str]:
+    """Remove an SPDX line that sits at the insertion site with no blank line after it.
+
+    The canonical block is the SPDX line plus one blank line. A bare copy of
+    the SPDX line directly followed by content is not canonical, so without
+    this step the injector would insert a second copy above it. Removing the
+    bare line lets the canonical block go back in with its blank line. A line
+    that already has its blank line after it is left for the canonical check.
+    """
+    if insertion_index >= len(lines) or lines[insertion_index] != canonical_line:
+        return lines
+    following = insertion_index + 1
+    if following < len(lines) and lines[following] == "":
+        return lines
+    return lines[:insertion_index] + lines[following:]
+
+
 def inject_banner(
     content: str,
     banner: CanonicalBanner,
@@ -593,6 +627,11 @@ def inject_banner(
     trimmed = _strip_existing_banner(lines, insertion_index, variant)
     if trimmed == lines and insertion_index != 0:
         trimmed = _strip_existing_banner(lines, 0, variant)
+    trimmed = _strip_bare_canonical_line(
+        trimmed,
+        determine_insertion_index(trimmed, variant),
+        canonical_block[0],
+    )
 
     insertion_index = determine_insertion_index(trimmed, variant)
     if is_canonical_at_position(trimmed, canonical_block, insertion_index):
