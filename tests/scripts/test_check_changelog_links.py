@@ -100,7 +100,9 @@ def test_cli_exit_code_on_findings(tmp_path: Path) -> None:
 
 def _next_version(part: str) -> str:
     """Return the next patch, minor or major release after the repository's version."""
-    major, minor, patch = (int(n) for n in bump_version.current_version(REPO_ROOT).split("."))
+    major, minor, patch = (
+        int(n) for n in bump_version.current_version(REPO_ROOT).split(".")
+    )
     return {
         "patch": f"{major}.{minor}.{patch + 1}",
         "minor": f"{major}.{minor + 1}.0",
