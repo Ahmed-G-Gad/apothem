@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,15 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-Adapter `claude-code` memasang korpus Apothem bersama ke dalam pohon penemuan
-native Claude Code. Agen Markdown, aturan, skill, output style, dan pengaturan
-dipasang di lokasi native-nya; prompt command dikonversi menjadi skill sehingga
-alur kerja yang dapat digunakan ulang tetap terlihat melalui permukaan skill
-Claude Code saat ini. Perender statusline disalin ke `~/.claude/statuslines/`
-tetapi tidak disambungkan: Claude Code membaca baris statusnya dari pengaturan
-`statusLine`, yang dibiarkan tidak disetel oleh adapter. Untuk mengaktifkannya,
-tambahkan ke `settings.json` sebuah entri `statusLine` dengan
-`"type": "command"` yang menjalankan `~/.claude/statuslines/render.py`.
+Adapter `claude-code` memasang korpus Apothem bersama ke dalam pohon penemuan native Claude Code. Agen Markdown, aturan, skill, output-style, dan pengaturan dipasang di lokasi native-nya; prompt command dikonversi menjadi skill sehingga alur kerja yang dapat digunakan ulang tetap terlihat melalui permukaan skill Claude Code saat ini. Perender statusline disalin ke `~/.claude/statuslines/` tetapi tidak disambungkan: Claude Code membaca baris statusnya dari pengaturan `statusLine`, yang dibiarkan tidak disetel oleh adapter. Untuk mengaktifkannya, tambahkan ke `settings.json` sebuah entri `statusLine` dengan `"type": "command"` yang menjalankan `~/.claude/statuslines/render.py`. Nilai `commandWindows` pada cuplikan tersebut dijalankan di Windows dan menyebut interpreter tanpa tanda kutip. Ketika jalur interpreter mengandung spasi, pemasangan menulis bentuk pendek 8.3 Windows pada nilai itu jika volume memilikinya. Entri hook di `settings.json` tetap menggunakan jalur lengkap.
 
 **Berkas yang ditulis:** `settings.json`, blok Apothem di `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/`, dan support subtree `.apothem/support/`

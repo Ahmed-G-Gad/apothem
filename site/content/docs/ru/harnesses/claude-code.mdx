@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Адаптер окружения Apothem для Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,18 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-Адаптер `claude-code` устанавливает общий корпус Apothem в нативное дерево
-обнаружения Claude Code. Исполнители в формате Markdown, правила, навыки,
-output-стили и настройки устанавливаются в свои нативные расположения; промпты
-команд преобразуются в навыки, чтобы повторно используемые рабочие процессы
-оставались видимыми через текущую поверхность навыков Claude Code. Рендерер
-строки состояния копируется в `~/.claude/statuslines/`, но не подключается:
-Claude Code читает строку состояния из настройки `statusLine`, которую адаптер
-оставляет незаданной. Чтобы включить её, добавьте в `settings.json` запись
-`statusLine` с `"type": "command"`, которая запускает
-`~/.claude/statuslines/render.py`.
+Адаптер `claude-code` устанавливает общий корпус Apothem в нативное дерево обнаружения
+Claude Code. Markdown-исполнители, правила, навыки, output-стили и настройки
+устанавливаются в свои нативные расположения; промпты команд преобразуются в навыки,
+чтобы повторно используемые рабочие процессы оставались видимыми через текущую
+поверхность навыков Claude Code. Рендерер строки состояния копируется в
+`~/.claude/statuslines/`, но не подключается: Claude Code читает строку состояния из
+настройки `statusLine`, которую адаптер оставляет незаданной. Чтобы включить её,
+добавьте в `settings.json` запись `statusLine` с `"type": "command"`, которая запускает
+`~/.claude/statuslines/render.py`. Значение `commandWindows` в фрагменте запускается в
+Windows и называет интерпретатор без кавычек. Если путь к интерпретатору содержит
+пробел, установка записывает в это значение его короткую форму Windows 8.3, когда она
+есть на томе. Записи хуков в `settings.json` сохраняют полный путь.
 
 **Записываемые файлы:** `settings.json`, блок Apothem в `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` и поддерево поддержки `.apothem/support/`

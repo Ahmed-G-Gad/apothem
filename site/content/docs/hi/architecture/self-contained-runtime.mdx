@@ -2,7 +2,7 @@
 title: "स्व-निहित रनटाइम"
 description: "Apothem का इंजन किसी भी चेकआउट से कैसे चलता है — वेंडर की गई निर्भरताएँ, PYTHONPATH=src आह्वान मॉडल, और प्लगइन-ट्री बूटस्ट्रैप।"
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,7 +55,7 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
 | सतह | आह्वान | संदर्भ |
 | ------- | ---------- | ------- |
 | इंजन CLI | `python -m apothem <command>` | `PYTHONPATH` पर `src/` वाला एक स्रोत ट्री (चेकआउट, npx कैश, प्लगइन ट्री) |
-| हुक रनटाइम | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | हार्नेस रूट के साझा `.apothem/support/` ट्री के अंतर्गत मटेरियलाइज़ की गई प्रति, निरपेक्ष पथ द्वारा |
+| हुक रनटाइम | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code का मटेरियलाइज़ेशन: हार्नेस रूट के साझा `.apothem/support/` ट्री के अंतर्गत प्रति, निरपेक्ष पथ द्वारा |
 
 - `python -m apothem` `src/apothem/__main__.py` चलाता है, जो
   `src/apothem/_vendor` को `sys.path` पर रखता है, जाँचता है कि `click` और `rich`
@@ -79,7 +79,7 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-यह ठीक वही आह्वान है जिसे वन-शॉट इंस्टॉलर पूरा होने पर प्रिंट करता है।
+जब `apothem` लॉन्चर PATH पर नहीं होता, तब वन-शॉट इंस्टॉलर पूरा होने पर यही रूप प्रिंट करता है, जिसमें वेंडर्ड डायरेक्टरी `src/` से पहले होती है और `python` के स्थान पर वह CPython होता है जिसे उसने रिज़ॉल्व किया।
 
 ## प्लगइन-ट्री बूटस्ट्रैप
 

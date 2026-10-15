@@ -2,7 +2,7 @@
 title: "Glosarium"
 description: "Glosarium Apothem — istilah dan konsep utama."
 machineTranslated: true
-sourceHash: "3f83ebe8ab57a917"
+sourceHash: "970b0d22cc5f76db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,9 +36,7 @@ harness dari satu profil bersama. Satu profil membawa setiap kohor; setiap adapt
 memproyeksikannya ke permukaan native harness-nya.
 
 ## Gerbang konformitas
-Bagian mekanis dari gerbang pra-emisi lima-belas-bar — validator yang dapat dicek
-mesin di `src/apothem/conformity/gate.py`. Berjalan sebelum setiap emisi artefak;
-bar-bar bernalar dievaluasi dalam tinjauan.
+Bagian mekanis dari gerbang pra-emisi lima-belas-bar — validator yang dapat dicek mesin di `src/apothem/conformity/gate.py`. Berjalan sebagai pemeriksaan advisori sebelum emisi artefak di tempat harness menyediakan hook PreToolUse (hanya memblokir dengan `--strict`, seperti di CI dan pre-commit); bar-bar bernalar dievaluasi dalam tinjauan.
 
 ## Entry point
 Grup entry-point setuptools `apothem.harnesses` yang dideklarasikan di

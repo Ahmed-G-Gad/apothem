@@ -2,7 +2,7 @@
 title: "Platform"
 description: "Sistem operasi, shell, dan skrip pemasang yang didukung untuk Apothem, plus prasyarat Python sistem untuk runtime mandiri."
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,19 +20,16 @@ dengan Node.js 18+.
 
 | Keluarga OS | Shell yang didukung | Skrip pemasang |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash` (bash sistem atau bash yang lebih baru terpasang-pengguna) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| Kontainer Linux ChromeOS (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`, dengan `bash` juga diterima (bash sistem atau bash yang lebih baru terpasang-pengguna) | `install.sh` |
+| Linux | POSIX `sh` (`bash` juga diterima) | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `sh` (`bash` juga diterima) | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `sh` (`bash` juga diterima) | `install.sh` |
+| Termux (Android) | POSIX `sh` (`bash` juga diterima) | `install.sh` |
+| Kontainer Linux ChromeOS (Crostini) | POSIX `sh` (`bash` juga diterima) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | Platform mana pun dengan PowerShell 7+ | PowerShell 7+ (lintas-platform) | `install.ps1` |
 
-Kedua skrip memiliki paritas fungsional satu sama lain. `install.sh` memerlukan
-`bash` POSIX. `install.ps1` memerlukan Windows PowerShell 5.1 atau lebih baru, atau
-PowerShell 7+ pada platform mana pun yang didukung PowerShell 7 itu sendiri — termasuk
-macOS dan Linux, di mana ia menjadi alternatif bagi `install.sh`.
+Kedua skrip memiliki paritas fungsional satu sama lain. `install.sh` memerlukan shell POSIX (`sh`, `dash`, `ash`, atau `bash`). `install.ps1` memerlukan Windows PowerShell 5.1 atau yang lebih baru, atau PowerShell 7+ pada platform mana pun yang didukung oleh PowerShell 7 itu sendiri — termasuk macOS dan Linux, di mana ia menjadi alternatif bagi `install.sh`.
 
 ## Satu prasyarat: Python sistem
 

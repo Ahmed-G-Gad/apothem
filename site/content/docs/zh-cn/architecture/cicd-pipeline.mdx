@@ -2,7 +2,7 @@
 title: "CI/CD 流水线图"
 description: "门控每次代码变更与发布的构建、测试、lint、安全与发布工作流阶段的可视化映射与泳道分解。"
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,8 +32,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -43,15 +43,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -66,25 +67,14 @@ flowchart LR
 
 ## 泳道职责
 
-- **静态分析泳道** —— 快速反馈。Ruff 覆盖 Python 风格与一套精选规则集；
-  mypy 以 strict 强制类型纪律；frontmatter 校验器为规则、技能、委派工作者与命令
-  门控工件 schema 合规性。markdownlint 不在这条泳道中：它仅作为 pre-commit
-  钩子运行，CI 不运行它（参见
-  [Markdown 约定](/docs/reference/markdown-conventions)）。
-- **测试泳道** —— `pytest tests/hooks` 针对完整事件矩阵演练钩子运行时；
-  `validate_ecosystem.py` 是跨工件一致性的主要结构门控；`chaos_pass.py`
-  与 `src/apothem/benchmarks/` 下的按类基准套件在发布泳道上激活，以捕捉
-  在降级输入下的退化与运行时预算回归。
-- **安全泳道** —— 密钥扫描捕获意外提交的凭据；SBOM 生成与许可证审计为任何
-  生产就绪安装门控供应链表面。
-- **发布泳道** —— 仅在打标签的发布上运行。签名标签验证确认发布分支的来源；
-  项目网站从 `site/dist/` 发布到 GitHub Pages 目标；发布说明派生自
-  `CHANGELOG.md` 的 Keep-A-Changelog 格式。
+- **静态分析泳道** —— 快速反馈。Ruff 覆盖 Python 风格与一套精选规则集；mypy 以 strict 强制类型纪律；frontmatter 校验器为规则、技能、委派工作者与命令门控工件模式合规性。markdownlint 不在这条泳道中：它仅作为 pre-commit 钩子运行，CI 不运行它（参见 [Markdown 约定](/docs/reference/markdown-conventions)）。
+- **测试泳道** —— `pytest tests/hooks` 针对完整事件矩阵演练钩子运行时；`validate_ecosystem.py` 是跨工件一致性的主要结构门控；`chaos_pass.py` 在 CI 质量作业中运行，针对推送到 `main` 的推送与拉取请求（按路径过滤），以便在降级输入下捕捉退化。`src/apothem/benchmarks/` 下的按类基准套件不在任何 CI 工作流中运行。
+- **安全泳道** —— 密钥扫描捕获意外提交的凭据；SBOM 生成与许可证审计对任何生产就绪安装的供应链表面进行门控。
+- **发布泳道** —— 发布工作流由标签推送触发；npm 与 VS Code 发布器也可通过手动派发，为既有标签重新运行。签名标签验证确认发布分支的来源；发布说明派生自 `CHANGELOG.md` 的 Keep-A-Changelog 格式。项目网站在推送到 `main` 且触及其构建输入的提交时，或经手动派发时，从 `site/dist/` 发布到 GitHub Pages 目标。
 
 ## 具体配置
 
-实际的工作流文件（`.github/workflows/ci.yml`、`.github/workflows/release.yml`
-等）在生产就绪生态系统建设期间安装。本图定义每个未来配置都遵循的规范形态。
+实际的工作流文件（`.github/workflows/ci.yml`、`.github/workflows/release.yml` 等）位于仓库中。本图定义了今后每个配置所对齐的规范形态。
 
 ## 权威交叉引用
 

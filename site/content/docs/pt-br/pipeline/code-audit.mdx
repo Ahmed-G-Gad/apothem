@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — Auditoria forense de código entre arquivos na escala do corpus do repositório."
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Auditoria forense de código entre arquivos na escala do corpus do repositório.
 Com argumentos:
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Entradas
 
-Repositório hospedeiro em qualquer estado do ciclo de vida
+Repositório hospedeiro com layout de fontes aprovado, uma linha de base de cobertura de testes e (no nível SHARED+) um portão de CI aprovado
 
 ## Saídas
 
-Achados em nível de corpus + REPORT.md
+Achados em nível de corpus em `_inputs/code-audit-findings.md`
 
 ## A jusante
 
@@ -37,22 +37,14 @@ A etapa de auditoria forense de código da Sequência de Auditoria de Revisão
 
 ## Fases do fluxo de trabalho
 
-O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
-
-1. **Carregar contexto** — Ler a suíte de plano, as regras e o Contrato de Retomada.
-2. **Verificar pré-requisitos** — Confirmar que as fases dependentes estão concluídas.
-3. **Executar tarefas** — Cumprir a missão do comando.
-4. **Verificar saídas** — Confirmar que todas as saídas declaradas existem e passam nas comportas de qualidade.
-5. **Atualizar PROGRESS.md** — Registrar as saídas verificadas no Registro de Saídas de Fase.
-6. **Emitir REPORT.md** — Prova de publicação da comporta de pré-emissão registrada.
+O comando executa seis fases forenses: ingestão de entrada, percurso de dependências entre arquivos, auditoria de type hints e cobertura, detecção de código morto e duplicado, auditoria de integridade arquitetural e emissão de achados com o portão de validação.
 
 ## Modos de falha
 
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
-| Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
-| Comporta de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
-| Falta um arquivo de entrada | Arquivo da suíte de plano ausente | Execute `/plan-generate` para criá-lo |
+| Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e execute novamente |
+| Arquivo de entrada ausente | Nenhuma execução do portão de CI nem linha de base de cobertura de testes no nível SHARED+ | Execute antes o pipeline de CI do hospedeiro e, em seguida, execute novamente |
 
 ## Exemplos
 
@@ -60,8 +52,8 @@ O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Referências cruzadas

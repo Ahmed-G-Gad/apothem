@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit——クラス別のパフォーマンス予算に対して監査します（Core Web Vitals、USE メソッド）。"
+description: "/perf-audit — USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint）に対して監査します。"
 machineTranslated: true
-sourceHash: "f4a428086264b0eb"
+sourceHash: "d614c1ffe9d5a42e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **役割：** パフォーマンス監査者
 **パイプライン位置：** フォートレス
 
-クラス別のパフォーマンス予算に対して監査します（Core Web Vitals、USE メソッド）。
+USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint）に対して監査します。
 
 ## 正規の呼び出し
 
@@ -20,16 +20,16 @@ sourceHash: "f4a428086264b0eb"
 引数付き：
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## 入力
 
-ライフサイクルのいずれの状態にあるホストリポジトリ
+`hooks/`、`src/apothem/benchmarks/`、`tests/`、およびフックのブートストラップスタブ `hooks/lib/bootstrap.{sh,ps1}` を含むホストリポジトリ
 
 ## 出力
 
-パフォーマンスの所見 + REPORT.md
+パフォーマンスの所見（`_inputs/perf-audit-findings.md`）
 
 ## 下流
 
@@ -37,22 +37,14 @@ sourceHash: "f4a428086264b0eb"
 
 ## ワークフローのフェーズ
 
-このコマンドは標準の `/plan` パイプラインワークフローに従います。
-
-1. **コンテキストの読み込み** — プランスイート、ルール、再開コントラクトを読み取ります。
-2. **前提条件の検証** — 依存フェーズが完了していることを確認します。
-3. **タスクの実行** — コマンドのミッションを遂行します。
-4. **出力の検証** — 宣言されたすべての出力が存在し、品質ゲートを通過することを確認します。
-5. **PROGRESS.md の更新** — 検証済みの出力をフェーズ出力レジストリに記録します。
-6. **REPORT.md の発行** — 事前発出ゲートのリリース証跡が記録されます。
+このコマンドは 5 つの監査フェーズを実行します。入力の取り込み、クラス別の予算の発見、ベンチマークの実行、USE メソッドによるホットパスの特定、そして検証ゲートを伴う所見の出力です。
 
 ## 失敗モード
 
 | 症状 | 原因 | 復旧 |
 |---------|-------|----------|
-| 前提条件が未完了 | 依存フェーズが終わっていない | まず上流のフェーズを完了させる |
 | 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
-| 入力ファイルが欠落 | プランスイートのファイルが存在しない | `/plan-generate` を実行して作成する |
+| 入力ファイルが欠落 | リポジトリに `src/apothem/benchmarks/` が存在しない | ベンチマークのドライバーを追加してから再実行する。存在するまで、コマンドは実行を拒否する |
 
 ## 例
 
@@ -60,8 +52,8 @@ sourceHash: "f4a428086264b0eb"
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## 相互参照

@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formate l'article selon le modèle de la revue et assemble le dossier de soumission (matériel supplémentaire, disponibilité des données/du code, lettre de présentation, éthique/conflit d'intérêts), avec un plan de préprint/DOI."
 machineTranslated: true
-sourceHash: "fbebb0df60083bca"
+sourceHash: "34e0993ca051136c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Formate l'article selon le modèle de la revue et assemble le dossier de soumiss
 Avec des arguments :
 
 ```bash
-/research-publish [path/to/research-suite/]
+/research-publish [--suite-name NAME]
 ```
 
 ## Entrées
@@ -61,8 +61,8 @@ Le formatage honore la divulgation par étapes : pour un lieu de publication en 
 ## Exemples
 
 ```bash
-# Assembler le dossier de soumission de la revue
-/research-publish path/to/research-suite/
+# Assemble the venue submission package
+/research-publish --suite-name <name>
 ```
 
 ## Références croisées

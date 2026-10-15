@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — versión de lanzamiento"
 description: "Apothem v1.0.1 ya está disponible: un único perfil compartido materializado en diecisiete entornos de asistente de IA, varias rutas de instalación y una versión firmada y atestiguada."
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,9 +38,8 @@ Los diecisiete adaptadores de esta versión:
 - windsurf
 - zed
 
-Añade una herramienta a tu flujo de trabajo, ejecuta un comando y tu
-configuración estará ahí. Quita una herramienta y Apothem la desinstala
-limpiamente, sin dejar archivos huérfanos.
+Añade una herramienta a tu flujo de trabajo, ejecuta un comando y tu configuración estará ahí.
+Quita una herramienta y Apothem elimina los archivos que escribió; los almacenes compartidos de memoria, contextos y aprendizaje se eliminan junto con el último entorno, previa copia de seguridad, y `plans/` siempre permanece.
 
 ## Instalación
 
@@ -61,12 +60,13 @@ Varias rutas de instalación, una sola CLI por debajo:
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **Instalador por script en un solo paso** — coloca un runtime
-   autocontenido y el lanzador `apothem` en el PATH:
+3. **Instalador por script en un solo paso** — coloca un tiempo de ejecución autónomo y un lanzador `apothem` (`~/.local/bin/apothem` en POSIX, con una sugerencia de PATH cuando ese directorio no está en `PATH`; `apothem.cmd` en WindowsApps en Windows):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   El script POSIX verifica la firma GPG de la etiqueta de lanzamiento de forma predeterminada y se detiene cuando la clave del mantenedor no está en el llavero local. Hasta que el mantenedor publique la huella de la clave (consulta `SECURITY.md`), define `APOTHEM_VERIFY=checksum` para comprobar el archivo frente a `SHA256SUMS` del lanzamiento, o `APOTHEM_ALLOW_UNVERIFIED=1` para continuar sin verificar la etiqueta.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -115,13 +115,7 @@ vida completo de la configuración:
 - `apothem profile` — inspecciona y gestiona el perfil compartido.
 - `apothem doctor` — diagnostica problemas de entorno y configuración.
 
-Cada adaptador de entorno implementa un protocolo `HarnessAdapter` uniforme —
-`install`, `uninstall`, `is_installed`, `verify` — de modo que cada entorno se
-comporta de forma predecible desde el asiento del operador, sin importar el
-formato del proveedor por debajo. Lee más sobre el diseño en
-[el análisis a fondo de la arquitectura del adaptador](/docs/blog/posts/multi-harness-adapter-design)
-y sobre la reconciliación de formatos en
-[convergencia de convenciones entre entornos](/docs/blog/posts/cross-harness-convention-convergence).
+Cada adaptador de entorno implementa un protocolo `HarnessAdapter` uniforme (`install`, `update`, `uninstall`, `is_installed`, `verify`), de modo que cada entorno se comporta de forma predecible desde el puesto del operador, sin importar el formato del proveedor que haya debajo. Lee más sobre el diseño en [el análisis en profundidad de la arquitectura del adaptador](/docs/blog/posts/multi-harness-adapter-design) y sobre la reconciliación de formatos en [convergencia de convenciones entre entornos](/docs/blog/posts/cross-harness-convention-convergence).
 
 ## Adónde ir después
 

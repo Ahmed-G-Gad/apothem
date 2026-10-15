@@ -1,28 +1,27 @@
 ---
 title: "`CLAUDE.md`"
-description: "Die stets geladene Ökosystem-Konfiguration, die jeder Interaktion den Basiskontext bereitstellt, mit sieben Abschnitten zu Plansuite, Identität, Verzeichnissen, Governance-Stufen, Direktiven, Mandaten und Registern."
+description: "Die stets geladene Projektkonfiguration, die jeder Interaktion ihren Basiskontext gibt: Prosa-Abschnitte zum Kanon der AI-Oberfläche, zum Betriebsablauf, zum Zweck und zu den Disziplinen; die querschnittlichen Mandate sind in der Regelkohorte operationalisiert."
 machineTranslated: true
 sourceHash: "d6a8ebfda25b9f38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`CLAUDE.md` ist die stets geladene Ökosystem-Konfiguration. Das Runtime des
-Host-Harnesses lädt sie bei jeder Interaktion, sodass ihr Inhalt der
-*Basiskontext* ist, den jedes andere Artefakt erweitert.
+`CLAUDE.md` ist die stets geladene Projektkonfiguration. Das Host-Harness lädt sie bei jeder Interaktion, daher ist ihr Inhalt der *Basiskontext*, den jedes andere Artefakt erweitert. Sie bleibt kohärent mit `AGENTS.md` (der kanonischen Oberfläche für Agent-Anweisungen) und `.github/copilot-instructions.md`, die dieselben Disziplinen spiegeln.
 
-## Abschnitte
+## Was sie enthält
 
-| Abschnitt | Zweck |
-|---------|---------|
-| §1 Plansuite | Benennt die Master-Plansuite-Vorlage und die acht `/plan-<stage>`-Befehle |
-| §2 Kognitive Identität & Softwarearchitektur | Erklärt die Rolle des Senior-Softwarearchitekten und die kreative Haltung |
-| §3 Artefaktverzeichnisse | On-Disk-Wurzeln je Klasse (Regeln, Befehle, Skills, delegierte Worker usw.) |
-| §4 Ernsthaftigkeitsskalierte Governance | Vierstufige Skalierungslinse (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
-| §5 Operative Direktiven | Frameworks für Problemlösung, strategische Entdeckung und Kommunikation |
-| §6 Übergreifende Mandate | Das CM-N-Register (CM-1 bis CM-28) |
-| §7 Register | Unterregister für Befehle, Regeln, delegierte Worker, Hooks, Skills, Evolution und leere Klassen |
+Die Projekt-`CLAUDE.md` ist in Prosaabschnitten verfasst: der AI-Oberflächen-Kanon, der Betriebskreislauf plan → harden → ship, Zweck und Quellstruktur des Projekts, die Disziplinen für Pläne, Release und Datei-Header, der Umgang mit Mehrdeutigkeit sowie die Konventionen für Codierung und Harness-Adapter. Sie legt fest, *was das Projekt ist* und *wie man darin arbeitet*; die Governance-Mandate wiederholt sie nicht, denn diese liegen in der Regel-Kohorte und werden der Laufzeit als Regeldateien bereitgestellt.
 
-## Konventionen für Mandat-Bezeichner
+| Governance-Oberfläche | Wo sie liegt |
+|---|---|
+| Querschnittsmandate (CM-N) | `src/apothem/rules/operational-mandates.md` und die mandatsspezifischen Regeldateien |
+| Die fünfzehn Produktionsmandate (M-N) | die mandatsspezifischen Regeldateien (`definitiveness.md`, `pre-emission-gate.md`, `production-ready-prs.md`, …) |
+| Kognitive Identität & Architekturhaltung | `src/apothem/rules/cognitive-identity.md` |
+| Ernsthaftigkeitsskalierte Governance | der eigene Abschnitt *Seriousness Scaling* jeder Regel |
+| Die `/plan`-Pipeline | die `/plan-*`-Befehle und `src/apothem/skills/plan-suite/` |
+| Artefaktverzeichnisse | das Quellenlayout — `rules/`, `commands/`, `skills/`, `agents/`, `hooks/` |
+
+## Konventionen für Mandatsbezeichner
 
 Drei Präfixe tragen unterschiedliche Bedeutungen:
 
@@ -32,11 +31,10 @@ Drei Präfixe tragen unterschiedliche Bedeutungen:
   `src/apothem/skills/plan-suite/master-template.md` §4.
 - **CP-N** — Kernprinzip, definiert in derselben Vorlage §6.
 
-Die Plansuite-Vorlage ist das kanonische TM/CP-Register; die Stufen der
-`/plan`-Pipeline lösen Querverweise über diese Datei auf.
+Die Plan-Suite-Vorlage ist das kanonische TM/CP-Register; die Stufen der `/plan`-Pipeline lösen Querverweise über diese Datei auf.
 
 ## Siehe auch
 
-- [Regeln](/docs/reference/rules) — die Regeldateien, die CM-1 bis CM-28 operationalisieren.
-- [Befehle](/docs/reference/commands) — die `/plan`-Pipeline-Stufen, die der Anker §1 Plansuite benennt.
-- [Hooks](/docs/reference/hooks) — die Hook-Schicht, die CM-7, CM-22 und CM-24 durchsetzt.
+- [Regeln](/docs/reference/rules) — die Regeldateien, die die querschnittlichen Mandate operationalisieren.
+- [Befehle](/docs/reference/commands) — die Stufen der `/plan`-Pipeline.
+- [Hooks](/docs/reference/hooks) — die Hook-Schicht, die die Mandate zu kohärentem Produkt, Konventionen und Kontextverwaltung durchsetzt.

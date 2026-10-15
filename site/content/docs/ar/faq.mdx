@@ -2,7 +2,7 @@
 title: "الأسئلة الشائعة"
 description: "أسئلة شائعة حول غرض Apothem، وأُطُر العمل المدعومة، واختيارية حزمة الخطّة، وتخصيص القواعد، وأنواع المُنتَجات، ومواقع حالة المنظومة."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,9 +29,7 @@ Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
 GLM (Z.ai), and Kimi Code
 ```
 
-يُجسِّد محوّل Claude Code في `~/.claude/`؛ ومُوزّع الخطّافات الخاص به محايد تجاه المضيف —
-إذ يحلّ جذر المنظومة من `$CLAUDE_PROJECT_DIR` أولًا، ثم
-`$LLM_PROJECT_DIR`، ثم يعود إلى `$HOME/.claude`.
+يُجسِّد محوّل <bdi>Claude Code</bdi> في <bdi>`~/.claude/`</bdi>؛ ومُوزّع الخطّافات الخاص به محايد تجاه المضيف — إذ يحلّ جذر المنظومة من <bdi>`$CLAUDE_PROJECT_DIR`</bdi> أولًا، ثم <bdi>`$LLM_PROJECT_DIR`</bdi>، ثم يجرّب عمليات البحث النسبية إلى السكربت وإلى مجلد العمل، وأخيرًا يعود إلى <bdi>`$HOME/.claude`</bdi>.
 
 ## هل يلزمني استخدام سلسلة حزمة الخطّة؟
 
@@ -41,9 +39,7 @@ GLM (Z.ai), and Kimi Code
 
 ## كيف أخصّص القواعد دون عمل نسخة (fork) من المستودع؟
 
-أضِف ملف قاعدتك الخاصّ ضمن `src/apothem/rules/<my-rule>.md`
-مع البيانات الأمامية (frontmatter) المعيارية. يلتقط مُحمِّل القواعد كل
-ملف يطابق النمط `src/apothem/rules/*.md`.
+أضِف سلسلة نصية إلى قائمة <bdi>`rules:`</bdi> في <bdi>`~/.config/apothem/profile.yaml`</bdi>، ثم أعِد تشغيل التثبيت أو التحديث. وملفات القواعد الواقعة تحت <bdi>`src/apothem/rules/`</bdi> تُعدِّل شجرة المصدر المُجمَّعة، التي يستبدلها مُثبِّت الأرشيف عند تشغيله مع <bdi>`--yes`</bdi>.
 
 ## كيف أعطّل قاعدة مؤقتًا؟
 
@@ -74,10 +70,15 @@ GLM (Z.ai), and Kimi Code
 
 ## أين تقع حالة المنظومة؟
 
-- **حالة الخطّة لكل حزمة** تقع ضمن `<project>/.apothem/plans/{suite}/`.
-- **الذاكرة لكل مشروع** تقع ضمن `projects/{hash}/memory/`.
-- **الذاكرة عبر المشاريع** تقع ضمن `memory/`.
-- **المسوّدات لكل جلسة** تقع ضمن `<project>/.apothem/plans/{suite}/_inputs/`.
+- **حالة الخطّة لكل حزمة** تقع ضمن <bdi>`<project>/.apothem/plans/{suite}/`</bdi>.
+- **ذاكرة Apothem** تقع ضمن <bdi>`.apothem/memory/`</bdi> أسفل جذر التثبيت
+  (في <bdi>Claude Code</bdi>: <bdi>`~/.claude/.apothem/memory/`</bdi>؛ و<bdi>`~/.apothem/memory/`</bdi> حين تكون
+  <bdi>`workspace.scope`</bdi> بقيمة <bdi>`user-home`</bdi>؛ و<bdi>`<project>/.apothem/memory/`</bdi> لتثبيتات
+  نطاق المشروع). أما الذاكرة التلقائية الخاصة بـ <bdi>Claude Code</bdi> فتقع ضمن جذر تهيئة إطار العمل، عند
+  <bdi>`projects/{hash}/memory/`</bdi> (في <bdi>Claude Code</bdi>: <bdi>`~/.claude/projects/{hash}/memory/`</bdi>).
+- **الذاكرة عبر المشاريع** تقع ضمن جذر تهيئة إطار العمل نفسه، عند
+  <bdi>`.apothem/memory/`</bdi> (في <bdi>Claude Code</bdi>: <bdi>`~/.claude/.apothem/memory/`</bdi>).
+- **المسوّدات لكل جلسة** تقع ضمن <bdi>`<project>/.apothem/plans/{suite}/_inputs/`</bdi>.
 
 ## هل يمكنني متابعة عمل طويل الأمد في جلسة جديدة أو على جهاز آخر؟
 

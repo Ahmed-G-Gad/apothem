@@ -2,7 +2,7 @@
 title: "Perguntas frequentes"
 description: "Perguntas comuns sobre o propósito do Apothem, ferramentas suportadas, opcionalidade da suíte de planejamento, customização de regras, tipos de artefato e localizações do estado do ecossistema."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,10 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-O adaptador do Claude Code se materializa em `~/.claude/`; seu despachante de hooks é neutro de host —
-ele resolve a raiz do ecossistema primeiro a partir de `$CLAUDE_PROJECT_DIR`, depois
-`$LLM_PROJECT_DIR`, e então recorre a `$HOME/.claude`.
+O adaptador do Claude Code se materializa em `~/.claude/`; seu despachante de hooks é
+neutro quanto ao host — ele resolve a raiz do ecossistema primeiro a partir de
+`$CLAUDE_PROJECT_DIR`, depois de `$LLM_PROJECT_DIR`, e então tenta buscas relativas ao
+script e ao diretório de trabalho, e por fim recorre a `$HOME/.claude`.
 
 ## Preciso usar o pipeline da suíte de planejamento?
 
@@ -40,9 +41,10 @@ validadores são úteis de forma independente.
 
 ## Como customizo as regras sem fazer fork do repositório?
 
-Adicione seu próprio arquivo de regra sob `src/apothem/rules/<my-rule>.md`
-com o frontmatter canônico. O carregador de regras capta todo
-arquivo que corresponde ao padrão `src/apothem/rules/*.md`.
+Adicione uma string à lista `rules:` em `~/.config/apothem/profile.yaml` e execute
+novamente a instalação ou a atualização. Arquivos de regra em `src/apothem/rules/`
+editam a árvore de fontes empacotada, que o instalador a partir do arquivo substitui
+quando executado com `--yes`.
 
 ## Como desabilito uma regra temporariamente?
 
@@ -74,10 +76,16 @@ verificação de CI passem.
 
 ## Onde fica o estado do ecossistema?
 
-- **O estado de planejamento por suíte** fica sob `<project>/.apothem/plans/{suite}/`.
-- **A memória por projeto** fica sob `projects/{hash}/memory/`.
-- **A memória entre projetos** fica sob `memory/`.
-- **O scratch por sessão** fica sob `<project>/.apothem/plans/{suite}/_inputs/`.
+- **O estado de planejamento por suíte** fica em `<project>/.apothem/plans/{suite}/`.
+- **A memória do Apothem** fica em `.apothem/memory/` abaixo da raiz de instalação (para
+  o Claude Code: `~/.claude/.apothem/memory/`; `~/.apothem/memory/` quando
+  `workspace.scope` é `user-home`; `<project>/.apothem/memory/` para instalações de
+  escopo de projeto). A auto-memória do próprio Claude Code fica sob a raiz de
+  configuração do harness, em `projects/{hash}/memory/` (para o Claude Code:
+  `~/.claude/projects/{hash}/memory/`).
+- **A memória entre projetos** fica sob essa mesma raiz de configuração do harness, em
+  `.apothem/memory/` (para o Claude Code: `~/.claude/.apothem/memory/`).
+- **O scratch por sessão** fica em `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Posso retomar um trabalho de longa duração em uma nova sessão ou em outra máquina?
 

@@ -2,7 +2,7 @@
 title: "部署检查清单"
 description: "在部署或共享 Apothem 生态系统之前的飞行前验证检查清单"
 machineTranslated: true
-sourceHash: "f19a44b28a1febc6"
+sourceHash: "09dbc1fde38d4135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,10 +108,10 @@ src/apothem/agents/*.md
 
 然后是实时场景：
 
-- [ ] `/plan-spec --interactive`（或 `/plan-spec <sample-file>`）——完成摄取/澄清而无命令级错误
-- [ ] `/plan-generate --dry-run`——生成结构预览而不写入文件
-- [ ] 对完整的计划套件执行 `/plan-status`——返回准确的阶段计数
-- [ ] 受托工作者调度：以小范围调用 `codebase-explorer` 工作者，在 maxTurns 内完成并返回结构化输出
+- [ ] `/plan-spec <sample-file>` —— 完成摄取／澄清，且无命令级错误
+- [ ] `/plan-generate --dry-run` —— 生成结构预览，且不写入文件
+- [ ] 对完整的计划套件运行 `/plan-status` —— 返回准确的阶段计数
+- [ ] 委派工作者调度：以较小范围调用 `codebase-explorer` 工作者，在 maxTurns 内完成并返回结构化输出
 
 ---
 

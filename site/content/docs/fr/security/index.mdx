@@ -2,7 +2,7 @@
 title: "Sécurité"
 description: "Posture de sécurité d'Apothem : objectif OpenSSF Scorecard, signalement des vulnérabilités, surfaces de durcissement."
 machineTranslated: true
-sourceHash: "1bc24c695dbc976f"
+sourceHash: "0b4ba23080c1c9b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,34 +15,11 @@ Apothem est un matérialisateur de configuration. Il lit un profil partagé et
 répertoires que lit chaque environnement. Cette unique fonction délimite ce à
 quoi il fait confiance et ce à quoi il ne fait pas confiance.
 
-- **Ce à quoi Apothem fait confiance.** Le profil partagé que vous rédigez et
-  l'arborescence source fournie, placée par l'installateur. Le profil est votre
-  intention déclarée ; le moteur le traite comme une entrée faisant autorité
-  après validation par rapport au schéma.
-- **Ce à quoi Apothem ne fait pas confiance.** Le contenu du profil n'atteint
-  le système de fichiers qu'après validation : les échecs de schéma, les
-  identifiants d'environnement inconnus, les chemins de projet non sûrs, les
-  sources de manifeste manquantes, la traversée de cible et les franchissements
-  de liens symboliques s'arrêtent tous avant toute écriture et renvoient des
-  diagnostics structurés avec `files_written: []`.
-- **Ce que la sortie matérialisée ne transporte jamais.** Aucun secret. Les
-  diagnostics du profil masquent les clés qui ressemblent à des secrets et les
-  valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte
-  brut, le JSON, les journaux, les extraits de documentation ou les tests, et
-  les exemples publics utilisent des identités et des domaines fictifs servant
-  d'espaces réservés. La configuration matérialisée est destinée à être
-  commitée et partagée ; elle ne transporte aucun identifiant.
-- **Le socle de refus universel.** Les règles qu'Apothem matérialise portent
-  un socle de refus non négociable, quelle que soit la liste d'autorisation
-  propre à un environnement : chemins de secrets (`.env*`, `~/.ssh/**`, magasins
-  d'identifiants), opérations shell destructrices (`rm -rf`, `sudo`, force-pushes
-  vers des branches protégées) et exécution d'entrées non fiables. Aucune liste
-  d'autorisation n'élargit silencieusement ce socle.
-- **Rayon d'impact.** Les écritures sont limitées aux répertoires des
-  environnements et aux sous-arborescences de support détenues par Apothem.
-  Les cibles gérées existantes sont sauvegardées avant remplacement et les
-  répertoires de découverte partagés sont fusionnés enfant par enfant, de sorte
-  que les fichiers sans rapport rédigés par l'opérateur restent en place.
+- **Ce à quoi Apothem fait confiance.** Le profil partagé que vous rédigez et l'arborescence source fournie par l'installateur. Le profil est votre intention déclarée ; le moteur le traite comme une entrée faisant autorité après validation par rapport au schéma.
+- **Ce à quoi Apothem ne fait pas confiance.** Le contenu du profil n'atteint le système de fichiers qu'après validation : les échecs de schéma, les identifiants d'environnement inconnus, les chemins de projet non sûrs, les sources de manifeste manquantes, la traversée de cible et les franchissements de liens symboliques s'arrêtent tous avant toute écriture et renvoient des diagnostics structurés avec `files_written: []`.
+- **Ce que la sortie matérialisée ne transporte jamais.** Aucun secret. Les diagnostics du profil masquent les clés qui ressemblent à des secrets et les valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte brut, le JSON, les journaux, les extraits de documentation ou les tests ; les exemples publics utilisent des identités et des domaines fictifs servant d'espaces réservés. La configuration matérialisée est destinée à être commitée et partagée ; elle ne transporte aucun identifiant.
+- **Le socle de refus universel.** Le fichier `settings.json` de Claude Code qu'Apothem matérialise porte un socle de refus non négociable, quelle que soit la liste d'autorisation propre à un environnement ; sur les autres environnements, ce même socle est un texte de politique dans les règles matérialisées, et non une liste de refus au niveau des paramètres. Ce socle couvre les chemins de secrets (`.env*`, `~/.ssh/**`, magasins d'identifiants), les opérations shell destructrices (`rm -rf`, `sudo`, force-pushes vers des branches protégées) et l'exécution d'entrées non fiables. Aucune liste d'autorisation n'élargit silencieusement ce socle.
+- **Rayon d'impact.** Les écritures sont limitées aux répertoires des environnements et aux sous-arborescences de support détenues par Apothem. Les cibles gérées existantes sont sauvegardées avant remplacement, et les répertoires de découverte partagés sont fusionnés enfant par enfant, de sorte que les fichiers sans rapport rédigés par l'opérateur restent en place.
 
 ## Posture de sécurité à l'exécution
 
@@ -68,10 +45,10 @@ d'espaces réservés.
 
 ## Liens rapides
 
-- [**Posture OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — preuve par vérification et limites connues de la plateforme
-- [**Audit des webhooks**](/docs/security/webhooks-audit) — preuve d'hygiène des secrets de webhook
+- [**Posture OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — preuves par contrôle et limites connues de la plateforme
+- [**Audit des webhooks**](/docs/security/webhooks-audit) — preuves d'hygiène des secrets de webhook
 - [**Protection de branche**](/docs/security/branch-protection-ruleset) — exigence de pull request, vérifications de statut requises, et blocage des force-pushes et des suppressions
-- [**Balayage des artefacts binaires**](/docs/security/binary-artifacts-sweep) — preuve de publication sans binaire dans le code source
+- [**Balayage des artefacts binaires**](/docs/security/binary-artifacts-sweep) — preuve que l'arborescence source ne contient aucun fichier binaire
 - [Politique de sécurité](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — signalement des vulnérabilités et versions prises en charge
 - [Badge OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — score en direct
 

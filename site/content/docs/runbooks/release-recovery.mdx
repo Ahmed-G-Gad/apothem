@@ -12,12 +12,11 @@ push runs the release and npm workflows. Nothing is force-pushed, and history
 on `main` is never rewritten.
 
 Published history is permanent. Every release tag, GitHub Release and npm
-version the project has published stays published: the project has three
-releases, each with its tag, its GitHub Release and its npm version. npm
-versions are immutable: a published `name@version` can never be replaced, and
-a version number that was unpublished can never be used again. Recovery
-therefore moves forward with a new patch release; it does not delete or
-re-point anything a user may already have installed.
+version the project has published stays published. npm versions are
+immutable: a published `name@version` can never be replaced, and a version
+number that was unpublished can never be used again. Recovery therefore moves
+forward with a new patch release; it does not delete or re-point anything a
+user may already have installed.
 
 ## 1. Stage taxonomy
 

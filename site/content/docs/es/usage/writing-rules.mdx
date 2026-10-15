@@ -19,13 +19,14 @@ alwaysApply: true         # true for always-on; false for path-filtered
 ---
 ```
 
-## Alcances de regla
+## Ámbitos de regla
 
-| Alcance | Cuándo se aplica |
-|-------|-------------|
-| `always-on` | Cada sesión, cada archivo |
-| `path-filtered` | Solo cuando el archivo activo coincide con `path-filter` |
-| `operator-selected` | El operador la habilita explícitamente en settings.json |
+El ámbito de una regla se define con dos campos del frontmatter, `alwaysApply` y `pathFilter`:
+
+| `alwaysApply` | `pathFilter` | Cuándo se aplica |
+|---------------|--------------|--------------|
+| `true` | `""` (vacío) | Siempre activa: cada sesión y cada archivo |
+| `false` | un glob como `"**/*.py"` | Filtrada por ruta: solo cuando el archivo activo coincide con el glob |
 
 ## Regla de ejemplo
 
@@ -44,11 +45,9 @@ alwaysApply: false
 - Prefer explicit over implicit.
 ```
 
-## Aplicar reglas a los harnesses
+## Aplicar reglas a los entornos
 
-Después de escribir una regla, actualiza cada adaptador de harness instalado.
-Ejecuta `apothem harnesses list` para ver el conjunto instalado, luego invoca
-update una vez por harness:
+Después de escribir una regla, actualiza cada adaptador de entorno instalado. Ejecuta `apothem harnesses list` para ver el conjunto instalado y después ejecuta la actualización una vez por cada entorno:
 
 ```bash
 apothem update --harness claude-code

@@ -2,7 +2,7 @@
 title: "対外コンフォーマンス登録簿 — ホストプロジェクト上での操作時"
 description: "ホストプロジェクト内で生成されるすべての成果物のコンフォーマンス要件を規定する十五のマンデート登録簿（M1–M15）。エコシステム内部マンデートとの相互マッピング付き。"
 machineTranslated: true
-sourceHash: "a921fa9513fb6c8f"
+sourceHash: "1be6fc81ce56e10d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,21 +14,21 @@ sourceHash: "a921fa9513fb6c8f"
 
 | ID | マンデート | 一行要約 | 正規ルール |
 | -- | ------- | ---------------- | -------------- |
-| M1 | ホストプロジェクト非依存 | ホストのスタック／フォーマッター／リンター／レイアウト／慣用法を発見し、それらを尊重し、沈黙を M5 に従い M7 注釈付きで照会として浮上させる | `src/apothem/rules/host-discovery.md` |
-| M2 | 編集規律 | すべての修正／拡張／改良を根拠とともに開示する。沈黙した過剰遵守も、沈黙した逸脱もしない | `src/apothem/rules/disclosure-ledger.md` |
-| M3 | 十の品質次元 | すべての成果物が十項目のチェック（厳密性、一貫性、構成可能性、可読性、孤立性、構造性、アーキテクチャ、命名、学術的参照、例／テスト／ドキュメント）に合格する | `src/apothem/rules/ten-dimension-check.md` |
-| M4 | 自己適用 | 意味のあるスコープのすべての発行の前に十五項目の事前発行ゲートを実行し、リリース証明を記録する | `src/apothem/rules/pre-emission-gate.md` |
-| M5 | 権威原則 | 照会せよ、捏造するな。アイデンティティ／スコープ／好み／セキュリティ／命名／インフラ／バージョン固定のデータは決して捏造されない | `src/apothem/rules/authority-inquiry.md` |
-| M6 | 専門知識の取り込み | 意図を読み、先回りして修正し、隣接するギャップで拡張し、引用された根拠で改良し、二次的帰結を予測する | `src/apothem/rules/expertise-posture.md` |
-| M7 | 選択肢注釈 | すべての複数選択肢の選択は、推奨マーカーと原則に結びついた根拠を伴う。権威ある領域では沈黙した選択は禁止される | `src/apothem/rules/option-annotation.md` |
-| M8 | 確定性と緻密性 | 拘束力ある規定が可能な箇所での曖昧化はしない。分岐を列挙しない「場合による」はしない。すべての契約は事前／事後／失敗条件を持つ | `src/apothem/rules/definitiveness.md` |
-| M9 | 視覚的レバレッジ | 構造的な主題は、出所と検証日付を伴う現状の図（デフォルトは Mermaid）を担う | `src/apothem/rules/visual-leverage.md` |
-| M10 | 双方向バインディング | 実質的な構造要素は相互的なバインディングを宣言する（Drives → ／ Driven by ← ／ Satisfies → ／ Established by ↑ ／ Cross-bound with ↔） | `src/apothem/rules/bidirectional-binding.md` |
-| M11 | アジャイルスプリント | 非トリビアルな複数ステップの作業は規律あるスプリント（目標／バックログ／DoR／DoD／レビュー／レトロスペクティブ）として実行される | `src/apothem/rules/agile-sprints.md` |
-| M12 | フェーズ報告と正規レイアウト | 複数フェーズの作業はサブフェーズごとの報告とフェーズレベルの集約を発行する。出力は正規レイアウトに置かれる | `src/apothem/rules/canonical-layout.md` |
-| M13 | コードクラフト | 何ではなくなぜを述べるコメント、単位付きの意図を明かす命名、型付き例外処理、名前付き定数、ホストのリンター／フォーマッター／型チェッカーを尊重する | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md`（言語ごと） |
-| M14 | エコシステム体系性 | 新しいコンポーネントは上流／下流／同位／強制者を宣言する。ホスト登録簿でインデックス化される。サイロも孤児も導入しない | `src/apothem/rules/systemic-participation.md` |
-| M15 | 本番対応形態 | コード変更は、同一の変更セット内でテスト＋ドキュメント＋CHANGELOG 項目＋準拠したコミットメッセージ＋CI グリーンとともに出荷される | `src/apothem/rules/production-ready-prs.md` |
+| M1 | ホストプロジェクト非依存 | ホストのスタック、フォーマッター、リンター、レイアウト、慣用法を発見し、それらを尊重する。沈黙は M5 に従い、M7 の注釈付きで照会として表面化させる | `src/apothem/rules/host-discovery.md` |
+| M2 | 編集の規律 | すべての修正、拡張、改良を根拠とともに開示する。沈黙した過剰遵守も、沈黙した越権もしない | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | 十の品質次元 | すべてのアーティファクトが十バーのチェック（厳密性、一貫性、構成可能性、可読性、孤立性、構造性、アーキテクチャ、命名、学術的参照、例・テスト・ドキュメント）に合格する | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | 自己適用 | 意味のあるスコープのすべての出力の前に十五バーの事前出力ゲートを実行し、ゲート結果を記録する | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | 権威の原則 | 照会せよ、捏造するな。アイデンティティ、スコープ、好み、セキュリティ、命名、インフラ、バージョン固定のデータは決して捏造しない | `src/apothem/rules/authority-inquiry.md` |
+| M6 | 専門知識の取り込み | 意図を読み取り、先回りして修正し、隣接するギャップで拡張し、引用した根拠で改良し、二次的な帰結を予測する | `src/apothem/rules/expertise-posture.md` |
+| M7 | 選択肢の注釈 | 複数の選択肢を伴うすべての選択には、推奨マーカーと、原則に結びついた根拠が付く。権威ある領域では、沈黙した選択は禁止される | `src/apothem/rules/option-annotation.md` |
+| M8 | 確定性と緻密性 | 拘束力のある規定が可能な箇所では、ぼかさない。分岐を列挙せずに「場合による」と書かない。すべての契約は、事前、事後、失敗の条件を持つ | `src/apothem/rules/definitiveness.md` |
+| M9 | 視覚的レバレッジ | 構造的な主題は、出所と検証日付を伴う現状の図（既定は Mermaid）を担う | `src/apothem/rules/visual-leverage.md` |
+| M10 | 双方向バインディング | 実質的な構造要素は、相互的なバインディングを宣言する（Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔） | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | アジャイルスプリント | 自明でない複数ステップの作業は、規律あるスプリント（ゴール / バックログ / DoR / DoD / レビュー / レトロスペクティブ）として実行される | `src/apothem/rules/agile-sprints.md` |
+| M12 | フェーズ報告と正規レイアウト | 複数フェーズの作業は、サブフェーズごとの報告とフェーズレベルの集約を出力する。出力は正規レイアウトに置かれる | `src/apothem/rules/canonical-layout.md` |
+| M13 | コードクラフト | 何ではなくなぜを述べるコメント、単位付きで意図を明かす命名、型付きの例外処理、名前付き定数、ホストの lint / フォーマット / 型チェックの尊重 | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md`（言語ごと） |
+| M14 | エコシステムのシステム性 | 新しいコンポーネントは、上流、下流、同位、強制者を宣言する。ホストのレジストリに索引付けされる。サイロも孤児も持ち込まない | `src/apothem/rules/systemic-participation.md` |
+| M15 | 本番対応の形態 | コードの変更は、同じ変更セットの中で、テスト、ドキュメント、CHANGELOG の項目、準拠したコミットメッセージ、CI グリーンとともに出荷される | `src/apothem/rules/production-ready-prs.md` |
 
 ## 1. トリビアル対非トリビアル閾値（確定済み）
 
@@ -44,15 +44,15 @@ sourceHash: "a921fa9513fb6c8f"
 
 | 必須コンポーネント | 目的 | 着地先 |
 | ------------------ | ------- | -------------- |
-| **登録簿表内のマンデート行** | マンデート、その一行要約、その正規ルールを命名する | 上記の本登録簿の表 |
-| **CM-N 相互マッピングセル** | §2 の並行語彙方針に従い、最も近い CM-N アナログを宣言する（または新軸として `(no direct CM-N analog)` をマークする） | 新ルールの `Cross-bound with ↔` 行 |
-| **正規ルール本文** | マンデートの実質的な仕様（事前条件／必要な振る舞い／開示面／失敗の兆候／五方向バインディング） | `src/apothem/rules/<mandate-name>.md` |
-| **事前発行ゲート行** | バーのチェック種別（機械的／推論的／混合）とその `Failure → action` を命名する | 事前発行ゲート登録簿表（`site/content/docs/governance/pre-emission-gate-registry.mdx`） |
-| **強制面** | `gate.py` によってオーケストレーションされる `src/apothem/conformity/<name>-grep.py` の機械的 grep か、またはオペレーター自己点検アンカー付きの明示的な推論的バー宣言のいずれか | `src/apothem/conformity/`（機械的）、または `reasoned` とマークされたゲート行（オペレーター自己点検） |
-| **コンフォーマンスフィクスチャ** | マンデートの失敗モードを演習する `tests/conformity-scenarios/fixtures/F-<N>-<name>/` 配下のフィクスチャ。検証器のマンデート一覧が新バーを含むよう更新される | `tests/conformity-scenarios/` |
-| **リリース証明スキーマの更新** | リリース証明の `bars:` ブロックが新行を獲得する。既存成果物のリリース証明ブロックは、再監査されるまで新行を `n/a (with reason: pre-mandate-N artifact)` として扱う | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 スキーマ |
-| **開示台帳エントリ** | 具体的なドライバー（観察されたパターンの再発、露呈したセキュリティギャップ、既存十五が網羅しない能力）に根ざした根拠とともにマンデートの導入を記録する | `src/apothem/rules/disclosure-ledger.md` に従う変更セットのコミット本文または PR 説明 |
+| **登録簿の表にあるマンデートの行** | マンデート、その一行要約、その正規ルールを命名する | この登録簿の上の表 |
+| **CM-N 相互マッピングのセル** | §2 の並行語彙方針に従い、最も近い CM-N の類似物を宣言する（または新しい軸として `(no direct CM-N analog)` とマークする） | 新しいルールの `Cross-bound with ↔` の行 |
+| **正規ルールの本文** | マンデートの実質的な仕様（事前条件、必要な振る舞い、開示面、失敗の兆候、五方向のバインディング） | `src/apothem/rules/<mandate-name>.md` |
+| **事前出力ゲートの行** | バーのチェック種別（機械的、推論的、混合）と、その `Failure → action` を命名する | 事前出力ゲートのレジストリ表（`site/content/docs/governance/pre-emission-gate-registry.mdx`） |
+| **強制面** | `gate.py` によってオーケストレーションされる `src/apothem/conformity/<name>-grep.py` の機械的な grep、または、オペレーター自己点検のアンカーを伴う推論的バーの明示的な宣言のいずれか | `src/apothem/conformity/`（機械的）、または `reasoned` とマークされたゲートの行（オペレーター自己点検） |
+| **コンフォーミティフィクスチャ** | `tests/conformity-scenarios/fixtures/F-<N>-<name>/` 配下のフィクスチャで、マンデートの失敗モードを演習する。検証器のマンデート一覧は、新しいバーを含むよう更新される | `tests/conformity-scenarios/` |
+| **ゲート結果スキーマの更新** | ゲート結果の `bars:` ブロックは新しい行を獲得する。既存のアーティファクトのゲート結果ブロックは、再監査されるまで、新しい行を `n/a (with reason: pre-mandate-N artifact)` として扱う | `site/content/docs/governance/pre-emission-gate-registry.mdx` の §1 スキーマ |
+| **開示台帳のエントリ** | 具体的な動機（観察されたパターンの再発、露呈したセキュリティギャップ、既存の十五が網羅しない能力）に根ざした根拠とともに、マンデートの導入を記録する | `src/apothem/rules/disclosure-ledger.md` に従う、変更セットのコミット本文または PR の説明 |
 
 **適用規律。** バンドルなしに到着するマンデート提案はレビューで却下されます。提案者はバンドルを完成させるか、提案を既存マンデートの拡張へ格下げします。既存の十五のマンデートは、仕様の対外軸として共に採択されました。将来の追加は、断片的に着地するのではなく、同じ全コンポーネントか無コンポーネントかの採択ケイデンスを尊重します。
 
-**格下げ／廃止プロトコル。** 確立された M-N が既存の CM-N または別の M-N と冗長であると判明したとき（具現化ルール本文の相互マッピング網羅マップが双方向に `direct` 隣接を示す）、格下げは対称的な逆操作です。登録簿行が廃止され、ゲート行が廃止され、正規ルールが廃止され（その内容は `src/apothem/rules/clean-room-generation.md` §3 再記述プロトコルに従い吸収側ルールへ折り込まれる）、コンフォーマンスフィクスチャが廃止され、リリース証明スキーマの `bars:` ブロックが行を落とし、変更セットが吸収側ルールの引用とともに開示台帳に記録されます。格下げは同じ全コンポーネントか無コンポーネントかの不変条件を保ちます。
+**格下げ／廃止のプロトコル。** 確立された M-N が既存の CM-N、または別の M-N と冗長であると判明した場合（具現化するルールの本文にある相互マッピング網羅マップが、双方向の `direct` 隣接を示す）、格下げは対称的な逆操作になります。登録簿の行が廃止され、ゲートの行が廃止され、正規ルールが廃止されます（内容は `src/apothem/rules/clean-room-generation.md` §3 の再記述プロトコルに従い、吸収側のルールへ折り込まれます）。コンフォーミティフィクスチャが廃止され、ゲート結果スキーマの `bars:` ブロックから行が落とされ、変更セットは吸収側ルールの引用とともに開示台帳に記録されます。格下げは、すべてのコンポーネントか、またはコンポーネントなしか、という同じ不変条件を保ちます。

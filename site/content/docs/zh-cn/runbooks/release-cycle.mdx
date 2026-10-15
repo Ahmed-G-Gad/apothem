@@ -2,13 +2,13 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 本操作手册将 `apothem` 的一次 `vX.Y.Z` 发布从干净的工作树推进到经过验证的分发表面。该流程是为使用 `gh`、`git` 和发布级 shell 的维护者编写的；它以一个经过验证的 Release 页面、一份已归档的 CHANGELOG，以及一次确认每个面向用户的表面都能响应规范安装命令的安装路径冒烟测试作为结束。
 
-发布模型是**追加式**的。每次发布在 `main` 上添加一个提交和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。项目有三个发布，每个发布都有其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
+发布模型是**追加式**的。每次发布在 `main` 上添加一个提交和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。每个发布都保留其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
 
 标签推送会启动两个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在两个工作流都完成后运行安装路径冒烟测试。
 
@@ -59,7 +59,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -172,6 +171,8 @@ apothem --version
 ```
 
 预期输出：`Apothem, version X.Y.Z`。
+
+启动器写入 `~/.local/bin`，要使上方的检查得以运行，该目录必须位于 `PATH` 上。当该目录不在 `PATH` 上时，安装器会打印需要添加的 `export PATH` 行。
 
 ### 5.4 一键脚本安装器（Windows）
 

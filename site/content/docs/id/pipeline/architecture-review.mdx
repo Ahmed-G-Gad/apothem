@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review — Tinjauan integritas arsitektur terhadap artefak desain di `_inputs/design.md`."
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Tinjauan integritas arsitektur terhadap artefak desain di `_inputs/design.md`.
 Dengan argumen:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## Masukan
@@ -29,7 +29,7 @@ Repositori host + `_inputs/design.md`
 
 ## Keluaran
 
-Temuan arsitektur + REPORT.md
+Temuan arsitektur di `_inputs/architecture-review-findings.md`
 
 ## Hilir
 
@@ -37,22 +37,14 @@ Tahap tinjauan arsitektur dari Urutan Tinjauan Audit
 
 ## Fase alur kerja
 
-Perintah ini mengikuti alur kerja pipeline `/plan` standar:
-
-1. **Memuat konteks** — Membaca suite plan, aturan, dan Kontrak Pelanjutan.
-2. **Memverifikasi prasyarat** — Memastikan fase dependensi telah selesai.
-3. **Mengeksekusi tugas** — Menjalankan misi perintah.
-4. **Memverifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lulus gerbang kualitas.
-5. **Memperbarui PROGRESS.md** — Mencatat keluaran terverifikasi di Registri Keluaran Fase.
-6. **Memancarkan REPORT.md** — Bukti rilis gerbang pra-emisi dicatat.
+Perintah ini menjalankan lima fase audit: penyerapan masukan, penelusuran keterlacakan desain-ke-kode, audit integritas batas-lapisan, sapuan kopling lintas-paket, dan emisi temuan dengan gerbang validasi.
 
 ## Mode kegagalan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Prasyarat tidak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| File masukan hilang | File suite plan tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+| File masukan hilang | Artefak desain `_inputs/design.md` tidak ada | Jalankan `/plan-design` untuk membuatnya |
 
 ## Contoh
 
@@ -60,8 +52,8 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## Referensi silang

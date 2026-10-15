@@ -1,50 +1,39 @@
 ---
 title: "Apothem vs. as regras brutas do CodeBuddy"
-description: "Por que encaminhar as regras de projeto do CodeBuddy através do Apothem em vez de escrever à mão arquivos .codebuddy/rules por projeto."
+description: "Por que encaminhar as regras de projeto do CodeBuddy pelo Apothem, em vez de escrever à mão os arquivos .codebuddy/rules em cada projeto."
 machineTranslated: true
 sourceHash: "54d7b1eeaef0f675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-O CodeBuddy lê as regras de projeto de `.codebuddy/rules/*.md`. Você pode
-escrever esses arquivos à mão, por projeto, para sempre. O Apothem gerencia um
-deles para você e o mantém consistente em cada ambiente e cada projeto.
+O CodeBuddy lê as regras do projeto em `.codebuddy/rules/*.md`. Você pode escrever esses arquivos à mão, por projeto, para sempre. O adaptador codebuddy do Apothem renderiza um deles a partir do perfil compartilhado e o mantém consistente em todos os harnesses e em todos os projetos. Esta página compara manter essa configuração à mão com gerenciá-la com o Apothem.
 
-## A abordagem bruta
+## Comparação de esforço
 
-Escrever à mão as regras do CodeBuddy significa:
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever regras | Copiar e colar as mesmas disciplinas em `.codebuddy/rules/` em cada projeto | Renderizadas a partir de um único corpus compartilhado |
+| Fonte de verdade | Os arquivos de cada projeto | Um cohort canônico |
+| Manter as regras alinhadas entre harnesses | Derivar novamente por ferramenta | Projetadas automaticamente |
+| Atualizar as regras | Editar à mão em cada projeto | `apothem update --harness codebuddy --project <path>` |
+| Remover a configuração | Exclusão manual | `apothem uninstall` com backup com marca de tempo |
 
-- Copiar e colar as mesmas disciplinas de engenharia em `.codebuddy/rules/` para
-  cada novo projeto.
-- Ficar fora de sincronia à medida que as disciplinas evoluem — não há uma única
-  fonte de verdade.
-- Re-derivar as mesmas convenções para Cursor, Windsurf, Claude Code e todas as
-  outras ferramentas que você usa, porque cada uma tem sua própria superfície de
-  regras.
+## O que o Apothem gerencia
 
-## A abordagem do Apothem
+O adaptador codebuddy renderiza as regras compartilhadas em um arquivo dedicado `<project>/.codebuddy/rules/apothem-rules.md` e não grava nenhum outro arquivo. Seu arquivo de memória `CODEBUDDY.md`, suas permissões e servidores MCP em `.codebuddy/settings.json` e quaisquer outros arquivos de regras que você escrever continuam pertencendo inteiramente ao operador: o adaptador reconhece essas superfícies, mas nunca as edita. Toda mudança nas regras compartilhadas re-renderiza o arquivo na próxima execução de `apothem update`.
 
-O Apothem mantém uma coorte de regras canônica no repositório de origem e a
-projeta na superfície nativa de cada ambiente. Para o CodeBuddy ele escreve:
+## Caminho de migração
 
-```
-<project>/.codebuddy/rules/apothem-rules.md
-```
+1. Execute `apothem profile init` para criar o perfil compartilhado, se você ainda não tiver um.
+2. Mova as disciplinas dos seus arquivos existentes em `.codebuddy/rules/` para o
+   corpus compartilhado.
+3. Execute `apothem install --harness codebuddy --project <path>` para renderizar o
+   arquivo `apothem-rules.md` ao lado das suas regras, que permanecem intocadas.
+4. Execute `apothem verify --harness codebuddy --project <path>` para confirmar que a
+   configuração foi aplicada.
+5. Use `apothem update --harness codebuddy --project <path>` para cada mudança posterior.
 
-| Aspecto | CodeBuddy bruto | Apothem |
-| --- | --- | --- |
-| Fonte de verdade | Os arquivos de cada projeto | Uma coorte canônica |
-| Consistência entre ambientes | Manual por ferramenta | Projetada automaticamente |
-| Atualizações | Editar à mão cada projeto | `apothem update --harness codebuddy --project <path>` |
-| Regras próprias do operador | Misturadas com as disciplinas | Intocadas — o Apothem escreve um arquivo dedicado |
-| Remoção | Exclusão manual | `apothem uninstall` com backup com marca de tempo |
+## Leia a seguir
 
-## O que continua sendo seu
-
-O Apothem escreve apenas `apothem-rules.md`. Seu arquivo de memória
-`CODEBUDDY.md`, suas permissões e servidores MCP em `.codebuddy/settings.json`, e
-quaisquer outros arquivos de regras que você escreva permanecem inteiramente do
-operador. O adaptador reconhece essas superfícies, mas nunca as edita.
-
-Consulte a [página do ambiente CodeBuddy](/docs/harnesses/codebuddy) para os
-comandos completos do ciclo de vida.
+- [Referência do adaptador CodeBuddy](/docs/harnesses/codebuddy)
+- [Visão geral da comparação](/docs/comparison)

@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard 태세"
 description: "Apothem의 OpenSSF Scorecard 목표와 점수를 계속 개선하는 데 쓰는 증거 표면입니다."
 machineTranslated: true
-sourceHash: "5e9567b9ec6c681e"
+sourceHash: "94c192fa1985b563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,13 +15,13 @@ Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, Scorecard가 
 | 검사 | 증거 표면 | 비고 |
 |---|---|---|
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 소스에서 추적되는 실행 가능 바이너리는 0개입니다. 생성된 배포 아카이브는 `dist/`에 머뭅니다. |
-| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main`은 공개 릴리스 승격 전에 보호됩니다. 새 릴리스 커밋이 안착한 후에는 강제 푸시와 삭제가 차단됩니다. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, CodeQL, Trivy, 문서 빌드, 패키징 스모크 검사. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | 공개 릴리스 승격 전에 `main`이 보호됩니다. 새 릴리스 커밋이 반영된 후에는 강제 푸시와 삭제가 차단됩니다. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, Trivy, 문서 빌드, 패키징 스모크 검사. |
 | **CII-Best-Practices** | OpenSSF Best Practices 등록 | OpenSSF Best Practices 사이트에서 메인테이너 측 등록이 필요합니다. 이는 저장소 파일만으로는 완료할 수 없습니다. |
-| **Code-Review** | 브랜치 보호 + CODEOWNERS | 저장소 관리자를 제외한 모든 사람에게 `main`에 대한 풀 리퀘스트가 필수이며, 프로젝트에 메인테이너가 한 명인 동안 브랜치 보호는 승인 검토 0개를 요구합니다([branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) 참조). 검토된 PR이 생기기 전까지 Scorecard 이력은 제한적으로 남습니다. |
+| **Code-Review** | 브랜치 보호 + CODEOWNERS | 저장소 관리자를 제외한 모든 사람에게 `main`에 대한 풀 리퀘스트가 필수이며, 프로젝트에 메인테이너가 한 명인 동안 브랜치 보호는 승인 검토 0건을 요구합니다([branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) 참조). 검토된 PR이 생기기 전까지 Scorecard 이력은 제한적으로 남습니다. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 새로운 단독 메인테이너 프로젝트는 여러 조직에 걸친 기여 이력을 만들어 낼 수 없습니다. 이 항목은 기여자가 합류하면서 자연스럽게 개선됩니다. |
 | **Dangerous-Workflow** | 워크플로 감사 | `pull_request_target`이 없습니다. Actions는 SHA로 고정되고 명시적 권한으로 범위가 한정됩니다. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate는 GitHub Actions, Python 매니페스트, 해시 잠금된 릴리스 요구 사항, npm 표면을 다루며, 그룹화된 의존성 PR도 계속 사용할 수 있게 합니다. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate는 GitHub Actions, Python 매니페스트, 해시 잠금된 릴리스 요구 사항, npm 표면을 다루며, 그룹화된 의존성 PR을 계속 사용할 수 있게 합니다. |
 | **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 속성 테스트가 파서와 frontmatter 불변식을 검증합니다. 업스트림 Scorecard는 Hypothesis를 퍼저 통합으로 인정하지 않을 수 있습니다. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 저장소 루트의 MIT 라이선스. |
 | **Maintained** | Git 히스토리 | 현재 릴리스 커밋과 활발한 워크플로 주기가 유지 관리를 입증합니다. 매우 새로운 저장소는 연령 경고를 받을 수 있습니다. |
@@ -30,8 +30,8 @@ Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, Scorecard가 
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python과 Actions 전반에 걸친 CodeQL `security-extended` 쿼리. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 조율된 공개 정책, 지원 버전 매트릭스, 대응 타임라인. |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 키리스 서명, SLSA 출처, SBOM, 체크섬, 릴리스 아티팩트. |
-| **Token-Permissions** | 워크플로 감사 | 워크플로는 기본적으로 읽기 전용 권한을 사용합니다. 쓰기 범위는 작업 로컬이며 배포/패키지 작업에 묶여 있습니다. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 주간 취약점 스캔과 CI 스캔(SARIF 업로드 포함). dependency-review 게이트는 취약하거나 허용되지 않은 라이선스의 의존성을 도입하는 풀 리퀘스트를 차단합니다. |
+| **Token-Permissions** | 워크플로 감사 | 워크플로는 기본적으로 읽기 전용 권한을 사용합니다. 쓰기 범위는 작업 로컬이며 배포 및 패키지 작업에 묶여 있습니다. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 주간 취약점 스캔과 SARIF 업로드를 포함한 CI 스캔. dependency-review 게이트는 취약하거나 허용되지 않은 라이선스의 의존성을 도입하는 풀 리퀘스트를 차단합니다. |
 
 ## 점수 해석
 

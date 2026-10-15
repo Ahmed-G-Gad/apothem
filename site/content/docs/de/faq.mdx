@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Häufige Fragen zum Zweck von Apothem, den unterstützten Harnesses, der Optionalität von Plan-Suiten, der Regelanpassung, den Artefakttypen und den Speicherorten des Ökosystem-Zustands."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-Der Claude Code-Adapter materialisiert in `~/.claude/`; sein Hook-Dispatcher ist host-neutral —
-er löst den Ökosystem-Stamm zuerst aus `$CLAUDE_PROJECT_DIR` auf, dann aus
-`$LLM_PROJECT_DIR`, und greift dann auf `$HOME/.claude` zurück.
+Der Adapter für Claude Code materialisiert nach `~/.claude/`; sein Hook-Dispatcher ist host-neutral — er löst den Ökosystem-Stamm zuerst über `$CLAUDE_PROJECT_DIR` auf, dann über `$LLM_PROJECT_DIR`, danach über Suchen relativ zum Skript und zum Arbeitsverzeichnis, und greift schließlich auf `$HOME/.claude` zurück.
 
 ## Muss ich die Plan-Suite-Pipeline verwenden?
 
@@ -40,9 +38,7 @@ Werkzeugkette sind unabhängig voneinander nützlich.
 
 ## Wie passe ich die Regeln an, ohne das Repository zu forken?
 
-Fügen Sie Ihre eigene Regeldatei unter `src/apothem/rules/<my-rule>.md`
-mit dem kanonischen Frontmatter hinzu. Der Regel-Loader erfasst jede
-Datei, die dem Muster `src/apothem/rules/*.md` entspricht.
+Fügen Sie der Liste `rules:` in `~/.config/apothem/profile.yaml` eine Zeichenkette hinzu und führen Sie die Installation oder das Update erneut aus. Regeldateien unter `src/apothem/rules/` ändern den verpackten Quellbaum, den der Archiv-Installer ersetzt, wenn er mit `--yes` ausgeführt wird.
 
 ## Wie deaktiviere ich eine Regel vorübergehend?
 
@@ -75,9 +71,15 @@ klassen bestehen.
 ## Wo befindet sich der Ökosystem-Zustand?
 
 - **Plan-Zustand pro Suite** liegt unter `<project>/.apothem/plans/{suite}/`.
-- **Speicher pro Projekt** liegt unter `projects/{hash}/memory/`.
-- **Projektübergreifender Speicher** liegt unter `memory/`.
-- **Scratch pro Sitzung** liegt unter `<project>/.apothem/plans/{suite}/_inputs/`.
+- **Apothem-Speicher** liegt unter `.apothem/memory/` im Installationsstamm (für
+  Claude Code: `~/.claude/.apothem/memory/`; `~/.apothem/memory/`, wenn
+  `workspace.scope` den Wert `user-home` hat; `<project>/.apothem/memory/` bei
+  Installationen auf Projektebene). Der eigene Auto-Speicher von Claude Code liegt
+  im Konfigurationsstamm des Harness unter `projects/{hash}/memory/` (für Claude
+  Code: `~/.claude/projects/{hash}/memory/`).
+- **Projektübergreifender Speicher** liegt unter demselben Konfigurationsstamm des
+  Harness unter `.apothem/memory/` (für Claude Code: `~/.claude/.apothem/memory/`).
+- **Zwischenspeicher pro Sitzung** liegt unter `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## Kann ich langlaufende Arbeit in einer neuen Sitzung oder auf einem anderen Rechner fortsetzen?
 

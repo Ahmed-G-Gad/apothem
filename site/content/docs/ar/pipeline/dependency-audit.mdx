@@ -2,7 +2,7 @@
 title: "/dependency-audit"
 description: "‏/dependency-audit — مرور تدقيق لكلّ تبعية (المباشرة + المتعدّية) للتحقّق من الترخيص و<bdi>CVE</bdi> والحداثة."
 machineTranslated: true
-sourceHash: "c4d7e94a7338bf03"
+sourceHash: "0c54a480092da944"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "c4d7e94a7338bf03"
 مع وسائط:
 
 ```bash
-/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/dependency-audit [path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]
 ```
 
 ## المدخلات
@@ -29,7 +29,7 @@ sourceHash: "c4d7e94a7338bf03"
 
 ## المخرجات
 
-نتائج التبعيات + <bdi>REPORT.md</bdi>
+نتائج التبعيات في <bdi>`_inputs/dependency-audit-findings.md`</bdi>
 
 ## في اتجاه المصبّ
 
@@ -37,22 +37,14 @@ sourceHash: "c4d7e94a7338bf03"
 
 ## مراحل سير العمل
 
-يتّبع الأمر سير العمل المعياري لخط أنابيب <bdi>`/plan`</bdi>:
-
-1. **تحميل السياق** — يقرأ حزمة الخطة والقواعد وعقد الاستئناف.
-2. **التحقّق من المتطلبات المسبقة** — يؤكّد اكتمال مراحل التبعية.
-3. **تنفيذ المهام** — يؤدّي مهمّة الأمر.
-4. **التحقّق من المخرجات** — يؤكّد وجود جميع المخرجات المُعلَنة واجتيازها بوّابات الجودة.
-5. **تحديث <bdi>PROGRESS.md</bdi>** — يسجّل المخرجات المُتحقَّق منها في سجلّ مخرجات المرحلة.
-6. **إصدار <bdi>REPORT.md</bdi>** — يُسجَّل إثبات الإفراج لبوّابة ما قبل الإصدار.
+يُنفِّذ الأمر خمس مراحل: استيعاب المدخلات، وجولة على كل تبعية، وفرز كل نتيجة، وإصدار النتائج، وبوابة التحقّق.
 
 ## أنماط الفشل
 
 | العَرَض | السبب | الاستعادة |
 |---------|-------|----------|
-| متطلب مسبق غير مكتمل | لم تنتهِ المرحلة المعتمَد عليها | أكمل المرحلة في اتجاه المنبع أولًا |
-| بوّابة الجودة FAIL | المُخرَج لا يفي بالمعايير | أصلح المُخرَج وأعد التشغيل |
-| ملف إدخال مفقود | ملف حزمة الخطة غائب | شغّل <bdi>`/plan-generate`</bdi> لإنشائه |
+| بوابة الجودة <bdi>FAIL</bdi> | المُخرَج لا يفي بالمعايير | أصلِح المُخرَج وأعِد التشغيل |
+| ملف إدخال مفقود | لا يُحلّ أي ملف بيان تبعيات في جذر المستودع | مرِّر جذر مستودع يحتوي ملف بيان تبعيات |
 
 ## أمثلة
 
@@ -60,8 +52,8 @@ sourceHash: "c4d7e94a7338bf03"
 # Dry-run to preview what would happen
 /dependency-audit --dry-run
 
-# Execute against a named plan suite
-/dependency-audit path/to/plan-suite/
+# Execute against a repository root
+/dependency-audit path/to/repo/
 ```
 
 ## إحالات مرجعية

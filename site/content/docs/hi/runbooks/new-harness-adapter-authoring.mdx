@@ -2,7 +2,7 @@
 title: "नया टूल अडैप्टर लिखना"
 description: "नया Apothem टूल अडैप्टर लिखने और प्रकाशित करने के लिए रनबुक।"
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,6 +61,6 @@ python -m apothem.conformity.gate --all .
 
 - अडैप्टर कार्यान्वयन
 - `site/content/docs/harnesses/<slug>.mdx` पर दस्तावेज़ पृष्ठ
-- परीक्षण
-- `pyproject.toml` में एंट्री-पॉइंट पंजीकरण
-- एक चेंजलॉग प्रविष्टि
+- टेस्ट
+- `pyproject.toml` में एंट्री-पॉइंट पंजीकरण, `src/apothem/lib/harness_registry_data.py` में एक `HARNESS_REGISTRY` प्रविष्टि (वहाँ `SUPPORTED_HARNESS_COUNT` बढ़ाएँ), और `src/apothem/schemas/profile.schema.json` के `harnessId` enum में ID
+- चेंजलॉग प्रविष्टि

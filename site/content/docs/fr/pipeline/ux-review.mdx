@@ -2,7 +2,7 @@
 title: "/ux-review"
 description: "/ux-review — Revue de l'expérience développeur portant sur l'ergonomie de la CLI, la documentation et la prise en main."
 machineTranslated: true
-sourceHash: "9f5bcdfb23374608"
+sourceHash: "17401a86d59ea454"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Revue de l'expérience développeur portant sur l'ergonomie de la CLI, la docume
 Avec arguments :
 
 ```bash
-/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/ux-review [path/to/repo/] [--focus SURFACE] [--dry-run]
 ```
 
 ## Entrées
 
-Dépôt hôte dans n'importe quel état de cycle de vie
+Dépôt hôte déployé avec un README, des scripts d'installation et un point d'entrée CLI
 
 ## Sorties
 
-Constats UX + REPORT.md
+Constats UX dans `_inputs/ux-review-findings.md`
 
 ## En aval
 
@@ -37,22 +37,15 @@ L'étape de revue UX de la Séquence d'Audit de Revue
 
 ## Phases du flux de travail
 
-La commande suit le flux de travail standard du pipeline `/plan` :
-
-1. **Charger le contexte** — Lire la suite de plan, les règles et le Contrat de Reprise.
-2. **Vérifier les prérequis** — Confirmer que les phases dépendantes sont achevées.
-3. **Exécuter les tâches** — Accomplir la mission de la commande.
-4. **Vérifier les sorties** — Confirmer que toutes les sorties déclarées existent et passent les portes qualité.
-5. **Mettre à jour PROGRESS.md** — Consigner les sorties vérifiées dans le Registre des Sorties de Phase.
-6. **Émettre REPORT.md** — Preuve de publication de la porte de pré-émission consignée.
+La commande exécute cinq phases : ingestion des entrées, parcours de l'ergonomie CLI, audit du flux d'installation et de la récupération après erreur, balayage de la découvrabilité de la documentation, et émission des constats avec le portail de validation.
 
 ## Modes de défaillance
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Prérequis incomplet | Phase dépendante non terminée | Achevez d'abord la phase amont |
-| Porte qualité FAIL | La sortie ne respecte pas les standards | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de la suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Porte qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Cible non déployée | La cible ne comporte pas la surface destinée à l'opérateur | Passez la racine du dépôt déployé |
 
 ## Exemples
 
@@ -60,8 +53,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 # Dry-run to preview what would happen
 /ux-review --dry-run
 
-# Execute against a named plan suite
-/ux-review path/to/plan-suite/
+# Execute against a host repository
+/ux-review path/to/repo/
 ```
 
 ## Références croisées

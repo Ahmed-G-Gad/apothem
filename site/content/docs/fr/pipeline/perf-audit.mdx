@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Audite par rapport aux budgets de performance par classe (Core Web Vitals, méthode USE)."
+description: "/perf-audit — Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint), selon la méthode USE."
 machineTranslated: true
-sourceHash: "f4a428086264b0eb"
+sourceHash: "d614c1ffe9d5a42e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rôle :** Auditeur de performance
 **Position dans le pipeline :** forteresse
 
-Audite par rapport aux budgets de performance par classe (Core Web Vitals, méthode USE).
+Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint), selon la méthode USE.
 
 ## Invocation canonique
 
@@ -20,16 +20,16 @@ Audite par rapport aux budgets de performance par classe (Core Web Vitals, méth
 Avec des arguments :
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## Entrées
 
-Dépôt hôte dans n'importe quel état de son cycle de vie
+Dépôt hôte qui contient `hooks/`, `src/apothem/benchmarks/`, `tests/` et les stubs d'amorçage des hooks `hooks/lib/bootstrap.{sh,ps1}`
 
 ## Sorties
 
-Constats de performance + REPORT.md
+Constats de performance dans `_inputs/perf-audit-findings.md`
 
 ## En aval
 
@@ -37,22 +37,14 @@ L'étape d'audit de performance de la Séquence de Revue d'Audit
 
 ## Phases du flux de travail
 
-La commande suit le flux de travail standard du pipeline `/plan` :
-
-1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
-2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
-3. **Exécuter les tâches** — Accomplit la mission de la commande.
-4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
-5. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
-6. **Émettre REPORT.md** — La preuve de libération de la porte de pré-émission est consignée.
+La commande exécute cinq phases d'audit : ingestion des entrées, découverte des budgets par classe, exécution des benchmarks, identification des chemins critiques par la méthode USE, et émission des constats avec le portail de validation.
 
 ## Modes d'échec
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
-| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
-| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Porte qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Le dépôt ne contient pas `src/apothem/benchmarks/` | Ajoutez les pilotes de benchmarks, puis relancez ; la commande refuse de s'exécuter tant qu'ils n'existent pas |
 
 ## Exemples
 
@@ -60,8 +52,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## Renvois

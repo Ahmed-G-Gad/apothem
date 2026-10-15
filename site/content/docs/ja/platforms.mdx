@@ -2,7 +2,7 @@
 title: "プラットフォーム"
 description: "Apothem がサポートするオペレーティングシステム、シェル、インストーラースクリプト、および自己完結型ランタイムに必要なシステム Python の前提条件。"
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,22 +18,18 @@ Apothem は 2 つのインストーラースクリプトを同梱しており、
 
 ## オペレーティングシステムとシェルのマトリクス
 
-| OS ファミリ | サポートされるシェル | インストーラースクリプト |
+| OS ファミリー | サポートされるシェル | インストーラースクリプト |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash`(システムの bash、またはユーザーがインストールした新しい bash) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| Windows Subsystem for Linux(WSL2) | POSIX `bash` | `install.sh` |
-| BSD(FreeBSD、OpenBSD、NetBSD) | POSIX `bash` | `install.sh` |
-| Termux(Android) | POSIX `bash` | `install.sh` |
-| ChromeOS Linux コンテナ(Crostini) | POSIX `bash` | `install.sh` |
-| Windows | Windows PowerShell 5.1 以上 | `install.ps1` |
-| PowerShell 7 以上を備えた任意のプラットフォーム | PowerShell 7 以上(クロスプラットフォーム) | `install.ps1` |
+| macOS | POSIX `sh`（`bash` も受け付けます。システムの bash、またはユーザーがインストールした新しい bash） | `install.sh` |
+| Linux | POSIX `sh`（`bash` も受け付けます） | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `sh`（`bash` も受け付けます） | `install.sh` |
+| BSD（FreeBSD、OpenBSD、NetBSD） | POSIX `sh`（`bash` も受け付けます） | `install.sh` |
+| Termux（Android） | POSIX `sh`（`bash` も受け付けます） | `install.sh` |
+| ChromeOS Linux コンテナー（Crostini） | POSIX `sh`（`bash` も受け付けます） | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| PowerShell 7+ を備えた任意のプラットフォーム | PowerShell 7+（クロスプラットフォーム） | `install.ps1` |
 
-2 つのスクリプトは互いに機能的に同等です。`install.sh` は POSIX `bash` を
-必要とします。`install.ps1` は Windows PowerShell 5.1 以降、または
-PowerShell 7 自体がサポートする任意のプラットフォーム上の PowerShell 7 以上を
-必要とします —— macOS や Linux もこれに含まれ、そこでは `install.sh` の
-代替手段となります。
+2 つのスクリプトは機能的に同等です。`install.sh` は POSIX シェル（`sh`、`dash`、`ash`、または `bash`）を必要とします。`install.ps1` は Windows PowerShell 5.1 以降、または PowerShell 7 自体がサポートする任意のプラットフォーム上の PowerShell 7 以降を必要とします。これには macOS と Linux も含まれ、そこでは `install.sh` の代替手段となります。
 
 ## 唯一の前提条件: システム Python
 

@@ -2,7 +2,7 @@
 title: "深入多编码助手适配器设计"
 description: "对 Apothem 的 HarnessAdapter 协议以及把一份配置文件物化为十七个编码助手的三种适配器类的技术深度解析。"
 machineTranslated: true
-sourceHash: "aa3e6ce912cf7275"
+sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,10 +18,11 @@ CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以�
 
 - `name` — 适配器注册的标识符。
 - `output_path` — 物化后的配置在磁盘上的落点。
-- `install` — 渲染并写入编码助手原生配置。
-- `uninstall` — 移除物化后的配置，而不触动共享配置文件。
-- `is_installed` — 报告该编码助手的配置是否存在。
-- `verify` — 检测配置文件与磁盘配置之间的漂移。
+- `install` — 渲染并写入工具的原生配置。
+- `update` — 配置档案变更后，重新渲染工具的原生配置。
+- `uninstall` — 移除物化后的配置，共享配置档案保持不变。
+- `is_installed` — 报告该工具的配置是否存在。
+- `verify` — 检测配置档案与磁盘配置之间的漂移。
 
 由于该契约是一个 `typing.Protocol`，适配器靠形态而非继承去满足它。CLI
 通过 `importlib.metadata` 从 `pyproject.toml` 中的
@@ -77,10 +78,7 @@ output-styles、设置以及约定目录。它属于第 II-A 类：它传播 Apo
 下随附厂商设置模板。它不带 `materializer.py`——它并不从配置文件渲染原生
 配置文件；它直接传播工件与约定目录。
 
-一处刻意划定的边界：claude-code 适配器并不管理 `CLAUDE.md`。那个文件是
-操作者所有的领地。Apothem 物化其周围的配置面——规则、hooks、设置——而把
-操作者自己的 `CLAUDE.md` 之声原封不动。一个会覆盖它的适配器会在每次
-`apothem install` 时抹去手写的项目指令，因此适配器在目录边界处划线止步。
+有一处刻意划定的边界：claude-code 适配器只管理 `CLAUDE.md` 中由哨兵界定的一个块；该块之外的散文保持不变。该文件的其余部分属于操作者自有的领地。Apothem 物化其周围的配置面——规则、钩子、设置——并将该块之外操作者的散文原样保留。若适配器改写整个文件，每次 `apothem install` 都会抹去手写的指令；而此适配器只改写它所管理的那个块。
 
 ## 为何这份统一性举足轻重
 

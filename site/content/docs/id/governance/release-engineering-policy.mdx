@@ -2,7 +2,7 @@
 title: "Kebijakan rekayasa rilis"
 description: "Lima kebijakan kanonik untuk versioning, penandaan rilis, siklus penghentian, perubahan yang tidak kompatibel, dan prosedur rollback."
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ Konvensi tag:
   yang membawa ringkasan catatan rilis dalam pesan tag.
 - **Tanda tangan** — setiap tag ditandatangani dengan GPG. Alur kerja rilis
   juga menghasilkan tanda tangan cosign keyless Sigstore pada setiap
-  artefak dan bukti rilis provenance SLSA-3, keduanya dilampirkan ke
+  artefak dan catatan provenans SLSA-3, keduanya dilampirkan ke
   halaman GitHub Release.
 
 ### Model rilis: aditif
@@ -45,8 +45,7 @@ Konvensi tag:
 Rilis bersifat aditif. Setiap rilis menambahkan satu commit di `main` dan satu
 tag; `main` tidak pernah di-force-push, dan tidak ada tag, GitHub Release, atau
 versi npm yang telah dipublikasikan yang dihapus, dipindahkan, atau digunakan
-ulang. Proyek memiliki tiga rilis, masing-masing dengan tag-nya, GitHub
-Release-nya, dan versi npm-nya, dan ketiganya tetap terpublikasi. Versi npm
+ulang. Setiap rilis mempertahankan tag-nya, GitHub Release-nya, dan versi npm-nya, dan semuanya tetap terpublikasi. Versi npm
 tidak dapat diubah: `name@version` yang telah dipublikasikan tidak pernah dapat
 diganti, dan nomor yang pernah di-unpublish tidak pernah dapat digunakan lagi.
 Pemasangan yang dipatok dan build yang dapat direproduksi bergantung pada setiap

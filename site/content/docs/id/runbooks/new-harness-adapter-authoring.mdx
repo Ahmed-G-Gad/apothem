@@ -2,7 +2,7 @@
 title: "Membuat adapter harness baru"
 description: "Runbook untuk membuat dan menerbitkan adapter harness Apothem baru."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ Buka PR dengan:
 - Implementasi adapter
 - Halaman dokumentasi di `site/content/docs/harnesses/<slug>.mdx`
 - Pengujian
-- Registrasi titik masuk di `pyproject.toml`
+- Registrasi entry point di `pyproject.toml`, entri `HARNESS_REGISTRY` di `src/apothem/lib/harness_registry_data.py` (naikkan `SUPPORTED_HARNESS_COUNT` di sana), dan ID pada enum `harnessId` di `src/apothem/schemas/profile.schema.json`
 - Entri changelog

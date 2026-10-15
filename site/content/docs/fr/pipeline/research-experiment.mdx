@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Exécute l'étude conçue et capture les données brutes avec une traçabilité complète, ainsi qu'un manifeste de reproductibilité (environnement, graine, protocole, versions épinglées)."
 machineTranslated: true
-sourceHash: "43edb7c712cda071"
+sourceHash: "669b49f8909599c4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Exécute l'étude ou l'expérience conçue et capture les données brutes avec u
 Avec arguments :
 
 ```bash
-/research-experiment [path/to/research-suite/]
+/research-experiment [--suite-name NAME]
 ```
 
 ## Entrées
@@ -61,8 +61,8 @@ L'exécution lance une passe pilote pour calibrer les budgets et les plages, pui
 ## Exemples
 
 ```bash
-# Exécuter l'étude conçue et capturer des données brutes reproductibles
-/research-experiment path/to/research-suite/
+# Run the designed study and capture reproducible raw data
+/research-experiment --suite-name <name>
 ```
 
 ## Renvois

@@ -1,72 +1,52 @@
 ---
 title: "أدلة التأليف وخط الأنابيب العملية"
-description: "إرشادات موجَّهة للمهام لتنقيح المحتوى إلى مواصفات، وتوليد حزم الخطط، ومراجعة الخطط، وتنفيذ المراحل، وإضافة القطع، وتشغيل بوابات الجودة."
+description: "إرشادات موجَّهة للمهام لتنقيح المحتوى إلى مواصفات، وتوليد حزم الخطط، ومراجعة الخطط، وتنفيذ المراحل، وإضافة القِطَع، وتشغيل بوابات الجودة."
 machineTranslated: true
-sourceHash: "7886387aff090853"
+sourceHash: "51dd595a3c38f228"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-إرشادات موجَّهة للمهام لـ **تأليف قطع Apothem وتشغيل خط أنابيب الخطط**. يجيب
-كل دليل عن سؤال ملموس واحد.
+إرشادات موجَّهة إلى المهام لـ **تأليف قطع <bdi>Apothem</bdi> وتشغيل خط أنابيب الخطّة**. يجيب كل دليل عن سؤال ملموس واحد.
 
-لوصفات إعداد أول تشغيل — إضافة بيئة، تحرير الملف التعريفي، تشغيل المثبّت —
-انظر قسم [وصفات الإرشاد العملي](/docs/how-to) بدلًا من ذلك.
+لوصفات الإعداد الأول — إضافة إطار عمل، وتحرير الملف التعريفي، وتشغيل المثبّت — انظر قسم [وصفات الإرشاد العملي](/docs/how-to) بدلًا من ذلك.
 
 ## خط أنابيب حزمة الخطّة
 
 ### كيف أنقّح محتوى خامًا إلى مواصفة؟
 
-استدعِ `/plan-spec` مع المحتوى الخام كمدخل. يشغّل دور Forge
-ست مراحل تحويل (الاكتشاف، الاعتبار الدقيق، تخطيط الفاعلية، التحقق من
-الحفظ، تطبيق الخبرة، مسح حلّ الأسئلة) ويُصدر المواصفة المُجمَّعة في
-`.apothem/plans/{suite}/_spec/spec.md`. انظر
-`src/apothem/commands/plan-spec.md` للبروتوكول الكامل.
+استدعِ <bdi>`/plan-spec`</bdi> مع المحتوى الخام مدخلًا. يشغّل دور <bdi>Forge</bdi> ست مراحل تحويل (الاكتشاف، والاعتبار الدقيق، وتخطيط الفاعلية، والتحقق من الحفظ، وتطبيق الخبرة، ومسح حلّ الأسئلة)، ويُصدر المواصفة المُجمَّعة في <bdi>`.apothem/plans/{suite}/_spec/spec.md`</bdi>. انظر <bdi>`src/apothem/commands/plan-spec.md`</bdi> للبروتوكول الكامل.
 
 ### كيف أولّد حزمة خطّة من مواصفة؟
 
-استدعِ `/plan-generate <suite-name>` بمجرّد وجود المواصفة في
-`.apothem/plans/{suite}/_spec/spec.md`. يُصدر المولّد ملفات البنية التحتية
-المعيارية بالإضافة إلى ملفات
-`phases/NN-kebab-topic/PHASE.md` لكل مرحلة. انظر
-`src/apothem/commands/plan-generate.md`.
+استدعِ <bdi>`/plan-generate .apothem/plans/{suite}/_spec/spec.md`</bdi> بمجرّد أن يكتب <bdi>`/plan-spec`</bdi> المواصفة. يُصدر المولّد ملفات البنية التحتية المعيارية، إضافةً إلى ملفات <bdi>`phases/NN-kebab-topic/PHASE.md`</bdi> الخاصة بكل مرحلة. انظر <bdi>`src/apothem/commands/plan-generate.md`</bdi>.
 
 ### كيف أراجع خطّة مولَّدة؟
 
-استدعِ `/plan-review path/to/plan-suite/`. يطبّق المراجِع
-تقنيات التخطيط الثماني ويُصدر بطاقات تقييم. تحجب بطاقات التقييم
-الفاشلة التنفيذ عند SHARED+ حتى تُحَلّ. انظر
-`src/apothem/commands/plan-review.md`.
+استدعِ <bdi>`/plan-review path/to/plan-suite/`</bdi>. يطبّق المراجِع تسع تقنيات للتخطيط ويُصدر بطاقات التقييم. تحجب بطاقات التقييم الفاشلة التنفيذ عند <bdi>SHARED+</bdi> حتى تُحَلّ. انظر <bdi>`src/apothem/commands/plan-review.md`</bdi>.
 
 ### كيف أنفّذ خطّة؟
 
-استدعِ `/plan-execute path/to/plan-suite/ [phase-id]`. بدون
-`phase-id`، تُشغَّل المرحلة المعلّقة التالية. ومع مُعرّف محدّد،
-تُشغَّل تلك المرحلة فقط. انظر `src/apothem/commands/plan-execute.md`.
+استدعِ <bdi>`/plan-execute path/to/plan-suite/ [phase-id]`</bdi>. بدون <bdi>`phase-id`</bdi> تُشغَّل المرحلة المعلّقة التالية. ومع معرّف محدّد لا تُشغَّل إلا تلك المرحلة. انظر <bdi>`src/apothem/commands/plan-execute.md`</bdi>.
 
 ### كيف أتحقّق من حالة الخطّة؟
 
-استدعِ `/plan-status path/to/plan-suite/ [--verbose]`. تقرير
-للقراءة فقط. انظر `src/apothem/commands/plan-status.md`.
+استدعِ <bdi>`/plan-status path/to/plan-suite/ [--verbose]`</bdi>. تقرير للقراءة فقط. انظر <bdi>`src/apothem/commands/plan-status.md`</bdi>.
 
 ## تأليف القطع
 
 ### كيف أضيف قاعدة جديدة؟
 
-1. اختر اسم ملف kebab-case تحت `src/apothem/rules/`، مثل
-   `src/apothem/rules/my-new-rule.md`.
-2. ألّف الواجهة الأمامية (`name`، `description`، `type:
-   instruction`، و`pathFilter` اختياري).
-3. اكتب النص بالأقسام المعيارية: الغرض،
-   الالتزامات، تدرّج الجدّية، الأنماط المضادة، الإنفاذ،
-   الروابط.
-4. أضف صفًا إلى مجموعة القواعد (`src/apothem/rules/`).
-5. شغّل `python scripts/dev/validate_ecosystem.py --check
-   frontmatter-cohort` للتحقق.
+1. اختر اسم ملف بصيغة <bdi>kebab-case</bdi> ضمن <bdi>`src/apothem/rules/`</bdi>، مثل
+   <bdi>`src/apothem/rules/my-new-rule.md`</bdi>.
+2. ألّف الـ<bdi>frontmatter</bdi> (<bdi>`name`</bdi>، و<bdi>`description`</bdi>، و<bdi>`pathFilter`</bdi>، و<bdi>`alwaysApply`</bdi>).
+3. اكتب النص بالأقسام المعيارية: <bdi>Purpose</bdi>، و<bdi>Obligations</bdi>، و<bdi>Seriousness Scaling</bdi>، و<bdi>Anti-Patterns</bdi>، و<bdi>Enforcement</bdi>، و<bdi>Bindings</bdi>.
+4. شغّل <bdi>`python scripts/dev/validate_ecosystem.py --check frontmatter-cohort`</bdi> للتحقق.
+
+محمّل القواعد يعتمد على <bdi>glob</bdi>، فهو يلتقط كل ملف يطابق <bdi>`src/apothem/rules/*.md`</bdi>، ولا يحتاج الأمر إلى أي مُدخل في سجلّ؛ إذ إن إسقاط الملف المُسمّى وفق الاصطلاح المعياري داخل المجلد هو التسجيل بأكمله.
 
 ### كيف أضيف عاملًا مفوَّضًا جديدًا؟
 
-اختر اسم ملف kebab-case تحت الدليل المعروض أدناه، بالصيغة
-`my-worker.md`:
+اختر اسم ملف بصيغة <bdi>kebab-case</bdi> ضمن المجلد المعروض أدناه، على الشكل <bdi>`my-worker.md`</bdi>:
 
 ```text
 src/apothem/agents/
@@ -75,25 +55,20 @@ src/apothem/agents/my-worker.md
 
 ثم:
 
-1. ألّف الواجهة الأمامية — متضمّنةً `name`، `description`،
-   `allowedTools`، `maxTurns`، `version`، وعلامة النوع المعروضة
-   أدناه:
+1. ألّف الـ<bdi>frontmatter</bdi>، متضمّنًا <bdi>`name`</bdi>، و<bdi>`version`</bdi>، و<bdi>`updated`</bdi>،
+   و<bdi>`description`</bdi>، و<bdi>`tools`</bdi>، و<bdi>`disallowedTools`</bdi>، و<bdi>`maxTurns`</bdi>، و<bdi>`effort`</bdi>.
 
-```text
-type: agent
-```
+2. اكتب موجّه النظام بوصفه متن الملف.
 
-1. اكتب موجّه النظام كنص.
-1. أضف صفًا إلى سجلّ المساعدات في مجموعة العمّال المفوَّضين (`src/apothem/agents/`).
+تُحمَّل حزمة العمّال المفوَّضين عبر <bdi>glob</bdi> من <bdi>`src/apothem/agents/*.md`</bdi>، فيُلتقط الملف المُسمّى وفق الاصطلاح المعياري عند وضعه في موضعه، ولا يوجد جدول سجلّ لتحريره.
 
 ### كيف أضيف خطّافًا جديدًا؟
 
 1. ألّف رسالة سياق تحت
-   `src/apothem/hooks/messages/<event>-<scope>.md`.
-2. وصّل الخطّاف في `settings.json`.
-3. حدّث خطّ أنابيب الخطّافات.
-4. شغّل `python scripts/dev/validate_ecosystem.py --check
-   hook-validator`.
+   <bdi>`src/apothem/hooks/messages/<event>-<scope>.md`</bdi>.
+2. وصّل الخطّاف في <bdi>`settings.json`</bdi>.
+3. حدّث خط أنابيب الخطّافات.
+4. شغّل <bdi>`python scripts/dev/validate_ecosystem.py`</bdi>.
 
 ## بوابات الجودة
 
@@ -108,9 +83,9 @@ python scripts/dev/validate_ecosystem.py
 python scripts/dev/chaos_pass.py
 ```
 
-يشغّل خط أنابيب التكامل المستمر المجموعة ذاتها بالتوازي.
+يشغّل خط أنابيب التكامل المستمر (<bdi>CI</bdi>) المجموعة ذاتها بالتوازي.
 
-### كيف أتحقّق من واجهة أمامية لصنف قطعة واحد؟
+### كيف أتحقّق من الـ<bdi>frontmatter</bdi> لصنف قطعة واحد؟
 
 ```bash
 python scripts/dev/validate_ecosystem.py --check frontmatter-cohort

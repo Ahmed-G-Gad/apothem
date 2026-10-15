@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "‎/plan-audit — حارسٌ ذو حلقة مغلقة لخط أنابيب /plan — يلفّ spec → generate → review ويُعالِج النتائج معالجةً نشطة حتى تصير الحزمة كُلًّا مُراجَعًا بلا نتائج."
 machineTranslated: true
-sourceHash: "13a1d2a19472e583"
+sourceHash: "6f82709e6c4d40fc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ sourceHash: "13a1d2a19472e583"
 
 ## الموضع في خط الأنابيب
 
-<bdi>`/plan-audit`</bdi> **متعامد** على خط الأنابيب الخطّي، وليس طورًا داخله. التسلسل الخطّي القانوني هو <bdi>`/plan-spec → /plan-generate → /plan-review → /plan-design`</bdi> (شَرطي، للحزم الحاملة للمعمارية فقط) <bdi>`→ /plan-execute`</bdi>. يشمل <bdi>`/plan-audit`</bdi> الأطوار <bdi>`/plan-spec → /plan-generate → /plan-review`</bdi> بوصفها مُلفِّفًا ذا حلقة مغلقة واحدًا يمكن استدعاؤه عند أيّ نقطة: يفحص الحالة ويُشغِّل الأطوار المفقودة فقط. وهو متميّز عن سلسلة تدقيق الحصن (تُدخَل عند <bdi>`/code-review`</bdi>، وطرفية عند <bdi>`/threat-model-audit`</bdi>)، التي تُدقِّق في قاعدة شِفرة مُنفَّذة بدلًا من حزمة خطّة.
+<bdi>`/plan-audit`</bdi> **متعامد** مع خط الأنابيب الخطّي، وليس طورًا داخله. التسلسل الخطّي القانوني هو <bdi>`/plan-spec → /plan-generate → /plan-review → /plan-design`</bdi> (شرطي، للحزم الحاملة للمعمارية فقط) <bdi>`→ /plan-execute`</bdi>. يشمل <bdi>`/plan-audit`</bdi> الأطوار <bdi>`/plan-spec → /plan-generate → /plan-review`</bdi> بوصفه مُلفِّفًا واحدًا ذا حلقة مغلقة يمكن استدعاؤه عند أيّ نقطة: يفحص الحالة، ويُشغِّل الأطوار المفقودة فقط حين توجد حزمة مُولَّدة؛ ومن دون حزمة مُولَّدة يرفض التنفيذ برسالة <bdi>`Blocked: run /plan-generate first`</bdi>. وهو متميّز عن سلسلة تدقيق الحصن (تُدخَل عند <bdi>`/code-review`</bdi>، وطرفية عند <bdi>`/threat-model-audit`</bdi>)، التي تُدقِّق في شيفرة مُنفَّذة بدلًا من حزمة خطّة.
 
 ## أطوار سير العمل
 

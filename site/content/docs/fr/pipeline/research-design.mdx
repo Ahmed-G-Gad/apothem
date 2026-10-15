@@ -2,7 +2,7 @@
 title: "/research-design"
 description: "/research-design — Opérationnalise les hypothèses en prédictions testables et conçoit l'étude (variables, contrôles, échantillon, puissance), puis gèle le plan d'analyse sous forme de préenregistrement."
 machineTranslated: true
-sourceHash: "9159cf8dd45e37c0"
+sourceHash: "7086ac7a2433484e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Opérationnalise les hypothèses en prédictions testables et conçoit l'étude 
 Avec arguments :
 
 ```bash
-/research-design [path/to/research-suite/]
+/research-design [--suite-name NAME]
 ```
 
 ## Entrées
@@ -61,8 +61,8 @@ Pour une étude porteuse de comparaison, la conception fixe, et préenregistre, 
 ## Exemples
 
 ```bash
-# Concevez l'étude et préenregistrez le plan d'analyse
-/research-design path/to/research-suite/
+# Design the study and preregister the analysis plan
+/research-design --suite-name <name>
 ```
 
 ## Références croisées

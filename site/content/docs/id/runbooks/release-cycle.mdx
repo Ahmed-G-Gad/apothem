@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,8 +16,7 @@ permukaan yang berhadapan dengan pengguna menjawab perintah instalasi kanonis.
 Model rilisnya **aditif**. Setiap rilis menambahkan satu commit di `main`
 dan satu tag `vX.Y.Z` beranotasi yang ditandatangani; tidak ada yang
 di-force-push dan tidak ada tag, GitHub Release, atau versi npm sebelumnya
-yang dihapus. Proyek memiliki tiga rilis, masing-masing dengan tag-nya,
-GitHub Release-nya, dan versi npm-nya, dan semuanya tetap terpublikasi: versi
+yang dihapus. Setiap rilis mempertahankan tag-nya, GitHub Release-nya, dan versi npm-nya, dan semuanya tetap terpublikasi: versi
 npm tidak dapat diubah (`name@version` yang telah dipublikasikan tidak pernah
 dapat diganti), dan pemasangan yang dipatok bergantung pada tag-tag tersebut.
 
@@ -88,7 +87,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -238,6 +236,8 @@ apothem --version
 ```
 
 Keluaran yang diharapkan: `Apothem, version X.Y.Z`.
+
+Peluncur ditulis ke `~/.local/bin`, yang harus berada di `PATH` agar pemeriksaan di atas dapat berjalan. Ketika direktori itu tidak ada di `PATH`, pemasang mencetak baris `export PATH` yang perlu ditambahkan.
 
 ### 5.4 Pemasang skrip satu langkah (Windows)
 

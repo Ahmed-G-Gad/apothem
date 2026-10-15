@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — Gera uma Suite de Plano Mestre completa a partir do `_spec/spec.md` redigido."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Com argumentos:
 
 ## Entradas
 
-O `_spec/spec.md` redigido + `_inputs/handoff-manifest.yml` de `/plan-spec` (ou prosa fornecida pelo operador).
+O `_spec/spec.md` redigido + `_inputs/handoff-manifest.yml` produzidos por `/plan-spec` (prosa isolada é recusada: execute `/plan-spec` para redigir `_spec/spec.md`; `--override` contorna o portão e registra um achado em PLAN-NOTES.md).
 
 ## Saídas
 
@@ -33,7 +33,7 @@ O `_spec/spec.md` redigido + `_inputs/handoff-manifest.yml` de `/plan-spec` (ou 
 
 ## Downstream
 
-/plan-review ou /plan-execute (downstream)
+/plan-review (a jusante); `/plan-execute` somente após existirem os scorecards de revisão (ou com `--override`)
 
 ## Fases do fluxo de trabalho
 

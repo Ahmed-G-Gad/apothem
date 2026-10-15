@@ -2,7 +2,7 @@
 title: "Руководство по включению Pages"
 description: "Пошаговое руководство по запуску GitHub Pages с пользовательским доменом на apothem.ahmedgad.com через настройку DNS-записи CNAME."
 machineTranslated: true
-sourceHash: "4eeea80143c61540"
+sourceHash: "4029b6bf004ea976"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -173,7 +173,7 @@ gh api /repos/ahmed-g-gad/apothem/pages \
 ### 2.6 Проверьте глубокие ссылки
 
 ```bash
-curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+curl -sSI https://apothem.ahmedgad.com/docs/architecture/ | head -3
 ```
 
 Ожидаемый вывод:
@@ -321,10 +321,10 @@ Porkbun, Domains.google, Network Solutions), примените независи
 
 | Сбой | Диагностика | Восстановление |
 |---|---|---|
-| `gh api .../pages` возвращает 404 | Pages не включён в репозитории | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site`, затем повторите §2.1 |
-| `dig` возвращает пусто через 30 минут | DNS-запись не зафиксирована у провайдера | Вернитесь к соответствующему приложению провайдера; убедитесь, что запись сохранена (не черновик / не в ожидании); проверьте панель на пропущенный шаг `Save` |
-| `https_certificate.state: errored` | Pages не может выдать сертификат | Выключите и включите пользовательский домен в настройках Pages; это повторно запускает выдачу. Подождите до 24 часов новой попытки |
-| 404 по глубокой ссылке после сборки | Сборка статического сайта не включила страницу | `gh workflow run publish-static-site.yml`; по завершении убедитесь, что `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` возвращает `success` |
+| `gh api .../pages` возвращает 404 | Pages не включён в репозитории | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f build_type=workflow`, затем повторите §2.1 |
+| `dig` возвращает пустой результат через 30 минут | DNS-запись не сохранена у провайдера | Вернитесь к соответствующему приложению провайдера; убедитесь, что запись сохранена (не черновик и не ожидает подтверждения); проверьте панель на пропущенный шаг `Save` |
+| `https_certificate.state: errored` | Pages не может выдать сертификат | Выключите и снова включите пользовательский домен в настройках Pages; это повторно запустит выдачу. Подождите до 24 часов новой попытки |
+| 404 по глубокой ссылке после сборки | Сборка статического сайта не включила страницу | `gh workflow run publish-static-site.yml`; по завершении проверьте, что `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` возвращает `success` |
 
 Если восстановление не удаётся после одного цикла соответствующей
 диагностики, эскалируйте к руководству по восстановлению выпуска

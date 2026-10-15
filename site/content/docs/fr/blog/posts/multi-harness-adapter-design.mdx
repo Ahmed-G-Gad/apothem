@@ -2,7 +2,7 @@
 title: "Au cœur de la conception de l'adaptateur multi-environnement"
 description: "Une plongée technique dans le protocole HarnessAdapter d'Apothem et les trois classes d'adaptateur qui matérialisent un profil en dix-sept environnements."
 machineTranslated: true
-sourceHash: "aa3e6ce912cf7275"
+sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,8 +20,9 @@ propres à l'éditeur. Il déclare les opérations que la CLI invoque et les
 métadonnées que la CLI lit :
 
 - `name` — l'identifiant enregistré de l'adaptateur.
-- `output_path` — où la configuration matérialisée atterrit sur le disque.
+- `output_path` — l'emplacement sur disque où atterrit la configuration matérialisée.
 - `install` — rendre et écrire la configuration native de l'environnement.
+- `update` — rendre à nouveau la configuration native de l'environnement après une modification du profil.
 - `uninstall` — supprimer la configuration matérialisée, en laissant le profil
   partagé intact.
 - `is_installed` — indiquer si la configuration de l'environnement est présente.
@@ -97,13 +98,13 @@ des modèles de paramètres d'éditeur sous
 `materializer.py` — il ne rend pas de fichier de configuration natif à partir du
 profil ; il propage directement les artefacts et les répertoires de convention.
 
-Une frontière délibérée : l'adaptateur claude-code ne gère pas `CLAUDE.md`. Ce
-fichier est un territoire qui appartient à l'opérateur. Apothem matérialise la
-surface de configuration environnante — les règles, les hooks, les paramètres —
-et laisse intacte la voix du `CLAUDE.md` propre à l'opérateur. Un adaptateur qui
-l'écraserait effacerait des instructions de projet écrites à la main à chaque
-`apothem install`, donc l'adaptateur trace la ligne à la frontière du
-répertoire et s'arrête.
+Une frontière délibérée : l'adaptateur claude-code ne gère qu'un bloc délimité
+par des sentinelles à l'intérieur de `CLAUDE.md` ; la prose située hors de ce bloc
+est préservée. Le reste de ce fichier relève du territoire de l'opérateur. Apothem
+matérialise la surface de configuration environnante — les règles, les hooks, les
+settings — et conserve mot pour mot la prose de l'opérateur située hors de ce bloc.
+Un adaptateur qui réécrirait tout le fichier effacerait à chaque `apothem install`
+les instructions rédigées à la main ; celui-ci ne réécrit que son bloc géré.
 
 ## Pourquoi l'uniformité compte
 

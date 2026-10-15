@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 —— ローンチリリース"
 description: "Apothem v1.0.1 が利用可能になりました —— 1 つの共有プロファイルを 17 の AI アシスタントハーネスへマテリアライズし、複数のインストール経路と、署名・証明されたリリースを備えています。"
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,9 +38,10 @@ Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロフ�
 - windsurf
 - zed
 
-ワークフローにツールを 1 つ追加し、コマンドを 1 つ実行すれば、あなたの設定は
-そこにあります。ツールを取り除けば、Apothem はきれいにアンインストールします
-—— 取り残された孤立ファイルを残しません。
+ツールをワークフローに追加し、コマンドを 1 つ実行すれば、あなたの設定はそこにあります。
+ツールを取り除けば、Apothem は書き込んだファイルを削除します。共有のメモリ、コンテキスト、
+学習ストアは、最後のハーネスが削除されるときにバックアップを取ったうえで一緒に削除され、
+`plans/` は常に残ります。
 
 ## インストール
 
@@ -62,11 +63,19 @@ Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロフ�
    ```
 
 3. **ワンショットのスクリプトインストーラー** —— 自己完結したランタイムと
-   `apothem` ランチャーを PATH 上に配置します：
+   `apothem` ランチャーを配置します（POSIX では `~/.local/bin/apothem`。そのディレクトリが
+   `PATH` にない場合は PATH のヒントを表示します。Windows では WindowsApps 内の
+   `apothem.cmd`）：
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   POSIX スクリプトは、既定でリリースタグの GPG 署名を検証し、メンテナーの鍵がローカルの
+   キーリングにない場合は中止します。メンテナーが鍵のフィンガープリントを公開するまで
+   （`SECURITY.md` を参照）、アーカイブをリリースの `SHA256SUMS` と照合するには
+   `APOTHEM_VERIFY=checksum` を、タグの検証なしで続行するには `APOTHEM_ALLOW_UNVERIFIED=1`
+   を設定してください。
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -115,11 +124,11 @@ Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロフ�
 - `apothem doctor` —— 環境と構成の問題を診断します。
 
 各ハーネスアダプターは、統一された `HarnessAdapter` プロトコル ——
-`install`、`uninstall`、`is_installed`、`verify` —— を実装します。そのため、
-下層のベンダー形式がどうであれ、オペレーターの席から見ると、どのハーネスも
-予測どおりに振る舞います。設計についての詳細は
-[アダプターアーキテクチャの深掘り](/docs/blog/posts/multi-harness-adapter-design)
-を、形式の調停についての詳細は
+`install`、`update`、`uninstall`、`is_installed`、`verify` —— を実装します。そのため、
+下層のベンダー形式がどうであれ、オペレーターの席から見ると、どのハーネスも予測どおりに
+振る舞います。設計についての詳細は
+[アダプターアーキテクチャの深掘り](/docs/blog/posts/multi-harness-adapter-design)を、
+形式の調停についての詳細は
 [ハーネス横断の慣習収束](/docs/blog/posts/cross-harness-convention-convergence)
 をお読みください。
 

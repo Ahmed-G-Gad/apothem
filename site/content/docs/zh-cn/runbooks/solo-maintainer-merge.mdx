@@ -2,7 +2,7 @@
 title: "单人维护者 PR 合并仪式"
 description: "维护者何时可以直接合并自己的拉取请求，以及在分支保护要求一次批准并对管理员强制执行时所用的仪式。"
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,7 +86,7 @@ python scripts/dev/admin_merge.py <pr-number>
 每次仪式调用都会落在三个持久的表面上，操作者可以在事后检查它们：
 
 - **PR 的合并元数据。** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` 返回合并执行者、合并时间戳以及 squash 提交的 SHA。`mergedBy` 执行者与运行步骤 3 的维护者身份一致。
-- **仓库的审计日志。** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` 将合并后的 CI 运行与合并提交关联起来；仓库的保护规则审计日志（通过 Settings → Branches 界面查看 `gh api /repos/<owner>/<repo>/branches/main/protection` 的历史）显示步骤 2 和步骤 4 的切换包围着合并窗口。
-- **维护者的 git 历史。** `git log main --merges --first-parent` 列出 `main` 上的每一个 squash 合并提交，提交主题中带有对应的 PR 编号（按照 `gh pr merge --squash` 的默认行为添加 `(#<pr-number>)` 后缀），使操作者能够将任何过往的落地追溯到其 PR 和仪式调用。
+- **仓库的审计日志。** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` 将合并后的 CI 运行与合并提交相关联；仓库的保护规则审计日志（通过 Settings → Branches 界面查看 `gh api /repos/<owner>/<repo>/branches/main/protection` 的历史记录）显示步骤 2 与步骤 4 的切换包围着合并窗口。
+- **维护者的 git 历史。** `git log main --first-parent --oneline` 列出 `main` 上的每一个 squash 合并提交，提交主题中带有对应的 PR 编号（依据 `gh pr merge --squash` 的默认行为，附加 `(#<pr-number>)` 后缀），使操作者能够将任何过往的落地追溯到其 PR 与仪式调用。
 
-当 `scripts/dev/admin_merge.py` 是入口点时，其非交互日志（stdout）会依次列出三个保护 API 调用和合并 API 调用；将封装器的输出通过管道传给 `tee`，即可捕获每次运行的审计片段，而无需依赖 GitHub 侧的日志保留。
+当 `scripts/dev/admin_merge.py` 为入口点时，其非交互日志（stderr）会依次列出三个保护 API 调用与合并 API 调用；将其 stderr 通过管道传给 `tee`（`2>&1 | tee`），即可在不依赖 GitHub 侧日志保留期的情况下，捕获每次运行的审计片段。

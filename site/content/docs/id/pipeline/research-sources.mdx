@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Pengumpulan sumber sistematis: menguraikan spesifikasi menjadi subkueri, mengipas penemuan secara paralel, menyaring dan memeringkat, lalu mengekstrak per sumber menjadi buku besar sumber yang diperingkat."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Pengumpulan sumber sistematis — menguraikan spesifikasi penelitian menjadi sub
 Dengan argumen:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Masukan
@@ -64,8 +64,8 @@ Di luar buku besar sumber, tahap ini membangun buku besar asal-usul komparator: 
 # Kumpulkan sumber untuk suite penelitian yang telah dibingkai
 /research-sources path/to/research-suite/
 
-# Kipas penemuan yang lebih dalam
-/research-sources path/to/research-suite/ --depth N
+# Batasi jumlah sumber yang lolos penyaringan
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Referensi silang

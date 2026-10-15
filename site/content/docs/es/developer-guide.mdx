@@ -2,7 +2,7 @@
 title: "Contribuir a Apothem — Guía del desarrollador"
 description: "Mantén y extiende el ecosistema de Apothem creando reglas, comandos, ayudantes, skills y hooks con esquemas canónicos, requisitos de frontmatter y procedimientos de validación."
 machineTranslated: true
-sourceHash: "924c7b14d9e24e4a"
+sourceHash: "887c6c6136f1dccb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -248,6 +248,13 @@ Incrementa `version` y `updated` a la vez en cada edición que cambie el
 comportamiento de un artefacto que los lleve. Añade una fila correspondiente al
 `CHANGELOG.md` del nivel del ecosistema para los lanzamientos que agrupen
 cambios de artefactos.
+
+### Revisiones de suites de plan
+
+La regla de artefactos anterior no se aplica a las suites de plan. La versión de una suite de plan es el valor `vX.Y.Z` registrado en el encabezado de su `MASTER-PLAN.md` y en la tabla de Historial de revisiones. Una corrección de erratas en una suite de plan es una revisión que incrementa el número PATCH. El paso 10.2 de `/plan-review` establece la clasificación y añade la fila del Historial de revisiones.
+
+- `vX.Y.Z` → `vX.Y.(Z+1)` (suite de plan, corrección de erratas: PATCH)
+- `vX.Y.Z` → `vX.Y.Z` (artefacto, corrección de erratas: sin incremento; la regla de artefactos anterior)
 
 ## Cuándo editar un artefacto
 

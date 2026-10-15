@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "d9218fbdb9417528"
+sourceHash: "f51d1e3b53ab82e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,11 +31,7 @@ di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native,
-termasuk inventaris MCP milik profil. Identitas, preferensi, dan aturan milik
-profil dimasukkan ke dalam dokumen profil. Command, skill, definisi helper,
-aturan, templat, dan prompt hook bersama ditempatkan sebagai materi pendukung
-di bawah `~/.hermes/.apothem/support/`.
+Adapter membaca profil bersama Apothem dan merender konfigurasi YAML native, termasuk inventaris MCP milik profil. Server MCP berasal dari bagian `mcp_servers` pada profil. Server tersebut dirender ke dalam `config.yaml` pada setiap pemasangan dan pembaruan, bukan disalin sebagai berkas. Identitas, preferensi, dan aturan milik profil dimasukkan ke dalam dokumen profil. Command, skill, definisi helper, aturan, templat, dan prompt hook bersama ditempatkan sebagai materi pendukung di bawah `~/.hermes/.apothem/support/`.
 
 ## Catatan kompatibilitas
 

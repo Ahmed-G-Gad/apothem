@@ -2,7 +2,7 @@
 title: "Política de ingeniería de lanzamientos"
 description: "Cinco políticas canónicas para el versionado, el etiquetado de lanzamientos, los ciclos de obsolescencia, los cambios incompatibles y los procedimientos de reversión."
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,22 +31,15 @@ del GitHub Release.
 
 Convenciones de las etiquetas:
 
-- **Formato** — exactamente `vMAJOR.MINOR.PATCH`. Sin prefijo `release-`,
-  sin sufijo `-final`.
-- **Anotación** — cada etiqueta es una etiqueta anotada (`git tag -a -s`)
-  que lleva el resumen de las notas de lanzamiento en el mensaje de la etiqueta.
-- **Firma** — cada etiqueta está firmada con GPG. Además, el flujo de trabajo de
-  lanzamiento produce una firma cosign sin clave de Sigstore en cada artefacto y
-  una prueba de lanzamiento de procedencia SLSA-3, ambas adjuntas a la página
-  del GitHub Release.
+- **Formato** — exactamente `vMAJOR.MINOR.PATCH`. Sin prefijo `release-` ni sufijo `-final`.
+- **Anotación** — cada etiqueta es una etiqueta anotada (`git tag -a -s`) que lleva el resumen de las notas de lanzamiento en el mensaje de la etiqueta.
+- **Firma** — cada etiqueta está firmada con GPG. Además, el flujo de trabajo de lanzamiento produce una firma cosign sin clave de Sigstore en cada artefacto y un registro de procedencia SLSA-3, ambos adjuntos a la página del GitHub Release.
 
 ### Modelo de lanzamiento: aditivo
 
 Los lanzamientos son aditivos. Cada lanzamiento agrega un commit en `main` y una
 etiqueta; nunca se hace force-push sobre `main`, y ninguna etiqueta, GitHub
-Release o versión de npm publicada se elimina, se mueve ni se reutiliza. El
-proyecto tiene tres lanzamientos, cada uno con su etiqueta, su GitHub Release y
-su versión de npm, y los tres siguen publicados. Las versiones de npm son
+Release o versión de npm publicada se elimina, se mueve ni se reutiliza. Cada lanzamiento conserva su etiqueta, su GitHub Release y su versión de npm, y todos siguen publicados. Las versiones de npm son
 inmutables: un `name@version` publicado nunca puede reemplazarse, y un número
 cuya publicación se retiró nunca puede volver a usarse. Las instalaciones
 fijadas y las compilaciones reproducibles dependen de cada etiqueta publicada.

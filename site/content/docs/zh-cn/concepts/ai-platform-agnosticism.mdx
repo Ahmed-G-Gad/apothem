@@ -2,7 +2,7 @@
 title: "与宿主无关的姿态"
 description: "Apothem 如何通过共享配置档案和工具适配器实现与宿主无关的姿态。"
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,4 +60,4 @@ One shared Apothem profile (YAML) + packaged cohorts
 
 ## 可移植性保证
 
-标记为 `portability: universal` 的命令与辅助器保证可以被转换到每个受支持的工具。标记为 `portability: project-specific` 的命令与辅助器，可能需要在文件正文中为每个工具提供覆盖说明。
+标记为 `portability: universal` 的命令与辅助器会转换到其注册表条目支持命令表面（经转换或经支持子树）的每个工具；没有此表面的工具不会收到任何命令。引擎不评估该标记。标记为 `portability: project-specific` 的命令与辅助器，可能需要在文件正文中提供按工具的覆盖文档。

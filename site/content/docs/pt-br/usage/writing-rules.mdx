@@ -1,12 +1,12 @@
 ---
 title: "Escrevendo regras"
-description: "Crie, defina o escopo e mantenha as regras de comportamento do Apothem."
+description: "Redija, defina o escopo e mantenha as regras de comportamento do Apothem."
 machineTranslated: true
 sourceHash: "310b05b6b5b3dd5d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Regras são arquivos Markdown em `src/apothem/rules/` com extensão `.md`.
+As regras são arquivos Markdown em `src/apothem/rules/` com extensão `.md`.
 
 ## Frontmatter da regra
 
@@ -21,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## Escopos da regra
 
-| Escopo | Quando é aplicado |
-|-------|-------------|
-| `always-on` | Toda sessão, todo arquivo |
-| `path-filtered` | Apenas quando o arquivo ativo corresponde a `path-filter` |
-| `operator-selected` | O operador habilita explicitamente em settings.json |
+O escopo de uma regra é definido por dois campos do frontmatter, `alwaysApply` e `pathFilter`:
+
+| `alwaysApply` | `pathFilter` | Quando é aplicada |
+|---------------|--------------|--------------|
+| `true` | `""` (vazio) | Sempre ativa: toda sessão, todo arquivo |
+| `false` | um glob como `"**/*.py"` | Filtrada por caminho: somente quando o arquivo ativo corresponde ao glob |
 
 ## Regra de exemplo
 
@@ -46,9 +47,7 @@ alwaysApply: false
 
 ## Aplicando regras aos harnesses
 
-Depois de escrever uma regra, atualize cada adaptador de harness instalado.
-Execute `apothem harnesses list` para ver o conjunto instalado, depois chame
-update uma vez por harness:
+Depois de escrever uma regra, atualize cada adaptador de harness instalado. Execute `apothem harnesses list` para ver o conjunto instalado e, em seguida, chame update uma vez por harness:
 
 ```bash
 apothem update --harness claude-code

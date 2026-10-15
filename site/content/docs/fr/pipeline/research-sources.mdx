@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Collecte systématique de sources : décompose la spécification en sous-requêtes, déploie la découverte en parallèle, filtre et classe, puis extrait par source dans un registre de sources classé."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Collecte systématique de sources — décompose la spécification de recherche 
 Avec des arguments :
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Entrées
@@ -61,11 +61,11 @@ Au-delà du registre de sources, cette étape construit un registre de provenanc
 ## Exemples
 
 ```bash
-# Collecter les sources pour une suite de recherche cadrée
+# Collect sources for a framed research suite
 /research-sources path/to/research-suite/
 
-# Déploiement de découverte plus profond
-/research-sources path/to/research-suite/ --depth N
+# Cap the screened-in source count
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Références croisées

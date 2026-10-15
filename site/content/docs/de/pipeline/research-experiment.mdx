@@ -2,7 +2,7 @@
 title: "/research-experiment"
 description: "/research-experiment — Führt die entworfene Studie aus und erfasst Rohdaten mit vollständiger Herkunft sowie ein Reproduzierbarkeitsmanifest (Umgebung, Seed, Protokoll, Versions-Pins)."
 machineTranslated: true
-sourceHash: "43edb7c712cda071"
+sourceHash: "669b49f8909599c4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Führt die entworfene Studie oder das entworfene Experiment aus und erfasst Rohd
 Mit Argumenten:
 
 ```bash
-/research-experiment [path/to/research-suite/]
+/research-experiment [--suite-name NAME]
 ```
 
 ## Eingaben
@@ -62,7 +62,7 @@ Die Ausführung startet mit einem Pilotdurchlauf, um Budgets und Wertebereiche z
 
 ```bash
 # Die entworfene Studie ausführen und reproduzierbare Rohdaten erfassen
-/research-experiment path/to/research-suite/
+/research-experiment --suite-name <name>
 ```
 
 ## Querverweise

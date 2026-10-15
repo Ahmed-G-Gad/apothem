@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review——`_inputs/design.md` の設計制作物に対するアーキテクチャ完全性レビュー。"
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "e17f69d6a67eaf55"
 引数付き：
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## 入力
@@ -29,7 +29,7 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## 出力
 
-アーキテクチャの所見 + REPORT.md
+アーキテクチャの所見（`_inputs/architecture-review-findings.md`）
 
 ## 下流
 
@@ -37,22 +37,14 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## ワークフローのフェーズ
 
-このコマンドは標準の `/plan` パイプラインワークフローに従います。
-
-1. **コンテキストの読み込み** — プランスイート、ルール、再開コントラクトを読み取ります。
-2. **前提条件の検証** — 依存フェーズが完了していることを確認します。
-3. **タスクの実行** — コマンドのミッションを遂行します。
-4. **出力の検証** — 宣言されたすべての出力が存在し、品質ゲートを通過することを確認します。
-5. **PROGRESS.md の更新** — 検証済みの出力をフェーズ出力レジストリに記録します。
-6. **REPORT.md の発行** — 事前発出ゲートのリリース証跡が記録されます。
+このコマンドは 5 つの監査フェーズを実行します。入力の取り込み、設計からコードへのトレーサビリティの走査、レイヤー境界の整合性の監査、パッケージ横断の結合の走査、そして検証ゲートを伴う所見の出力です。
 
 ## 失敗モード
 
 | 症状 | 原因 | 復旧 |
 |---------|-------|----------|
-| 前提条件が未完了 | 依存フェーズが終わっていない | まず上流のフェーズを完了させる |
 | 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
-| 入力ファイルが欠落 | プランスイートのファイルが存在しない | `/plan-generate` を実行して作成する |
+| 入力ファイルが欠落 | 設計アーティファクト `_inputs/design.md` が存在しない | `/plan-design` を実行して作成する |
 
 ## 例
 
@@ -60,8 +52,8 @@ sourceHash: "e17f69d6a67eaf55"
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## 相互参照

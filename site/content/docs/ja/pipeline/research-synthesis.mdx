@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis — 収集したソースを最新水準マップと文献マトリクスに調和させ、すべての論点を敵対的に検証し、明示的な研究ギャップを述べます。"
 machineTranslated: true
-sourceHash: "23c59e71f50e4a3e"
+sourceHash: "41141e6d1904a0ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "23c59e71f50e4a3e"
 引数付き:
 
 ```bash
-/research-synthesis [path/to/research-suite/]
+/research-synthesis [--suite-name NAME]
 ```
 
 ## 入力
@@ -61,8 +61,8 @@ sourceHash: "23c59e71f50e4a3e"
 ## 例
 
 ```bash
-# 収集したソースを最新水準マップ＋ギャップに統合する
-/research-synthesis path/to/research-suite/
+# 収集したソースを SOTA（最新水準）マップ＋ギャップに統合する
+/research-synthesis --suite-name <name>
 ```
 
 ## 相互参照

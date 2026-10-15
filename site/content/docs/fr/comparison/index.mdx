@@ -2,7 +2,7 @@
 title: "Comparaison"
 description: "Comment évaluer Apothem face à une configuration d'environnement maintenue à la main et à d'autres approches de configuration, avec une matrice de fonctionnalités et des pages par environnement."
 machineTranslated: true
-sourceHash: "0291d627acd6aa88"
+sourceHash: "3f105749820c670d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,23 @@ Les faits concernant les pairs sur cette page datent du **2026-10-02** et sont
 tirés du README ou de la documentation propre à chaque projet (voir
 [Sources](#sources)) ; revérifiez-les à chaque version mineure.
 
-D'autres outils résolvent des tranches voisines de ce problème. Les gestionnaires de configuration basés sur des fichiers, comme **chezmoi** et **GNU Stow**, placent, lient ou génèrent des fichiers à partir de templates, mais ne traduisent jamais une source unique vers le schéma de configuration *natif* de chaque environnement. Les CLI de synchronisation inter-outils génèrent des fichiers propres à chaque outil à partir d'une source unique : **rulesync** génère une configuration native pour 60 outils de codage et deux standards ouverts, sur une unité synchronisée qui ajoute MCP, les fichiers ignore, les permissions et les vérifications de revue, dont aucun n'est synchronisé par le manifeste d'Apothem ; **ruler** distribue un répertoire `.ruler/` unique vers 33 cibles, en concaténant les règles dans le fichier d'instructions de chaque outil et en traduisant les serveurs MCP, les skills et les sous-agents en configuration native. Ce qui distingue Apothem, c'est la **discipline de gouvernance et de cycle de vie livrée autour de la synchronisation** : un portail de conformité mécanisé, des pipelines déterministes, une forteresse d'audit et un cycle de vie réversible et vérifié.
+D'autres outils résolvent des tranches voisines de ce problème. Les gestionnaires de
+configuration basés sur des fichiers, comme **chezmoi** et **GNU Stow**, placent,
+lient ou génèrent des fichiers à partir de templates, mais ne traduisent jamais une
+source unique vers le schéma de configuration *natif* de chaque environnement. Les
+CLI de synchronisation inter-outils génèrent des fichiers propres à chaque outil à
+partir d'une source unique : **rulesync** génère une configuration native pour 60
+outils de codage et deux standards ouverts, sur une unité synchronisée qui ajoute
+MCP, les fichiers ignore, les permissions et les vérifications de revue, dont aucun
+n'est synchronisé par le manifeste d'Apothem ; Apothem rend ses serveurs MCP à
+partir du profil, par l'intermédiaire des materializers des adaptateurs qui les
+rédigent. **ruler** distribue un répertoire `.ruler/` unique vers 33 cibles, en
+concaténant les règles dans le fichier d'instructions de chaque outil et en
+traduisant les serveurs MCP, les skills et les sous-agents en configuration native.
+La distinction d'Apothem tient à la **discipline de gouvernance et de cycle de vie
+livrée autour de la synchronisation** : un portail de conformité mécanisé, des
+pipelines déterministes, une forteresse d'audit et un cycle de vie vérifié et
+réversible.
 
 | Capacité | Apothem | Gestionnaires de configuration par fichiers (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |

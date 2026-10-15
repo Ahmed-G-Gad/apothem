@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources——系统性来源收集：将规格拆解为子查询，并行扇出发现，筛选并排序，再逐来源提取为一份排序的来源台账。"
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "61f80a4f92aed2b6"
 带参数：
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## 输入
@@ -64,8 +64,8 @@ sourceHash: "61f80a4f92aed2b6"
 # 为一个已框定的研究套件收集来源
 /research-sources path/to/research-suite/
 
-# 更深的发现扇出
-/research-sources path/to/research-suite/ --depth N
+# 限定入选来源的数量上限
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## 交叉引用

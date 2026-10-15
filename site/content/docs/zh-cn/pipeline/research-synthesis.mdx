@@ -2,7 +2,7 @@
 title: "/research-synthesis"
 description: "/research-synthesis——将收集到的来源调和为一份最新水平地图和文献矩阵，对每条论断进行对抗式验证，并陈述明确的研究空白。"
 machineTranslated: true
-sourceHash: "23c59e71f50e4a3e"
+sourceHash: "41141e6d1904a0ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "23c59e71f50e4a3e"
 带参数：
 
 ```bash
-/research-synthesis [path/to/research-suite/]
+/research-synthesis [--suite-name NAME]
 ```
 
 ## 输入
@@ -61,8 +61,8 @@ sourceHash: "23c59e71f50e4a3e"
 ## 示例
 
 ```bash
-# 将收集到的来源综合为最新水平地图＋空白
-/research-synthesis path/to/research-suite/
+# 将收集到的来源综合为最新水平（SOTA）地图与空白
+/research-synthesis --suite-name <name>
 ```
 
 ## 交叉引用

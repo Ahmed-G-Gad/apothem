@@ -2,7 +2,7 @@
 title: "/docs-review"
 description: "/docs-review — Dokumentations-Review-Durchlauf gegen die Prosakonventionen und die Qualitätsstandards der zehn Dimensionen."
 machineTranslated: true
-sourceHash: "123fb8b2a0b00354"
+sourceHash: "96830aacc7564a81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Dokumentations-Review-Durchlauf gegen die Prosakonventionen und die Qualitätsst
 Mit Argumenten:
 
 ```bash
-/docs-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/docs-review [path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]
 ```
 
 ## Eingaben
@@ -29,7 +29,7 @@ Dokumentationsfläche des Host-Repositorys
 
 ## Ausgaben
 
-Dokumentationsbefunde + REPORT.md
+Dokumentationsbefunde unter `_inputs/docs-review-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,14 @@ Die Dokumentations-Review-Stufe der Audit-Prüfsequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
-
-1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
-2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
-4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
-6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+Der Befehl durchläuft fünf Phasen: Eingabeaufnahme, Durchlauf pro Seite, Triage je Befund, Ausgabe der Befunde und das Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
 | Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
-| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+| Fehlende Eingabedatei | Unter dem Pfad sind keine Dokumentationsdateien erreichbar | Übergib ein Repository-Wurzelverzeichnis oder ein Verzeichnis mit Dokumentationsquellen, das Markdown-Seiten enthält |
 
 ## Beispiele
 
@@ -60,8 +52,8 @@ Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
 # Dry-run to preview what would happen
 /docs-review --dry-run
 
-# Execute against a named plan suite
-/docs-review path/to/plan-suite/
+# Execute against a repository root
+/docs-review path/to/repo/
 ```
 
 ## Querverweise

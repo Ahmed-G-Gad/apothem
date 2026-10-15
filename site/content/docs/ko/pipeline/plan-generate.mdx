@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — 작성된 `_spec/spec.md`로부터 완전한 마스터 플랜 스위트를 생성합니다."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 입력
 
-`/plan-spec`에서 나온 작성된 `_spec/spec.md` + `_inputs/handoff-manifest.yml`(또는 운영자가 제공한 산문).
+`/plan-spec`이 작성한 `_spec/spec.md`와 `_inputs/handoff-manifest.yml`입니다(산문만으로는 거부됩니다. `_spec/spec.md`를 작성하려면 `/plan-spec`을 실행하세요. `--override`는 게이트를 우회하며, PLAN-NOTES.md에 발견 사항을 기록합니다).
 
 ## 출력
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 하류
 
-/plan-review 또는 /plan-execute (하류)
+/plan-review (하류); 검토 점수표가 있은 뒤에만 `/plan-execute`를 실행합니다(또는 `--override`와 함께).
 
 ## 워크플로 페이즈
 

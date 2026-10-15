@@ -2,7 +2,7 @@
 title: "바이너리 산출물 스윕"
 description: "Apothem 바이너리 산출물 스윕 — 소스에 추적되는 컴파일/패키징 바이너리는 0개. OpenSSF Scorecard Binary-Artifacts 점검 증거."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Apothem은 버전 관리에 추적되는 컴파일·패키징·불투명 바이�
 
 소스에 허용되는 바이너리 산출물은 좁게 한정된 두 부류입니다.
 
-1. **브랜드 자산** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. 이들은 `scripts/dev/rebuild-assets.{sh,ps1}`를 통해 `assets/src/`의 SVG 마스터로부터 **결정론적으로 재생성 가능**합니다. Scorecard는 `image/png` 면제에 따라 이를 정당한 것으로 취급합니다.
+1. **브랜드 자산** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. 이 파일들은 `scripts/dev/rebuild-assets-resvg.py`를 통해 `assets/src/`의 SVG 마스터로부터 **결정론적으로 재생성할 수 있습니다**. Scorecard는 `image/png` 면제에 따라 이를 정당한 파일로 취급합니다.
 2. **폰트 파일** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. 라이선스가 문서화된 번들 폰트 파일이며, Scorecard의 `font/*` 면제에 따릅니다.
 
 두 부류 모두 [`site/content/docs/brand/index.mdx`](/docs/brand)에 문서화되어 있으며, 그 출처는 자산 재빌드 레시피에 기록됩니다.
@@ -39,7 +39,7 @@ Apothem은 버전 관리에 추적되는 컴파일·패키징·불투명 바이�
 
 ```shell
 # apothem 저장소 루트에서:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 이 호출은 **0줄**을 반환해야 합니다. 비어 있지 않은 결과는 바이너리 산출물이 소스에 추적되었음을 의미하며, 이는 다음 릴리스를 차단하는 HIGH 심각도 발견 사항입니다.
@@ -48,9 +48,8 @@ git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|cla
 
 이 스윕은 다음의 일부입니다.
 
-- **PR별 CI** — `.github/workflows/ci.yml`에 바이너리 산출물 grep 단계가 포함됩니다.
 - **릴리스별 체크포인트** — 릴리스 엔지니어링 런북이 태깅 전에 스윕을 검증합니다.
-- **주간 Scorecard 실행** — OpenSSF Scorecard 워크플로가 점검 통과를 재확인합니다.
+- **주간 Scorecard 실행** — OpenSSF Scorecard 워크플로가 점검이 통과하는지 다시 확인합니다.
 
 ## 참고 자료
 

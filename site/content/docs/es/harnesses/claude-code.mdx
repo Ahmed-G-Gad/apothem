@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol
-de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las
-skills, los estilos de salida y los ajustes se instalan en sus ubicaciones
-nativas; los prompts de comando se convierten en skills para que los flujos de
-trabajo reutilizables permanezcan visibles a través de la superficie de skills
-actual de Claude Code. El renderizador de la línea de estado se copia en
-`~/.claude/statuslines/`, pero no se conecta: Claude Code lee su línea de estado
-del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla,
-agrega a `settings.json` una entrada `statusLine` de `"type": "command"` que
-ejecute `~/.claude/statuslines/render.py`.
+El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las skills, los estilos de salida y los ajustes se instalan en sus ubicaciones nativas; los prompts de comando se convierten en skills para que los flujos de trabajo reutilizables sigan visibles a través de la superficie de skills actual de Claude Code. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`, pero no está conectado: Claude Code lee su línea de estado del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla, añade a `settings.json` una entrada `statusLine` de `"type": "command"` que ejecute `~/.claude/statuslines/render.py`. El valor `commandWindows` del fragmento se ejecuta en Windows y nombra el intérprete sin comillas. Cuando la ruta del intérprete contiene un espacio, la instalación escribe en ese valor su forma corta de 8.3 de Windows, si el volumen la tiene. Las entradas de hook de `settings.json` conservan la ruta completa.
 
 **Archivos escritos:** `settings.json`, el bloque de Apothem en `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` y el subárbol de soporte `.apothem/support/`

@@ -2,7 +2,7 @@
 title: "发布工程策略"
 description: "关于版本管理、发布标签、弃用周期、破坏性变更和回滚流程的五项规范策略。"
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,12 +27,12 @@ sourceHash: "b030ea8b958faa67"
 标签约定：
 
 - **格式**——严格为 `vMAJOR.MINOR.PATCH`。不带 `release-` 前缀，不带 `-final` 后缀。
-- **附注**——每个标签都是附注标签（`git tag -a -s`），在标签消息中携带发布说明摘要。
-- **签名**——每个标签都经过 GPG 签名。发布工作流还会为每个产物生成一个 Sigstore 无密钥 cosign 签名，并生成一份 SLSA-3 出处溯源发布证明，两者均附加到 GitHub Release 页面。
+- **附注**——每个标签都是附注标签（`git tag -a -s`），并在标签消息中携带发布说明摘要。
+- **签名**——每个标签都经 GPG 签名。发布工作流还会为每个工件生成 Sigstore 无密钥 cosign 签名，并生成一份 SLSA-3 出处溯源记录，两者均附加到 GitHub Release 页面。
 
 ### 发布模型：追加式
 
-发布是追加式的。每次发布在 `main` 上添加一个提交和一个标签；`main` 绝不会被强制推送，任何已发布的标签、GitHub Release 或 npm 版本都不会被删除、移动或复用。项目有三个发布，每个发布都有其标签、其 GitHub Release 和其 npm 版本，这三个发布全部保持已发布状态。npm 版本不可变：已发布的 `name@version` 永远无法被替换，已被撤销发布的版本号也永远不能再次使用。固定版本的安装和可复现构建依赖于每一个已发布的标签。[发布周期](/docs/runbooks/release-cycle)和[发布恢复](/docs/runbooks/release-recovery)这两份操作手册都遵循此模型。
+发布是追加式的。每次发布在 `main` 上添加一个提交和一个标签；`main` 绝不会被强制推送，任何已发布的标签、GitHub Release 或 npm 版本都不会被删除、移动或复用。每个发布都保留其标签、其 GitHub Release 和其 npm 版本，所有发布都保持已发布状态。npm 版本不可变：已发布的 `name@version` 永远无法被替换，已被撤销发布的版本号也永远不能再次使用。固定版本的安装和可复现构建依赖于每一个已发布的标签。[发布周期](/docs/runbooks/release-cycle)和[发布恢复](/docs/runbooks/release-recovery)这两份操作手册都遵循此模型。
 
 仓库的发布门面规则（贡献者说明中的 Release Facade 一节）阐明了本模型。其仅限当前版本的要求（在 freshness-facade 规则中有镜像）适用于公开表面上的说法。它不限制哪些发布仍保持已发布状态。
 

@@ -2,7 +2,7 @@
 title: "زمن التشغيل المكتفي ذاتيًا"
 description: "كيف يعمل محرّك Apothem من أي نسخة مسحوبة — الاعتماديات المُضمَّنة، ونموذج الاستدعاء PYTHONPATH=src، وتمهيد شجرة الإضافة."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,7 +52,7 @@ sourceHash: "eaa8df0482200534"
 | السطح | الاستدعاء | السياق |
 | ------- | ---------- | ------- |
 | واجهة سطر أوامر المحرّك | <bdi>`python -m apothem <command>`</bdi> | شجرة مصدر يكون فيها <bdi>`src/`</bdi> على <bdi>`PYTHONPATH`</bdi> (نسخة مسحوبة، أو ذاكرة <bdi>npx</bdi> المؤقتة، أو شجرة الإضافة) |
-| زمن تشغيل الخطّافات | <bdi>`python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>`</bdi> | النسخة المُجسَّدة تحت الشجرة المشتركة <bdi>`.apothem/support/`</bdi> في جذر إطار العمل، بمسار مطلق |
+| زمن تشغيل الخطّافات | <bdi>`<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>`</bdi> | التجسيد الخاص بـ <bdi>Claude Code</bdi>: النسخة الموجودة تحت الشجرة المشتركة <bdi>`.apothem/support/`</bdi> في جذر إطار العمل، بالمسار المطلق |
 
 - يُشغِّل <bdi>`python -m apothem`</bdi> الملف <bdi>`src/apothem/__main__.py`</bdi>، الذي
   يضع <bdi>`src/apothem/_vendor`</bdi> في <bdi>`sys.path`</bdi>، ويتحقّق من أن
@@ -78,7 +78,7 @@ sourceHash: "eaa8df0482200534"
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-وهذا بالضبط الاستدعاء الذي يطبعه المُثبِّت ذو الخطوة الواحدة عند اكتماله.
+عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع المُثبِّت ذو الخطوة الواحدة هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حدّده المُثبِّت بدلًا من <bdi>`python`</bdi>.
 
 ## تمهيد شجرة الإضافة
 

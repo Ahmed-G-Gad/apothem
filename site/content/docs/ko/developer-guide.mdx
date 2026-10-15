@@ -2,7 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
-sourceHash: "924c7b14d9e24e4a"
+sourceHash: "887c6c6136f1dccb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -237,6 +237,13 @@ alwaysApply: false
 이 필드들을 지닌 아티팩트의 동작을 바꾸는 모든 편집에서는 `version`과 `updated`를
 함께 올리세요. 아티팩트 변경을 묶는 릴리스에 대해서는 생태계 수준의
 `CHANGELOG.md`에 그에 맞는 행을 추가하세요.
+
+### 플랜 스위트 개정
+
+위의 아티팩트 규칙은 플랜 스위트에 적용되지 않습니다. 플랜 스위트의 버전은 `MASTER-PLAN.md` 헤더와 Revision History 표에 기록된 `vX.Y.Z` 값입니다. 플랜 스위트의 오타 수정은 PATCH 번호를 올리는 개정입니다. `/plan-review`의 10.2단계가 분류를 정하고 Revision History 행을 추가합니다.
+
+- `vX.Y.Z` → `vX.Y.(Z+1)` (플랜 스위트, 오타 수정: PATCH)
+- `vX.Y.Z` → `vX.Y.Z` (아티팩트, 오타 수정: 번호 올리지 않음; 위의 아티팩트 규칙)
 
 ## 아티팩트를 편집해야 할 때
 

@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit——/plan 流水线的闭环守卫——封装 spec → generate → review，并主动修复发现，直到套件成为一个已审查、零发现的整体。"
 machineTranslated: true
-sourceHash: "13a1d2a19472e583"
+sourceHash: "6f82709e6c4d40fc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ sourceHash: "13a1d2a19472e583"
 
 ## 流水线位置
 
-`/plan-audit` 对线性流水线是**正交**的，而非其中的一个阶段。规范线性序列是 `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件性的，仅承载架构的套件）`→ /plan-execute`。`/plan-audit` 把 `/plan-spec → /plan-generate → /plan-review` 涵盖为单个闭环封装，可在任意点调用：它检视状态并仅运行缺失的阶段。它有别于堡垒审计链（在 `/code-review` 进入，在 `/threat-model-audit` 终止），后者审计已执行的代码库而非计划套件。
+`/plan-audit` 与线性流水线**正交**，而非其中的一个阶段。规范的线性序列为 `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件性的，仅适用于承载架构的套件）`→ /plan-execute`。`/plan-audit` 将 `/plan-spec → /plan-generate → /plan-review` 涵盖为单个闭环封装，可在任意时点调用：它检视状态，并且在已生成套件存在后，只运行缺失的阶段；若无已生成套件，则以 `Blocked: run /plan-generate first` 拒绝运行。它有别于堡垒审计链（从 `/code-review` 进入，以 `/threat-model-audit` 终止），后者审计的是已执行的代码库，而非计划套件。
 
 ## 工作流阶段
 

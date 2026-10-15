@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper — Assemble un brouillon d'article de premier plan (du résumé à la conclusion plus les références) à partir de la synthèse, de la conception et de l'analyse, chaque citation étant vérifiée pour qu'elle se résolve."
 machineTranslated: true
-sourceHash: "58884a64b76f4ced"
+sourceHash: "748c384ba8f36be4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Assemble un brouillon d'article de premier plan à partir de la synthèse, de la
 Avec des arguments :
 
 ```bash
-/research-paper [path/to/research-suite/]
+/research-paper [--suite-name NAME]
 ```
 
 ## Entrées
@@ -61,8 +61,8 @@ Sous un lieu de publication en double aveugle, le manuscrit ne porte que ce que 
 ## Exemples
 
 ```bash
-# Assembler le brouillon de l'article à partir de la synthèse + la conception + l'analyse
-/research-paper path/to/research-suite/
+# Assemble the paper draft from synthesis + design + analysis
+/research-paper --suite-name <name>
 ```
 
 ## Références croisées

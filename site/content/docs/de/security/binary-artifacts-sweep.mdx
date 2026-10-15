@@ -2,7 +2,7 @@
 title: "Binärartefakt-Durchlauf"
 description: "Apothem-Binärartefakt-Durchlauf — null kompilierte / gepackte Binärdateien im Quellcode verfolgt. Nachweis für die OpenSSF-Scorecard-Prüfung Binary-Artifacts."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,8 @@ Der Durchlauf zählt die Dateitypen auf, die Scorecard als binär einstuft, und 
 
 Zwei eng gefasste Klassen von Binärartefakten SIND im Quellcode zulässig:
 
-1. **Markenressourcen** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Diese sind über `scripts/dev/rebuild-assets.{sh,ps1}` **deterministisch aus den SVG-Mastern** unter `assets/src/` regenerierbar. Scorecard behandelt sie gemäß seiner `image/png`-Ausnahme als legitim.
-2. **Schriftdateien** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Gebündelte Schriftdateien mit dokumentierten Lizenzen; gemäß der `font/*`-Ausnahme von Scorecard.
+1. **Markenressourcen** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Diese lassen sich **deterministisch aus den SVG-Mastern** unter `assets/src/` über `scripts/dev/rebuild-assets-resvg.py` neu erzeugen. Scorecard behandelt sie gemäß seiner Ausnahme für `image/png` als legitim.
+2. **Schriftdateien** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Mitgelieferte Schriftdateien mit dokumentierten Lizenzen; gemäß der Ausnahme `font/*` von Scorecard.
 
 Beide Klassen sind unter [`site/content/docs/brand/index.mdx`](/docs/brand) dokumentiert, und ihre Herkunft wird im Asset-Rebuild-Rezept festgehalten.
 
@@ -39,7 +39,7 @@ Beide Klassen sind unter [`site/content/docs/brand/index.mdx`](/docs/brand) doku
 
 ```shell
 # Aus dem Wurzelverzeichnis des apothem-Repositorys:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 Dieser Aufruf sollte **null Zeilen** zurückgeben. Ein nicht leeres Ergebnis zeigt an, dass ein Binärartefakt im Quellcode verfolgt wurde — ein Befund hoher Schwere, der die nächste Veröffentlichung blockiert.
@@ -48,8 +48,7 @@ Dieser Aufruf sollte **null Zeilen** zurückgeben. Ein nicht leeres Ergebnis zei
 
 Der Durchlauf ist Teil von:
 
-- **CI je PR** — `.github/workflows/ci.yml` enthält einen Grep-Schritt für Binärartefakte.
-- **Kontrollpunkt je Veröffentlichung** — das Release-Engineering-Runbook prüft den Durchlauf vor dem Tagging.
+- **Kontrollpunkt je Release** — das Release-Engineering-Runbook prüft den Durchlauf vor dem Tagging.
 - **Wöchentlicher Scorecard-Lauf** — der OpenSSF-Scorecard-Workflow bestätigt erneut, dass die Prüfung besteht.
 
 ## Referenzen

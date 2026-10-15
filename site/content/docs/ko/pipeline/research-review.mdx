@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — 논문에 대한 동료 심사 수준의 적대적 비평: 7축 심사자 점수표(참신성, 엄밀성, 재현성, 명확성, 윤리, 통계 검토, 보고 지침 준수)와 심각도로 분류된 필수 수정 목록."
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "2aafbd301812aded"
 인수 사용:
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## 입력
@@ -33,17 +33,17 @@ sourceHash: "2aafbd301812aded"
 
 ## 하류
 
-/research-publish(하류 소비자). `major-revision` 또는 `reject` 판정은 재심사 전에 필수 수정을 처리하도록 수정 루프를 `/research-paper`로 되돌립니다.
+/research-publish (하류 소비자). `major-revision` 또는 `reject` 판정이 나오면, `/research-publish`를 실행하기 전에 필수 수정을 처리해야 합니다.
 
 ## 워크플로 단계
 
 이 명령은 표준 `/research` 파이프라인 워크플로를 따릅니다:
 
 1. **컨텍스트 로드** — 논문 산출물을 읽습니다.
-2. **시퀀스 게이트 검증** — 논문이 존재하는지 확인합니다. 그렇지 않으면 `Blocked: run /research-paper first`로 중단합니다.
-3. **적대적 심사** — 일곱 축(참신성 · 엄밀성 · 재현성 · 명확성 · 윤리 · 통계 검토 · 보고 지침 준수)을 채점합니다. 재현성 재실행과 인용 무결성 감사를 수행합니다. 기본 반박; 증거와 함께 구체적 결함을 찾아냅니다.
-4. **수정 분류** — 필수 수정을 구체적 동인 근거와 함께 HIGH / MEDIUM / LOW로 순위를 매깁니다.
-5. **핸드오프 매니페스트 업데이트** — 심사 보고서와 점수표 판정을 기록합니다.
+2. **시퀀스 게이트 검증** — 논문, `_outputs/analysis.md`, `_inputs/synthesis.md`가 존재하고 비어 있지 않은지 확인합니다. 그렇지 않으면 `Blocked: run /research-paper first`와 함께 중단합니다.
+3. **적대적 심사** — 일곱 축(참신성 · 엄밀성 · 재현성 · 명확성 · 윤리 · 통계 검토 · 보고 지침 준수)을 채점합니다. 재현성 재실행과 인용 무결성 감사를 수행합니다. 기본적으로 반박하고, 증거와 함께 구체적 결함을 찾아냅니다.
+4. **수정 사항 분류** — 필수 수정을 구체적 동인 근거와 함께 HIGH / MEDIUM / LOW로 순위 매깁니다.
+5. **핸드오프 매니페스트 갱신** — 심사 보고서와 점수표 판정을 기록합니다.
 6. **심사 발행** — `_outputs/review-report.md`.
 
 ## 최저 엄밀성 기준
@@ -62,7 +62,7 @@ sourceHash: "2aafbd301812aded"
 
 ```bash
 # 논문을 동료 심사하고 심사자 점수표를 발행합니다
-/research-review path/to/research-suite/
+/research-review --suite-name <name>
 ```
 
 ## 상호 참조

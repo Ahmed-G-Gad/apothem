@@ -2,7 +2,7 @@
 title: "하니스 어댑터 추상화"
 description: "HarnessAdapter 프로토콜 — Apothem 어댑터가 공유 프로파일을 어떻게 변환하는지."
 machineTranslated: true
-sourceHash: "bf8b17806fd4c2c6"
+sourceHash: "3e2bf8f9744fc759"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,30 +19,14 @@ Apothem은 스키마로 검증된 단일 YAML 프로파일을 의미상의 정�
 자신의 가정을 코어로 누출시킬 것이고, 하니스를 하나 추가하는 것은 설치, 업데이트,
 제거, 검증 로직을 보조를 맞춰 손대는 일이 될 것입니다.
 
-어댑터 패턴은 이를 뒤집습니다. 코어는 오직 `HarnessAdapter`
-프로토콜 — 라이프사이클 메서드로 이루어진 작은 계약 — 만 알고 있습니다. 각 하니스의 방언은
-그 계약을 구현하는 하나의 자기완결적 하위 패키지 안에 살아 있습니다. 코어는 어댑터에게
-*설치*하라고 요청하면서도, 그것이 JSON
-파일을 렌더링하는 것을 뜻하는지, 규칙 디렉터리를 쓰는 것을 뜻하는지, 지원 트리를 까는 것을
-뜻하는지 알지 못합니다. 새 하니스는
-프로토콜을 충족하고 진입점을 등록함으로써 합류하며, 코어에서는 아무것도 변경되지 않습니다. 이것이
-Apothem이 호스트 비종속을 유지하는 구조적 이유입니다 — 그 추상화야말로 하니스 특화 지식이
-퍼져나가는 것을 막는 경계입니다.
+어댑터 패턴은 이 구조를 뒤집습니다. 코어는 라이프사이클 메서드로 이루어진 작은 계약인 `HarnessAdapter` 프로토콜만 알고 있습니다. 각 하니스의 방언은 그 계약을 구현하는 자기완결적 하위 패키지 하나 안에 들어 있습니다. 코어는 어댑터에게 *설치*를 요청하지만, 그것이 JSON 파일 렌더링을 뜻하는지, 규칙 디렉터리 작성을 뜻하는지, 지원 트리 배치를 뜻하는지는 알지 못합니다. 새 하니스는 프로토콜을 충족하고, `src/apothem/lib/harness_registry_data.py`에 `HARNESS_REGISTRY` 항목을 추가하며(그 안의 `SUPPORTED_HARNESS_COUNT`도 함께 올립니다), `pyproject.toml`의 `apothem.harnesses` 진입점에 이를 반영하고, `src/apothem/schemas/profile.schema.json`의 `harnessId` 열거형에 ID를 추가하여 합류합니다. 이것이 Apothem이 호스트 비종속성을 유지하는 구조적 이유입니다. 이 추상화는 하니스별 지식이 여기저기 퍼지지 않도록 막는 경계이기 때문입니다.
 
 ## 어댑터의 형태
 
 어댑터는 두 가지 구체화 형태로 나뉘며, 둘 다 레지스트리에서 확인할 수 있습니다.
 
-- **단일 파일 렌더러**는 프로파일 필드를 하나의 하니스 네이티브
-  구성 파일로 변환합니다. 예를 들어 Claude Code 어댑터는 공유 프로파일로부터 항상
-  `~/.claude/settings.json`을 써내고, Apothem
-  규약 디렉터리(`agents/`, `rules/`, `skills/`, …)를 그 옆에 평탄화하여 배치합니다.
-- **규칙 표면 및 지원 트리 어댑터**는 Apothem 페이로드
-  cohort를 하니스가 문서화한 규칙 위치로 전파하며, 네이티브 형식이 존재하는 경우 cohort를
-  네이티브 형식으로 변환하고, 나머지는 네이티브 앵커에서 참조되는
-  Apothem 소유의 지원 하위 트리 아래에 둡니다. Cursor
-  어댑터는 제공된 프로젝트 루트에 단일 `.cursor/rules/apothem-rules.mdc`를
-  쓰고 규칙 표면만 전달합니다.
+- **단일 파일 렌더러**는 프로필 필드를 하나의 하니스 네이티브 구성 파일로 변환합니다. 예를 들어 OpenCode 어댑터는 공유 프로필에서 머티리얼라이저를 거쳐 네이티브 구성 파일을 렌더링합니다.
+- **규칙 표면 및 지원 트리 어댑터**는 Apothem 페이로드 코호트를 하니스가 문서화한 규칙 위치로 전파합니다. 네이티브 형식이 있는 경우 코호트를 그 형식으로 변환하고, 나머지는 네이티브 앵커에서 참조되는 Apothem 소유 지원 하위 트리 아래에 둡니다. Cursor 어댑터는 제공된 프로젝트 루트에 `.cursor/rules/apothem-rules.mdc` 하나를 작성하며 규칙 표면만 전달합니다. Claude Code 어댑터는 프로필에서 `settings.json`을 렌더링하지 않습니다. 번들된 설정 템플릿을 훅 인터프리터 경로를 채운 상태로 `~/.claude/settings.json`에 복사하고, 그 옆에 Apothem 규약 디렉터리(`agents/`, `rules/`, `skills/`, …)를 평탄화하여 배치하며, `CLAUDE.md`의 센티널로 구분된 관리 블록에 프로필을 기록합니다.
 
 주어진 어댑터는 **사용자 범위**(홈 디렉터리 아래에 씀)이거나
 **프로젝트 범위**(`--project <path>`를 요구하고 그 트리 내부에 씀)이며,
@@ -67,7 +51,7 @@ flowchart TD
     AL --> WS["windsurf adapter<br/>(project scope)"]
     AL --> ETC["… 12 more registered adapters<br/>(antigravity, gemini-cli, glm, hermes,<br/>kimi-code, open-claw, opencode, qwen-code,<br/>codebuddy, kiro, trae, zed)"]
 
-    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(single-file render)"]
+    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
     CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
     CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]

@@ -2,7 +2,7 @@
 title: "Cerimônia de merge de PR para mantenedor solo"
 description: "Quando o mantenedor pode fazer o merge do próprio pull request diretamente, e a cerimônia para uma proteção de branch que exige uma aprovação e a impõe aos administradores."
 machineTranslated: true
-sourceHash: "a71e0b9bd24c0df8"
+sourceHash: "514a1a7cdead89dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,6 +87,6 @@ Cada invocação da cerimônia deixa registro em três superfícies duráveis qu
 
 - **Os metadados de merge do PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` retorna o ator do merge, o carimbo de data e hora do merge e o SHA do commit de squash. O ator `mergedBy` corresponde à identidade do mantenedor que executou o passo 3.
 - **O log de auditoria do repositório.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlaciona a execução de CI pós-merge ao commit de merge; o log de auditoria das regras de proteção do repositório (histórico de `gh api /repos/<owner>/<repo>/branches/main/protection` pela interface Settings → Branches) mostra as alternâncias do passo 2 e do passo 4 delimitando a janela de merge.
-- **O histórico git do mantenedor.** `git log main --merges --first-parent` lista cada commit de squash-merge em `main` com o número do PR correspondente no assunto do commit (sufixo `(#<pr-number>)`, conforme o padrão de `gh pr merge --squash`), permitindo ao operador rastrear qualquer aterrissagem passada de volta ao seu PR e à sua invocação da cerimônia.
+- **O histórico git do mantenedor.** `git log main --first-parent --oneline` lista cada commit de squash-merge em `main` com o número do PR correspondente no assunto do commit (sufixo `(#<pr-number>)`, conforme o padrão de `gh pr merge --squash`), permitindo ao operador rastrear qualquer incorporação passada de volta ao seu PR e à invocação da cerimônia.
 
-Quando `scripts/dev/admin_merge.py` é o ponto de entrada, seu log não interativo (stdout) nomeia as três chamadas à API de proteção e a chamada à API de merge em sequência; canalizar o wrapper para `tee` captura um fragmento de auditoria por execução sem depender da retenção de logs do lado do GitHub.
+Quando `scripts/dev/admin_merge.py` é o ponto de entrada, seu log não interativo (stderr) nomeia as três chamadas à API de proteção e a chamada à API de merge, em sequência; canalizar o stderr para `tee` (`2>&1 | tee`) captura um fragmento de auditoria por execução sem depender da retenção de logs do lado do GitHub.

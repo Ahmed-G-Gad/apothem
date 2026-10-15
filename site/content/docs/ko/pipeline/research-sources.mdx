@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — 체계적 출처 수집: 명세를 하위 질의로 분해하고, 발견을 병렬로 팬아웃하며, 선별 및 순위화하고, 출처별로 추출하여 순위화된 출처 원장으로 만듭니다."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "61f80a4f92aed2b6"
 인수 사용:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## 입력
@@ -64,8 +64,8 @@ sourceHash: "61f80a4f92aed2b6"
 # 틀이 잡힌 연구 스위트를 위한 출처 수집
 /research-sources path/to/research-suite/
 
-# 더 깊은 발견 팬아웃
-/research-sources path/to/research-suite/ --depth N
+# 선별된 출처 개수에 상한 두기
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## 상호 참조

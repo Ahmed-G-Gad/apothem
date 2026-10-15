@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — Executa uma fase específica de uma Suite de Plano Mestre com verificação de conformidade."
 machineTranslated: true
-sourceHash: "1c0e6764a4b8609f"
+sourceHash: "83dae82d475df6e2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,12 +39,12 @@ Arquivos REPORT.md por fase, artefatos da base de código, COMPLETION.md
 
 O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
 
-1. **Carregar contexto** — Lê a suite de plano, as regras e o Contrato de Retomada.
+1. **Carregar contexto** — Lê a suíte de plano, as regras e o Contrato de Retomada.
 2. **Verificar pré-requisitos** — Confirma que as fases de dependência estão concluídas.
 3. **Executar tarefas** — Cumpre a missão do comando.
 4. **Verificar saídas** — Confirma que todas as saídas declaradas existem e passam pelos portões de qualidade.
-5. **Atualizar PROGRESS.md** — Registra as saídas verificadas no Registro de Saídas de Fase.
-6. **Emitir REPORT.md** — Fica registrada a prova de liberação do portão de pré-emissão.
+5. **Emitir REPORT.md** — Resultado do portão de pré-emissão registrado.
+6. **Atualizar PROGRESS.md** — Registra as saídas verificadas no Registro de Saídas de Fase.
 
 ## Modos de falha
 

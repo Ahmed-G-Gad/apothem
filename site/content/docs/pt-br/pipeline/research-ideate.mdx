@@ -2,7 +2,7 @@
 title: "/research-ideate"
 description: "/research-ideate — Formula o espaço do problema a partir de uma semente de domínio: varredura de oportunidades e lacunas, varredura de hipóteses prévias invalidadas e geração ranqueada de questões de pesquisa candidatas — a etapa inicial do pipeline /research, alimentando /research-spec."
 machineTranslated: true
-sourceHash: "705fcb742a990b2f"
+sourceHash: "d5f2efd865584459"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,11 +39,11 @@ Uma semente de domínio — notas de domínio em formato livre (fornecidas pelo 
 
 O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
-1. **Carregar o contexto** — Ler a semente de domínio, as regras e qualquer estado existente da suíte.
-2. **Varrer o espaço de oportunidades e lacunas** — Mapear o que foi estudado, o que é contestado e o que permanece sem ser abordado no domínio.
-3. **Varrer as hipóteses prévias invalidadas** — Trazer à tona as hipóteses já refutadas pelo trabalho prévio para que a lista não percorra novamente terreno já resolvido.
-4. **Gerar e ranquear candidatas** — Produzir questões de pesquisa candidatas, cada uma enunciada em uma forma falsificável, ranqueadas por tratabilidade e impacto.
-5. **Verificar as saídas** — Confirmar que cada candidata está fundamentada no trabalho prévio primário e é refutável; resolver cada ambiguidade através do canal de consulta estruturada.
+1. **Carregar contexto** — Lê a semente de domínio, as regras e qualquer estado existente da suíte.
+2. **Varrer o espaço de oportunidades e lacunas** — Mapeia o que foi estudado, o que é contestado e o que permanece sem ser abordado no domínio.
+3. **Varrer as hipóteses prévias invalidadas** — Traz à tona hipóteses já refutadas pelo trabalho prévio, para que a lista não percorra de novo terreno já resolvido.
+4. **Gerar e ranquear candidatas** — Produz questões de pesquisa candidatas, cada uma enunciada de forma falsificável, ranqueadas segundo critérios aprovados pelo operador (novidade, viabilidade, impacto, força de falsificabilidade).
+5. **Verificar as saídas** — Confirma que cada candidata está fundamentada em trabalho prévio primário e é refutável; resolve cada ambiguidade pelo canal de consulta estruturada.
 6. **Emitir a lista de ideação** — `_inputs/ideation.md` mais o manifesto de transferência.
 
 ## Modos de falha

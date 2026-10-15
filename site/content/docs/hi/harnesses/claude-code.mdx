@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,15 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-`claude-code` अडैप्टर साझा Apothem कॉर्पस को Claude Code के नेटिव डिस्कवरी ट्री
-में इंस्टॉल करता है। Markdown एजेंट, नियम, स्किल, आउटपुट स्टाइल, और सेटिंग्स अपने
-नेटिव स्थानों पर इंस्टॉल होते हैं; कमांड प्रॉम्प्ट स्किल में परिवर्तित किए जाते
-हैं ताकि पुनः प्रयोज्य वर्कफ़्लो वर्तमान Claude Code स्किल सतह के माध्यम से
-दृश्यमान बने रहें। स्टेटसलाइन रेंडरर `~/.claude/statuslines/` में कॉपी किया जाता
-है, लेकिन जोड़ा नहीं जाता: Claude Code अपनी स्टेटस लाइन `statusLine` सेटिंग से
-पढ़ता है, जिसे अडैप्टर अनसेट छोड़ देता है। इसे चालू करने के लिए, `settings.json`
-में `"type": "command"` वाली एक `statusLine` प्रविष्टि जोड़ें जो
-`~/.claude/statuslines/render.py` चलाती है।
+`claude-code` अडैप्टर साझा Apothem कॉर्पस को Claude Code के नेटिव डिस्कवरी ट्री में इंस्टॉल करता है। Markdown एजेंट, नियम, स्किल, आउटपुट स्टाइल, और सेटिंग्स अपने नेटिव स्थानों पर इंस्टॉल होते हैं; कमांड प्रॉम्प्ट स्किल में बदले जाते हैं ताकि पुनः प्रयोज्य वर्कफ़्लो वर्तमान Claude Code स्किल सतह के माध्यम से दृश्य बने रहें। स्टेटसलाइन रेंडरर `~/.claude/statuslines/` में कॉपी किया जाता है, लेकिन उससे जुड़ा (wired) नहीं होता: Claude Code अपनी स्टेटस लाइन `statusLine` सेटिंग से पढ़ता है, जिसे अडैप्टर अनसेट छोड़ देता है। इसे चालू करने के लिए `settings.json` में `statusLine` प्रविष्टि जोड़ें जिसका `"type": "command"` हो और जो `~/.claude/statuslines/render.py` चलाती हो। स्निपेट का `commandWindows` मान Windows पर चलता है और इंटरप्रेटर को बिना उद्धरण-चिह्न के नाम देता है। जब इंटरप्रेटर पथ में स्पेस हो, तो वॉल्यूम पर Windows 8.3 लघु रूप मौजूद होने पर इंस्टॉल उस मान में वही लिखता है। `settings.json` की हुक प्रविष्टियाँ पूर्ण पथ रखती हैं।
 
 **लिखी गई फ़ाइलें:** `~/.claude/` के अंतर्गत `settings.json`, `CLAUDE.md` में
 Apothem ब्लॉक, `agents/`, `rules/`, `skills/`, `statuslines/`, `output-styles/`,

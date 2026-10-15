@@ -1,75 +1,56 @@
 ---
 title: "Guides pratiques de rédaction et de pipeline"
-description: "Procédures pas à pas orientées tâches pour affiner du contenu en spécifications, générer des suites de plans, relire des plans, exécuter des phases, ajouter des artefacts et exécuter des portes de qualité."
+description: "Procédures pas à pas orientées tâches : affiner un contenu en spécifications, générer des suites de planification, relire des plans, exécuter des phases, ajouter des artefacts et lancer les portails de qualité."
 machineTranslated: true
-sourceHash: "7886387aff090853"
+sourceHash: "51dd595a3c38f228"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Procédures pas à pas orientées tâches pour **rédiger des artefacts Apothem et
-piloter le pipeline de plans**. Chaque guide répond à une question concrète
-unique.
+Procédures pas à pas orientées tâches pour **rédiger des artefacts Apothem et piloter le pipeline de plans**. Chaque guide répond à une question concrète unique.
 
-Pour les recettes de configuration initiale — ajouter un environnement, modifier
-le profil, piloter l'installateur — consultez plutôt la section
-[Recettes pratiques](/docs/how-to).
+Pour les recettes de première configuration — ajouter un environnement, modifier le profil, piloter l'installateur — consultez plutôt la section [Recettes pratiques](/docs/how-to).
 
-## Pipeline de suite de plans
+## Pipeline de la suite de planification
 
 ### Comment affiner du contenu brut en une spécification ?
 
-Invoquez `/plan-spec` avec le contenu brut en entrée. Le rôle Forge exécute six
-phases de transformation (Découverte, Considération méticuleuse, Cartographie de
-la puissance, Vérification de la préservation, Application de l'expertise,
-Balayage de résolution des questions) et émet la spécification consolidée à
-`.apothem/plans/{suite}/_spec/spec.md`. Voir
-`src/apothem/commands/plan-spec.md` pour le protocole complet.
+Invoquez `/plan-spec` avec le contenu brut en entrée. Le rôle Forge exécute six phases de transformation (Découverte, Considération méticuleuse, Cartographie de la puissance, Vérification de la préservation, Application de l'expertise, Balayage de résolution des questions) et émet la spécification consolidée à `.apothem/plans/{suite}/_spec/spec.md`. Voir `src/apothem/commands/plan-spec.md` pour le protocole complet.
 
-### Comment générer une suite de plans à partir d'une spécification ?
+### Comment générer une suite de planification à partir d'une spécification ?
 
-Invoquez `/plan-generate <suite-name>` une fois que la spécification se trouve à
-`.apothem/plans/{suite}/_spec/spec.md`. Le générateur émet les fichiers d'infrastructure
-canoniques plus les fichiers
-`phases/NN-kebab-topic/PHASE.md` par phase. Voir
-`src/apothem/commands/plan-generate.md`.
+Invoquez `/plan-generate .apothem/plans/{suite}/_spec/spec.md` une fois que `/plan-spec` a écrit la spécification. Le générateur émet les fichiers d'infrastructure canoniques ainsi que les fichiers `phases/NN-kebab-topic/PHASE.md` propres à chaque phase. Voir `src/apothem/commands/plan-generate.md`.
 
 ### Comment relire un plan généré ?
 
-Invoquez `/plan-review path/to/plan-suite/`. Le relecteur applique les huit
-techniques de planification et émet des fiches de score. Les fiches de score en
-échec bloquent l'exécution à SHARED+ jusqu'à résolution. Voir
-`src/apothem/commands/plan-review.md`.
+Invoquez `/plan-review path/to/plan-suite/`. Le relecteur applique les neuf techniques de planification et émet des fiches de score. Les fiches de score en échec bloquent l'exécution à SHARED+ tant qu'elles ne sont pas résolues. Voir `src/apothem/commands/plan-review.md`.
 
 ### Comment exécuter un plan ?
 
-Invoquez `/plan-execute path/to/plan-suite/ [phase-id]`. Sans `phase-id`, la
-prochaine phase en attente s'exécute. Avec un identifiant spécifique, seule cette
-phase s'exécute. Voir `src/apothem/commands/plan-execute.md`.
+Invoquez `/plan-execute path/to/plan-suite/ [phase-id]`. Sans `phase-id`, la prochaine phase en attente s'exécute. Avec un identifiant précis, seule cette phase s'exécute. Voir `src/apothem/commands/plan-execute.md`.
 
 ### Comment vérifier l'état d'un plan ?
 
-Invoquez `/plan-status path/to/plan-suite/ [--verbose]`. Rapport en lecture
-seule. Voir `src/apothem/commands/plan-status.md`.
+Invoquez `/plan-status path/to/plan-suite/ [--verbose]`. Rapport en lecture seule. Voir `src/apothem/commands/plan-status.md`.
 
 ## Rédaction d'artefacts
 
 ### Comment ajouter une nouvelle règle ?
 
-1. Choisissez un nom de fichier en kebab-case sous `src/apothem/rules/`, p. ex.
+1. Choisissez un nom de fichier en kebab-case sous `src/apothem/rules/`, par exemple
    `src/apothem/rules/my-new-rule.md`.
-2. Rédigez le frontmatter (`name`, `description`, `type:
-   instruction`, `pathFilter` en option).
+2. Rédigez le frontmatter (`name`, `description`, `pathFilter`,
+   `alwaysApply`).
 3. Rédigez le corps avec les sections canoniques : Purpose,
    Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
    Bindings.
-4. Ajoutez une ligne à la cohorte de règles (`src/apothem/rules/`).
-5. Exécutez `python scripts/dev/validate_ecosystem.py --check
+4. Exécutez `python scripts/dev/validate_ecosystem.py --check
    frontmatter-cohort` pour vérifier.
 
-### Comment ajouter un nouveau worker délégué ?
+Le chargeur de règles fonctionne par glob : il prend en compte chaque fichier correspondant à `src/apothem/rules/*.md`, de sorte qu'aucune entrée de registre n'est nécessaire ; déposer le fichier au nom canonique dans ce répertoire suffit à l'enregistrer.
 
-Choisissez un nom de fichier en kebab-case sous le répertoire indiqué
-ci-dessous, en utilisant la forme `my-worker.md` :
+### Comment ajouter un nouveau travailleur délégué ?
+
+Choisissez un nom de fichier en kebab-case sous le répertoire indiqué ci-dessous, en utilisant la forme `my-worker.md` :
 
 ```text
 src/apothem/agents/
@@ -78,16 +59,13 @@ src/apothem/agents/my-worker.md
 
 Puis :
 
-1. Rédigez le frontmatter — y compris `name`, `description`,
-   `allowedTools`, `maxTurns`, `version`, et le marqueur de type indiqué
-   ci-dessous :
+1. Rédigez le frontmatter — y compris `name`, `version`, `updated`,
+   `description`, `tools`, `disallowedTools`, `maxTurns` et
+   `effort`.
 
-```text
-type: agent
-```
+2. Rédigez le system prompt comme corps.
 
-1. Rédigez le system prompt comme corps.
-1. Ajoutez une ligne au registre des auxiliaires dans la cohorte de workers délégués (`src/apothem/agents/`).
+La cohorte de travailleurs délégués est chargée par glob depuis `src/apothem/agents/*.md`, de sorte que le fichier au nom canonique est pris en compte dès son placement ; il n'existe aucune table de registre à modifier.
 
 ### Comment ajouter un nouveau hook ?
 
@@ -95,12 +73,11 @@ type: agent
    `src/apothem/hooks/messages/<event>-<scope>.md`.
 2. Câblez le hook dans `settings.json`.
 3. Mettez à jour le pipeline de hooks.
-4. Exécutez `python scripts/dev/validate_ecosystem.py --check
-   hook-validator`.
+4. Exécutez `python scripts/dev/validate_ecosystem.py`.
 
-## Portes de qualité
+## Portails de qualité
 
-### Comment exécuter les portes de qualité locales ?
+### Comment exécuter les portails de qualité locaux ?
 
 ```bash
 python -m ruff check .

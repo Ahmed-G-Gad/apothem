@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — 体系的なソース収集: 仕様をサブクエリに分解し、並列で発見をファンアウトし、スクリーニングしてランク付けし、ソースごとに抽出してランク付けされたソース台帳にまとめます。"
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "61f80a4f92aed2b6"
 引数付き:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## 入力
@@ -64,8 +64,8 @@ sourceHash: "61f80a4f92aed2b6"
 # 枠組みされた研究スイートのためにソースを収集する
 /research-sources path/to/research-suite/
 
-# より深い発見のファンアウト
-/research-sources path/to/research-suite/ --depth N
+# スクリーニングを通過したソースの数に上限を設ける
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## 相互参照

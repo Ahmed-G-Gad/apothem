@@ -2,7 +2,7 @@
 title: "Runbook pemulihan rilis"
 description: "Prosedur pemulihan untuk rilis yang gagal di tengah jalan di bawah model rilis aditif, tahap demi tahap, tanpa menulis ulang riwayat yang telah dipublikasikan."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,9 +14,7 @@ beranotasi yang ditandatangani; push tag menjalankan alur kerja rilis dan npm.
 Tidak ada yang di-force-push, dan riwayat di `main` tidak pernah ditulis ulang.
 
 Riwayat yang telah dipublikasikan bersifat permanen. Setiap tag rilis, GitHub
-Release, dan versi npm yang telah dipublikasikan proyek tetap terpublikasi:
-proyek memiliki tiga rilis, masing-masing dengan tag-nya, GitHub Release-nya,
-dan versi npm-nya. Versi npm tidak dapat diubah: `name@version` yang telah
+Release, dan versi npm yang telah dipublikasikan proyek tetap terpublikasi. Versi npm tidak dapat diubah: `name@version` yang telah
 dipublikasikan tidak pernah dapat diganti, dan nomor versi yang pernah
 di-unpublish tidak pernah dapat digunakan lagi. Karena itu, pemulihan bergerak
 maju dengan rilis patch baru; pemulihan tidak menghapus atau mengarahkan ulang

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-`claude-code` 适配器将共享的 Apothem 语料安装到 Claude Code 的原生发现树中。Markdown 智能体、规则、技能、输出样式和设置都安装到其原生位置；命令提示词会被转换为技能，使可复用的工作流通过当前的 Claude Code 技能表面保持可见。状态栏渲染器会被复制到 `~/.claude/statuslines/`，但不会被接入：Claude Code 从 `statusLine` 设置读取其状态栏，而适配器不设置该项。要启用它，请在 `settings.json` 中添加一个带有 `"type": "command"` 的 `statusLine` 条目，让它运行 `~/.claude/statuslines/render.py`。
+`claude-code` 适配器将共享的 Apothem 语料安装到 Claude Code 的原生发现树中。Markdown 委托、规则、技能、输出样式与设置安装在各自的原生位置；命令提示词转换为技能，使可复用的工作流通过当前的 Claude Code 技能表面保持可见。状态栏渲染器被复制到 `~/.claude/statuslines/`，但未接入：Claude Code 从 `statusLine` 设置读取其状态栏，而适配器不设置该项。若要启用它，请在 `settings.json` 中添加一个类型为 `"type": "command"` 的 `statusLine` 条目，由该条目运行 `~/.claude/statuslines/render.py`。该片段中的 `commandWindows` 值在 Windows 上运行，并以不加引号的形式指定解释器。当解释器路径包含空格且该卷存在 8.3 短路径时，安装会在该值中写入其 Windows 8.3 短形式。`settings.json` 中的钩子条目保留完整路径。
 
 **写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
 

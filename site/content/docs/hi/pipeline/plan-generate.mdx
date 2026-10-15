@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — लिखित `_spec/spec.md` से एक पूर्ण मास्टर प्लान सूट जनरेट करता है।"
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## इनपुट
 
-`/plan-spec` से लिखित `_spec/spec.md` + `_inputs/handoff-manifest.yml` (या ऑपरेटर-प्रदत्त गद्य)।
+`/plan-spec` से लिखित `_spec/spec.md` + `_inputs/handoff-manifest.yml` (केवल गद्य अस्वीकार किया जाता है: `_spec/spec.md` लिखने के लिए `/plan-spec` चलाएँ; `--override` गेट को बायपास करता है और PLAN-NOTES.md में एक निष्कर्ष दर्ज करता है)।
 
 ## आउटपुट
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## अनुप्रवाह
 
-/plan-review या /plan-execute (अनुप्रवाह)
+/plan-review (अनुप्रवाह); `/plan-execute` केवल समीक्षा स्कोरकार्ड मौजूद होने के बाद (या `--override` के साथ)
 
 ## वर्कफ़्लो फ़ेज़
 

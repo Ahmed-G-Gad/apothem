@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — rilis peluncuran"
 description: "Apothem v1.0.1 telah tersedia — satu profil bersama yang dimaterialisasi ke dalam tujuh belas harness asisten AI, beberapa jalur pemasangan, dan rilis yang ditandatangani dan diatestasi."
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,9 +39,8 @@ Tujuh belas adapter dalam rilis ini:
 - windsurf
 - zed
 
-Tambahkan sebuah alat ke alur kerja Anda, jalankan satu perintah, dan
-konfigurasi Anda sudah ada di sana. Hapus sebuah alat, dan Apothem akan
-mencopotnya dengan bersih — tanpa meninggalkan berkas yatim.
+Tambahkan sebuah alat ke alur kerja Anda, jalankan satu perintah, dan konfigurasi Anda sudah ada di sana.
+Hapus sebuah alat, dan Apothem menghapus berkas yang ditulisnya; penyimpanan memori, konteks, dan pembelajaran bersama ikut dihapus bersama harness terakhir, setelah dicadangkan, dan `plans/` selalu dipertahankan.
 
 ## Pemasangan
 
@@ -63,11 +62,13 @@ Beberapa jalur pemasangan, satu CLI di bawahnya:
    ```
 
 3. **Pemasang skrip sekali jalan** — menempatkan runtime mandiri dan peluncur
-   `apothem` di PATH:
+   `apothem` (`~/.local/bin/apothem` di POSIX, dengan petunjuk PATH ketika direktori itu tidak ada di `PATH`; `apothem.cmd` di WindowsApps pada Windows):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   Skrip POSIX memverifikasi tanda tangan GPG tag rilis secara default dan berhenti ketika kunci maintainer tidak ada di keyring lokal. Sebelum maintainer mempublikasikan sidik jari kunci (lihat `SECURITY.md`), setel `APOTHEM_VERIFY=checksum` untuk memeriksa arsip terhadap `SHA256SUMS` rilis, atau `APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan tanpa verifikasi tag.
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -113,10 +114,8 @@ siklus hidup konfigurasi:
 - `apothem profile` — memeriksa dan mengelola profil bersama.
 - `apothem doctor` — mendiagnosis masalah lingkungan dan konfigurasi.
 
-Setiap adapter harness mengimplementasikan protokol `HarnessAdapter` yang
-seragam — `install`, `uninstall`, `is_installed`, `verify` — sehingga setiap
-harness berperilaku dapat diprediksi dari kursi operator, terlepas dari format
-vendor di bawahnya. Baca lebih lanjut tentang desainnya di
+Setiap adapter harness mengimplementasikan protokol `HarnessAdapter` yang seragam —
+`install`, `update`, `uninstall`, `is_installed`, `verify` — sehingga setiap harness berperilaku dapat diprediksi dari kursi operator, terlepas dari format vendor di bawahnya. Baca lebih lanjut tentang desainnya di
 [telaah mendalam arsitektur adapter](/docs/blog/posts/multi-harness-adapter-design)
 dan tentang rekonsiliasi format di
 [konvergensi konvensi antar-harness](/docs/blog/posts/cross-harness-convention-convergence).

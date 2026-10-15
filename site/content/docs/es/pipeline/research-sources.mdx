@@ -2,7 +2,7 @@
 title: "/research-sources"
 description: "/research-sources — Recolección sistemática de fuentes: descompone la especificación en subconsultas, despliega el descubrimiento en paralelo, criba y clasifica, y extrae por fuente en un libro mayor de fuentes clasificado."
 machineTranslated: true
-sourceHash: "61f80a4f92aed2b6"
+sourceHash: "8d13e28b12f48bf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Recolección sistemática de fuentes — descompone la especificación de invest
 Con argumentos:
 
 ```bash
-/research-sources [path/to/research-suite/] [--depth N]
+/research-sources [path/to/research-suite/] [--max-sources N]
 ```
 
 ## Entradas
@@ -64,8 +64,8 @@ Más allá del libro mayor de fuentes, esta etapa construye un libro mayor de pr
 # Recopilar fuentes para una suite de investigación enmarcada
 /research-sources path/to/research-suite/
 
-# Despliegue de descubrimiento más profundo
-/research-sources path/to/research-suite/ --depth N
+# Limitar el número de fuentes seleccionadas
+/research-sources path/to/research-suite/ --max-sources N
 ```
 
 ## Referencias cruzadas

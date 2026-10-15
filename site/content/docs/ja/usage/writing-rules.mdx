@@ -1,12 +1,12 @@
 ---
 title: "ルールの記述"
-description: "Apothem の動作ルールの作成、スコープ設定、保守を行います。"
+description: "Apothem の振る舞いのルールを作成し、スコープを定め、保守します。"
 machineTranslated: true
 sourceHash: "310b05b6b5b3dd5d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-ルールは `src/apothem/rules/` 内にある拡張子 `.md` の Markdown ファイルです。
+ルールは、`src/apothem/rules/` に置かれる、拡張子 `.md` の Markdown ファイルです。
 
 ## ルールのフロントマター
 
@@ -21,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## ルールのスコープ
 
-| スコープ | 適用されるとき |
-|-------|-------------|
-| `always-on` | すべてのセッション、すべてのファイル |
-| `path-filtered` | アクティブなファイルが `path-filter` に一致する場合のみ |
-| `operator-selected` | オペレーターが settings.json で明示的に有効化したとき |
+ルールのスコープは、二つのフロントマターフィールド `alwaysApply` と `pathFilter` によって設定されます:
+
+| `alwaysApply` | `pathFilter` | 適用されるタイミング |
+|---------------|--------------|--------------|
+| `true` | `""`（空） | 常時適用: すべてのセッション、すべてのファイル |
+| `false` | `"**/*.py"` のような glob | パスによる絞り込み: アクティブなファイルが glob に一致する場合のみ |
 
 ## ルールの例
 
@@ -44,11 +45,9 @@ alwaysApply: false
 - Prefer explicit over implicit.
 ```
 
-## 各環境へのルールの適用
+## ルールをハーネスに適用する
 
-ルールを記述したら、インストール済みの各環境アダプターを更新します。
-`apothem harnesses list` を実行してインストール済みのセットを確認し、環境ごとに
-update を 1 回ずつ呼び出します。
+ルールを書いた後は、インストール済みの各ハーネスアダプターを更新します。`apothem harnesses list` を実行して、インストール済みの一覧を確認し、ハーネスごとに一度ずつ update を呼び出してください:
 
 ```bash
 apothem update --harness claude-code

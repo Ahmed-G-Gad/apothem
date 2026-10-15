@@ -2,7 +2,7 @@
 title: "/dependency-audit"
 description: "/dependency-audit — Passe d'audit par dépendance (directes + transitives) pour la licence, les CVE et la fraîcheur."
 machineTranslated: true
-sourceHash: "c4d7e94a7338bf03"
+sourceHash: "0c54a480092da944"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Passe d'audit par dépendance (directes + transitives) pour la licence, les CVE 
 Avec des arguments :
 
 ```bash
-/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/dependency-audit [path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]
 ```
 
 ## Entrées
@@ -29,7 +29,7 @@ Manifestes de dépendances du dépôt hôte
 
 ## Sorties
 
-Constats de dépendances + REPORT.md
+Constats sur les dépendances dans `_inputs/dependency-audit-findings.md`
 
 ## En aval
 
@@ -37,22 +37,14 @@ L'étape dependency-audit de la Séquence de Relecture d'Audit
 
 ## Phases du flux de travail
 
-La commande suit le flux de travail standard du pipeline `/plan` :
-
-1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
-2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
-3. **Exécuter les tâches** — Accomplit la mission de la commande.
-4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
-5. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
-6. **Émettre REPORT.md** — La preuve de libération de la porte de pré-émission est consignée.
+La commande exécute cinq phases : ingestion des entrées, parcours dépendance par dépendance, tri constat par constat, émission des constats, et le portail de validation.
 
 ## Modes d'échec
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
-| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
-| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Porte qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Aucun manifeste de dépendances ne se résout à la racine du dépôt | Passez une racine de dépôt qui contient un manifeste de dépendances |
 
 ## Exemples
 
@@ -60,8 +52,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 # Dry-run to preview what would happen
 /dependency-audit --dry-run
 
-# Execute against a named plan suite
-/dependency-audit path/to/plan-suite/
+# Execute against a repository root
+/dependency-audit path/to/repo/
 ```
 
 ## Renvois

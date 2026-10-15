@@ -2,7 +2,7 @@
 title: "Especificación del esquema de artefactos"
 description: "Esquema canónico de frontmatter YAML y campos obligatorios para todos los tipos de artefacto del árbol de fuentes de Apothem, con plantillas por clase y reglas de validación."
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,10 @@ su tipo de artefacto. Este documento define el esquema canónico de cada tipo.
 **Convención de versionado (clases de artefacto versionadas: comandos, ayudantes, skills, CLAUDE.md):**
 
 - `version` es **semántica** (`MAJOR.MINOR.PATCH`). Incrementa MAJOR para los cambios incompatibles de esquema o de contrato; MINOR para los cambios aditivos compatibles (nuevos campos opcionales, secciones adicionales, antipatrones adicionales); PATCH para un cambio de comportamiento que corrige una directiva existente sin romper el contrato.
-- Las correcciones de erratas, de enlaces y de formato, así como las ediciones que solo tocan comentarios o documentación, dejan `version` sin cambios. Solo un cambio de comportamiento la incrementa.
+- Las correcciones de erratas y de enlaces, el formato y las ediciones que solo tocan comentarios o documentación dejan `version` sin cambios. Solo un cambio de comportamiento la incrementa.
 - `updated` es la **fecha ISO 8601** (`YYYY-MM-DD`) de la edición más reciente. Debe cambiar con cada incremento de `version`, y también cambia con una corrección de erratas o de enlaces que no incrementa la versión.
 - Los artefactos nuevos comienzan en `v0.Y.Z`. La promoción a `vX.Y.Z` indica que el contrato del artefacto es lo bastante estable como para ser un compromiso público.
+- Las suites de plan quedan fuera de esta convención. Una corrección de erratas en una suite de plan incrementa el número PATCH de la versión de la suite (`vX.Y.Z` a `vX.Y.(Z+1)`) y añade una fila al Historial de revisiones. La [guía para desarrolladores](/docs/developer-guide) describe la regla de las suites de plan en su sección de revisiones de suites de plan.
 
 ---
 

@@ -2,7 +2,7 @@
 title: "مسح الثنائيات المُولَّدة"
 description: "مسح الثنائيات المُولَّدة في Apothem — صفر ثنائيات مُجمَّعة / مُحزَّمة مُتتبَّعة في المصدر. دليل فحص Binary-Artifacts في OpenSSF Scorecard."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,8 @@ sourceHash: "272228f3b58562c2"
 
 يُسمح في المصدر بصنفين ضيّقين من الثنائيات:
 
-1. **أصول العلامة** — `assets/*.png`، `assets/*.ico`، `assets/favicon.*`. هذه **قابلة لإعادة التوليد حتميًّا** من نسخ <bdi>SVG</bdi> الأصلية في `assets/src/` عبر `scripts/dev/rebuild-assets.{sh,ps1}`. يعاملها <bdi>Scorecard</bdi> كشرعية وفق إعفائه `image/png`.
-2. **ملفات الخطوط** — `assets/fonts/*.ttf`، `assets/fonts/*.woff2`. ملفات خطوط مُرفقة برخص موثَّقة؛ وفق إعفاء `font/*` لدى <bdi>Scorecard</bdi>.
+1. **أصول العلامة** — `assets/*.png`، `assets/*.ico`، `assets/favicon.*`. هذه **قابلة لإعادة التوليد بشكل حتمي** من النسخ الأصلية بصيغة SVG في `assets/src/` عبر `scripts/dev/rebuild-assets-resvg.py`. يعامل <bdi>Scorecard</bdi> هذه الملفات بوصفها مشروعة وفق إعفائه `image/png`.
+2. **ملفات الخطوط** — `assets/fonts/*.ttf`، `assets/fonts/*.woff2`. ملفات خطوط مُضمَّنة برخص موثَّقة؛ وفق إعفاء `font/*` في <bdi>Scorecard</bdi>.
 
 كلا الصنفين موثَّق في [`site/content/docs/brand/index.mdx`](/docs/brand)، ومصدرهما مُسجَّل في وصفة إعادة بناء الأصول.
 
@@ -39,7 +39,7 @@ sourceHash: "272228f3b58562c2"
 
 ```shell
 # من جذر مستودع apothem:
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 ينبغي أن يُعيد هذا الاستدعاء **صفر أسطر**. النتيجة غير الفارغة تدلّ على أن ثنائيًّا مُولَّدًا قد تُتبِّع في المصدر — وهو اكتشاف بخطورة عالية يحجب الإصدار التالي.
@@ -48,7 +48,6 @@ git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|cla
 
 يُعدّ المسح جزءًا من:
 
-- **<bdi>CI</bdi> لكل طلب سحب** — يتضمّن `.github/workflows/ci.yml` خطوة <bdi>grep</bdi> للثنائيات المُولَّدة.
 - **نقطة تفتيش لكل إصدار** — يتحقّق دليل هندسة الإصدار من المسح قبل وسم الإصدار.
 - **تشغيل <bdi>Scorecard</bdi> الأسبوعي** — يعيد سير عمل <bdi>OpenSSF Scorecard</bdi> تأكيد نجاح الفحص.
 

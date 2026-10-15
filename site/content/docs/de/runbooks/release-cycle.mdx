@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,8 +16,7 @@ benutzerseitige Oberfläche auf den kanonischen Installationsbefehl antwortet.
 Das Release-Modell ist **additiv**. Jedes Release fügt einen Commit auf `main`
 und ein signiertes, annotiertes `vX.Y.Z`-Tag hinzu; nichts wird per Force-Push
 übertragen, und kein früheres Tag, kein GitHub Release und keine npm-Version
-wird entfernt. Das Projekt hat drei Releases, jedes mit seinem Tag, seinem
-GitHub Release und seiner npm-Version, und alle bleiben veröffentlicht:
+wird entfernt. Jedes Release behält sein Tag, sein GitHub Release und seine npm-Version, und alle bleiben veröffentlicht:
 npm-Versionen sind unveränderlich (ein veröffentlichtes `name@version` kann
 niemals ersetzt werden), und gepinnte Installationen hängen von den Tags ab.
 
@@ -90,7 +89,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -245,6 +243,8 @@ apothem --version
 ```
 
 Erwartete Ausgabe: `Apothem, version X.Y.Z`.
+
+Der Launcher wird nach `~/.local/bin` geschrieben, das für die obige Prüfung in `PATH` liegen muss. Liegt dieses Verzeichnis nicht in `PATH`, gibt der Installer die Zeile `export PATH` aus, die hinzugefügt werden muss.
 
 ### 5.4 Ein-Schritt-Skript-Installer (Windows)
 

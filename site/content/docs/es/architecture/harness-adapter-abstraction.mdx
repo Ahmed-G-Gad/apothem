@@ -2,7 +2,7 @@
 title: "Abstracción del adaptador de entorno"
 description: "El protocolo HarnessAdapter — cómo los adaptadores de Apothem traducen el perfil compartido."
 machineTranslated: true
-sourceHash: "bf8b17806fd4c2c6"
+sourceHash: "3e2bf8f9744fc759"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,34 +22,27 @@ de forma rígida en la CLI, cada entorno filtraría sus suposiciones al núcleo,
 añadir un entorno significaría tocar la lógica de instalación, actualización,
 desinstalación y verificación al unísono.
 
-El patrón adaptador invierte eso. El núcleo conoce solo el protocolo
-`HarnessAdapter` — un pequeño contrato de métodos de ciclo de vida. El dialecto
+El patrón adaptador invierte esa lógica. El núcleo conoce solo el protocolo
+`HarnessAdapter`, un pequeño contrato de métodos de ciclo de vida. El dialecto
 de cada entorno vive dentro de un subpaquete autocontenido que implementa el
-contrato. El núcleo le pide a un adaptador que *instale* sin saber si eso
-significa renderizar un archivo JSON, escribir un directorio de reglas o asentar
-un árbol de soporte. Los nuevos entornos se incorporan satisfaciendo el protocolo
-y registrando un punto de entrada; nada en el núcleo cambia. Esta es la razón
-estructural por la que Apothem permanece agnóstico al anfitrión — la abstracción
-es la frontera que impide que el conocimiento específico de cada entorno se
-propague.
+contrato. El núcleo pide a un adaptador que *instale* sin saber si eso significa
+renderizar un archivo JSON, escribir un directorio de reglas o colocar un
+subárbol de soporte. Los nuevos entornos se incorporan cumpliendo el protocolo y
+añadiendo una entrada `HARNESS_REGISTRY` en
+`src/apothem/lib/harness_registry_data.py` (incrementando allí
+`SUPPORTED_HARNESS_COUNT`), reflejándola en los puntos de entrada
+`apothem.harnesses` de `pyproject.toml` y añadiendo el ID al enum `harnessId` de
+`src/apothem/schemas/profile.schema.json`. Esta es la razón estructural por la
+que Apothem sigue siendo agnóstico al anfitrión: la abstracción es la frontera
+que impide que el conocimiento específico de cada entorno se propague.
 
 ## La forma de un adaptador
 
 Los adaptadores se dividen en dos formas de materialización, ambas visibles en el
 registro:
 
-- **Los renderizadores de archivo único** traducen los campos del perfil en un
-  archivo de configuración nativo del entorno. El adaptador de Claude Code, por
-  ejemplo, siempre escribe `~/.claude/settings.json` a partir del perfil
-  compartido y aplana los directorios de convención de Apothem (`agents/`,
-  `rules/`, `skills/`, …) junto a él.
-- **Los adaptadores de superficie de reglas y de árbol de soporte** propagan el
-  cohorte de carga útil de Apothem a la ubicación de reglas documentada por el
-  entorno, convirtiendo los cohortes al formato nativo donde existe uno y
-  aparcando el resto bajo un subárbol de soporte propio de Apothem referenciado
-  desde el ancla nativa. El adaptador de Cursor escribe un único
-  `.cursor/rules/apothem-rules.mdc` en la raíz de proyecto suministrada y entrega
-  solo la superficie de reglas.
+- **Los renderizadores de archivo único** traducen los campos del perfil a un único archivo de configuración nativo del entorno. El adaptador de OpenCode, por ejemplo, renderiza su archivo de configuración nativo a partir del perfil compartido mediante un materializador.
+- **Los adaptadores de superficie de reglas y de subárbol de soporte** propagan la cohorte de carga útil de Apothem a la ubicación de reglas documentada del entorno, convirtiendo las cohortes al formato nativo cuando existe uno y colocando el resto bajo un subárbol de soporte propiedad de Apothem al que se hace referencia desde el ancla nativa. El adaptador de Cursor escribe un único `.cursor/rules/apothem-rules.mdc` en la raíz de proyecto indicada y entrega solo la superficie de reglas. El adaptador de Claude Code no renderiza `settings.json` a partir del perfil. Copia la plantilla de ajustes incluida en `~/.claude/settings.json`, con el intérprete de hooks ya rellenado, aplana junto a ella los directorios de convención de Apothem (`agents/`, `rules/`, `skills/`, …) y escribe el perfil en un bloque gestionado delimitado por centinelas dentro de `CLAUDE.md`.
 
 Un adaptador dado es de **alcance de usuario** (escribe bajo el directorio de
 inicio) o de **alcance de proyecto** (requiere `--project <path>` y escribe
@@ -74,7 +67,7 @@ flowchart TD
     AL --> WS["windsurf adapter<br/>(project scope)"]
     AL --> ETC["… 12 more registered adapters<br/>(antigravity, gemini-cli, glm, hermes,<br/>kimi-code, open-claw, opencode, qwen-code,<br/>codebuddy, kiro, trae, zed)"]
 
-    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(single-file render)"]
+    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
     CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
     CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]

@@ -2,7 +2,7 @@
 title: "المنصّات"
 description: "أنظمة التشغيل والأصداف ونصوص المثبّت المدعومة لـ Apothem، بالإضافة إلى متطلّب Python النظامي المسبق لزمن التشغيل القائم بذاته."
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,21 +17,18 @@ Node.js 18+.
 
 ## مصفوفة نظام التشغيل والصدفة
 
-| عائلة نظام التشغيل | الأصداف المدعومة | نص المثبّت |
+| عائلة نظام التشغيل | الأصداف المدعومة | سكربت المثبّت |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash` (bash النظام أو bash أحدث ثبّته المستخدم) | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| نظام Windows الفرعي لـ Linux (WSL2) | POSIX `bash` | `install.sh` |
-| BSD (FreeBSD، OpenBSD، NetBSD) | POSIX `bash` | `install.sh` |
-| Termux (Android) | POSIX `bash` | `install.sh` |
-| حاوية Linux في ChromeOS (Crostini) | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`، مع قبول `bash` أيضًا (bash النظام أو bash أحدث ثبّته المستخدم) | `install.sh` |
+| Linux | POSIX `sh` (مع قبول `bash` أيضًا) | `install.sh` |
+| نظام Windows الفرعي لـ Linux (WSL2) | POSIX `sh` (مع قبول `bash` أيضًا) | `install.sh` |
+| BSD (FreeBSD، OpenBSD، NetBSD) | POSIX `sh` (مع قبول `bash` أيضًا) | `install.sh` |
+| Termux (Android) | POSIX `sh` (مع قبول `bash` أيضًا) | `install.sh` |
+| حاوية Linux في ChromeOS (Crostini) | POSIX `sh` (مع قبول `bash` أيضًا) | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | أيّ منصّة بها PowerShell 7+ | PowerShell 7+ (متعدّد المنصّات) | `install.ps1` |
 
-النصّان متكافئان وظيفيًا. يتطلّب `install.sh` صدفة `bash` متوافقة مع POSIX.
-ويتطلّب `install.ps1` صدفة Windows PowerShell 5.1 أو أحدث، أو
-PowerShell 7+ على أيّ منصّة يدعمها PowerShell 7 نفسه — بما في ذلك
-macOS وLinux، حيث يكون بديلًا عن `install.sh`.
+السكربتان متكافئان وظيفيًا. يتطلّب `install.sh` صدفة POSIX (`sh` أو `dash` أو `ash` أو `bash`). ويتطلّب `install.ps1` صدفة Windows PowerShell 5.1 أو أحدث، أو PowerShell 7+ على أيّ منصّة يدعمها PowerShell 7 نفسه — بما في ذلك macOS وLinux، حيث يكون بديلًا عن `install.sh`.
 
 ## المتطلّب المسبق الوحيد: Python نظامي
 

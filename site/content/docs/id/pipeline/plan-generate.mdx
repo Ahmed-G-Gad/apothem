@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — Menghasilkan Master Plan Suite lengkap dari `_spec/spec.md` yang ditulis."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Dengan argumen:
 
 ## Masukan
 
-`_spec/spec.md` yang ditulis + `_inputs/handoff-manifest.yml` dari `/plan-spec` (atau prosa yang disediakan operator).
+`_spec/spec.md` yang ditulis + `_inputs/handoff-manifest.yml` dari `/plan-spec` (prosa saja ditolak: jalankan `/plan-spec` untuk menulis `_spec/spec.md`; `--override` melewati gerbang dan mencatat temuan di PLAN-NOTES.md).
 
 ## Keluaran
 
@@ -33,7 +33,7 @@ Dengan argumen:
 
 ## Hilir
 
-/plan-review atau /plan-execute (hilir)
+/plan-review (hilir); `/plan-execute` hanya setelah kartu skor tinjauan tersedia (atau dengan `--override`)
 
 ## Fase alur kerja
 

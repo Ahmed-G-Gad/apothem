@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit——针对每类性能预算进行审计（Core Web Vitals、USE 方法）。"
+description: "/perf-audit —— 依据每类性能预算（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint）进行审计，采用 USE 方法。"
 machineTranslated: true
-sourceHash: "f4a428086264b0eb"
+sourceHash: "d614c1ffe9d5a42e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **角色：** 性能审计者
 **流水线位置：** 堡垒
 
-针对每类性能预算进行审计（Core Web Vitals、USE 方法）。
+依据每类性能预算进行审计（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint），采用 USE 方法。
 
 ## 规范调用
 
@@ -20,16 +20,16 @@ sourceHash: "f4a428086264b0eb"
 带参数：
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## 输入
 
-任何生命周期状态下的宿主仓库
+包含 `hooks/`、`src/apothem/benchmarks/`、`tests/` 以及钩子引导桩 `hooks/lib/bootstrap.{sh,ps1}` 的宿主仓库
 
 ## 输出
 
-性能发现 + REPORT.md
+性能发现项位于 `_inputs/perf-audit-findings.md`
 
 ## 下游
 
@@ -37,22 +37,14 @@ sourceHash: "f4a428086264b0eb"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则和恢复契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 履行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+该命令分为五个审计阶段：输入摄取、按类预算发现、基准执行、借助 USE 方法识别热路径，以及附带校验门的发现项输出。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
-| 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 缺失输入文件 | 仓库缺少 `src/apothem/benchmarks/` | 添加基准驱动程序后重新运行；在驱动程序存在之前，该命令将拒绝运行 |
 
 ## 示例
 
@@ -60,8 +52,8 @@ sourceHash: "f4a428086264b0eb"
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## 交叉引用

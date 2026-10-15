@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review — Revue d'intégrité architecturale par rapport à l'artefact de conception dans `_inputs/design.md`."
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Revue d'intégrité architecturale par rapport à l'artefact de conception dans 
 Avec des arguments :
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## Entrées
@@ -29,7 +29,7 @@ Dépôt hôte + `_inputs/design.md`
 
 ## Sorties
 
-Constats d'architecture + REPORT.md
+Constats d'architecture dans `_inputs/architecture-review-findings.md`
 
 ## En aval
 
@@ -37,22 +37,14 @@ L'étape de revue d'architecture de la Séquence de Revue d'Audit
 
 ## Phases du flux de travail
 
-La commande suit le flux de travail standard du pipeline `/plan` :
-
-1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
-2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
-3. **Exécuter les tâches** — Accomplit la mission de la commande.
-4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
-5. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
-6. **Émettre REPORT.md** — La preuve de libération de la porte de pré-émission est consignée.
+La commande exécute cinq phases d'audit : ingestion des entrées, parcours de traçabilité de la conception au code, audit de l'intégrité des frontières de couches, balayage du couplage inter-paquets, et émission des constats avec le portail de validation.
 
 ## Modes d'échec
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
-| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
-| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Porte qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | L'artefact de conception `_inputs/design.md` est absent | Exécutez `/plan-design` pour le créer |
 
 ## Exemples
 
@@ -60,8 +52,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## Renvois

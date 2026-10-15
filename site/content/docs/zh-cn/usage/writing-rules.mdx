@@ -21,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## 规则作用域
 
-| 作用域 | 应用时机 |
-|-------|-------------|
-| `always-on` | 每个会话、每个文件 |
-| `path-filtered` | 仅当活动文件匹配 `path-filter` 时 |
-| `operator-selected` | 操作者在 settings.json 中显式启用 |
+规则的作用域由两个前置元数据字段决定，即 `alwaysApply` 与 `pathFilter`：
+
+| `alwaysApply` | `pathFilter` | 应用时机 |
+|---------------|--------------|--------------|
+| `true` | `""`（空） | 始终启用：每个会话、每个文件 |
+| `false` | 形如 `"**/*.py"` 的 glob | 路径过滤：仅当活动文件匹配该 glob 时 |
 
 ## 示例规则
 
@@ -44,10 +45,9 @@ alwaysApply: false
 - Prefer explicit over implicit.
 ```
 
-## 将规则应用于各环境
+## 将规则应用于各工具
 
-编写规则后，请更新每个已安装的环境适配器。运行 `apothem harnesses list` 查看
-已安装的集合，然后为每个环境各调用一次 update：
+编写规则之后，请更新每个已安装的工具适配器。运行 `apothem harnesses list` 查看已安装的集合，然后对每个工具各调用一次 update：
 
 ```bash
 apothem update --harness claude-code

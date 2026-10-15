@@ -1,6 +1,6 @@
 ---
 title: "Regeln schreiben"
-description: "Verfasse, begrenze den Geltungsbereich und pflege die Verhaltensregeln von Apothem."
+description: "Apothem-Verhaltensregeln verfassen, deren Geltungsbereich festlegen und pflegen."
 machineTranslated: true
 sourceHash: "310b05b6b5b3dd5d"
 ---
@@ -21,11 +21,12 @@ alwaysApply: true         # true for always-on; false for path-filtered
 
 ## Regel-Geltungsbereiche
 
-| Geltungsbereich | Wann angewendet |
-|-------|-------------|
-| `always-on` | Jede Sitzung, jede Datei |
-| `path-filtered` | Nur wenn die aktive Datei `path-filter` entspricht |
-| `operator-selected` | Der Operator aktiviert sie ausdrücklich in settings.json |
+Der Geltungsbereich einer Regel wird durch zwei Frontmatter-Felder gesetzt, `alwaysApply` und `pathFilter`:
+
+| `alwaysApply` | `pathFilter` | Wann angewendet |
+|---------------|--------------|--------------|
+| `true` | `""` (leer) | Immer aktiv: jede Sitzung, jede Datei |
+| `false` | ein Glob wie `"**/*.py"` | Pfadgefiltert: nur wenn die aktive Datei dem Glob entspricht |
 
 ## Beispielregel
 
@@ -46,9 +47,7 @@ alwaysApply: false
 
 ## Regeln auf Harnesses anwenden
 
-Nachdem du eine Regel geschrieben hast, aktualisiere jeden installierten
-Harness-Adapter. Führe `apothem harnesses list` aus, um den installierten Satz
-zu sehen, und rufe dann update einmal pro Harness auf:
+Nachdem du eine Regel geschrieben hast, aktualisiere jeden installierten Harness-Adapter. Führe `apothem harnesses list` aus, um den installierten Satz zu sehen, und rufe dann update einmal pro Harness auf:
 
 ```bash
 apothem update --harness claude-code

@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Audita frente a presupuestos de rendimiento por clase (Core Web Vitals, método USE)."
+description: "/perf-audit — Audita frente a presupuestos de rendimiento por clase (tiempo de ejecución de hooks, verify-ecosystem, puerta de conformidad, pruebas, trabajadores delegados, shell, lint), con el método USE."
 machineTranslated: true
-sourceHash: "f4a428086264b0eb"
+sourceHash: "d614c1ffe9d5a42e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Auditor de rendimiento
 **Posición en el pipeline:** fortaleza
 
-Audita frente a presupuestos de rendimiento por clase (Core Web Vitals, método USE).
+Audita frente a presupuestos de rendimiento por clase (tiempo de ejecución de hooks, verify-ecosystem, puerta de conformidad, pruebas, trabajadores delegados, shell, lint), con el método USE.
 
 ## Invocación canónica
 
@@ -20,16 +20,16 @@ Audita frente a presupuestos de rendimiento por clase (Core Web Vitals, método 
 Con argumentos:
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## Entradas
 
-Repositorio anfitrión en cualquier estado de su ciclo de vida
+Repositorio anfitrión que contiene `hooks/`, `src/apothem/benchmarks/`, `tests/` y los stubs de arranque de hooks `hooks/lib/bootstrap.{sh,ps1}`
 
 ## Salidas
 
-Hallazgos de rendimiento + REPORT.md
+Hallazgos de rendimiento en `_inputs/perf-audit-findings.md`
 
 ## Aguas abajo
 
@@ -37,22 +37,14 @@ La etapa de auditoría de rendimiento de la Secuencia de Revisión de Auditoría
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
-
-1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
-2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
-3. **Ejecutar tareas** — Cumple la misión del comando.
-4. **Verificar salidas** — Confirma que todas las salidas declaradas existen y pasan las compuertas de calidad.
-5. **Actualizar PROGRESS.md** — Registra las salidas verificadas en el Registro de Salidas de Fase.
-6. **Emitir REPORT.md** — Queda registrada la prueba de liberación de la compuerta de pre-emisión.
+El comando ejecuta cinco fases de auditoría: ingesta de entradas, descubrimiento de presupuestos por clase, ejecución de benchmarks, identificación de rutas críticas mediante el método USE y emisión de hallazgos con la puerta de validación.
 
 ## Modos de fallo
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
-| Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
-| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
+| Falta un archivo de entrada | El repositorio no tiene `src/apothem/benchmarks/` | Añade los controladores de benchmarks y vuelve a ejecutar; el comando se niega hasta que existan |
 
 ## Ejemplos
 
@@ -60,8 +52,8 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## Referencias cruzadas

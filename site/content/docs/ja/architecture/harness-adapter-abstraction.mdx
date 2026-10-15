@@ -2,7 +2,7 @@
 title: "ハーネスアダプターの抽象化"
 description: "HarnessAdapter プロトコル — Apothem のアダプターが共有プロファイルをどのように変換するか。"
 machineTranslated: true
-sourceHash: "bf8b17806fd4c2c6"
+sourceHash: "3e2bf8f9744fc759"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,31 +20,36 @@ Apothem 所有のサポートパスを使用します。
 その前提をコアに漏れ出させてしまい、ハーネスを 1 つ追加するたびに、インストール・更新・
 アンインストール・検証のロジックを足並みをそろえて変更しなければならなくなります。
 
-アダプターパターンはそれを反転させます。コアは `HarnessAdapter`
-プロトコル — ライフサイクルメソッドからなる小さな契約 — だけを知っています。各ハーネスの方言は、
-その契約を実装する 1 つの自己完結したサブパッケージの内部に住みます。コアはアダプターに
+アダプターパターンは、その構図を反転させます。コアが知っているのは `HarnessAdapter`
+プロトコル（ライフサイクルメソッドからなる小さな契約）だけです。各ハーネスの方言は、
+その契約を実装する 1 つの自己完結したサブパッケージの内部に収まります。コアはアダプターに
 *インストール*するよう求めますが、それが JSON
 ファイルのレンダリングを意味するのか、ルールディレクトリの書き込みを意味するのか、
-サポートツリーの敷設を意味するのかを知りません。新しいハーネスは
-プロトコルを満たしてエントリーポイントを登録することで加わります。コアには何の変更も要りません。
-これこそ Apothem が
-ホスト非依存であり続ける構造的な理由です — その抽象化こそが、ハーネス固有の知識が
-広がるのを食い止める境界なのです。
+サポートツリーの敷設を意味するのかを知りません。新しいハーネスは、プロトコルを満たし、
+`src/apothem/lib/harness_registry_data.py` に `HARNESS_REGISTRY` のエントリーを追加し
+（そこで `SUPPORTED_HARNESS_COUNT` を更新し）、`pyproject.toml` の `apothem.harnesses`
+エントリーポイントに同じものを反映させ、`src/apothem/schemas/profile.schema.json` の
+`harnessId` 列挙に ID を加えることで参加します。
+これこそ Apothem がホスト非依存であり続ける構造的な理由です。この抽象化は、
+ハーネス固有の知識が広がるのを食い止める境界なのです。
 
 ## アダプターの形
 
 アダプターは 2 つの物質化形態に分かれ、どちらもレジストリで確認できます。
 
 - **単一ファイルレンダラー**は、プロファイルのフィールドを 1 つのハーネスネイティブな
-  設定ファイルへ変換します。たとえば Claude Code アダプターは、共有プロファイルから常に
-  `~/.claude/settings.json` を書き出し、Apothem
-  の規約ディレクトリ（`agents/`、`rules/`、`skills/`、…）をその隣に平坦化して配置します。
-- **ルール面およびサポートツリーアダプター**は、Apothem のペイロード
-  cohort を、そのハーネスがドキュメント化したルール位置へ伝播させ、ネイティブ形式が存在する場合は
-  cohort をその形式へ変換し、残りはネイティブアンカーから参照される
-  Apothem 所有のサポートサブツリーの下に置きます。Cursor
-  アダプターは、与えられたプロジェクトルートへ単一の `.cursor/rules/apothem-rules.mdc`
-  を書き込み、ルール面のみを提供します。
+  設定ファイルへ変換します。たとえば OpenCode アダプターは、マテリアライザーを通じて、
+  共有プロファイルからネイティブの設定ファイルをレンダリングします。
+- **ルール面およびサポートツリーのアダプター**は、Apothem のペイロードのコホートを、
+  そのハーネスがドキュメント化しているルールの配置先へ伝播させます。ネイティブ形式が
+  存在するコホートはその形式へ変換し、残りはネイティブアンカーから参照される
+  Apothem 所有のサポートサブツリーの下に置きます。Cursor アダプターは、指定された
+  プロジェクトルートに単一の `.cursor/rules/apothem-rules.mdc` を書き込み、ルール面のみを
+  提供します。Claude Code アダプターは、プロファイルから `settings.json` をレンダリングしません。
+  同梱の設定テンプレートを、フックインタープリターを埋めた状態で `~/.claude/settings.json` に
+  コピーし、その隣に Apothem の規約ディレクトリ（`agents/`、`rules/`、`skills/`、…）を
+  平坦化して配置し、プロファイルをセンチネルで区切られた管理ブロックとして `CLAUDE.md` に
+  書き込みます。
 
 ある特定のアダプターは、**ユーザースコープ**（ホームディレクトリの下に書き込む）か、
 **プロジェクトスコープ**（`--project <path>` を要求し、そのツリー内部に書き込む）のいずれかで、
@@ -69,7 +74,7 @@ flowchart TD
     AL --> WS["windsurf adapter<br/>(project scope)"]
     AL --> ETC["… 12 more registered adapters<br/>(antigravity, gemini-cli, glm, hermes,<br/>kimi-code, open-claw, opencode, qwen-code,<br/>codebuddy, kiro, trae, zed)"]
 
-    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(single-file render)"]
+    CC --> CCN["~/.claude/settings.json<br/>+ flattened convention dirs<br/>(template copy)"]
     CX --> CXN["~/.codex/AGENTS.md + hooks.json<br/>+ converted TOML agents<br/>(render + support tree)"]
     CU --> CUN["&lt;project&gt;/.cursor/rules/apothem-rules.mdc<br/>(rules surface)"]
     CO --> CON["&lt;project&gt;/.github/copilot-instructions.md<br/>(rules surface)"]

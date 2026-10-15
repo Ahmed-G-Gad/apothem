@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate — Genera una Suite de Plan Maestra completa a partir del `_spec/spec.md` redactado."
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Con argumentos:
 
 ## Entradas
 
-El `_spec/spec.md` redactado + `_inputs/handoff-manifest.yml` de `/plan-spec` (o prosa proporcionada por el operador).
+El `_spec/spec.md` redactado + `_inputs/handoff-manifest.yml` de `/plan-spec` (la prosa sola se rechaza: ejecuta `/plan-spec` para redactar `_spec/spec.md`; `--override` omite la puerta y registra un hallazgo en PLAN-NOTES.md).
 
 ## Salidas
 
@@ -33,7 +33,7 @@ El `_spec/spec.md` redactado + `_inputs/handoff-manifest.yml` de `/plan-spec` (o
 
 ## Aguas abajo
 
-/plan-review o /plan-execute (aguas abajo)
+/plan-review (aguas abajo); `/plan-execute` solo después de que existan las tarjetas de puntuación de revisión (o con `--override`)
 
 ## Fases del flujo de trabajo
 

@@ -2,7 +2,7 @@
 title: "委托架构"
 description: "Apothem 如何将单一的委托能力集合投射到十七个具有不同钩子表面与规则格式的 AI 工具之上。"
 machineTranslated: true
-sourceHash: "5ef9a38bd5d1cdff"
+sourceHash: "a0655f91d2726ce9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,11 +31,11 @@ Apothem 读取一份共享配置档案（`~/.config/apothem/profile.yaml`），�
 | codebuddy | 无 | `.codebuddy/rules/apothem-rules.md` 项目规则文件 | I 类 | 无 |
 | codex | 原生 `hooks.json` 生命周期钩子 | `AGENTS.md` 加由已安装技能引用的支持规则 | I 类 | 无 |
 | cursor | 无 | `.mdc` 工作区规则（MDC 前置元数据：`description` / `globs` / `alwaysApply`） | I 类 | 无 |
-| gemini-cli | 无 | 嵌入单一 `GEMINI.md` 的规则 | I 类 | 无 |
+| gemini-cli | 仅支持材料 | 嵌入单一 `GEMINI.md` 的规则 | I 类 | 无 |
 | github-copilot | 无（IDE 扩展，无工具调用钩子） | `.github/copilot-instructions.md` 中的规则 | I 类 | 无 |
 | glm | 无（模型后端，无委托工具表面） | `.apothem/providers/glm.toml` 后端提供方配置（无规则集合） | I 类 | 无 |
 | hermes | 仅支持材料 | `config.yaml` 加外部技能目录 | II-B 类 | `config.yaml` |
-| kimi-code | 无 | `AGENTS.md` 加 `.kimi-code/.apothem/support/` 下的支持规则 | I 类 | 无 |
+| kimi-code | 仅支持材料 | `AGENTS.md` 加 `.kimi-code/.apothem/support/` 下的支持规则 | I 类 | 无 |
 | kiro | 无（Kiro 委托钩子不在适配器范围内） | `.kiro/steering/apothem-rules.md` 引导文件 | I 类 | 无 |
 | open-claw | 仅支持材料 | `openclaw.json` 加额外技能目录 | II-B 类 | `openclaw.json` |
 | opencode | 仅支持材料 | 配置档案渲染的 JSON 加原生命令、技能与委托 | II-B 类 | `opencode.json` |
@@ -47,24 +47,13 @@ Apothem 读取一份共享配置档案（`~/.config/apothem/profile.yaml`），�
 
 矩阵说明：
 
-- **claude-code** 是参考适配器。它承载原生 PreToolUse、PostToolUse、Stop
-  与 SessionStart 钩子，并附带厂商设置模板（`settings.json`）。它有意
-  不管理 `CLAUDE.md` —— 该文件属于操作者自有的领域。
-- **codex** 通过 `hooks.json` 安装原生生命周期钩子，将委托转换为 TOML，
-  把命令提示词封装为 Codex 技能，并将 `config.toml` 留给操作者自有。
-- **antigravity** 将 `~/.gemini/GEMINI.md` 保留为全局上下文锚点，并在
-  `~/.gemini/antigravity-cli/plugins/apothem/` 下安装一个 Apothem 插件。
-  在适配器掌握 Antigravity 钩子模式翻译之前，钩子文件作为支持材料保留。
-- **cursor** 通过承载厂商 MDC 前置元数据（`description`、`globs`、
-  `alwaysApply`）的 `.mdc` 文件激活规则；适配器不写入单文件
-  `.cursorrules`。
-- **windsurf** 使用 `.devin/rules/`；适配器不写入单文件
-  `.windsurfrules`。
-- **hermes** 与 **open-claw** 渲染原生配置文件，并通过每个工具
-  所记录的技能目录设置接入 Apothem 支持技能目录。不受支持的共享集合
-  保留在 Apothem 自有的支持子树下。
-- **qwen-code** 渲染所记录的 `settings.json` 键用于上下文与钩子分派，
-  然后使用 Qwen 原生的命令、技能与委托目录。
+- **claude-code** 是参考适配器。它承载原生的 PreToolUse、PostToolUse、Stop 与 SessionStart 钩子，并附带厂商设置模板。它向 `CLAUDE.md` 写入一个由哨兵界定的受管块，并保持哨兵之外的操作者散文不变。
+- **codex** 通过 `hooks.json` 安装原生生命周期钩子，将委托转换为 TOML，把命令提示词封装为 Codex 技能，并把 `config.toml` 留给操作者自有。
+- **antigravity** 将 `~/.gemini/GEMINI.md` 保留为全局上下文锚点，并在 `~/.gemini/antigravity-cli/plugins/apothem/` 下安装一个 Apothem 插件。在适配器掌握 Antigravity 钩子模式的翻译之前，钩子文件作为支持材料保留。
+- **cursor** 通过承载厂商 MDC 前置元数据（`description`、`globs`、`alwaysApply`）的 `.mdc` 文件激活规则；适配器不写入单文件 `.cursorrules`。
+- **windsurf** 使用 `.devin/rules/`；适配器不写入单文件 `.windsurfrules`。
+- **hermes** 与 **open-claw** 渲染原生配置文件，并通过每个工具所记录的技能目录设置接入 Apothem 支持技能目录。不受支持的共享集合保留在 Apothem 自有的支持子树下。
+- **qwen-code** 为上下文与钩子分派渲染所记录的 `settings.json` 键，然后使用 Qwen 原生的命令、技能与委托目录。
 
 ## 跨工具编排纪律
 
@@ -121,7 +110,7 @@ Apothem 依据适配器将共享配置档案翻译为工具原生输出的方式
 
 | 轴线 | 十七个工具中观察到的范围 |
 |------|---------------------------------------------|
-| 钩子表面 | 原生多事件（claude-code、codex、qwen-code）→ 仅支持钩子材料（antigravity、gemini-cli、hermes、open-claw、opencode）→ 无（codebuddy、cursor、github-copilot、glm、kimi-code、kiro、trae、windsurf、zed） |
+| 钩子表面 | 原生多事件（claude-code、codex、qwen-code）→ 仅支持钩子材料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ 无（codebuddy、cursor、github-copilot、glm、kiro、trae、windsurf、zed） |
 | 规则激活格式 | 扁平 `.md`（claude-code）→ 插件规则（antigravity）→ `.mdc` 工作区（cursor）→ 目录规则（codebuddy、trae、windsurf）→ 引导文件（kiro）→ 项目根扁平文件（zed）→ 单一嵌入文件（codex、gemini-cli、github-copilot、kimi-code）→ 配置引用的支持材料（hermes、open-claw、opencode、qwen-code）→ 后端提供方配置（glm） |
 | 适配器类 | I 类原始传播 → II-A 类原始 + 厂商设置 → II-B 类配置档案渲染单表面 |
 

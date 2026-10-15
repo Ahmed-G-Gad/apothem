@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Apothem-Harness-Adapter für Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,20 @@ sourceHash: "99cda84bf3fff83e"
 apothem install --harness claude-code
 ```
 
-Der `claude-code`-Adapter installiert den gemeinsamen Apothem-Korpus in den
-nativen Discovery-Baum von Claude Code. Markdown-Agenten, Regeln, Skills,
-Output-Styles und Einstellungen werden an ihren nativen Speicherorten
-installiert; Command-Prompts werden in Skills umgewandelt, damit
-wiederverwendbare Workflows über die aktuelle Skill-Oberfläche von Claude Code
-sichtbar bleiben. Der Statusline-Renderer wird nach `~/.claude/statuslines/`
-kopiert, aber nicht eingebunden: Claude Code liest seine Statuszeile aus der
-Einstellung `statusLine`, die der Adapter nicht setzt. Um sie einzuschalten,
-fügen Sie `settings.json` einen `statusLine`-Eintrag mit `"type": "command"`
-hinzu, der `~/.claude/statuslines/render.py` ausführt.
+Der `claude-code`-Adapter installiert den gemeinsamen Apothem-Korpus in den nativen
+Discovery-Baum von Claude Code. Markdown-definierte delegierte Worker, Regeln,
+Skills, Output-Styles und Einstellungen werden an ihren nativen Orten installiert;
+Command-Prompts werden in Skills umgewandelt, damit wiederverwendbare Workflows über
+die aktuelle Skill-Oberfläche von Claude Code sichtbar bleiben. Der
+Statusline-Renderer wird nach `~/.claude/statuslines/` kopiert, aber nicht
+eingebunden: Claude Code liest seine Statuszeile aus der Einstellung `statusLine`,
+die der Adapter nicht setzt. Um sie einzuschalten, ergänze in `settings.json` einen
+Eintrag `statusLine` mit `"type": "command"`, der `~/.claude/statuslines/render.py`
+ausführt. Der Wert `commandWindows` des Snippets läuft unter Windows und nennt den
+Interpreter ohne Anführungszeichen. Enthält der Interpreter-Pfad ein Leerzeichen,
+schreibt die Installation in diesen Wert die Windows-8.3-Kurzform, sofern das Volume
+eine besitzt. Die Hook-Einträge in `settings.json` behalten den vollständigen Pfad
+bei.
 
 **Geschriebene Dateien:** `settings.json`, der Apothem-Block in `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` sowie der Unterstützungs-Teilbaum `.apothem/support/`

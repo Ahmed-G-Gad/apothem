@@ -2,7 +2,7 @@
 title: "编写新的工具适配器"
 description: "编写并发布新的 Apothem 工具适配器的操作手册。"
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,5 +62,5 @@ python -m apothem.conformity.gate --all .
 - 适配器实现
 - 位于 `site/content/docs/harnesses/<slug>.mdx` 的文档页面
 - 测试
-- 在 `pyproject.toml` 中注册入口点
+- 在 `pyproject.toml` 中注册入口点，在 `src/apothem/lib/harness_registry_data.py` 中添加 `HARNESS_REGISTRY` 条目（并在那里递增 `SUPPORTED_HARNESS_COUNT`），以及将该 ID 加入 `src/apothem/schemas/profile.schema.json` 的 `harnessId` 枚举
 - 变更日志条目

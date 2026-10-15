@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — Audit kode forensik lintas-berkas pada skala korpus repositori."
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Audit kode forensik lintas-berkas pada skala korpus repositori.
 Dengan argumen:
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Masukan
 
-Repositori hos pada keadaan siklus-hidup mana pun
+Repositori host dengan tata letak sumber yang disetujui, baseline cakupan tes, dan (pada SHARED+) gerbang CI yang lulus
 
 ## Keluaran
 
-Temuan tingkat-korpus + REPORT.md
+Temuan tingkat-korpus di `_inputs/code-audit-findings.md`
 
 ## Hilir
 
@@ -37,22 +37,14 @@ Tahap audit kode forensik dari Urutan Audit Tinjauan
 
 ## Fase alur kerja
 
-Perintah ini mengikuti alur kerja pipeline `/plan` standar:
-
-1. **Muat konteks** — Membaca suite rencana, aturan, dan Kontrak Pelanjutan.
-2. **Verifikasi prasyarat** — Memastikan fase dependen telah selesai.
-3. **Jalankan tugas** — Menjalankan misi perintah.
-4. **Verifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lolos gerbang kualitas.
-5. **Perbarui PROGRESS.md** — Mencatat keluaran terverifikasi dalam Registri Keluaran Fase.
-6. **Keluarkan REPORT.md** — Bukti rilis gerbang pra-pengeluaran tercatat.
+Perintah ini menjalankan enam fase forensik: penyerapan masukan, penelusuran dependensi lintas-berkas, audit type-hint dan cakupan, deteksi kode mati dan duplikasi, audit integritas arsitektural, dan emisi temuan dengan gerbang validasi.
 
 ## Mode kegagalan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Prasyarat belum lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| Berkas masukan hilang | Berkas suite rencana tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+| Berkas masukan hilang | Belum ada eksekusi gerbang CI atau baseline cakupan tes pada SHARED+ | Jalankan pipeline CI host lebih dulu, lalu jalankan ulang |
 
 ## Contoh
 
@@ -60,8 +52,8 @@ Perintah ini mengikuti alur kerja pipeline `/plan` standar:
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Referensi silang

@@ -2,7 +2,7 @@
 title: "Keamanan"
 description: "Postur keamanan Apothem — target OpenSSF Scorecard, pelaporan kerentanan, permukaan pengerasan."
 machineTranslated: true
-sourceHash: "1bc24c695dbc976f"
+sourceHash: "0b4ba23080c1c9b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,31 +15,11 @@ menulis berkas konfigurasi native-harness ke dalam direktori yang dibaca oleh
 setiap harness. Fungsi tunggal itu membatasi apa yang dipercayainya dan apa
 yang tidak.
 
-- **Apa yang dipercayai Apothem.** Profil bersama yang Anda tulis dan pohon
-  sumber terbundel yang ditempatkan oleh pemasang. Profil adalah niat yang Anda
-  deklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah
-  validasi skema.
-- **Apa yang tidak dipercayai Apothem.** Isi profil mencapai sistem berkas
-  hanya setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur
-  proyek yang tidak aman, sumber manifest yang hilang, traversal target, dan
-  penyeberangan symlink semuanya berhenti sebelum penulisan apa pun dan
-  mengembalikan diagnostik terstruktur dengan `files_written: []`.
-- **Apa yang tidak pernah dibawa keluaran termaterialisasi.** Tidak ada
-  rahasia. Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai
-  berbentuk token sebelum mencapai keluaran teks polos, JSON, log, cuplikan
-  dokumentasi, atau pengujian, dan contoh publik menggunakan identitas dan
-  domain placeholder palsu. Konfigurasi termaterialisasi dimaksudkan untuk
-  di-commit dan dibagikan; konfigurasi itu tidak membawa kredensial.
-- **Lantai penolakan universal.** Aturan yang dimaterialisasi Apothem membawa
-  lantai penolakan yang tidak dapat ditawar terlepas dari daftar-izin
-  per-harness mana pun — jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan
-  kredensial), operasi shell destruktif (`rm -rf`, `sudo`, force-push ke
-  branch terproteksi), dan eksekusi masukan yang tidak tepercaya. Tidak ada
-  daftar-izin yang diam-diam memperluas lantai ini.
-- **Radius dampak.** Penulisan dibatasi pada direktori harness dan support
-  subtree milik Apothem. Target terkelola yang ada dicadangkan sebelum
-  penggantian dan direktori penemuan bersama digabungkan anak demi anak,
-  sehingga berkas tak terkait yang ditulis operator tetap di tempatnya.
+- **Apa yang dipercayai Apothem.** Profil bersama yang Anda tulis dan pohon sumber terbundel yang ditempatkan oleh pemasang. Profil adalah niat yang Anda deklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah validasi skema.
+- **Apa yang tidak dipercayai Apothem.** Isi profil mencapai sistem berkas hanya setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur proyek yang tidak aman, sumber manifest yang hilang, traversal target, dan penyeberangan symlink semuanya berhenti sebelum penulisan apa pun dan mengembalikan diagnostik terstruktur dengan `files_written: []`.
+- **Apa yang tidak pernah dibawa keluaran termaterialisasi.** Tidak ada rahasia. Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk token sebelum mencapai keluaran teks polos, JSON, log, cuplikan dokumentasi, atau pengujian, dan contoh publik menggunakan identitas dan domain placeholder palsu. Konfigurasi termaterialisasi dimaksudkan untuk di-commit dan dibagikan; konfigurasi itu tidak membawa kredensial.
+- **Lantai penolakan universal.** `settings.json` Claude Code yang dimaterialisasikan Apothem membawa lantai penolakan yang tidak dapat ditawar, terlepas dari daftar-izin per-harness mana pun; pada harness lain, lantai yang sama berupa teks kebijakan dalam aturan yang dimaterialisasikan, bukan daftar penolakan tingkat-pengaturan — mencakup jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan kredensial), operasi shell destruktif (`rm -rf`, `sudo`, force-push ke cabang terproteksi), dan eksekusi masukan yang tidak tepercaya. Tidak ada daftar-izin yang diam-diam memperluas lantai ini.
+- **Radius dampak.** Penulisan dibatasi pada direktori harness dan subpohon dukungan milik Apothem. Target terkelola yang ada dicadangkan sebelum penggantian dan direktori penemuan bersama digabungkan anak demi anak, sehingga berkas tak terkait yang ditulis operator tetap di tempatnya.
 
 ## Postur keselamatan runtime
 
@@ -64,16 +44,16 @@ placeholder palsu.
 
 - [**Postur OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — bukti per pemeriksaan dan batasan platform yang diketahui
 - [**Audit webhook**](/docs/security/webhooks-audit) — bukti higiene rahasia webhook
-- [**Proteksi branch**](/docs/security/branch-protection-ruleset) — persyaratan pull request, pemeriksaan status wajib, serta pemblokiran force-push dan penghapusan
-- [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti rilis nol-biner-di-sumber
+- [**Proteksi branch**](/docs/security/branch-protection-ruleset) — persyaratan pull request, pemeriksaan status yang diwajibkan, serta pemblokiran force-push dan penghapusan
+- [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti bahwa pohon sumber tidak memuat berkas biner
 - [Kebijakan keamanan](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — pelaporan kerentanan & versi yang didukung
-- [Lencana OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — skor aktual
+- [Lencana OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — skor langsung
 
 ## Melaporkan kerentanan
 
 Gunakan [Pelaporan Kerentanan Privat](https://github.com/ahmed-g-gad/apothem/security) pada tab Security repositori. Kebijakan lengkap, matriks versi yang didukung, dan lini masa respons ada di [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Bukti rilis rantai pasok
+## Bukti pendukung rilis rantai pasok
 
 Setiap artefak rilis disertai:
 

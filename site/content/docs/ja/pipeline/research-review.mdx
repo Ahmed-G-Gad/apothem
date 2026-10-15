@@ -2,7 +2,7 @@
 title: "/research-review"
 description: "/research-review — 論文に対する査読水準の対抗的批評：7軸のレビュアー記分カード（新規性、厳密性、再現性、明瞭性、倫理、統計レビュー、報告ガイドライン適合性）と、重大度で振り分けた必須修正リスト。"
 machineTranslated: true
-sourceHash: "2aafbd301812aded"
+sourceHash: "73915d388b353eda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "2aafbd301812aded"
 引数付き：
 
 ```bash
-/research-review [path/to/research-suite/]
+/research-review [--suite-name NAME]
 ```
 
 ## 入力
@@ -33,18 +33,18 @@ sourceHash: "2aafbd301812aded"
 
 ## 下流
 
-/research-publish（下流の消費者）。`major-revision` または `reject` の判定は、必須修正に対応するために改訂ループを `/research-paper` まで戻し、その後に再レビューする。
+/research-publish（下流の消費者）。`major-revision` または `reject` の判定は、`/research-publish` を実行する前に必須の修正に対応しなければならないことを意味します。
 
 ## ワークフローのフェーズ
 
 このコマンドは標準的な `/research` パイプラインのワークフローに従います：
 
-1. **コンテキストの読み込み** —— 論文成果物を読み込む。
-2. **シーケンスゲートの検証** —— 論文が存在することを確認する。存在しない場合は `Blocked: run /research-paper first` で停止する。
-3. **対抗的にレビュー** —— 7 つの軸（新規性 · 厳密性 · 再現性 · 明瞭性 · 倫理 · 統計レビュー · 報告ガイドライン適合性）を採点する。再現性の再実行と引用整合性監査を行う。デフォルトで反証。証拠とともに具体的な欠陥を特定する。
-4. **修正を振り分け** —— 必須修正を HIGH / MEDIUM / LOW に並べ、具体的な根拠の理由を付ける。
-5. **ハンドオフマニフェストの更新** —— レビューレポートと記分カードの判定を記録する。
-6. **レビューの発行** —— `_outputs/review-report.md`。
+1. **コンテキストの読み込み** — 論文の成果物を読み込みます。
+2. **シーケンスゲートの検証** — 論文、`_outputs/analysis.md`、`_inputs/synthesis.md` が存在し、空でないことを確認します。そうでない場合は、`Blocked: run /research-paper first` で停止します。
+3. **対抗的にレビュー** — 7 つの軸（新規性 · 厳密性 · 再現性 · 明瞭性 · 倫理 · 統計レビュー · 報告ガイドラインへの適合）を採点します。再現性の再実行と引用の整合性の監査を実行します。デフォルトで反証し、証拠とともに具体的な欠陥を特定します。
+4. **修正の振り分け** — 必須の修正を、具体的な根拠とともに HIGH / MEDIUM / LOW にランク付けします。
+5. **ハンドオフマニフェストの更新** — レビューレポートと、スコアカードの判定を記録します。
+6. **レビューの出力** — `_outputs/review-report.md`。
 
 ## 厳密性の下限
 
@@ -61,8 +61,8 @@ sourceHash: "2aafbd301812aded"
 ## 例
 
 ```bash
-# 論文を査読し、レビュアー記分カードを発行する
-/research-review path/to/research-suite/
+# 論文を査読し、レビュアーのスコアカードを出力する
+/research-review --suite-name <name>
 ```
 
 ## 相互参照

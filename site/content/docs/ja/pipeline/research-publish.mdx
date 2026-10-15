@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — 論文を投稿先のテンプレートに整形し、投稿パッケージ（補足資料、データ／コードの可用性、カバーレター、倫理／利益相反）を組み立て、プレプリント／DOI 計画を添えます。"
 machineTranslated: true
-sourceHash: "fbebb0df60083bca"
+sourceHash: "34e0993ca051136c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "fbebb0df60083bca"
 引数付き:
 
 ```bash
-/research-publish [path/to/research-suite/]
+/research-publish [--suite-name NAME]
 ```
 
 ## 入力
@@ -62,7 +62,7 @@ sourceHash: "fbebb0df60083bca"
 
 ```bash
 # 投稿先の投稿パッケージを組み立てる
-/research-publish path/to/research-suite/
+/research-publish --suite-name <name>
 ```
 
 ## 相互参照

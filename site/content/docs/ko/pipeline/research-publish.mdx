@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — 논문을 게재처 템플릿에 맞춰 서식화하고 제출 패키지(보충 자료, 데이터/코드 가용성, 커버 레터, 윤리/이해상충)를 조립하며, 프리프린트/DOI 계획을 포함합니다."
 machineTranslated: true
-sourceHash: "fbebb0df60083bca"
+sourceHash: "34e0993ca051136c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "fbebb0df60083bca"
 인수 사용:
 
 ```bash
-/research-publish [path/to/research-suite/]
+/research-publish [--suite-name NAME]
 ```
 
 ## 입력
@@ -61,8 +61,8 @@ sourceHash: "fbebb0df60083bca"
 ## 예시
 
 ```bash
-# 게재처 제출 패키지 조립
-/research-publish path/to/research-suite/
+# 게재처 제출 패키지를 조립합니다
+/research-publish --suite-name <name>
 ```
 
 ## 상호 참조

@@ -2,7 +2,7 @@
 title: "/architecture-review"
 description: "/architecture-review — `_inputs/design.md` के डिज़ाइन आर्टिफ़ैक्ट के विरुद्ध आर्किटेक्चरल-अखंडता समीक्षा।"
 machineTranslated: true
-sourceHash: "e17f69d6a67eaf55"
+sourceHash: "a325744421d3027b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "e17f69d6a67eaf55"
 तर्कों के साथ:
 
 ```bash
-/architecture-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/architecture-review [path/to/repo/] [--focus LAYER] [--dry-run]
 ```
 
 ## इनपुट
@@ -29,7 +29,7 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## आउटपुट
 
-आर्किटेक्चर निष्कर्ष + REPORT.md
+आर्किटेक्चर निष्कर्ष `_inputs/architecture-review-findings.md` पर
 
 ## अनुप्रवाह
 
@@ -37,22 +37,14 @@ sourceHash: "e17f69d6a67eaf55"
 
 ## वर्कफ़्लो फ़ेज़
 
-यह कमांड मानक `/plan` पाइपलाइन वर्कफ़्लो का पालन करता है:
-
-1. **संदर्भ लोड करें** — प्लान सूट, नियम और पुनरारंभ अनुबंध पढ़ें।
-2. **पूर्वापेक्षाएँ सत्यापित करें** — पुष्टि करें कि निर्भरता फ़ेज़ पूर्ण हैं।
-3. **टास्क निष्पादित करें** — कमांड के मिशन को पूरा करें।
-4. **आउटपुट सत्यापित करें** — पुष्टि करें कि सभी घोषित आउटपुट मौजूद हैं और गुणवत्ता गेट पास करते हैं।
-5. **PROGRESS.md अपडेट करें** — फ़ेज़ आउटपुट रजिस्ट्री में सत्यापित आउटपुट दर्ज करें।
-6. **REPORT.md उत्सर्जित करें** — पूर्व-उत्सर्जन गेट का रिलीज़ प्रमाण दर्ज किया जाता है।
+यह कमांड पाँच ऑडिट चरण चलाता है: इनपुट इनजेस्ट, डिज़ाइन-से-कोड ट्रेसेबिलिटी वॉक, लेयर-सीमा अखंडता ऑडिट, क्रॉस-पैकेज युग्मन स्वीप, और सत्यापन गेट के साथ निष्कर्ष उत्सर्जन।
 
 ## विफलता मोड
 
 | लक्षण | कारण | पुनर्प्राप्ति |
 |---------|-------|----------|
-| पूर्वापेक्षा अपूर्ण | निर्भर फ़ेज़ समाप्त नहीं हुआ | पहले अपस्ट्रीम फ़ेज़ पूरा करें |
 | गुणवत्ता गेट FAIL | आउटपुट मानकों पर खरा नहीं उतरता | आउटपुट ठीक करें और पुनः चलाएँ |
-| इनपुट फ़ाइल अनुपस्थित | प्लान सूट फ़ाइल नदारद | इसे बनाने के लिए `/plan-generate` चलाएँ |
+| इनपुट फ़ाइल अनुपस्थित | डिज़ाइन आर्टिफ़ैक्ट `_inputs/design.md` नहीं है | इसे बनाने के लिए `/plan-design` चलाएँ |
 
 ## उदाहरण
 
@@ -60,8 +52,8 @@ sourceHash: "e17f69d6a67eaf55"
 # Dry-run to preview what would happen
 /architecture-review --dry-run
 
-# Execute against a named plan suite
-/architecture-review path/to/plan-suite/
+# Execute against a repository root
+/architecture-review path/to/repo/
 ```
 
 ## क्रॉस-संदर्भ

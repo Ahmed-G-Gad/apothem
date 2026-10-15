@@ -2,7 +2,7 @@
 title: "Diagramme du pipeline CI/CD"
 description: "Carte visuelle et décomposition par couloirs des étapes du flux de travail de build, de test, de lint, de sécurité et de publication qui contrôlent chaque changement de code et chaque publication."
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,8 +35,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -46,15 +46,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -78,26 +79,29 @@ flowchart LR
   [Conventions Markdown](/docs/reference/markdown-conventions)).
 - **Couloir de tests** — `pytest tests/hooks` exerce le runtime des hooks contre
   la matrice complète d'événements ; `validate_ecosystem.py` est la principale
-  porte structurelle pour la cohérence inter-artefacts ; `chaos_pass.py` et la
-  suite de benchmarks par classe sous `src/apothem/benchmarks/` s'activent sur le
-  couloir de publication pour détecter la dégradation sous des entrées dégradées
-  et les régressions du budget d'exécution.
+  porte structurelle pour la cohérence inter-artefacts ; `chaos_pass.py` s'exécute
+  dans le job qualité de la CI, sur les push et pull requests vers `main`
+  (filtrés par chemin), pour détecter la dégradation sous des entrées dégradées.
+  La suite de benchmarks par classe sous `src/apothem/benchmarks/` ne s'exécute
+  dans aucun flux de travail CI.
 - **Couloir de sécurité** — l'analyse de secrets repère les identifiants commités
   par accident ; la génération de SBOM et les audits de licence contrôlent la
-  surface de la chaîne d'approvisionnement pour toute installation de préparation
-  à la production.
-- **Couloir de publication** — ne s'exécute que sur les publications étiquetées.
-  La vérification de l'étiquette signée confirme la provenance de la branche de
-  publication ; le site web du projet est publié depuis `site/dist/` vers la
-  cible GitHub Pages ; les notes de publication dérivent du format
-  Keep-A-Changelog de `CHANGELOG.md`.
+  surface de la chaîne d'approvisionnement pour toute installation de
+  préparation à la production.
+- **Couloir de publication** — les flux de travail de publication sont déclenchés
+  par les push de tags ; les publieurs npm et VS Code peuvent aussi être relancés
+  manuellement pour une étiquette existante. La vérification de l'étiquette
+  signée confirme la provenance de la branche de publication ; les notes de
+  publication dérivent du format Keep-A-Changelog de `CHANGELOG.md`. Le site web
+  du projet se publie depuis `site/dist/` vers la cible GitHub Pages lors des
+  push sur `main` qui touchent à ses entrées de compilation, ou sur
+  déclenchement manuel.
 
 ## Configuration concrète
 
 Les fichiers de flux de travail réels (`.github/workflows/ci.yml`,
-`.github/workflows/release.yml`, etc.) s'installent lors de la construction de
-l'écosystème de préparation à la production. Ce diagramme définit la forme
-canonique que toute configuration future reflète.
+`.github/workflows/release.yml`, etc.) se trouvent dans le dépôt. Ce diagramme
+définit la forme canonique que toute configuration future reflète.
 
 ## Références croisées faisant autorité
 

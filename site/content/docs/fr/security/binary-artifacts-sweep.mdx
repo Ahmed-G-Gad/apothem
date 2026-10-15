@@ -2,7 +2,7 @@
 title: "Balayage des artefacts binaires"
 description: "Balayage des artefacts binaires d'Apothem — zéro binaire compilé / empaqueté suivi dans le code source. Preuve pour la vérification Binary-Artifacts d'OpenSSF Scorecard."
 machineTranslated: true
-sourceHash: "272228f3b58562c2"
+sourceHash: "c3d3f348646dcbd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Le balayage énumère les types de fichiers que Scorecard considère comme binai
 
 Deux classes restreintes d'artefacts binaires SONT autorisées dans le code source :
 
-1. **Ressources de marque** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Elles sont **régénérables de façon déterministe** à partir des maîtres SVG situés dans `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard les considère comme légitimes au titre de son exemption `image/png`.
+1. **Ressources de marque** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Elles sont **régénérables de façon déterministe** à partir des maîtres SVG situés dans `assets/src/` via `scripts/dev/rebuild-assets-resvg.py`. Scorecard les considère comme légitimes au titre de son exemption `image/png`.
 2. **Fichiers de police** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Fichiers de police empaquetés avec des licences documentées ; au titre de l'exemption `font/*` de Scorecard.
 
 Les deux classes sont documentées dans [`site/content/docs/brand/index.mdx`](/docs/brand) et leur provenance est consignée dans la recette de reconstruction des ressources.
@@ -38,8 +38,8 @@ Les deux classes sont documentées dans [`site/content/docs/brand/index.mdx`](/d
 ## Commande de vérification
 
 ```shell
-# Depuis la racine du dépôt apothem :
-git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+# From the apothem repository root:
+git ls-files | grep -E '\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
 ```
 
 Cette invocation devrait renvoyer **zéro ligne**. Un résultat non vide indique qu'un artefact binaire a été suivi dans le code source — un constat de gravité ÉLEVÉE qui bloque la prochaine publication.
@@ -48,7 +48,6 @@ Cette invocation devrait renvoyer **zéro ligne**. Un résultat non vide indique
 
 Le balayage fait partie de :
 
-- **CI par PR** — `.github/workflows/ci.yml` inclut une étape de grep des artefacts binaires.
 - **Point de contrôle par publication** — le runbook d'ingénierie de publication vérifie le balayage avant l'étiquetage.
 - **Exécution hebdomadaire de Scorecard** — le flux de travail OpenSSF Scorecard reconfirme que la vérification passe.
 

@@ -2,7 +2,7 @@
 title: "/code-review"
 description: "/code-review——横跨 src/、scripts/ 和 tools/ 的、由操作者驱动的逐文件代码质量审查扫查。"
 machineTranslated: true
-sourceHash: "395372bb80e8a223"
+sourceHash: "d99bac7d093b55c3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "395372bb80e8a223"
 带参数：
 
 ```bash
-/code-review [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-review [path/to/repo/] [--focus FILE_OR_DIR] [--dry-run]
 ```
 
 ## 输入
@@ -29,7 +29,7 @@ sourceHash: "395372bb80e8a223"
 
 ## 输出
 
-逐文件发现项 + REPORT.md 中的处置日志
+逐文件发现项位于 `_inputs/code-review-findings.md`
 
 ## 下游
 
@@ -37,22 +37,14 @@ sourceHash: "395372bb80e8a223"
 
 ## 工作流阶段
 
-该命令遵循标准的 `/plan` 流水线工作流：
-
-1. **加载上下文** — 读取计划套件、规则和恢复契约。
-2. **验证前置条件** — 确认依赖阶段已完成。
-3. **执行任务** — 履行命令使命。
-4. **验证输出** — 确认所有声明的输出存在并通过质量门。
-5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
-6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+该命令分为五个阶段：输入摄取、逐文件遍历、逐项分诊、发现项输出，以及校验门。
 
 ## 失败模式
 
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
-| 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
-| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
-| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+| 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
+| 缺失输入文件 | 仓库中不存在 `src/`、`scripts/` 或 `tools/` 中的任何一个 | 传入至少包含其中一个目录的仓库根目录 |
 
 ## 示例
 
@@ -60,8 +52,8 @@ sourceHash: "395372bb80e8a223"
 # Dry-run to preview what would happen
 /code-review --dry-run
 
-# Execute against a named plan suite
-/code-review path/to/plan-suite/
+# Execute against a repository root
+/code-review path/to/repo/
 ```
 
 ## 交叉引用

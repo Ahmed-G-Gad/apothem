@@ -2,7 +2,7 @@
 title: "Preguntas frecuentes"
 description: "Preguntas habituales sobre el propósito de Apothem, los entornos compatibles, la opcionalidad de la suite de plan, la personalización de reglas, los tipos de artefactos y las ubicaciones del estado del ecosistema."
 machineTranslated: true
-sourceHash: "6d1fe986929d524a"
+sourceHash: "39f28c46787a7498"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, y Zed
 ```
 
-El adaptador de Claude Code se materializa en `~/.claude/`; su despachador de hooks es neutral respecto al host:
-resuelve la raíz del ecosistema primero a partir de `$CLAUDE_PROJECT_DIR`, luego
-`$LLM_PROJECT_DIR`, y por último recurre a `$HOME/.claude`.
+El adaptador de Claude Code se materializa en `~/.claude/`; su despachador de hooks es neutral respecto al anfitrión: primero resuelve la raíz del ecosistema a partir de `$CLAUDE_PROJECT_DIR`, después de `$LLM_PROJECT_DIR`, luego prueba búsquedas relativas al script y al directorio de trabajo, y por último recurre a `$HOME/.claude`.
 
 ## ¿Necesito usar la canalización de la suite de plan?
 
@@ -40,9 +38,7 @@ cadena de herramientas de validación son útiles de forma independiente.
 
 ## ¿Cómo personalizo las reglas sin bifurcar el repositorio?
 
-Añade tu propio archivo de regla en `src/apothem/rules/<my-rule>.md`
-con el frontmatter canónico. El cargador de reglas recoge cada
-archivo que coincida con el patrón `src/apothem/rules/*.md`.
+Añade una cadena a la lista `rules:` en `~/.config/apothem/profile.yaml` y vuelve a ejecutar la instalación o la actualización. Los archivos de regla bajo `src/apothem/rules/` editan el árbol de código fuente empaquetado, que el instalador del archivo comprimido reemplaza cuando se ejecuta con `--yes`.
 
 ## ¿Cómo desactivo una regla temporalmente?
 
@@ -75,8 +71,8 @@ comprobaciones de CI pasen.
 ## ¿Dónde vive el estado del ecosistema?
 
 - El **estado de plan por suite** vive bajo `<project>/.apothem/plans/{suite}/`.
-- La **memoria por proyecto** vive bajo `projects/{hash}/memory/`.
-- La **memoria entre proyectos** vive bajo `memory/`.
+- La **memoria de Apothem** vive bajo `.apothem/memory/` dentro de la raíz de instalación (para Claude Code: `~/.claude/.apothem/memory/`; `~/.apothem/memory/` cuando `workspace.scope` es `user-home`; `<project>/.apothem/memory/` en las instalaciones con ámbito de proyecto). La propia memoria automática de Claude Code vive bajo la raíz de configuración del entorno, en `projects/{hash}/memory/` (para Claude Code: `~/.claude/projects/{hash}/memory/`).
+- La **memoria entre proyectos** vive bajo esa misma raíz de configuración del entorno, en `.apothem/memory/` (para Claude Code: `~/.claude/.apothem/memory/`).
 - El **scratch por sesión** vive bajo `<project>/.apothem/plans/{suite}/_inputs/`.
 
 ## ¿Puedo retomar un trabajo de larga duración en una nueva sesión o en otra máquina?

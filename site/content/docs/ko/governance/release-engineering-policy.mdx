@@ -2,7 +2,7 @@
 title: "릴리스 엔지니어링 정책"
 description: "버전 관리, 릴리스 태그 지정, 지원 중단 주기, 호환성을 깨는 변경, 롤백 절차에 관한 다섯 가지 표준 정책입니다."
 machineTranslated: true
-sourceHash: "b030ea8b958faa67"
+sourceHash: "6265d8a001812a5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,22 +31,15 @@ GitHub Release 페이지를 게시합니다.
 
 태그 규칙:
 
-- **형식** — 정확히 `vMAJOR.MINOR.PATCH`입니다. `release-` 접두사도,
-  `-final` 접미사도 없습니다.
-- **주석** — 모든 태그는 주석 태그(`git tag -a -s`)이며,
-  태그 메시지에 릴리스 노트 요약을 담습니다.
-- **서명** — 모든 태그는 GPG로 서명됩니다. 릴리스 워크플로는
-  추가로 각 아티팩트에 대한 Sigstore 키리스 cosign 서명과
-  SLSA-3 출처 릴리스 증명을 생성하며, 둘 다
-  GitHub Release 페이지에 첨부됩니다.
+- **형식** — 정확히 `vMAJOR.MINOR.PATCH`입니다. `release-` 접두사도 `-final` 접미사도 없습니다.
+- **주석** — 모든 태그는 주석 태그(`git tag -a -s`)이며, 태그 메시지에 릴리스 노트 요약을 담습니다.
+- **서명** — 모든 태그는 GPG로 서명됩니다. 릴리스 워크플로는 추가로 각 아티팩트에 대한 Sigstore 키리스 cosign 서명과 SLSA-3 출처 기록을 생성하며, 둘 다 GitHub Release 페이지에 첨부됩니다.
 
 ### 릴리스 모델: 추가형
 
 릴리스는 추가형입니다. 각 릴리스는 `main`에 커밋 하나와 태그 하나를
 추가합니다. `main`은 절대 강제 푸시되지 않으며, 게시된 태그, GitHub Release,
-npm 버전은 어느 것도 삭제되거나, 이동되거나, 재사용되지 않습니다. 프로젝트에는
-세 개의 릴리스가 있으며, 각 릴리스는 자체 태그, 자체 GitHub Release, 자체 npm
-버전을 가지고, 세 릴리스 모두 게시된 상태로 남습니다. npm 버전은 변경할 수
+npm 버전은 어느 것도 삭제되거나, 이동되거나, 재사용되지 않습니다. 각 릴리스는 자체 태그, 자체 GitHub Release, 자체 npm 버전을 유지하며, 모든 릴리스가 게시된 상태로 남습니다. npm 버전은 변경할 수
 없습니다. 게시된 `name@version`은 절대 교체할 수 없으며, 게시가 취소된 번호는
 절대 다시 사용할 수 없습니다. 고정된 설치와 재현 가능한 빌드는 게시된 모든
 태그에 의존합니다. [릴리스 주기](/docs/runbooks/release-cycle) 런북과

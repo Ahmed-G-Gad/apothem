@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "5f0a7e3183712b33"
+sourceHash: "7bdb8c8995e9fbe3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,7 +12,7 @@ sourceHash: "5f0a7e3183712b33"
 
 リリースモデルは**追加型**です。
 各リリースは `main` に 1 つのコミットと、署名付きの注釈付き `vX.Y.Z` タグを 1 つ追加します。何も強制プッシュされず、以前のタグ、GitHub Release、npm バージョンが削除されることもありません。
-プロジェクトには 3 つのリリースがあり、それぞれにタグ、GitHub Release、npm バージョンがあり、すべて公開されたままです。npm のバージョンは不変であり（公開済みの `name@version` は決して置き換えられません）、ピン留めされたインストールはタグに依存しています。
+各リリースはそれぞれのタグ、GitHub Release、npm バージョンを保持し、すべて公開されたままです。npm のバージョンは不変であり（公開済みの `name@version` は決して置き換えられません）、ピン留めされたインストールはタグに依存しています。
 
 タグのプッシュは 2 つのワークフローを開始します。
 `.github/workflows/release.yml` は、GitHub Release を完全な成果物セット（sdist、wheel、CycloneDX SBOM、Sigstore cosign バンドル、SLSA-3 来歴、プラットフォームランタイムアーカイブ）とともにビルド、署名、構成証明、公開します。
@@ -75,7 +75,6 @@ python scripts/release/bump_version.py X.Y.Z
   qwen-extension.json
   .claude-plugin/marketplace.json   (top level and metadata)
   plugins/apothem/.codex-plugin/plugin.json
-  src/apothem/harnesses/antigravity/templates/plugin.json
   CITATION.cff
   ```
 
@@ -205,6 +204,8 @@ apothem --version
 ```
 
 期待される出力: `Apothem, version X.Y.Z`。
+
+ランチャーは `~/.local/bin` に書き込まれます。上記の確認を実行するには、このディレクトリが `PATH` に含まれている必要があります。そのディレクトリが `PATH` にない場合、インストーラーは追加すべき `export PATH` の行を表示します。
 
 ### 5.4 ワンショットスクリプトインストーラー（Windows）
 

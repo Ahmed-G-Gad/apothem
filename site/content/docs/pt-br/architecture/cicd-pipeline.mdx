@@ -2,7 +2,7 @@
 title: "Diagrama do pipeline de CI/CD"
 description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada lançamento."
 machineTranslated: true
-sourceHash: "64009cf19f38f8d7"
+sourceHash: "42620c7c2fb8ec8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,8 +35,8 @@ flowchart LR
     subgraph Test["Test lane"]
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
-        CHAOS["chaos_pass.py (release lane)"]
-        BENCH["src/apothem/benchmarks/ (release lane)"]
+        CHAOS["chaos_pass.py (CI quality job)"]
+        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
@@ -46,15 +46,16 @@ flowchart LR
     subgraph Publish["Publish lane (tags only)"]
         SIGN["Signed-tag verification"]
         ATTEST["Provenance attestation"]
-        DOCS["Project website publish"]
         RELEASE["Release notes from CHANGELOG.md"]
     end
+    DOCS["Project website publish"]
     PR --> Static
     PR --> Test
     PR --> Security
     PUSH --> Static
     PUSH --> Test
     PUSH --> Security
+    PUSH --> DOCS
     TAG --> Static
     TAG --> Test
     TAG --> Security
@@ -69,35 +70,35 @@ flowchart LR
 
 ## Papéis das faixas
 
-- **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo Python e
-  um conjunto curado de regras; o mypy impõe disciplina de tipos no modo strict;
-  o validador de frontmatter controla a conformidade com o schema dos artefatos
-  para regras, skills, trabalhadores delegados e comandos. O markdownlint não
-  faz parte desta faixa: ele roda apenas como hook de pre-commit, e o CI não o
-  executa (consulte
+- **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo do Python e
+  um conjunto curado de regras; o mypy impõe disciplina de tipos no modo strict; o
+  validador de frontmatter controla a conformidade dos artefatos com o schema para
+  regras, skills, trabalhadores delegados e comandos. O markdownlint não faz parte
+  desta faixa: ele roda apenas como hook de pre-commit, e o CI não o executa (consulte
   [Convenções de Markdown](/docs/reference/markdown-conventions)).
 - **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra a
-  matriz completa de eventos; `validate_ecosystem.py` é o principal portão
-  estrutural para a consistência entre artefatos; `chaos_pass.py` e a suíte de
-  benchmarks por classe sob `src/apothem/benchmarks/` ativam-se na faixa de
-  lançamento para detectar degradação sob entradas degradadas e regressões do
-  orçamento de runtime.
-- **Faixa de segurança** — a varredura de segredos detecta credenciais incluídas
-  em commits por acidente; a geração de SBOM e as auditorias de licença
-  controlam a superfície da cadeia de suprimentos em qualquer instalação de
-  prontidão para produção.
-- **Faixa de publicação** — roda apenas em lançamentos marcados com tag. A
-  verificação de tag assinada confirma a procedência da branch de lançamento; o
-  site do projeto é publicado a partir de `site/dist/` no destino do GitHub
-  Pages; as notas de lançamento derivam do formato Keep-A-Changelog do
-  `CHANGELOG.md`.
+  matriz completa de eventos; `validate_ecosystem.py` é o principal portão estrutural
+  para a consistência entre artefatos; `chaos_pass.py` roda no job de qualidade do CI
+  em pushes e pull requests para `main` (com filtro de caminho), para detectar
+  degradação sob entradas degradadas. O conjunto de benchmarks por classe em
+  `src/apothem/benchmarks/` não roda em nenhum fluxo de trabalho do CI.
+- **Faixa de segurança** — a varredura de segredos detecta credenciais incluídas em
+  commits por acidente; a geração de SBOM e as auditorias de licença controlam a
+  superfície da cadeia de suprimentos em qualquer instalação voltada à prontidão para
+  produção.
+- **Faixa de publicação** — os fluxos de trabalho de lançamento são disparados por
+  pushes de tags; os publicadores do npm e da extensão do VS Code também podem ser
+  reexecutados por disparo manual para uma tag existente. A verificação de tag assinada
+  confirma a procedência da branch de lançamento; as notas de lançamento derivam do
+  `CHANGELOG.md` no formato Keep-A-Changelog. O site do projeto é publicado a partir de
+  `site/dist/` no destino do GitHub Pages em pushes para `main` que alterem seus insumos
+  de build, ou por disparo manual.
 
 ## Configuração concreta
 
 Os arquivos de fluxo de trabalho reais (`.github/workflows/ci.yml`,
-`.github/workflows/release.yml`, etc.) são instalados durante a construção do
-ecossistema de prontidão para produção. Este diagrama define a forma canônica que
-toda configuração futura espelha.
+`.github/workflows/release.yml`, etc.) estão no repositório. Este diagrama define a
+forma canônica que toda configuração futura espelha.
 
 ## Referências cruzadas autoritativas
 

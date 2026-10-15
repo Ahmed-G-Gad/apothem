@@ -2,7 +2,7 @@
 title: "Postura agnóstica de host"
 description: "Como o Apothem alcança uma postura agnóstica de host via o perfil compartilhado e os adaptadores de ferramenta."
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,7 +83,8 @@ o núcleo. A divergência é estruturalmente impossível.
 
 ## Garantias de portabilidade
 
-Comandos e auxiliares marcados como `portability: universal` são garantidamente
-traduzíveis para cada harness suportado. Comandos e auxiliares marcados como
-`portability: project-specific` podem exigir documentação de override por harness no
-corpo do arquivo.
+Comandos e auxiliares marcados como `portability: universal` são traduzidos para cada
+harness cuja entrada no registro suporta uma superfície de comandos (convertida ou em
+subárvore de suporte); harnesses sem uma não recebem comandos. O motor não avalia o
+marcador. Comandos e auxiliares marcados como `portability: project-specific` podem
+exigir documentação de override por harness no corpo do arquivo.

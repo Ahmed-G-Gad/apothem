@@ -2,7 +2,7 @@
 title: "Segurança"
 description: "Postura de segurança do Apothem — meta no OpenSSF Scorecard, reporte de vulnerabilidades, superfícies de endurecimento."
 machineTranslated: true
-sourceHash: "1bc24c695dbc976f"
+sourceHash: "0b4ba23080c1c9b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,32 +15,11 @@ grava arquivos de configuração nativos de cada harness nos diretórios que cad
 harness lê. Essa função única delimita aquilo em que ele confia e aquilo em que
 não confia.
 
-- **Em que o Apothem confia.** No perfil compartilhado que você redige e na
-  árvore de código-fonte empacotada posicionada pelo instalador. O perfil é a
-  sua intenção declarada; o motor o trata como entrada autoritativa após a
-  validação de schema.
-- **Em que o Apothem não confia.** O conteúdo do perfil chega ao sistema de
-  arquivos somente após a validação: falhas de schema, IDs de harness
-  desconhecidos, caminhos de projeto inseguros, fontes de manifesto ausentes,
-  travessia de alvo e cruzamentos de links simbólicos param todos antes de
-  qualquer gravação e retornam diagnósticos estruturados com `files_written: []`.
-- **O que a saída materializada nunca carrega.** Nenhum segredo. Os diagnósticos
-  do perfil ocultam chaves com aparência de segredo e valores com formato de
-  token antes que cheguem à saída em texto simples, ao JSON, aos logs, aos
-  trechos de documentação ou aos testes, e os exemplos públicos usam identidades
-  e domínios fictícios de exemplo. A configuração materializada destina-se a ser
-  incluída em commits e compartilhada; ela não carrega credenciais.
-- **O piso de negação universal.** As regras que o Apothem materializa carregam
-  um piso de negação inegociável, independentemente de qualquer lista de
-  permissões por harness — caminhos de segredos (`.env*`, `~/.ssh/**`,
-  armazenamentos de credenciais), operações de shell destrutivas (`rm -rf`,
-  `sudo`, force-pushes para branches protegidas) e execução de entradas não
-  confiáveis. Nenhuma lista de permissões amplia silenciosamente esse piso.
-- **Raio de impacto.** As gravações ficam limitadas aos diretórios dos harnesses
-  e às subárvores de suporte de propriedade do Apothem. Os alvos gerenciados
-  existentes recebem backup antes da substituição, e os diretórios de descoberta
-  compartilhados são mesclados filho por filho, de modo que arquivos não
-  relacionados criados pelo operador permanecem no lugar.
+- **Em que o Apothem confia.** O perfil compartilhado que você redige e a árvore de código-fonte empacotada posta pelo instalador. O perfil é a sua intenção declarada; o motor o trata como entrada autoritativa após a validação de schema.
+- **Em que o Apothem não confia.** O conteúdo do perfil chega ao sistema de arquivos somente após a validação: falhas de schema, IDs de harness desconhecidos, caminhos de projeto inseguros, fontes de manifesto ausentes, travessia de alvo e cruzamentos de links simbólicos param todos antes de qualquer gravação e retornam diagnósticos estruturados com `files_written: []`.
+- **O que a saída materializada nunca carrega.** Nenhum segredo. Os diagnósticos do perfil ocultam chaves com aparência de segredo e valores com formato de token antes que cheguem à saída em texto simples, ao JSON, aos logs, aos trechos de documentação ou aos testes, e os exemplos públicos usam identidades e domínios fictícios. A configuração materializada deve ser incluída em commits e compartilhada; ela não carrega credenciais.
+- **O piso de negação universal.** O `settings.json` do Claude Code que o Apothem materializa carrega um piso de negação inegociável, independentemente de qualquer lista de permissões por harness; nos demais harnesses, o mesmo piso é texto de política nas regras materializadas, e não uma lista de negação no nível de configurações — caminhos de segredos (`.env*`, `~/.ssh/**`, armazenamentos de credenciais), operações de shell destrutivas (`rm -rf`, `sudo`, force-pushes para branches protegidas) e execução de entrada não confiável. Nenhuma lista de permissões amplia silenciosamente esse piso.
+- **Raio de impacto.** As gravações ficam limitadas aos diretórios dos harnesses e às subárvores de suporte de propriedade do Apothem. Os alvos gerenciados existentes recebem backup antes da substituição, e os diretórios de descoberta compartilhados são mesclados filho a filho, de modo que arquivos não relacionados criados pelo operador permanecem no lugar.
 
 ## Postura de segurança em tempo de execução
 
@@ -65,9 +44,9 @@ identidades e domínios fictícios de exemplo.
 ## Links rápidos
 
 - [**Postura do OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — evidência por verificação e limites conhecidos da plataforma
-- [**Auditoria de webhooks**](/docs/security/webhooks-audit) — evidência de higiene dos segredos de webhook
-- [**Proteção de branches**](/docs/security/branch-protection-ruleset) — exigência de pull request, verificações de status obrigatórias e bloqueios de force-push e de exclusão
-- [**Varredura de artefatos binários**](/docs/security/binary-artifacts-sweep) — prova de lançamento sem binários no código-fonte
+- [**Auditoria de webhooks**](/docs/security/webhooks-audit) — evidência de higiene de segredos de webhook
+- [**Proteção de branch**](/docs/security/branch-protection-ruleset) — exigência de pull request, verificações de status obrigatórias e bloqueios de force-push e de exclusão
+- [**Varredura de artefatos binários**](/docs/security/binary-artifacts-sweep) — evidência de que a árvore de código-fonte não contém arquivos binários
 - [Política de segurança](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — reporte de vulnerabilidades e versões suportadas
 - [Selo do OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — pontuação ao vivo
 
@@ -75,7 +54,7 @@ identidades e domínios fictícios de exemplo.
 
 Use o [Reporte Privado de Vulnerabilidades](https://github.com/ahmed-g-gad/apothem/security) na aba Security do repositório. A política completa, a matriz de versões suportadas e os prazos de resposta estão em [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Provas de lançamento da cadeia de suprimentos
+## Evidências de lançamento da cadeia de suprimentos
 
 Todo artefato de lançamento é distribuído com:
 

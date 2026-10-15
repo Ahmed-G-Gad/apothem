@@ -2,7 +2,7 @@
 title: "대외 적합성 레지스트리 — 호스트 프로젝트에서 작업할 때"
 description: "호스트 프로젝트에서 생성되는 모든 아티팩트의 적합성 요구 사항을 규정하는 열다섯 가지 명령 레지스트리(M1–M15), 생태계 내부 명령과 상호 매핑."
 machineTranslated: true
-sourceHash: "a921fa9513fb6c8f"
+sourceHash: "1be6fc81ce56e10d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,23 +12,23 @@ sourceHash: "a921fa9513fb6c8f"
 
 열다섯 가지 명령은 병행 어휘 정책에 따라 CM-N 명령과 **나란히** 작동합니다(`site/content/docs/governance/cross-cutting-mandates.mdx` 참조). M과 CM은 직교하는 거버넌스 차원입니다(M은 대외 축 — 호스트 프로젝트 아티팩트, CM은 대내 축 — 생태계 내부 아티팩트). 아래에 열거된 각 규칙은 그 명령의 정규 본거지입니다. 이 레지스트리는 색인입니다.
 
-| ID | 명령 | 한 줄 요약 | 정규 규칙 |
+| ID | 맨데이트 | 한 줄 요약 | 정규 규칙 |
 | -- | ------- | ---------------- | -------------- |
-| M1 | 호스트 프로젝트 불가지론 | 호스트의 스택／포매터／린터／레이아웃／관용을 발견하고 존중하며, 침묵을 M5에 따라 M7 주석과 함께 질의로 부각한다 | `src/apothem/rules/host-discovery.md` |
-| M2 | 편집 규율 | 모든 수정／확장／정련을 근거와 함께 공개한다. 침묵하는 과잉 준수도, 침묵하는 월권도 없다 | `src/apothem/rules/disclosure-ledger.md` |
-| M3 | 열 가지 품질 차원 | 모든 아티팩트가 열 막대 점검(엄밀성, 일관성, 구성 가능성, 가독성, 고립성, 구조성, 아키텍처, 명명, 학술적 참조, 예시／테스트／문서)을 통과한다 | `src/apothem/rules/ten-dimension-check.md` |
-| M4 | 자기 적용 | 의미 있는 범위의 모든 방출 전에 열다섯 막대 사전 방출 게이트를 실행하고 릴리스 증명을 기록한다 | `src/apothem/rules/pre-emission-gate.md` |
-| M5 | 권위 원칙 | 질의하라, 지어내지 말라. 정체성／범위／선호／보안／명명／인프라／버전 고정 데이터는 결코 날조되지 않는다 | `src/apothem/rules/authority-inquiry.md` |
-| M6 | 전문성 통합 | 의도를 읽고, 선제적으로 수정하며, 인접한 공백에서 확장하고, 인용된 근거로 정련하며, 2차 결과를 예측한다 | `src/apothem/rules/expertise-posture.md` |
-| M7 | 선택지 주석 | 모든 다중 선택지 선택은 권장 표시와 원칙에 연결된 근거를 수반한다. 권위 영역에서 침묵하는 선택은 금지된다 | `src/apothem/rules/option-annotation.md` |
-| M8 | 확정성과 치밀성 | 구속력 있는 규정이 가능한 곳에서 얼버무리지 않는다. 분기를 열거하지 않은 "경우에 따라"는 없다. 모든 계약은 사전／사후／실패 조건을 갖는다 | `src/apothem/rules/definitiveness.md` |
-| M9 | 시각적 지렛대 | 구조적 주제는 출처와 검증 날짜를 갖춘 현재 현실의 다이어그램(기본 Mermaid)을 담는다 | `src/apothem/rules/visual-leverage.md` |
-| M10 | 양방향 바인딩 | 실질적인 구조 요소는 상호적 바인딩을 선언한다(Drives → ／ Driven by ← ／ Satisfies → ／ Established by ↑ ／ Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
-| M11 | 애자일 스프린트 | 비사소한 다단계 작업은 규율 있는 스프린트(목표／백로그／DoR／DoD／리뷰／회고)로 실행된다 | `src/apothem/rules/agile-sprints.md` |
-| M12 | 단계 보고 및 정규 레이아웃 | 다단계 작업은 하위 단계별 보고와 단계 수준 롤업을 발행한다. 출력은 정규 레이아웃에 둔다 | `src/apothem/rules/canonical-layout.md` |
-| M13 | 코드 장인정신 | 무엇이 아니라 왜를 설명하는 주석, 단위를 곁들인 의도를 드러내는 명명, 형 지정된 예외 처리, 명명된 상수, 호스트의 린터／포매터／타입 검사기를 존중한다 | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md`(언어별) |
-| M14 | 생태계 체계성 | 새 컴포넌트는 상류／하류／동료／집행자를 선언한다. 호스트 레지스트리에 색인된다. 사일로도 고아도 도입하지 않는다 | `src/apothem/rules/systemic-participation.md` |
-| M15 | 프로덕션 준비 형태 | 코드 변경은 동일 변경 세트 안에서 테스트＋문서＋CHANGELOG 항목＋준수하는 커밋 메시지＋CI 그린과 함께 출하된다 | `src/apothem/rules/production-ready-prs.md` |
+| M1 | 호스트 프로젝트 비종속성 | 호스트의 스택 / 포매터 / 린터 / 레이아웃 / 관용구를 발견하고 준수한다. 침묵은 M5에 따라 M7 주석과 함께 질의로 드러낸다 | `src/apothem/rules/host-discovery.md` |
+| M2 | 편집 규율 | 모든 수정, 확장, 정련을 근거와 함께 공개한다. 침묵하는 과잉 준수도, 침묵하는 월권도 없다 | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | 열 가지 품질 차원 | 모든 아티팩트는 열 막대 점검(엄밀성, 일관성, 구성 가능성, 가독성, 고아성, 구조성, 아키텍처, 명명, 학술적 참조, 예시 / 테스트 / 문서)을 통과한다 | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | 자기 적용 | 의미 있는 범위의 모든 방출 전에 열다섯 막대 사전 방출 게이트를 실행하고 게이트 결과를 기록한다 | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | 권한 원칙 | 질의하고 지어내지 않는다. 신원, 범위, 선호, 보안, 명명, 인프라, 버전 고정 데이터는 결코 날조되지 않는다 | `src/apothem/rules/authority-inquiry.md` |
+| M6 | 전문성 통합 | 의도를 읽고, 선제적으로 수정하고, 인접한 공백으로 확장하고, 인용된 근거로 정련하며, 2차 결과를 예측한다 | `src/apothem/rules/expertise-posture.md` |
+| M7 | 선택지 주석 | 모든 다중 선택지 선택에는 권장 표시와 원칙에 연결된 근거가 함께 붙는다. 권위 영역에서 침묵하는 선택은 금지된다 | `src/apothem/rules/option-annotation.md` |
+| M8 | 확정성과 치밀성 | 구속력 있는 규정이 가능한 곳에서는 얼버무리지 않는다. 분기를 열거하지 않은 "경우에 따라"는 없다. 모든 계약에는 사전, 사후, 실패 조건이 있다 | `src/apothem/rules/definitiveness.md` |
+| M9 | 시각적 지렛대 | 구조적 주제는 출처와 검증 날짜를 갖춘 현재 현실 다이어그램(기본 Mermaid)을 담는다 | `src/apothem/rules/visual-leverage.md` |
+| M10 | 양방향 바인딩 | 실질적인 구조 요소는 상호 바인딩을 선언한다(Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | 애자일 스프린트 | 비사소한 다단계 작업은 규율 있는 스프린트로 실행된다(목표 / 백로그 / DoR / DoD / 리뷰 / 회고) | `src/apothem/rules/agile-sprints.md` |
+| M12 | 단계 보고 및 표준 레이아웃 | 다단계 작업은 하위 단계별 보고와 단계 수준 롤업을 발행하며, 출력은 표준 레이아웃에 둔다 | `src/apothem/rules/canonical-layout.md` |
+| M13 | 코드 장인 정신 | 무엇이 아니라 이유를 설명하는 주석, 단위를 포함한 의도 드러내는 이름, 타입이 지정된 예외 처리, 명명된 상수, 호스트의 린트 / 포맷 / 타입 검사 준수 | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md`(언어별) |
+| M14 | 생태계 체계성 | 새 컴포넌트는 상류 / 하류 / 동료 / 집행자를 선언하고, 호스트 레지스트리에 색인되며, 사일로나 고아를 새로 도입하지 않는다 | `src/apothem/rules/systemic-participation.md` |
+| M15 | 프로덕션 준비 형식 | 코드 변경은 같은 변경 세트 안에서 테스트, 문서, CHANGELOG 항목, 준수하는 커밋 메시지, CI 녹색 상태와 함께 출하된다 | `src/apothem/rules/production-ready-prs.md` |
 
 ## 1. 사소함 대 비사소함 임계값(확정됨)
 
@@ -44,15 +44,15 @@ sourceHash: "a921fa9513fb6c8f"
 
 | 필수 구성 요소 | 목적 | 안착 위치 |
 | ------------------ | ------- | -------------- |
-| **레지스트리 표의 명령 행** | 명령, 그 한 줄 요약, 그 정규 규칙을 명명한다 | 위의 본 레지스트리 표 |
-| **CM-N 상호 매핑 셀** | §2 병행 어휘 정책에 따라 가장 가까운 CM-N 유사물을 선언한다(또는 새 축으로 `(no direct CM-N analog)`를 표시한다) | 새 규칙의 `Cross-bound with ↔` 행 |
-| **정규 규칙 본문** | 명령의 실질적 명세(사전 조건／필요한 동작／공개 표면／실패 징후／다섯 방향 바인딩) | `src/apothem/rules/<mandate-name>.md` |
-| **사전 발행 게이트 행** | 막대의 점검 종류(기계적／추론적／혼합)와 그 `Failure → action`을 명명한다 | 사전 발행 게이트 레지스트리 표(`site/content/docs/governance/pre-emission-gate-registry.mdx`) |
-| **강제 표면** | `gate.py`에 의해 오케스트레이션되는 `src/apothem/conformity/<name>-grep.py`의 기계적 grep이거나, 운영자 자가 점검 앵커를 갖춘 명시적 추론적 막대 선언 중 하나 | `src/apothem/conformity/`(기계적) 또는 `reasoned`로 표시된 게이트 행(운영자 자가 점검) |
-| **적합성 픽스처** | 명령의 실패 모드를 연습하는 `tests/conformity-scenarios/fixtures/F-<N>-<name>/` 아래의 픽스처. 검증기의 명령 목록이 새 막대를 포함하도록 갱신된다 | `tests/conformity-scenarios/` |
-| **릴리스 증명 스키마 갱신** | 릴리스 증명의 `bars:` 블록이 새 행을 얻는다. 기존 아티팩트의 릴리스 증명 블록은 재감사될 때까지 새 행을 `n/a (with reason: pre-mandate-N artifact)`로 취급한다 | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 스키마 |
-| **공개 원장 항목** | 구체적 동인(관찰된 패턴 재발, 노출된 보안 공백, 기존 열다섯이 다루지 못하는 능력)에 뿌리내린 근거와 함께 명령 도입을 기록한다 | `src/apothem/rules/disclosure-ledger.md`에 따른 변경 세트의 커밋 본문 또는 PR 설명 |
+| **레지스트리 표의 맨데이트 행** | 맨데이트, 그 한 줄 요약, 정규 규칙을 명명한다 | 위의 이 레지스트리 표 |
+| **CM-N 상호 매핑 셀** | §2 병행 어휘 정책에 따라 가장 가까운 CM-N 유사물을 선언한다(또는 새 축임을 `(no direct CM-N analog)`로 표시한다) | 새 규칙의 `Cross-bound with ↔` 행 |
+| **정규 규칙 본문** | 맨데이트의 실질적 명세(사전 조건 / 필수 동작 / 공개 표면 / 실패 징후 / 다섯 방향 바인딩) | `src/apothem/rules/<mandate-name>.md` |
+| **사전 방출 게이트 행** | 막대의 검사 종류(기계형 / 추론형 / 혼합)와 그 `Failure → action`을 명명한다 | 사전 방출 게이트 레지스트리 표(`site/content/docs/governance/pre-emission-gate-registry.mdx`) |
+| **강제 표면** | `gate.py`가 조율하는 `src/apothem/conformity/<name>-grep.py`의 기계적 grep이거나, 운영자 자가 점검 앵커가 있는 명시적 추론형 막대 선언 중 하나 | `src/apothem/conformity/`(기계형) 또는 `reasoned`로 표시된 게이트 행(운영자 자가 점검) |
+| **적합성 픽스처** | 맨데이트의 실패 모드를 다루는 `tests/conformity-scenarios/fixtures/F-<N>-<name>/` 아래 픽스처. 검증기의 맨데이트 목록에 새 막대가 포함되도록 갱신 | `tests/conformity-scenarios/` |
+| **게이트 결과 스키마 갱신** | 게이트 결과의 `bars:` 블록에 새 행이 추가된다. 기존 아티팩트의 게이트 결과 블록은 다시 감사될 때까지 새 행을 `n/a (with reason: pre-mandate-N artifact)`로 취급한다 | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 스키마 |
+| **공개 원장 항목** | 구체적 동인(관찰된 패턴의 재발, 드러난 보안 공백, 기존 열다섯 개가 다루지 못하는 능력)에 근거한 맨데이트 도입 기록 | `src/apothem/rules/disclosure-ledger.md`에 따른 변경 세트의 커밋 본문 또는 PR 설명 |
 
 **적용 규율.** 묶음 없이 도착한 명령 제안은 리뷰에서 거부됩니다. 제안자는 묶음을 완성하거나 제안을 기존 명령의 확장으로 강등합니다. 기존 열다섯 명령은 명세의 대외 축으로 함께 채택되었습니다. 미래의 추가는 조각조각 안착하는 대신 동일한 모든-구성-요소-아니면-무-구성-요소 채택 박자를 존중합니다.
 
-**강등／퇴역 프로토콜.** 확립된 M-N이 기존 CM-N 또는 다른 M-N과 중복됨이 발견될 때(구현 규칙 본문의 상호 매핑 커버리지 맵이 양방향으로 `direct` 인접을 보일 때), 강등은 대칭적 역과정입니다. 레지스트리 행이 퇴역하고, 게이트 행이 퇴역하며, 정규 규칙이 퇴역하고(그 내용은 `src/apothem/rules/clean-room-generation.md` §3 재작성 프로토콜에 따라 흡수 규칙에 접혀 들어감), 적합성 픽스처가 퇴역하며, 릴리스 증명 스키마의 `bars:` 블록이 행을 떨구고, 변경 세트가 흡수 규칙 인용과 함께 공개 원장에 기록됩니다. 강등은 동일한 모든-구성-요소-아니면-무-구성-요소 불변식을 보존합니다.
+**강등 / 퇴역 프로토콜.** 확립된 M-N이 기존 CM-N이나 다른 M-N과 중복되는 것으로 확인되면(구체화 규칙 본문의 상호 매핑 커버리지 맵이 양방향으로 `direct` 인접을 보일 때), 강등은 대칭적인 역과정입니다. 레지스트리 행, 게이트 행, 정규 규칙이 퇴역합니다. 정규 규칙의 내용은 `src/apothem/rules/clean-room-generation.md` §3 재작성 프로토콜에 따라 흡수 규칙에 접혀 들어갑니다. 적합성 픽스처는 퇴역하고, 게이트 결과 스키마의 `bars:` 블록은 해당 행을 뺍니다. 변경 세트는 흡수 규칙 인용과 함께 공개 원장에 기록됩니다. 강등은 동일한 모든 구성 요소 또는 구성 요소 없음이라는 불변식을 보존합니다.

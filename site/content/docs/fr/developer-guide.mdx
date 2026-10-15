@@ -2,7 +2,7 @@
 title: "Contribuer à Apothem — Guide du développeur"
 description: "Maintenir et étendre l'écosystème Apothem en rédigeant des règles, des commandes, des auxiliaires, des skills et des hooks à l'aide de schémas canoniques, d'exigences de frontmatter et de procédures de validation."
 machineTranslated: true
-sourceHash: "924c7b14d9e24e4a"
+sourceHash: "887c6c6136f1dccb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -250,6 +250,13 @@ Faites évoluer `version` et `updated` ensemble à chaque modification qui chang
 le comportement d'un artefact qui les porte. Ajoutez une ligne correspondante au
 `CHANGELOG.md` de niveau écosystème pour les publications qui regroupent des
 changements d'artefacts.
+
+### Révisions des suites de planification
+
+La règle sur les artefacts ci-dessus ne s'applique pas aux suites de planification. La version d'une suite de planification est la valeur `vX.Y.Z` consignée dans l'en-tête de son `MASTER-PLAN.md` et dans le tableau Revision History. Une correction typographique apportée à une suite de planification est une révision qui incrémente le numéro PATCH. L'étape 10.2 de `/plan-review` fixe la classification et ajoute la ligne au tableau Revision History.
+
+- `vX.Y.Z` → `vX.Y.(Z+1)` (suite de planification, correction typographique : PATCH)
+- `vX.Y.Z` → `vX.Y.Z` (artefact, correction typographique : aucun incrément ; la règle sur les artefacts ci-dessus)
 
 ## Quand modifier un artefact
 

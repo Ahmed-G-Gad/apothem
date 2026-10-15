@@ -2,7 +2,7 @@
 title: "术语表"
 description: "Apothem 术语表——关键术语与概念。"
 machineTranslated: true
-sourceHash: "3f83ebe8ab57a917"
+sourceHash: "970b0d22cc5f76db"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ Apothem 文档、代码与治理中使用的关键术语，按字母顺序排列
 一组同一种类的已同步工件——规则、命令、技能、委托、钩子、输出样式、模式或模板——引擎会从单一共享配置档案将它们物化到每个工具中。一份配置档案承载全部集合；每个适配器将它们投射到其工具的原生表面。
 
 ## 合规闸门
-十五道预发布闸门中的机械部分——位于 `src/apothem/conformity/gate.py` 的可由机器检查的校验器。在每次工件发布之前运行；需要推理判断的关卡则在评审中评估。
+十五道预发布闸门中的机械部分——位于 `src/apothem/conformity/gate.py` 的可由机器检查的校验器。在工具暴露 PreToolUse 钩子的情况下，它在工件发出之前作为建议性检查运行（仅在使用 `--strict` 时阻断，如 CI 与 pre-commit 中那样）；推理判断关卡则在评审中评估。
 
 ## 入口点
 `pyproject.toml` 中声明的 `apothem.harnesses` setuptools 入口点组。它与工具注册表完全镜像；一项测试断言所声明的入口点等于已注册的适配器，因此一个约定正确但未注册的适配器会作为覆盖回归浮现出来。

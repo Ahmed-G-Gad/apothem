@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "d9218fbdb9417528"
+sourceHash: "f51d1e3b53ab82e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,11 +32,7 @@ style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
 
 ## Correspondance entre le profil et la configuration native
 
-L'adaptateur lit le profil partagé d'Apothem et rend la configuration YAML
-native, y compris l'inventaire MCP du profil. L'identité, les préférences et les
-règles du profil vont dans le document de profil. Les commandes, skills,
-définitions d'auxiliaires, règles, templates et prompts de hook partagés
-aboutissent comme matériel de support sous `~/.hermes/.apothem/support/`.
+L'adaptateur lit le profil partagé d'Apothem et rend la configuration YAML native, y compris l'inventaire MCP du profil. Les serveurs MCP proviennent de la section `mcp_servers` du profil. Ils sont rendus dans `config.yaml` à chaque installation et mise à jour, et non copiés sous forme de fichiers. L'identité, les préférences et les règles du profil vont dans le document de profil. Les commandes, skills, définitions d'auxiliaires, règles, templates et prompts de hooks partagés aboutissent comme matériel de support sous `~/.hermes/.apothem/support/`.
 
 ## Notes de compatibilité
 

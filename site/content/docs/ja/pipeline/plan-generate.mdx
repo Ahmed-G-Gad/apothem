@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate——作成済みの `_spec/spec.md` から完全なマスタープランスイートを生成します。"
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 入力
 
-`/plan-spec` からの、作成済みの `_spec/spec.md` + `_inputs/handoff-manifest.yml`（または操作者が提供した散文）。
+`/plan-spec` からの作成済みの `_spec/spec.md` と `_inputs/handoff-manifest.yml`（散文だけでは拒否されます。`_spec/spec.md` を作成するには `/plan-spec` を実行してください。`--override` はゲートを迂回し、PLAN-NOTES.md の所見として記録します）。
 
 ## 出力
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 下流
 
-/plan-review または /plan-execute（下流）
+/plan-review（下流）。`/plan-execute` は、レビューのスコアカードが存在する場合にのみ（または `--override` を付けた場合に）実行します
 
 ## ワークフローのフェーズ
 

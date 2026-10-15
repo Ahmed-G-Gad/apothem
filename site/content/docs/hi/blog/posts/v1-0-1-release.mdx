@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — लॉन्च रिलीज़"
 description: "Apothem v1.0.1 उपलब्ध है — एक साझा प्रोफ़ाइल सत्रह AI सहायक हार्नेस में मूर्त होती है, कई इंस्टॉल पथ, और एक हस्ताक्षरित, अनुप्रमाणित रिलीज़।"
 machineTranslated: true
-sourceHash: "8078642da3930d22"
+sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,8 +38,7 @@ Apothem `~/.config/apothem/profile.yaml` पर एक साझा प्रो
 - zed
 
 अपने वर्कफ़्लो में एक टूल जोड़ें, एक कमांड चलाएँ, और आपकी कॉन्फ़िगरेशन वहाँ है।
-एक टूल हटाएँ, और Apothem उसे साफ़-सुथरे ढंग से अनइंस्टॉल करता है — पीछे कोई
-अनाथ फ़ाइल नहीं छोड़ता।
+एक टूल हटाएँ, और Apothem वे फ़ाइलें हटाता है जो उसने लिखी थीं; साझा मेमोरी, कॉन्टेक्स्ट और लर्निंग स्टोर आख़िरी हार्नेस के साथ, बैकअप के बाद, हटते हैं, और `plans/` हमेशा बना रहता है।
 
 ## इंस्टॉल
 
@@ -60,12 +59,13 @@ Apothem `~/.config/apothem/profile.yaml` पर एक साझा प्रो
    npx @ahmed-g-gad/apothem install --harness all --project .
    ```
 
-3. **एक-शॉट स्क्रिप्ट इंस्टॉलर** — एक स्व-निहित रनटाइम और `apothem` लॉन्चर को
-   PATH पर रखता है:
+3. **एक-शॉट स्क्रिप्ट इंस्टॉलर** — एक स्व-निहित रनटाइम और `apothem` लॉन्चर रखता है (POSIX पर `~/.local/bin/apothem`, जब वह डायरेक्टरी `PATH` पर न हो तो PATH संकेत के साथ; Windows पर WindowsApps में `apothem.cmd`):
 
    ```bash
    curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
    ```
+
+   POSIX स्क्रिप्ट डिफ़ॉल्ट रूप से रिलीज़ टैग के GPG हस्ताक्षर की पुष्टि करती है, और जब मेंटेनर कुंजी स्थानीय keyring में न हो तब रुक जाती है। जब तक मेंटेनर कुंजी का फ़िंगरप्रिंट प्रकाशित नहीं करता (देखें `SECURITY.md`), तब तक आर्काइव को रिलीज़ `SHA256SUMS` से जाँचने के लिए `APOTHEM_VERIFY=checksum` सेट करें, या टैग सत्यापन के बिना आगे बढ़ने के लिए `APOTHEM_ALLOW_UNVERIFIED=1` सेट करें।
 
    ```powershell
    irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
@@ -113,8 +113,7 @@ Apothem `~/.config/apothem/profile.yaml` पर एक साझा प्रो
 - `apothem doctor` — पर्यावरण और कॉन्फ़िगरेशन की समस्याओं का निदान करता है।
 
 प्रत्येक हार्नेस अडैप्टर एक समान `HarnessAdapter` प्रोटोकॉल लागू करता है —
-`install`, `uninstall`, `is_installed`, `verify` — ताकि नीचे जो भी विक्रेता
-प्रारूप हो, ऑपरेटर की कुर्सी से प्रत्येक हार्नेस पूर्वानुमेय ढंग से व्यवहार करे।
+`install`, `update`, `uninstall`, `is_installed`, `verify` — ताकि नीचे चाहे जो भी विक्रेता प्रारूप हो, ऑपरेटर के नज़रिए से हर हार्नेस पूर्वानुमेय ढंग से व्यवहार करे।
 डिज़ाइन के बारे में अधिक पढ़ें
 [अडैप्टर आर्किटेक्चर गहन-विश्लेषण](/docs/blog/posts/multi-harness-adapter-design)
 में, और प्रारूप-समाधान के बारे में

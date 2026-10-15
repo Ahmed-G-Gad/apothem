@@ -2,7 +2,7 @@
 title: "平台"
 description: "Apothem 支持的操作系统、shell 与安装器脚本，以及自包含运行时所需的系统 Python 前置条件。"
 machineTranslated: true
-sourceHash: "415ff7249f5d32cd"
+sourceHash: "f01d1a9a6f2a47d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,19 +18,16 @@ Apothem 附带两个安装器脚本，两者合在一起覆盖了现代开发者
 
 | 操作系统系列 | 支持的 shell | 安装器脚本 |
 | --------- | ---------------- | ---------------- |
-| macOS | POSIX `bash`（系统自带的 bash 或用户安装的更新版 bash） | `install.sh` |
-| Linux | POSIX `bash` | `install.sh` |
-| 适用于 Linux 的 Windows 子系统（WSL2） | POSIX `bash` | `install.sh` |
-| BSD（FreeBSD、OpenBSD、NetBSD） | POSIX `bash` | `install.sh` |
-| Termux（Android） | POSIX `bash` | `install.sh` |
-| ChromeOS Linux 容器（Crostini） | POSIX `bash` | `install.sh` |
+| macOS | POSIX `sh`，同时接受 `bash`（系统自带的 bash 或用户安装的较新版 bash） | `install.sh` |
+| Linux | POSIX `sh`（同时接受 `bash`） | `install.sh` |
+| 适用于 Linux 的 Windows 子系统（WSL2） | POSIX `sh`（同时接受 `bash`） | `install.sh` |
+| BSD（FreeBSD、OpenBSD、NetBSD） | POSIX `sh`（同时接受 `bash`） | `install.sh` |
+| Termux（Android） | POSIX `sh`（同时接受 `bash`） | `install.sh` |
+| ChromeOS Linux 容器（Crostini） | POSIX `sh`（同时接受 `bash`） | `install.sh` |
 | Windows | Windows PowerShell 5.1+ | `install.ps1` |
 | 任何装有 PowerShell 7+ 的平台 | PowerShell 7+（跨平台） | `install.ps1` |
 
-两个脚本彼此功能对等。`install.sh` 需要一个 POSIX `bash`。`install.ps1`
-需要 Windows PowerShell 5.1 或更高版本，或者 PowerShell 7 本身所支持的
-任何平台上的 PowerShell 7+ —— 包括 macOS 与 Linux，在这些平台上它是
-`install.sh` 的替代选择。
+两个脚本功能对等。`install.sh` 需要 POSIX shell（`sh`、`dash`、`ash` 或 `bash`）。`install.ps1` 需要 Windows PowerShell 5.1 或更高版本，或在 PowerShell 7 本身所支持的任何平台上运行 PowerShell 7+——包括 macOS 与 Linux，在这些平台上它可替代 `install.sh`。
 
 ## 唯一的前置条件：系统 Python
 

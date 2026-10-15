@@ -2,7 +2,7 @@
 title: "Runtime mandiri"
 description: "Cara mesin Apothem berjalan dari checkout mana pun — dependensi yang di-vendor, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,7 +58,7 @@ gantinya, mesin memiliki dua permukaan invokasi:
 | Permukaan | Invokasi | Konteks |
 | ------- | ---------- | ------- |
 | CLI mesin | `python -m apothem <command>` | Pohon sumber dengan `src/` di `PYTHONPATH` (checkout, cache npx, pohon plugin) |
-| Runtime hook | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Salinan termaterialisasi di bawah pohon `.apothem/support/` bersama milik akar harness, melalui jalur absolut |
+| Runtime hook | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Materialisasi Claude Code: salinan di bawah pohon `.apothem/support/` bersama milik akar harness, melalui jalur absolut |
 
 - `python -m apothem` menjalankan `src/apothem/__main__.py`, yang menempatkan
   `src/apothem/_vendor` di `sys.path`, memeriksa bahwa `click` dan `rich` dapat
@@ -84,7 +84,7 @@ checkout di awal `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Inilah persis invokasi yang dicetak pemasang sekali-jalan saat selesai.
+Ketika peluncur `apothem` tidak ada di PATH, pemasang sekali-jalan mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`.
 
 ## Bootstrap pohon plugin
 

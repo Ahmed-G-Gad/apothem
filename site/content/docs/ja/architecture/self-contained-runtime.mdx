@@ -2,7 +2,7 @@
 title: "自己完結型ランタイム"
 description: "Apothem のエンジンが任意のチェックアウトからどのように実行されるか — ベンダリングされた依存関係、PYTHONPATH=src による呼び出しモデル、プラグインツリーのブートストラップ。"
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,8 +50,8 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 
 | 面 | 呼び出し | コンテキスト |
 | ------- | ---------- | ------- |
-| エンジン CLI | `python -m apothem <command>` | `src/` を `PYTHONPATH` に含めたソースツリー（チェックアウト、npx キャッシュ、プラグインツリー） |
-| フックランタイム | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | ハーネスルートの共有 `.apothem/support/` ツリー配下にあるマテリアライズされたコピー。絶対パスで指定します |
+| エンジン CLI | `python -m apothem <command>` | `src/` を `PYTHONPATH` に含むソースツリー（チェックアウト、npx キャッシュ、プラグインツリー） |
+| フックランタイム | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code のマテリアライズ：ハーネスルートの共有 `.apothem/support/` ツリー配下にあるコピーを、絶対パスで指定したもの |
 
 - `python -m apothem` は `src/apothem/__main__.py` を実行します。これは
   `src/apothem/_vendor` を `sys.path` に置き、`click` と `rich` が
@@ -75,7 +75,7 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-これはまさに、ワンショットインストーラーが完了時に表示する呼び出しです。
+`apothem` ランチャーが PATH 上にない場合、ワンショットインストーラーは完了時にこの形式を表示します。その際、ベンダリングされたディレクトリを `src/` より前に置き、`python` の代わりに解決した CPython を使います。
 
 ## プラグインツリーのブートストラップ
 

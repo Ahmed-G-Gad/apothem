@@ -2,7 +2,7 @@
 title: "安全"
 description: "Apothem 的安全态势——OpenSSF Scorecard 目标、漏洞报告、加固表面。"
 machineTranslated: true
-sourceHash: "1bc24c695dbc976f"
+sourceHash: "0b4ba23080c1c9b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,11 +12,11 @@ Apothem 的安全态势建立在五大支柱之上：供应链加固、漏洞响
 
 Apothem 是一个配置物化器。它读取一份共享配置档案，并将工具原生配置文件写入每个工具所读取的目录。这一单一功能界定了它信任什么、不信任什么。
 
-- **Apothem 信任什么。** 你编写的共享配置档案，以及由安装器放置的捆绑源码树。配置档案是你声明的意图；引擎在 schema 校验通过后将其视为权威输入。
-- **Apothem 不信任什么。** 配置档案内容只有在校验之后才会到达文件系统：schema 校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径遍历以及符号链接穿越，全部会在任何写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
-- **物化输出绝不携带什么。** 不携带任何机密。配置档案诊断在到达纯文本输出、JSON、日志、文档片段或测试之前，会对类似机密的键和形似令牌的值进行脱敏，公开示例使用虚构的占位身份和域名。物化后的配置旨在被提交和共享；它不携带任何凭据。
-- **通用拒绝底线。** 无论任何按工具设置的允许列表如何，Apothem 物化的规则都带有一条不可协商的拒绝底线——机密路径（`.env*`、`~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、向受保护分支强制推送）以及执行不可信输入。任何允许列表都不会悄然放宽这条底线。
-- **影响范围。** 写入被限定在工具目录和 Apothem 自有的支持子树内。现有的受管目标在被替换之前会先备份，共享发现目录按子项逐一合并，因此无关的、由操作者编写的文件会保留原位。
+- **Apothem 信任什么。** 你编写的共享配置档案，以及由安装器放置的捆绑源码树。配置档案是你声明的意图；引擎在模式校验通过后将其视为权威输入。
+- **Apothem 不信任什么。** 配置档案的内容只有在校验之后才会到达文件系统：模式校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径穿越以及符号链接穿越，全部会在任何写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
+- **物化输出绝不携带什么。** 不携带任何机密。配置档案诊断在输出到纯文本、JSON、日志、文档片段或测试之前，会对类似机密的键与形似令牌的值进行脱敏；公开示例使用虚构的占位身份与域名。物化后的配置旨在被提交与共享，其中不携带任何凭据。
+- **通用拒绝底线。** Apothem 物化的 Claude Code `settings.json` 无论任何按工具设置的允许列表如何，都带有一条不可协商的拒绝底线；在其他工具上，同一底线则是物化规则中的策略文本，而非设置级的拒绝列表——涵盖机密路径（`.env*`、`~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、向受保护分支强制推送），以及执行不可信输入。任何允许列表都不会悄然放宽这条底线。
+- **影响范围。** 写入被限定在工具目录与 Apothem 自有的支持子树之内。现有的受管目标在替换前会先备份，共享发现目录则按子项逐一合并，因此无关的、由操作者编写的文件会保留在原位。
 
 ## 运行时安全态势
 
@@ -28,10 +28,10 @@ Apothem 是一个配置物化器。它读取一份共享配置档案，并将工
 
 ## 快速链接
 
-- [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target)——逐项检查证据和已知的平台限制
+- [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target)——逐项检查证据与已知的平台限制
 - [**Webhook 审计**](/docs/security/webhooks-audit)——webhook 密钥卫生证据
-- [**分支保护**](/docs/security/branch-protection-ruleset)——拉取请求要求、必需状态检查，以及对强制推送和删除的阻止
-- [**二进制制品扫描**](/docs/security/binary-artifacts-sweep)——源码中零二进制的发布证明
+- [**分支保护**](/docs/security/branch-protection-ruleset)——拉取请求要求、必需状态检查，以及对强制推送与删除的阻止
+- [**二进制制品扫描**](/docs/security/binary-artifacts-sweep)——源码树不含二进制文件的证据
 - [安全策略](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)——漏洞报告与受支持版本
 - [OpenSSF Scorecard 徽章](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)——实时分数
 
@@ -39,7 +39,7 @@ Apothem 是一个配置物化器。它读取一份共享配置档案，并将工
 
 使用仓库 Security 标签页上的[私有漏洞报告](https://github.com/ahmed-g-gad/apothem/security)。完整策略、受支持版本矩阵和响应时间线位于 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)。
 
-## 供应链发布证明
+## 供应链发布证据
 
 每个发布产物都附带：
 

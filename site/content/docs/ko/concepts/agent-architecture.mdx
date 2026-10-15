@@ -2,7 +2,7 @@
 title: "에이전트 아키텍처"
 description: "Apothem이 단일 에이전트 역량 코호트를, 훅 표면과 규칙 형식이 제각각인 열일곱 개의 하니스에 어떻게 투영하는가."
 machineTranslated: true
-sourceHash: "5ef9a38bd5d1cdff"
+sourceHash: "a0655f91d2726ce9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,17 +27,17 @@ PreToolUse 훅 표면, Apothem이 규칙을 활성화하는 데 사용하는 형
 
 | 하니스 | PreToolUse 훅 표면 | 규칙 활성화 형식 | 어댑터 클래스 | 머티리얼라이저 |
 |---------|-------------------------|------------------------|---------------|--------------|
-| antigravity | 네이티브 훅 표면 존재; Apothem 지원 자료만 | `GEMINI.md` 및 Antigravity CLI 플러그인 규칙 | Class I | 없음 |
-| claude-code | 네이티브 PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 아래 `.md` 평면 규칙 | Class II-A | 없음 (벤더 설정 템플릿) |
+| antigravity | 네이티브 훅 표면이 있음; Apothem 지원 자료만 | `GEMINI.md` 및 Antigravity CLI 플러그인 규칙 | Class I | 없음 |
+| claude-code | 네이티브 PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 아래 `.md` 평면 규칙 | Class II-A | 없음(벤더 설정 템플릿) |
 | codebuddy | 없음 | `.codebuddy/rules/apothem-rules.md` 프로젝트 규칙 파일 | Class I | 없음 |
 | codex | 네이티브 `hooks.json` 라이프사이클 훅 | `AGENTS.md` 및 설치된 스킬이 참조하는 지원 규칙 | Class I | 없음 |
-| cursor | 없음 | `.mdc` 워크스페이스 규칙 (MDC 프런트매터: `description` / `globs` / `alwaysApply`) | Class I | 없음 |
-| gemini-cli | 없음 | 단일 `GEMINI.md`에 임베드된 규칙 | Class I | 없음 |
-| github-copilot | 없음 (IDE 확장, 도구 호출 훅 없음) | `.github/copilot-instructions.md`의 규칙 | Class I | 없음 |
-| glm | 없음 (모델 백엔드, 에이전트 도구 표면 없음) | `.apothem/providers/glm.toml` 백엔드 프로바이더 구성 (규칙 코호트 없음) | Class I | 없음 |
+| cursor | 없음 | `.mdc` 워크스페이스 규칙(MDC 프런트매터: `description` / `globs` / `alwaysApply`) | Class I | 없음 |
+| gemini-cli | 지원 자료만 | 단일 `GEMINI.md`에 임베드된 규칙 | Class I | 없음 |
+| github-copilot | 없음(IDE 확장, 도구 호출 훅 없음) | `.github/copilot-instructions.md`의 규칙 | Class I | 없음 |
+| glm | 없음(모델 백엔드, 에이전트 도구 표면 없음) | `.apothem/providers/glm.toml` 백엔드 프로바이더 구성(규칙 코호트 없음) | Class I | 없음 |
 | hermes | 지원 자료만 | `config.yaml` 및 외부 스킬 디렉터리 | Class II-B | `config.yaml` |
-| kimi-code | 없음 | `AGENTS.md` 및 `.kimi-code/.apothem/support/` 아래 지원 규칙 | Class I | 없음 |
-| kiro | 없음 (Kiro 에이전트 훅은 어댑터 범위 밖) | `.kiro/steering/apothem-rules.md` 스티어링 파일 | Class I | 없음 |
+| kimi-code | 지원 자료만 | `AGENTS.md` 및 `.kimi-code/.apothem/support/` 아래 지원 규칙 | Class I | 없음 |
+| kiro | 없음(Kiro 에이전트 훅은 어댑터 범위 밖) | `.kiro/steering/apothem-rules.md` 스티어링 파일 | Class I | 없음 |
 | open-claw | 지원 자료만 | `openclaw.json` 및 추가 스킬 디렉터리 | Class II-B | `openclaw.json` |
 | opencode | 지원 자료만 | 프로필 렌더링 JSON 및 네이티브 커맨드, 스킬, 에이전트 | Class II-B | `opencode.json` |
 | qwen-code | 네이티브 PreToolUse / Stop / SessionStart | `QWEN.md` 및 네이티브 커맨드, 스킬, 에이전트 | Class II-B | `settings.json` / `QWEN.md` |
@@ -48,26 +48,13 @@ PreToolUse 훅 표면, Apothem이 규칙을 활성화하는 데 사용하는 형
 
 매트릭스에 대한 참고 사항:
 
-- **claude-code**는 기준 어댑터입니다. 네이티브 PreToolUse, PostToolUse, Stop,
-  SessionStart 훅을 갖추고 벤더 설정 템플릿을 제공합니다.
-  의도적으로 `CLAUDE.md`는 관리하지 않습니다 — 그 파일은 운영자 소유 영역입니다.
-- **codex**는 `hooks.json`을 통해 네이티브 라이프사이클 훅을 설치하고,
-  에이전트를 TOML로 변환하며, 커맨드 프롬프트를 Codex 스킬로 감싸고,
-  `config.toml`은 운영자 소유로 남깁니다.
-- **antigravity**는 `~/.gemini/GEMINI.md`를 전역 컨텍스트 앵커로 유지하고
-  `~/.gemini/antigravity-cli/plugins/apothem/` 아래에 Apothem 플러그인을
-  설치합니다. 훅 파일은 어댑터가 Antigravity 훅 스키마 변환을 소유하기 전까지
-  지원 자료로 보존됩니다.
-- **cursor**는 벤더 MDC 프런트매터(`description`, `globs`, `alwaysApply`)를 담은
-  `.mdc` 파일을 통해 규칙을 활성화합니다. 어댑터는 단일 파일 `.cursorrules`를
-  작성하지 않습니다.
-- **windsurf**는 `.devin/rules/`를 사용합니다. 어댑터는 단일 파일
-  `.windsurfrules`를 작성하지 않습니다.
-- **hermes**와 **open-claw**는 네이티브 구성 파일을 렌더링하고 각 도구의
-  문서화된 스킬 디렉터리 설정을 통해 Apothem 지원 스킬 디렉터리를 연결합니다.
-  지원되지 않는 공유 코호트는 Apothem 소유 지원 하위 트리 아래에 남습니다.
-- **qwen-code**는 컨텍스트와 훅 디스패치를 위한 문서화된 `settings.json` 키를
-  렌더링한 뒤 Qwen 네이티브 커맨드, 스킬, 에이전트 디렉터리를 사용합니다.
+- **claude-code**는 기준 어댑터입니다. 네이티브 PreToolUse, PostToolUse, Stop, SessionStart 훅을 갖추고 벤더 설정 템플릿을 제공합니다. `CLAUDE.md`에는 센티널로 구분된 관리 블록 하나를 쓰고, 센티널 바깥의 운영자 산문은 그대로 둡니다.
+- **codex**는 `hooks.json`을 통해 네이티브 라이프사이클 훅을 설치하고, 에이전트를 TOML로 변환하며, 커맨드 프롬프트를 Codex 스킬로 감싸고, `config.toml`은 운영자 소유로 남겨 둡니다.
+- **antigravity**는 `~/.gemini/GEMINI.md`를 전역 컨텍스트 앵커로 유지하고, `~/.gemini/antigravity-cli/plugins/apothem/` 아래에 Apothem 플러그인을 설치합니다. 훅 파일은 어댑터가 Antigravity 훅 스키마 변환을 소유하기 전까지 지원 자료로 보존됩니다.
+- **cursor**는 벤더 MDC 프런트매터(`description`, `globs`, `alwaysApply`)를 담은 `.mdc` 파일로 규칙을 활성화합니다. 어댑터는 단일 파일 `.cursorrules`를 작성하지 않습니다.
+- **windsurf**는 `.devin/rules/`를 사용합니다. 어댑터는 단일 파일 `.windsurfrules`를 작성하지 않습니다.
+- **hermes**와 **open-claw**는 네이티브 구성 파일을 렌더링하고, 각 하니스가 문서화한 스킬 디렉터리 설정을 통해 Apothem 지원 스킬 디렉터리를 연결합니다. 지원되지 않는 공유 코호트는 Apothem 소유 지원 하위 트리 아래에 남습니다.
+- **qwen-code**는 컨텍스트와 훅 디스패치를 위한 문서화된 `settings.json` 키를 렌더링한 다음, Qwen 네이티브 커맨드, 스킬, 에이전트 디렉터리를 사용합니다.
 
 ## 하니스 간 오케스트레이션 규율
 
@@ -129,7 +116,7 @@ Apothem은 공유 프로필을 하니스 네이티브 출력으로 변환하는 
 
 | 축 | 열일곱 개 하니스에서 관찰된 범위 |
 |------|---------------------------------------------|
-| 훅 표면 | 네이티브 멀티 이벤트(claude-code, codex, qwen-code) → 지원 전용 훅 자료(antigravity, gemini-cli, hermes, open-claw, opencode) → 없음(codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| 훅 표면 | 네이티브 다중 이벤트(claude-code, codex, qwen-code) → 지원 전용 훅 자료(antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → 없음(codebuddy, cursor, github-copilot, glm, kiro, trae, windsurf, zed) |
 | 규칙 활성화 형식 | 평면 `.md`(claude-code) → 플러그인 규칙(antigravity) → `.mdc` 워크스페이스(cursor) → 디렉터리 규칙(codebuddy, trae, windsurf) → 스티어링 파일(kiro) → 프로젝트 루트 평면 파일(zed) → 단일 임베드 파일(codex, gemini-cli, github-copilot, kimi-code) → 구성 참조 지원 자료(hermes, open-claw, opencode, qwen-code) → 백엔드 프로바이더 구성(glm) |
 | 어댑터 클래스 | Class I 원본 전파 → Class II-A 원본 + 벤더 설정 → Class II-B 프로필 렌더링 단일 표면 |
 

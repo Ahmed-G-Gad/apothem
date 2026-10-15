@@ -2,7 +2,7 @@
 title: "Spesifikasi Skema Artefak"
 description: "Skema frontmatter YAML kanonik dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan templat per-kelas dan aturan validasi."
 machineTranslated: true
-sourceHash: "e2aec62fc27cb76c"
+sourceHash: "b572b7b7166215da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,7 @@ Dokumen ini mendefinisikan skema kanonik untuk setiap tipe.
 - Perbaikan salah ketik, perbaikan tautan, pemformatan, serta suntingan yang hanya menyentuh komentar atau dokumentasi tidak mengubah `version`. Hanya perubahan perilaku yang menaikkannya.
 - `updated` adalah **tanggal ISO 8601** (`YYYY-MM-DD`) dari suntingan terbaru. Nilainya harus berubah pada setiap kenaikan `version`, dan juga berubah pada perbaikan salah ketik atau tautan yang tidak menaikkan versi.
 - Artefak baru dimulai pada `v0.Y.Z`. Promosi ke `vX.Y.Z` menandakan bahwa kontrak artefak cukup stabil untuk menjadi komitmen publik.
+- Suite rencana berada di luar konvensi ini. Perbaikan salah ketik pada suite rencana menaikkan nomor PATCH dari versi suite (`vX.Y.Z` menjadi `vX.Y.(Z+1)`) dan menambahkan baris Revision History. [Panduan pengembang](/docs/developer-guide) menjelaskan aturan suite rencana pada bagian revisi suite rencana.
 
 ---
 

@@ -1,46 +1,39 @@
 ---
 title: "Apothem versus konfigurasi Antigravity manual"
-description: "Memelihara konteks global dan file plugin Antigravity CLI dengan tangan versus mengelolanya melalui profil bersama Apothem."
+description: "Memelihara secara manual konteks global dan berkas plugin Antigravity CLI dibandingkan dengan mengelolanya melalui profil bersama Apothem."
 machineTranslated: true
 sourceHash: "aabcfc2d95c2f441"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Antigravity adalah lingkungan propagasi manifes Kelas I: Apothem menulis jangkar
-konteks global `~/.gemini/GEMINI.md` dan memasang plugin Apothem di bawah
-`~/.gemini/antigravity-cli/plugins/apothem/`. Halaman ini mempertentangkan
-pemeliharaan tata letak itu dengan tangan terhadap pengelolaannya dengan Apothem.
+Antigravity adalah harness propagasi-manifest Kelas I: Apothem menulis jangkar konteks global `~/.gemini/GEMINI.md` dan memasang plugin Apothem di bawah `~/.gemini/antigravity-cli/plugins/apothem/`. Halaman ini membandingkan pemeliharaan tata letak tersebut secara manual dengan pengelolaannya memakai Apothem.
+
+## Status
+
+**Pratinjau.** Adapter Antigravity menargetkan jangkar konteks `GEMINI.md` dan permukaan plugin Antigravity CLI yang terdokumentasi saat ini. Kohor tanpa permukaan native tetap berupa materi pendukung Apothem.
 
 ## Perbandingan upaya
 
-| Tugas | Konfigurasi manual | Dikelola Apothem |
+| Tugas | Konfigurasi manual mentah | Dikelola Apothem |
 | ---- | --------------- | --------------- |
-| Menulis aturan | Menulis tiap file aturan plugin dengan tangan | Menulis sekali di korpus bersama |
-| Mempertahankan prompt yang dapat dipakai ulang | Menyalin prompt perintah dan skill ke file plugin dengan tangan | Dikonversi atau disalin sebagai skill plugin |
-| Mempertahankan materi pendukung hook | Menyalin referensi hook tanpa penyambungan aktif dengan tangan | Disalin di bawah pohon pendukung plugin Apothem |
-| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
-| Memasang / menghapus konfigurasi | Menyalin dan menghapus file dengan tangan | `apothem install` / `apothem uninstall` |
+| Menulis aturan | Tulis setiap berkas aturan plugin secara manual | Tulis sekali di korpus bersama |
+| Mempertahankan prompt yang dapat digunakan ulang | Salin prompt command dan skill secara manual ke berkas plugin | Dikonversi atau disalin menjadi skill plugin |
+| Mempertahankan materi pendukung hook | Salin referensi hook secara manual tanpa pengkabelan aktif | Disalin di bawah pohon pendukung plugin Apothem |
+| Menjaga aturan tetap selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memasang / menghapus konfigurasi | Salin dan hapus berkas secara manual | `apothem install` / `apothem uninstall` |
 | Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness antigravity` |
 
 ## Apa yang dikelola Apothem
 
-Apothem mengelola file konteks global Antigravity, metadata plugin, skill
-perintah yang dikonversi, skill yang dapat dipakai ulang, agen yang dikonversi,
-aturan, templat, dan materi pendukung hook. File hook dipertahankan sebagai
-materi pendukung; Apothem tidak mendaftarkan event hook Antigravity yang aktif
-sampai adapter memiliki lapisan penerjemahan skema untuk `hooks.json`
-Antigravity.
+Apothem mengelola berkas konteks global Antigravity, metadata plugin, skill command yang dikonversi, skill yang dapat digunakan ulang, agen yang dikonversi, aturan, templat, dan materi pendukung hook. Berkas hook dipertahankan sebagai materi pendukung; Apothem tidak mendaftarkan event hook Antigravity yang aktif sampai adapter memiliki lapisan terjemahan skema untuk `hooks.json` Antigravity.
 
 ## Jalur migrasi
 
-1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
-   memilikinya.
-2. Pindahkan aturan Antigravity tulisan-tangan Anda ke korpus bersama.
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum melakukannya.
+2. Pindahkan aturan Antigravity yang sudah ada dan ditulis tangan ke dalam korpus bersama.
 3. Jalankan `apothem install --harness antigravity` untuk menyebarkan korpus.
-4. Jalankan `apothem verify --harness antigravity` untuk memastikan konfigurasi
-   sudah terpasang.
-5. Gunakan `apothem update --harness antigravity` untuk setiap perubahan
-   berikutnya.
+4. Jalankan `apothem verify --harness antigravity` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness antigravity` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de harness do Apothem para o Claude Code (GA)."
 machineTranslated: true
-sourceHash: "99cda84bf3fff83e"
+sourceHash: "8fc429cc0aa4c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,15 +18,17 @@ apothem install --harness claude-code
 ```
 
 O adaptador `claude-code` instala o corpus compartilhado do Apothem na árvore de
-descoberta nativa do Claude Code. Os agentes em Markdown, as regras, as skills,
-os output styles e as configurações são instalados em seus locais nativos; os
-prompts de comando são convertidos em skills para que os fluxos de trabalho
-reutilizáveis permaneçam visíveis pela superfície de skills atual do Claude
-Code. O renderizador de statusline é copiado para `~/.claude/statuslines/`, mas
-não é conectado: o Claude Code lê sua linha de status da configuração
-`statusLine`, que o adaptador deixa sem definir. Para ativá-lo, adicione ao
-`settings.json` uma entrada `statusLine` de `"type": "command"` que execute
-`~/.claude/statuslines/render.py`.
+descoberta nativa do Claude Code. Agentes em Markdown, regras, skills, output styles e
+configurações são instalados em seus locais nativos; os prompts de comando são
+convertidos em skills para que os fluxos de trabalho reutilizáveis continuem visíveis
+pela superfície de skills atual do Claude Code. O renderizador de statusline é copiado
+para `~/.claude/statuslines/`, mas não é conectado: o Claude Code lê sua linha de status
+a partir da configuração `statusLine`, que o adaptador deixa sem definir. Para ativá-lo,
+adicione ao `settings.json` uma entrada `statusLine` de `"type": "command"` que execute
+`~/.claude/statuslines/render.py`. O valor `commandWindows` do trecho é executado no
+Windows e nomeia o interpretador sem aspas. Quando o caminho do interpretador contém um
+espaço, a instalação grava nesse valor a forma curta 8.3 do Windows, quando o volume a
+possui. As entradas de hook em `settings.json` mantêm o caminho completo.
 
 **Arquivos gravados:** `settings.json`, o bloco do Apothem em `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` e a subárvore de suporte `.apothem/support/`

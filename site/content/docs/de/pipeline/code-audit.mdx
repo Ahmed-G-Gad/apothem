@@ -2,7 +2,7 @@
 title: "/code-audit"
 description: "/code-audit — Dateiübergreifendes forensisches Code-Audit auf Repository-Korpus-Ebene."
 machineTranslated: true
-sourceHash: "2f3c290241ac5fb5"
+sourceHash: "ed923c7bf0779bab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,16 +20,16 @@ Dateiübergreifendes forensisches Code-Audit auf Repository-Korpus-Ebene.
 Mit Argumenten:
 
 ```bash
-/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/code-audit [path/to/repo/] [--focus AREA] [--dry-run]
 ```
 
 ## Eingaben
 
-Host-Repository in einem beliebigen Lebenszyklus-Zustand
+Host-Repository mit einem genehmigten Quelllayout, einer Basislinie der Testabdeckung und (ab SHARED+) einem bestandenen CI-Gate
 
 ## Ausgaben
 
-Befunde auf Korpus-Ebene + REPORT.md
+Befunde auf Korpus-Ebene unter `_inputs/code-audit-findings.md`
 
 ## Nachgelagert
 
@@ -37,22 +37,14 @@ Die forensische Code-Audit-Stufe der Audit-Review-Sequenz
 
 ## Workflow-Phasen
 
-Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
-
-1. **Kontext laden** — Plan-Suite, Regeln und Wiederaufnahme-Vertrag lesen.
-2. **Voraussetzungen prüfen** — Bestätigen, dass abhängige Phasen abgeschlossen sind.
-3. **Aufgaben ausführen** — Die Mission des Befehls erfüllen.
-4. **Ausgaben prüfen** — Bestätigen, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
-5. **PROGRESS.md aktualisieren** — Verifizierte Ausgaben im Phasen-Ausgaberegister erfassen.
-6. **REPORT.md ausgeben** — Freigabenachweis des Pre-Emission-Tors erfasst.
+Der Befehl durchläuft sechs forensische Phasen: Eingabeaufnahme, dateiübergreifender Durchlauf der Abhängigkeiten, Audit der Typhinweise und der Abdeckung, Erkennung von totem Code und Duplikaten, Audit der architektonischen Integrität sowie Ausgabe der Befunde mit dem Validierungs-Gate.
 
 ## Fehlermodi
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Voraussetzung unvollständig | Abhängige Phase nicht beendet | Zuerst die vorgelagerte Phase abschließen |
-| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Ausgabe korrigieren und erneut ausführen |
-| Eingabedatei fehlt | Plan-Suite-Datei fehlt | `/plan-generate` ausführen, um sie zu erstellen |
+| Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Fehlende Eingabedatei | Keine Ausführung des CI-Gates und keine Basislinie der Testabdeckung ab SHARED+ | Führe zuerst die CI-Pipeline des Hosts aus, dann erneut |
 
 ## Beispiele
 
@@ -60,8 +52,8 @@ Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
 # Dry-run to preview what would happen
 /code-audit --dry-run
 
-# Execute against a named plan suite
-/code-audit path/to/plan-suite/
+# Execute against a repository root
+/code-audit path/to/repo/
 ```
 
 ## Querverweise

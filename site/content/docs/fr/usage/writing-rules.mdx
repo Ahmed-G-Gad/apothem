@@ -6,8 +6,7 @@ sourceHash: "310b05b6b5b3dd5d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les règles sont des fichiers Markdown dans `src/apothem/rules/` avec l'extension
-`.md`.
+Les règles sont des fichiers Markdown situés dans `src/apothem/rules/`, avec l'extension `.md`.
 
 ## Frontmatter de règle
 
@@ -20,15 +19,16 @@ alwaysApply: true         # true for always-on; false for path-filtered
 ---
 ```
 
-## Portées de règle
+## Portées des règles
 
-| Portée | Quand elle s'applique |
-|-------|-------------|
-| `always-on` | Chaque session, chaque fichier |
-| `path-filtered` | Uniquement quand le fichier actif correspond à `path-filter` |
-| `operator-selected` | L'opérateur l'active explicitement dans settings.json |
+La portée d'une règle est définie par deux champs du frontmatter, `alwaysApply` et `pathFilter` :
 
-## Règle d'exemple
+| `alwaysApply` | `pathFilter` | Quand elle s'applique |
+|---------------|--------------|--------------|
+| `true` | `""` (vide) | Toujours active : chaque session, chaque fichier |
+| `false` | un glob, par exemple `"**/*.py"` | Filtrée par chemin : uniquement lorsque le fichier actif correspond au glob |
+
+## Exemple de règle
 
 ```markdown
 ---
@@ -45,11 +45,9 @@ alwaysApply: false
 - Prefer explicit over implicit.
 ```
 
-## Appliquer les règles aux harnesses
+## Appliquer les règles aux environnements
 
-Après avoir écrit une règle, mettez à jour chaque adaptateur de harness
-installé. Exécutez `apothem harnesses list` pour voir l'ensemble installé, puis
-appelez update une fois par harness :
+Après avoir rédigé une règle, mettez à jour chaque adaptateur d'environnement installé. Exécutez `apothem harnesses list` pour voir l'ensemble installé, puis appelez update une fois par environnement :
 
 ```bash
 apothem update --harness claude-code

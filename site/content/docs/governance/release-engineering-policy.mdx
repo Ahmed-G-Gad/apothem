@@ -40,13 +40,13 @@ Tag conventions:
 
 ### Release model: additive
 
-Releases are additive. Each release adds one commit on `main` and one
-tag; `main` is never force-pushed, and no published tag, GitHub Release or
-npm version is deleted, moved or reused. The project has three releases,
-each with its tag, its GitHub Release and its npm version, and all three
-stay published. npm versions are immutable: a published `name@version` can
-never be replaced, and an unpublished number can never be used again. Pinned
-installs and reproducible builds depend on every published tag. The
+Releases are additive. Each release adds one commit on `main` and one tag;
+`main` is never force-pushed, and no published tag, GitHub Release or npm
+version is deleted, moved or reused. Every release keeps its tag, its GitHub
+Release and its npm version, and all of them stay published. npm versions are
+immutable: a published `name@version` can never be replaced, and an
+unpublished number can never be used again. Pinned installs and reproducible
+builds depend on every published tag. The
 [release-cycle](/docs/runbooks/release-cycle) and
 [release-recovery](/docs/runbooks/release-recovery) runbooks both follow this
 model.

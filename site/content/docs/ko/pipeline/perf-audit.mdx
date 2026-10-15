@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — 클래스별 성능 예산에 대해 감사합니다(Core Web Vitals, USE 메서드)."
+description: "/perf-audit — USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트)에 대해 감사합니다."
 machineTranslated: true
-sourceHash: "f4a428086264b0eb"
+sourceHash: "d614c1ffe9d5a42e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **역할:** 성능 감사자
 **파이프라인 위치:** 포트리스
 
-클래스별 성능 예산에 대해 감사합니다(Core Web Vitals, USE 메서드).
+USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트)에 대해 감사합니다.
 
 ## 표준 호출
 
@@ -20,16 +20,16 @@ sourceHash: "f4a428086264b0eb"
 인수와 함께:
 
 ```bash
-/perf-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+/perf-audit [path/to/repo/] [--focus CLASS] [--dry-run]
 ```
 
 ## 입력
 
-생명 주기의 어떤 상태에 있는 호스트 리포지토리
+`hooks/`, `src/apothem/benchmarks/`, `tests/`, 그리고 훅 부트스트랩 스텁 `hooks/lib/bootstrap.{sh,ps1}`를 포함한 호스트 저장소
 
 ## 출력
 
-성능 발견 사항 + REPORT.md
+성능 발견 사항: `_inputs/perf-audit-findings.md`
 
 ## 하류
 
@@ -37,22 +37,14 @@ sourceHash: "f4a428086264b0eb"
 
 ## 워크플로 페이즈
 
-이 명령은 표준 `/plan` 파이프라인 워크플로를 따릅니다:
-
-1. **컨텍스트 로드** — 플랜 스위트, 규칙, 재개 계약을 읽습니다.
-2. **사전 요건 검증** — 의존 페이즈가 완료되었는지 확인합니다.
-3. **태스크 실행** — 명령의 미션을 수행합니다.
-4. **출력 검증** — 선언된 모든 출력이 존재하고 품질 게이트를 통과하는지 확인합니다.
-5. **PROGRESS.md 업데이트** — 검증된 출력을 페이즈 출력 레지스트리에 기록합니다.
-6. **REPORT.md 발행** — 사전 발행 게이트의 릴리스 증빙이 기록됩니다.
+이 명령은 다섯 개의 감사 단계를 실행합니다. 입력 수집, 클래스별 예산 탐색, 벤치마크 실행, USE 메서드에 의한 핫 패스 식별, 그리고 검증 게이트를 거친 발견 사항 출력입니다.
 
 ## 실패 모드
 
 | 증상 | 원인 | 복구 |
 |---------|-------|----------|
-| 사전 요건 미완료 | 의존 페이즈가 끝나지 않음 | 먼저 상류 페이즈를 완료한다 |
-| 품질 게이트 FAIL | 출력이 기준을 충족하지 않음 | 출력을 고치고 다시 실행한다 |
-| 입력 파일 누락 | 플랜 스위트 파일이 없음 | `/plan-generate`를 실행해 생성한다 |
+| 품질 게이트 FAIL | 출력이 기준을 충족하지 않음 | 출력을 수정하고 다시 실행한다 |
+| 입력 파일 누락 | 저장소에 `src/apothem/benchmarks/`가 없음 | 벤치마크 드라이버를 추가한 뒤 다시 실행한다. 드라이버가 있을 때까지 명령은 실행을 거부한다 |
 
 ## 예시
 
@@ -60,8 +52,8 @@ sourceHash: "f4a428086264b0eb"
 # Dry-run to preview what would happen
 /perf-audit --dry-run
 
-# Execute against a named plan suite
-/perf-audit path/to/plan-suite/
+# Execute against a repository root
+/perf-audit path/to/repo/
 ```
 
 ## 상호 참조

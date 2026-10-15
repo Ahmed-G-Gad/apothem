@@ -2,7 +2,7 @@
 title: "Создание нового адаптера среды"
 description: "Руководство по созданию и публикации нового адаптера среды Apothem."
 machineTranslated: true
-sourceHash: "6583b704225045aa"
+sourceHash: "340d6137117f067e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,8 +59,8 @@ python -m apothem.conformity.gate --all .
 
 Откройте PR с:
 
-- реализацией адаптера
-- страницей документации по адресу `site/content/docs/harnesses/<slug>.mdx`
-- тестами
-- регистрацией точки входа в `pyproject.toml`
-- записью в журнале изменений
+- реализация адаптера
+- страница документации по адресу `site/content/docs/harnesses/<slug>.mdx`
+- тесты
+- регистрация точки входа в `pyproject.toml`, запись `HARNESS_REGISTRY` в `src/apothem/lib/harness_registry_data.py` (с увеличением там `SUPPORTED_HARNESS_COUNT`) и идентификатор в перечислении `harnessId` в `src/apothem/schemas/profile.schema.json`
+- запись в журнале изменений

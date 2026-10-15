@@ -2,7 +2,7 @@
 title: "Posture indépendante de l'hôte"
 description: "Comment Apothem atteint une posture indépendante de l'hôte via le profil partagé et les adaptateurs d'environnement."
 machineTranslated: true
-sourceHash: "8f7497f9319b9d20"
+sourceHash: "dc0e6903e3076aa0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,4 +83,4 @@ le cœur. La dérive est structurellement impossible.
 
 ## Garanties de portabilité
 
-Les commandes et les helpers marqués `portability: universal` sont garantis traduisibles vers chaque environnement pris en charge. Les commandes et les helpers marqués `portability: project-specific` peuvent nécessiter une documentation de surcharge par environnement dans le corps du fichier.
+Les commandes et les helpers marqués `portability: universal` se traduisent vers chaque environnement dont l'entrée de registre prend en charge une surface de commandes (convertie ou sous-arborescence de support) ; les environnements qui n'en ont pas ne reçoivent aucune commande. Le moteur n'évalue pas le marqueur. Les commandes et les helpers marqués `portability: project-specific` peuvent exiger une documentation de surcharge par environnement dans le corps du fichier.

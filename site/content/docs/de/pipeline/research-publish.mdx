@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einreichungspaket zusammen (Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik/Interessenkonflikt), mit einem Preprint-/DOI-Plan."
 machineTranslated: true
-sourceHash: "fbebb0df60083bca"
+sourceHash: "34e0993ca051136c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einrei
 Mit Argumenten:
 
 ```bash
-/research-publish [path/to/research-suite/]
+/research-publish [--suite-name NAME]
 ```
 
 ## Eingaben
@@ -61,8 +61,8 @@ Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publika
 ## Beispiele
 
 ```bash
-# Das Einreichungspaket des Publikationsorts zusammenstellen
-/research-publish path/to/research-suite/
+# Das Einreichungspaket für den Publikationsort zusammenstellen
+/research-publish --suite-name <name>
 ```
 
 ## Querverweise

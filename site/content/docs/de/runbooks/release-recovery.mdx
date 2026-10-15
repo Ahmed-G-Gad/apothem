@@ -2,7 +2,7 @@
 title: "Runbook zur Release-Wiederherstellung"
 description: "Wiederherstellungsverfahren für ein Release, das unter dem additiven Release-Modell mitten im Ablauf fehlschlägt, Stufe für Stufe und ohne veröffentlichten Verlauf umzuschreiben."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,9 +16,7 @@ Nichts wird per Force-Push übertragen, und der Verlauf auf `main` wird niemals
 umgeschrieben.
 
 Veröffentlichter Verlauf ist dauerhaft. Jedes Release-Tag, jedes GitHub Release
-und jede npm-Version, die das Projekt veröffentlicht hat, bleibt veröffentlicht:
-Das Projekt hat drei Releases, jedes mit seinem Tag, seinem GitHub Release und
-seiner npm-Version. npm-Versionen sind unveränderlich: Ein veröffentlichtes
+und jede npm-Version, die das Projekt veröffentlicht hat, bleibt veröffentlicht. npm-Versionen sind unveränderlich: Ein veröffentlichtes
 `name@version` kann niemals ersetzt werden, und eine Versionsnummer, deren
 Veröffentlichung zurückgezogen wurde, kann niemals wieder verwendet werden. Die
 Wiederherstellung geht daher mit einem neuen Patch-Release nach vorn; sie löscht

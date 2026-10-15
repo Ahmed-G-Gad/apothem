@@ -1,87 +1,71 @@
 ---
 title: "Guías prácticas de autoría y canalización"
-description: "Recorridos orientados a tareas para refinar contenido en especificaciones, generar suites de planes, revisar planes, ejecutar fases, añadir artefactos y ejecutar compuertas de calidad."
+description: "Recorridos orientados a tareas para refinar contenido en especificaciones, generar suites de planes, revisar planes, ejecutar fases, añadir artefactos y ejecutar puertas de calidad."
 machineTranslated: true
-sourceHash: "7886387aff090853"
+sourceHash: "51dd595a3c38f228"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Recorridos orientados a tareas para **crear artefactos de Apothem y manejar la
-canalización de planes**. Cada guía responde a una única pregunta concreta.
+Recorridos orientados a tareas para **crear artefactos de Apothem y manejar la canalización de planes**. Cada guía responde a una única pregunta concreta.
 
-Para las recetas de configuración de primera ejecución — añadir un entorno, editar el
-perfil, manejar el instalador — consulta en su lugar la sección
-[Recetas prácticas](/docs/how-to).
+Para las recetas de configuración de primera ejecución (añadir un entorno, editar el perfil, ejecutar el instalador), consulta en su lugar la sección [Recetas prácticas](/docs/how-to).
 
-## Canalización de la suite de planes
+## Canalización de la suite de plan
 
-### ¿Cómo refino contenido en bruto en una especificación?
+### ¿Cómo refino contenido en bruto hasta convertirlo en una especificación?
 
-Invoca `/plan-spec` con el contenido en bruto como entrada. El rol Forge ejecuta seis
-fases de transformación (Descubrimiento, Consideración Meticulosa, Mapeo de Potencia,
-Verificación de Preservación, Aplicación de Pericia, Barrido de Resolución de
-Preguntas) y emite la especificación consolidada en `.apothem/plans/{suite}/_spec/spec.md`.
-Consulta `src/apothem/commands/plan-spec.md` para el protocolo completo.
+Invoca `/plan-spec` con el contenido en bruto como entrada. El rol Forge ejecuta seis fases de transformación (Descubrimiento, Consideración Meticulosa, Mapeo de Potencia, Verificación de Preservación, Aplicación de Pericia, Barrido de Resolución de Preguntas) y emite la especificación consolidada en `.apothem/plans/{suite}/_spec/spec.md`. Consulta `src/apothem/commands/plan-spec.md` para el protocolo completo.
 
-### ¿Cómo genero una suite de planes a partir de una especificación?
+### ¿Cómo genero una suite de plan a partir de una especificación?
 
-Invoca `/plan-generate <suite-name>` una vez que la especificación viva en
-`.apothem/plans/{suite}/_spec/spec.md`. El generador emite los archivos canónicos de
-infraestructura más los archivos `phases/NN-kebab-topic/PHASE.md` por fase. Consulta
-`src/apothem/commands/plan-generate.md`.
+Invoca `/plan-generate .apothem/plans/{suite}/_spec/spec.md` una vez que `/plan-spec` haya escrito la especificación. El generador emite los archivos canónicos de infraestructura más los archivos `phases/NN-kebab-topic/PHASE.md` por fase. Consulta `src/apothem/commands/plan-generate.md`.
 
 ### ¿Cómo reviso un plan generado?
 
-Invoca `/plan-review path/to/plan-suite/`. El revisor aplica las ocho técnicas de
-planificación y emite cuadros de mando. Los cuadros de mando reprobados bloquean la
-ejecución en SHARED+ hasta resolverse. Consulta `src/apothem/commands/plan-review.md`.
+Invoca `/plan-review path/to/plan-suite/`. El revisor aplica las nueve técnicas de planificación y emite cuadros de mando. Los cuadros de mando con fallos bloquean la ejecución en SHARED+ hasta que se resuelvan. Consulta `src/apothem/commands/plan-review.md`.
 
 ### ¿Cómo ejecuto un plan?
 
-Invoca `/plan-execute path/to/plan-suite/ [phase-id]`. Sin un `phase-id`, se ejecuta
-la siguiente fase pendiente. Con un id específico, solo se ejecuta esa fase. Consulta
-`src/apothem/commands/plan-execute.md`.
+Invoca `/plan-execute path/to/plan-suite/ [phase-id]`. Sin un `phase-id`, se ejecuta la siguiente fase pendiente. Con un id concreto, solo se ejecuta esa fase. Consulta `src/apothem/commands/plan-execute.md`.
 
 ### ¿Cómo compruebo el estado de un plan?
 
-Invoca `/plan-status path/to/plan-suite/ [--verbose]`. Informe de solo lectura.
-Consulta `src/apothem/commands/plan-status.md`.
+Invoca `/plan-status path/to/plan-suite/ [--verbose]`. Informe de solo lectura. Consulta `src/apothem/commands/plan-status.md`.
 
 ## Autoría de artefactos
 
 ### ¿Cómo añado una nueva regla?
 
-1. Elige un nombre de archivo kebab-case bajo `src/apothem/rules/`, p. ej.
+1. Elige un nombre de archivo en kebab-case bajo `src/apothem/rules/`, por ejemplo,
    `src/apothem/rules/my-new-rule.md`.
-2. Escribe el frontmatter (`name`, `description`, `type: instruction`, `pathFilter`
-   opcional).
-3. Escribe el cuerpo con las secciones canónicas: Propósito, Obligaciones, Escalado
-   por Seriedad, Antipatrones, Cumplimiento, Vínculos.
-4. Añade una fila a la cohorte de reglas (`src/apothem/rules/`).
-5. Ejecuta `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort` para
-   verificar.
+2. Escribe el frontmatter (`name`, `description`, `pathFilter`,
+   `alwaysApply`).
+3. Escribe el cuerpo con las secciones canónicas: Purpose,
+   Obligations, Seriousness Scaling, Anti-Patterns, Enforcement y
+   Bindings.
+4. Ejecuta `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` para verificar.
+
+El cargador de reglas se basa en globs: recoge todo archivo que coincida con `src/apothem/rules/*.md`, así que no hace falta ninguna entrada de registro; basta con colocar el archivo con el nombre canónico en el directorio para completar el registro.
 
 ### ¿Cómo añado un nuevo trabajador delegado?
 
-Elige un nombre de archivo kebab-case bajo el directorio que se muestra abajo, usando
-la forma `my-worker.md`:
+Elige un nombre de archivo en kebab-case bajo el directorio que se muestra a continuación, con la forma `my-worker.md`:
 
 ```text
 src/apothem/agents/
 src/apothem/agents/my-worker.md
 ```
 
-Luego:
+Después:
 
-1. Escribe el frontmatter — incluyendo `name`, `description`, `allowedTools`,
-   `maxTurns`, `version` y el marcador de tipo que se muestra abajo:
+1. Escribe el frontmatter, incluyendo `name`, `version`, `updated`,
+   `description`, `tools`, `disallowedTools`, `maxTurns` y
+   `effort`.
 
-```text
-type: agent
-```
+2. Escribe el prompt del sistema como cuerpo.
 
-1. Escribe el prompt del sistema como cuerpo.
-1. Añade una fila al registro de ayudantes en la cohorte de trabajadores delegados (`src/apothem/agents/`).
+La cohorte de trabajadores delegados se carga mediante globs desde `src/apothem/agents/*.md`, así que el archivo con el nombre canónico se recoge en cuanto se coloca; no hay ninguna tabla de registro que editar.
 
 ### ¿Cómo añado un nuevo hook?
 
@@ -89,11 +73,11 @@ type: agent
    `src/apothem/hooks/messages/<event>-<scope>.md`.
 2. Conecta el hook en `settings.json`.
 3. Actualiza la canalización de hooks.
-4. Ejecuta `python scripts/dev/validate_ecosystem.py --check hook-validator`.
+4. Ejecuta `python scripts/dev/validate_ecosystem.py`.
 
-## Compuertas de calidad
+## Puertas de calidad
 
-### ¿Cómo ejecuto las compuertas de calidad locales?
+### ¿Cómo ejecuto las puertas de calidad locales?
 
 ```bash
 python -m ruff check .

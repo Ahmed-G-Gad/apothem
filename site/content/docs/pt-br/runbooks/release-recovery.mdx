@@ -2,7 +2,7 @@
 title: "Runbook de recuperação de lançamento"
 description: "Procedimentos de recuperação, estágio por estágio, para um lançamento que falha no meio do processo sob o modelo de lançamento aditivo, sem reescrever o histórico publicado."
 machineTranslated: true
-sourceHash: "263f18e3216bf674"
+sourceHash: "91a31722fb721a3e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,7 @@ assinada e anotada; o push da tag executa os fluxos de trabalho de lançamento e
 do npm. Nada recebe force-push, e o histórico em `main` nunca é reescrito.
 
 O histórico publicado é permanente. Toda tag de lançamento, todo GitHub Release
-e toda versão do npm que o projeto publicou permanecem publicados: o projeto tem
-três lançamentos, cada um com sua tag, seu GitHub Release e sua versão do npm.
+e toda versão do npm que o projeto publicou permanecem publicados.
 As versões do npm são imutáveis: um `name@version` publicado nunca pode ser
 substituído, e um número de versão que foi despublicado nunca pode ser usado
 novamente. Por isso, a recuperação avança com um novo lançamento de patch; ela

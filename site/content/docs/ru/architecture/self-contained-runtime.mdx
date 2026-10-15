@@ -2,7 +2,7 @@
 title: "Самодостаточная среда выполнения"
 description: "Как движок Apothem запускается из любого чекаута — вендоренные зависимости, модель вызова PYTHONPATH=src и начальная загрузка дерева плагина."
 machineTranslated: true
-sourceHash: "eaa8df0482200534"
+sourceHash: "d840e762d7860704"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,7 +56,7 @@ Apothem намеренно не объявляет консольных скри
 | Поверхность | Вызов | Контекст |
 | ------- | ---------- | ------- |
 | CLI движка | `python -m apothem <command>` | Дерево исходного кода с `src/` в `PYTHONPATH` (чекаут, кэш npx, дерево плагина) |
-| Среда выполнения хуков | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Материализованная копия в общем дереве `.apothem/support/` корня окружения, по абсолютному пути |
+| Среда выполнения хуков | `<resolved CPython> "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Материализация Claude Code: копия в общем дереве `.apothem/support/` корня окружения, по абсолютному пути |
 
 - `python -m apothem` запускает `src/apothem/__main__.py`, который помещает
   `src/apothem/_vendor` в `sys.path`, проверяет, что `click` и `rich`
@@ -81,7 +81,7 @@ Apothem намеренно не объявляет консольных скри
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Именно этот вызов одношаговый установщик печатает по завершении.
+Когда лаунчер `apothem` не находится в PATH, одношаговый установщик выводит по завершении эту форму: каталог с вендорными библиотеками стоит перед `src/`, а вместо `python` указан найденный им CPython.
 
 ## Начальная загрузка дерева плагина
 

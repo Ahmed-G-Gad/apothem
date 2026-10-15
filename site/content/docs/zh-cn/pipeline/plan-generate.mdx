@@ -2,7 +2,7 @@
 title: "/plan-generate"
 description: "/plan-generate——从已编写的 `_spec/spec.md` 生成完整的主计划套件。"
 machineTranslated: true
-sourceHash: "7bcb0ac0c7c4a1ca"
+sourceHash: "0c5811434c38dedc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 输入
 
-来自 `/plan-spec` 的已编写 `_spec/spec.md` + `_inputs/handoff-manifest.yml`（或操作者提供的散文）。
+来自 `/plan-spec` 的已编写 `_spec/spec.md` 与 `_inputs/handoff-manifest.yml`（仅有散文会被拒绝：请运行 `/plan-spec` 以编写 `_spec/spec.md`；`--override` 会绕过闸门，并在 PLAN-NOTES.md 中记录一条发现项）。
 
 ## 输出
 
@@ -33,7 +33,7 @@ sourceHash: "7bcb0ac0c7c4a1ca"
 
 ## 下游
 
-/plan-review 或 /plan-execute（下游）
+/plan-review（下游）；`/plan-execute` 仅在评审记分卡存在之后运行（或使用 `--override`）
 
 ## 工作流阶段
 
