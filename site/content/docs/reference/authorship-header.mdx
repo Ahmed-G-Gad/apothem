@@ -28,7 +28,7 @@ The canonical text — written here in its `#`-comment-syntax form — is the so
 # SPDX-License-Identifier: MIT
 ```
 
-This text is the **only** authoritative source. The `file-header` validator (§8) checks files against this byte-exact fixture. Any drift between a file's header line and this fixture (under syntax substitution per §2) is reported as a finding. The validator is advisory, so a finding does not fail the build (§8).
+This text is the **only** authoritative source. The `file-header` validator (§8) checks files against this byte-exact fixture. Any drift between a file's header line and this fixture (under syntax substitution per §2) is reported as a finding. The validator is blocking: under `--strict`, as CI and the pre-commit hook run it, a finding fails the run (§8).
 
 ---
 
@@ -70,6 +70,7 @@ The following classes are **exempt** from the SPDX header line. The `file-header
 - **Vendored third-party content** — files under `_vendor/`, `vendor/`, `third_party/`, and `node_modules/`. These carry the upstream's own license or notice. Injecting our marker over upstream attribution is a license violation.
 - **Audit, planning, and harness state** — everything under `.audit/` and `.apothem/`, which holds plans, memory, learning data, and contexts. Also `projects/` and `memory/` at the working-tree root, which the harness owns. These trees are gitignored or operator-owned and out of scope of the published tree. Plan files are provenance-tracked by their frontmatter (see [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
 - **Test data fixtures** — `.yaml`, `.yml`, `.txt`, and `.json` files under `tests/fixtures/`. Test source files in that tree still carry the header.
+- **Injector smoke-test inputs** — the files under `tests/conformity-scenarios/fixtures/F-13-injector-smoke/`. They stay header-less because the injector test checks that the injector adds the header to them.
 - **Packaging and empty markers** — `.SRCINFO`, which a packaging parser reads strictly, and the zero-byte markers `.keep`, `.gitkeep`, and `py.typed`.
 - **Binary files** — the image, font, archive, media, and compiled-object suffixes listed in the fixture. A suffix that the validator's variant table does not map is exempt by default.
 
@@ -127,7 +128,7 @@ The injector is invoked by the `make headers-fix` target, which runs `scripts/in
 
 Lives at [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). For every file in the working tree, the validator looks up its applicability (per §3) and, if applicable, asserts the canonical SPDX line is present at the insertion site. For most families that site is the file's head, after an optional shebang. For Markdown and MDX files, a YAML frontmatter block is skipped first, so the canonical line may follow the closing fence, as §5 requires. MDX files resolve to the `{/* */}` form (§2) and are checked against it. The validator and the injector place the canonical block at the same index.
 
-Backed by the byte-exact fixture at [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). The corpus run reports a finding count and a sample of flagged files for this matcher. It prints no per-file diff and no coverage percentage. The matcher is advisory: its findings are reported and do not fail the build, under `--strict` or otherwise.
+Backed by the byte-exact fixture at [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). The corpus run reports a finding count and a sample of flagged files for this matcher. It prints no per-file diff and no coverage percentage. The matcher is blocking: under `--strict`, which CI and the pre-commit hook use, a finding fails the run. Without `--strict` the gate reports the finding and exits `0`.
 
 ---
 
@@ -137,8 +138,8 @@ The discipline must survive every future session and every future contributor. M
 
 1. **`src/apothem/schemas/authorship-header.txt`** — the byte-exact canonical fixture; one source of truth.
 2. **`scripts/inject-header.{sh,py}`** — the mechanical injector (§7).
-3. **`file-header` validator** (§8) — reports divergence as advisory findings; it does not fail the build.
-4. **Pre-commit hook** — the `conformity-corpus-perwrite` hook runs every per-Write matcher, including the `file-header` validator (§8), over the tracked tree with `--strict`. The `file-header` matcher is advisory, so its findings are reported and do not block a commit. The hook only checks. It has no fix mode and never runs the injector (§7), which runs through `make headers-fix`.
+3. **`file-header` validator** (§8) — reports divergence as a blocking finding, which fails a `--strict` run.
+4. **Pre-commit hook** — the `conformity-corpus-perwrite` hook runs every per-Write matcher, including the `file-header` validator (§8), over the tracked tree with `--strict`. The `file-header` matcher is blocking, so a finding blocks the commit. The hook only checks. It has no fix mode and never runs the injector (§7), which runs through `make headers-fix`.
 5. **`CLAUDE.md` mandatory-behavior block** — instructs the assistant to inject the canonical SPDX line whenever creating an applicable file.
 6. **The GitHub Copilot instructions file** at `.github/copilot-instructions.md` — instructs Copilot to do the same on file generation.
 7. **PreToolUse hooks** at `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — intercept Write/Edit tool calls on applicable paths so the SPDX line is injected at file creation rather than discovered later as a validator finding.
