@@ -23,7 +23,7 @@ Each bar MUST pass individually before emission:
 
 - **M1** Host agnosticism · **M2** Editorial disclosure · **M3** Ten dimensions · **M4** Self-application · **M5** Authority · **M6** Expertise · **M7** Option annotation · **M8** Definitiveness · **M9** Visual leverage · **M10** Bidirectional binding · **M11** Agile sprints · **M12** Phase reporting & layout · **M13** Code craft · **M14** Systemicity · **M15** Production-ready.
 
-Mechanical-fraction bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `conformity/*-grep.py` orchestrated by `conformity/gate.py`; reasoned bars (M1, M3, M4, M6, M9, M11, M12, M14) are agent-evaluated and recorded in the attestation.
+Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `conformity/*-grep.py` orchestrated by `conformity/gate.py`. Mechanical-and-reasoned bars (M3, M9, M12, M14, M15) have matchers that cover one named part of the bar; the agent evaluates the rest. Reasoned bars (M1, M2, M4, M6, M11) have no matcher and are agent-evaluated and recorded in the attestation.
 
 (Companion Sub-Rule Anchor) See `rules/pre-emission-gate-bars.md` §1 for the per-bar Check + Failure→action table.
 
