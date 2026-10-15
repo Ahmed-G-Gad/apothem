@@ -2,7 +2,7 @@
 title: "インストールワークフロー"
 description: "apothem install、update、uninstall がエンドツーエンドでどのように動作するか。"
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,10 +54,7 @@ flowchart TD
 
 ## エラー処理
 
-インストール/更新操作は、書き込み前に検証し、置き換えの前に既存の一致する
-ターゲットをバックアップし、共有された発見ディレクトリ内では Apothem が管理する
-子エントリのみをマージします。`--dry-run` は同じ検証を実行し、ディレクトリや
-ファイルを作成せずに、スキップまたは変更なしの結果を返します。
+インストール/更新操作は、書き込みの前に検証し、置き換えの前に既存の一致するターゲットをバックアップし、共有された発見ディレクトリでは Apothem が管理する子エントリのみをマージします。`--dry-run` は同じ検証を実行し、各書き込みが得るはずだった結果（`created` や `updated` など）を、ディレクトリやファイルを作成せずに返します。
 
 ## Reversibility (backup and rollback)
 

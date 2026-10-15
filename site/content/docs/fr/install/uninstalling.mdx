@@ -2,7 +2,7 @@
 title: "Désinstallation"
 description: "Supprimer Apothem et nettoyer les configurations d'environnement."
 machineTranslated: true
-sourceHash: "5480c1153c062495"
+sourceHash: "a94130c42f86f341"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,13 +34,23 @@ de canal sont ceux du
   `/plugin uninstall apothem@apothem` (l'entrée de marketplace peut être
   supprimée avec `/plugin marketplace remove ahmed-g-gad/apothem`).
 - **npx (canal 2)** — rien à supprimer ; `npx` s'exécute depuis son cache.
-  Videz-le avec `npm cache clean --force` si vous voulez faire disparaître la
-  copie en cache.
+  Videz-le avec `npm cache clean --force` si vous voulez supprimer la copie
+  en cache.
 - **Installateur en une seule étape (canal 3)** — exécutez le script de
   désinstallation correspondant depuis le checkout :
-  `scripts/installer/uninstall.sh` (POSIX) ou `scripts/installer/uninstall.ps1`
-  (PowerShell). Les deux demandent confirmation avant de supprimer et refusent
-  les cibles non sûres.
+  `scripts/installer/uninstall.sh` (POSIX) ou
+  `scripts/installer/uninstall.ps1` (PowerShell). Chaque script supprime
+  l'environnement nommé par `--harness` (`-Harness` sous PowerShell), sinon
+  `APOTHEM_HARNESS`, sinon Claude Code. Il supprime aussi le shim de commande
+  `apothem`. La source provient de `APOTHEM_SOURCE` lorsque cette variable est
+  définie, ou de `APOTHEM_HOME` (par défaut `$HOME/.apothem`). La source reste en
+  place, sauf si vous passez `--remove-source` (`-RemoveSource` sous PowerShell).
+  Cet indicateur ne supprime que le clone géré situé dans `APOTHEM_HOME`, et
+  seulement lorsqu'il contient un répertoire `.git`. Avec l'emplacement par
+  défaut, il supprime aussi les sauvegardes d'installation et le journal situé
+  sous `~/.apothem/`. Les deux demandent confirmation avant de supprimer les
+  configurations d'environnement et la source. `--yes` (`-Yes` sous PowerShell)
+  ignore ces invites. Les deux refusent les cibles non sûres.
 - **Extension de la famille VS Code (canal 4)** — exécutez d'abord
   **Apothem: Uninstall** depuis la palette de commandes pour supprimer les
   configurations d'environnement, puis supprimez l'extension depuis la vue

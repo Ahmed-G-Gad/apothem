@@ -2,7 +2,7 @@
 title: "トラブルシューティング"
 description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,7 +71,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install がハーネスを見つけられない
 
-apothem doctor を実行して、検出されたハーネスディレクトリを一覧表示します。何も見つからない場合は、ハーネスがインストールされ、少なくとも一度は起動されていることを確認してください。
+apothem doctor を実行して、ハーネスごとに 1 行ずつある Harness Status の表を確認してください。`not installed` と表示された行は、Apothem がそのハーネスのインストールを検出しなかったことを意味します。`needs --project` と表示された行はプロジェクトスコープのハーネスで、doctor は `--project <path>` を渡した場合にのみこれを確認します。doctor が `No harness is installed yet` と報告した場合は、ハーネスがインストールされていることを確認してから、`apothem install --harness <name>` を実行してください。
 
 ### apothem verify がアダプターの失敗を報告する
 

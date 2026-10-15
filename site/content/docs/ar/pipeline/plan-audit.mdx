@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "‎/plan-audit — حارسٌ ذو حلقة مغلقة لخط أنابيب /plan — يلفّ spec → generate → review ويُعالِج النتائج معالجةً نشطة حتى تصير الحزمة كُلًّا مُراجَعًا بلا نتائج."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "6f82709e6c4d40fc"
 مع وسائط:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## المُدخَلات
@@ -33,7 +33,7 @@ sourceHash: "6f82709e6c4d40fc"
 
 ## الموضع في خط الأنابيب
 
-<bdi>`/plan-audit`</bdi> **متعامد** مع خط الأنابيب الخطّي، وليس طورًا داخله. التسلسل الخطّي القانوني هو <bdi>`/plan-spec → /plan-generate → /plan-review → /plan-design`</bdi> (شرطي، للحزم الحاملة للمعمارية فقط) <bdi>`→ /plan-execute`</bdi>. يشمل <bdi>`/plan-audit`</bdi> الأطوار <bdi>`/plan-spec → /plan-generate → /plan-review`</bdi> بوصفه مُلفِّفًا واحدًا ذا حلقة مغلقة يمكن استدعاؤه عند أيّ نقطة: يفحص الحالة، ويُشغِّل الأطوار المفقودة فقط حين توجد حزمة مُولَّدة؛ ومن دون حزمة مُولَّدة يرفض التنفيذ برسالة <bdi>`Blocked: run /plan-generate first`</bdi>. وهو متميّز عن سلسلة تدقيق الحصن (تُدخَل عند <bdi>`/code-review`</bdi>، وطرفية عند <bdi>`/threat-model-audit`</bdi>)، التي تُدقِّق في شيفرة مُنفَّذة بدلًا من حزمة خطّة.
+<bdi>`/plan-audit`</bdi> **متعامد** مع خط الأنابيب الخطّي، وليس طورًا داخله. التسلسل الخطّي القانوني هو <bdi>`/plan-spec → /plan-generate → /plan-review → /plan-design`</bdi> (شرطي، للحزم الحاملة للمعمارية فقط) <bdi>`→ /plan-execute`</bdi>. ويشمل <bdi>`/plan-audit`</bdi> الأطوار <bdi>`/plan-spec → /plan-generate → /plan-review`</bdi> بوصفه مُلفِّفًا واحدًا ذا حلقة مغلقة يمكن استدعاؤه عند أيّ نقطة: يفحص الحالة، ويشغّل الأطوار المفقودة فقط. ومن دون مواصفة مكتوبة ولا حزمة مُولَّدة، يرفض التنفيذ برسالة <bdi>`Blocked: run /plan-spec first`</bdi> (ويتجاوز <bdi>`--override`</bdi> البوابة، ويسجّل التجاوز ملاحظةً في <bdi>PLAN-NOTES.md</bdi>، مع ذكر المبرّر والشرط المسبق المفقود). وهو يختلف عن تسلسل مراجعة التدقيق (يُدخَل إليه عند <bdi>`/code-review`</bdi>، وطرفيّته <bdi>`/threat-model-audit`</bdi>)، الذي يُدقِّق في شيفرة مُنفَّذة بدلًا من حزمة خطّة.
 
 ## أطوار سير العمل
 
@@ -60,7 +60,7 @@ sourceHash: "6f82709e6c4d40fc"
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## إحالات متقاطعة

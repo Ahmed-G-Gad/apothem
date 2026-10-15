@@ -45,7 +45,7 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 
 **Shared semantics (cross-harness convergence floor).** Every adapter sub-package:
 
-- exposes a `<Name>Adapter` class implementing the `HarnessAdapter` protocol (`name`, `output_path`, `install`, `uninstall`, `is_installed`, `verify`);
+- exposes a `<Name>Adapter` class implementing the `HarnessAdapter` protocol (`name`, `output_path`, `install`, `update`, `uninstall`, `is_installed`, `verify`);
 - ships sibling action modules `install.py` / `uninstall.py` / `update.py` / `verify.py`;
 - ships `materializer.py` exposing `materialize_native_config(profile) -> str` only when the harness renders a single-file native config surface; raw-propagation adapters document the missing materializer as an intentional divergence;
 - registers via the `[project.entry-points."apothem.harnesses"]` table in `pyproject.toml`;

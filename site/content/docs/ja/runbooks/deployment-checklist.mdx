@@ -2,7 +2,7 @@
 title: "デプロイチェックリスト"
 description: "Apothem エコシステムをデプロイまたは共有する前の事前検証チェックリスト"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,20 +30,19 @@ frontmatter をパースし、YAML エラーと欠落している必須フィー
 
 ### ルール（`src/apothem/rules/*.md`）
 
-- [ ] `name` — ファイル名に一致する kebab-case 識別子
-- [ ] `version` — semver `MAJOR.MINOR.PATCH`（例: `"X.Y.Z"`）
-- [ ] `updated` — ISO 8601 日付（例: `"2026-04-20"`）
+- [ ] `name` — ファイル名に一致する kebab-case の識別子
 - [ ] `description` — 1 文の要約
-- [ ] `scope` — `"always-on"` または `"path-filtered"`
-- [ ] `portability` — `"universal"`、`"universal-with-windows-caveats"`、`"unix-only"`、または `"windows-only"`
-- [ ] `pathFilter` — パスフィルタールールでは存在し、有効な glob 文字列であること。常時オンのルールでは存在しないこと
+- [ ] `alwaysApply` — 常時オンのルールでは `true`、パスフィルタールールでは `false`
+- [ ] `pathFilter` — すべてのルールに存在すること。常時オンのルールでは `""`（`alwaysApply: true`）、パスフィルタールールではカンマ区切りの glob リスト（`alwaysApply: false`）
+
+ルールには `version`、`updated`、`scope`、`portability` のキーはありません。
 
 ### コマンド（`src/apothem/commands/*.md`）
 
 - [ ] `name` — kebab-case のコマンド名
-- [ ] `version`、`updated`、`description`、`argument-hint` が存在
-- [ ] `disable-model-invocation` が存在し意図的である（ガイダンス専用コマンドでは `true`）
-- [ ] `effort`、`portability` を、存在する場合はレビュー済み（schema 上は任意）
+- [ ] `version`、`updated`、`description`、`argument-hint`、`portability`、`allowed-tools` が存在すること
+- [ ] `disable-model-invocation` が存在し、意図したものであること（ガイダンスのみのコマンドでは `true`）
+- [ ] `effort` キーがないこと：`command.schema.json` は `additionalProperties: false` を設定しており、これを許可しません
 
 ### 委任ワーカー
 
@@ -53,17 +52,17 @@ frontmatter をパースし、YAML エラーと欠落している必須フィー
 src/apothem/agents/*.md
 ```
 
-- [ ] `name`、`version`、`updated`、`description` が存在
+- [ ] `name`、`version`、`updated`、`description` が存在すること
 - [ ] `tools` — 許可されたツールのカンマ区切りリスト
-- [ ] `disallowedTools` — 許可されていないツールを明示的に列挙
-- [ ] `maxTurns` — 設定済み（> 10 の場合は理由コメント付き）
-- [ ] `permissionMode` — **`"bypassPermissions"` であってはならない** — `"default"` を使用
-- [ ] `memory: false`（永続メモリを意図する場合を除く）
+- [ ] `disallowedTools` — 許可しないツールを明示的に列挙
+- [ ] `maxTurns` — 設定すること（10 を超える場合は理由のコメントを付ける）
+- [ ] `permissionMode` — **`"bypassPermissions"` を設定してはならない**。キーは未設定のままにする（アグノスティックな姿勢は権限モードを事前設定しないため）。
+- [ ] `memory` は、永続メモリを意図的に使う場合を除き省略すること。設定する場合は `user`、`project`、`local` のいずれかとする（真偽値形式は使わない）。
 
 ### スキル（`src/apothem/skills/*/SKILL.md`）
 
-- [ ] `name`、`version`、`updated`、`description` が存在
-- [ ] `user-invocable` — 宣言済み（true/false）
+- [ ] `name`、`version`、`updated`、`description`、`archetype`、`disable-model-invocation`、`allowed-tools` が存在すること
+- [ ] `userInvocable` を宣言していること（true/false）。ソースでの綴りは `userInvocable` である。スキルは、`userInvocable` と `user-invocable`（Claude Code での綴り）のいずれか一方だけを持つ。
 
 ---
 

@@ -2,7 +2,7 @@
 title: "Tiempo de ejecución autónomo"
 description: "Cómo el motor de Apothem se ejecuta desde cualquier checkout — dependencias incorporadas, el modelo de invocación PYTHONPATH=src y el arranque del árbol del plugin."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,7 +85,7 @@ del checkout a `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Cuando el lanzador `apothem` no está en PATH, el instalador de un solo paso imprime esta forma al terminar, con el directorio de dependencias incluidas antes de `src/` y el CPython que resolvió en lugar de `python`.
+Cuando el lanzador `apothem` no está en PATH, `install.sh` imprime esta forma al terminar, con el directorio de dependencias incluidas antes de `src/` y el CPython que resolvió en lugar de `python`. `install.ps1` imprime los mismos dos ajustes en forma de PowerShell: una asignación de `$env:PYTHONPATH` que une el directorio de dependencias incluidas y `src/` con `;`, y después `& '<CPython>' -m apothem <command>`.
 
 ## Arranque del árbol del plugin
 

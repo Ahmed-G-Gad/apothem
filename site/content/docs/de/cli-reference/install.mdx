@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,7 +87,7 @@ Profilfeld benennen:
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (die MCP-Spezifikation erklärt HTTP+SSE für veraltet) | Verwenden Sie `streamable-http`, wenn der Server es unterstützt. |
 | `mcp_plain_http` | eine `http://`-URL zu einem Host, der keine Loopback-Adresse ist | Verwenden Sie eine `https://`-URL. |
-| `mcp_literal_credential` | ein `headers`- oder `env`-Wert, der wie ein Token geformt ist (`ghp_`, `github_pat_`, `sk-`, `xox*-` oder `Bearer` mit einem langen Token) | Bewahren Sie das Geheimnis in einer Umgebungsvariable auf und schreiben Sie Referenzen im Stil von `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | ein `headers`- oder `env`-Wert, der wie ein Token geformt ist (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-` oder `Bearer` mit einem langen Token) | Bewahren Sie das Geheimnis in einer Umgebungsvariable auf und schreiben Sie Referenzen im Stil von `${GITHUB_TOKEN}`. |
 
 Der Empfehlungshinweis zu Anmeldedaten gibt niemals den gefundenen Wert aus. Ein
 Wert, der eine `${...}`-Referenz enthält, wird niemals markiert.
@@ -117,10 +117,10 @@ Kommentare, nachgestellte Kommas und JSON5-Syntax verloren gingen. Daher gilt:
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zu installierender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). Führen Sie `apothem harnesses list` aus, um die registrierten Namen zu sehen. |
+| `--harness NAME` | Zu installierender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). Bei `all` werden Harnesses übersprungen, die in `exclude_harnesses` des Profils aufgeführt sind; ein ausdrücklich benannter Harness wird dagegen auch dann installiert, wenn er aufgeführt ist. Führen Sie `apothem harnesses list` aus, um die registrierten Namen zu sehen. |
 | `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Vorschau der Installation, ohne Dateien zu schreiben. |
-| `--clean`, `--fresh` | Optionaler sauberer Neuanfang: Sichert und entfernt den bisherigen Installationszustand je Harness vor der Installation. |
+| `--clean`, `--fresh` | Optionaler sauberer Neuanfang: Der bisherige Installationszustand je Harness wird vor der Installation gesichert und entfernt. |
 | `--yes` | Überspringt die Bestätigung je Ziel während einer Entfernung für den sauberen Neuanfang (erforderlich für nicht interaktive `--clean`-Läufe). |
 | `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
@@ -166,7 +166,15 @@ bearbeiten, mit dem Unified Diff in `detail.diff` — derselbe Plan, den
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

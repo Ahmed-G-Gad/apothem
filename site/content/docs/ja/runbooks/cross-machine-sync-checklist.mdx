@@ -2,7 +2,7 @@
 title: "マシン間同期検証チェックリスト"
 description: "完全な可搬性チェックを伴い、新しいホスト上で Claude Code アダプターが正しくインストール、検証、アンインストールされることを確認する検証手順。"
 machineTranslated: true
-sourceHash: "fe0bc745cce7932a"
+sourceHash: "b6f6f7d6a489e8c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**期待される結果:** 対話式のフローでプロンプトが表示されること。`--yes` はバッチ実行のためにプロンプトを省略すること。どちらのフローでも、Claude Code の設定ルートに Apothem がマテリアライズしたファイルが残らないこと。`apothem` シムが削除されること（POSIX では `~/.local/bin/apothem`、Windows では `%LOCALAPPDATA%\Microsoft\WindowsApps` 内の `apothem.cmd`）。
+**期待される結果:** 対話式フローでプロンプトが表示されること。`--yes` を指定すると、バッチ実行ではプロンプトが省略されること。どちらのフローでも、Claude Code の設定ルートに Apothem がマテリアライズしたファイルが残らないこと。`apothem` シムが削除されること（`~/.local/bin/apothem`。`%LOCALAPPDATA%\Microsoft\WindowsApps` の `apothem.cmd` シムは、`uninstall.ps1` によってのみ削除されます）。
 
 ## 6. 安全ガードの検証
 

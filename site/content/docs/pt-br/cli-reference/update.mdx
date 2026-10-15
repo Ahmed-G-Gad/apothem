@@ -2,7 +2,7 @@
 title: "update"
 description: "Referência da CLI para o comando apothem update."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ O alias na forma contínua `apothem updating` (também aceito como
 
 | Opção | Descrição |
 |---|---|
-| `--harness NAME` | Adaptador de harness a atualizar, ou `all` para o conjunto de todo o registro (obrigatório). |
+| `--harness NAME` | Adaptador de harness a atualizar, ou `all` para o conjunto de todo o registro (obrigatório). Com `all`, os harnesses listados em `exclude_harnesses` do perfil são ignorados, mas um harness nomeado explicitamente é atualizado mesmo quando listado. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. O padrão é `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mostra uma prévia da atualização sem gravar arquivos. |
 | `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. Obrigatório quando o conjunto de harnesses selecionado inclui adaptadores com escopo de projeto. |

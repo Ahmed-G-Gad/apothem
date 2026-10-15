@@ -37,8 +37,17 @@ Removal matches the install channel you used. Channel numbers are those of the
   `npm cache clean --force` if you want the cached copy gone.
 - **One-shot installer (channel 3)** — run the matching uninstall script from the
   checkout: `scripts/installer/uninstall.sh` (POSIX) or
-  `scripts/installer/uninstall.ps1` (PowerShell). Both confirm before
-  removing and refuse unsafe targets.
+  `scripts/installer/uninstall.ps1` (PowerShell). Each script removes the
+  harness named by `--harness` (`-Harness` on PowerShell), else
+  `APOTHEM_HARNESS`, else Claude Code. It also removes the `apothem`
+  command shim. The source comes from `APOTHEM_SOURCE` when set, or from
+  `APOTHEM_HOME` (default `$HOME/.apothem`). The source stays unless you pass
+  `--remove-source` (`-RemoveSource` on PowerShell). That flag deletes only the
+  managed clone at `APOTHEM_HOME`, and only when it has a `.git` directory.
+  With the default location, it also deletes the install backups and the
+  ledger under `~/.apothem/`. Both prompt before removing the harness configs
+  and the source. `--yes` (`-Yes` on PowerShell) skips the prompts. Both
+  refuse unsafe targets.
 - **VS Code-family extension (channel 4)** — run **Apothem: Uninstall** from the command
   palette first to remove the harness configs, then remove the extension from
   the Extensions view or with `code --uninstall-extension ahmed-g-gad.apothem`.

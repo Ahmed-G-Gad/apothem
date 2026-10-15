@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Memformat makalah ke templat venue dan merakit paket pengajuan (suplemen, ketersediaan data/kode, surat pengantar, etika/konflik kepentingan), dengan rencana preprint/DOI."
 machineTranslated: true
-sourceHash: "34e0993ca051136c"
+sourceHash: "775d7080efc5b935"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,8 @@ Paket pengajuan terformat venue di lokasi yang natural bagi host (naskah terform
 Perintah ini mengikuti alur kerja pipeline `/research` standar:
 
 1. **Memuat konteks** — Membaca makalah dan laporan tinjauan.
-2. **Memverifikasi Gerbang Urutan** — Memastikan `_outputs/review-report.md` ada; jika tidak, berhenti dengan `Blocked: run /research-review first`.
-3. **Memformat & mengemas** — Menerapkan templat venue; merakit suplemen, ketersediaan data/kode, surat pengantar, deklarasi etika / konflik kepentingan.
+2. **Memverifikasi Gerbang Urutan** — Memastikan `_outputs/review-report.md` ada dan revisi berkeparahan HIGH-nya sudah diselesaikan (atau operator telah secara eksplisit menerima risiko sisa); jika tidak, berhenti dengan `Blocked: run /research-review first`.
+3. **Memformat & mengemas** — Menerapkan templat venue; merakit suplemen, ketersediaan data/kode, surat pengantar, deklarasi etika / konflik kepentingan (COI).
 4. **Merencanakan preprint / pengarsipan** — Mencatat rencana preprint dan DOI; menyusun daftar periksa pengajuan.
 5. **Memperbarui manifes serah terima** — Mencatat paket pengajuan dan catatan publikasi.
 6. **Memancarkan paket** — Paket pengajuan terformat venue + `_outputs/publication-record.md`.
@@ -54,7 +54,7 @@ Pemformatan menghormati pengungkapan bertahap: untuk tempat-terbit tunanetra-gan
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Blocked: run /research-review first | Tidak ada laporan tinjauan | Jalankan `/research-review` untuk menghasilkan `_outputs/review-report.md` |
+| Blocked: run /research-review first | Tidak ada laporan tinjauan, atau revisi HIGH yang masih terbuka | Jalankan `/research-review` untuk menghasilkan `_outputs/review-report.md`, atau selesaikan revisi HIGH yang terbuka lalu jalankan ulang `/research-review`, atau terima risiko sisa secara eksplisit |
 | Revisi HIGH belum ditangani | Temuan tinjauan dilewati | Tangani revisi dan jalankan ulang `/research-review` |
 | Ketersediaan data/kode hilang | Permukaan reproduksibilitas tidak ada | Tambahkan pernyataan ketersediaan data / kode sebelum pengajuan |
 

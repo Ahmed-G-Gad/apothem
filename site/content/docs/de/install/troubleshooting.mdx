@@ -2,7 +2,7 @@
 title: "Fehlerbehebung"
 description: "Lösungen für häufige Apothem-Installationsfehler und Laufzeitprobleme über die Plugin-, npx- und Installer-Pfade hinweg."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -94,9 +94,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install findet keine Harnesses
 
-Führen Sie apothem doctor aus, um erkannte Harness-Verzeichnisse aufzulisten.
-Wenn keine gefunden werden, stellen Sie sicher, dass Ihr Harness installiert und
-mindestens einmal gestartet wurde.
+Führen Sie apothem doctor aus, um dessen Tabelle Harness Status zu lesen, die eine Zeile pro Harness enthält. Eine Zeile mit der Markierung `not installed` bedeutet, dass Apothem für diesen Harness keine Installation gefunden hat. Eine Zeile mit der Markierung `needs --project` gehört zu einem Harness mit Projekt-Geltungsbereich, den doctor nur prüft, wenn Sie `--project <path>` angeben. Meldet doctor `No harness is installed yet`, stellen Sie sicher, dass Ihr Harness installiert ist, und führen Sie anschließend `apothem install --harness <name>` aus.
 
 ### apothem verify meldet einen fehlerhaften Adapter
 

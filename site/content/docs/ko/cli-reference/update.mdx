@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,14 +28,14 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 | 옵션 | 설명 |
 |---|---|
-| `--harness NAME` | 업데이트할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). |
-| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`. |
+| `--harness NAME` | 업데이트할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). `all`을 사용하면 프로필의 `exclude_harnesses`에 나열된 하니스는 건너뛰지만, 명시적으로 이름을 지정한 하니스는 나열되어 있어도 업데이트됩니다. |
+| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`입니다. |
 | `--dry-run` | 파일을 쓰지 않고 업데이트를 미리 봅니다. |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. 선택한 하니스 집합에 프로젝트 범위 어댑터가 포함되면 필수입니다. |
-| `--quiet`, `-q` | 정보성 출력을 억제하며, 오류만 출력합니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |
 | `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
-| `--json` | `--format json`의 단축형. |
+| `--json` | `--format json`의 축약형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
 | `-h`, `--help` | 도움말을 표시하고 종료합니다. |
 

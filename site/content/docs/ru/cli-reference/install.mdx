@@ -2,7 +2,7 @@
 title: "install"
 description: "Справочник CLI для команды apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,7 +85,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (спецификация MCP объявляет HTTP+SSE устаревшим) | Используйте `streamable-http`, когда сервер его поддерживает. |
 | `mcp_plain_http` | URL `http://` к хосту, который не является loopback | Используйте URL `https://`. |
-| `mcp_literal_credential` | значение `headers` или `env`, похожее на токен (`ghp_`, `github_pat_`, `sk-`, `xox*-` или `Bearer` с длинным токеном) | Храните секрет в переменной окружения и пишите ссылки в стиле `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | значение `headers` или `env`, похожее на токен (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, либо `Bearer` с длинным токеном) | Храните секрет в переменной окружения и пишите ссылки вида `${GITHUB_TOKEN}`. |
 
 Рекомендация об учётных данных никогда не печатает найденное значение.
 Значение, содержащее ссылку `${...}`, никогда не помечается.
@@ -113,14 +113,14 @@ JSONC), `openclaw.json` (JSON5) и `config.yaml`. Установка объед�
 
 | Параметр | Описание |
 |---|---|
-| `--harness NAME` | Адаптер окружения для установки или `all` для набора уровня всего реестра (обязателен). Выполните `apothem harnesses list`, чтобы увидеть зарегистрированные имена. |
+| `--harness NAME` | Адаптер окружения для установки или `all` для набора уровня всего реестра (обязателен). С `all` окружения, перечисленные в `exclude_harnesses` профиля, пропускаются, но окружение, названное явно, устанавливается, даже если оно в этом списке. Зарегистрированные имена показывает `apothem harnesses list`. |
 | `--profile PATH` | Путь к YAML общего профиля. По умолчанию `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Предпросмотр установки без записи файлов. |
 | `--clean`, `--fresh` | Чистый лист по явному запросу: создать резервную копию и удалить прежнее состояние установки для каждого окружения перед установкой. |
 | `--yes` | Пропустить подтверждение для каждой цели при удалении в режиме чистого листа (обязателен для неинтерактивных запусков с `--clean`). |
 | `--project PATH` | Корень проекта для окружений с областью проекта. |
 | `--quiet`, `-q` | Подавить информационный вывод; выводятся только ошибки. |
-| `--verbose`, `-v` | Печатать обоснование каждой непроецированной возможности вместо сгруппированного примечания на окружение. |
+| `--verbose`, `-v` | Печатать обоснование каждой непроецированной возможности вместо сгруппированного примечания по окружению. |
 | `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
 | `--json` | Сокращение для `--format json`. |
 | `--no-color` | Отключить цветовые коды ANSI в выводе. |
@@ -162,7 +162,15 @@ JSONC), `openclaw.json` (JSON5) и `config.yaml`. Установка объед�
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

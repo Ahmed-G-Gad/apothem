@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper — Ensambla un borrador de artículo de primer nivel (del resumen a la conclusión más las referencias) a partir de la síntesis, el diseño y el análisis, con cada cita verificada para que resuelva."
 machineTranslated: true
-sourceHash: "748c384ba8f36be4"
+sourceHash: "e7be8ccd7da4e80f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,12 @@ Con argumentos:
 ## Salidas
 
 El entregable del artículo en una ubicación natural del host (`paper/`): resumen, introducción, trabajo relacionado, método, resultados, discusión, limitaciones, conclusión, referencias.
+
+La etapa también escribe el registro de la puerta de validación. Contiene el resultado de cada referencia y el número de citas resueltas frente al número declarado:
+
+```text
+_outputs/paper-attestation.md
+```
 
 ## Posterior
 

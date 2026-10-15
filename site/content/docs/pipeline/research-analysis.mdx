@@ -46,7 +46,7 @@ The command follows the standard `/research` pipeline workflow:
 
 ## Rigor floor
 
-Stochastic results are reported as best, mean, median, standard deviation, and worst across repetitions, with convergence curves and distribution plots. Comparisons use nonparametric tests — a paired signed-rank test pairwise, an omnibus rank test with post-hoc correction across methods — reported with a stochastic-superiority effect size and a critical-difference diagram. A result advances to the paper only when it clears the advancement gate: it beats its comparators convincingly and significantly, and the clearance is logged in an auditable runbook.
+A stochastic method is run for at least thirty independent repetitions per instance or condition, more when the spread across repetitions is wide relative to the differences under test, until the summary statistics are stable. Its results are reported as best, mean, median, standard deviation, and worst across repetitions, with convergence curves and distribution plots. Comparisons use nonparametric tests — a paired signed-rank test pairwise, an omnibus rank test with post-hoc correction across methods — reported with a stochastic-superiority effect size and a critical-difference diagram. A result advances to the paper only when it clears the advancement gate: it beats its comparators convincingly and significantly, and the clearance is logged in an auditable runbook.
 
 ## Failure modes
 

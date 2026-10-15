@@ -2,7 +2,7 @@
 title: "Menyunting profil"
 description: "Ubah profil bersama dan wujudkan-ulang setiap perkakas yang terpasang."
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,7 +81,7 @@ apothem verify --harness all
 
 `profile show` mencerminkan suntingan Anda.
 
-`apothem verify --harness all` memeriksa setiap harness terdaftar, sehingga keluar dengan kode bukan-nol kecuali semuanya telah terpasang. Harness berlingkup proyek juga memerlukan `--project PATH`; tanpanya, batch berhenti dengan galat `project.required`. Untuk memeriksa hanya harness yang Anda perbarui, jalankan perintah yang sama dengan nama harness tersebut:
+`apothem verify --harness all` memeriksa setiap harness terdaftar kecuali yang tercantum dalam `exclude_harnesses` pada profil, sehingga keluar dengan kode bukan-nol kecuali semua harness lainnya telah terpasang. Harness berlingkup-proyek juga memerlukan `--project PATH`; tanpanya, batch berhenti dengan galat `project.required`. Untuk memeriksa hanya harness yang Anda perbarui, jalankan perintah yang sama dengan nama harness tersebut:
 
 ```bash
 apothem verify --harness <name>

@@ -2,7 +2,7 @@
 title: "قائمة تحقّق النشر"
 description: "قائمة تحقّق للتحقّق المسبق قبل نشر منظومة Apothem أو مشاركتها"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,20 +30,19 @@ sourceHash: "09dbc1fde38d4135"
 
 ### القواعد (`src/apothem/rules/*.md`)
 
-- [ ] `name` — مُعرّف بنمط kebab-case مطابق لاسم الملفّ
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (مثال: `"X.Y.Z"`)
-- [ ] `updated` — تاريخ ISO 8601 (مثال: `"2026-04-20"`)
+- [ ] `name` — مُعرِّف بنمط kebab-case مطابق لاسم الملفّ
 - [ ] `description` — ملخّص من جملة واحدة
-- [ ] `scope` — `"always-on"` أو `"path-filtered"`
-- [ ] `portability` — `"universal"` أو `"universal-with-windows-caveats"` أو `"unix-only"` أو `"windows-only"`
-- [ ] `pathFilter` — حاضر وعبارة عن سلسلة glob صالحة للقواعد المُرشَّحة بالمسار؛ وغائب للقواعد الدائمة التشغيل
+- [ ] `alwaysApply` — `true` للقواعد الدائمة التشغيل، و`false` للقواعد المُرشَّحة بالمسار
+- [ ] `pathFilter` — حاضر في كل قاعدة: `""` للقواعد الدائمة التشغيل (`alwaysApply: true`)، وقائمة glob مفصولة بفواصل للقواعد المُرشَّحة بالمسار (`alwaysApply: false`)
+
+لا تحمل القواعد أيًّا من المفاتيح `version` أو `updated` أو `scope` أو `portability`.
 
 ### الأوامر (`src/apothem/commands/*.md`)
 
 - [ ] `name` — اسم أمر بنمط kebab-case
-- [ ] `version` و`updated` و`description` و`argument-hint` حاضرة
+- [ ] `version` و`updated` و`description` و`argument-hint` و`portability` و`allowed-tools` حاضرة
 - [ ] `disable-model-invocation` حاضر ومقصود (`true` للأوامر الإرشادية فقط)
-- [ ] مراجعة `effort` و`portability` حيثما وُجدا (اختياريان وفق الـ schema)
+- [ ] لا يوجد مفتاح `effort`: إذ يضبط `command.schema.json` القيمة `additionalProperties: false` ولا يقبله
 
 ### العاملون المُفوَّضون
 
@@ -57,13 +56,13 @@ src/apothem/agents/*.md
 - [ ] `tools` — قائمة بالأدوات المسموح بها مفصولة بفواصل
 - [ ] `disallowedTools` — يدرج صراحةً الأدوات غير المسموح بها
 - [ ] `maxTurns` — مضبوط (مع تعليق مبرِّر إذا كان > 10)
-- [ ] `permissionMode` — **يجب ألّا يكون `"bypassPermissions"`** — استخدم `"default"`
-- [ ] `memory: false` ما لم تكن الذاكرة الدائمة مقصودة
+- [ ] `permissionMode` — **يجب ألّا يكون `"bypassPermissions"`**؛ اترك المفتاح غير مضبوط، لأن الوضع المحايد لا يضبط مسبقًا أي وضع أذونات
+- [ ] `memory` غير مضبوط ما لم تكن الذاكرة الدائمة مقصودة؛ وإذا ضُبط فيكون أحد القيم `user` أو `project` أو `local` (لا توجد صيغة بوليانية)
 
 ### المهارات (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name` و`version` و`updated` و`description` حاضرة
-- [ ] `user-invocable` — مُعلَن (true/false)
+- [ ] `name` و`version` و`updated` و`description` و`archetype` و`disable-model-invocation` و`allowed-tools` حاضرة
+- [ ] `userInvocable` مُعلَن (true/false). تهجئة المصدر هي `userInvocable`؛ والمهارة تحمل واحدًا فقط من `userInvocable` أو `user-invocable` (تهجئة Claude Code).
 
 ---
 

@@ -2,7 +2,7 @@
 title: "قائمة تحقق التحقق من المزامنة عبر الأجهزة"
 description: "إجراء تحقّق لتأكيد أن محوّل Claude Code يُثبَّت ويُتحقَّق منه ويُزال بشكل صحيح على مضيف جديد، مع فحوص قابلية النقل الكاملة."
 machineTranslated: true
-sourceHash: "fe0bc745cce7932a"
+sourceHash: "b6f6f7d6a489e8c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**المتوقَّع:** يطالب المسار التفاعلي بالتأكيد؛ ويتخطّى <bdi>`--yes`</bdi> المطالبة في التشغيلات الدفعية؛ ويترك كلا المسارين جذر إعدادات <bdi>Claude Code</bdi> خاليًا من ملفات <bdi>Apothem</bdi> المُجسَّدة؛ وتُزال أداة الغلاف <bdi>shim</bdi> للأمر <bdi>`apothem`</bdi> (<bdi>`~/.local/bin/apothem`</bdi> على <bdi>POSIX</bdi>، و<bdi>`apothem.cmd`</bdi> في <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> على <bdi>Windows</bdi>).
+**المتوقَّع:** يطالب المسار التفاعلي بالتأكيد؛ ويتخطّى <bdi>`--yes`</bdi> المطالبة في التشغيلات الدفعية؛ ويترك كلا المسارين جذر إعدادات <bdi>Claude Code</bdi> خاليًا من ملفات <bdi>Apothem</bdi> المُجسَّدة؛ وتُزال أداة الغلاف <bdi>`apothem`</bdi> (<bdi>`~/.local/bin/apothem`</bdi>؛ وأمّا أداة الغلاف <bdi>`apothem.cmd`</bdi> في <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> فلا تُزال إلا بواسطة <bdi>`uninstall.ps1`</bdi>).
 
 ## 6. التحقق من حواجز الأمان
 

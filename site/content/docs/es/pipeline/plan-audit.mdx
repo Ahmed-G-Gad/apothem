@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Guardián de bucle cerrado del pipeline /plan — envuelve spec → generate → review y remedia activamente los hallazgos hasta que la suite es un todo revisado y con cero hallazgos."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Guardián de bucle cerrado del pipeline `/plan`. Mientras `/plan-review` reporta
 Con argumentos:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## Entradas
@@ -33,7 +33,7 @@ Un reporte persistente y acotado en `<suite>/_outputs/audit-report-<YYYY-MM-DD>.
 
 ## Posición en el pipeline
 
-`/plan-audit` es **ortogonal** al pipeline lineal, no una etapa dentro de él. La secuencia lineal canónica es `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, solo para suites con arquitectura) `→ /plan-execute`. `/plan-audit` abarca `/plan-spec → /plan-generate → /plan-review` como un único envoltorio de bucle cerrado que puede invocarse en cualquier punto: inspecciona el estado y ejecuta solo las etapas que faltan una vez que existe una suite generada; sin suite generada, se niega con `Blocked: run /plan-generate first`. Es distinto de la cadena de auditoría de fortaleza (entra en `/code-review` y termina en `/threat-model-audit`), que audita una base de código ejecutada en lugar de una suite de plan.
+`/plan-audit` es **ortogonal** al pipeline lineal, no una etapa dentro de él. La secuencia lineal canónica es `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, solo para suites con arquitectura) `→ /plan-execute`. `/plan-audit` abarca `/plan-spec → /plan-generate → /plan-review` como un único envoltorio de bucle cerrado que puede invocarse en cualquier punto: inspecciona el estado y ejecuta solo las etapas que faltan. Si no hay ni una especificación escrita ni una suite generada, se niega con `Blocked: run /plan-spec first` (`--override` omite la puerta y registra la omisión como hallazgo en PLAN-NOTES.md, con la justificación y la precondición que falta indicadas). Es distinto de la secuencia de revisión de auditoría (entra en `/code-review` y termina en `/threat-model-audit`), que audita una base de código ejecutada en lugar de una suite de plan.
 
 ## Fases del flujo de trabajo
 
@@ -60,7 +60,7 @@ Un reporte persistente y acotado en `<suite>/_outputs/audit-report-<YYYY-MM-DD>.
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## Referencias cruzadas

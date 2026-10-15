@@ -2,7 +2,7 @@
 title: "Alur kerja instalasi"
 description: "Bagaimana apothem install, update, dan uninstall bekerja secara menyeluruh."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,11 +54,7 @@ proyek. CLI tidak mengekspos flag `--scope`; adapter bercakupan proyek memerluka
 
 ## Penanganan kesalahan
 
-Operasi instalasi/pembaruan memvalidasi sebelum menulis, mencadangkan target yang
-cocok yang sudah ada sebelum penggantian, dan hanya menggabungkan entri anak yang
-dikelola Apothem di direktori penemuan bersama. `--dry-run` menjalankan validasi
-yang sama dan mengembalikan hasil dilewati atau tidak berubah tanpa membuat
-direktori atau berkas.
+Operasi instalasi/pembaruan memvalidasi sebelum menulis, mencadangkan target yang cocok yang sudah ada sebelum penggantian, dan hanya menggabungkan entri anak yang dikelola Apothem di direktori penemuan bersama. `--dry-run` menjalankan validasi yang sama dan mengembalikan hasil yang akan dihasilkan setiap penulisan, seperti `created` atau `updated`, tanpa membuat direktori atau berkas.
 
 ## Reversibility (backup and rollback)
 

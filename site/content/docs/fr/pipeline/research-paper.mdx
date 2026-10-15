@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper — Assemble un brouillon d'article de premier plan (du résumé à la conclusion plus les références) à partir de la synthèse, de la conception et de l'analyse, chaque citation étant vérifiée pour qu'elle se résolve."
 machineTranslated: true
-sourceHash: "748c384ba8f36be4"
+sourceHash: "e7be8ccd7da4e80f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,12 @@ Avec des arguments :
 ## Sorties
 
 Le livrable de l'article à un emplacement naturel de l'hôte (`paper/`) — résumé, introduction, travaux connexes, méthode, résultats, discussion, limites, conclusion, références.
+
+L'étape écrit aussi l'enregistrement du portail de validation. Il contient le résultat pour chaque référence, ainsi que le nombre de citations résolues comparé au nombre de citations revendiquées :
+
+```text
+_outputs/paper-attestation.md
+```
 
 ## En aval
 

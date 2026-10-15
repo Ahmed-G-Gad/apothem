@@ -2,7 +2,7 @@
 title: "Diagrama del pipeline de CI/CD"
 description: "Mapa visual y desglose por carriles de las etapas del flujo de trabajo de compilación, prueba, lint, seguridad y publicación que controlan cada cambio de código y cada lanzamiento."
 machineTranslated: true
-sourceHash: "42620c7c2fb8ec8b"
+sourceHash: "d9a69ec274df9173"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,11 +32,11 @@ flowchart LR
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
         CHAOS["chaos_pass.py (CI quality job)"]
-        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
+        BENCH["src/apothem/benchmarks/ (unit tests in CI, bench_hooks in metrics job)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
-        SBOM["SBOM generation"]
+        SBOM["SBOM generation (tags only)"]
         LICENSE["License audit"]
     end
     subgraph Publish["Publish lane (tags only)"]
@@ -66,9 +66,9 @@ flowchart LR
 
 ## Roles de los carriles
 
-- **Carril de análisis estático** — retroalimentación rápida. Ruff cubre el estilo de Python y un conjunto de reglas curado; mypy impone disciplina de tipos en modo strict; el validador de frontmatter controla el cumplimiento del esquema de artefactos para reglas, skills, trabajadores delegados y comandos. markdownlint no forma parte de este carril: se ejecuta solo como hook de pre-commit y CI no lo ejecuta (consulta [Convenciones de Markdown](/docs/reference/markdown-conventions)).
-- **Carril de pruebas** — `pytest tests/hooks` ejercita el tiempo de ejecución de hooks contra la matriz completa de eventos; `validate_ecosystem.py` es la puerta estructural principal para la coherencia entre artefactos; `chaos_pass.py` se ejecuta en el trabajo de calidad de CI en los push y las pull requests a `main` (filtrado por ruta) para detectar la degradación ante entradas degradadas. La suite de benchmarks por clase bajo `src/apothem/benchmarks/` no se ejecuta en ningún flujo de trabajo de CI.
-- **Carril de seguridad** — el escaneo de secretos detecta credenciales confirmadas por accidente; la generación de SBOM y las auditorías de licencias controlan la superficie de la cadena de suministro para cualquier instalación de preparación para producción.
+- **Carril de análisis estático** — retroalimentación rápida. Ruff cubre el estilo de Python y un conjunto de reglas curado; mypy aplica disciplina de tipos en modo strict; el validador de frontmatter controla el cumplimiento del esquema de artefactos para reglas, skills, trabajadores delegados y comandos. markdownlint no forma parte de este carril: solo se ejecuta como hook de pre-commit, y CI no lo ejecuta (consulta [Convenciones de Markdown](/docs/reference/markdown-conventions)).
+- **Carril de pruebas** — `pytest tests/hooks` ejercita el tiempo de ejecución de hooks con la matriz completa de eventos; `validate_ecosystem.py` es la puerta estructural principal para la coherencia entre artefactos; `chaos_pass.py` se ejecuta en el trabajo de calidad de CI en los push y las pull requests a `main` (filtrado por ruta) para detectar la degradación ante entradas degradadas. Los drivers de benchmark por clase bajo `src/apothem/benchmarks/` se ejecutan en CI a través de la suite de pytest y del trabajo `metrics`. Cada ejecución completa de pytest en CI recoge `tests/unit/test_benchmarks.py`, que llama a todos los drivers salvo `bench_install.py`. El trabajo `metrics` ejecuta `scripts/dev/collect_metrics.py`, que ejecuta `bench_hooks.py --json` y registra el resultado como `hook_e2e_ms`. `bench_tests.py` y `bench_install.py` solo miden ejecuciones reales con `make benchmarks`. Ningún flujo de trabajo ejecuta `make benchmarks`.
+- **Carril de seguridad** — gitleaks en `ci.yml` detecta credenciales confirmadas por accidente. La auditoría de licencias (`license-audit.yml`) falla si la licencia de una dependencia no está en su lista permitida. Se ejecuta semanalmente y cuando cambian los archivos de dependencias o de licencias. `release.yml` genera el SBOM de cada versión etiquetada.
 - **Carril de publicación** — los flujos de trabajo de lanzamiento se activan con los push de etiquetas; los publicadores de npm y de VS Code también pueden volver a ejecutarse mediante despacho manual para una etiqueta existente. La verificación de etiquetas firmadas confirma la procedencia de la rama de lanzamiento; las notas de lanzamiento derivan del formato Keep-A-Changelog de `CHANGELOG.md`. El sitio web del proyecto se publica desde `site/dist/` en el destino de GitHub Pages en los push a `main` que modifiquen sus entradas de compilación, o mediante despacho manual.
 
 ## Configuración concreta

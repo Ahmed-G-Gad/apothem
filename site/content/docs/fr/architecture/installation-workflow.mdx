@@ -2,7 +2,7 @@
 title: "Flux d'installation"
 description: "Comment apothem install, update et uninstall fonctionnent de bout en bout."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,11 +56,12 @@ Chaque destination est documentée dans
 
 ## Gestion des erreurs
 
-Les opérations d'installation/mise à jour valident avant d'écrire, sauvegardent
+Les opérations d'installation et de mise à jour valident avant d'écrire, sauvegardent
 les cibles correspondantes existantes avant le remplacement, et ne fusionnent que
 les entrées enfants gérées par Apothem dans les répertoires de découverte
-partagés. `--dry-run` exécute la même validation et renvoie des résultats ignorés
-ou inchangés sans créer de répertoires ni de fichiers.
+partagés. `--dry-run` exécute la même validation et renvoie le résultat que
+chaque écriture aurait produit, tel que `created` ou `updated`, sans créer de
+répertoires ni de fichiers.
 
 ## Reversibility (backup and rollback)
 

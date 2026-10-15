@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,8 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 | 操作 | 条件 | 修复 |
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse`（MCP 规范已弃用 HTTP+SSE） | 当服务器支持时，使用 `streamable-http`。 |
-| `mcp_plain_http` | 一个指向非回环主机的 `http://` URL | 使用 `https://` URL。 |
-| `mcp_literal_credential` | 一个形似令牌的 `headers` 或 `env` 值（`ghp_`、`github_pat_`、`sk-`、`xox*-`，或带有长令牌的 `Bearer`） | 将机密保存在环境变量中，并写成 `${GITHUB_TOKEN}` 形式的引用。 |
+| `mcp_plain_http` | 指向非回环主机的 `http://` URL | 使用 `https://` URL。 |
+| `mcp_literal_credential` | 形似令牌的 `headers` 或 `env` 值（`ghp_`、`gho_`、`ghu_`、`ghs_`、`ghr_`、`github_pat_`、`sk-`、`xoxa-`、`xoxb-`、`xoxo-`、`xoxp-`、`xoxr-`、`xoxs-`，或带有长令牌的 `Bearer`） | 将机密保存在环境变量中，并写成 `${GITHUB_TOKEN}` 形式的引用。 |
 
 凭据提示绝不会打印它所发现的值。包含 `${...}` 引用的值绝不会被标记。
 
@@ -63,9 +63,9 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要安装的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。运行 `apothem harnesses list` 查看已注册的名称。 |
+| `--harness NAME` | 要安装的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。使用 `all` 时，会跳过共享配置档案中 `exclude_harnesses` 列出的工具，但显式指定的工具即使被列出也会被安装。运行 `apothem harnesses list` 查看已注册的名称。 |
 | `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
-| `--dry-run` | 预览安装而不写入文件。 |
+| `--dry-run` | 预览安装，但不写入文件。 |
 | `--clean`, `--fresh` | 需主动选择的全新安装：在安装之前，备份并移除先前按工具划分的安装状态。 |
 | `--yes` | 在全新安装的移除阶段跳过逐目标确认（非交互式 `--clean` 运行时必填）。 |
 | `--project PATH` | 项目作用域工具的项目根目录。 |
@@ -107,7 +107,15 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

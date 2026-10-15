@@ -2,7 +2,7 @@
 title: "Flujo de instalación"
 description: "Cómo funcionan apothem install, update y uninstall de principio a fin."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,11 +55,7 @@ indicador `--scope`; los adaptadores de alcance de proyecto requieren
 
 ## Manejo de errores
 
-Las operaciones de instalación/actualización validan antes de escribir, hacen una
-copia de seguridad de los destinos coincidentes existentes antes de reemplazarlos,
-y fusionan solo las entradas hijas gestionadas por Apothem en los directorios de
-descubrimiento compartidos. `--dry-run` ejecuta la misma validación y devuelve
-resultados omitidos o sin cambios sin crear directorios ni archivos.
+Las operaciones de instalación y actualización validan antes de escribir, hacen una copia de seguridad de los destinos coincidentes existentes antes de reemplazarlos y fusionan solo las entradas hijas gestionadas por Apothem en los directorios de descubrimiento compartidos. `--dry-run` ejecuta la misma validación y devuelve el resultado que tendría cada escritura, como `created` o `updated`, sin crear directorios ni archivos.
 
 ## Reversibility (backup and rollback)
 

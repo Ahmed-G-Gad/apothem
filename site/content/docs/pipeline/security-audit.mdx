@@ -1,13 +1,15 @@
 ---
 title: "/security-audit"
-description: "/security-audit — Comprehensive security posture audit against the current OWASP ASVS release and OWASP Top 10."
+description: "/security-audit — Comprehensive security posture audit against OWASP ASVS 4.0 or later and OWASP Top 10."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Role:** Security auditor
 **Pipeline position:** fortress
 
-Comprehensive security posture audit against the current OWASP ASVS release and OWASP Top 10.
+Comprehensive security posture audit against OWASP ASVS 4.0 or later and OWASP Top 10.
+
+The command's floor is the final ASVS 4.0 patch release. It does not look up newer ASVS releases itself. Findings cite ASVS chapters by number and short title, such as V5 (Validation, Sanitization, Encoding), V12 (File and Resources), and V14 (Configuration).
 
 ## Canonical invocation
 

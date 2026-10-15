@@ -55,7 +55,8 @@ destination is documented at
 Install/update operations validate before writing, back up existing matching
 targets before replacement, and merge only Apothem-managed child entries in
 shared discovery directories. `--dry-run` executes the same validation and
-returns skipped or unchanged outcomes without creating directories or files.
+returns the outcome each write would have, such as `created` or `updated`,
+without creating directories or files.
 
 ## Reversibility (backup and rollback)
 

@@ -2,7 +2,7 @@
 title: "update"
 description: "Référence de la CLI pour la commande apothem update."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ L'alias en forme continue `apothem updating` (également accepté sous la forme
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Adaptateur d'environnement à mettre à jour, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
+| `--harness NAME` | Adaptateur d'environnement à mettre à jour, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). Avec `all`, les environnements listés dans `exclude_harnesses` du profil sont ignorés, mais un environnement nommé explicitement est mis à jour même s'il figure dans cette liste. |
 | `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut : `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Prévisualise la mise à jour sans écrire de fichiers. |
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. Obligatoire lorsque l'ensemble d'environnements sélectionné inclut des adaptateurs à portée de projet. |

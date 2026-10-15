@@ -83,7 +83,7 @@ The profile's MCP servers get three advisories, each naming the profile field:
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (the MCP specification deprecates HTTP+SSE) | Use `streamable-http` when the server supports it. |
 | `mcp_plain_http` | an `http://` URL to a host that is not loopback | Use an `https://` URL. |
-| `mcp_literal_credential` | a `headers` or `env` value shaped like a token (`ghp_`, `github_pat_`, `sk-`, `xox*-`, or `Bearer` with a long token) | Keep the secret in an environment variable and write `${GITHUB_TOKEN}`-style references. |
+| `mcp_literal_credential` | a `headers` or `env` value shaped like a token (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, or `Bearer` with a long token) | Keep the secret in an environment variable and write `${GITHUB_TOKEN}`-style references. |
 
 The credential advisory never prints the value it found. A value that contains
 a `${...}` reference is never flagged.
@@ -110,7 +110,7 @@ trailing commas, and JSON5 syntax. So:
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (required). Run `apothem harnesses list` for registered names. |
+| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (required). With `all`, harnesses listed in the profile's `exclude_harnesses` are skipped, but a harness named explicitly is installed even when listed. Run `apothem harnesses list` for registered names. |
 | `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Preview install without writing files. |
 | `--clean`, `--fresh` | Opt-in clean slate: back up and remove the prior per-harness install state before installing. |
@@ -159,7 +159,15 @@ shows:
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

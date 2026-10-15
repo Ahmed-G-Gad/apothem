@@ -2,7 +2,7 @@
 title: "Checklist de implantação"
 description: "Checklist de verificação prévia para implantar ou compartilhar o ecossistema Apothem"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,19 +31,24 @@ Para cada tipo de artefato, verifique se os campos obrigatórios estão presente
 ### Regras (`src/apothem/rules/*.md`)
 
 - [ ] `name` — identificador em kebab-case que corresponde ao nome do arquivo
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (por exemplo, `"X.Y.Z"`)
-- [ ] `updated` — data ISO 8601 (por exemplo, `"2026-04-20"`)
 - [ ] `description` — resumo de uma única frase
-- [ ] `scope` — `"always-on"` ou `"path-filtered"`
-- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` ou `"windows-only"`
-- [ ] `pathFilter` — presente e com uma string glob válida para regras filtradas por caminho; ausente para regras sempre ativas
+- [ ] `alwaysApply` — `true` para regras sempre ativas, `false` para regras
+      filtradas por caminho
+- [ ] `pathFilter` — presente em toda regra: `""` para regras sempre ativas
+      (`alwaysApply: true`), uma lista de globs separada por vírgulas para
+      regras filtradas por caminho (`alwaysApply: false`)
+
+As regras não têm nenhuma chave `version`, `updated`, `scope` ou `portability`.
 
 ### Comandos (`src/apothem/commands/*.md`)
 
 - [ ] `name` — nome do comando em kebab-case
-- [ ] `version`, `updated`, `description`, `argument-hint` presentes
-- [ ] `disable-model-invocation` presente e intencional (`true` para comandos somente de orientação)
-- [ ] `effort`, `portability` revisados onde estiverem presentes (opcionais conforme o schema)
+- [ ] `version`, `updated`, `description`, `argument-hint`, `portability`,
+      `allowed-tools` presentes
+- [ ] `disable-model-invocation` presente e intencional (`true` para comandos
+      somente de orientação)
+- [ ] Sem chave `effort`: `command.schema.json` define
+      `additionalProperties: false` e não a admite
 
 ### Trabalhadores delegados
 
@@ -57,13 +62,19 @@ src/apothem/agents/*.md
 - [ ] `tools` — lista separada por vírgulas de ferramentas permitidas
 - [ ] `disallowedTools` — lista explicitamente as ferramentas não permitidas
 - [ ] `maxTurns` — definido (com comentário de justificativa se > 10)
-- [ ] `permissionMode` — **NÃO deve ser `"bypassPermissions"`** — use `"default"`
-- [ ] `memory: false` a menos que a memória persistente seja intencional
+- [ ] `permissionMode` — **NÃO deve ser `"bypassPermissions"`**; deixe a chave
+      sem definir, pois a postura agnóstica não pré-define nenhum modo de
+      permissão
+- [ ] `memory` omitido, a menos que a memória persistente seja intencional;
+      quando definido, um de `user`, `project` ou `local` (sem forma booleana)
 
 ### Skills (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name`, `version`, `updated`, `description` presentes
-- [ ] `user-invocable` — declarado (true/false)
+- [ ] `name`, `version`, `updated`, `description`, `archetype`,
+      `disable-model-invocation`, `allowed-tools` presentes
+- [ ] `userInvocable` declarado (true/false). A grafia de origem é
+      `userInvocable`; uma skill carrega exatamente um entre `userInvocable` e
+      `user-invocable` (a grafia do Claude Code).
 
 ---
 

@@ -2,7 +2,7 @@
 title: "Resolución de problemas"
 description: "Soluciones para los fallos de instalación habituales de Apothem y los problemas en tiempo de ejecución en las rutas del plugin, npx y el instalador."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,9 +91,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install no encuentra ningún entorno
 
-Ejecuta apothem doctor para listar los directorios de entorno detectados. Si no
-se encuentra ninguno, asegúrate de que tu entorno está instalado y se ha iniciado
-al menos una vez.
+Ejecuta apothem doctor para leer su tabla Harness Status, que tiene una fila por entorno. Una fila marcada como `not installed` indica que Apothem no encontró ninguna instalación para ese entorno. Una fila marcada como `needs --project` corresponde a un entorno de alcance de proyecto, que doctor comprueba solo cuando pasas `--project <path>`. Si doctor informa `No harness is installed yet`, asegúrate de que tu entorno esté instalado y, después, ejecuta `apothem install --harness <name>`.
 
 ### apothem verify informa de un adaptador que falla
 

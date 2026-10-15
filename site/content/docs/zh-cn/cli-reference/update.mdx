@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,15 +25,15 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要更新的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。 |
+| `--harness NAME` | 要更新的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。使用 `all` 时，会跳过共享配置档案中 `exclude_harnesses` 列出的工具，但显式指定的工具即使被列出也会被更新。 |
 | `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
-| `--dry-run` | 预览更新而不写入文件。 |
+| `--dry-run` | 预览更新，但不写入文件。 |
 | `--project PATH` | 项目作用域工具的项目根目录。当所选的工具集合包含项目作用域适配器时必填。 |
 | `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
 | `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出

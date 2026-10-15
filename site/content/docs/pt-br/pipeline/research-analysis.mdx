@@ -2,7 +2,7 @@
 title: "/research-analysis"
 description: "/research-analysis — Analisa os dados brutos conforme o plano pré-registrado: testes planejados, tamanhos de efeito com intervalos de confiança, verificações de robustez e desvios divulgados."
 machineTranslated: true
-sourceHash: "c9d0df0af4550cbb"
+sourceHash: "63b072fd3548eba2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,18 @@ O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 ## Piso de rigor
 
-Os resultados estocásticos são reportados como melhor, média, mediana, desvio padrão e pior entre as repetições, com curvas de convergência e gráficos de distribuição. As comparações usam testes não paramétricos — um teste pareado de postos com sinal aos pares, um teste ômnibus de postos com correção post-hoc entre métodos — reportados com um tamanho de efeito de superioridade estocástica e um diagrama de diferença crítica. Um resultado avança para o artigo somente quando supera o portão de avanço: ele vence seus comparadores de forma convincente e significativa, e a aprovação é registrada em um runbook auditável.
+Um método estocástico é executado com pelo menos trinta repetições independentes
+por instância ou condição, mais quando a dispersão entre as repetições é grande
+em relação às diferenças testadas, até que as estatísticas resumidas sejam
+estáveis. Seus resultados são reportados como melhor, média, mediana, desvio
+padrão e pior entre as repetições, com curvas de convergência e gráficos de
+distribuição. As comparações usam testes não paramétricos — um teste pareado de
+postos com sinal, par a par, e um teste ômnibus de postos com correção post-hoc
+entre os métodos — reportados com um tamanho de efeito de superioridade
+estocástica e um diagrama de diferença crítica. Um resultado avança para o
+artigo somente quando supera o portão de avanço: ele vence seus comparadores de
+forma convincente e significativa, e a aprovação é registrada em um runbook
+auditável.
 
 ## Modos de falha
 

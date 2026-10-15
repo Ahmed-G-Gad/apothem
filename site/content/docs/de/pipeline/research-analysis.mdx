@@ -2,7 +2,7 @@
 title: "/research-analysis"
 description: "/research-analysis — Analysiert die Rohdaten gemäß dem präregistrierten Plan: geplante Tests, Effektstärken mit Konfidenzintervallen, Robustheitsprüfungen und offengelegte Abweichungen."
 machineTranslated: true
-sourceHash: "c9d0df0af4550cbb"
+sourceHash: "63b072fd3548eba2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,7 @@ Der Befehl folgt dem standardmäßigen `/research`-Pipeline-Workflow:
 
 ## Rigorositätsuntergrenze
 
-Stochastische Ergebnisse werden als bestes, mittleres, medianes, Standardabweichungs- und schlechtestes Ergebnis über die Wiederholungen hinweg berichtet, mit Konvergenzkurven und Verteilungsdiagrammen. Vergleiche verwenden nichtparametrische Tests — ein gepaarter Vorzeichen-Rang-Test paarweise, ein Omnibus-Rangtest mit Post-hoc-Korrektur über Methoden hinweg — berichtet mit einer Effektstärke der stochastischen Überlegenheit und einem Diagramm der kritischen Differenz. Ein Ergebnis rückt nur dann ins Paper vor, wenn es das Vorrückungs-Gate durchläuft: Es schlägt seine Vergleichsverfahren überzeugend und signifikant, und die Freigabe wird in einem auditierbaren Runbook protokolliert.
+Ein stochastisches Verfahren wird für mindestens dreißig unabhängige Wiederholungen pro Instanz oder Bedingung ausgeführt, bei großer Streuung über die Wiederholungen im Verhältnis zu den geprüften Unterschieden auch häufiger, bis die zusammenfassenden Statistiken stabil sind. Seine Ergebnisse werden als bestes, mittleres, medianes, Standardabweichungs- und schlechtestes Ergebnis über die Wiederholungen hinweg berichtet, mit Konvergenzkurven und Verteilungsdiagrammen. Vergleiche verwenden nichtparametrische Tests — einen gepaarten Vorzeichen-Rang-Test paarweise, einen Omnibus-Rangtest mit Post-hoc-Korrektur über Methoden hinweg — berichtet mit einer Effektstärke der stochastischen Überlegenheit und einem Diagramm der kritischen Differenz. Ein Ergebnis rückt nur dann ins Paper vor, wenn es das Vorrückungs-Gate durchläuft: Es schlägt seine Vergleichsverfahren überzeugend und signifikant, und die Freigabe wird in einem auditierbaren Runbook protokolliert.
 
 ## Fehlermodi
 

@@ -2,7 +2,7 @@
 title: "إلغاء التثبيت"
 description: "أزِل Apothem ونظِّف إعدادات أُطُر العمل."
 machineTranslated: true
-sourceHash: "5480c1153c062495"
+sourceHash: "a94130c42f86f341"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,25 +27,11 @@ apothem uninstall --harness all --project /path/to/project --yes
 تتبع الإزالة قناة التثبيت التي استخدمتها. أرقام القنوات هي أرقامها في
 [جدول قنوات التثبيت](/docs/install#اختر-قناة):
 
-- **إضافة <bdi>Claude Code</bdi> (القناة 1)** — أزِل الإضافة من داخل
-  <bdi>Claude Code</bdi>: <bdi>`/plugin uninstall apothem@apothem`</bdi> (ويمكن
-  إزالة مُدخَل سوق الإضافات عبر
-  <bdi>`/plugin marketplace remove ahmed-g-gad/apothem`</bdi>).
-- **<bdi>npx</bdi> (القناة 2)** — لا شيء لإزالته؛ يعمل <bdi>`npx`</bdi> من ذاكرته
-  المؤقتة. امسحها عبر <bdi>`npm cache clean --force`</bdi> إن أردت التخلّص من
-  النسخة المخزّنة مؤقتًا.
-- **المُثبِّت بخطوة واحدة (القناة 3)** — شغِّل سكربت إلغاء التثبيت المطابق من النسخة
-  المسحوبة: <bdi>`scripts/installer/uninstall.sh`</bdi> (<bdi>POSIX</bdi>) أو
-  <bdi>`scripts/installer/uninstall.ps1`</bdi> (<bdi>PowerShell</bdi>). كلاهما يطلب
-  التأكيد قبل الإزالة ويرفض الأهداف غير الآمنة.
-- **امتداد عائلة <bdi>VS Code</bdi> (القناة 4)** — شغِّل
-  **<bdi>Apothem: Uninstall</bdi>** من لوحة الأوامر أولًا لإزالة إعدادات أُطُر
-  العمل، ثم أزِل الامتداد من عرض الامتدادات أو عبر
-  <bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>. يشغّل الامتداد
-  المحرّكَ افتراضيًا عبر <bdi>`npx`</bdi>، لذا يغطّي بند **<bdi>npx</bdi>** أعلاه
-  الذاكرة المؤقتة.
-- **مداخل سطر الأوامر التمهيدية (القنوات 5–7)** — أزِل الامتداد أو الإضافة بأداته
-  المضيفة بعد إزالة إعدادات أُطُر العمل. المضيفات:
+- **إضافة <bdi>Claude Code</bdi> (القناة 1)** — أزِل الإضافة من داخل <bdi>Claude Code</bdi>: <bdi>`/plugin uninstall apothem@apothem`</bdi> (ويمكن إزالة مُدخَل سوق الإضافات عبر <bdi>`/plugin marketplace remove ahmed-g-gad/apothem`</bdi>).
+- **<bdi>npx</bdi> (القناة 2)** — لا شيء لإزالته؛ يعمل <bdi>`npx`</bdi> من ذاكرته المؤقتة. امسحها عبر <bdi>`npm cache clean --force`</bdi> إن أردت التخلّص من النسخة المخزّنة مؤقتًا.
+- **المُثبِّت بخطوة واحدة (القناة 3)** — شغِّل سكربت إلغاء التثبيت المطابق من النسخة المسحوبة: <bdi>`scripts/installer/uninstall.sh`</bdi> (<bdi>POSIX</bdi>) أو <bdi>`scripts/installer/uninstall.ps1`</bdi> (<bdi>PowerShell</bdi>). يزيل كل سكربت إطار العمل الذي يسمّيه <bdi>`--harness`</bdi> (أو <bdi>`-Harness`</bdi> في <bdi>PowerShell</bdi>)، وإلا فالذي في <bdi>`APOTHEM_HARNESS`</bdi>، وإلا فـ <bdi>Claude Code</bdi>. ويزيل أيضًا غلاف الأمر <bdi>`apothem`</bdi>. ويأتي المصدر من <bdi>`APOTHEM_SOURCE`</bdi> إذا كان مضبوطًا، أو من <bdi>`APOTHEM_HOME`</bdi> (الافتراضي <bdi>`$HOME/.apothem`</bdi>). ويبقى المصدر ما لم تمرّر <bdi>`--remove-source`</bdi> (<bdi>`-RemoveSource`</bdi> في <bdi>PowerShell</bdi>). ولا يحذف هذا العلم إلا النسخة المُدارة المستنسخة في <bdi>`APOTHEM_HOME`</bdi>، ولا يفعل ذلك إلا حين تحوي دليل <bdi>`.git`</bdi>. ومع الموقع الافتراضي، يحذف أيضًا نسخ التثبيت الاحتياطية والسجلّ تحت <bdi>`~/.apothem/`</bdi>. ويسأل الاثنان قبل إزالة إعدادات إطار العمل والمصدر، و<bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> في <bdi>PowerShell</bdi>) يتخطّى المطالبات. ويرفض الاثنان الأهداف غير الآمنة.
+- **امتداد عائلة <bdi>VS Code</bdi> (القناة 4)** — شغِّل **<bdi>Apothem: Uninstall</bdi>** من لوحة الأوامر أولًا لإزالة إعدادات أُطُر العمل، ثم أزِل الامتداد من عرض الامتدادات أو عبر <bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>. يشغّل الامتداد المحرّكَ افتراضيًا عبر <bdi>`npx`</bdi>، لذا يغطّي بند **<bdi>npx</bdi>** أعلاه الذاكرة المؤقتة.
+- **مداخل سطر الأوامر التمهيدية (القنوات 5–7)** — أزِل الامتداد أو الإضافة بأداته المضيفة بعد زوال إعدادات أُطُر العمل. المضيفات:
 
   ```text
   channel 5   Gemini CLI extension

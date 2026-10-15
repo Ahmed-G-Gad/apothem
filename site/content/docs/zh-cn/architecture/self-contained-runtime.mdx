@@ -2,7 +2,7 @@
 title: "自包含运行时"
 description: "Apothem 的引擎如何从任意检出运行——vendored 依赖、PYTHONPATH=src 调用模型，以及插件树引导。"
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,7 @@ Apothem 有意不在 `pyproject.toml` 中声明任何控制台脚本——控制
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-当 `apothem` 启动器不在 PATH 上时，一键安装器在完成时会打印此形式：vendored 目录排在 `src/` 之前，并以其所解析到的 CPython 代替 `python`。
+当 `apothem` 启动器不在 PATH 上时，`install.sh` 会在安装完成时打印这一形式：vendored 目录排在 `src/` 之前，并以其所解析到的 CPython 代替 `python`。`install.ps1` 以 PowerShell 形式打印同样的两项设置：一条 `$env:PYTHONPATH` 赋值，它用 `;` 连接 vendored 目录与 `src/` 目录，随后是 `& '<CPython>' -m apothem <command>`。
 
 ## 插件树引导
 

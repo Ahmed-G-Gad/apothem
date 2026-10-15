@@ -2,7 +2,7 @@
 title: "Runtime autonome"
 description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances vendorisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,9 +86,11 @@ checkout en tête de `PYTHONPATH` :
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Lorsque le lanceur `apothem` ne figure pas dans le PATH, l'installateur en une
-seule étape affiche cette forme à la fin, avec le répertoire vendorisé placé avant
-`src/` et le CPython qu'il a résolu à la place de `python`.
+Lorsque le lanceur `apothem` ne figure pas dans le PATH, `install.sh` affiche cette forme
+à la fin, avec le répertoire vendorisé placé avant `src/` et le CPython qu'il a
+résolu à la place de `python`. `install.ps1` affiche les deux mêmes réglages sous
+forme PowerShell : une affectation `$env:PYTHONPATH` qui joint les répertoires
+vendorisé et `src/` avec `;`, puis `& '<CPython>' -m apothem <command>`.
 
 ## Bootstrap de l'arbre du plugin
 

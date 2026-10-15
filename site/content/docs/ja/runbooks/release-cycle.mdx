@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -198,14 +198,14 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 ワンショットスクリプトインストーラー（POSIX）
 
+インストーラーは `apothem` ランチャーを `~/.local/bin` に、または `APOTHEM_BIN_DIR` が設定されている場合はその変数で指定されたディレクトリに書き込みます。以下の確認を実行するには、そのディレクトリが `PATH` に含まれている必要があります。含まれていない場合、インストーラーは追加すべき `export PATH` の行を表示します。そのディレクトリが `PATH` に含まれるまで、シェルは `apothem` を見つけられず、確認は失敗します。インストーラーがランチャーを配置できない場合は、警告を表示し、`export PATH` の行は表示しません。
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 期待される出力: `Apothem, version X.Y.Z`。
-
-ランチャーは `~/.local/bin` に書き込まれます。上記の確認を実行するには、このディレクトリが `PATH` に含まれている必要があります。そのディレクトリが `PATH` にない場合、インストーラーは追加すべき `export PATH` の行を表示します。
 
 ### 5.4 ワンショットスクリプトインストーラー（Windows）
 

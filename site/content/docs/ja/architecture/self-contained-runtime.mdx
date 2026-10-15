@@ -2,7 +2,7 @@
 title: "自己完結型ランタイム"
 description: "Apothem のエンジンが任意のチェックアウトからどのように実行されるか — ベンダリングされた依存関係、PYTHONPATH=src による呼び出しモデル、プラグインツリーのブートストラップ。"
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-`apothem` ランチャーが PATH 上にない場合、ワンショットインストーラーは完了時にこの形式を表示します。その際、ベンダリングされたディレクトリを `src/` より前に置き、`python` の代わりに解決した CPython を使います。
+`apothem` ランチャーが PATH 上にない場合、`install.sh` は完了時にこの形式を表示します。その際、ベンダリングされたディレクトリを `src/` より前に置き、`python` の代わりに解決された CPython を使います。`install.ps1` は、同じ 2 つの設定を PowerShell の形式で表示します。すなわち、ベンダリングされたディレクトリと `src/` ディレクトリを `;` で連結する `$env:PYTHONPATH` の代入と、続けて `& '<CPython>' -m apothem <command>` です。
 
 ## プラグインツリーのブートストラップ
 

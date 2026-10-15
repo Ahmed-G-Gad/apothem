@@ -2,7 +2,7 @@
 title: "プロファイルを編集する"
 description: "共有プロファイルを変更し、インストール済みの全ハーネスを再生成します。"
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,7 +83,7 @@ apothem verify --harness all
 
 `profile show` は編集内容を反映します。
 
-`apothem verify --harness all` は、登録済みのすべてのハーネスを確認するため、それらすべてがインストールされていない限り、非ゼロで終了します。プロジェクトスコープのハーネスには `--project PATH` も必要です。指定しない場合、バッチは `project.required` エラーで停止します。更新したハーネスだけを確認するには、そのハーネス名を指定して同じコマンドを実行してください。
+`apothem verify --harness all` は、プロファイルの `exclude_harnesses` に記載されたものを除く、登録済みのすべてのハーネスを確認します。そのため、除外されていないほかのすべてのハーネスがインストールされていない限り、非ゼロ終了コードで終了します。プロジェクトスコープのハーネスには `--project PATH` も必要です。指定しない場合、バッチは `project.required` エラーで停止します。更新したハーネスだけを確認するには、そのハーネス名を指定して同じコマンドを実行してください：
 
 ```bash
 apothem verify --harness <name>

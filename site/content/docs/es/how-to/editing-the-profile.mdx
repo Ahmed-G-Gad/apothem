@@ -2,7 +2,7 @@
 title: "Editar el perfil"
 description: "Cambia el perfil compartido y vuelve a materializar cada entorno instalado."
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -82,7 +82,7 @@ apothem verify --harness all
 
 `profile show` refleja tu edición.
 
-`apothem verify --harness all` comprueba todos los entornos registrados, así que termina con un código distinto de cero salvo que todos estén instalados. Los entornos de ámbito de proyecto también necesitan `--project PATH`; sin él, el lote se detiene con un error `project.required`. Para comprobar solo el entorno que actualizaste, ejecuta el mismo comando con el nombre de ese entorno:
+`apothem verify --harness all` comprueba todos los entornos registrados excepto los que enumera `exclude_harnesses` del perfil, así que termina con un código distinto de cero salvo que todos los demás estén instalados. Los entornos de alcance de proyecto también necesitan `--project PATH`; sin él, el lote se detiene con un error `project.required`. Para comprobar solo el entorno que actualizaste, ejecuta el mismo comando con el nombre de ese entorno:
 
 ```bash
 apothem verify --harness <name>

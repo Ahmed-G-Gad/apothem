@@ -2,7 +2,7 @@
 title: "रिलीज़-चक्र रनबुक"
 description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -228,14 +228,14 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 एक-चरण स्क्रिप्ट इंस्टॉलर (POSIX)
 
+इंस्टॉलर `apothem` लॉन्चर को `~/.local/bin` में लिखता है, या जब वह चर सेट हो, तो `APOTHEM_BIN_DIR` द्वारा नामित डायरेक्टरी में। नीचे की जाँच के लिए उस डायरेक्टरी का `PATH` पर होना आवश्यक है। यदि वह नहीं है, तो इंस्टॉलर जोड़ने के लिए `export PATH` पंक्ति प्रिंट करता है। जब तक वह डायरेक्टरी `PATH` पर नहीं होती, शेल `apothem` नहीं ढूँढ सकता, और जाँच विफल हो जाती है। यदि इंस्टॉलर लॉन्चर नहीं रख सकता, तो वह एक चेतावनी प्रिंट करता है और कोई `export PATH` पंक्ति नहीं।
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 अपेक्षित आउटपुट: `Apothem, version X.Y.Z`।
-
-लॉन्चर `~/.local/bin` में लिखा जाता है, जो ऊपर की जाँच चलने के लिए `PATH` पर होना चाहिए। जब वह डायरेक्टरी `PATH` पर न हो, तो इंस्टॉलर जोड़ने के लिए `export PATH` पंक्ति प्रिंट करता है।
 
 ### 5.4 एक-चरण स्क्रिप्ट इंस्टॉलर (Windows)
 

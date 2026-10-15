@@ -2,7 +2,7 @@
 title: "자체 완결형 런타임"
 description: "Apothem 엔진이 어떤 체크아웃에서든 실행되는 방식입니다. 벤더링된 종속성, PYTHONPATH=src 호출 모델, 플러그인 트리 부트스트랩을 다룹니다."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,7 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-`apothem` 런처가 PATH에 없으면, 원샷 설치 프로그램은 완료 시 이 형식을 출력합니다. 이 형식에서는 벤더링된 디렉터리가 `src/`보다 앞에 오며, `python` 대신 설치 프로그램이 해석한 CPython이 쓰입니다.
+`apothem` 런처가 PATH에 없으면, `install.sh`는 완료 시 이 형식을 출력합니다. 이 형식에서는 벤더링된 디렉터리가 `src/`보다 앞에 오며, `python` 대신 설치 프로그램이 해석한 CPython이 쓰입니다. `install.ps1`은 같은 두 설정을 PowerShell 형식으로 출력합니다. 그 형식은 벤더링된 디렉터리와 `src/` 디렉터리를 `;`로 잇는 `$env:PYTHONPATH` 할당과, 그다음 `& '<CPython>' -m apothem <command>`입니다.
 
 ## 플러그인 트리 부트스트랩
 
