@@ -2,11 +2,13 @@
 title: "卸载"
 description: "移除 Apothem 并清理工具配置。"
 machineTranslated: true
-sourceHash: "9d5c30cdd9a2bacc"
+sourceHash: "5480c1153c062495"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 先移除工具配置
+
+本页使用的裸 `apothem` 命令，是一键安装器（即[安装指南](/docs/install)中的第 3 个安装渠道）写入的垫片，该垫片所在目录位于 `PATH` 中之后即可运行。在其他安装渠道上，按照安装指南所述，把 `apothem` 替换为 `npx @ahmed-g-gad/apothem` 即可。
 
 在卸载 Apothem 之前，先移除每个工具适配器的配置，让你的工具回到干净的状态。运行 `apothem harnesses list` 查看当前已安装了哪些适配器，然后逐个移除，或使用覆盖整个注册表的选择器：
 

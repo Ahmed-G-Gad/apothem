@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,6 +93,12 @@ Apothem tidak terpengaruh.
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+Eksekusi `--all` mencakup validator mandiri. Eksekusi tersebut tidak menjalankan pemeriksaan koherensi multi-permukaan yang dijelaskan di bawah Catatan kompatibilitas. Untuk menjalankan pemeriksaan itu dengan nama di dalam checkout:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## Pemecahan masalah

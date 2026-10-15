@@ -2,11 +2,11 @@
 title: "フロントマタースキーマ"
 description: "アーティファクトクラス全体にわたる、YAML フロントマターブロックの構造、クラスごとの必須キー、バリデーターによる強制ルールのリファレンスガイド。"
 machineTranslated: true
-sourceHash: "d6c49336e4d3abf9"
+sourceHash: "e0fad965a556b755"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **すべてのアーティファクトクラスにおける YAML フロントマターの正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の Conventions にある要約は、インラインの宣言です。[`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) にあるクラスごとの JSON Schema（`additionalProperties` が未知のキーを拒否します）は機械可読な契約であり、食い違いがある場合は常にこちらが優先されます。このページは必須キーの索引であり、[`artifact-schema.mdx`](/docs/reference/artifact-schema) はクラスごとのテンプレートと実例を扱います — どちらも、それらのスキーマを人間が読める形にした投影です。
+> **すべてのアーティファクトクラスにおける YAML フロントマターの正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) の Conventions にある要約がインラインの宣言です。[`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) にあるクラスごとの JSON Schema（スキルとコマンドのスキーマにある `additionalProperties: false` は未知のキーを拒否し、エージェント、出力スタイル、プランのスキーマは `additionalProperties: true` を設定しています）が機械可読な契約であり、食い違いがある場合はこちらが優先されます。本ページは必須キーの索引であり、[`artifact-schema.mdx`](/docs/reference/artifact-schema) はクラスごとのテンプレートと実例を扱います。どちらも、これらのスキーマを人間が読める形にした投影です。
 
 ---
 

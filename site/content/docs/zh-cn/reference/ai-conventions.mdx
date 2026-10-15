@@ -2,11 +2,11 @@
 title: "多表面工具约定"
 description: "关于多表面工具配置及其在聊天、IDE 补全和 PR 评审运行时之间一致性的规范性权威参考。"
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的多表面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随已发布仓库一同提供的独立参考。架构理由记录于 [ADR-0003](/docs/architecture)。
+> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的多表面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随已发布仓库一同提供的独立参考。架构理由记录于 ADR-0003。
 
 ---
 
@@ -39,8 +39,8 @@ sourceHash: "8b401418bac95c44"
 |---|---|---|---|
 | `AGENTS.md` | 仓库根目录（和/或 `.codex/AGENTS.md`） | **MUST** | 支持 AGENTS 的工具 |
 | `CLAUDE.md` | 仓库根目录（和/或 `.claude/CLAUDE.md`） | **MUST** | Claude Code |
-| 以 `.github/` 为根的指令文件 | `.github/copilot-instructions.md` | **MUST** | IDE 内补全运行时 |
-| 以 `site/content/docs/architecture/` 为根的辅助器清单 | `site/content/docs/architecture/agents.mdx` | **MAY**（经由结构化询问通道选择启用） | 多辅助器编排平台 |
+| IDE 内指令文件 | `.github/copilot-instructions.md` | **MUST** | IDE 内补全运行时 |
+| 辅助器清单 | `site/content/docs/architecture/agents.mdx` | **MAY**（经由结构化询问通道选择启用） | 多辅助器编排平台 |
 | `.cursorrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内编辑器运行时 |
 | `.windsurfrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内伴侣运行时 |
 
@@ -130,7 +130,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 ## 另请参阅
 
-- [ADR-0003](/docs/architecture)——架构理由、考虑过的替代方案。
+- ADR-0003——架构理由、考虑过的替代方案。
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)——规范的声明清单夹具。
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md)——规范的项目之声。
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)——Claude Code 镜像。

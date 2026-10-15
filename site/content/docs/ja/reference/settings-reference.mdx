@@ -2,7 +2,7 @@
 title: "settings.json ドキュメント"
 description: "Apothem エコシステム向けに、Claude Code のフック実行・権限・イベント・タイムアウト・Python ランタイム・検証・レイヤー化された設定の優先順位を構成します。"
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,11 +61,12 @@ sourceHash: "e5e617ed964a9419"
 
 | イベント | トリガー | タイムアウト | 目的 | マンデート |
 | ----- | ------- | ------- | ------- | ------- |
-| **SessionStart** | 新しい Claude Code セッション | 30 秒 | コンテキスト初期化、メモリ読み取り、プラン状態チェック | CM-14 |
-| **PreToolUse** | Write/Edit/NotebookEdit/Bash の前 | 10 秒 | CM-7 準拠 + frontmatter の検証 | CM-7、CM-22 |
-| **PreCompact** | コンテキスト圧縮の前 | 30 秒 | 未外部化の状態を外部化 | CM-24 §2.3 |
-| **PostCompact** | コンテキスト圧縮の後 | 30 秒 | 外部化された状態から再ブートストラップ | CM-24 §6.2 |
+| **SessionStart** | 新しい Claude Code セッション | 30 秒 | コンテキストの初期化、メモリの読み取り、プラン状態の確認 | CM-14 |
+| **PreToolUse** | Write/Edit/NotebookEdit/Bash の前 | 10 秒 | CM-7 準拠とフロントマターの検証 | CM-7、CM-22 |
+| **PostToolUse** | すべてのツール呼び出しの後（マッチャー `*`） | 10 秒 | プロアクティブなコンテキスト圧縮の助言 | コンテキスト管理（プロアクティブなコンテキスト圧縮） |
 | **Stop** | セッション終了 | 60 秒 | セッション終了時の外部化 | CM-14/CM-22/CM-24/CM-26 |
+
+このテンプレートは 4 つのイベントを登録します。`PreCompact` と `PostCompact` は登録しません。Codex と Qwen Code のテンプレートはこれらを登録し、[フックリファレンス](/docs/reference/hooks) では、これらをハーネスごとに一覧しています。
 
 `dispatch.py` はイベントホワイトリストに `UserPromptSubmit` と `Notification` も
 追加で受け付けます。いずれも同梱テンプレートでは配線されていません。同じ

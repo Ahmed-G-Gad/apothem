@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "适用于 GitHub Copilot（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,6 +65,12 @@ apothem uninstall --harness github-copilot --project /path/to/project
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+`--all` 运行涵盖独立的校验器。它不会运行“兼容性说明”一节中所述的多表面一致性检查。若要在检出目录中按名称运行该检查：
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## 故障排查

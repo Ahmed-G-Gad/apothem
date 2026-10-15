@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "968c5a26a3906dc5"
+sourceHash: "cff52dcbcba63390"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,15 +67,7 @@ strukturierten `rollback.confirmation_required`-Fehler (Exit-Code 1), sofern
 nicht `--yes` angegeben ist. `--install-id` und `--last` wählen den
 Installationsdurchlauf aus und schließen sich gegenseitig aus.
 
-Ein Rollback mit `--harness all` ist bewusst erschöpfend: Er umfasst jeden
-registrierten Harness, einschließlich derer, die `exclude_harnesses` des Profils
-bei der Installation überspringt — das Wiederherstellen des Zustands vor der
-Installation ist ein Aufräumvorgang, daher erreicht er Einträge, die eine zuvor
-breiter angelegte Installation hinterlassen haben kann. Ein Harness ohne
-aufgezeichnete Installation schlägt als Zeile mit `"outcome": "error"` in
-`results` fehl (siehe JSON-Ausgabe), und der Durchlauf wird mit den übrigen
-Harnesses fortgesetzt. Der Befehl endet anschließend mit Exit-Code 1, oder mit 2,
-wenn mindestens ein Ziel eines anderen Harness zurückgesetzt wurde.
+Ein Rollback mit `--harness all` ist bewusst erschöpfend: Er umfasst jeden registrierten Harness, einschließlich derer, die `exclude_harnesses` des Profils bei der Installation überspringt. Das Wiederherstellen des Zustands vor der Installation ist ein Aufräumvorgang; daher erreicht er auch Einträge, die eine zuvor breiter angelegte Installation hinterlassen haben kann. Ein Harness ohne aufgezeichnete Installation schlägt als Zeile mit `"outcome": "error"` in `results` fehl (siehe JSON-Ausgabe), und der Durchlauf wird mit den übrigen Harnesses fortgesetzt. Der Befehl endet dann mit Exit-Code 1, wenn nichts zurückgesetzt wurde, oder mit Exit-Code 2 (Teilergebnis), wenn mindestens ein Ziel zurückgesetzt und zugleich ein Fehler verzeichnet wurde.
 
 ## Optionen
 
@@ -94,6 +86,8 @@ wenn mindestens ein Ziel eines anderen Harness zurückgesetzt wurde.
 | `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
+
+Das Beispiel ist der äußere Rahmen für einen einzelnen, benannten Harness. Bei `--harness all` hat `harness` den Wert `all`, `output_path` den Wert `null`, und `results` enthält die Zeilen jedes ausgewählten Harness.
 
 ```json
 {

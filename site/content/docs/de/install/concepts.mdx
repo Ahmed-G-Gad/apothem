@@ -2,7 +2,7 @@
 title: "Konzepte"
 description: "Glossar mit Definitionen für gemeinsame Profile, Harness-Adapter, Regeln, Hooks, Konformitäts-Gates, Skills und delegierte Worker in Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,7 @@ Harness verhalten soll.
 
 ## Hook
 
-Ein Python-Skript, das in settings.json registriert ist und bei Harness-Lebenszyklus-Ereignissen
-ausgelöst wird (PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hooks erzwingen Konformitäts-
-Mandate in Echtzeit, bevor die Ausgabe die Festplatte erreicht. Das Hook-Ereignismodell ist heute eine Claude Code-Oberfläche;
-Adapter für Harnesses ohne Hook-Mechanismus lassen es einfach weg.
+Ein Python-Skript, das in der Hook-Konfiguration eines Harness (settings.json für Claude Code) registriert ist und bei Lebenszyklus-Ereignissen wie PreToolUse, PostToolUse, SessionStart und Stop ausgelöst wird; einige Adapter registrieren außerdem PreCompact und PostCompact. Hooks erzwingen Konformitäts-Mandate in Echtzeit, bevor die Ausgabe die Festplatte erreicht. Adapter für Harnesses ohne Hook-Mechanismus lassen ihn weg.
 
 ## Konformitäts-Gate
 

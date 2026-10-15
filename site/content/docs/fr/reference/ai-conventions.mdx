@@ -2,11 +2,11 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence normative canonique pour les contributeurs en aval.** Ce document reprend les sections Conventions d'environnements multi-surfaces de la spécification du projet (Spécification §0.6 + §2.8 + §4.7) ; c'est la référence autonome livrée avec le dépôt publié. La justification architecturale est consignée dans [ADR-0003](/docs/architecture).
+> **Référence normative canonique pour les contributeurs en aval.** Ce document reprend les sections Conventions d'environnements multi-surfaces de la spécification du projet (Spécification §0.6 + §2.8 + §4.7) ; c'est la référence autonome livrée avec le dépôt publié. La justification architecturale est consignée dans l'ADR-0003.
 
 ---
 
@@ -39,9 +39,9 @@ Les surfaces sont des *canaux* différents qui expriment une seule *spécificati
 |---|---|---|---|
 | `AGENTS.md` | racine du dépôt (et/ou `.codex/AGENTS.md`) | **DOIT** | environnements compatibles AGENTS |
 | `CLAUDE.md` | racine du dépôt (et/ou `.claude/CLAUDE.md`) | **DOIT** | Claude Code |
-| fichier d'instructions situé sous `.github/` | `.github/copilot-instructions.md` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
-| manifeste des assistants situé sous `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
-| `.cursorrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution d'éditeur dans l'IDE |
+| Fichier d'instructions de l'IDE | `.github/copilot-instructions.md` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
+| Manifeste des assistants | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
+| `.cursorrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution de l'éditeur dans l'IDE |
 | `.windsurfrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution compagnon dans l'IDE |
 
 Pour ce dépôt, les surfaces activées sur option sont celles que la fixture de la liste d'affirmations ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) énumère sous `optional-in`. Les configurations racine propres à un fournisseur et inutilisées sont volontairement absentes ; un fichier de configuration propre à un outil n'est ajouté que lorsque cet outil est une surface d'édition active pour ce dépôt.
@@ -130,7 +130,7 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 
 ## Voir aussi
 
-- [ADR-0003](/docs/architecture) — justification architecturale, alternatives envisagées.
+- ADR-0003 — justification architecturale, alternatives envisagées.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — la fixture canonique de la liste d'affirmations.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — la voix canonique du projet.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — le miroir pour Claude Code.

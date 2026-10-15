@@ -2,11 +2,11 @@
 title: "اصطلاحات أُطُر العمل متعدّدة الأسطح"
 description: "المرجع المعياري المعتمد لإعداد أُطُر العمل متعدّدة الأسطح واتّساقها عبر بيئات تشغيل الدردشة، والإكمال داخل بيئة التطوير، ومراجعة طلبات السحب."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **مرجع معياري معتمد للمساهمين اللاحقين.** يعكس هذا المستند أقسام اصطلاحات أُطُر العمل متعدّدة الأسطح في مواصفة المشروع (المواصفة §0.6 + §2.8 + §4.7)؛ وهو المرجع المستقلّ الذي يُشحَن مع المستودع المنشور. والأساس المعماري مُسجَّل في [<bdi>ADR-0003</bdi>](/docs/architecture).
+> **مرجع معياري معتمد للمساهمين اللاحقين.** يعكس هذا المستند أقسام اصطلاحات أُطُر العمل متعدّدة الأسطح في مواصفة المشروع (المواصفة §0.6 + §2.8 + §4.7)؛ وهو المرجع المستقلّ الذي يُشحَن مع المستودع المنشور. والأساس المعماري مُسجَّل في <bdi>ADR-0003</bdi>.
 
 ---
 
@@ -37,10 +37,10 @@ sourceHash: "8b401418bac95c44"
 
 | السطح | المسار | إلزامي؟ | الجمهور |
 |---|---|---|---|
-| <bdi>`AGENTS.md`</bdi> | جذر المستودع (و/أو <bdi>`.codex/AGENTS.md`</bdi>) | **يجب** | أُطُر العمل المدركة لـ <bdi>AGENTS</bdi> |
+| <bdi>`AGENTS.md`</bdi> | جذر المستودع (و/أو <bdi>`.codex/AGENTS.md`</bdi>) | **يجب** | أُطُر العمل المدركة لـ<bdi>AGENTS</bdi> |
 | <bdi>`CLAUDE.md`</bdi> | جذر المستودع (و/أو <bdi>`.claude/CLAUDE.md`</bdi>) | **يجب** | <bdi>Claude Code</bdi> |
-| ملف تعليمات جذره <bdi>`.github/`</bdi> | <bdi>`.github/copilot-instructions.md`</bdi> | **يجب** | بيئة تشغيل الإكمال داخل بيئة التطوير |
-| بيان مساعِدات جذره <bdi>`site/content/docs/architecture/`</bdi> | <bdi>`site/content/docs/architecture/agents.mdx`</bdi> | **يجوز** (بالاشتراك عبر قناة الاستيضاح المُهيكَل) | منصّات تنسيق المساعِدات المتعدّدة |
+| ملف تعليمات داخل بيئة التطوير | <bdi>`.github/copilot-instructions.md`</bdi> | **يجب** | بيئة تشغيل الإكمال داخل بيئة التطوير |
+| بيان المساعِدات | <bdi>`site/content/docs/architecture/agents.mdx`</bdi> | **يجوز** (بالاشتراك عبر قناة الاستيضاح المُهيكَل) | منصّات تنسيق المساعِدات المتعدّدة |
 | <bdi>`.cursorrules`</bdi> | جذر المستودع | **يجوز** (بالاشتراك) | بيئة تشغيل المحرِّر داخل بيئة التطوير |
 | <bdi>`.windsurfrules`</bdi> | جذر المستودع | **يجوز** (بالاشتراك) | بيئة تشغيل الرفيق داخل بيئة التطوير |
 
@@ -130,7 +130,7 @@ sourceHash: "8b401418bac95c44"
 
 ## انظر أيضًا
 
-- [<bdi>ADR-0003</bdi>](/docs/architecture) — الأساس المعماري، والبدائل التي دُرِست.
+- <bdi>ADR-0003</bdi> — الأساس المعماري، والبدائل التي دُرِست.
 - [<bdi>`tests/fixtures/multi-surface-claims.yaml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — تجهيزة قائمة الادّعاءات المرجعية.
 - [<bdi>`AGENTS.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — صوت المشروع المرجعي.
 - [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — مرآة <bdi>Claude Code</bdi>.

@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -89,6 +89,12 @@ apothem uninstall --harness github-copilot --project /path/to/project
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+`--all` 실행은 독립형 검증기를 대상으로 합니다. 호환성 참고 사항에 설명된 다중 표면 일관성 검사는 실행하지 않습니다. 체크아웃에서 이 검사를 이름으로 실행하려면 다음을 사용하세요:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## 문제 해결

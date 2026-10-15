@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,12 +43,7 @@ perfil y luego ejecuta [`update`](/docs/cli-reference/update) para aplicarlo. Co
 
 ## Vista previa del radio de impacto
 
-`install --harness all` se despliega en alcances mixtos: los adaptadores de
-alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que
-los adaptadores de alcance de usuario escriben bajo tu directorio personal —
-fuera de esa raíz. Antes de escribir cualquier archivo, el comando imprime los
-destinos concretos agrupados bajo dos encabezados: los que están dentro de la
-raíz del proyecto y los que están bajo tu directorio personal.
+`install --harness all` se despliega en alcances mixtos: los adaptadores de alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que los adaptadores de alcance de usuario escriben bajo tu directorio personal, fuera de esa raíz. Antes de que la instalación escriba cualquier archivo, el comando imprime los destinos concretos agrupados bajo dos encabezados: los que están dentro de la raíz del proyecto y los que están bajo tu directorio personal. La única excepción es `--clean`: su paso de partida limpia se ejecuta antes de esta vista previa, escribe una copia de seguridad y elimina los destinos anteriores, tal como se describe más abajo.
 
 Cuando la selección escribe fuera de la raíz del proyecto, una confirmación
 interactiva protege las escrituras con raíz en el directorio personal. `--yes`,
@@ -225,8 +220,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## Códigos de salida

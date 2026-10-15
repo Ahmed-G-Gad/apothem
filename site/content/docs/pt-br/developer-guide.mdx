@@ -2,7 +2,7 @@
 title: "Contribuindo com o Apothem — Guia do Desenvolvedor"
 description: "Mantenha e estenda o ecossistema do Apothem criando regras, comandos, auxiliares, skills e hooks com schemas canônicos, requisitos de frontmatter e procedimentos de validação."
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -104,7 +104,7 @@ carrega a chave: as regras não carregam nenhuma delas, e as skills não carrega
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -226,16 +226,19 @@ Todo artefato versionado carrega sua própria versão semântica
 (`MAJOR.MINOR.PATCH`). Os comandos e as skills a exigem, os auxiliares e os
 output-styles PODEM carregá-la, e as regras não carregam nenhuma:
 
-- **PATCH** — correções de erros de digitação, formatação, atualização de links, edições somente em comentários. Comportamento inalterado.
+- **PATCH** — uma mudança de comportamento que corrige uma diretiva existente sem quebrar o contrato.
 - **MINOR** — mudanças aditivas e compatíveis: novas seções opcionais, novos campos de frontmatter opcionais, novos exemplos. Os consumidores existentes continuam funcionando sem alteração.
 - **MAJOR** — mudanças incompatíveis de schema ou de contrato: seções removidas, campos renomeados, comportamento alterado de uma diretiva existente, mudanças que exigem que os artefatos downstream se adaptem.
 
+Correções de erro de digitação, correções de link, formatação e edições somente em comentários ou somente de documentação deixam a versão inalterada. Somente uma mudança de comportamento a incrementa. Uma edição desse tipo ainda atualiza a data `updated` do artefato.
+
 Exemplos:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: correção de erro de digitação)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: adicionada uma nova seção opcional)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: diretiva corrigida que altera o comportamento)
+- `vX.Y.Z` → `vX.Y.Z` (sem incremento: correção de erro de digitação ou de link; `updated` muda)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: seção opcional nova adicionada)
 - `v0.Y.Z` → `v(0+1).0.0` (MAJOR: contrato declarado estável; os novos artefatos partem de `v0.Y.Z`)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: removido um campo de frontmatter obrigatório)
+- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: campo de frontmatter obrigatório removido)
 
 Incremente `version` e `updated` juntos a cada edição que altere o comportamento
 de um artefato que os carrega. Acrescente uma linha correspondente ao

@@ -2,7 +2,7 @@
 title: "إعداد حساب الناشر"
 description: "تهيئة الناشر الموثوق على npmjs.com للحزمة @ahmed-g-gad/apothem والمتطلّبات المسبقة للإصدار على جانب GitHub."
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,11 +22,7 @@ sourceHash: "ee07a06a98f62864"
 | <bdi>GitHub</bdi> | <bdi>`ahmed-g-gad`</bdi> | <bdi>`ahmed-g-gad/apothem`</bdi> |
 | <bdi>npm (npmjs.com)</bdi> | <bdi>`ahmed-g-gad`</bdi> | <bdi>`@ahmed-g-gad/apothem`</bdi> |
 
-يُسمَح لمالك <bdi>GitHub</bdi> بالتغيّر مستقبلًا. يقرأ منطق سير العمل والمُثبِّت
-<bdi>`github.repository`</bdi> أو <bdi>`github.repository_owner`</bdi> أو
-<bdi>`APOTHEM_GITHUB_REPOSITORY`</bdi> حيث تسمح المنصّة بالحلّ الديناميكي. ويبقى
-مُعرِّف الحزمة في السجلّ مستقرًا لأن المستخدمين يُثبّتون اسم الحزمة، لا اسم حساب
-المشرف.
+يُسمح لمالك <bdi>GitHub</bdi> بالتغيّر مستقبلًا. يقرأ منطق سير العمل والمُثبِّت <bdi>`github.repository`</bdi> أو <bdi>`github.repository_owner`</bdi> أو <bdi>`APOTHEM_GITHUB_REPO`</bdi> حيثما تسمح المنصّة بالحلّ الديناميكي. ويبقى معرِّف الحزمة في السجلّ مستقرًّا لأن المستخدمين يُثبّتون اسم الحزمة، لا اسم حساب المشرف.
 
 ## <bdi>npm (npmjs.com)</bdi>
 
@@ -59,6 +55,10 @@ sourceHash: "ee07a06a98f62864"
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   يحتاج الفحص إلى ضبط <bdi>`GH_TOKEN`</bdi> والملف <bdi>`sbom.cdx.json`</bdi> المنشور في
+   <bdi>`dist/release-assets/`</bdi>. ويحدّد [دليل تشغيل دورة الإصدار](/docs/runbooks/release-cycle)،
+   §2.4، نطاق الرمز وأمر التنزيل.
 
 9. وافِق على عملية النشر إلى بيئة <bdi>`release`</bdi> الخاصة بتشغيل
    <bdi>`Publish npm`</bdi> (<bdi>`publish-npm.yml`</bdi>) الذي يبدأه دفعُ الوسم. وإن

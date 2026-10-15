@@ -2,7 +2,7 @@
 title: "Regla personalizada"
 description: "Crear una regla permanente personalizada para tu proyecto."
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ Guárdalo en `rules/kebab-filenames.md` dentro de la raíz de instalación de tu
 
 ## Verifica que la regla está bien formada
 
-Ejecuta el validador de frontmatter sobre el archivo de regla que acabas de escribir. Desde un checkout de Apothem, antepón `PYTHONPATH=src` al comando; tras una instalación con script, antepón `PYTHONPATH="$HOME/.apothem/src"`:
+Ejecuta el validador de frontmatter sobre el archivo de regla que acabas de escribir. Usa el primer comando desde un checkout de Apothem, donde `PYTHONPATH=src` hace que el paquete sea importable. Usa el segundo después de una instalación con script, donde el código fuente vive en `$HOME/.apothem/src`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Una regla bien formada informa de una superación limpia:

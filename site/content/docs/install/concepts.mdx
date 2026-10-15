@@ -32,10 +32,10 @@ harness should behave.
 
 ## Hook
 
-A Python script registered in settings.json that fires on harness lifecycle events
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hooks enforce conformity
-mandates in real-time before output reaches disk. The hook event model is a Claude Code surface
-today; adapters for harnesses without a hook mechanism simply omit it.
+A Python script registered in a harness's hook configuration (settings.json for Claude Code)
+that fires on lifecycle events such as PreToolUse, PostToolUse, SessionStart and Stop; some
+adapters also register PreCompact and PostCompact. Hooks enforce conformity mandates in real
+time before output reaches disk. Adapters for harnesses without a hook mechanism omit it.
 
 ## Conformity gate
 

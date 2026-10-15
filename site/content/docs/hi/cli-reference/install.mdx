@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install कमांड के लिए CLI संदर्भ।"
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,12 +45,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ## प्रभाव-त्रिज्या पूर्वावलोकन
 
-`install --harness all` मिश्रित स्कोप में फैलता है: प्रोजेक्ट-स्कोप अडैप्टर
-दिए गए `--project` रूट के अंतर्गत लिखते हैं, जबकि उपयोगकर्ता-स्कोप अडैप्टर
-आपकी होम डायरेक्टरी के अंतर्गत लिखते हैं — उस रूट के बाहर। कोई भी फ़ाइल लिखे
-जाने से पहले, कमांड ठोस टारगेट को दो शीर्षकों के अंतर्गत समूहबद्ध करके प्रिंट
-करता है: वे जो प्रोजेक्ट रूट के भीतर हैं और वे जो आपकी होम डायरेक्टरी के
-अंतर्गत हैं।
+`install --harness all` मिश्रित स्कोप में फैलता है: प्रोजेक्ट-स्कोप अडैप्टर दिए गए `--project` रूट के अंतर्गत लिखते हैं, जबकि उपयोगकर्ता-स्कोप अडैप्टर आपकी होम डायरेक्टरी के अंतर्गत लिखते हैं — उस रूट के बाहर। कोई भी फ़ाइल लिखे जाने से पहले, कमांड ठोस टारगेट को दो शीर्षकों के अंतर्गत समूहबद्ध करके प्रिंट करता है: वे जो प्रोजेक्ट रूट के भीतर हैं और वे जो आपकी होम डायरेक्टरी के अंतर्गत हैं। एकमात्र अपवाद `--clean` है: उसका क्लीन-स्लेट चरण इस पूर्वावलोकन से पहले चलता है, और वह एक बैकअप लिखता है तथा पिछले टारगेट हटाता है, जैसा नीचे वर्णित है।
 
 जब चयन प्रोजेक्ट रूट के बाहर लिखता है, तो एक इंटरैक्टिव पुष्टि होम-रूट वाले
 लेखनों की रक्षा करती है। `--yes`, एक गैर-इंटरैक्टिव शेल (कोई TTY नहीं),
@@ -227,8 +222,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## निकास कोड

@@ -2,11 +2,11 @@
 title: "프런트매터 스키마"
 description: "아티팩트 클래스 전반의 YAML 프런트매터 블록 구조, 클래스별 필수 키, 검증기 강제 규칙에 관한 참조 가이드입니다."
 machineTranslated: true
-sourceHash: "d6c49336e4d3abf9"
+sourceHash: "e0fad965a556b755"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **모든 아티팩트 클래스의 YAML 프런트매터에 관한 정식 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions에 있는 요약은 인라인 선언이고, [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)의 클래스별 JSON 스키마(`additionalProperties`가 알 수 없는 키를 거부함)는 기계가 읽을 수 있는 계약이며 어떤 불일치에서든 우선합니다. 이 페이지는 필수 키 색인이고, [`artifact-schema.mdx`](/docs/reference/artifact-schema)는 클래스별 템플릿과 상세 예시를 담습니다 — 둘 다 이 스키마들을 사람이 읽을 수 있게 투영한 문서입니다.
+> **모든 아티팩트 클래스의 YAML 프런트매터에 관한 정식 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)의 Conventions에 있는 요약은 인라인 선언이며, [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)의 클래스별 JSON 스키마(스킬과 명령 스키마의 `additionalProperties: false`는 알 수 없는 키를 거부하고, 에이전트, 출력 스타일, 플랜 스키마는 `additionalProperties: true`로 설정됨)가 기계가 읽을 수 있는 계약이며 불일치가 있으면 항상 우선합니다. 이 페이지는 필수 키 색인이고, [`artifact-schema.mdx`](/docs/reference/artifact-schema)는 클래스별 템플릿과 상세 예시를 담습니다. 두 문서 모두 이 스키마들을 사람이 읽을 수 있게 투영한 것입니다.
 
 ---
 

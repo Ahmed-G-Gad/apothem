@@ -2,7 +2,7 @@
 title: "install"
 description: "Справочник CLI для команды apothem install."
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,12 +43,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ## Предпросмотр радиуса поражения
 
-`install --harness all` разветвляется на смешанные области: адаптеры с областью
-проекта записывают под переданным корнем `--project`, а адаптеры с областью
-пользователя записывают под вашим домашним каталогом — за пределами этого корня.
-Прежде чем будет записан какой-либо файл, команда печатает конкретные цели,
-сгруппированные под двумя заголовками: цели внутри корня проекта и цели под
-вашим домашним каталогом.
+`install --harness all` разветвляется на смешанные области: адаптеры с областью проекта записывают в корень, переданный через `--project`, а адаптеры с областью пользователя записывают в ваш домашний каталог, то есть за пределами этого корня. Прежде чем установка запишет какой-либо файл, команда выводит конкретные цели, сгруппированные под двумя заголовками: цели внутри корня проекта и цели в вашем домашнем каталоге. Единственное исключение — `--clean`: его шаг очистки выполняется до этого предварительного просмотра, записывает резервную копию и удаляет прежние цели, как описано ниже.
 
 Когда выбор записывает за пределы корня проекта, интерактивное подтверждение
 защищает записи, корнем которых служит домашний каталог. `--yes`,
@@ -223,8 +218,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## Коды выхода

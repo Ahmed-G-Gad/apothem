@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "968c5a26a3906dc5"
+sourceHash: "cff52dcbcba63390"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,16 +65,7 @@ TTY) —, la commande refuse d'emblée avec une erreur structurée
 fourni. `--install-id` et `--last` sélectionnent la passe d'installation et
 s'excluent mutuellement.
 
-Un rollback `--harness all` est délibérément exhaustif : il couvre chaque
-environnement enregistré, y compris ceux que le champ `exclude_harnesses` du
-profil ignore lors de l'installation — restaurer l'état antérieur à
-l'installation est une opération de nettoyage ; elle atteint donc les
-enregistrements qu'une installation antérieure plus large a pu laisser. Un
-environnement sans installation enregistrée échoue sous la forme d'une ligne
-`"outcome": "error"` dans `results` (voir la sortie JSON), et l'exécution se
-poursuit avec les environnements restants. La commande se termine ensuite avec
-le code 1, ou 2 lorsqu'au moins une cible d'un autre environnement a été
-annulée.
+Un rollback `--harness all` est délibérément exhaustif : il couvre chaque environnement enregistré, y compris ceux que le champ `exclude_harnesses` du profil ignore lors de l'installation. Restaurer l'état antérieur à l'installation est une opération de nettoyage ; elle atteint donc les enregistrements qu'une installation antérieure plus large a pu laisser. Un environnement sans installation enregistrée échoue sous la forme d'une ligne `"outcome": "error"` dans `results` (voir la sortie JSON), et l'exécution se poursuit avec les environnements restants. La commande se termine ensuite avec le code 1 si aucune cible n'a été annulée, ou avec le code 2 (résultat partiel) lorsqu'au moins une cible a été annulée et qu'un échec a également été enregistré.
 
 ## Options
 
@@ -93,6 +84,8 @@ annulée.
 | `-h`, `--help` | Affiche l'aide et quitte. |
 
 ## Sortie JSON
+
+L'exemple présente l'enveloppe d'un seul environnement nommé. Avec `--harness all`, `harness` vaut `all`, `output_path` vaut `null`, et `results` contient les lignes de chaque environnement sélectionné.
 
 ```json
 {

@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "1c900ce4c37b3e46"
+sourceHash: "2da59e39cc2cc8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -201,15 +201,7 @@ Release-Tag ist annotiert und signiert. Der Abschnitt zur Release-Signierung in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 listet jedes Tag auf und beschreibt, wie es verifiziert wird.
 
-Ausdrückliche Überschreibungen lockern den Standard. `APOTHEM_ALLOW_UNVERIFIED=1`
-stuft einen Verifizierungsfehler zu einer Warnung herab und fährt fort; das ist
-für den Einsatz in Air-Gapped-Umgebungen, lokal oder vor signierten Releases
-gedacht. `APOTHEM_REF=main` checkt den beweglichen Branch ohne Verifizierung nur
-zusammen mit `APOTHEM_ALLOW_UNVERIFIED=1` aus. Mit `APOTHEM_REF=main` allein
-holt der Installer `main` nach `APOTHEM_HOME` und bricht dann ab, bevor eine
-Konfiguration materialisiert wird, weil ein Branch kein signiertes Release-Tag
-ist. Ein lokaler Checkout über `APOTHEM_SOURCE` ruft nichts ab und überspringt
-die Verifizierung.
+Ausdrückliche Überschreibungen lockern den Standard. `APOTHEM_ALLOW_UNVERIFIED=1` stuft einen Verifizierungsfehler zu einer Warnung herab und fährt fort; das ist für Air-Gapped-Umgebungen oder den lokalen Einsatz gedacht oder um ein Release zu installieren, das vor der Signatur von Tags erschienen ist. `APOTHEM_REF=main` checkt den beweglichen Branch ohne Verifizierung nur zusammen mit `APOTHEM_ALLOW_UNVERIFIED=1` aus. Mit `APOTHEM_REF=main` allein holt der Installer `main` nach `APOTHEM_HOME` und bricht dann ab, bevor eine Konfiguration materialisiert wird, weil ein Branch kein signiertes Release-Tag ist. Ein lokaler Checkout über `APOTHEM_SOURCE` ruft nichts ab und überspringt die Verifizierung.
 
 `APOTHEM_VERIFY=checksum` ist der Mittelweg für einen Host, der den
 öffentlichen Schlüssel des Maintainers noch nicht besitzt: Statt zu klonen,

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de entorno de Apothem para Codex (Beta)."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,8 @@ comandos reutilizables como skills de Codex.
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` para las
 skills invocadas por el usuario, y archivos de soporte bajo
 `~/.config/apothem/{rules,templates}/`.
+
+**Intérprete de hooks.** Antes de escribir nada, la instalación resuelve un intérprete CPython 3.10+. En Windows, la entrada `commandWindows` de cada hook en `hooks.json` ejecuta la ruta absoluta de ese intérprete en lugar del lanzador `py -3`; las entradas `command` de POSIX siguen usando `python3`. Vuelve a ejecutar `apothem update --harness codex` después de que el intérprete se mueva o se elimine. Si no se encuentra ningún CPython 3.10+, la instalación se detiene antes de escribir cualquier archivo.
 
 El bloque de Apothem en `AGENTS.md` termina con una sección de archivos de
 soporte de Apothem que nombra el directorio absoluto contra el que se resuelve

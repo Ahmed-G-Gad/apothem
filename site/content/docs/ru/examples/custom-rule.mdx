@@ -2,7 +2,7 @@
 title: "Пользовательское правило"
 description: "Создание пользовательского постоянного правила для вашего проекта."
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## Проверьте, что правило составлено корректно
 
-Запустите валидатор frontmatter для файла правила, который вы только что написали. Из чекаута Apothem добавьте `PYTHONPATH=src` к команде; после установки через скрипт добавьте `PYTHONPATH="$HOME/.apothem/src"`:
+Запустите валидатор frontmatter для файла правила, который вы только что написали. Первую команду используйте из чекаута Apothem, где `PYTHONPATH=src` делает пакет импортируемым. Вторую используйте после установки скриптом, когда исходный код находится в `$HOME/.apothem/src`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Корректно составленное правило выводит чистое прохождение:

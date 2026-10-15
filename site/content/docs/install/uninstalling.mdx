@@ -6,6 +6,12 @@ description: "Remove Apothem and clean up harness configs."
 
 ## Remove harness configs first
 
+The bare `apothem` command used on this page is the shim that the one-shot
+installer (channel 3 of the [installation guide](/docs/install)) writes; it runs
+once that shim's directory is on `PATH`. On the other install channels,
+substitute `npx @ahmed-g-gad/apothem` for `apothem`, as the installation guide
+describes.
+
 Before uninstalling Apothem, remove each harness adapter config to leave
 your harnesses in a clean state. Run `apothem harnesses list` to see
 which adapters are currently installed, then remove them one at a time or use

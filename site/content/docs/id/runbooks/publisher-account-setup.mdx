@@ -2,7 +2,7 @@
 title: "Penyiapan Akun Penerbit"
 description: "Konfigurasikan penerbit tepercaya npmjs.com untuk @ahmed-g-gad/apothem dan prasyarat rilis di sisi GitHub."
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,11 +23,7 @@ sendiri dan tidak memerlukan akun penerbit eksternal.
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Pemilik GitHub diizinkan berubah di masa mendatang. Logika alur kerja dan
-pemasang membaca `github.repository`, `github.repository_owner`, atau
-`APOTHEM_GITHUB_REPOSITORY` di tempat platform mengizinkan resolusi dinamis.
-Pengidentifikasi paket registri tetap stabil karena pengguna memasang nama
-paket, bukan nama akun pemelihara.
+Pemilik GitHub diizinkan berubah di masa mendatang. Logika alur kerja dan pemasang membaca `github.repository`, `github.repository_owner`, atau `APOTHEM_GITHUB_REPO` di tempat platform mengizinkan resolusi dinamis. Pengidentifikasi paket registri tetap stabil karena pengguna memasang nama paket, bukan nama akun pemelihara.
 
 ## npm (npmjs.com)
 
@@ -60,6 +56,10 @@ paket, bukan nama akun pemelihara.
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   Pemeriksaan memerlukan `GH_TOKEN` yang sudah diatur dan `sbom.cdx.json` yang sudah dipublikasikan di
+   `dist/release-assets/`. [Runbook siklus rilis](/docs/runbooks/release-cycle),
+   §2.4, memuat cakupan token dan perintah unduhan.
 
 9. Setujui deployment environment `release` untuk run `Publish npm`
    (`publish-npm.yml`) yang dimulai oleh push tag. Jika run itu tidak dimulai,

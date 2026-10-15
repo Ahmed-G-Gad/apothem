@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ sourceHash: "8bc55176ce744fca"
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -169,13 +169,16 @@ alwaysApply: false
 
 每个带版本的制品都带有其自身的语义化版本（`MAJOR.MINOR.PATCH`）。命令和技能要求带有它，辅助器和输出样式可以带有它，规则则不带：
 
-- **PATCH**——拼写修正、格式调整、链接刷新、仅限注释的编辑。行为不变。
-- **MINOR**——新增式的非破坏性变更：新的可选章节、新的可选 frontmatter 字段、新的示例。现有使用方无需任何改动即可继续工作。
+- **PATCH**——行为层面的变更，在不破坏契约的前提下修正现有指令。
+- **MINOR**——增量式的非破坏性变更：新的可选章节、新的可选 frontmatter 字段、新的示例。现有使用方无需任何改动即可继续工作。
 - **MAJOR**——破坏性的 schema 或契约变更：移除章节、重命名字段、改变现有指令的行为，以及要求下游制品作出适配的变更。
+
+拼写修正、链接修正、格式调整，以及仅限注释或仅限文档的编辑，都不改变版本号。只有行为变更才会递增版本号。此类编辑仍需更新制品的 `updated` 日期。
 
 示例：
 
-- `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH：拼写修正）
+- `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH：修正了一条会改变行为的指令）
+- `vX.Y.Z` → `vX.Y.Z`（不递增：拼写或链接修正；`updated` 随之变更）
 - `vX.Y.Z` → `vX.(Y+1).0`（MINOR：新增一个可选章节）
 - `v0.Y.Z` → `v(0+1).0.0`（MAJOR：宣布契约稳定；新制品以 `v0.Y.Z` 起始）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR：移除必填 frontmatter 字段）

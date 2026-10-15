@@ -34,7 +34,7 @@ version comments and are bumped by Renovate.
 | Security tooling | Current lower bounds live in `pyproject.toml` `security` extra | Current scanner floors ratified before release |
 | Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
 | Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
-| GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
+| GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception, marked with an `action-pinning-exempt:` comment in `release.yml` | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
 | npm packaging | `publish-npm.yml` workflow runs on the `v*.*.*` tag push, with `workflow_dispatch` as the fallback | The single public npm package is `@ahmed-g-gad/apothem`; publication waits for the operator's approval of the `release` environment, given after `scripts/release/check-release-ready.sh` passes |
 
 ## Locking

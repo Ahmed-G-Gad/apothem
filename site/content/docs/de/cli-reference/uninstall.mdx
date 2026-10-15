@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "CLI-Referenz für den Befehl apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,14 +18,24 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 Entfernt die vom Adapter verwalteten Harness-Ziele und danach die Verzeichnisse,
 die die Installation angelegt hat, sobald sie leer sind (ein Verzeichnis, das
-irgendetwas von Ihnen enthält, bleibt bestehen). Fragt nach Bestätigung, sofern
-nicht `--yes` angegeben ist. Wenn keine Abfrage möglich ist — `--format json`
-(Abfragetext würde das einzelne JSON-Dokument verfälschen) oder eine nicht
+irgendetwas von Ihnen enthält, bleibt bestehen).
+
+Das Memory, die Kontexte und die Lernspeicher des gemeinsamen Arbeitsverzeichnisses
+werden nur gesichert und entfernt, wenn dies der letzte Harness ist, der in
+diesem Verzeichnis installiert ist. Die Deinstallation entfernt sie an dem Ort,
+den die Installation vermerkt hat, sodass sie dort gefunden werden, wo die
+Installation sie geschrieben hat (siehe die Profilfelder `workspace`). Das
+Verzeichnis `plans/` wird nie entfernt.
+
+Fragt nach Bestätigung, sofern nicht
+`--yes` angegeben ist. Wenn keine Abfrage möglich ist — `--format json`
+(der Abfragetext würde das einzelne JSON-Dokument verfälschen) oder eine nicht
 interaktive Shell (kein TTY) —, verweigert der Befehl die Ausführung von
 vornherein mit einem strukturierten Fehler `uninstall.confirmation_required`
-(Exit-Code 1), sofern nicht `--yes` angegeben ist. Wenn ein ausgewählter Harness
-nicht installiert ist, ist der Befehl erfolgreich (Exit-Code 0) und gibt einen
-Hinweis „nothing to remove“ aus.
+(Exit-Code 1), sofern nicht `--yes` angegeben ist. Ist ein ausgewählter Harness
+nicht installiert, ist der Befehl erfolgreich (Exit-Code 0) und gibt in der
+einfachen Ausgabe `NAME is not installed; nothing to remove.` aus, wobei `NAME`
+die Harness-ID ist.
 
 Die gemeinsamen Datenspeicher unter `.apothem/` an der Installationswurzel
 (`memory/`, `contexts/`, `learning/`) bleiben bestehen, solange ein anderer
@@ -36,10 +46,10 @@ entfernt ihn dann samt allem, was er enthält. Alles, was Sie in `plans/`
 aufbewahren, wird niemals entfernt.
 
 Eine Entfernung mit `--harness all` ist bewusst erschöpfend: Sie umfasst jeden
-registrierten Harness, einschließlich derer, die `exclude_harnesses` im Profil
-bei der Installation überspringt — die Bereinigung erreicht Zustand, den eine
-früher umfassendere Installation hinterlassen haben könnte. Harnesses, die nie
-installiert wurden, melden „nothing to remove“.
+registrierten Harness, einschließlich derjenigen, die `exclude_harnesses` im
+Profil bei der Installation überspringt — die Bereinigung erfasst auch Zustände,
+die eine früher umfassendere Installation hinterlassen haben könnte. Harnesses,
+die nie installiert wurden, erhalten denselben Hinweis.
 
 Der Alias in Verlaufsform `apothem uninstalling` (auch als
 `apothem Uninstalling` akzeptiert) wird auf denselben Handler aufgelöst.
@@ -100,7 +110,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Exit-Codes

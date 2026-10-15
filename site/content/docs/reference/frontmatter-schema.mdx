@@ -4,7 +4,7 @@ description: "Reference guide for YAML frontmatter block structure, per-class re
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical reference for YAML frontmatter on every artifact class.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; the per-class JSON Schemas at [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` rejects unknown keys) are the machine-readable contract and win on any disagreement. This page is the required-key index, and [`artifact-schema.mdx`](/docs/reference/artifact-schema) carries the per-class templates and worked examples — both are human-readable projections of those schemas.
+> **Canonical reference for YAML frontmatter on every artifact class.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; the per-class JSON Schemas at [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties: false` in the skill and command schemas rejects unknown keys; the agent, output-style, and plan schemas set `additionalProperties: true`) are the machine-readable contract and win on any disagreement. This page is the required-key index, and [`artifact-schema.mdx`](/docs/reference/artifact-schema) carries the per-class templates and worked examples — both are human-readable projections of those schemas.
 
 ---
 

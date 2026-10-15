@@ -218,6 +218,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The release readiness check can pass.** `scripts/release/check-release-ready.sh`
+  and its PowerShell twin looked for an SPDX file the release never builds, so
+  they could never pass. They now check the CycloneDX `sbom.cdx.json` the release
+  publishes: its format, the version in its root package URL, and the vendored
+  packages. The release runbooks document the `GH_TOKEN` the check needs.
+- **Uninstall removes the workspace stores where install wrote them.** With
+  `workspace.scope: user-home` or a custom `directory_name`, uninstall and
+  rollback looked for the `memory/`, `contexts/` and `learning/` stores under
+  `<root>/.apothem` and left the real ones behind. Install now records the data
+  home it resolved, and uninstall, rollback and the last-harness check use it.
+  Installs recorded before this change keep the default location.
+- **The header injector writes MDX files.** `scripts/inject-header.py` places the
+  SPDX line as an MDX comment after the frontmatter of an `.mdx` file, as the
+  authorship-header page describes. That page now says the header check is
+  advisory, names ADRs in plain text, and drops a header marker that nothing
+  implements.
+- **The Windows statusline command names the resolved interpreter.** The Claude
+  Code statusline's Windows command used the `py -3` launcher, which not every
+  Python install provides. It now uses the interpreter install resolves, as the
+  hooks do.
+- **"axes" is spelled correctly** in the rules, commands, skills and templates
+  that read "axs", and pre-emission bar M4 has one name, "Self-application",
+  classified as reasoned across the rules and docs. After you upgrade,
+  `apothem diff` lists the affected installed files as pending updates until the
+  next `apothem update`.
+- **Documentation matches the code and the maintainer's choices.** A typo or link
+  fix leaves an artifact's version unchanged. The comparison page lists durable
+  memory and gives the synced unit as the propagation manifest defines it. The
+  hook-event tables, the `--clean` note on `install`, the installer override
+  text on the install page and in the README, the continuous-form alias labels,
+  the release runbook's repository variable and the CI/CD page now say what the
+  code does.
 - **Codex hooks on Windows run the install-resolved interpreter.** The
   `commandWindows` entries in `hooks.json` ran the `py -3` launcher; they now
   run the CPython that install resolves, as the Claude Code hooks do, and an

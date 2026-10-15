@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ## 影响范围预览
 
-`install --harness all` 会扇出到混合的作用域：项目作用域的适配器写入所提供的 `--project` 根目录之下，而用户作用域的适配器写入你的主目录之下——也就是该根目录之外。在写入任何文件之前，该命令会打印具体的目标，并按两个标题分组：位于项目根目录内的目标，以及位于你主目录下的目标。
+`install --harness all` 会扇出到混合的作用域：项目作用域的适配器写入所提供的 `--project` 根目录之下，而用户作用域的适配器写入你的主目录之下——也就是该根目录之外。在安装写入任何文件之前，该命令会打印具体的目标，并按两个标题分组：位于项目根目录内的目标，以及位于你主目录下的目标。唯一的例外是 `--clean`：其清空重来步骤早于此预览运行，它会写入备份并删除先前的目标，具体见下文。
 
 当所选内容写入项目根目录之外时，交互式确认会把守以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自都会在不提示的情况下继续。只有 `--dry-run` 不写入任何内容；`--format json` 会跳过预览和确认提示，但仍会执行写入。拒绝主目录提示会在安装写入之前中止。使用 `--clean` 时，清理步骤会先运行，并且有自己针对每个目标的确认：它会在 `~/.apothem/backups` 下写入备份，并删除它所确认的目标。拒绝安装提示后，这些删除操作和备份仍然保留。
 
@@ -159,8 +159,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## 退出码

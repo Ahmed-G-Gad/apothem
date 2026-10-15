@@ -2,7 +2,7 @@
 title: "Runbook del ciclo de lanzamiento"
 description: "Flujo de lanzamiento completo, desde las puertas locales, pasando por el GitHub Release firmado, hasta la publicación en npm."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -146,14 +146,21 @@ GitHub Release. El mantenedor revisa el registro del trabajo
 
 ### 2.4 Confirmar la publicación en npm
 
-El push de la etiqueta también ejecuta `publish-npm.yml` junto a `release.yml`.
-El flujo de trabajo de npm no espera al flujo de trabajo de lanzamiento; la
-aprobación del entorno `release` es la puerta. Cuando el flujo de trabajo de
-lanzamiento de §2.3 haya terminado, confirma que todo está listo:
+El push de la etiqueta también ejecuta `publish-npm.yml` junto a `release.yml`. El flujo de trabajo de npm no espera al flujo de trabajo de lanzamiento; la aprobación del entorno `release` es la puerta. Cuando el flujo de trabajo de lanzamiento de §2.3 haya terminado, confirma que el lanzamiento está listo. La comprobación lee los lanzamientos, las ejecuciones de flujos de trabajo y el SBOM publicado, así que antes prepara dos entradas:
+
+- **`GH_TOKEN`.** El script se niega a ejecutarse sin él, aunque `gh` ya tenga una sesión iniciada. Usa un token de acceso personal de grano fino limitado a
+  `ahmed-g-gad/apothem`, con **Actions: Read** (ejecuciones de flujos de trabajo) y **Contents: Read** (lanzamientos). La comprobación no escribe nada, así que no necesita ningún permiso de escritura. Un token obtenido con `gh auth token` tiene todos los alcances del inicio de sesión, así que usa preferentemente el token de grano fino.
+- **El SBOM publicado.** La comprobación lee `dist/release-assets/sbom.cdx.json`, el archivo CycloneDX que adjunta el lanzamiento. Descarga la copia que publicó el lanzamiento en lugar de una compilación local.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+La comprobación falla cuando el lanzamiento es un borrador o una versión preliminar, cuando un flujo de trabajo requerido para el commit de la etiqueta no está en verde, cuando falta el SBOM, cuando describe otra versión o cuando omite un paquete vendorizado. El mensaje de fallo indica la causa.
 
 Después aprueba el despliegue del entorno `release` cuando se te solicite. El
 flujo de trabajo publica `@ahmed-g-gad/apothem@X.Y.Z` en npmjs.com mediante la

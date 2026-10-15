@@ -2,7 +2,7 @@
 title: "Comparaison"
 description: "Comment évaluer Apothem face à une configuration d'environnement maintenue à la main et à d'autres approches de configuration, avec une matrice de fonctionnalités et des pages par environnement."
 machineTranslated: true
-sourceHash: "4a833217abbbb01d"
+sourceHash: "0291d627acd6aa88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,46 +18,24 @@ Les faits concernant les pairs sur cette page datent du **2026-10-02** et sont
 tirés du README ou de la documentation propre à chaque projet (voir
 [Sources](#sources)) ; revérifiez-les à chaque version mineure.
 
-D'autres outils résolvent des tranches voisines de ce problème. Les
-gestionnaires de configuration basés sur des fichiers comme **chezmoi** et
-**GNU Stow** placent des fichiers, les lient ou les génèrent à partir de
-templates, mais ne traduisent jamais une source unique vers le schéma de
-configuration *natif* de chaque environnement. Les CLI de synchronisation
-inter-outils génèrent des fichiers par outil à partir d'une source unique :
-**rulesync** génère une configuration native pour 60 outils de codage et deux
-standards ouverts, sur une unité synchronisée plus large que celle d'Apothem ;
-**ruler** distribue un répertoire `.ruler/` unique vers 33 cibles, en
-concaténant les règles dans le fichier d'instructions de chaque outil et en
-traduisant les serveurs MCP, les skills et les sous-agents en configuration
-native. Ce qui distingue Apothem, c'est la **discipline de gouvernance et de
-cycle de vie livrée autour de la synchronisation** : un portail de conformité
-mécanisé, des pipelines déterministes, une forteresse d'audit et un cycle de
-vie réversible et vérifié.
+D'autres outils résolvent des tranches voisines de ce problème. Les gestionnaires de configuration basés sur des fichiers, comme **chezmoi** et **GNU Stow**, placent, lient ou génèrent des fichiers à partir de templates, mais ne traduisent jamais une source unique vers le schéma de configuration *natif* de chaque environnement. Les CLI de synchronisation inter-outils génèrent des fichiers propres à chaque outil à partir d'une source unique : **rulesync** génère une configuration native pour 60 outils de codage et deux standards ouverts, sur une unité synchronisée qui ajoute MCP, les fichiers ignore, les permissions et les vérifications de revue, dont aucun n'est synchronisé par le manifeste d'Apothem ; **ruler** distribue un répertoire `.ruler/` unique vers 33 cibles, en concaténant les règles dans le fichier d'instructions de chaque outil et en traduisant les serveurs MCP, les skills et les sous-agents en configuration native. Ce qui distingue Apothem, c'est la **discipline de gouvernance et de cycle de vie livrée autour de la synchronisation** : un portail de conformité mécanisé, des pipelines déterministes, une forteresse d'audit et un cycle de vie réversible et vérifié.
 
 | Capacité | Apothem | Gestionnaires de configuration par fichiers (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
-| Une source vers les schémas natifs de nombreux outils | Oui — dix-sept adaptateurs d'environnement | Non — copie, lien symbolique ou template, sans traduction | Oui — 60 outils plus les standards AGENTS.md et Agent Skills | En partie — règles concaténées dans le fichier d'instructions de chaque outil ; MCP, skills et sous-agents écrits sous forme native |
-| Unité synchronisée | règles, skills, sous-agents, hooks, commandes slash, output-styles, paramètres, MCP | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions, checks (instructions de vérification pour la revue de code) | règles, MCP, skills, sous-agents |
-| Corpus de gouvernance (règles comportementales plus un portail de conformité mécanique) | Oui — `python -m apothem.conformity.gate` | Non | Non — sa fonctionnalité `checks` synchronise des vérifications de revue de code vers les outils ; aucun portail de conformité sur les règles | Non |
+| Une source vers les schémas natifs de nombreux outils | Oui — dix-sept adaptateurs d'environnement | Non — copie, lien symbolique ou template, sans traduction | Oui — 60 outils, plus les standards AGENTS.md et Agent Skills | En partie — règles concaténées dans le fichier d'instructions de chaque outil ; MCP, skills et sous-agents écrits sous forme native |
+| Unité synchronisée | règles, skills, sous-agents, commandes slash, hooks, output-styles, statuslines, templates, validateurs de conformité, schémas, templates d'instructions par environnement et template de paramètres Claude Code | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions, checks (instructions de vérification de revue de code) | règles, MCP, skills, sous-agents |
+| Corpus de gouvernance (règles comportementales plus un portail de conformité mécanique) | Oui — `python -m apothem.conformity.gate` | Non | Non — sa fonctionnalité `checks` synchronise des vérifications de revue de code vers les outils ; aucun portail de conformité ne porte sur les règles | Non |
 | Pipelines déterministes de planification et de recherche | Oui — de `/plan-spec` à `/plan-execute`, `/research` en treize étapes | Non | Non | Non |
 | Forteresse d'audit qui détecte et corrige | Oui — balayage à onze commandes, boucle de ré-audit `/fortress` | Non | Non | Non |
-| Publications durcies pour la chaîne d'approvisionnement | Oui — SBOM, Sigstore, SLSA, objectif Scorecard | Non comparé | Non indiqué dans son README | Non indiqué dans son README |
+| Mémoire durable entre les sessions | Oui — magasin `memory/records.json` sous le répertoire de données d'Apothem, créé à l'installation | Non comparé | Non indiqué dans son README | Non indiqué dans son README |
+| Publications durcies pour la chaîne d'approvisionnement | Oui — SBOM, Sigstore, SLSA, cible Scorecard | Non comparé | Non indiqué dans son README | Non indiqué dans son README |
 | Cycle de vie réversible et vérifié | Oui — sauvegarde, `apothem verify --json`, désinstallation sans orphelin | chezmoi : `chezmoi verify` vérifie chaque cible ; Stow : liens symboliques uniquement | Non indiqué dans son README | sauvegardes `.bak` et `ruler revert` ; aucune commande de vérification dans son README |
 
-Là où un pair est plus fort, il est nommé : **rulesync** atteint plus de trois
-fois plus d'outils et synchronise une unité plus large (permissions et
-vérifications de revue comprises), et **ruler** atteint près de deux fois plus
-d'outils, avec sa propre commande de retour arrière. Apothem échange le nombre
-brut d'outils contre la discipline de gouvernance, d'audit et de cycle de vie
-livrée autour de la synchronisation — un portail de conformité, des pipelines
-déterministes de planification et de recherche, une forteresse d'audit à onze
-commandes, une mémoire durable et un cycle de vie réversible et vérifié —
-qu'aucun des deux outils de synchronisation ne porte.
+Là où un pair est plus fort, il est nommé : **rulesync** atteint plus de trois fois plus d'outils et synchronise MCP, les fichiers ignore, les permissions et les vérifications de revue, ce que le manifeste d'Apothem ne fait pas ; **ruler** atteint près de deux fois plus d'outils, avec sa propre commande de retour arrière. Apothem échange le nombre brut d'outils contre la discipline de gouvernance, d'audit et de cycle de vie livrée autour de la synchronisation — un portail de conformité, des pipelines déterministes de planification et de recherche, une forteresse d'audit à onze commandes, une mémoire durable et un cycle de vie réversible et vérifié — qu'aucun des deux outils de synchronisation ne propose.
 
 ### Sources
 
-Toutes consultées le 2026-10-02, sur la dernière publication de chaque projet à
-cette date.
+Toutes consultées le 2026-10-02, sur la dernière publication de chaque projet à cette date. Les README de rulesync et de ruler ont été relus le 2026-10-15 pour la ligne sur la mémoire durable ; aucun des deux ne mentionne de fonctionnalité de mémoire.
 
 - rulesync (npm `rulesync`) : [README](https://github.com/dyoshikawa/rulesync#readme)
   (tableau des outils pris en charge : 60 outils de codage et deux standards

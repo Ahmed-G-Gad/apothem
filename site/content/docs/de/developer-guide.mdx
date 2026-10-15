@@ -2,7 +2,7 @@
 title: "Zu Apothem beitragen — Entwicklerhandbuch"
 description: "Pflegen und erweitern Sie das Apothem-Ökosystem, indem Sie Regeln, Befehle, Helfer, Skills und Hooks mit kanonischen Schemas, Frontmatter-Anforderungen und Validierungsverfahren verfassen."
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -107,7 +107,7 @@ den Schlüssel trägt: Regeln tragen keinen davon, und Skills tragen kein
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -231,13 +231,16 @@ Jedes versionierte Artefakt trägt seine eigene semantische Version
 (`MAJOR.MINOR.PATCH`). Befehle und Skills verlangen sie, Helfer und
 Output-Styles KÖNNEN sie tragen, und Regeln tragen keine:
 
-- **PATCH** — Tippfehlerkorrekturen, Formatierung, Auffrischen von Links, reine Kommentaränderungen. Verhalten unverändert.
+- **PATCH** — eine Verhaltensänderung, die eine bestehende Direktive korrigiert, ohne den Vertrag zu brechen.
 - **MINOR** — additive, nicht inkompatible Änderungen: neue optionale Abschnitte, neue optionale Frontmatter-Felder, neue Beispiele. Bestehende Konsumenten funktionieren ohne Änderung weiter.
 - **MAJOR** — inkompatible Schema- oder Vertragsänderungen: entfernte Abschnitte, umbenannte Felder, geändertes Verhalten einer bestehenden Direktive, Änderungen, die nachgelagerte Artefakte zur Anpassung zwingen.
 
+Tippfehlerkorrekturen, Linkkorrekturen, Formatierungen sowie reine Kommentar- oder Dokumentationsänderungen lassen die Version unverändert. Nur eine Verhaltensänderung erhöht sie. Eine solche Bearbeitung aktualisiert dennoch das Datum `updated` des Artefakts.
+
 Beispiele:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: Tippfehlerkorrektur)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: eine korrigierte Direktive, die das Verhalten ändert)
+- `vX.Y.Z` → `vX.Y.Z` (keine Erhöhung: Tippfehler- oder Linkkorrektur; `updated` ändert sich)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: neuen optionalen Abschnitt hinzugefügt)
 - `v0.Y.Z` → `v(0+1).0.0` (MAJOR: Vertrag als stabil deklariert; neue Artefakte beginnen bei `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: verpflichtendes Frontmatter-Feld entfernt)

@@ -2,7 +2,7 @@
 title: "概念"
 description: "术语表，定义 Apothem 中的共享配置档案、工具适配器、规则、钩子、合规闸门、技能和委派工作者。"
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,7 @@ src/apothem/rules/ 下的 Markdown 文件，会在每次交互时加载（始终
 
 ## 钩子
 
-注册在 settings.json 中的 Python 脚本，在工具生命周期事件（PreToolUse、PostToolUse、SessionStart、PreCompact、Stop、PostCompact）上触发。钩子在输出落盘之前，实时执行合规强制规定。钩子事件模型目前是 Claude Code 的一个界面；对于没有钩子机制的工具，其适配器直接省略它。
+注册在工具的钩子配置（Claude Code 为 settings.json）中的 Python 脚本，会在 PreToolUse、PostToolUse、SessionStart 和 Stop 等生命周期事件上触发；部分适配器还会注册 PreCompact 和 PostCompact。钩子在输出落盘之前实时执行合规强制项。对于没有钩子机制的工具，其适配器会省略钩子。
 
 ## 合规闸门
 

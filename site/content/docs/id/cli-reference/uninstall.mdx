@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,16 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 Menghapus target harness yang dikelola adapter, lalu direktori yang dibuat
 pemasangan setelah direktori tersebut kosong (direktori yang berisi apa pun
-milik Anda tetap ada). Meminta konfirmasi kecuali
+milik Anda tetap ada).
+
+Memori, konteks, dan penyimpanan pembelajaran dari direktori kerja bersama dicadangkan dan dihapus hanya ketika ini adalah harness terakhir yang dipasang di direktori tersebut. Penghapusan dilakukan di lokasi yang dicatat oleh pemasangan, sehingga penghapusan menemukannya di mana pun pemasangan menulisnya (lihat bidang profil `workspace`). Direktori `plans/` tidak pernah dihapus.
+
+Meminta konfirmasi kecuali
 `--yes` diberikan. Ketika prompt tidak mungkin ditampilkan — `--format json`
 (teks prompt akan merusak dokumen JSON tunggal) atau shell non-interaktif
 (tanpa TTY) — perintah menolak sejak awal dengan galat terstruktur
 `uninstall.confirmation_required` (keluar 1) kecuali `--yes` diberikan.
-Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dengan
-pemberitahuan "nothing to remove".
+Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dan, pada keluaran biasa, mencetak `NAME is not installed; nothing to remove.`, dengan `NAME` berupa id harness.
 
 Penyimpanan data bersama di bawah `.apothem/` pada root pemasangan (`memory/`,
 `contexts/`, `learning/`) tetap ada selama harness terpasang lain pada root yang
@@ -37,7 +40,7 @@ Penghapusan `--harness all` sengaja dibuat menyeluruh: penghapusan ini mencakup
 setiap harness yang terdaftar, termasuk harness apa pun yang dilewati
 `exclude_harnesses` milik profil saat pemasangan — pembersihan menjangkau
 keadaan yang mungkin ditinggalkan oleh pemasangan sebelumnya yang lebih luas.
-Harness yang tidak pernah dipasang melaporkan "nothing to remove".
+Harness yang tidak pernah dipasang menerima pemberitahuan yang sama.
 
 Alias bentuk-kontinu `apothem uninstalling` (juga diterima sebagai
 `apothem Uninstalling`) di-resolve ke handler yang sama.
@@ -97,7 +100,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Kode keluar

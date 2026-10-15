@@ -2,7 +2,7 @@
 title: "Documentación de settings.json"
 description: "Configura la ejecución de hooks de Claude Code, permisos, eventos, tiempos de espera, runtime de Python, validación y precedencia de ajustes por capas para el ecosistema Apothem."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,11 +61,12 @@ Las herramientas de solo lectura están preaprobadas; las operaciones de escritu
 
 | Evento | Disparador | Tiempo de espera | Propósito | Mandato |
 | ----- | ------- | ------- | ------- | ------- |
-| **SessionStart** | Nueva sesión de Claude Code | 30 segundos | Inicializar contexto, leer memoria, comprobar estado del plan | CM-14 |
-| **PreToolUse** | Antes de Write/Edit/NotebookEdit/Bash | 10 segundos | Validar conformidad CM-7 + frontmatter | CM-7, CM-22 |
-| **PreCompact** | Antes de la compactación de contexto | 30 segundos | Externalizar el estado no externalizado | CM-24 §2.3 |
-| **PostCompact** | Después de la compactación de contexto | 30 segundos | Reiniciar el arranque desde el estado externalizado | CM-24 §6.2 |
+| **SessionStart** | Nueva sesión de Claude Code | 30 segundos | Inicializar contexto, leer memoria, comprobar el estado del plan | CM-14 |
+| **PreToolUse** | Antes de Write/Edit/NotebookEdit/Bash | 10 segundos | Validar el cumplimiento de CM-7 y el frontmatter | CM-7, CM-22 |
+| **PostToolUse** | Después de cada llamada a una herramienta (matcher `*`) | 10 segundos | Aviso consultivo de compactación proactiva | Gestión del contexto (compactación proactiva) |
 | **Stop** | Salida de la sesión | 60 segundos | Externalización al final de la sesión | CM-14/CM-22/CM-24/CM-26 |
+
+Esta plantilla registra cuatro eventos. No registra `PreCompact` ni `PostCompact`; sí lo hacen las plantillas de Codex y de Qwen Code, y la [referencia de hooks](/docs/reference/hooks) los enumera por entorno.
 
 `dispatch.py` acepta además `UserPromptSubmit` y `Notification` en su lista
 blanca de eventos. Ninguno está cableado en las plantillas distribuidas; añade un bloque matcher con el mismo

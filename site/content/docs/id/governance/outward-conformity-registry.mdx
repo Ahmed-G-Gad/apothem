@@ -2,7 +2,7 @@
 title: "Registri Konformitas Eksternal — Saat Beroperasi pada Proyek Inang"
 description: "Registri lima belas mandat (M1–M15) yang menetapkan persyaratan konformitas untuk semua artefak yang dihasilkan di proyek inang, dipetakan-silang dengan mandat internal-ekosistem."
 machineTranslated: true
-sourceHash: "29a21958554beb3f"
+sourceHash: "a921fa9513fb6c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,22 +12,22 @@ Ketika ekosistem ini menghasilkan, menyunting, mengerjakan-ulang, menyesuaikan, 
 
 Lima belas mandat beroperasi **berdampingan dengan** mandat CM-N sesuai kebijakan kosakata paralel (lihat `site/content/docs/governance/cross-cutting-mandates.mdx`); M dan CM adalah dimensi tata kelola yang ortogonal (M adalah sumbu eksternal — artefak proyek inang; CM adalah sumbu internal — artefak internal-ekosistem). Setiap rule yang tercantum di bawah adalah rumah kanonis mandatnya; registri ini adalah indeks.
 
-| ID | Mandat | Ringkasan satu baris | Rule kanonis |
+| ID | Mandat | Ringkasan satu baris | Aturan kanonik |
 | -- | ------- | ---------------- | -------------- |
 | M1 | Agnostisisme Proyek-Inang | Temukan stack / formatter / linter / tata-letak / idiom inang; hormati mereka; munculkan keheningan sebagai pertanyaan sesuai M5 dengan anotasi M7 | `src/apothem/rules/host-discovery.md` |
 | M2 | Disiplin Editorial | Ungkapkan setiap amandemen / perluasan / penyempurnaan dengan alasan; tanpa kepatuhan-berlebih yang sunyi, tanpa pelampauan-batas yang sunyi | `src/apothem/rules/disclosure-ledger.md` |
-| M3 | Sepuluh Dimensi Kualitas | Setiap artefak lolos pemeriksaan sepuluh-poin (ketelitian, koherensi, keterkonfigurasian, keterbacaan, keyatiman, struktural, arsitektur, penamaan, perujukan akademis, contoh/tes/dokumen) | `src/apothem/rules/ten-dimension-check.md` |
-| M4 | Penerapan-Diri | Jalankan gerbang pra-emisi lima belas-poin sebelum setiap emisi berlingkup berarti; catat bukti rilis | `src/apothem/rules/pre-emission-gate.md` |
+| M3 | Sepuluh Dimensi Kualitas | Setiap artefak lolos pemeriksaan sepuluh-bilah (ketelitian, koherensi, keterkonfigurasian, keterbacaan, keyatiman, struktural, arsitektur, penamaan, perujukan akademis, contoh/tes/dokumen) | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | Penerapan-Diri | Jalankan gerbang pra-emisi lima belas-bilah sebelum setiap emisi berlingkup berarti; catat bukti rilis | `src/apothem/rules/pre-emission-gate.md` |
 | M5 | Prinsip Otoritas | Tanyakan, jangan mengarang; data identitas / lingkup / preferensi / keamanan / penamaan / infrastruktur / penyematan-versi tidak pernah dibuat-buat | `src/apothem/rules/authority-inquiry.md` |
 | M6 | Penyertaan Keahlian | Baca maksud, amandemen secara proaktif, perluas pada celah yang berdekatan, sempurnakan dengan alasan terkutip, antisipasi konsekuensi tingkat-kedua | `src/apothem/rules/expertise-posture.md` |
 | M7 | Anotasi Opsi | Setiap pilihan multi-opsi membawa penanda rekomendasi plus alasan yang terhubung-prinsip; pilihan sunyi terlarang di wilayah otoritatif | `src/apothem/rules/option-annotation.md` |
-| M8 | Kepastian & Kekedapan | Tanpa pengelakan di mana resep yang mengikat dimungkinkan; tanpa "tergantung" tanpa cabang yang terenumerasi; setiap kontrak punya kondisi pra / pasca / kegagalan | `src/apothem/rules/definitiveness.md` |
+| M8 | Kepastian & Kekedapan | Tanpa pengelakan di mana preskripsi yang mengikat dimungkinkan; tanpa "tergantung" tanpa cabang yang terenumerasi; setiap kontrak punya kondisi pra / pasca / kegagalan | `src/apothem/rules/definitiveness.md` |
 | M9 | Daya-Ungkit Visual | Materi pokok struktural membawa diagram realitas-saat-ini (Mermaid sebagai bawaan) dengan asal-usul + tanggal verifikasi | `src/apothem/rules/visual-leverage.md` |
 | M10 | Pengikatan Dua-Arah | Elemen struktural substantif mendeklarasikan ikatan timbal-balik (Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
-| M11 | Sprint Agile | Pekerjaan multi-langkah tak-sepele berjalan sebagai sprint berdisiplin (Tujuan / Backlog / DoR / DoD / Review / Retrospektif) | `src/apothem/rules/agile-sprints.md` |
-| M12 | Pelaporan Fase & Tata-Letak Kanonis | Pekerjaan multi-fase memancarkan laporan per-subfase + ringkasan tingkat-fase; keluaran pada tata-letak kanonis | `src/apothem/rules/canonical-layout.md` |
+| M11 | Sprint Agile | Pekerjaan multi-langkah tak-sepele berjalan sebagai sprint berdisiplin (Tujuan / Backlog / DoR / DoD / Tinjauan / Retrospektif) | `src/apothem/rules/agile-sprints.md` |
+| M12 | Pelaporan Fase & Tata-Letak Kanonik | Pekerjaan multi-fase memancarkan laporan per-subfase + ringkasan tingkat-fase; keluaran pada tata-letak kanonik | `src/apothem/rules/canonical-layout.md` |
 | M13 | Kerajinan Kode | Komentar mengapa-bukan-apa; nama yang mengungkap maksud dengan satuan; penanganan eksepsi bertipe; konstanta bernama; hormati linter / formatter / pemeriksa-tipe inang | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (per-bahasa) |
-| M14 | Sistemikitas Ekosistem | Komponen baru mendeklarasikan hulu / hilir / sejawat / penegak; terindeks di registri inang; tanpa silo, tanpa yatim yang diperkenalkan | `src/apothem/rules/systemic-participation.md` |
+| M14 | Sistemisitas Ekosistem | Komponen baru mendeklarasikan hulu / hilir / sejawat / penegak; terindeks di registri inang; tanpa silo, tanpa yatim yang diperkenalkan | `src/apothem/rules/systemic-participation.md` |
 | M15 | Bentuk Siap-Produksi | Perubahan kode dikirim dengan tes + dokumen + entri CHANGELOG + pesan commit yang patuh + CI hijau dalam set-perubahan yang sama | `src/apothem/rules/production-ready-prs.md` |
 
 ## 1. Ambang Sepele-vs-Tak-Sepele (terselesaikan)

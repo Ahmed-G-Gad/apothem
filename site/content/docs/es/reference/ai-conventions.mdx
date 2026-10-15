@@ -2,11 +2,11 @@
 title: "Convenciones de entorno multi-superficie"
 description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los tiempos de ejecución de chat, de autocompletado en el IDE y de revisión de pull requests."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referencia normativa canónica para los colaboradores que trabajan aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en [ADR-0003](/docs/architecture).
+> **Referencia normativa canónica para colaboradores de aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en ADR-0003.
 
 ---
 
@@ -39,9 +39,9 @@ Las superficies son *canales* distintos que expresan una sola *especificación*.
 |---|---|---|---|
 | `AGENTS.md` | raíz del repositorio (y/o `.codex/AGENTS.md`) | **DEBE** | entornos compatibles con AGENTS |
 | `CLAUDE.md` | raíz del repositorio (y/o `.claude/CLAUDE.md`) | **DEBE** | Claude Code |
-| archivo de instrucciones con raíz en `.github/` | `.github/copilot-instructions.md` | **DEBE** | tiempo de ejecución de autocompletado dentro del IDE |
-| manifiesto de ayudantes con raíz en `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PUEDE** (activación opcional mediante el canal de indagación estructurada) | plataformas de orquestación de varios ayudantes |
-| `.cursorrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución de editor dentro del IDE |
+| Archivo de instrucciones dentro del IDE | `.github/copilot-instructions.md` | **DEBE** | tiempo de ejecución de autocompletado dentro del IDE |
+| Manifiesto de ayudantes | `site/content/docs/architecture/agents.mdx` | **PUEDE** (activación opcional mediante el canal de indagación estructurada) | plataformas de orquestación de varios ayudantes |
+| `.cursorrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución del editor dentro del IDE |
 | `.windsurfrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución acompañante dentro del IDE |
 
 Para este repositorio, las superficies de activación opcional son las que el fixture de la lista de afirmaciones ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) enumera bajo `optional-in`. Las configuraciones raíz específicas de proveedor que no se usan están ausentes de forma intencional; un archivo de configuración específico de una herramienta se agrega solo cuando esa herramienta es una superficie de edición activa para este repositorio.
@@ -130,7 +130,7 @@ Tres validadores implementan conjuntamente el contrato de coherencia:
 
 ## Véase también
 
-- [ADR-0003](/docs/architecture) — justificación arquitectónica, alternativas consideradas.
+- ADR-0003 — justificación arquitectónica y alternativas consideradas.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — el fixture canónico de la lista de afirmaciones.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — la voz canónica del proyecto.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — el espejo para Claude Code.

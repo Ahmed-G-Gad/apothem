@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "2dca789e924d7381"
+sourceHash: "f13f9ce348ede92c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ apothem install --harness open-claw
 
 ## 兼容性说明
 
-预览版适配器。OpenClaw 不会自行加载支持树或配置档案文档：它的任何技能位置、工作区指令文件或配置都不指向那里，因此安装之后，OpenClaw 运行时不带有 Apothem 的规则、技能或 MCP 服务器。OpenClaw 从其工作区的 `skills/` 和 `.agents/skills/` 文件夹、`~/.agents/skills`、其状态目录，以及 `skills.load.extraDirs` 中列出的任何文件夹读取技能；若要使用 Apothem 技能，请自行将 `~/.openclaw/.apothem/support/skills` 添加到该列表中；`apothem update` 会保留你添加到 `openclaw.json` 中的键。MCP 服务器位于 OpenClaw 配置的 `mcp.servers` 块中，你通过 `openclaw mcp add` 及相关子命令管理它；适配器不在那里写入任何条目。（OpenClaw 的行为依据其[技能](https://docs.openclaw.ai/tools/skills)和 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 文档，读取于 2026-10-02。）
+预览版适配器。OpenClaw 不会自行加载支持树或配置档案文档：它的任何技能位置、工作区指令文件或配置都不指向那里，因此安装之后，OpenClaw 运行时不带有 Apothem 的规则、技能或 MCP 服务器。OpenClaw 从其工作区的 `skills/` 与 `.agents/skills/` 文件夹、`~/.agents/skills` 以及其状态目录读取技能，然后按 `agents.defaults.skills` 下的技能名称白名单进行过滤。`skills.load.extraDirs` 不是技能加载器，因此 `~/.openclaw/.apothem/support/skills` 下的 Apothem 技能，只有在你将其放入上述某个文件夹并在该白名单中写明名称之后，才会被加载。`apothem update` 会保留你添加到 `openclaw.json` 中的键。MCP 服务器位于 OpenClaw 配置的 `mcp.servers` 块中，你通过 `openclaw mcp add` 及相关子命令进行管理；适配器不在那里写入任何条目。（OpenClaw 的行为依据其[技能](https://docs.openclaw.ai/tools/skills)和 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 文档，读取于 2026-10-02。）
 
 ## 验证
 
@@ -71,7 +71,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness open-claw` |
 | 验证失败 | 运行 `apothem update --harness open-claw`，然后再次验证 |
-| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness open-claw` |
+| 意外的配置内容 | Apothem 不会在 `openclaw.json` 中写入任何键，并保留其中已有的键，因此配置档案内容不会落到那里。配置档案内容落在 `~/.openclaw/apothem/rules/00-apothem-profile.md` 中：请检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 [更新](#更新) 下的命令 |
 
 ## 配置开关
 

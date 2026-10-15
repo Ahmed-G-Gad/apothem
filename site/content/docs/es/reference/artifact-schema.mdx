@@ -2,22 +2,13 @@
 title: "Especificación del esquema de artefactos"
 description: "Esquema canónico de frontmatter YAML y campos obligatorios para todos los tipos de artefacto del árbol de fuentes de Apothem, con plantillas por clase y reglas de validación."
 machineTranslated: true
-sourceHash: "3f59b1e92bd11b92"
+sourceHash: "e2aec62fc27cb76c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Plantillas de frontmatter YAML por clase y campos obligatorios para todos los artefactos del ecosistema Apothem.**
 
-> **Fuente de verdad.** El contrato legible por máquina y aplicado por la puerta
-> son los JSON Schemas por clase bajo [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
-> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), cada uno
-> de los cuales declara `additionalProperties` para que la puerta de conformidad
-> rechace las claves desconocidas. Esta página y
-> [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) son las dos
-> proyecciones legibles por humanos de esos esquemas: esta página lleva las
-> **plantillas y los ejemplos desarrollados** por clase, y frontmatter-schema, el
-> **índice conciso de claves obligatorias**. Cuando una página discrepa de los
-> JSON Schemas, prevalecen los esquemas.
+> **Fuente de verdad.** El contrato legible por máquina y aplicado por la puerta lo forman los JSON Schemas por clase bajo [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …). Los esquemas de skill y de comando declaran `additionalProperties: false`, así que rechazan las claves desconocidas; los esquemas de agente, de output-style y de plan declaran `additionalProperties: true`. Esta página y [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) son las dos proyecciones legibles por humanos de esos esquemas: esta página lleva las **plantillas y los ejemplos desarrollados** por clase, y frontmatter-schema, el **índice conciso de claves obligatorias**. Cuando una página discrepa de los JSON Schemas, prevalecen los esquemas.
 
 ## Visión general
 
@@ -36,8 +27,9 @@ su tipo de artefacto. Este documento define el esquema canónico de cada tipo.
 
 **Convención de versionado (clases de artefacto versionadas: comandos, ayudantes, skills, CLAUDE.md):**
 
-- `version` es **semántica** (`MAJOR.MINOR.PATCH`). Incrementa MAJOR para los cambios incompatibles de esquema o de contrato; MINOR para los cambios aditivos compatibles (nuevos campos opcionales, secciones adicionales, antipatrones adicionales); PATCH para aclaraciones, correcciones de formato o ediciones solo de documentación sin cambio de comportamiento.
-- `updated` es la **fecha ISO 8601** (`YYYY-MM-DD`) de la edición más reciente. Debe cambiar con cada incremento de `version` y puede actualizarse de forma independiente para refrescos de enlaces que no incrementan la versión.
+- `version` es **semántica** (`MAJOR.MINOR.PATCH`). Incrementa MAJOR para los cambios incompatibles de esquema o de contrato; MINOR para los cambios aditivos compatibles (nuevos campos opcionales, secciones adicionales, antipatrones adicionales); PATCH para un cambio de comportamiento que corrige una directiva existente sin romper el contrato.
+- Las correcciones de erratas, de enlaces y de formato, así como las ediciones que solo tocan comentarios o documentación, dejan `version` sin cambios. Solo un cambio de comportamiento la incrementa.
+- `updated` es la **fecha ISO 8601** (`YYYY-MM-DD`) de la edición más reciente. Debe cambiar con cada incremento de `version`, y también cambia con una corrección de erratas o de enlaces que no incrementa la versión.
 - Los artefactos nuevos comienzan en `v0.Y.Z`. La promoción a `vX.Y.Z` indica que el contrato del artefacto es lo bastante estable como para ser un compromiso público.
 
 ---
@@ -415,13 +407,7 @@ Cada artefacto debe superar estas comprobaciones:
 
 ## Notas
 
-- **La coherencia como seguridad:** El frontmatter canónico hace posibles la
-  validación automatizada, las herramientas y la verificación entre artefactos.
-  Las desviaciones se acumulan rápidamente.
-- **Declaración de portabilidad:** No todos los artefactos pueden ser
-  universales. Declara las restricciones explícitamente: es mejor documentar una
-  salvedad que distribuir un fallo silencioso.
-- **Kebab-case para los nombres:** Fácil de usar en URL, scripts y contextos de
-  línea de comandos. Evita los espacios, los guiones bajos y el camelCase en los
-  nombres.
-- **Higiene del incremento de versión:** Cada edición que cambie el comportamiento debe incrementar `version` y `updated` a la vez. Las correcciones puras de formato o de erratas incrementan PATCH; las nuevas secciones opcionales o los nuevos antipatrones incrementan MINOR; la reorganización estructural o los cambios de contrato incrementan MAJOR.
+- **La coherencia como seguridad:** El frontmatter canónico permite la validación automatizada, las herramientas y la verificación entre artefactos. Las desviaciones se acumulan rápidamente.
+- **Declaración de portabilidad:** No todos los artefactos pueden ser universales. Declara las restricciones explícitamente: es mejor documentar una salvedad que distribuir un fallo silencioso.
+- **Kebab-case para los nombres:** Fácil de usar en URL, scripts y contextos de línea de comandos. Evita los espacios, los guiones bajos y el camelCase en los nombres.
+- **Higiene del incremento de versión:** Cada edición que cambie el comportamiento debe incrementar `version` y `updated` a la vez. Las correcciones de erratas, de enlaces y de formato dejan la versión sin cambios; las nuevas secciones opcionales o los nuevos antipatrones incrementan MINOR; la reorganización estructural o los cambios de contrato incrementan MAJOR.

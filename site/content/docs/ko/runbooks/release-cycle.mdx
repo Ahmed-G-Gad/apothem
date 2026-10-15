@@ -2,7 +2,7 @@
 title: "릴리스 주기 런북"
 description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 npm 게시에 이르는 완전한 릴리스 워크플로입니다."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -139,13 +139,20 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 npm 게시 확인
 
-태그 푸시는 `release.yml`과 나란히 `publish-npm.yml`도 실행합니다. npm
-워크플로는 릴리스 워크플로를 기다리지 않으며, `release` 환경 승인이 게이트입니다.
-§2.3의 릴리스 워크플로가 끝나면 준비 상태를 확인합니다.
+태그 푸시는 `release.yml`과 나란히 `publish-npm.yml`도 실행합니다. npm 워크플로는 릴리스 워크플로를 기다리지 않으며, `release` 환경 승인이 게이트입니다. §2.3의 릴리스 워크플로가 끝나면 준비 상태를 확인하세요. 이 검사는 릴리스, 워크플로 실행, 게시된 SBOM을 읽으므로, 먼저 두 가지 입력을 준비하세요:
+
+- **`GH_TOKEN`.** 스크립트는 `gh`에 이미 로그인되어 있더라도 이 값이 없으면 실행을 거부합니다. `ahmed-g-gad/apothem`으로 범위를 제한한 세분화된 개인 액세스 토큰을 사용하고, **Actions: Read**(워크플로 실행)와 **Contents: Read**(릴리스)를 부여하세요. 이 검사는 아무것도 쓰지 않으므로 쓰기 권한은 필요하지 않습니다. `gh auth token`으로 얻은 토큰은 로그인의 모든 범위를 가지므로, 세분화된 토큰을 권장합니다.
+- **게시된 SBOM.** 검사는 릴리스가 첨부한 CycloneDX 파일 `dist/release-assets/sbom.cdx.json`을 읽습니다. 로컬 빌드 대신 릴리스가 게시한 사본을 다운로드하세요.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+검사는 릴리스가 초안이거나 프리릴리스인 경우, 태그 커밋에 필요한 워크플로가 녹색이 아닌 경우, SBOM이 없는 경우, 다른 버전을 기술하는 경우, 벤더링된 패키지를 빠뜨린 경우에 실패합니다. 실패 메시지는 원인을 알려 줍니다.
 
 그런 다음 프롬프트가 표시되면 `release` 환경 배포를 승인하세요. 워크플로는 npm
 Trusted Publishing(OIDC)을 통해 `@ahmed-g-gad/apothem@X.Y.Z`를 npmjs.com에

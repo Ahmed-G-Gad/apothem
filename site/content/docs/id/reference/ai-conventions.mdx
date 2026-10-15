@@ -2,11 +2,11 @@
 title: "Konvensi Harness Multi-Permukaan"
 description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Konvensi Harness Multi-Permukaan dari spesifikasi proyek (Spec §0.6 + §2.8 + §4.7); dokumen ini adalah referensi mandiri yang dikirimkan bersama repo yang dipublikasikan. Dasar pemikiran arsitekturalnya dicatat di [ADR-0003](/docs/architecture).
+> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Konvensi Harness Multi-Permukaan dari spesifikasi proyek (Spec §0.6 + §2.8 + §4.7); dokumen ini adalah referensi mandiri yang dikirimkan bersama repo yang dipublikasikan. Dasar pemikiran arsitekturalnya dicatat di ADR-0003.
 
 ---
 
@@ -39,8 +39,8 @@ Permukaan-permukaan itu adalah *kanal* berbeda yang mengekspresikan satu *spesif
 |---|---|---|---|
 | `AGENTS.md` | root repo (dan/atau `.codex/AGENTS.md`) | **HARUS** | harness yang mengenali AGENTS |
 | `CLAUDE.md` | root repo (dan/atau `.claude/CLAUDE.md`) | **HARUS** | Claude Code |
-| Berkas instruksi yang berakar di `.github/` | `.github/copilot-instructions.md` | **HARUS** | runtime pelengkapan di dalam IDE |
-| Manifest pembantu yang berakar di `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **BOLEH** (opt-in melalui kanal kueri terstruktur) | platform orkestrasi multi-pembantu |
+| Berkas instruksi dalam IDE | `.github/copilot-instructions.md` | **HARUS** | runtime pelengkapan di dalam IDE |
+| Manifest pembantu | `site/content/docs/architecture/agents.mdx` | **BOLEH** (opt-in melalui kanal kueri terstruktur) | platform orkestrasi multi-pembantu |
 | `.cursorrules` | root repo | **BOLEH** (opt-in) | runtime editor di dalam IDE |
 | `.windsurfrules` | root repo | **BOLEH** (opt-in) | runtime pendamping di dalam IDE |
 
@@ -130,7 +130,7 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 
 ## Lihat Juga
 
-- [ADR-0003](/docs/architecture) — dasar pemikiran arsitektural, alternatif yang dipertimbangkan.
+- ADR-0003 — dasar pemikiran arsitektural, alternatif yang dipertimbangkan.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — fixture daftar klaim kanonik.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — suara proyek kanonik.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — cermin untuk Claude Code.

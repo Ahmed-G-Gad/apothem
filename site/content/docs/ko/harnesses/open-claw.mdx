@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw(미리 보기)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "2dca789e924d7381"
+sourceHash: "f13f9ce348ede92c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,19 +40,7 @@ OpenClaw의 네이티브 구성은 JSON이며, 머티리얼라이저는 빈 JSON
 
 ## 호환성 참고 사항
 
-미리 보기 어댑터입니다. OpenClaw는 지원 트리나 프로필 문서를 스스로 로드하지
-않습니다. OpenClaw의 스킬 위치, 워크스페이스 지침 파일, 구성 중 어느 것도 그곳을
-가리키지 않으므로, 설치 후 OpenClaw는 Apothem의 규칙, 스킬, MCP 서버 없이
-실행됩니다. OpenClaw는 워크스페이스의 `skills/` 및 `.agents/skills/` 폴더,
-`~/.agents/skills`, 자신의 상태 디렉터리, 그리고 `skills.load.extraDirs`에 나열된
-모든 폴더에서 스킬을 읽습니다. Apothem 스킬을 사용하려면
-`~/.openclaw/.apothem/support/skills`를 그 목록에 직접 추가하세요.
-`apothem update`는 여러분이 `openclaw.json`에 추가한 키를 유지합니다. MCP 서버는
-OpenClaw 구성의 `mcp.servers` 블록에 있으며, 이 블록은 `openclaw mcp add`와 관련
-하위 명령으로 여러분이 관리합니다. 어댑터는 그곳에 어떤 항목도 작성하지
-않습니다. (OpenClaw의 동작은 [스킬](https://docs.openclaw.ai/tools/skills) 및
-[MCP CLI](https://docs.openclaw.ai/cli/mcp) 문서에 따른 것이며, 2026-10-02에
-확인했습니다.)
+미리 보기 어댑터입니다. OpenClaw는 지원 하위 트리나 프로필 문서를 스스로 로드하지 않습니다. OpenClaw의 스킬 위치, 워크스페이스 지침 파일, 구성 중 어느 것도 그곳을 가리키지 않으므로, 설치 후 OpenClaw는 Apothem의 규칙, 스킬, MCP 서버 없이 실행됩니다. OpenClaw는 워크스페이스의 `skills/` 및 `.agents/skills/` 폴더, `~/.agents/skills`, 그리고 자신의 상태 디렉터리에서 스킬을 읽은 다음, `agents.defaults.skills` 아래의 스킬 이름 허용 목록으로 걸러냅니다. `skills.load.extraDirs`는 스킬 로더가 아니므로, `~/.openclaw/.apothem/support/skills` 아래의 Apothem 스킬은 그 폴더 중 하나에 배치하고 허용 목록에 이름을 적어야 비로소 로드됩니다. `apothem update`는 여러분이 `openclaw.json`에 추가한 키를 유지합니다. MCP 서버는 OpenClaw 구성의 `mcp.servers` 블록에 있으며, 이 블록은 `openclaw mcp add`와 관련 하위 명령으로 관리합니다. 어댑터는 그곳에 어떤 항목도 작성하지 않습니다. (OpenClaw 동작은 [스킬](https://docs.openclaw.ai/tools/skills) 및 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 문서에 따른 것이며, 2026-10-02에 확인했습니다.)
 
 ## 검증
 
@@ -101,8 +89,8 @@ python -m apothem.conformity.gate --all .
 | 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness open-claw`를 다시 실행 |
-| 검증 실패 | `apothem update --harness open-claw`를 실행한 후 다시 검증 |
-| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness open-claw`를 다시 실행 |
+| 검증 실패 | `apothem update --harness open-claw`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | Apothem은 `openclaw.json`에 키를 새로 작성하지 않고 이미 들어 있는 키를 유지하므로, 프로필 내용은 그곳에 들어가지 않습니다. 프로필 내용은 `~/.openclaw/apothem/rules/00-apothem-profile.md`에 들어갑니다. `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음, [업데이트](#업데이트) 아래의 명령을 다시 실행하세요 |
 
 ## 구성 노브
 

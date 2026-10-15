@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "1c900ce4c37b3e46"
+sourceHash: "2da59e39cc2cc8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -193,15 +193,7 @@ Bagian penandatanganan rilis di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 mencantumkan setiap tag dan cara memverifikasinya.
 
-Penggantian eksplisit melonggarkan perilaku default. `APOTHEM_ALLOW_UNVERIFIED=1`
-menurunkan kegagalan verifikasi menjadi peringatan lalu melanjutkan, untuk
-penggunaan air-gapped, lokal, atau rilis pra-penandatanganan.
-`APOTHEM_REF=main` melakukan checkout branch yang bergerak tanpa verifikasi
-hanya bersama `APOTHEM_ALLOW_UNVERIFIED=1`. Dengan `APOTHEM_REF=main` saja,
-pemasang mengambil `main` ke dalam `APOTHEM_HOME`, lalu membatalkan proses
-sebelum konfigurasi apa pun dimaterialisasikan, karena branch bukan tag rilis
-yang bertanda tangan. Checkout lokal melalui `APOTHEM_SOURCE` tidak mengambil
-apa pun dan melewati verifikasi.
+Penggantian eksplisit melonggarkan perilaku default. `APOTHEM_ALLOW_UNVERIFIED=1` menurunkan kegagalan verifikasi menjadi peringatan lalu melanjutkan proses, untuk penggunaan air-gapped atau lokal, atau untuk memasang rilis yang terbit sebelum penandatanganan tag diterapkan. `APOTHEM_REF=main` melakukan checkout branch yang bergerak tanpa verifikasi hanya bersama `APOTHEM_ALLOW_UNVERIFIED=1`. Dengan `APOTHEM_REF=main` saja, pemasang mengambil `main` ke dalam `APOTHEM_HOME`, lalu membatalkan proses sebelum konfigurasi apa pun dimaterialisasikan, karena branch bukan tag rilis yang bertanda tangan. Checkout lokal melalui `APOTHEM_SOURCE` tidak mengambil apa pun dan melewati verifikasi.
 
 `APOTHEM_VERIFY=checksum` adalah jalan tengah untuk host yang belum memegang
 kunci publik pemelihara: alih-alih mengkloning, pemasang mengunduh arsip

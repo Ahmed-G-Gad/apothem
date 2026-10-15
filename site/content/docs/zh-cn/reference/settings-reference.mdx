@@ -2,7 +2,7 @@
 title: "settings.json 文档"
 description: "为 Apothem 生态配置 Claude Code 的钩子执行、权限、事件、超时、Python 运行时、校验以及分层设置优先级。"
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,9 +63,10 @@ fixture 位于其旁的 `~/.claude/.apothem/support/schemas/`）都是独立的�
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | 新的 Claude Code 会话 | 30 秒 | 初始化上下文、读取记忆、检查计划状态 | CM-14 |
 | **PreToolUse** | 在 Write/Edit/NotebookEdit/Bash 之前 | 10 秒 | 校验 CM-7 合规性 + frontmatter | CM-7、CM-22 |
-| **PreCompact** | 在上下文压缩之前 | 30 秒 | 外化尚未外化的状态 | CM-24 §2.3 |
-| **PostCompact** | 在上下文压缩之后 | 30 秒 | 从外化状态重新引导 | CM-24 §6.2 |
+| **PostToolUse** | 在每次工具调用之后（匹配器 `*`） | 10 秒 | 主动压缩建议 | 上下文管理（主动压缩） |
 | **Stop** | 会话退出 | 60 秒 | 会话结束外化 | CM-14/CM-22/CM-24/CM-26 |
+
+本模板注册四个事件。它不注册 `PreCompact` 或 `PostCompact`；Codex 与 Qwen Code 的模板会注册这两者，[钩子参考](/docs/reference/hooks) 按工具列出了它们。
 
 `dispatch.py` 还在其事件白名单中接受 `UserPromptSubmit` 和 `Notification`。
 两者在随附模板中均未接线；添加一个使用相同

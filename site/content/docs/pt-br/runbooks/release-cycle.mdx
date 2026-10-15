@@ -2,7 +2,7 @@
 title: "Runbook do ciclo de lançamento"
 description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -146,14 +146,20 @@ confirmações de upload dos ativos.
 
 ### 2.4 Confirmar a publicação no npm
 
-O push da tag também executa `publish-npm.yml` ao lado de `release.yml`. O fluxo
-de trabalho do npm não espera pelo fluxo de trabalho de lançamento; a aprovação
-do ambiente `release` é o portão. Quando o fluxo de trabalho de lançamento da
-§2.3 tiver terminado, confirme a prontidão:
+O push da tag também executa `publish-npm.yml` ao lado de `release.yml`. O fluxo de trabalho do npm não espera pelo fluxo de trabalho de lançamento; a aprovação do ambiente `release` é o portão. Quando o fluxo de trabalho de lançamento da §2.3 tiver terminado, confirme a prontidão. A verificação lê os lançamentos, as execuções de fluxos de trabalho e o SBOM publicado; por isso, prepare duas entradas antes:
+
+- **`GH_TOKEN`.** O script se recusa a rodar sem ele, mesmo quando o `gh` já está autenticado. Use um token de acesso pessoal de granularidade fina limitado a `ahmed-g-gad/apothem`, com **Actions: Read** (execuções de fluxos de trabalho) e **Contents: Read** (lançamentos). A verificação não grava nada, por isso nenhuma permissão de escrita é necessária. Um token obtido com `gh auth token` carrega todos os escopos do login; prefira, portanto, o token de granularidade fina.
+- **O SBOM publicado.** A verificação lê `dist/release-assets/sbom.cdx.json`, o arquivo CycloneDX que o lançamento anexa. Baixe a cópia que o lançamento publicou, em vez de um build local.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+A verificação falha quando o lançamento é um rascunho ou um pré-lançamento, quando um fluxo de trabalho exigido para o commit da tag não está verde, quando o SBOM está ausente, quando ele descreve outra versão ou quando omite um pacote incorporado. A mensagem de falha informa a causa.
 
 Em seguida, aprove a implantação do ambiente `release` quando solicitado. O
 fluxo de trabalho publica `@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da

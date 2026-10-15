@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Адаптер окружения Apothem для Codex (бета)."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,14 @@ apothem install --harness codex
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` для
 навыков, вызываемых пользователем, и вспомогательные файлы в
 `~/.config/apothem/{rules,templates}/`.
+
+**Интерпретатор хуков.** Прежде чем что-либо записать, установка определяет
+интерпретатор CPython 3.10+. В Windows запись `commandWindows` каждого хука в
+`hooks.json` запускает абсолютный путь этого интерпретатора вместо лаунчера
+`py -3`; записи POSIX `command` по-прежнему используют `python3`. Повторно
+выполните `apothem update --harness codex` после того, как интерпретатор
+переместили или удалили. Если интерпретатор CPython 3.10+ не найден,
+установка останавливается до записи любого файла.
 
 Блок Apothem в `AGENTS.md` завершается разделом о вспомогательных файлах
 Apothem, который называет абсолютный каталог, относительно которого

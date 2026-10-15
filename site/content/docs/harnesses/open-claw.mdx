@@ -44,10 +44,12 @@ Preview adapter. OpenClaw does not load the support tree or the profile
 document on its own: none of its skill locations, its workspace instruction
 files, or its config points there, so after install OpenClaw runs without Apothem's rules, skills, or
 MCP servers. OpenClaw reads skills from its workspace `skills/` and
-`.agents/skills/` folders, `~/.agents/skills`, its state directory, and any
-folder listed in `skills.load.extraDirs`; to use the Apothem skills, add
-`~/.openclaw/.apothem/support/skills` to that list yourself; `apothem update`
-keeps keys you add to `openclaw.json`. MCP servers live in
+`.agents/skills/` folders, `~/.agents/skills`, and its state directory, then
+filters them through the allowlist of skill names under
+`agents.defaults.skills`. `skills.load.extraDirs` is not a skill loader, so the
+Apothem skills under `~/.openclaw/.apothem/support/skills` load only once you
+place them in one of those folders and name them in that allowlist.
+`apothem update` keeps keys you add to `openclaw.json`. MCP servers live in
 the `mcp.servers` block of the OpenClaw config, which you manage with
 `openclaw mcp add` and the related subcommands; the adapter writes no entries
 there. (OpenClaw behavior per its [skills](https://docs.openclaw.ai/tools/skills)
@@ -101,7 +103,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness open-claw` |
 | Verification failed | Run `apothem update --harness open-claw`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness open-claw` |
+| Unexpected config content | Apothem authors no keys in `openclaw.json` and keeps the keys already in it, so profile content does not land there. Profile content lands in `~/.openclaw/apothem/rules/00-apothem-profile.md`: check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run the command under [Updating](#updating) |
 
 ## Configuration knobs
 

@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "1c900ce4c37b3e46"
+sourceHash: "2da59e39cc2cc8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -200,15 +200,7 @@ ultérieure est annotée et signée. La section de
 consacrée à la signature des publications liste chaque étiquette et la manière
 de la vérifier.
 
-Des dérogations explicites assouplissent le comportement par défaut.
-`APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en
-avertissement et poursuit l'opération, pour un usage isolé du réseau, local, ou
-antérieur aux publications signées. `APOTHEM_REF=main` n'extrait la branche
-mouvante sans vérification qu'avec `APOTHEM_ALLOW_UNVERIFIED=1`. Avec
-`APOTHEM_REF=main` seul, l'installateur récupère `main` dans `APOTHEM_HOME`, puis
-s'interrompt avant que la configuration ne soit matérialisée, car une branche
-n'est pas une étiquette de publication signée. Un checkout local via
-`APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
+Les dérogations explicites assouplissent le comportement par défaut. `APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en simple avertissement et poursuit l'opération, pour un usage isolé du réseau ou local, ou pour installer une publication antérieure à la signature des étiquettes. `APOTHEM_REF=main` n'extrait la branche mouvante sans vérification qu'avec `APOTHEM_ALLOW_UNVERIFIED=1`. Avec `APOTHEM_REF=main` seul, l'installateur récupère `main` dans `APOTHEM_HOME`, puis s'interrompt avant que toute configuration ne soit matérialisée, car une branche n'est pas une étiquette de publication signée. Un checkout local via `APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
 
 `APOTHEM_VERIFY=checksum` est la voie intermédiaire pour une machine qui ne
 détient pas encore la clé publique du mainteneur : au lieu de cloner,

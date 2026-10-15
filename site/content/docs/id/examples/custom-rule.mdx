@@ -2,7 +2,7 @@
 title: "Rule kustom"
 description: "Menulis sebuah rule selalu-aktif kustom untuk proyek Anda."
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ Simpan ini ke `rules/kebab-filenames.md` di dalam akar instalasi harness Anda (`
 
 ## Verifikasi bahwa rule valid
 
-Jalankan validator frontmatter terhadap berkas rule yang baru saja Anda tulis. Dari checkout Apothem, awali perintah dengan `PYTHONPATH=src`; setelah pemasangan skrip, awali dengan `PYTHONPATH="$HOME/.apothem/src"`:
+Jalankan validator frontmatter terhadap berkas rule yang baru saja Anda tulis. Gunakan perintah pertama dari checkout Apothem, tempat `PYTHONPATH=src` membuat paket dapat diimpor. Gunakan perintah kedua setelah pemasangan skrip, saat sumbernya berada di bawah `$HOME/.apothem/src`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Rule yang valid melaporkan lolos bersih:

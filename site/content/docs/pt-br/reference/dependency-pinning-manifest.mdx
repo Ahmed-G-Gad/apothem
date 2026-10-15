@@ -2,7 +2,7 @@
 title: "Manifesto de fixação de dependências"
 description: "Política de declaração de dependências que cobre as faixas de runtime do Python, as ferramentas de desenvolvimento, os arquivos de bloqueio das ferramentas de lançamento e os pisos de versão ratificados para cada superfície de build."
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,13 @@ comentários de versão e são atualizadas pelo Renovate.
 
 | Superfície | Estado ratificado | Justificativa |
 |---|---|---|
-| Dependências de runtime | Os limites inferiores atuais ficam em `pyproject.toml` `[project.dependencies]` | Pisos estáveis atuais ratificados antes do lançamento; sem bloqueio conhecido por CVE de runtime |
+| Dependências de runtime | Os limites inferiores atuais ficam em `pyproject.toml` `[project.dependencies]` | Pisos estáveis atuais ratificados antes do lançamento; nenhum bloqueio conhecido por CVE de runtime |
 | Ferramentas de desenvolvimento | Os limites inferiores atuais ficam no extra `dev` de `pyproject.toml` | Pisos estáveis mais recentes ratificados antes do lançamento |
-| Ferramentas de segurança | Os limites inferiores atuais ficam no extra `security` de `pyproject.toml` | Pisos de scanner atuais ratificados antes do lançamento |
-| Ferramentas de lançamento | O fechamento bloqueado por hash fica em `scripts/release/requirements-build-linux.txt` | O fluxo de trabalho de lançamento instala com `--require-hashes`; os scripts locais exigem que `build` já exista em vez de instalar silenciosamente dependências em movimento |
+| Ferramentas de segurança | Os limites inferiores atuais ficam no extra `security` de `pyproject.toml` | Pisos atuais de scanners ratificados antes do lançamento |
+| Ferramentas de lançamento | O fechamento bloqueado por hash fica em `scripts/release/requirements-build-linux.txt` | O fluxo de trabalho de lançamento instala com `--require-hashes`; os scripts locais exigem que `build` já exista, em vez de instalar silenciosamente dependências em movimento |
 | Ferramentas de documentação | As faixas atuais ficam em `site/package.json`; a resolução exata fica em `site/package-lock.json` | `npm outdated` não retorna nenhuma dependência de documentação desatualizada após a atualização do arquivo de bloqueio |
-| GitHub Actions | As fixações por SHA existentes são mantidas para o lançamento atual; o fluxo de trabalho reutilizável do SLSA continua sendo a exceção documentada fixada por tag | A reexecução do CI público está verde; as atualizações amplas de versão major das Actions são deixadas intencionalmente para os pull requests de automação de dependências, a fim de evitar flutuação na superfície de lançamento |
-| Empacotamento npm | O fluxo de trabalho `publish-npm.yml` é executado no push da tag `v*.*.*`, com `workflow_dispatch` como alternativa | O único pacote npm público é `@ahmed-g-gad/apothem`; a publicação aguarda a aprovação do operador para o ambiente `release`, concedida depois que `scripts/release/check-release-ready.sh` passa |
+| GitHub Actions | As fixações por SHA existentes são mantidas para o lançamento atual; o fluxo de trabalho reutilizável do SLSA continua sendo a exceção documentada, fixada por tag, marcada com um comentário `action-pinning-exempt:` em `release.yml` | A reexecução do CI público está verde; atualizações amplas de versão major das Actions são deixadas de propósito para os pull requests de automação de dependências, para evitar mudanças desnecessárias na superfície de lançamento |
+| Empacotamento npm | O fluxo de trabalho `publish-npm.yml` roda no push da tag `v*.*.*`, com `workflow_dispatch` como alternativa | O único pacote npm público é `@ahmed-g-gad/apothem`; a publicação aguarda a aprovação do operador para o ambiente `release`, concedida depois que `scripts/release/check-release-ready.sh` passa |
 
 ## Bloqueio
 

@@ -2,7 +2,7 @@
 title: "发布者账户设置"
 description: "为 @ahmed-g-gad/apothem 配置 npmjs.com 受信任发布者，以及 GitHub 侧的发布前置条件。"
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,7 +15,7 @@ sourceHash: "ee07a06a98f62864"
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-GitHub 所有者将来允许变动。在平台允许动态解析之处，工作流和安装器逻辑会读取 `github.repository`、`github.repository_owner` 或 `APOTHEM_GITHUB_REPOSITORY`。注册表包标识符保持稳定，因为用户安装的是包名，而不是维护者账户名。
+GitHub 所有者将来允许变动。在平台允许动态解析的场合，工作流与安装器逻辑会读取 `github.repository`、`github.repository_owner` 或 `APOTHEM_GITHUB_REPO`。注册表包标识符保持稳定，因为用户安装的是包名，而不是维护者的账户名。
 
 ## npm (npmjs.com)
 
@@ -42,6 +42,8 @@ GitHub 所有者将来允许变动。在平台允许动态解析之处，工作�
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   该检查需要设置 `GH_TOKEN`，并需要 `dist/release-assets/` 中已发布的 `sbom.cdx.json`。[发布周期操作手册](/docs/runbooks/release-cycle) 的 §2.4 给出了令牌范围与下载命令。
 
 9. 为标签推送所启动的 `Publish npm`（`publish-npm.yml`）运行批准 `release` 环境部署。如果该运行没有启动，请从 GitHub Actions 标签页调度该工作流，并带上 `tag=<release-tag>`。
 10. 验证已上线的包：

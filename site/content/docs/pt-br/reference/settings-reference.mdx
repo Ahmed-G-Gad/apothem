@@ -2,7 +2,7 @@
 title: "Documentação do settings.json"
 description: "Configure a execução de hooks do Claude Code, permissões, eventos, tempos limite, runtime Python, validação e precedência de configurações em camadas para o ecossistema Apothem."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,9 +63,10 @@ Ferramentas somente leitura são pré-aprovadas; operações de escrita (`Write`
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | Nova sessão do Claude Code | 30 segundos | Inicializar contexto, ler memória, verificar estado do plano | CM-14 |
 | **PreToolUse** | Antes de Write/Edit/NotebookEdit/Bash | 10 segundos | Validar conformidade com CM-7 + frontmatter | CM-7, CM-22 |
-| **PreCompact** | Antes da compactação de contexto | 30 segundos | Externalizar o estado não externalizado | CM-24 §2.3 |
-| **PostCompact** | Após a compactação de contexto | 30 segundos | Reiniciar o bootstrap a partir do estado externalizado | CM-24 §6.2 |
+| **PostToolUse** | Após cada chamada de ferramenta (matcher `*`) | 10 segundos | Aviso de compactação proativa | Gerenciamento de contexto (compactação proativa) |
 | **Stop** | Saída da sessão | 60 segundos | Externalização no fim da sessão | CM-14/CM-22/CM-24/CM-26 |
+
+Este template registra quatro eventos. Ele não registra `PreCompact` nem `PostCompact`; os templates do Codex e do Qwen Code os registram, e a [referência de hooks](/docs/reference/hooks) os lista por harness.
 
 `dispatch.py` adicionalmente aceita `UserPromptSubmit` e `Notification` em sua lista
 de permissões de eventos. Nenhum está conectado nos modelos distribuídos; adicione um bloco matcher com o mesmo

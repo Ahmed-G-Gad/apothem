@@ -28,8 +28,9 @@ Prompts for confirmation unless
 text would corrupt the single JSON document) or a non-interactive shell (no
 TTY) — the command refuses up front with a structured
 `uninstall.confirmation_required` error (exit 1) unless `--yes` is supplied.
-If a selected harness is not installed, the command succeeds (exit 0) with a
-"nothing to remove" notice.
+If a selected harness is not installed, the command succeeds (exit 0) and, in
+plain output, prints `NAME is not installed; nothing to remove.`, where `NAME`
+is the harness id.
 
 The shared data stores under `.apothem/` at the install root (`memory/`,
 `contexts/`, `learning/`) stay while another installed harness at the same
@@ -41,7 +42,7 @@ Anything you keep in `plans/` is never removed.
 A `--harness all` removal is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips
 during install — cleanup reaches state a previously broader install may have
-left behind. Harnesses that were never installed report "nothing to remove".
+left behind. Harnesses that were never installed get the same notice.
 
 The continuous-form alias `apothem uninstalling` (also accepted as
 `apothem Uninstalling`) resolves to the same handler.
@@ -101,7 +102,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Exit codes

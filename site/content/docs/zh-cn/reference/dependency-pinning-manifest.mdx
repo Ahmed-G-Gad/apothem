@@ -2,7 +2,7 @@
 title: "依赖锁定清单"
 description: "依赖声明策略，涵盖 Python 运行时版本范围、开发工具链、发布工具锁文件，以及每个构建表面所批准的版本下限。"
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一�
 | 安全工具 | 当前下限位于 `pyproject.toml` `security` extra | 发布前批准当前扫描器下限 |
 | 发布工具 | 哈希锁定闭包位于 `scripts/release/requirements-build-linux.txt` | 发布工作流以 `--require-hashes` 安装；本地脚本要求 `build` 已存在，而非静默安装漂移的依赖 |
 | 文档工具 | 当前范围位于 `site/package.json`；精确解析位于 `site/package-lock.json` | 锁文件刷新后 `npm outdated` 不返回任何陈旧的文档依赖 |
-| GitHub Actions | 当前发布保留既有 SHA 固定；SLSA 可复用工作流仍是已记录的标签固定例外 | 公共 CI 重跑为绿；为避免发布表面出现变动，广泛的 action 大版本升级有意留给依赖自动化拉取请求 |
+| GitHub Actions | 当前发布保留既有 SHA 固定；SLSA 可复用工作流仍是已记录的标签固定例外，在 `release.yml` 中以 `action-pinning-exempt:` 注释标记 | 公共 CI 重跑结果为绿；为避免发布表面的频繁变动，广泛的 action 大版本升级有意留给依赖自动化的拉取请求 |
 | npm 打包 | `publish-npm.yml` 工作流在 `v*.*.*` 标签推送时运行，并以 `workflow_dispatch` 作为后备 | 唯一的公共 npm 包是 `@ahmed-g-gad/apothem`；发布会等待操作者对 `release` 环境的批准，该批准在 `scripts/release/check-release-ready.sh` 通过之后给出 |
 
 ## 锁定

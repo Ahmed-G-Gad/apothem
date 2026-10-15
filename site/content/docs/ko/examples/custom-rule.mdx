@@ -2,7 +2,7 @@
 title: "커스텀 규칙"
 description: "프로젝트를 위한 커스텀 상시-적용 규칙을 작성합니다."
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## 규칙이 올바르게 작성되었는지 검증하기
 
-방금 작성한 규칙 파일에 frontmatter 검증기를 실행하세요. Apothem 체크아웃에서는 명령 앞에 `PYTHONPATH=src`를 붙이고, 스크립트로 설치한 뒤에는 `PYTHONPATH="$HOME/.apothem/src"`를 붙이세요:
+방금 작성한 규칙 파일에 프런트매터 검증기를 실행하세요. Apothem 체크아웃에서는 첫 번째 명령을 사용하세요. 이때 `PYTHONPATH=src`가 패키지를 임포트할 수 있게 합니다. 스크립트로 설치한 뒤에는 두 번째 명령을 사용하세요. 이때 소스는 `$HOME/.apothem/src` 아래에 있습니다:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 올바르게 작성된 규칙은 깔끔하게 통과 판정을 받습니다:

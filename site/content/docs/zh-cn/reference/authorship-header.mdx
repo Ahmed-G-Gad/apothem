@@ -2,13 +2,13 @@
 title: "作者署名头——逐文件 SPDX 许可行"
 description: "使用规范的单行头部，以每种文件类型相应的注释语法，定义并强制执行逐文件的 SPDX 许可标识符标记。"
 machineTranslated: true
-sourceHash: "be2cac4bcbaa4744"
+sourceHash: "1433a9c4ee709a0d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的作者署名与文件头章节（规范 §0.5 + §4.6）；它是随已发布仓库一同提供的独立参考。架构理由记录于 [ADR-0002](/docs/reference/authorship-header)。
+> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的作者署名与文件头章节（规范 §0.5 + §4.6）；它是随已发布仓库一同提供的独立参考。架构理由记录于 ADR-0002。
 
 ---
 
@@ -30,7 +30,7 @@ sourceHash: "be2cac4bcbaa4744"
 # SPDX-License-Identifier: MIT
 ```
 
-此文本是**唯一**权威来源。`file-header` 校验器（§8）针对这份字节精确的夹具运行。文件头部行与此夹具之间的任何漂移（在按 §2 进行语法替换的前提下）都是 CI 失败。
+本文本是**唯一**权威来源。`file-header` 校验器（§8）会针对这一字节精确的夹具进行校验。文件头部行与此夹具之间的任何偏差（在按 §2 进行语法替换的前提下），都会作为一项发现项被报告。该校验器为建议性质，因此一项发现项不会导致构建失败（§8）。
 
 ---
 
@@ -61,7 +61,7 @@ HTML 注释（或 MDX 的 `{/* */}`）包装器以不可见方式渲染，因此
 
 ## 3. 例外清单（按类别豁免）
 
-以下类别**豁免**于 SPDX 头部行。`file-header` 校验器的适用性检查对它们返回 `not-applicable`：
+以下类别**豁免**于 SPDX 头部行。`file-header` 校验器对这些文件不作检查，直接放行：
 
 - **`LICENSE`**——它本身就是法律文书；携带权威版权行，`license-author-consistency` 校验器会确认其存在。
 - **`*.svg` 资源**——XML 注释对行注释标记而言很脆弱，因此 SVG 溯源由资源 README 和生成的栅格输出承载。
@@ -103,7 +103,7 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 ## 6. 头部可见性策略
 
-具体到 Markdown 文件，SPDX 行**默认不可见**——包裹在 `<!-- ... -->`（或 MDX 的 `{/* */}`）中，仅在源码中可见。这是 README、CONTRIBUTING、CLAUDE.md、受支持工具的指令文件、技能 SKILL.md、命令正文、output-styles 以及文档页的正确策略。**可见**渲染（SPDX 行作为输出顶部的纯文本或围栏块）对那些受益于可立即阅读的溯源信息的独立参考文档是允许的；该策略按文件类别在 `src/apothem/schemas/header-visibility.yaml` 中设置（默认*不可见*），并允许在该行之后紧接一个文件作用域覆盖标记 `<!-- header-visibility: visible -->`。
+对于 Markdown 与 MDX 文件，SPDX 行始终写在其注释包裹之内（`<!-- ... -->` 或 `{/* */}`）。它仅在源码中可见，不会出现在渲染后的页面中。注入器不具备可见渲染功能，也不支持逐文件覆盖。仓库中没有任何工具会读取夹具 `src/apothem/schemas/header-visibility.yaml`。
 
 ---
 
@@ -113,21 +113,22 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 - 接受一个或多个文件路径（或 glob）。
 - 通过例外清单（§3）确定适用性。
-- 检测现有头部状态（规范 / 畸形 / 缺失），剥离它发现的任何非规范横幅块，使重新运行具有幂等性。
+- 检测现有头部状态（规范 / 畸形 / 缺失），并剥离所发现的任何非规范横幅块，使重新运行具有幂等性。
 - 按文件类型渲染正确的 SPDX 变体（§2）。
 - 在正确位置插入（§5），并遵守 shebang 和 frontmatter。
-- 以三种模式运行：`fix-in-place`（写入）、`emit-patch`（打印统一 diff）、`check`（出现任何偏离时以非零状态退出——供 CI 使用）。
+- 对位于插入位置且缺少空行的 SPDX 行，补入缺失的空行，而不是在其上方再插入第二份副本。
+- 以三种模式运行：`fix-in-place`（写入）、`emit-patch`（打印统一 diff）、`check`（出现任何偏离时以非零状态退出；没有任何 CI 任务会对已跟踪的树运行它）。
 - 幂等：运行两次等于什么都没做。
 
 注入器由 `make headers-fix` 目标调用，该目标运行 `scripts/inject-header.py --mode fix-in-place`。
 
 ---
 
-## 8. 校验器——`file-header`（CI）
+## 8. 校验器——`file-header`
 
-位于 [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)。对于工作树中的每个文件，校验器查询其适用性（按 §3），若适用，则断言规范 SPDX 行存在于文件头部——位于所有其他内容之前，该行之前它允许出现的唯一内容是 shebang（§5）。它不会越过 Markdown frontmatter 继续读取。
+位于 [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)。对于工作树中的每个文件，校验器会查询其适用性（按 §3）；若适用，则断言规范 SPDX 行存在于文件头部，且该行之前唯一允许出现的内容是 shebang（§5）。其当前代码导致两处缺口。它不会跳过 YAML frontmatter，因此，对于按 §5 要求将 SPDX 行置于 frontmatter 之后的 Markdown 文件，它会将其报告为发现项。它的变体表中没有列出 `.mdx`，因此对 MDX 文件会直接放行，而不作检查。
 
-由位于 [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) 的字节精确夹具支撑。在 CI 摘要中报告逐文件 diff 和聚合覆盖率 %。出现任何偏离时使构建失败。
+由位于 [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) 的字节精确夹具支撑。针对此匹配器，语料库运行会报告发现项的数量，以及被标记文件的样本。它不输出逐文件 diff，也不输出覆盖率百分比。该匹配器属于建议性质：其发现项会被报告，但无论是否使用 `--strict`，都不会导致构建失败。
 
 ---
 
@@ -135,13 +136,13 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 该纪律必须在未来的每个会话和每位贡献者中延续下去。强制性的强制执行表面：
 
-1. **`src/apothem/schemas/authorship-header.txt`**——字节精确的规范夹具；唯一的事实来源。
+1. **`src/apothem/schemas/authorship-header.txt`**——字节精确的规范夹具；唯一事实来源。
 2. **`scripts/inject-header.{sh,py}`**——机械注入器（§7）。
-3. **`file-header` CI 校验器**（§8）——出现任何偏离时使构建失败。
-4. **Pre-commit 钩子**——`conformity-corpus-perwrite` 钩子对已跟踪的树运行 `file-header` 校验器（§8）。它只做检查；重写文件的是注入器（§7），通过 `make headers-fix` 进行。
+3. **`file-header` 校验器**（§8）——以建议性发现项的形式报告偏差；它不会导致构建失败。
+4. **Pre-commit 钩子**——`conformity-corpus-perwrite` 钩子会以 `--strict` 对已跟踪的树运行每个逐写入（per-Write）匹配器，包括 `file-header` 校验器（§8）。`file-header` 匹配器属于建议性质，因此其发现项会被报告，但不会阻止提交。该钩子只做检查，没有修复模式，也从不运行注入器（§7）；注入器通过 `make headers-fix` 运行。
 5. **`CLAUDE.md` 强制行为块**——指示助手在创建适用文件时注入规范 SPDX 行。
-6. 位于 `.github/copilot-instructions.md` 的 **GitHub Copilot 指令文件**——指示 Copilot 在生成文件时做同样的事。
-7. 位于 `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` 的 **PreToolUse 钩子**——拦截对适用路径的 Write/Edit 工具调用，使 SPDX 行在文件创建时注入，而不是之后才作为 CI 失败被发现。
+6. 位于 `.github/copilot-instructions.md` 的 **GitHub Copilot 指令文件**——指示 Copilot 在生成文件时同样照做。
+7. 位于 `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` 的 **PreToolUse 钩子**——拦截适用路径上的 Write/Edit 工具调用，使 SPDX 行在文件创建时即被注入，而不是之后才以校验器发现项的形式暴露。
 8. **PR 模板复选框**——面向贡献者的断言：每个新文件都带有规范 SPDX 行。
 9. **本文档**（`site/content/docs/reference/authorship-header.mdx`）——规范的、规范性的说明文。
 
@@ -149,8 +150,8 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 ## 另请参阅
 
-- [ADR-0002](/docs/reference/authorship-header)——架构理由、考虑过的替代方案。
-- [ADR-0006](/docs/reference/authorship-header)——横幅收窄的批准。
+- ADR-0002——架构理由、考虑过的替代方案。
+- ADR-0006——横幅收窄的批准。
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt)——字节精确的规范夹具。
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)——例外清单（正则/glob 形式）。
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) 和 [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh)——注入器。

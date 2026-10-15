@@ -2,7 +2,7 @@
 title: "Fluxo de instalação"
 description: "Como apothem install, update e uninstall funcionam de ponta a ponta."
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,10 @@ Em `apothem uninstall --harness X`:
 1. Chama `Adapter.uninstall()`.
 2. O adaptador remove apenas os arquivos que escreveu; o perfil compartilhado YAML
    e os arquivos não relacionados escritos pelo operador permanecem intocados.
+3. Os armazenamentos de memória, contextos e aprendizado do diretório de trabalho
+   compartilhado são salvos em backup e removidos quando este for o último harness
+   instalado nesse diretório. Eles são removidos no local que a instalação
+   registrou. O diretório `plans/` nunca é removido.
 
 ## Resolução de escopo
 

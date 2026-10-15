@@ -2,7 +2,7 @@
 title: "Configuration du compte d'éditeur"
 description: "Configurez l'éditeur de confiance npmjs.com pour @ahmed-g-gad/apothem ainsi que les prérequis de publication côté GitHub."
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,12 +24,7 @@ elle-même et ne nécessitent aucun compte d'éditeur externe.
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Le propriétaire GitHub est autorisé à changer à l'avenir. La logique des flux de
-travail et de l'installateur lit `github.repository`,
-`github.repository_owner` ou `APOTHEM_GITHUB_REPOSITORY` là où une plateforme
-permet la résolution dynamique. L'identifiant du paquet dans le registre reste
-stable, car les utilisateurs installent le nom du paquet, et non le nom du
-compte du mainteneur.
+Le propriétaire GitHub peut changer à l'avenir. La logique des flux de travail et de l'installateur lit `github.repository`, `github.repository_owner` ou `APOTHEM_GITHUB_REPO` là où une plateforme permet la résolution dynamique. L'identifiant du paquet dans le registre reste stable, car les utilisateurs installent le nom du paquet, et non le nom du compte du mainteneur.
 
 ## npm (npmjs.com)
 
@@ -64,6 +59,10 @@ compte du mainteneur.
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   La vérification nécessite que `GH_TOKEN` soit défini et que `sbom.cdx.json` publié se trouve dans
+   `dist/release-assets/`. Le [runbook du cycle de publication](/docs/runbooks/release-cycle),
+   §2.4, indique la portée du jeton et la commande de téléchargement.
 
 9. Approuvez le déploiement de l'environnement `release` pour l'exécution de
    `Publish npm` (`publish-npm.yml`) que démarre le push de l'étiquette. Si cette

@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -149,15 +149,27 @@ recherche des confirmations de téléversement des ressources.
 
 ### 2.4 Confirmer la publication npm
 
-Le push de l'étiquette exécute aussi `publish-npm.yml` à côté de `release.yml`.
-Le flux de travail npm n'attend pas le flux de travail de publication ;
-l'approbation de l'environnement `release` est le point de contrôle. Une fois le
-flux de travail de publication du §2.3 terminé, confirmez l'état de
-préparation :
+Le push de l'étiquette exécute aussi `publish-npm.yml` à côté de `release.yml`. Le flux de travail npm n'attend pas le flux de travail de publication ; l'approbation de l'environnement `release` est le point de contrôle. Une fois le flux de travail de publication du §2.3 terminé, confirmez l'état de préparation. La vérification lit les publications (releases), les exécutions de flux de travail et le SBOM publié ; préparez donc d'abord deux éléments :
+
+- **`GH_TOKEN`.** Le script refuse de s'exécuter sans lui, même lorsque `gh` est
+  déjà connecté. Utilisez un jeton d'accès personnel à granularité fine limité à
+  `ahmed-g-gad/apothem`, avec **Actions: Read** (exécutions de flux de travail) et
+  **Contents: Read** (publications). La vérification n'écrit rien : aucune permission
+  d'écriture n'est donc nécessaire. Un jeton issu de `gh auth token` porte toutes les
+  portées de la connexion ; privilégiez donc le jeton à granularité fine.
+- **Le SBOM publié.** La vérification lit `dist/release-assets/sbom.cdx.json`, le
+  fichier CycloneDX que la publication joint. Téléchargez la copie publiée par la
+  publication plutôt qu'une compilation locale.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+La vérification échoue lorsque la publication est un brouillon ou une préversion, lorsqu'un flux de travail requis pour le commit de l'étiquette n'est pas au vert, lorsque le SBOM est absent, lorsqu'il décrit une autre version, ou lorsqu'il omet un paquet vendorisé. Le message d'échec indique la cause.
 
 Approuvez ensuite le déploiement de l'environnement `release` lorsque vous y
 êtes invité. Le flux de travail publie `@ahmed-g-gad/apothem@X.Y.Z` sur

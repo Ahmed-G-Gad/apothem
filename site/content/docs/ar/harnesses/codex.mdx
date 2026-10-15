@@ -2,7 +2,7 @@
 title: "Codex"
 description: "محوّل إطار عمل Apothem لـ Codex (تجريبي)."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,12 @@ apothem install --harness codex
 و<bdi>`~/.agents/skills/*/SKILL.md`</bdi>، و<bdi>`~/.agents/skills/*/agents/openai.yaml`</bdi>
 للمهارات التي يستدعيها المستخدم، وملفات الدعم تحت
 <bdi>`~/.config/apothem/{rules,templates}/`</bdi>.
+
+**مُفسِّر الخطّافات.** قبل أن يكتب التثبيت أي شيء، يعثر على مُفسِّر <bdi>CPython 3.10+</bdi>.
+وعلى Windows، تُشغِّل كل مُدخلة <bdi>`commandWindows`</bdi> في الملف <bdi>`hooks.json`</bdi> المسارَ المطلق
+لذلك المُفسِّر بدلًا من المُشغِّل <bdi>`py -3`</bdi>؛ وتُبقي مُدخلاتُ <bdi>`command`</bdi> في <bdi>POSIX</bdi> على <bdi>`python3`</bdi>.
+أعِد تشغيل <bdi>`apothem update --harness codex`</bdi> بعد نقل المُفسِّر أو إزالته.
+وإذا لم يُعثَر على <bdi>CPython 3.10+</bdi>، يتوقّف التثبيت قبل أن يكتب أي ملف.
 
 تنتهي كتلة <bdi>Apothem</bdi> في <bdi>`AGENTS.md`</bdi> بقسم ملفات دعم
 <bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب

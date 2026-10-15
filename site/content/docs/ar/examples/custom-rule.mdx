@@ -2,7 +2,7 @@
 title: "قاعدة مخصّصة"
 description: "تأليف قاعدة دائمة مخصّصة لمشروعك."
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## التحقّق من أن القاعدة سليمة البنية
 
-شغّل مدقّق <bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته للتوّ. ومن نسخة مسحوبة من <bdi>Apothem</bdi>، ابدأ الأمر بـ <bdi>`PYTHONPATH=src`</bdi>؛ وبعد التثبيت عبر النص البرمجي، ابدأه بـ <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi>:
+شغّل مدقّق <bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته للتوّ. استخدم الأمر الأول من نسخة <bdi>Apothem</bdi> مسحوبة من المستودع، حيث يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمةَ قابلةً للاستيراد. واستخدم الأمر الثاني بعد التثبيت عبر السكربت، حيث يعيش المصدر تحت <bdi>`$HOME/.apothem/src`</bdi>:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 تُبلغ القاعدة السليمة البنية عن اجتياز نظيف:

@@ -2,11 +2,11 @@
 title: "Схема фронтматтера"
 description: "Справочное руководство по структуре блока YAML-фронтматтера, обязательным ключам по классам и правилам их применения валидаторами для всех классов артефактов."
 machineTranslated: true
-sourceHash: "d6c49336e4d3abf9"
+sourceHash: "e0fad965a556b755"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Каноническая справка по YAML-фронтматтеру для каждого класса артефактов.** Сводка в разделе «Conventions» файла [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — это встроенное объявление; JSON Schema по классам в [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` отклоняет неизвестные ключи) — машиночитаемый контракт, который имеет приоритет при любом расхождении. Эта страница — указатель обязательных ключей, а [`artifact-schema.mdx`](/docs/reference/artifact-schema) содержит шаблоны и разобранные примеры по классам; обе страницы — человекочитаемые проекции этих схем.
+> **Каноническая справка по YAML-фронтматтеру для каждого класса артефактов.** Сводка в разделе «Conventions» файла [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — это встроенное объявление; JSON Schema по классам в [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (схемы навыков и команд с `additionalProperties: false` отклоняют неизвестные ключи; схемы агентов, output-стилей и планов задают `additionalProperties: true`) — машиночитаемый контракт, и при любом расхождении приоритет у него. Эта страница — указатель обязательных ключей, а [`artifact-schema.mdx`](/docs/reference/artifact-schema) содержит шаблоны и разобранные примеры по классам; обе страницы — человекочитаемые проекции этих схем.
 
 ---
 

@@ -2,7 +2,7 @@
 title: "Concepts"
 description: "Glossaire définissant les profils partagés, les adaptateurs d'environnement, les règles, les hooks, les portails de conformité, les skills et les travailleurs délégués dans Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,10 +35,7 @@ l'environnement doit se comporter.
 
 ## Hook
 
-Un script Python enregistré dans settings.json qui se déclenche sur les événements du cycle de vie de l'environnement
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Les hooks appliquent les mandats de conformité
-en temps réel avant que la sortie n'atteigne le disque. Le modèle d'événements de hook est aujourd'hui une surface propre à Claude Code ;
-les adaptateurs pour les environnements dépourvus de mécanisme de hook l'omettent simplement.
+Un script Python enregistré dans la configuration de hooks d'un environnement (settings.json pour Claude Code), qui se déclenche sur des événements du cycle de vie tels que PreToolUse, PostToolUse, SessionStart et Stop ; certains adaptateurs enregistrent aussi PreCompact et PostCompact. Les hooks appliquent les mandats de conformité en temps réel, avant que la sortie n'atteigne le disque. Les adaptateurs pour les environnements dépourvus de mécanisme de hook l'omettent.
 
 ## Portail de conformité
 

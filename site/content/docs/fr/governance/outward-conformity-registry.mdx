@@ -2,7 +2,7 @@
 title: "Registre de conformité externe — Lors d'opérations sur des projets hôtes"
 description: "Registre de quinze mandats (M1–M15) spécifiant les exigences de conformité pour tous les artefacts générés dans les projets hôtes, croisé avec les mandats internes à l'écosystème."
 machineTranslated: true
-sourceHash: "29a21958554beb3f"
+sourceHash: "a921fa9513fb6c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,21 +14,21 @@ Les quinze mandats opèrent **aux côtés des** mandats CM-N selon la politique 
 
 | ID | Mandat | Résumé en une ligne | Règle canonique |
 | -- | ------- | ---------------- | -------------- |
-| M1 | Agnosticisme vis-à-vis du projet hôte | Découvre la pile / le formateur / le linter / l'agencement / les idiomes de l'hôte ; les honore ; fait remonter le silence comme une demande selon M5 avec annotation M7 | `src/apothem/rules/host-discovery.md` |
+| M1 | Agnosticisme vis-à-vis du projet hôte | Découvre la pile / le formateur / le linter / l'agencement / les idiomes de l'hôte ; les respecte ; fait remonter le silence comme une demande selon M5 avec annotation M7 | `src/apothem/rules/host-discovery.md` |
 | M2 | Discipline éditoriale | Divulgue chaque amendement / extension / raffinement avec sa justification ; pas de surconformité silencieuse, pas de débordement silencieux | `src/apothem/rules/disclosure-ledger.md` |
-| M3 | Dix dimensions de qualité | Chaque artefact passe la vérification à dix points (rigueur, cohérence, configurabilité, lisibilité, orphelinat, structuralité, architecture, nomenclature, référencement académique, exemples/tests/documentation) | `src/apothem/rules/ten-dimension-check.md` |
-| M4 | Auto-application | Exécute le portail de pré-émission à quinze points avant chaque émission de portée significative ; consigne la preuve de publication | `src/apothem/rules/pre-emission-gate.md` |
+| M3 | Dix dimensions de qualité | Chaque artefact passe la vérification à dix barres (rigueur, cohérence, configurabilité, lisibilité, orphelinat, structuralité, architecture, nomenclature, référencement académique, exemples/tests/documentation) | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | Auto-application | Exécute le portail de pré-émission à quinze barres avant chaque émission de portée significative ; consigne la preuve de publication | `src/apothem/rules/pre-emission-gate.md` |
 | M5 | Principe d'autorité | Demande, n'invente pas ; les données d'identité / de portée / de préférence / de sécurité / de nomenclature / d'infrastructure / d'épinglage de version ne sont jamais fabriquées | `src/apothem/rules/authority-inquiry.md` |
-| M6 | Incorporation d'expertise | Lis l'intention, amende proactivement, étends sur les lacunes adjacentes, raffine avec une justification citée, anticipe les conséquences de second ordre | `src/apothem/rules/expertise-posture.md` |
-| M7 | Annotation des options | Tout choix à plusieurs options porte un marqueur de recommandation plus une justification liée à des principes ; les choix silencieux sont interdits en territoire faisant autorité | `src/apothem/rules/option-annotation.md` |
-| M8 | Caractère définitif et étanchéité | Aucune atermoiement là où une prescription contraignante est possible ; pas de « ça dépend » sans branches énumérées ; chaque contrat a des conditions préalables / postérieures / d'échec | `src/apothem/rules/definitiveness.md` |
-| M9 | Levier visuel | Le sujet structurel porte un diagramme de la réalité actuelle (Mermaid par défaut) avec provenance + date de vérification | `src/apothem/rules/visual-leverage.md` |
+| M6 | Incorporation de l'expertise | Lire l'intention, amender de façon proactive, étendre sur les lacunes adjacentes, raffiner avec une justification citée, anticiper les conséquences de second ordre | `src/apothem/rules/expertise-posture.md` |
+| M7 | Annotation des options | Tout choix à plusieurs options porte un marqueur de recommandation et une justification liée aux principes ; les choix silencieux sont interdits en territoire faisant autorité | `src/apothem/rules/option-annotation.md` |
+| M8 | Caractère définitif et étanchéité | Aucune formulation évasive là où une prescription contraignante est possible ; pas de « ça dépend » sans branches énumérées ; chaque contrat a des conditions préalables / postérieures / d'échec | `src/apothem/rules/definitiveness.md` |
+| M9 | Levier visuel | La matière structurelle porte un diagramme de la réalité actuelle (Mermaid par défaut) avec provenance + date de vérification | `src/apothem/rules/visual-leverage.md` |
 | M10 | Liaison bidirectionnelle | Les éléments structurels substantiels déclarent des liaisons réciproques (Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
-| M11 | Sprints agiles | Le travail non trivial à plusieurs étapes s'exécute comme des sprints disciplinés (Objectif / Backlog / DoR / DoD / Revue / Rétrospective) | `src/apothem/rules/agile-sprints.md` |
-| M12 | Rapports de phase et agencement canonique | Le travail multiphase émet des rapports par sous-phase + une synthèse au niveau de la phase ; les sorties dans l'agencement canonique | `src/apothem/rules/canonical-layout.md` |
-| M13 | Métier du code | Commentaires du pourquoi-pas-quoi ; noms révélateurs d'intention avec unités ; gestion d'exceptions typée ; constantes nommées ; honore le linter / formateur / vérificateur de types de l'hôte | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (par langage) |
-| M14 | Systémicité de l'écosystème | Les nouveaux composants déclarent les ascendants / descendants / pairs / applicateurs ; indexés dans les registres de l'hôte ; aucun silo ni orphelin introduit | `src/apothem/rules/systemic-participation.md` |
-| M15 | Forme prête pour la production | Les modifications de code sont livrées avec tests + documentation + entrée au CHANGELOG + message de commit conforme + CI au vert dans le même ensemble de modifications | `src/apothem/rules/production-ready-prs.md` |
+| M11 | Sprints agiles | Le travail non trivial en plusieurs étapes s'exécute comme des sprints disciplinés (Objectif / Backlog / DoR / DoD / Revue / Rétrospective) | `src/apothem/rules/agile-sprints.md` |
+| M12 | Rapports de phase et disposition canonique | Le travail multiphase émet des rapports par sous-phase et une synthèse au niveau de la phase ; les sorties suivent la disposition canonique | `src/apothem/rules/canonical-layout.md` |
+| M13 | Artisanat du code | Commentaires du pourquoi-pas-quoi ; noms révélateurs de l'intention avec unités ; gestion typée des exceptions ; constantes nommées ; respect du linter / formateur / vérificateur de types de l'hôte | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (par langage) |
+| M14 | Systémicité de l'écosystème | Les nouveaux composants déclarent amont / aval / pairs / applicateurs ; indexés dans les registres de l'hôte ; aucun silo ni orphelin introduit | `src/apothem/rules/systemic-participation.md` |
+| M15 | Forme prête pour la production | Les modifications de code sont livrées avec tests + documentation + entrée CHANGELOG + message de commit conforme + CI au vert dans le même ensemble de modifications | `src/apothem/rules/production-ready-prs.md` |
 
 ## 1. Seuil trivial vs non trivial (réglé)
 

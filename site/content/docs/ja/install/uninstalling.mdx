@@ -2,11 +2,13 @@
 title: "アンインストール"
 description: "Apothem を削除し、ハーネス設定をクリーンアップします。"
 machineTranslated: true
-sourceHash: "9d5c30cdd9a2bacc"
+sourceHash: "5480c1153c062495"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 最初にハーネス設定を削除する
+
+このページで使われている素の `apothem` コマンドは、ワンショットインストーラー（[インストールガイド](/docs/install)のチャネル 3）が書き込むシムです。そのシムのディレクトリが `PATH` に含まれていれば実行できます。その他のインストールチャネルでは、インストールガイドに記載されているとおり、`apothem` を `npx @ahmed-g-gad/apothem` に置き換えてください。
 
 Apothem をアンインストールする前に、各ハーネスアダプターの設定を削除して、ハーネスをクリーンな状態にしておきます。
 `apothem harnesses list` を実行して現在どのアダプターがインストールされているかを確認し、それらを 1 つずつ削除するか、レジストリ全体のセレクターを使用します。

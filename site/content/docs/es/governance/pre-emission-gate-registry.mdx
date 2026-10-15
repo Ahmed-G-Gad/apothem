@@ -2,7 +2,7 @@
 title: "Registro de la compuerta de preemisión — Comprobación obligatoria de quince barras"
 description: "Comprobación de conformidad obligatoria de quince barras ejecutada antes de la emisión de alcance significativo, con mapeos de acción ante fallo y esquema de prueba de release."
 machineTranslated: true
-sourceHash: "ae70067b5dcc7f40"
+sourceHash: "be81c64b8d309fc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,17 +15,17 @@ Antes de cualquier emisión de artefacto de alcance significativo (según el umb
 | 1 | M1 agnosticismo del anfitrión | razonada | revisar para coincidir con las convenciones del anfitrión |
 | 2 | M2 divulgación editorial | razonada | añadir libro mayor de divulgación |
 | 3 | M3 diez dimensiones | mixta (mecánica + razonada) | revisar en la dimensión que falla |
-| 4 | M4 autoaplicación | mecánica (prueba de release presente) | registrar prueba de release |
-| 5 | M5 autoridad | mecánica (grep de marcador `<USER-CONFIRM:…>`) | reencaminar a la superficie de consulta |
+| 4 | M4 autoaplicación | razonada (bloque de verificación presente) | registrar el bloque de verificación |
+| 5 | M5 autoridad | mecánica (grep del marcador de posición `<USER-CONFIRM:…>`) | reencaminar a la superficie de consulta |
 | 6 | M6 pericia | razonada (sección de carencias expuestas presente) | exponer carencias; citar |
-| 7 | M7 anotación de opciones | mecánica (el conjunto de opciones lleva marcador de recomendación) | anotar |
-| 8 | M8 carácter definitivo | mecánica (grep de vocabulario evasivo) | promover la evasión a condicionales |
-| 9 | M9 apalancamiento visual | razonada (existe diagrama donde es estructural) | crear / actualizar diagrama |
-| 10 | M10 vínculo bidireccional | mecánica (grep de reciprocidad de vínculos) | cerrar medias-aristas |
-| 11 | M11 sprints ágiles | razonada (aparato de sprint instanciado) | reestructurar como sprints |
-| 12 | M12 informe de fases y disposición | mecánica (grep de salida huérfana) + razonada | crear resumen; reubicar |
-| 13 | M13 oficio de código | mecánica (lint / formateo / verificación de tipos; grep de bare-except, número-mágico, código-comentado) | revisar |
-| 14 | M14 sistematicidad | razonada (declara aguas arriba / aguas abajo / pares / aplicadores) | declarar; indexar |
+| 7 | M7 anotación de opciones | mecánica (el conjunto de opciones lleva el marcador de recomendación) | anotar |
+| 8 | M8 carácter definitivo | mecánica (grep de vocabulario evasivo) | convertir las evasivas en condicionales |
+| 9 | M9 aprovechamiento visual | razonada (existe un diagrama donde es estructural) | crear / actualizar el diagrama |
+| 10 | M10 vinculación bidireccional | mecánica (grep de reciprocidad de vínculos) | cerrar las semiaristas |
+| 11 | M11 sprints ágiles | razonada (aparato de sprints instanciado) | reestructurar en sprints |
+| 12 | M12 informes de fase y disposición | mecánica (grep de salida huérfana) + razonada | redactar el resumen consolidado; reubicar |
+| 13 | M13 oficio de código | mecánica (lint / formato / comprobación de tipos; grep de bare-except, número mágico y código comentado) | revisar |
+| 14 | M14 sistemicidad | razonada (declara aguas arriba / aguas abajo / pares / aplicadores) | declarar; indexar |
 | 15 | M15 listo para producción | mecánica (grep de production-ready-pr) + razonada | añadir pruebas / documentación / CHANGELOG |
 
 ## 1. Esquema de prueba de release

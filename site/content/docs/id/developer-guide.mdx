@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -103,7 +103,7 @@ aturan tidak membawa satu pun dari ketiganya, dan skill tidak membawa
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -229,15 +229,18 @@ Setiap artefak berversi membawa versi semantiknya sendiri (`MAJOR.MINOR.PATCH`).
 Command dan skill mewajibkannya, helper dan output-style BOLEH membawanya, dan
 aturan tidak membawanya:
 
-- **PATCH** — perbaikan salah ketik, pemformatan, penyegaran tautan, suntingan yang hanya menyentuh komentar. Perilaku tidak berubah.
+- **PATCH** — perubahan perilaku yang memperbaiki direktif yang sudah ada tanpa merusak kontrak.
 - **MINOR** — perubahan aditif yang tidak merusak: bagian opsional baru, bidang frontmatter opsional baru, contoh baru. Konsumen yang sudah ada tetap berfungsi tanpa perubahan.
 - **MAJOR** — perubahan skema atau kontrak yang merusak: bagian yang dihapus, bidang yang diganti namanya, perilaku direktif yang sudah ada yang diubah, perubahan yang mengharuskan artefak hilir beradaptasi.
 
+Perbaikan salah ketik, perbaikan tautan, pemformatan, serta suntingan yang hanya menyentuh komentar atau dokumentasi tidak mengubah versi. Hanya perubahan perilaku yang menaikkannya. Suntingan semacam itu tetap memperbarui tanggal `updated` artefak.
+
 Contoh:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: perbaikan salah ketik)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: direktif yang diperbaiki sehingga perilakunya berubah)
+- `vX.Y.Z` → `vX.Y.Z` (tanpa kenaikan: perbaikan salah ketik atau tautan; `updated` berubah)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: menambahkan bagian opsional baru)
-- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: menyatakan kontrak stabil; artefak baru dimulai pada `v0.Y.Z`)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: kontrak dinyatakan stabil; artefak baru dimulai pada `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: menghapus bidang frontmatter wajib)
 
 Naikkan `version` dan `updated` bersama-sama pada setiap suntingan yang mengubah
