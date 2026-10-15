@@ -2,7 +2,7 @@
 title: "استكشاف الأخطاء وإصلاحها"
 description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات الإضافة وnpx والمُثبِّت."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,9 +93,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### لا يجد <bdi>apothem install</bdi> أي أُطُر عمل
 
-شغّل <bdi>apothem doctor</bdi> لإدراج أدلّة أُطُر العمل المُكتشَفة. وإن لم يُعثَر
-على أي منها، فتأكّد من أنّ إطار العمل لديك مُثبَّت وأنه شُغِّل مرّة واحدة على
-الأقل.
+شغّل <bdi>apothem doctor</bdi> لقراءة جدول <bdi>Harness Status</bdi>، الذي يحوي صفًّا واحدًا لكل إطار عمل. ويعني الصف المُعلَّم بـ <bdi>`not installed`</bdi> أن <bdi>Apothem</bdi> لم يجد تثبيتًا لذلك الإطار. والصف المُعلَّم بـ <bdi>`needs --project`</bdi> يخص إطار عمل ذا نطاق مشروع، ولا يفحصه <bdi>doctor</bdi> إلا حين تمرّر <bdi>`--project <path>`</bdi>. وإذا أبلغ <bdi>doctor</bdi> بـ <bdi>`No harness is installed yet`</bdi>، فتأكّد من تثبيت إطار العمل لديك، ثم شغّل <bdi>`apothem install --harness <name>`</bdi>.
 
 ### يُبلِغ <bdi>apothem verify</bdi> عن محوّل فاشل
 

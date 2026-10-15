@@ -2,7 +2,7 @@
 title: "Runtime autocontido"
 description: "Como o motor do Apothem roda a partir de qualquer checkout — dependências internalizadas, o modelo de invocação PYTHONPATH=src e o bootstrap da árvore do plugin."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,9 +83,12 @@ checkout ao `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Quando o lançador `apothem` não está no PATH, o instalador de uma única etapa imprime
-esta forma ao concluir, com o diretório de dependências incorporadas antes de `src/` e
-o CPython que ele resolveu no lugar de `python`.
+Quando o lançador `apothem` não está no PATH, o `install.sh` imprime esta forma
+ao concluir, com o diretório de dependências incorporadas antes de `src/` e o
+CPython que ele resolveu no lugar de `python`. O `install.ps1` imprime as mesmas
+duas configurações na forma do PowerShell: uma atribuição a `$env:PYTHONPATH`
+que une os diretórios de dependências incorporadas e `src/` com `;`, seguida de
+`& '<CPython>' -m apothem <command>`.
 
 ## Bootstrap da árvore do plugin
 

@@ -2,7 +2,7 @@
 title: "Контрольный список развёртывания"
 description: "Контрольный список предварительной проверки для развёртывания или совместного использования экосистемы Apothem"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,19 +31,18 @@ frontmatter каждого артефакта и помечает ошибки Y
 ### Правила (`src/apothem/rules/*.md`)
 
 - [ ] `name` — идентификатор в kebab-case, совпадающий с именем файла
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (например, `"X.Y.Z"`)
-- [ ] `updated` — дата ISO 8601 (например, `"2026-04-20"`)
 - [ ] `description` — однострочное резюме
-- [ ] `scope` — `"always-on"` или `"path-filtered"`
-- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` или `"windows-only"`
-- [ ] `pathFilter` — присутствует и является корректной glob-строкой для правил с фильтрацией по пути; отсутствует для всегда активных правил
+- [ ] `alwaysApply` — `true` для правил, которые действуют всегда, `false` для правил с фильтром по путям
+- [ ] `pathFilter` — присутствует в каждом правиле: `""` для правил, которые действуют всегда (`alwaysApply: true`), список glob-шаблонов через запятую для правил с фильтром по путям (`alwaysApply: false`)
+
+Правила не содержат ключей `version`, `updated`, `scope` или `portability`.
 
 ### Команды (`src/apothem/commands/*.md`)
 
 - [ ] `name` — имя команды в kebab-case
-- [ ] `version`, `updated`, `description`, `argument-hint` присутствуют
+- [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` присутствуют
 - [ ] `disable-model-invocation` присутствует и намеренно (`true` для команд, предназначенных только для руководства)
-- [ ] `effort`, `portability` проверены там, где присутствуют (необязательны по schema)
+- [ ] Ключа `effort` нет: `command.schema.json` задаёт `additionalProperties: false` и его не допускает
 
 ### Делегированные исполнители
 
@@ -57,13 +56,13 @@ src/apothem/agents/*.md
 - [ ] `tools` — список разрешённых инструментов через запятую
 - [ ] `disallowedTools` — явно перечисляет запрещённые инструменты
 - [ ] `maxTurns` — задан (с комментарием-обоснованием, если > 10)
-- [ ] `permissionMode` — **НЕ должен быть `"bypassPermissions"`** — используйте `"default"`
-- [ ] `memory: false`, если постоянная память не предусмотрена намеренно
+- [ ] `permissionMode` — **НЕ должен быть `"bypassPermissions"`**; не задавайте ключ, поскольку нейтральная (agnostic) конфигурация заранее не задаёт режим разрешений
+- [ ] `memory` не указан, если постоянная память не предусмотрена намеренно; если указан, то одно из значений `user`, `project`, `local` (логической формы нет)
 
 ### Навыки (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name`, `version`, `updated`, `description` присутствуют
-- [ ] `user-invocable` — объявлено (true/false)
+- [ ] `name`, `version`, `updated`, `description`, `archetype`, `disable-model-invocation`, `allowed-tools` присутствуют
+- [ ] `userInvocable` объявлено (true/false). В исходнике используется написание `userInvocable`; навык несёт ровно одно из `userInvocable` или `user-invocable` (написание Claude Code).
 
 ---
 

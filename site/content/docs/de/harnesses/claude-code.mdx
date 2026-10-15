@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Apothem-Harness-Adapter für Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,6 +69,8 @@ von Apothem verwaltete Kindelemente werden vor dem Ersetzen gesichert; nicht
 zugehörige, vom Operator verfasste Einträge bleiben erhalten. `settings.json`
 wird zusammengeführt, sodass vom Operator verfasste Schlüssel
 wiederherstellbar bleiben.
+
+Vom Operator verfasste Dateien bleiben nur außerhalb der unten genannten Ordner erhalten. Jede Installation und jede Aktualisierung entfernt jeden dieser Ordner unter `~/.claude/`, der vorhanden ist, unabhängig davon, ob Apothem ihn geschrieben hat: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` und `commands/`. Außerdem entfernt sie `statuslines/__init__.py` sowie die Dateien `AGENTS.md` in `agents/`, `rules/`, `skills/`, `statuslines/` und `output-styles/`. Ein entfernter Ordner wird als Ganzes entfernt, einschließlich der Dateien, die Sie darin abgelegt haben. Slash-Befehle, die Sie in `commands/` behalten, werden ebenfalls entfernt, und Apothem installiert seine eigenen Befehlsvorlagen als Skills unter `skills/`. Ein Hook-Skript, das Sie in `hooks/` behalten, wird entfernt, wodurch jeder Eintrag in `settings.json`, der es aufruft, ins Leere zeigt. Die Bereinigung läuft, bevor die Installation ihre eigenen Dateien schreibt. Jeder entfernte Pfad wird zuvor nach `~/.apothem/backups/` kopiert, und der Installationsdatensatz nennt diese Kopie. Die Deinstallation stellt sie nicht wieder her. Um einen entfernten Pfad wiederherzustellen, führen Sie für die Installation, die ihn entfernt hat, `apothem rollback --harness claude-code --install-id ID` aus, wie in der [Rollback-Referenz](/docs/cli-reference/rollback) beschrieben. Ein einfaches `apothem rollback` macht nur die letzte Installation rückgängig. Installationsdatensätze und ihre Kopien werden für die neuesten 10 Installationen aufbewahrt; ein entfernter Pfad kann daher nur wiederhergestellt werden, solange seine Installation zu diesen gehört. `apothem diff --harness claude-code` führt diese Entfernungen vor der Installation als `Prune stale files` auf.
 
 Installierte Skills und die im Claude Code-Plugin gebündelten Skills tragen
 `user-invocable` statt des `userInvocable` aus dem Quellkorpus, weil Claude

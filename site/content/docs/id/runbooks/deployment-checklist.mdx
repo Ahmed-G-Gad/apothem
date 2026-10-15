@@ -2,7 +2,7 @@
 title: "Checklist Deployment"
 description: "Checklist verifikasi pra-penerbangan untuk men-deploy atau berbagi ekosistem Apothem"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,19 +31,18 @@ Untuk setiap jenis artefak, verifikasi bahwa bidang wajib hadir:
 ### Aturan (`src/apothem/rules/*.md`)
 
 - [ ] `name` — pengidentifikasi kebab-case yang cocok dengan nama berkas
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (mis., `"X.Y.Z"`)
-- [ ] `updated` — tanggal ISO 8601 (mis., `"2026-04-20"`)
 - [ ] `description` — ringkasan satu kalimat
-- [ ] `scope` — `"always-on"` atau `"path-filtered"`
-- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"`, atau `"windows-only"`
-- [ ] `pathFilter` — hadir dan berupa string glob yang valid untuk aturan terfilter-jalur; absen untuk aturan yang selalu aktif
+- [ ] `alwaysApply` — `true` untuk aturan yang selalu aktif, `false` untuk aturan terfilter-jalur
+- [ ] `pathFilter` — hadir pada setiap aturan: `""` untuk aturan yang selalu aktif (`alwaysApply: true`), daftar glob dipisahkan koma untuk aturan terfilter-jalur (`alwaysApply: false`)
+
+Aturan tidak memiliki kunci `version`, `updated`, `scope`, atau `portability`.
 
 ### Perintah (`src/apothem/commands/*.md`)
 
 - [ ] `name` — nama perintah kebab-case
-- [ ] `version`, `updated`, `description`, `argument-hint` hadir
+- [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` hadir
 - [ ] `disable-model-invocation` hadir dan disengaja (`true` untuk perintah panduan-saja)
-- [ ] `effort`, `portability` ditinjau jika hadir (opsional menurut schema)
+- [ ] Tidak ada kunci `effort`: `command.schema.json` menetapkan `additionalProperties: false` dan tidak menerimanya
 
 ### Pekerja terdelegasi
 
@@ -57,13 +56,13 @@ src/apothem/agents/*.md
 - [ ] `tools` — daftar peralatan yang diizinkan dipisahkan koma
 - [ ] `disallowedTools` — secara eksplisit mendaftar peralatan yang tidak diizinkan
 - [ ] `maxTurns` — disetel (dengan komentar alasan jika > 10)
-- [ ] `permissionMode` — **TIDAK boleh `"bypassPermissions"`** — gunakan `"default"`
-- [ ] `memory: false` kecuali memori persisten memang disengaja
+- [ ] `permissionMode` — **TIDAK boleh `"bypassPermissions"`**; biarkan kunci ini tidak disetel, karena postur agnostik tidak menetapkan mode izin sebelumnya
+- [ ] `memory` dihilangkan kecuali memori persisten memang disengaja; jika diatur, salah satu dari `user`, `project`, `local` (tidak ada bentuk boolean)
 
 ### Skill (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name`, `version`, `updated`, `description` hadir
-- [ ] `user-invocable` — dideklarasikan (true/false)
+- [ ] `name`, `version`, `updated`, `description`, `archetype`, `disable-model-invocation`, `allowed-tools` hadir
+- [ ] `userInvocable` dideklarasikan (true/false). Ejaan sumbernya adalah `userInvocable`; sebuah skill membawa tepat satu dari `userInvocable` atau `user-invocable` (ejaan Claude Code).
 
 ---
 

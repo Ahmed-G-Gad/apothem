@@ -2,7 +2,7 @@
 title: "Fluxo de instalação"
 description: "Como apothem install, update e uninstall funcionam de ponta a ponta."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,11 +54,12 @@ documentado em `site/content/docs/harnesses/<harness>.mdx`.
 
 ## Tratamento de erros
 
-As operações de instalação/atualização validam antes de escrever, fazem backup dos
-destinos correspondentes existentes antes da substituição, e mesclam apenas as
-entradas-filhas gerenciadas pelo Apothem nos diretórios de descoberta
-compartilhados. `--dry-run` executa a mesma validação e retorna resultados
-ignorados ou inalterados sem criar diretórios ou arquivos.
+As operações de instalação/atualização validam antes de escrever, fazem backup
+dos destinos correspondentes existentes antes da substituição e mesclam apenas
+as entradas-filhas gerenciadas pelo Apothem nos diretórios de descoberta
+compartilhados. `--dry-run` executa a mesma validação e retorna o resultado que
+cada escrita teria, como `created` ou `updated`, sem criar diretórios ou
+arquivos.
 
 ## Reversibility (backup and rollback)
 

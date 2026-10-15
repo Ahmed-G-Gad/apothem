@@ -2,7 +2,7 @@
 title: "install"
 description: "Référence de la CLI pour la commande apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,7 +90,7 @@ du profil concerné :
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (la spécification MCP rend HTTP+SSE obsolète) | Utilisez `streamable-http` lorsque le serveur le prend en charge. |
 | `mcp_plain_http` | une URL `http://` vers un hôte qui n'est pas une adresse de bouclage | Utilisez une URL `https://`. |
-| `mcp_literal_credential` | une valeur `headers` ou `env` ayant la forme d'un jeton (`ghp_`, `github_pat_`, `sk-`, `xox*-`, ou `Bearer` suivi d'un long jeton) | Conservez le secret dans une variable d'environnement et écrivez des références de type `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | une valeur `headers` ou `env` ayant la forme d'un jeton (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, ou `Bearer` suivi d'un long jeton) | Conservez le secret dans une variable d'environnement et écrivez des références de type `${GITHUB_TOKEN}`. |
 
 L'avis sur les identifiants n'affiche jamais la valeur qu'il a trouvée. Une
 valeur contenant une référence `${...}` n'est jamais signalée.
@@ -120,7 +120,7 @@ les commentaires, les virgules finales et la syntaxe JSON5. Par conséquent :
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Adaptateur d'environnement à installer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). Exécutez `apothem harnesses list` pour obtenir les noms enregistrés. |
+| `--harness NAME` | Adaptateur d'environnement à installer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). Avec `all`, les environnements listés dans `exclude_harnesses` du profil sont ignorés, mais un environnement nommé explicitement est installé même s'il figure dans cette liste. Exécutez `apothem harnesses list` pour obtenir les noms enregistrés. |
 | `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut : `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Prévisualise l'installation sans écrire de fichiers. |
 | `--clean`, `--fresh` | Table rase à activer explicitement : sauvegarde puis supprime l'état d'installation antérieur propre à chaque environnement avant d'installer. |
@@ -169,7 +169,15 @@ unifié dans `detail.diff` — le même plan que celui affiché par
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

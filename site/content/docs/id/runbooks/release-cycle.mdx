@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -230,14 +230,14 @@ Keluaran yang diharapkan: `Apothem, version X.Y.Z`.
 
 ### 5.3 Pemasang skrip satu langkah (POSIX)
 
+Pemasang menulis peluncur `apothem` ke `~/.local/bin`, atau ke direktori yang dinamai oleh `APOTHEM_BIN_DIR` ketika variabel itu diatur. Pemeriksaan di bawah memerlukan direktori tersebut ada di `PATH`. Ketika tidak ada, pemasang mencetak baris `export PATH` yang perlu ditambahkan. Selama direktori tersebut belum ada di `PATH`, shell tidak dapat menemukan `apothem`, dan pemeriksaan gagal. Jika pemasang tidak dapat menempatkan peluncur, ia mencetak peringatan dan tidak mencetak baris `export PATH`.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 Keluaran yang diharapkan: `Apothem, version X.Y.Z`.
-
-Peluncur ditulis ke `~/.local/bin`, yang harus berada di `PATH` agar pemeriksaan di atas dapat berjalan. Ketika direktori itu tidak ada di `PATH`, pemasang mencetak baris `export PATH` yang perlu ditambahkan.
 
 ### 5.4 Pemasang skrip satu langkah (Windows)
 

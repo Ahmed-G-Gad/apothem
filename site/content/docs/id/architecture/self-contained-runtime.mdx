@@ -2,7 +2,7 @@
 title: "Runtime mandiri"
 description: "Cara mesin Apothem berjalan dari checkout mana pun — dependensi yang di-vendor, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,7 +84,7 @@ checkout di awal `PYTHONPATH`:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Ketika peluncur `apothem` tidak ada di PATH, pemasang sekali-jalan mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`.
+Ketika peluncur `apothem` tidak ada di PATH, `install.sh` mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`. `install.ps1` mencetak dua pengaturan yang sama dalam bentuk PowerShell: penugasan `$env:PYTHONPATH` yang menggabungkan direktori vendor dan `src/` dengan `;`, lalu `& '<CPython>' -m apothem <command>`.
 
 ## Bootstrap pohon plugin
 

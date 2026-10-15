@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — Mengeksekusi fase tertentu dari Master Plan Suite dengan pemeriksaan konformitas."
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ File REPORT.md per fase, artefak basis kode, COMPLETION.md
 
 ## Hilir
 
-`/code-review` — titik masuk kanonik dari urutan benteng audit sebelas perintah. `/plan-execute` adalah tahap terminal dari pipeline *plan*; ketika fase akhir selesai, kode yang dibangun diserahkan ke benteng audit untuk ditinjau.
+`/fortress` mengeraskan pekerjaan yang sudah dieksekusi hingga berada dalam keadaan yang digerbang-rilis dalam satu panggilan (deteksi, verifikasi, remediasi, audit ulang, gerbang). Secara bawaan ia berhenti untuk konfirmasi di setiap batas ronde; `--autonomous` menjalankan ronde tanpa berhenti. `/code-review` — titik masuk kanonik dari urutan tinjauan audit sebelas perintah, yang menelusuri rantai itu satu tahap demi satu tahap. `/plan-execute` adalah tahap terminal dari pipeline *plan*; ketika fase akhir selesai, kode yang dibangun diserahkan ke urutan tinjauan audit untuk ditinjau.
 
 ## Fase alur kerja
 

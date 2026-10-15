@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -165,14 +165,14 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 一键脚本安装器（POSIX）
 
+安装器会将 `apothem` 启动器写入 `~/.local/bin`；若设置了 `APOTHEM_BIN_DIR`，则写入该变量指定的目录。下方的检查需要该目录位于 `PATH` 上。若不在，安装器会打印需要添加的 `export PATH` 行。在该目录位于 `PATH` 上之前，shell 无法找到 `apothem`，检查会失败。若安装器无法放置启动器，它会打印警告，而不会打印 `export PATH` 行。
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 预期输出：`Apothem, version X.Y.Z`。
-
-启动器写入 `~/.local/bin`，要使上方的检查得以运行，该目录必须位于 `PATH` 上。当该目录不在 `PATH` 上时，安装器会打印需要添加的 `export PATH` 行。
 
 ### 5.4 一键脚本安装器（Windows）
 

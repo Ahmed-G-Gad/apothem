@@ -2,7 +2,7 @@
 title: "Eigenständige Laufzeit"
 description: "Wie Apothems Engine aus jedem Checkout läuft — gevendorte Abhängigkeiten, das Aufrufmodell PYTHONPATH=src und der Bootstrap des Plugin-Baums."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,9 +85,12 @@ Checkouts dem `PYTHONPATH` vorangestellt wird:
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-Wenn der Starter `apothem` nicht im PATH liegt, gibt der Ein-Schritt-Installer
-bei Abschluss diese Form aus, mit dem vendored-Verzeichnis vor `src/` und dem
-CPython, den er aufgelöst hat, an Stelle von `python`.
+Wenn der Starter `apothem` nicht im PATH liegt, gibt `install.sh` bei Abschluss
+diese Form aus, mit dem vendored-Verzeichnis vor `src/` und dem CPython, den es
+aufgelöst hat, an Stelle von `python`. `install.ps1` gibt dieselben zwei
+Einstellungen in PowerShell-Form aus: eine Zuweisung an `$env:PYTHONPATH`, die
+das vendored-Verzeichnis und das Verzeichnis `src/` mit `;` verbindet, danach
+`& '<CPython>' -m apothem <command>`.
 
 ## Bootstrap des Plugin-Baums
 

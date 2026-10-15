@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — /plan パイプラインの閉ループ守護者——spec → generate → review をラップし、スイートがレビュー済みかつ発見ゼロの全体になるまで発見を能動的に修復します。"
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "6f82709e6c4d40fc"
 引数付き：
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## 入力
@@ -33,7 +33,7 @@ sourceHash: "6f82709e6c4d40fc"
 
 ## パイプライン位置
 
-`/plan-audit` は線形パイプラインに対して**直交**しており、その中の 1 ステージではありません。正規の線形シーケンスは `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件付き、アーキテクチャを伴うスイートのみ）`→ /plan-execute` です。`/plan-audit` は `/plan-spec → /plan-generate → /plan-review` を、任意の地点で呼び出せる単一の閉ループラッパーとして包含します。状態を検査し、生成済みのスイートが存在する場合は欠落しているステージだけを実行します。生成済みのスイートがない場合は、`Blocked: run /plan-generate first` で拒否します。これは要塞監査チェーン（`/code-review` で入り、`/threat-model-audit` で終端する）とは別物で、後者は計画スイートではなく、実行済みのコードベースを監査します。
+`/plan-audit` は線形パイプラインに対して**直交**しており、その中の 1 ステージではありません。正規の線形シーケンスは `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件付き、アーキテクチャを伴うスイートのみ）`→ /plan-execute` です。`/plan-audit` は `/plan-spec → /plan-generate → /plan-review` を、任意の時点で呼び出せる単一の閉ループラッパーとして包含します。状態を検査し、欠落しているステージのみを実行します。作成済みの仕様も生成済みのプランスイートもない場合は、`Blocked: run /plan-spec first` で拒否します（`--override` はゲートを迂回しますが、その迂回を、根拠と欠けている前提条件を明記して PLAN-NOTES.md に指摘事項として記録します）。これは監査レビューシーケンス（入口は `/code-review`、終端は `/threat-model-audit`）とは別物です。後者はプランスイートではなく、実行済みのコードベースを監査します。
 
 ## ワークフローのフェーズ
 
@@ -60,7 +60,7 @@ sourceHash: "6f82709e6c4d40fc"
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## 相互参照

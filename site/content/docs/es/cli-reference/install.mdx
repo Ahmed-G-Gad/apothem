@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -85,7 +85,7 @@ el campo del perfil:
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (la especificación de MCP declara obsoleto HTTP+SSE) | Usa `streamable-http` cuando el servidor lo admita. |
 | `mcp_plain_http` | una URL `http://` hacia un host que no es de loopback | Usa una URL `https://`. |
-| `mcp_literal_credential` | un valor de `headers` o `env` con forma de token (`ghp_`, `github_pat_`, `sk-`, `xox*-` o `Bearer` con un token largo) | Guarda el secreto en una variable de entorno y escribe referencias del estilo `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | un valor de `headers` o `env` con forma de token (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-` o `Bearer` con un token largo) | Guarda el secreto en una variable de entorno y escribe referencias del tipo `${GITHUB_TOKEN}`. |
 
 El aviso de credenciales nunca imprime el valor que encontró. Un valor que
 contiene una referencia `${...}` nunca se marca.
@@ -113,12 +113,12 @@ comentarios, las comas finales y la sintaxis JSON5. Por eso:
 
 | Opción | Descripción |
 |---|---|
-| `--harness NAME` | Adaptador de entorno que se instala, o `all` para el conjunto de todo el registro (obligatorio). Ejecuta `apothem harnesses list` para ver los nombres registrados. |
+| `--harness NAME` | Adaptador de entorno que se instala, o `all` para el conjunto de todo el registro (obligatorio). Con `all`, se omiten los entornos listados en `exclude_harnesses` del perfil, pero un entorno indicado explícitamente se instala aunque figure en la lista. Ejecuta `apothem harnesses list` para ver los nombres registrados. |
 | `--profile PATH` | Ruta al YAML del perfil compartido. Valor predeterminado: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Previsualiza la instalación sin escribir archivos. |
-| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina el estado de instalación anterior por entorno antes de instalar. |
+| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina el estado de instalación anterior de cada entorno antes de instalar. |
 | `--yes` | Omite la confirmación por destino durante una eliminación de borrón y cuenta nueva (obligatorio en ejecuciones no interactivas de `--clean`). |
-| `--project PATH` | Raíz del proyecto para los entornos de alcance de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Imprime la justificación de cada capacidad no proyectada en lugar de la nota agrupada por entorno. |
 | `--format plain\|json` | Formato de salida (predeterminado: `plain`). |
@@ -162,7 +162,15 @@ unificado en `detail.diff` — el mismo plan que muestra
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

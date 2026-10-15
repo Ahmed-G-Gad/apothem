@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,7 +93,7 @@ campo do perfil:
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (a especificação MCP descontinua o HTTP+SSE) | Use `streamable-http` quando o servidor oferecer suporte a ele. |
 | `mcp_plain_http` | uma URL `http://` para um host que não é loopback | Use uma URL `https://`. |
-| `mcp_literal_credential` | um valor de `headers` ou de `env` com formato de token (`ghp_`, `github_pat_`, `sk-`, `xox*-` ou `Bearer` com um token longo) | Mantenha o segredo em uma variável de ambiente e escreva referências no estilo `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | um valor de `headers` ou `env` com formato de token (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, ou `Bearer` com um token longo) | Mantenha o segredo em uma variável de ambiente e escreva referências no estilo `${GITHUB_TOKEN}`. |
 
 O aviso consultivo de credencial nunca imprime o valor que encontrou. Um valor
 que contém uma referência `${...}` nunca é sinalizado.
@@ -121,14 +121,14 @@ comentários, vírgulas finais e a sintaxe JSON5. Por isso:
 
 | Opção | Descrição |
 |---|---|
-| `--harness NAME` | Adaptador de harness a instalar, ou `all` para o conjunto de todo o registro (obrigatório). Execute `apothem harnesses list` para ver os nomes registrados. |
+| `--harness NAME` | Adaptador de harness a instalar, ou `all` para o conjunto de todo o registro (obrigatório). Com `all`, os harnesses listados em `exclude_harnesses` do perfil são ignorados, mas um harness nomeado explicitamente é instalado mesmo quando listado. Execute `apothem harnesses list` para ver os nomes registrados. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. O padrão é `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mostra uma prévia da instalação sem gravar arquivos. |
-| `--clean`, `--fresh` | Recomeço limpo, ativado explicitamente: faz backup do estado de instalação anterior por harness e o remove antes de instalar. |
+| `--clean`, `--fresh` | Recomeço limpo, ativado explicitamente: faz backup e remove o estado de instalação anterior de cada harness antes de instalar. |
 | `--yes` | Pula a confirmação por destino durante uma remoção de recomeço limpo (obrigatório em execuções não interativas de `--clean`). |
 | `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. |
 | `--quiet`, `-q` | Suprime a saída informativa; apenas os erros são emitidos. |
-| `--verbose`, `-v` | Imprime a justificativa de cada capacidade não projetada em vez da nota agrupada por harness. |
+| `--verbose`, `-v` | Imprime a justificativa de cada capacidade não projetada, em vez da nota agrupada por harness. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
 | `--json` | Abreviação de `--format json`. |
 | `--no-color` | Desativa os códigos de cor ANSI na saída. |
@@ -170,7 +170,15 @@ mostra:
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

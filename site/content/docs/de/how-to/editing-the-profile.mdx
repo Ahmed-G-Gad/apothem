@@ -2,7 +2,7 @@
 title: "Das Profil bearbeiten"
 description: "Ändere das gemeinsame Profil und materialisiere jeden installierten Harness erneut."
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,7 +84,7 @@ apothem verify --harness all
 
 `profile show` zeigt deine Bearbeitung an.
 
-`apothem verify --harness all` prüft jeden registrierten Harness und endet deshalb mit einem Code ungleich null, sofern nicht alle installiert sind. Harnesses mit Projektumfang benötigen außerdem `--project PATH`; ohne diese Angabe bricht der Stapellauf mit einem Fehler `project.required` ab. Um nur den Harness zu prüfen, den du aktualisiert hast, führe denselben Befehl mit dem Namen dieses Harness aus:
+`apothem verify --harness all` prüft jeden registrierten Harness außer denen, die `exclude_harnesses` des Profils auflistet, und endet deshalb mit einem Code ungleich null, sofern nicht alle übrigen installiert sind. Harnesses mit Projekt-Geltungsbereich benötigen außerdem `--project PATH`; ohne diese Angabe bricht der Stapellauf mit einem Fehler `project.required` ab. Um nur den Harness zu prüfen, den du aktualisiert hast, führe denselben Befehl mit dem Namen dieses Harness aus:
 
 ```bash
 apothem verify --harness <name>

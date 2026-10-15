@@ -2,7 +2,7 @@
 title: "문제 해결"
 description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,7 +61,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install이 하니스를 찾지 못함
 
-apothem doctor를 실행하여 감지된 하니스 디렉터리를 나열하세요. 아무것도 발견되지 않으면 하니스가 설치되어 있고 최소 한 번 실행되었는지 확인하세요.
+apothem doctor를 실행하여 하니스마다 한 행씩 있는 Harness Status 표를 확인하세요. `not installed`로 표시된 행은 Apothem이 해당 하니스의 설치를 찾지 못했다는 뜻입니다. `needs --project`로 표시된 행은 프로젝트 범위 하니스이며, doctor는 `--project <path>`를 전달할 때만 이를 검사합니다. doctor가 `No harness is installed yet`을 보고하면 하니스가 설치되어 있는지 확인한 다음 `apothem install --harness <name>`을 실행하세요.
 
 ### apothem verify가 실패한 어댑터를 보고함
 

@@ -2,7 +2,7 @@
 title: "update"
 description: "مرجع واجهة سطر الأوامر لأمر apothem update."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 | الخيار | الوصف |
 |---|---|
-| <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد تحديثه، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). |
+| <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد تحديثه، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). مع <bdi>`all`</bdi>، تُتخطّى أُطُر العمل المُدرَجة في <bdi>`exclude_harnesses`</bdi> الخاصة بالملف التعريفي، لكن إطار العمل المُسمّى صراحةً يُحدَّث حتى لو كان مُدرَجًا فيها. |
 | <bdi>`--profile PATH`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
 | <bdi>`--dry-run`</bdi> | يعاين التحديث دون كتابة ملفات. |
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. مطلوب عندما تتضمّن مجموعة أُطُر العمل المختارة محوّلات ذات نطاق المشروع. |

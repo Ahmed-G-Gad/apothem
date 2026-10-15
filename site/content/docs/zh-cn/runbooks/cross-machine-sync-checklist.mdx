@@ -2,7 +2,7 @@
 title: "跨主机同步验证清单"
 description: "用于在全新主机上确认 Claude Code 适配器能够正确安装、校验并卸载的验证流程，包含完整的可移植性检查。"
 machineTranslated: true
-sourceHash: "fe0bc745cce7932a"
+sourceHash: "b6f6f7d6a489e8c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**预期：** 交互式流程会提示确认；`--yes` 在批量运行时跳过提示；两种流程都会使 Claude Code 配置根目录不再残留 Apothem 物化的文件；`apothem` 垫片会被移除（POSIX 上为 `~/.local/bin/apothem`，Windows 上为 `%LOCALAPPDATA%\Microsoft\WindowsApps` 中的 `apothem.cmd`）。
+**预期：** 交互式流程会给出提示；`--yes` 在批量运行时跳过提示；两种流程之后，Claude Code 配置根目录中都不再残留 Apothem 物化的文件；`apothem` 垫片会被移除（`~/.local/bin/apothem`；`%LOCALAPPDATA%\Microsoft\WindowsApps` 中的 `apothem.cmd` 垫片仅由 `uninstall.ps1` 移除）。
 
 ## 6. 安全护栏验证
 

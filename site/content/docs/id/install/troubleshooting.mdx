@@ -2,7 +2,7 @@
 title: "Pemecahan masalah"
 description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan pemasang."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,8 +91,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install tidak menemukan harness
 
-Jalankan apothem doctor untuk mencantumkan direktori harness yang terdeteksi. Jika tidak ada yang ditemukan, pastikan
-harness Anda terpasang dan telah diluncurkan setidaknya sekali.
+Jalankan apothem doctor untuk membaca tabel Harness Status-nya, yang memiliki satu baris per harness. Baris yang bertanda `not installed` berarti Apothem tidak menemukan pemasangan untuk harness tersebut. Baris yang bertanda `needs --project` adalah harness berlingkup-proyek, yang hanya diperiksa doctor ketika Anda memberikan `--project <path>`. Jika doctor melaporkan `No harness is installed yet`, pastikan harness Anda sudah terpasang, lalu jalankan `apothem install --harness <name>`.
 
 ### apothem verify melaporkan adapter yang gagal
 

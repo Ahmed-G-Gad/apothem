@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,8 @@ OpenCode も、`~/.config/opencode/AGENTS.md` が存在しない場合には `~/
 アダプターは可能な場合はネイティブディレクトリを直接使用し、コマンドプロンプトをスキルフォルダーに変換します。
 Apothem が管理する既存の一致する子要素は、置き換えの前にバックアップされます。無関係なオペレーター作成のエントリは保持されます。
 `settings.json` はマージされるため、オペレーターが作成したキーは復元可能なままです。
+
+オペレーターが作成したファイルは、以下のフォルダの外にのみ保持されます。インストールと更新のたびに、`~/.claude/` 配下に存在する次の各フォルダが、Apothem が書き込んだかどうかにかかわらず削除されます：`src/`、`conformity/`、`schemas/`、`hooks/`、`config/`、`scripts/`、`tools/`、`lib/`、`templates/`、`docs/`、`tests/`、`packaging/`、`mcp/`、`examples/`、`assets/`、`site/`、`public/`、`commands/`。また、`statuslines/__init__.py` と、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/` にある `AGENTS.md` ファイルも削除されます。削除されたフォルダは、その中に配置したファイルを含めて丸ごと削除されます。`commands/` に保持したスラッシュコマンドも削除され、Apothem は独自のコマンドプロンプトを `skills/` 配下のスキルとしてインストールします。`hooks/` に保持したフックスクリプトも削除されるため、それを呼び出す `settings.json` のエントリーは何も指さない状態になります。このスイープは、インストールが独自のファイルを書き込む前に実行されます。削除された各パスは、まず `~/.apothem/backups/` にコピーされ、インストール記録にそのコピーの場所が記載されます。アンインストールでは復元されません。削除されたパスを復元するには、そのパスを削除したインストールに対して `apothem rollback --harness claude-code --install-id ID` を実行します（[ロールバックのリファレンス](/docs/cli-reference/rollback)に記載されています）。単に `apothem rollback` を実行すると、最新のインストールのみが取り消されます。インストール記録とそのコピーは、直近の 10 回分のインストールについて保持されるため、削除されたパスは、そのインストールが保持範囲に含まれている間だけ復元できます。インストールの前に `apothem diff --harness claude-code` を実行すると、これらの削除が `Prune stale files` として一覧に表示されます。
 
 インストールされたスキルと、Claude Code プラグインに同梱されたスキルは、ソースコーパスの `userInvocable` の代わりに `user-invocable` を持ちます。Claude Code はハイフン付きのキーしか読み取らないためです。
 2 つのテンプレートコンテナー（`plan-suite`、`research-suite`）はこれを `false` に設定しているため、`/` メニューには表示されません。

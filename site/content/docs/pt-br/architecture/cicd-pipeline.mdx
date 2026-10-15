@@ -2,7 +2,7 @@
 title: "Diagrama do pipeline de CI/CD"
 description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada lançamento."
 machineTranslated: true
-sourceHash: "42620c7c2fb8ec8b"
+sourceHash: "d9a69ec274df9173"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,11 +36,11 @@ flowchart LR
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
         CHAOS["chaos_pass.py (CI quality job)"]
-        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
+        BENCH["src/apothem/benchmarks/ (unit tests in CI, bench_hooks in metrics job)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
-        SBOM["SBOM generation"]
+        SBOM["SBOM generation (tags only)"]
         LICENSE["License audit"]
     end
     subgraph Publish["Publish lane (tags only)"]
@@ -70,29 +70,36 @@ flowchart LR
 
 ## Papéis das faixas
 
-- **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo do Python e
-  um conjunto curado de regras; o mypy impõe disciplina de tipos no modo strict; o
-  validador de frontmatter controla a conformidade dos artefatos com o schema para
-  regras, skills, trabalhadores delegados e comandos. O markdownlint não faz parte
-  desta faixa: ele roda apenas como hook de pre-commit, e o CI não o executa (consulte
-  [Convenções de Markdown](/docs/reference/markdown-conventions)).
-- **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra a
-  matriz completa de eventos; `validate_ecosystem.py` é o principal portão estrutural
-  para a consistência entre artefatos; `chaos_pass.py` roda no job de qualidade do CI
-  em pushes e pull requests para `main` (com filtro de caminho), para detectar
-  degradação sob entradas degradadas. O conjunto de benchmarks por classe em
-  `src/apothem/benchmarks/` não roda em nenhum fluxo de trabalho do CI.
-- **Faixa de segurança** — a varredura de segredos detecta credenciais incluídas em
-  commits por acidente; a geração de SBOM e as auditorias de licença controlam a
-  superfície da cadeia de suprimentos em qualquer instalação voltada à prontidão para
-  produção.
-- **Faixa de publicação** — os fluxos de trabalho de lançamento são disparados por
-  pushes de tags; os publicadores do npm e da extensão do VS Code também podem ser
-  reexecutados por disparo manual para uma tag existente. A verificação de tag assinada
-  confirma a procedência da branch de lançamento; as notas de lançamento derivam do
-  `CHANGELOG.md` no formato Keep-A-Changelog. O site do projeto é publicado a partir de
-  `site/dist/` no destino do GitHub Pages em pushes para `main` que alterem seus insumos
-  de build, ou por disparo manual.
+- **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo do
+  Python e um conjunto curado de regras; o mypy impõe disciplina de tipos no
+  modo strict; o validador de frontmatter controla a conformidade dos artefatos
+  com o schema para regras, skills, trabalhadores delegados e comandos. O
+  markdownlint não faz parte desta faixa: ele roda apenas como hook de
+  pre-commit, e o CI não o executa (consulte [Convenções de
+  Markdown](/docs/reference/markdown-conventions)).
+- **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra
+  a matriz completa de eventos; `validate_ecosystem.py` é o principal portão
+  estrutural para a consistência entre artefatos; `chaos_pass.py` roda no job de
+  qualidade do CI em pushes e pull requests para `main` (com filtro de caminho),
+  para detectar degradação sob entradas degradadas. Os drivers de benchmark por
+  classe em `src/apothem/benchmarks/` rodam no CI pela suíte do pytest e pelo
+  job `metrics`. Cada execução completa do pytest no CI coleta
+  `tests/unit/test_benchmarks.py`, que chama todos os drivers, exceto
+  `bench_install.py`. O job `metrics` executa `scripts/dev/collect_metrics.py`,
+  que roda `bench_hooks.py --json` e registra o resultado como `hook_e2e_ms`.
+  `bench_tests.py` e `bench_install.py` medem execuções reais somente sob `make benchmarks`. Nenhum fluxo de trabalho executa `make benchmarks`.
+- **Faixa de segurança** — gitleaks em `ci.yml` detecta credenciais incluídas em
+  commits por acidente. A auditoria de licenças (`license-audit.yml`) falha
+  quando a licença de uma dependência está fora da sua lista de permissões. Ela
+  roda semanalmente e quando arquivos de dependência ou de licença mudam.
+  `release.yml` gera o SBOM de cada release marcada com tag.
+- **Faixa de publicação** — os fluxos de trabalho de release são disparados por
+  pushes de tags; os publicadores do npm e do VS Code também podem ser
+  reexecutados por disparo manual para uma tag existente. A verificação de tag
+  assinada confirma a procedência da branch de release; as notas de release
+  derivam do `CHANGELOG.md`, no formato Keep-A-Changelog. O site do projeto é
+  publicado a partir de `site/dist/` no destino do GitHub Pages em pushes para
+  `main` que alterem seus insumos de build, ou por disparo manual.
 
 ## Configuração concreta
 

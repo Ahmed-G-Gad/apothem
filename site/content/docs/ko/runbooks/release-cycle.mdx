@@ -2,7 +2,7 @@
 title: "릴리스 주기 런북"
 description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 npm 게시에 이르는 완전한 릴리스 워크플로입니다."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -219,14 +219,14 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 원샷 스크립트 설치 프로그램(POSIX)
 
+설치 프로그램은 `apothem` 런처를 `~/.local/bin`에 기록하거나, `APOTHEM_BIN_DIR` 변수가 설정된 경우 그 변수가 지정한 디렉터리에 기록합니다. 아래의 검사를 하려면 해당 디렉터리가 `PATH`에 있어야 합니다. 그렇지 않으면 설치 프로그램은 추가할 `export PATH` 줄을 출력합니다. 해당 디렉터리가 `PATH`에 들어 있지 않은 동안에는 셸이 `apothem`을 찾을 수 없으며 검사는 실패합니다. 설치 프로그램이 런처를 배치할 수 없는 경우에는 경고를 출력하며, `export PATH` 줄은 출력하지 않습니다.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 예상 출력: `Apothem, version X.Y.Z`.
-
-런처는 `~/.local/bin`에 기록되며, 위 검사를 실행하려면 이 디렉터리가 `PATH`에 있어야 합니다. 이 디렉터리가 `PATH`에 없으면 설치 프로그램이 추가할 `export PATH` 줄을 출력합니다.
 
 ### 5.4 원샷 스크립트 설치 프로그램(Windows)
 

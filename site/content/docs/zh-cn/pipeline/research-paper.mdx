@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper —— 依据综合、设计与分析组装一份顶级论文草稿（从摘要到结论以及参考文献），并验证每条引用均可解析。"
 machineTranslated: true
-sourceHash: "748c384ba8f36be4"
+sourceHash: "e7be8ccd7da4e80f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,12 @@ sourceHash: "748c384ba8f36be4"
 ## 输出
 
 位于宿主自然位置（`paper/`）的论文交付物——摘要、引言、相关工作、方法、结果、讨论、局限、结论、参考文献。
+
+该阶段还会写入验证闸门记录。记录中包含每条参考文献的结果，以及已解析的引用数与所声称的引用数的对比：
+
+```text
+_outputs/paper-attestation.md
+```
 
 ## 下游
 

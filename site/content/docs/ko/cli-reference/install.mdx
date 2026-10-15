@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,9 @@ plain 모드에서 각자의 `Warning:` 줄에 출력됩니다. 예를 들어 �
 
 | 작업 | 조건 | 해결 방법 |
 | --- | --- | --- |
-| `mcp_deprecated_transport` | `transport: sse`(MCP 사양은 HTTP+SSE를 지원 중단함) | 서버가 지원한다면 `streamable-http`를 사용하세요. |
+| `mcp_deprecated_transport` | `transport: sse`(MCP 사양은 HTTP+SSE를 지원 중단함) | 서버가 지원하면 `streamable-http`를 사용하세요. |
 | `mcp_plain_http` | 루프백이 아닌 호스트를 가리키는 `http://` URL | `https://` URL을 사용하세요. |
-| `mcp_literal_credential` | 토큰처럼 생긴 `headers` 또는 `env` 값(`ghp_`, `github_pat_`, `sk-`, `xox*-`, 또는 긴 토큰이 붙은 `Bearer`) | 시크릿은 환경 변수에 보관하고 `${GITHUB_TOKEN}` 형식의 참조를 쓰세요. |
+| `mcp_literal_credential` | 토큰처럼 생긴 `headers` 또는 `env` 값(`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, 또는 긴 토큰이 붙은 `Bearer`) | 시크릿은 환경 변수에 보관하고 `${GITHUB_TOKEN}` 형식의 참조를 쓰세요. |
 
 자격 증명 권고는 발견한 값을 절대 출력하지 않습니다. `${...}` 참조가 포함된 값은
 절대 플래그 처리되지 않습니다.
@@ -106,14 +106,14 @@ plain 모드에서 각자의 `Warning:` 줄에 출력됩니다. 예를 들어 �
 
 | 옵션 | 설명 |
 |---|---|
-| `--harness NAME` | 설치할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). 등록된 이름은 `apothem harnesses list`를 실행하여 확인하세요. |
-| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`. |
+| `--harness NAME` | 설치할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). `all`을 사용하면 프로필의 `exclude_harnesses`에 나열된 하니스는 건너뛰지만, 명시적으로 이름을 지정한 하니스는 나열되어 있어도 설치됩니다. 등록된 이름은 `apothem harnesses list`를 실행하여 확인하세요. |
+| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`입니다. |
 | `--dry-run` | 파일을 쓰지 않고 설치를 미리 봅니다. |
-| `--clean`, `--fresh` | 선택형 클린 슬레이트: 설치 전에 이전의 하니스별 설치 상태를 백업하고 제거합니다. |
+| `--clean`, `--fresh` | 선택형 클린 슬레이트: 설치 전에 이전의 하니스별 설치 상태를 백업한 뒤 제거합니다. |
 | `--yes` | 클린 슬레이트 제거 중 대상별 확인을 건너뜁니다(비대화형 `--clean` 실행에 필수). |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. |
 | `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |
-| `--verbose`, `-v` | 하니스당 묶인 참고 대신 투영되지 않은 각 기능의 근거를 출력합니다. |
+| `--verbose`, `-v` | 하니스별로 묶인 참고 대신 투영되지 않은 각 기능의 근거를 출력합니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
 | `--json` | `--format json`의 축약형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
@@ -155,7 +155,15 @@ plain 모드에서 각자의 `Warning:` 줄에 출력됩니다. 예를 들어 �
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

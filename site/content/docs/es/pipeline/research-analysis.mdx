@@ -2,7 +2,7 @@
 title: "/research-analysis"
 description: "/research-analysis — Analiza los datos brutos según el plan preregistrado: pruebas planificadas, tamaños del efecto con intervalos de confianza, comprobaciones de robustez y desviaciones divulgadas."
 machineTranslated: true
-sourceHash: "c9d0df0af4550cbb"
+sourceHash: "63b072fd3548eba2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,7 @@ El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 ## Umbral de rigor
 
-Los resultados estocásticos se informan como mejor, media, mediana, desviación estándar y peor a lo largo de las repeticiones, con curvas de convergencia y gráficos de distribución. Las comparaciones usan pruebas no paramétricas —una prueba de rangos con signo pareada por pares, una prueba de rangos ómnibus con corrección post-hoc entre métodos— informadas con un tamaño del efecto de superioridad estocástica y un diagrama de diferencia crítica. Un resultado avanza al artículo solo cuando supera la compuerta de avance: vence a sus comparadores de forma convincente y significativa, y la superación se registra en un cuaderno de ejecución auditable.
+Un método estocástico se ejecuta al menos treinta repeticiones independientes por instancia o condición, más cuando la dispersión entre repeticiones es grande en relación con las diferencias bajo prueba, hasta que los estadísticos resumidos sean estables. Sus resultados se informan como mejor, media, mediana, desviación estándar y peor a lo largo de las repeticiones, con curvas de convergencia y gráficos de distribución. Las comparaciones usan pruebas no paramétricas —una prueba de rangos con signo pareada por pares, una prueba de rangos ómnibus con corrección post-hoc entre métodos— informadas con un tamaño del efecto de superioridad estocástica y un diagrama de diferencia crítica. Un resultado pasa al artículo solo cuando supera la puerta de avance: vence a sus comparadores de forma convincente y significativa, y la superación queda registrada en un cuaderno de ejecución auditable.
 
 ## Modos de fallo
 

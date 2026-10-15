@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute——在符合性检查下，从主计划套件中执行某一具体阶段。"
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ sourceHash: "83dae82d475df6e2"
 
 ## 下游
 
-`/code-review`——十一命令审计堡垒序列的规范入口点。`/plan-execute` 是*计划*流水线的终端阶段；当最终阶段完成时，构建好的代码交接给审计堡垒进行审查。
+`/fortress` 在一次调用中将已执行的工作加固到发布闸门状态（检测、验证、修复、重新审计、闸门）。默认情况下，它会在每个轮次边界暂停以请求确认；`--autonomous` 则不暂停地运行各轮次。`/code-review`——十一条命令的审计评审序列的规范入口点，它逐阶段地走完整个序列。`/plan-execute` 是*计划*流水线的终端阶段；当最终阶段完成时，构建好的代码交接给审计评审序列进行审查。
 
 ## 工作流阶段
 

@@ -2,7 +2,7 @@
 title: "Dépannage"
 description: "Solutions aux échecs d'installation et aux problèmes d'exécution courants d'Apothem sur les voies plugin, npx et installateur."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,9 +91,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install ne trouve aucun environnement
 
-Exécutez apothem doctor pour lister les répertoires d'environnement détectés. Si
-aucun n'est trouvé, assurez-vous que votre environnement est installé et a été
-lancé au moins une fois.
+Exécutez apothem doctor pour lire son tableau Harness Status, qui compte une ligne par environnement. Une ligne marquée `not installed` signifie qu'Apothem n'a trouvé aucune installation pour cet environnement. Une ligne marquée `needs --project` correspond à un environnement à portée de projet, que doctor ne vérifie que si vous passez `--project <path>`. Si doctor affiche `No harness is installed yet`, vérifiez que votre environnement est installé, puis exécutez `apothem install --harness <name>`.
 
 ### apothem verify signale un adaptateur défaillant
 

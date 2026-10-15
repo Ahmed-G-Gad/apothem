@@ -2,7 +2,7 @@
 title: "परिनियोजन चेकलिस्ट"
 description: "Apothem इकोसिस्टम को परिनियोजित या साझा करने से पहले की पूर्व-परीक्षण सत्यापन चेकलिस्ट"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,19 +31,18 @@ frontmatter को पार्स करता है और YAML त्रु�
 ### नियम (`src/apothem/rules/*.md`)
 
 - [ ] `name` — फ़ाइलनाम से मेल खाता kebab-case पहचानकर्ता
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (उदा., `"X.Y.Z"`)
-- [ ] `updated` — ISO 8601 तिथि (उदा., `"2026-04-20"`)
 - [ ] `description` — एकल-वाक्य सारांश
-- [ ] `scope` — `"always-on"` या `"path-filtered"`
-- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"`, या `"windows-only"`
-- [ ] `pathFilter` — पथ-फ़िल्टर किए गए नियमों के लिए मौजूद और वैध glob स्ट्रिंग; सदा-चालू नियमों के लिए अनुपस्थित
+- [ ] `alwaysApply` — सदा-चालू नियमों के लिए `true`, पथ-फ़िल्टर्ड नियमों के लिए `false`
+- [ ] `pathFilter` — हर नियम पर मौजूद: सदा-चालू नियमों (`alwaysApply: true`) के लिए `""`, पथ-फ़िल्टर्ड नियमों (`alwaysApply: false`) के लिए अल्पविराम-पृथक glob सूची
+
+नियमों में कोई `version`, `updated`, `scope`, या `portability` कुंजी नहीं होती।
 
 ### कमांड (`src/apothem/commands/*.md`)
 
 - [ ] `name` — kebab-case कमांड नाम
-- [ ] `version`, `updated`, `description`, `argument-hint` मौजूद
-- [ ] `disable-model-invocation` मौजूद और सोद्देश्य (मार्गदर्शन-मात्र कमांड के लिए `true`)
-- [ ] `effort`, `portability` जहाँ मौजूद हों वहाँ समीक्षित (schema के अनुसार वैकल्पिक)
+- [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` मौजूद
+- [ ] `disable-model-invocation` मौजूद और सोद्देश्य (मार्गदर्शन-मात्र कमांडों के लिए `true`)
+- [ ] कोई `effort` कुंजी नहीं: `command.schema.json` `additionalProperties: false` सेट करता है और उसे स्वीकार नहीं करता
 
 ### प्रत्यायोजित वर्कर
 
@@ -57,13 +56,13 @@ src/apothem/agents/*.md
 - [ ] `tools` — अनुमत टूल की अल्पविराम-पृथक सूची
 - [ ] `disallowedTools` — अननुमत टूल को स्पष्ट रूप से सूचीबद्ध करता है
 - [ ] `maxTurns` — सेट (यदि > 10 हो तो औचित्य टिप्पणी के साथ)
-- [ ] `permissionMode` — **`"bypassPermissions"` नहीं होना चाहिए** — `"default"` का उपयोग करें
-- [ ] `memory: false` जब तक स्थायी मेमोरी सोद्देश्य न हो
+- [ ] `permissionMode` — **`"bypassPermissions"` नहीं होना चाहिए**; कुंजी अनसेट छोड़ें, क्योंकि एग्नॉस्टिक रुख कोई अनुमति मोड पहले से सेट नहीं करता
+- [ ] `memory` तब तक छोड़ें जब तक स्थायी मेमोरी सोद्देश्य न हो; सेट होने पर `user`, `project`, `local` में से एक (बूलियन रूप नहीं)
 
 ### स्किल (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name`, `version`, `updated`, `description` मौजूद
-- [ ] `user-invocable` — घोषित (true/false)
+- [ ] `name`, `version`, `updated`, `description`, `archetype`, `disable-model-invocation`, `allowed-tools` मौजूद
+- [ ] `userInvocable` घोषित (true/false)। स्रोत वर्तनी `userInvocable` है; एक स्किल इनमें से ठीक एक रखती है: `userInvocable` या `user-invocable` (Claude Code की वर्तनी)।
 
 ---
 

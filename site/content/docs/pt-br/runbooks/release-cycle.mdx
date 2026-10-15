@@ -2,7 +2,7 @@
 title: "Runbook do ciclo de lançamento"
 description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -233,14 +233,20 @@ Saída esperada: `Apothem, version X.Y.Z`.
 
 ### 5.3 Instalador de script de um único passo (POSIX)
 
+O instalador grava o lançador `apothem` em `~/.local/bin`, ou no diretório
+indicado por `APOTHEM_BIN_DIR` quando essa variável está definida. A verificação
+abaixo precisa que esse diretório esteja no `PATH`. Quando não está, o
+instalador imprime a linha `export PATH` a ser adicionada. Enquanto esse
+diretório não estiver no `PATH`, o shell não encontra `apothem`, e a verificação
+falha. Se o instalador não conseguir colocar o lançador no lugar, ele imprime um
+aviso e nenhuma linha `export PATH`.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 Saída esperada: `Apothem, version X.Y.Z`.
-
-O lançador é gravado em `~/.local/bin`, que precisa estar no `PATH` para que a verificação acima seja executada. Quando esse diretório não está no `PATH`, o instalador imprime a linha `export PATH` a ser adicionada.
 
 ### 5.4 Instalador de script de um único passo (Windows)
 

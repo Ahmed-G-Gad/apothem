@@ -2,7 +2,7 @@
 title: "Pencopotan"
 description: "Hapus Apothem dan bersihkan konfigurasi harness."
 machineTranslated: true
-sourceHash: "5480c1153c062495"
+sourceHash: "a94130c42f86f341"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,24 +28,11 @@ Berikan `--yes` untuk melewati prompt konfirmasi per harness.
 Cara penghapusan mengikuti kanal instalasi yang Anda gunakan. Nomor kanal
 mengikuti [tabel kanal instalasi](/docs/install#pilih-kanal):
 
-- **Plugin Claude Code (kanal 1)** — hapus plugin dari dalam Claude Code:
-  `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus
-  dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx (kanal 2)** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya.
-  Bersihkan cache dengan `npm cache clean --force` jika Anda ingin salinan yang
-  ter-cache dihapus.
-- **Pemasang satu langkah (kanal 3)** — jalankan skrip pencopotan yang sesuai
-  dari checkout: `scripts/installer/uninstall.sh` (POSIX) atau
-  `scripts/installer/uninstall.ps1` (PowerShell). Keduanya meminta konfirmasi
-  sebelum menghapus dan menolak target yang tidak aman.
-- **Ekstensi keluarga VS Code (kanal 4)** — jalankan **Apothem: Uninstall** dari
-  palet perintah terlebih dahulu untuk menghapus konfigurasi harness, lalu hapus
-  ekstensi dari tampilan Extensions atau dengan
-  `code --uninstall-extension ahmed-g-gad.apothem`. Secara default ekstensi
-  menjalankan mesin melalui `npx`, sehingga entri **npx** di atas mencakup
-  cache-nya.
-- **Bootstrap baris perintah (kanal 5–7)** — hapus ekstensi atau plugin
-  dengan perkakas host-nya setelah konfigurasi harness dihapus. Host-nya:
+- **Plugin Claude Code (kanal 1)** — hapus plugin dari dalam Claude Code: `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx (kanal 2)** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya. Bersihkan cache dengan `npm cache clean --force` jika Anda ingin salinan yang ter-cache dihapus.
+- **Pemasang satu langkah (kanal 3)** — jalankan skrip pencopotan yang sesuai dari checkout: `scripts/installer/uninstall.sh` (POSIX) atau `scripts/installer/uninstall.ps1` (PowerShell). Setiap skrip menghapus harness yang dinamai oleh `--harness` (`-Harness` di PowerShell), jika tidak ada maka `APOTHEM_HARNESS`, dan jika tidak ada juga maka Claude Code. Skrip itu juga menghapus shim perintah `apothem`. Sumber diambil dari `APOTHEM_SOURCE` jika diatur, atau dari `APOTHEM_HOME` (default `$HOME/.apothem`). Sumber tetap ada kecuali Anda memberikan `--remove-source` (`-RemoveSource` di PowerShell). Flag itu hanya menghapus klon terkelola di `APOTHEM_HOME`, dan hanya ketika klon tersebut memiliki direktori `.git`. Dengan lokasi default, ia juga menghapus cadangan pemasangan dan ledger di bawah `~/.apothem/`. Keduanya meminta konfirmasi sebelum menghapus konfigurasi harness dan sumbernya. `--yes` (`-Yes` di PowerShell) melewati prompt. Keduanya menolak target yang tidak aman.
+- **Ekstensi keluarga VS Code (kanal 4)** — jalankan **Apothem: Uninstall** dari palet perintah terlebih dahulu untuk menghapus konfigurasi harness, lalu hapus ekstensi dari tampilan Extensions atau dengan `code --uninstall-extension ahmed-g-gad.apothem`. Secara default ekstensi menjalankan mesin melalui `npx`, sehingga entri **npx** di atas mencakup cache-nya.
+- **Bootstrap baris perintah (kanal 5–7)** — hapus ekstensi atau plugin dengan perkakas host-nya setelah konfigurasi harness dihapus. Host-nya:
 
   ```text
   channel 5   Gemini CLI extension

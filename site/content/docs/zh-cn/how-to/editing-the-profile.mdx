@@ -2,7 +2,7 @@
 title: "编辑配置文件"
 description: "更改共享配置文件并为每个已安装的工具重新物化。"
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,7 +77,7 @@ apothem verify --harness all
 
 `profile show` 会反映你的编辑。
 
-`apothem verify --harness all` 会检查每个已注册的工具，因此除非全部已安装，否则它会以非零状态退出。项目作用域的工具还需要 `--project PATH`；如果未提供，批量检查会以 `project.required` 错误停止。若只检查你更新过的工具，请使用同一命令并指定该工具的名称：
+`apothem verify --harness all` 会检查每个已注册的工具，但不包括共享配置档案中 `exclude_harnesses` 列出的工具，因此除非其余工具全部已安装，否则它会以非零状态退出。项目作用域的工具还需要 `--project PATH`；若未提供，批量检查会以 `project.required` 错误停止。若只检查你更新过的工具，请使用同一命令并指定该工具的名称：
 
 ```bash
 apothem verify --harness <name>

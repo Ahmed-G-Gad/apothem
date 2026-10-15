@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,7 +55,7 @@ plain モードでは、これはハーネスごとに 1 つのグループ化�
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse`（MCP 仕様は HTTP+SSE を非推奨としています） | サーバーがサポートしている場合は `streamable-http` を使用してください。 |
 | `mcp_plain_http` | ループバックではないホストへの `http://` URL | `https://` URL を使用してください。 |
-| `mcp_literal_credential` | トークンのような形をした `headers` または `env` の値（`ghp_`、`github_pat_`、`sk-`、`xox*-`、または長いトークンを伴う `Bearer`） | シークレットは環境変数に保持し、`${GITHUB_TOKEN}` 形式の参照を書いてください。 |
+| `mcp_literal_credential` | トークンの形をした `headers` または `env` の値（`ghp_`、`gho_`、`ghu_`、`ghs_`、`ghr_`、`github_pat_`、`sk-`、`xoxa-`、`xoxb-`、`xoxo-`、`xoxp-`、`xoxr-`、`xoxs-`、または長いトークンを伴う `Bearer`） | シークレットは環境変数に保持し、`${GITHUB_TOKEN}` 形式の参照を書いてください。 |
 
 認証情報の勧告が、検出した値を出力することは決してありません。
 `${...}` 参照を含む値にフラグが立てられることは決してありません。
@@ -75,16 +75,16 @@ plain モードでは、これはハーネスごとに 1 つのグループ化�
 
 | オプション | 説明 |
 |---|---|
-| `--harness NAME` | インストールするハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。登録されている名前は `apothem harnesses list` を実行して確認してください。 |
+| `--harness NAME` | インストールするハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。`all` を指定すると、プロファイルの `exclude_harnesses` に記載されたハーネスはスキップされます。ただし、名前を明示的に指定したハーネスは、記載されていてもインストールされます。登録済みの名前は `apothem harnesses list` を実行して確認してください。 |
 | `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml` です。 |
 | `--dry-run` | ファイルを書き込まずにインストールをプレビューします。 |
-| `--clean`, `--fresh` | オプトインのクリーンスレート: インストールの前に、以前のハーネスごとのインストール状態をバックアップして削除します。 |
+| `--clean`, `--fresh` | オプトインのクリーンスレート：インストールの前に、ハーネスごとの以前のインストール状態をバックアップして削除します。 |
 | `--yes` | クリーンスレートの削除中に、ターゲットごとの確認をスキップします（非対話の `--clean` 実行では必須）。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
 | `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
 | `--verbose`, `-v` | ハーネスごとのグループ化された注記の代わりに、投影されなかった各機能の理由を出力します。 |
 | `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
-| `--json` | `--format json` の短縮形。 |
+| `--json` | `--format json` の短縮形です。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
@@ -120,7 +120,15 @@ plain モードでは、これはハーネスごとに 1 つのグループ化�
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

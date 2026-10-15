@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -244,14 +244,14 @@ Sortie attendue : `Apothem, version X.Y.Z`.
 
 ### 5.3 Installateur de script en une seule étape (POSIX)
 
+L'installateur écrit le lanceur `apothem` dans `~/.local/bin`, ou dans le répertoire nommé par `APOTHEM_BIN_DIR` lorsque cette variable est définie. La vérification ci-dessous exige que ce répertoire figure dans `PATH`. Lorsqu'il n'y figure pas, l'installateur affiche la ligne `export PATH` à ajouter. Tant que ce répertoire ne figure pas dans `PATH`, le shell ne trouve pas `apothem` et la vérification échoue. Si l'installateur ne peut pas placer le lanceur, il affiche un avertissement et aucune ligne `export PATH`.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 Sortie attendue : `Apothem, version X.Y.Z`.
-
-Le lanceur est écrit dans `~/.local/bin`, qui doit figurer dans `PATH` pour que la vérification ci-dessus s'exécute. Lorsque ce répertoire ne figure pas dans `PATH`, l'installateur affiche la ligne `export PATH` à ajouter.
 
 ### 5.4 Installateur de script en une seule étape (Windows)
 

@@ -1,15 +1,17 @@
 ---
 title: "/security-audit"
-description: "/security-audit — Audit complet de la posture de sécurité face à la version en vigueur d'OWASP ASVS et à l'OWASP Top 10."
+description: "/security-audit — Audit complet de la posture de sécurité face à OWASP ASVS 4.0 ou à une version ultérieure, et à l'OWASP Top 10."
 machineTranslated: true
-sourceHash: "b27563cba30f3df4"
+sourceHash: "4236f937c9af9637"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Rôle :** Auditeur de sécurité
 **Position dans le pipeline :** forteresse
 
-Audit complet de la posture de sécurité face à la version en vigueur d'OWASP ASVS et à l'OWASP Top 10.
+Audit complet de la posture de sécurité face à OWASP ASVS 4.0 ou à une version ultérieure, et à l'OWASP Top 10.
+
+Le socle de la commande est la dernière version de correctif de l'ASVS 4.0 ; elle ne consulte pas elle-même les versions plus récentes de l'ASVS. Les constats citent les chapitres ASVS par numéro et titre abrégé, par exemple V5 (Validation, Sanitization, Encoding), V12 (File and Resources) et V14 (Configuration).
 
 ## Invocation canonique
 

@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formata o artigo conforme o modelo do veículo e monta o pacote de submissão (suplementar, disponibilidade de dados/código, carta de apresentação, ética/conflito de interesse), com um plano de preprint/DOI."
 machineTranslated: true
-sourceHash: "34e0993ca051136c"
+sourceHash: "775d7080efc5b935"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,11 +40,19 @@ O pacote de submissão formatado para o veículo em um local natural do host (o 
 O comando segue o fluxo de trabalho padrão do pipeline `/research`:
 
 1. **Carregar contexto** — Ler o artigo e o relatório de revisão.
-2. **Verificar o Portão de sequência** — Confirmar que `_outputs/review-report.md` existe; caso contrário, parar com `Blocked: run /research-review first`.
-3. **Formatar e empacotar** — Aplicar o modelo do veículo; montar suplementar, disponibilidade de dados/código, carta de apresentação, declarações de ética / conflito de interesse.
-4. **Planejar o preprint / arquivamento** — Registrar o plano de preprint e DOI; construir a lista de verificação de submissão.
-5. **Atualizar o manifesto de transferência** — Registrar o pacote de submissão e o registro de publicação.
-6. **Emitir o pacote** — O pacote de submissão formatado para o veículo + `_outputs/publication-record.md`.
+2. **Verificar o Portão de sequência** — Confirmar que
+   `_outputs/review-report.md` existe e que as revisões de severidade HIGH dele
+   estão resolvidas (ou que o operador aceitou explicitamente o risco residual);
+   caso contrário, interromper com `Blocked: run /research-review first`.
+3. **Formatar e empacotar** — Aplicar o modelo do veículo; montar suplementar,
+   disponibilidade de dados/código, carta de apresentação, declarações de ética
+   / conflito de interesse.
+4. **Planejar o preprint / arquivamento** — Registrar o plano de preprint e DOI;
+   construir a lista de verificação de submissão.
+5. **Atualizar o manifesto de transferência** — Registrar o pacote de submissão
+   e o registro de publicação.
+6. **Emitir o pacote** — O pacote de submissão formatado para o veículo +
+   `_outputs/publication-record.md`.
 
 ## Piso de rigor
 
@@ -54,8 +62,8 @@ A formatação honra a divulgação em estágios: para um veículo de revisão d
 
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
-| Blocked: run /research-review first | Sem relatório de revisão | Execute `/research-review` para produzir `_outputs/review-report.md` |
-| Revisão HIGH não atendida | Achado de revisão ignorado | Atenda à revisão e execute novamente `/research-review` |
+| Blocked: run /research-review first | Nenhum relatório de revisão, ou revisões HIGH em aberto | Execute `/research-review` para produzir `_outputs/review-report.md`, ou resolva as revisões HIGH em aberto e execute `/research-review` novamente, ou aceite explicitamente o risco residual |
+| Revisão HIGH não atendida | Achado de revisão ignorado | Atenda à revisão e execute `/research-review` novamente |
 | Falta disponibilidade de dados/código | Superfície de reprodutibilidade ausente | Adicione a declaração de disponibilidade de dados / código antes da submissão |
 
 ## Exemplos

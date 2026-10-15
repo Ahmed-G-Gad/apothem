@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,14 +26,14 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 | オプション | 説明 |
 |---|---|
-| `--harness NAME` | 更新するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。 |
+| `--harness NAME` | 更新するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。`all` を指定すると、プロファイルの `exclude_harnesses` に記載されたハーネスはスキップされます。ただし、名前を明示的に指定したハーネスは、記載されていても更新されます。 |
 | `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml` です。 |
 | `--dry-run` | ファイルを書き込まずに更新をプレビューします。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。選択したハーネスのセットにプロジェクトスコープのアダプターが含まれる場合は必須です。 |
 | `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
 | `--verbose`, `-v` | 追加の診断出力を出力します。 |
 | `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
-| `--json` | `--format json` の短縮形。 |
+| `--json` | `--format json` の短縮形です。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 

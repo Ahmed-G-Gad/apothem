@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Guardião de laço fechado do pipeline /plan — envolve spec → generate → review e remedia ativamente os achados até a suite ser um todo revisado e com zero achados."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Guardião de laço fechado do pipeline `/plan`. Enquanto `/plan-review` reporta 
 Com argumentos:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## Entradas
@@ -33,7 +33,19 @@ Um relatório persistente e limitado em `<suite>/_outputs/audit-report-<YYYY-MM-
 
 ## Posição no pipeline
 
-`/plan-audit` é **ortogonal** ao pipeline linear, e não uma etapa dentro dele. A sequência linear canônica é `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, apenas para suítes com arquitetura) `→ /plan-execute`. `/plan-audit` engloba `/plan-spec → /plan-generate → /plan-review` como um único invólucro de laço fechado que pode ser invocado em qualquer ponto: inspeciona o estado e executa apenas as etapas que faltam, uma vez que exista uma suíte gerada; sem suíte gerada, recusa-se com `Blocked: run /plan-generate first`. Ele é distinto da cadeia de auditoria de fortaleza (que entra em `/code-review` e termina em `/threat-model-audit`), que audita uma base de código executada, e não uma suíte de planejamento.
+`/plan-audit` é **ortogonal** ao pipeline linear, e não uma etapa dentro dele. A
+sequência linear canônica é
+`/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, apenas
+para suítes com arquitetura) `→ /plan-execute`. `/plan-audit` engloba
+`/plan-spec → /plan-generate → /plan-review` como um único invólucro de laço
+fechado que pode ser invocado em qualquer ponto: ele inspeciona o estado e
+executa apenas as etapas que faltam. Sem uma especificação redigida nem uma
+suíte gerada, ele se recusa com `Blocked: run /plan-spec first` (`--override`
+contorna o portão e registra o desvio como um achado em PLAN-NOTES.md, com a
+justificativa e a pré-condição ausente nomeadas). Ele é distinto da sequência de
+revisão de auditoria (que entra em `/code-review` e termina em
+`/threat-model-audit`), que audita uma base de código executada, e não uma suíte
+de planejamento.
 
 ## Fases do fluxo de trabalho
 
@@ -60,7 +72,7 @@ Um relatório persistente e limitado em `<suite>/_outputs/audit-report-<YYYY-MM-
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## Referências cruzadas

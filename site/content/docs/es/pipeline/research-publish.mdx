@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formatea el artículo según la plantilla del lugar de publicación y ensambla el paquete de envío (suplementario, disponibilidad de datos/código, carta de presentación, ética/conflicto de interés), con un plan de preprint/DOI."
 machineTranslated: true
-sourceHash: "34e0993ca051136c"
+sourceHash: "775d7080efc5b935"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,11 +40,11 @@ El paquete de envío con formato del lugar de publicación en una ubicación nat
 El comando sigue el flujo de trabajo estándar de la canalización `/research`:
 
 1. **Cargar contexto** — Leer el artículo y el informe de revisión.
-2. **Verificar la Puerta de secuencia** — Confirmar que `_outputs/review-report.md` existe; de lo contrario, detenerse con `Blocked: run /research-review first`.
-3. **Formatear y empaquetar** — Aplicar la plantilla del lugar de publicación; ensamblar suplementario, disponibilidad de datos/código, carta de presentación, declaraciones de ética / conflicto de interés.
+2. **Verificar la Puerta de secuencia** — Confirmar que `_outputs/review-report.md` existe y que sus revisiones de severidad HIGH están resueltas (o que el operador ha aceptado explícitamente el riesgo residual); de lo contrario, detenerse con `Blocked: run /research-review first`.
+3. **Formatear y empaquetar** — Aplicar la plantilla del lugar de publicación; ensamblar material suplementario, disponibilidad de datos/código, carta de presentación y declaraciones de ética / conflicto de interés.
 4. **Planificar el preprint / archivado** — Registrar el plan de preprint y DOI; construir la lista de comprobación de envío.
 5. **Actualizar el manifiesto de traspaso** — Registrar el paquete de envío y el registro de publicación.
-6. **Emitir el paquete** — El paquete de envío con formato del lugar de publicación + `_outputs/publication-record.md`.
+6. **Emitir el paquete** — El paquete de envío con el formato del lugar de publicación + `_outputs/publication-record.md`.
 
 ## Umbral de rigor
 
@@ -54,7 +54,7 @@ El formateo respeta la divulgación por etapas: para un lugar de publicación de
 
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
-| Blocked: run /research-review first | Sin informe de revisión | Ejecuta `/research-review` para producir `_outputs/review-report.md` |
+| Blocked: run /research-review first | No hay informe de revisión, o hay revisiones HIGH abiertas | Ejecuta `/research-review` para producir `_outputs/review-report.md`, o resuelve las revisiones HIGH abiertas y vuelve a ejecutar `/research-review`, o acepta explícitamente el riesgo residual |
 | Revisión HIGH sin atender | Hallazgo de revisión omitido | Atiende la revisión y vuelve a ejecutar `/research-review` |
 | Falta disponibilidad de datos/código | Superficie de reproducibilidad ausente | Añade la declaración de disponibilidad de datos / código antes del envío |
 
