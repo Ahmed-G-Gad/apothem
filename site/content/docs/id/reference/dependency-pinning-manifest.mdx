@@ -2,7 +2,7 @@
 title: "Manifes Penyematan Dependensi"
 description: "Kebijakan deklarasi dependensi yang mencakup rentang runtime Python, perkakas pengembangan, berkas kunci perkakas rilis, dan batas bawah versi yang diratifikasi untuk setiap permukaan build."
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,13 @@ SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Renovate.
 
 | Permukaan | Status yang diratifikasi | Rasionel |
 |---|---|---|
-| Dependensi runtime | Batas bawah saat ini berada di `pyproject.toml` `[project.dependencies]` | Batas bawah stabil saat ini diratifikasi sebelum rilis; tanpa penghalang CVE runtime yang diketahui |
+| Dependensi runtime | Batas bawah saat ini berada di `pyproject.toml` `[project.dependencies]` | Batas bawah stabil saat ini diratifikasi sebelum rilis; tidak ada penghalang CVE runtime yang diketahui |
 | Perkakas pengembangan | Batas bawah saat ini berada di extra `dev` dari `pyproject.toml` | Batas bawah stabil terbaru diratifikasi sebelum rilis |
 | Perkakas keamanan | Batas bawah saat ini berada di extra `security` dari `pyproject.toml` | Batas bawah pemindai saat ini diratifikasi sebelum rilis |
 | Perkakas rilis | Penutupan yang dikunci hash berada di `scripts/release/requirements-build-linux.txt` | Alur kerja rilis memasang dengan `--require-hashes`; skrip lokal mensyaratkan `build` sudah ada alih-alih diam-diam memasang dependensi yang bergerak |
 | Perkakas dokumentasi | Rentang saat ini berada di `site/package.json`; resolusi eksak berada di `site/package-lock.json` | `npm outdated` tidak mengembalikan dependensi dokumentasi yang usang setelah penyegaran berkas kunci |
-| GitHub Actions | Penyematan SHA yang ada dipertahankan untuk rilis saat ini; alur kerja SLSA yang dapat dipakai ulang tetap menjadi pengecualian yang didokumentasikan dan disematkan tag | Eksekusi ulang CI publik hijau; peningkatan versi mayor action yang luas sengaja diserahkan ke pull request otomasi dependensi untuk menghindari gejolak permukaan rilis |
-| Pengemasan npm | Alur kerja `publish-npm.yml` berjalan pada push tag `v*.*.*`, dengan `workflow_dispatch` sebagai jalur cadangan | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi menunggu persetujuan operator atas environment `release`, yang diberikan setelah `scripts/release/check-release-ready.sh` lolos |
+| GitHub Actions | Penyematan SHA yang ada dipertahankan untuk rilis saat ini; alur kerja SLSA yang dapat dipakai ulang tetap menjadi pengecualian yang disematkan dengan tag dan didokumentasikan, ditandai dengan komentar `action-pinning-exempt:` di `release.yml` | Eksekusi ulang CI publik hijau; peningkatan versi mayor action yang luas sengaja diserahkan ke PR otomasi dependensi untuk menghindari gejolak pada permukaan rilis |
+| Pengemasan npm | Alur kerja `publish-npm.yml` berjalan pada push tag `v*.*.*`, dengan `workflow_dispatch` sebagai cadangan | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi menunggu persetujuan operator atas environment `release`, yang diberikan setelah `scripts/release/check-release-ready.sh` lolos |
 
 ## Penguncian
 

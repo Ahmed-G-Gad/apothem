@@ -2,21 +2,15 @@
 title: "Spécification du schéma d'artefacts"
 description: "Schéma canonique de frontmatter YAML et champs requis pour tous les types d'artefacts de l'arbre des sources d'Apothem, avec modèles par classe et règles de validation."
 machineTranslated: true
-sourceHash: "3f59b1e92bd11b92"
+sourceHash: "e2aec62fc27cb76c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Modèles de frontmatter YAML par classe et champs requis pour tous les artefacts de l'écosystème Apothem.**
 
-> **Source de vérité.** Le contrat lisible par machine et appliqué par le portail
-> est constitué des JSON Schemas par classe sous [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
-> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), chacun
-> déclarant `additionalProperties` afin que le portail de conformité rejette les
-> clés inconnues. Cette page et [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
-> sont les deux projections lisibles par un humain de ces schémas — cette page
-> porte les **modèles et exemples détaillés** par classe, frontmatter-schema
-> l'**index concis des clés requises**. Lorsqu'une page contredit les JSON
-> Schemas, les schémas l'emportent.
+> **Source de vérité.** Le contrat lisible par machine et appliqué par le portail de conformité est constitué des JSON Schemas par classe sous [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …). Les schémas de skill et de commande déclarent `additionalProperties: false`, de sorte qu'ils rejettent les clés inconnues ; les schémas d'agent, d'output-style et de plan déclarent `additionalProperties: true`.
+> Cette page et [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) sont les deux projections lisibles par un humain de ces schémas : cette page porte les **modèles et exemples détaillés** par classe, frontmatter-schema l'**index concis des clés requises**. Lorsqu'une page contredit les JSON Schemas, ce sont les schémas qui l'emportent.
 
 ## Vue d'ensemble
 
@@ -36,8 +30,9 @@ chaque type.
 
 **Convention de versionnage (classes d'artefacts versionnées : commandes, assistants, skills, CLAUDE.md) :**
 
-- `version` est **sémantique** (`MAJOR.MINOR.PATCH`). Incrémentez MAJOR pour les changements incompatibles de schéma ou de contrat ; MINOR pour les changements additifs compatibles (nouveaux champs optionnels, sections supplémentaires, anti-modèles supplémentaires) ; PATCH pour les clarifications, les corrections de mise en forme ou les modifications portant uniquement sur la documentation, sans changement de comportement.
-- `updated` est la **date ISO 8601** (`YYYY-MM-DD`) de la modification la plus récente. Elle doit changer à chaque incrément de `version` et peut être mise à jour indépendamment lors de rafraîchissements de liens qui n'incrémentent pas la version.
+- `version` est **sémantique** (`MAJOR.MINOR.PATCH`). Incrémentez MAJOR pour les changements incompatibles de schéma ou de contrat ; MINOR pour les changements additifs compatibles (nouveaux champs optionnels, sections supplémentaires, anti-modèles supplémentaires) ; PATCH pour un changement de comportement qui corrige une directive existante sans rompre le contrat.
+- Les corrections de fautes de frappe, les corrections de liens, la mise en forme et les modifications portant uniquement sur des commentaires ou sur la documentation laissent `version` inchangée. Seul un changement de comportement l'incrémente.
+- `updated` est la **date ISO 8601** (`YYYY-MM-DD`) de la modification la plus récente. Elle doit changer à chaque incrément de `version`, et elle change aussi lors d'une correction de faute de frappe ou de lien qui n'incrémente pas la version.
 - Les nouveaux artefacts démarrent à `v0.Y.Z`. La promotion vers `vX.Y.Z` indique que le contrat de l'artefact est suffisamment stable pour constituer un engagement public.
 
 ---
@@ -424,4 +419,9 @@ Chaque artefact doit satisfaire les vérifications suivantes :
 - **Kebab-case pour les noms :** facile à utiliser dans les URL, les scripts et
   les contextes de ligne de commande. Évitez les espaces, les traits de
   soulignement et le camelCase dans les noms.
-- **Hygiène des incréments de version :** toute modification qui change le comportement doit incrémenter `version` et `updated` ensemble. Les corrections purement de mise en forme ou de fautes de frappe incrémentent PATCH ; les nouvelles sections optionnelles ou les nouveaux anti-modèles incrémentent MINOR ; une réorganisation structurelle ou des changements de contrat incrémentent MAJOR.
+- **Hygiène des incréments de version :** toute modification qui change le
+  comportement doit incrémenter `version` et `updated` ensemble. Les corrections
+  de fautes de frappe, les corrections de liens et les changements de mise en
+  forme laissent la version inchangée ; les nouvelles sections optionnelles ou
+  les nouveaux anti-modèles incrémentent MINOR ; les réorganisations structurelles
+  ou les changements de contrat incrémentent MAJOR.

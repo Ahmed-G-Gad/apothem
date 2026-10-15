@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -121,13 +121,20 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 npm 公開を確認する
 
-タグのプッシュは、`release.yml` と並行して `publish-npm.yml` も実行します。
-npm のワークフローはリリースワークフローの完了を待たず、`release` 環境の承認がゲートです。
-§2.3 のリリースワークフローが完了したら、準備状態を確認します。
+タグのプッシュでは、`release.yml` と並んで `publish-npm.yml` も実行されます。npm のワークフローはリリースワークフローの完了を待たず、ゲートとなるのは `release` 環境の承認です。§2.3 のリリースワークフローが完了したら、準備状態を確認します。このチェックは、リリース、ワークフローの実行、公開済みの SBOM を読み取るため、まず 2 つの入力を用意します：
+
+- **`GH_TOKEN`。** `gh` にすでにログインしている場合でも、このトークンがなければスクリプトは実行を拒否します。`ahmed-g-gad/apothem` に限定した、きめ細かいスコープの個人用アクセストークンを使ってください。権限は **Actions: Read**（ワークフローの実行）と **Contents: Read**（リリース）です。チェックは何も書き込まないため、書き込み権限は不要です。`gh auth token` から得たトークンはログインのすべてのスコープを持つため、きめ細かいトークンを優先してください。
+- **公開済みの SBOM。** チェックは `dist/release-assets/sbom.cdx.json` を読み取ります。これはリリースが添付する CycloneDX ファイルです。ローカルのビルドではなく、リリースが公開したコピーをダウンロードしてください。
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+次の場合、チェックは失敗します。リリースがドラフトまたはプレリリースである場合、タグのコミットに対する必須のワークフローがグリーンでない場合、SBOM が存在しない場合、SBOM が別のバージョンを記述している場合、または SBOM にベンダリングされたパッケージが含まれていない場合です。失敗メッセージには、原因が示されます。
 
 その後、プロンプトが表示されたら、`release` 環境のデプロイを承認します。
 ワークフローは npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。

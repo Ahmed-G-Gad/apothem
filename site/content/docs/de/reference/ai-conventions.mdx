@@ -2,11 +2,11 @@
 title: "Multi-Surface-Harness-Konventionen"
 description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeitumgebungen für Chat, IDE-Vervollständigung und Pull-Request-Review hinweg."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument spiegelt die Abschnitte der Projektspezifikation zu den Multi-Surface-Harness-Konventionen (Spezifikation §0.6 + §2.8 + §4.7); es ist die eigenständige Referenz, die mit dem veröffentlichten Repository ausgeliefert wird. Die architektonische Begründung ist in [ADR-0003](/docs/architecture) festgehalten.
+> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument spiegelt die Abschnitte der Projektspezifikation zu den Multi-Surface-Harness-Konventionen (Spezifikation §0.6 + §2.8 + §4.7); es ist die eigenständige Referenz, die mit dem veröffentlichten Repository ausgeliefert wird. Die architektonische Begründung ist in ADR-0003 festgehalten.
 
 ---
 
@@ -39,10 +39,10 @@ Die Oberflächen sind verschiedene *Kanäle*, die eine *Spezifikation* ausdrück
 |---|---|---|---|
 | `AGENTS.md` | Repository-Wurzel (und/oder `.codex/AGENTS.md`) | **MUSS** | AGENTS-fähige Harnesses |
 | `CLAUDE.md` | Repository-Wurzel (und/oder `.claude/CLAUDE.md`) | **MUSS** | Claude Code |
-| Anweisungsdatei mit Wurzel in `.github/` | `.github/copilot-instructions.md` | **MUSS** | Vervollständigungs-Laufzeitumgebung in der IDE |
-| Helfer-Manifest mit Wurzel in `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **KANN** (Opt-in über den Kanal der strukturierten Rückfrage) | Orchestrierungsplattformen für mehrere Helfer |
-| `.cursorrules` | Repository-Wurzel | **KANN** (Opt-in) | Editor-Laufzeitumgebung in der IDE |
-| `.windsurfrules` | Repository-Wurzel | **KANN** (Opt-in) | Begleiter-Laufzeitumgebung in der IDE |
+| Anweisungsdatei für die IDE | `.github/copilot-instructions.md` | **MUSS** | Laufzeitumgebung für Vervollständigung in der IDE |
+| Helfer-Manifest | `site/content/docs/architecture/agents.mdx` | **KANN** (Opt-in über den Kanal der strukturierten Rückfrage) | Orchestrierungsplattformen für mehrere Helfer |
+| `.cursorrules` | Repository-Wurzel | **KANN** (Opt-in) | Laufzeitumgebung des Editors in der IDE |
+| `.windsurfrules` | Repository-Wurzel | **KANN** (Opt-in) | Begleit-Laufzeitumgebung in der IDE |
 
 Für dieses Repository sind die Opt-in-Oberflächen diejenigen, die die Fixture der Aussagenliste ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) unter `optional-in` aufführt. Nicht genutzte anbieterspezifische Wurzelkonfigurationen fehlen absichtlich; eine toolspezifische Konfigurationsdatei wird nur hinzugefügt, wenn dieses Tool eine aktive Bearbeitungsoberfläche für dieses Repository ist.
 
@@ -130,7 +130,7 @@ Drei Validatoren implementieren den Kohärenzvertrag gemeinsam:
 
 ## Siehe auch
 
-- [ADR-0003](/docs/architecture) — architektonische Begründung, erwogene Alternativen.
+- ADR-0003 — architektonische Begründung, erwogene Alternativen.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — die kanonische Fixture der Aussagenliste.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — die kanonische Stimme des Projekts.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — der Spiegel für Claude Code.

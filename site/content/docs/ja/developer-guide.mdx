@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,7 +79,7 @@ sourceHash: "8bc55176ce744fca"
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -184,13 +184,16 @@ alwaysApply: false
 バージョンを持つ各アーティファクトは、独自のセマンティックバージョン（`MAJOR.MINOR.PATCH`）を持ちます。
 コマンドとスキルはこれを必須とし、ヘルパーと出力スタイルはこれを持ってもかまわず（MAY）、ルールはこれを持ちません:
 
-- **PATCH** — 誤字の修正、整形、リンクの更新、コメントのみの編集。挙動は変わらない。
-- **MINOR** — 追加的で互換性を壊さない変更: 新しい任意セクション、新しい任意のフロントマターフィールド、新しい例。既存の利用者は変更なしで動作し続ける。
-- **MAJOR** — 互換性を壊すスキーマまたは契約の変更: セクションの削除、フィールドの名前変更、既存の指令の挙動の変更、下流のアーティファクトに適応を求める変更。
+- **PATCH** — 既存の指令を、契約を壊さずに修正する挙動の変更。
+- **MINOR** — 追加的で互換性を壊さない変更：新しい任意のセクション、新しい任意のフロントマターフィールド、新しい例。既存の利用者は変更なしで動作し続けます。
+- **MAJOR** — 互換性を壊すスキーマまたは契約の変更：セクションの削除、フィールドの名前変更、既存の指令の挙動の変更、下流のアーティファクトに適応を求める変更。
+
+誤字の修正、リンクの修正、整形、コメントのみ、またはドキュメントのみの編集では、バージョンは変わりません。挙動の変更のみがバージョンを上げます。そのような編集でも、アーティファクトの `updated` の日付は更新されます。
 
 例:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH: 誤字の修正）
+- `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH: 挙動を変える指令の修正）
+- `vX.Y.Z` → `vX.Y.Z`（バージョン据え置き：誤字またはリンクの修正。`updated` は変更）
 - `vX.Y.Z` → `vX.(Y+1).0`（MINOR: 新しい任意セクションを追加）
 - `v0.Y.Z` → `v(0+1).0.0`（MAJOR: 契約を安定版と宣言。新しいアーティファクトは `v0.Y.Z` から始まる）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR: 必須のフロントマターフィールドを削除）

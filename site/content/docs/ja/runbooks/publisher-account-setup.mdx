@@ -2,7 +2,7 @@
 title: "パブリッシャーアカウントのセットアップ"
 description: "@ahmed-g-gad/apothem 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。"
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,9 +19,7 @@ sourceHash: "ee07a06a98f62864"
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-GitHub のオーナーは、将来変わることが許容されています。
-ワークフローとインストーラーのロジックは、プラットフォームが動的な解決を許可する場所では、`github.repository`、`github.repository_owner`、または `APOTHEM_GITHUB_REPOSITORY` を読み取ります。
-ユーザーはメンテナーのアカウント名ではなくパッケージ名をインストールするため、レジストリのパッケージ識別子は安定したままです。
+GitHub のオーナーは、将来変わることが許容されています。ワークフローとインストーラーのロジックは、プラットフォームが動的な解決を許可する場所では、`github.repository`、`github.repository_owner`、または `APOTHEM_GITHUB_REPO` を読み取ります。ユーザーはメンテナーのアカウント名ではなくパッケージ名をインストールするため、レジストリのパッケージ識別子は安定したままです。
 
 ## npm (npmjs.com)
 
@@ -53,6 +51,8 @@ GitHub のオーナーは、将来変わることが許容されています。
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   チェックには `GH_TOKEN` の設定と、`dist/release-assets/` 内の公開済みの `sbom.cdx.json` が必要です。[リリースサイクルランブック](/docs/runbooks/release-cycle) の §2.4 に、トークンのスコープとダウンロードコマンドが記載されています。
 
 9. タグのプッシュが開始する `Publish npm`（`publish-npm.yml`）の実行について、
    `release` 環境のデプロイを承認します。その実行が開始されなかった場合は、

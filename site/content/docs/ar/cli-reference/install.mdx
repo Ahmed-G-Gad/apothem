@@ -2,7 +2,7 @@
 title: "install"
 description: "مرجع واجهة سطر الأوامر لأمر apothem install."
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,11 +44,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ## معاينة نطاق الأثر
 
-يتفرّع <bdi>`install --harness all`</bdi> إلى نطاقات مختلطة: تكتب المحوّلات ذات
-نطاق المشروع تحت جذر <bdi>`--project`</bdi> المُمرَّر، بينما تكتب المحوّلات ذات
-نطاق المستخدم تحت دليلك المنزلي — خارج ذلك الجذر. وقبل كتابة أي ملف، يطبع الأمر
-الأهداف الفعلية مُجمَّعةً تحت عنوانين: تلك التي داخل جذر المشروع، وتلك التي تحت
-دليلك المنزلي.
+يتفرّع <bdi>`install --harness all`</bdi> إلى نطاقات مختلطة: تكتب المحوّلات ذات نطاق المشروع تحت جذر <bdi>`--project`</bdi> المُمرَّر، بينما تكتب المحوّلات ذات نطاق المستخدم تحت دليلك المنزلي — خارج ذلك الجذر. وقبل أن يكتب التثبيت أيّ ملف، يطبع الأمر الأهداف الفعلية مُجمَّعةً تحت عنوانين: تلك الموجودة داخل جذر المشروع، وتلك الموجودة تحت دليلك المنزلي. والاستثناء الوحيد هو <bdi>`--clean`</bdi>: فخطوة التنظيف الكامل فيه تعمل قبل هذه المعاينة، فتكتب نسخة احتياطية وتُزيل الأهداف السابقة، كما هو موضّح أدناه.
 
 عندما يكتب الاختيار خارج جذر المشروع، يحرس تأكيدٌ تفاعلي عمليات الكتابة المتجذّرة
 في الدليل المنزلي. ويمضي كلٌّ من <bdi>`--yes`</bdi>، والصدفة غير التفاعلية (دون
@@ -219,8 +215,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## رموز الخروج

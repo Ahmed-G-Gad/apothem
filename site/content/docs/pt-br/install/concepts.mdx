@@ -2,7 +2,7 @@
 title: "Conceitos"
 description: "Glossário que define perfis compartilhados, adaptadores de harness, regras, hooks, portões de conformidade, skills e trabalhadores delegados no Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,7 @@ harness deve se comportar.
 
 ## Hook
 
-Um script Python registrado em settings.json que dispara em eventos do ciclo de vida do harness
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Os hooks impõem mandatos de conformidade
-em tempo real antes que a saída chegue ao disco. O modelo de eventos de hook é uma superfície do Claude Code
-hoje; adaptadores para harnesses sem um mecanismo de hook simplesmente o omitem.
+Um script Python registrado na configuração de hooks de um harness (settings.json no Claude Code) que dispara em eventos do ciclo de vida, como PreToolUse, PostToolUse, SessionStart e Stop; alguns adaptadores também registram PreCompact e PostCompact. Os hooks impõem mandatos de conformidade em tempo real antes que a saída chegue ao disco. Adaptadores para harnesses sem mecanismo de hook o omitem.
 
 ## Portão de conformidade
 

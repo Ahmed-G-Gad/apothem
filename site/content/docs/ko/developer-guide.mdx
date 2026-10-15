@@ -2,7 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -96,7 +96,7 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -220,13 +220,16 @@ alwaysApply: false
 지닙니다. 명령과 스킬에는 필수이고, 헬퍼와 출력 스타일은 지닐 수 있으며(MAY),
 규칙에는 없습니다.
 
-- **PATCH** — 오타 수정, 서식, 링크 갱신, 주석만 바꾸는 편집. 동작은 변하지 않습니다.
+- **PATCH** — 계약을 깨지 않으면서 기존 지침을 바로잡는 동작 변경.
 - **MINOR** — 호환성을 깨지 않는 추가 변경: 새 선택 섹션, 새 선택 프런트매터 필드, 새 예시. 기존 소비자는 변경 없이 계속 작동합니다.
 - **MAJOR** — 호환성을 깨는 스키마 또는 계약 변경: 섹션 제거, 필드 이름 변경, 기존 지침의 동작 변경, 다운스트림 아티팩트의 적응이 필요한 변경.
 
+오타 수정, 링크 수정, 서식, 주석 전용 또는 문서 전용 편집은 버전을 그대로 둡니다. 동작 변경만 버전을 올립니다. 그런 편집도 아티팩트의 `updated` 날짜는 여전히 갱신합니다.
+
 예시:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: 오타 수정)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: 동작을 바꾸는 지침의 수정)
+- `vX.Y.Z` → `vX.Y.Z` (버전 변경 없음: 오타 또는 링크 수정; `updated`는 변경)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: 새 선택 섹션 추가)
 - `v0.Y.Z` → `v(0+1).0.0` (MAJOR: 계약을 안정 상태로 선언; 새 아티팩트는 `v0.Y.Z`에서 시작)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: 필수 프런트매터 필드 제거)

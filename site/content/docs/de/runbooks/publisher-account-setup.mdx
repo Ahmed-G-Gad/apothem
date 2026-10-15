@@ -2,7 +2,7 @@
 title: "Einrichtung des Publisher-Kontos"
 description: "Den vertrauenswürdigen npmjs.com-Publisher für @ahmed-g-gad/apothem und die GitHub-seitigen Release-Voraussetzungen konfigurieren."
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,11 +24,7 @@ Publisher-Konto.
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Der GitHub-Eigentümer darf sich künftig ändern. Die Workflow- und
-Installer-Logik liest `github.repository`, `github.repository_owner` oder
-`APOTHEM_GITHUB_REPOSITORY`, wo eine Plattform dynamische Auflösung zulässt.
-Der Paketbezeichner in der Registry bleibt stabil, weil Benutzer den Paketnamen
-installieren, nicht den Kontonamen des Maintainers.
+Der GitHub-Eigentümer darf sich künftig ändern. Die Workflow- und Installer-Logik liest `github.repository`, `github.repository_owner` oder `APOTHEM_GITHUB_REPO`, wo eine Plattform dynamische Auflösung zulässt. Der Paketbezeichner in der Registry bleibt stabil, weil Benutzer den Paketnamen installieren, nicht den Kontonamen des Maintainers.
 
 ## npm (npmjs.com)
 
@@ -63,6 +59,10 @@ installieren, nicht den Kontonamen des Maintainers.
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   Die Prüfung setzt voraus, dass `GH_TOKEN` gesetzt ist und die veröffentlichte `sbom.cdx.json` in
+   `dist/release-assets/` liegt. Das [Runbook zum Release-Zyklus](/docs/runbooks/release-cycle),
+   §2.4, nennt den Geltungsbereich des Tokens und den Download-Befehl.
 
 9. Genehmigen Sie das Deployment der Umgebung `release` für den Lauf von
    `Publish npm` (`publish-npm.yml`), den der Tag-Push startet. Falls dieser

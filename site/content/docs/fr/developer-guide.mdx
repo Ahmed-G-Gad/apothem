@@ -2,7 +2,7 @@
 title: "Contribuer à Apothem — Guide du développeur"
 description: "Maintenir et étendre l'écosystème Apothem en rédigeant des règles, des commandes, des auxiliaires, des skills et des hooks à l'aide de schémas canoniques, d'exigences de frontmatter et de procédures de validation."
 machineTranslated: true
-sourceHash: "8bc55176ce744fca"
+sourceHash: "924c7b14d9e24e4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,7 +106,7 @@ clé : les règles n'en portent aucune, et les skills ne portent pas `portabilit
 ✓ updated: ISO 8601 date (YYYY-MM-DD)
 ✓ description: single-line, non-empty
 ✓ scope fields valid per artifact type (rules: pathFilter + alwaysApply; CLAUDE.md root: scope)
-✓ portability: valid enum (`universal` | `universal-with-windows-caveats` | `unix-only` | `windows-only`)
+✓ portability: string, for example `universal` (the schemas do not enumerate its values)
 ✓ No typos in field names — must match canonical schema exactly
 ✓ Optional fields use correct enum values
 ```
@@ -232,13 +232,16 @@ Chaque artefact versionné porte sa propre version sémantique
 (`MAJOR.MINOR.PATCH`). Les commandes et les skills l'exigent, les auxiliaires et
 les output-styles PEUVENT la porter, et les règles n'en portent aucune :
 
-- **PATCH** — corrections de fautes de frappe, mise en forme, rafraîchissement de liens, modifications portant uniquement sur des commentaires. Comportement inchangé.
-- **MINOR** — changements additifs non incompatibles : nouvelles sections optionnelles, nouveaux champs de frontmatter optionnels, nouveaux exemples. Les consommateurs existants continuent de fonctionner sans modification.
+- **PATCH** — un changement de comportement qui corrige une directive existante sans rompre le contrat.
+- **MINOR** — changements additifs compatibles : nouvelles sections optionnelles, nouveaux champs de frontmatter optionnels, nouveaux exemples. Les consommateurs existants continuent de fonctionner sans modification.
 - **MAJOR** — changements incompatibles de schéma ou de contrat : sections supprimées, champs renommés, comportement modifié d'une directive existante, changements qui obligent les artefacts en aval à s'adapter.
+
+Les corrections de fautes de frappe, les corrections de liens, la mise en forme et les modifications portant uniquement sur des commentaires ou sur la documentation laissent la version inchangée. Seul un changement de comportement l'incrémente. Une telle modification met tout de même à jour la date `updated` de l'artefact.
 
 Exemples :
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH : correction d'une faute de frappe)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH : directive corrigée qui modifie le comportement)
+- `vX.Y.Z` → `vX.Y.Z` (aucun incrément : correction de faute de frappe ou de lien ; `updated` change)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR : ajout d'une nouvelle section optionnelle)
 - `v0.Y.Z` → `v(0+1).0.0` (MAJOR : contrat déclaré stable ; les nouveaux artefacts démarrent à `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR : suppression d'un champ de frontmatter obligatoire)

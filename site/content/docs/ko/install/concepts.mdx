@@ -2,7 +2,7 @@
 title: "개념"
 description: "Apothem의 공유 프로필, 하니스 어댑터, 규칙, 훅, 적합성 게이트, 스킬, 위임 작업자를 정의하는 용어집."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,11 +34,7 @@ Apothem 설치는 항상 다음을 의미합니다. 공유 프로필을 설치�
 
 ## 훅
 
-하니스 수명 주기 이벤트(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop,
-PostCompact)에서 실행되도록 settings.json에 등록된 Python 스크립트입니다. 훅은
-출력이 디스크에 도달하기 전에 실시간으로 적합성 의무를 강제합니다. 훅 이벤트
-모델은 현재 Claude Code 표면입니다. 훅 메커니즘이 없는 하니스용 어댑터는 단순히
-이를 생략합니다.
+하니스의 훅 구성(Claude Code의 경우 settings.json)에 등록되어, PreToolUse, PostToolUse, SessionStart, Stop 같은 수명 주기 이벤트에서 실행되는 Python 스크립트입니다. 일부 어댑터는 PreCompact와 PostCompact도 등록합니다. 훅은 출력이 디스크에 도달하기 전에 적합성 의무를 실시간으로 강제합니다. 훅 메커니즘이 없는 하니스용 어댑터는 이를 생략합니다.
 
 ## 적합성 게이트
 

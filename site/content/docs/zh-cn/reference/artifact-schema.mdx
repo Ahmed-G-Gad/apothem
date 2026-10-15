@@ -2,13 +2,22 @@
 title: "制品 Schema 规范"
 description: "Apothem 源码树中所有制品类型的规范 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
-sourceHash: "3f59b1e92bd11b92"
+sourceHash: "e2aec62fc27cb76c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **所有 Apothem 生态系统制品的逐类 YAML frontmatter 模板与必填字段。**
 
-> **权威来源。** 机器可读、由闸门强制执行的契约是 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 JSON Schema（`agent.schema.json`、`command.schema.json`、`skill.schema.json`……），每个 schema 都声明了 `additionalProperties`，因此合规闸门会拒绝未知键。本页与 [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) 是这些 schema 的两个人类可读投影——本页承载逐类的**模板与完整示例**，frontmatter-schema 承载简洁的**必需键索引**。当某一页与 JSON Schema 不一致时，以 schema 为准。
+> **权威来源。** 机器可读、由闸门强制执行的契约，
+> 是 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 JSON Schema，
+> 即 `agent.schema.json`、`command.schema.json`、`skill.schema.json` 等。
+> skill 和 command 的 schema 声明了 `additionalProperties: false`，因此会拒绝未知键；
+> agent、output-style 与 plan 的 schema 则声明 `additionalProperties: true`。
+> 本页与 [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) 是这些 schema 的两份人类可读投影：
+> 本页承载逐类的**模板与完整示例**，
+> frontmatter-schema 页面则提供简明的**必需键索引**。
+> 若某一页与 JSON Schema 不一致，
+> 以 schema 为准。
 
 ## 概述
 
@@ -24,9 +33,10 @@ Apothem 源码树中的所有制品（位于 `src/apothem/` 下以及根配置�
 
 **版本约定（带版本的制品类别——命令、辅助器、技能、CLAUDE.md）：**
 
-- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。破坏性的 schema 或契约变更递增 MAJOR；增量式的非破坏性变更（新的可选字段、新增章节、新增反模式）递增 MINOR；澄清、格式修复或不改变行为的纯文档编辑递增 PATCH。
-- `updated` 是最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而改变，也可以在不递增版本的链接刷新中单独更新。
-- 新制品从 `v0.Y.Z` 起步。提升到 `vX.Y.Z` 表示该制品的契约已足够稳定，可以作为一项公开承诺。
+- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。破坏性的 schema 或契约变更递增 MAJOR；增量式的非破坏性变更（新的可选字段、新增章节、新增反模式）递增 MINOR；在不破坏契约的前提下修正现有指令的行为变更，递增 PATCH。
+- 拼写修正、链接修正、格式调整，以及仅限注释或仅限文档的编辑，都不改变 `version`。只有行为变更才会递增它。
+- `updated` 是最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而改变；在不递增版本的拼写或链接修正中，它同样会改变。
+- 新制品从 `v0.Y.Z` 起步。提升到 `vX.Y.Z` 表示该制品的契约已足够稳定，可作为公开承诺。
 
 ---
 
@@ -394,6 +404,6 @@ portability: "project-local"
 ## 说明
 
 - **一致性即安全：** 规范的 frontmatter 使自动化校验、工具支持和跨制品验证成为可能。偏差会迅速累积。
-- **可移植性声明：** 并非所有制品都能做到 universal。显式声明约束——记录一条注意事项，胜过交付一个无声的缺陷。
+- **可移植性声明：** 并非所有制品都能做到通用。显式声明约束——记录一条注意事项，胜过交付一个无声的缺陷。
 - **名称使用 kebab-case：** 便于在 URL、脚本和命令行环境中使用。名称应避免空格、下划线和 camelCase。
-- **版本递增卫生：** 每次改变行为的编辑都必须同时递增 `version` 和 `updated`。纯格式或拼写修复递增 PATCH；新的可选章节或反模式递增 MINOR；结构性重组或契约变更递增 MAJOR。
+- **版本递增卫生：** 每次改变行为的编辑都必须同时递增 `version` 和 `updated`。拼写修正、链接修正和格式调整不改变版本号；新增可选章节或反模式递增 MINOR；结构性重组或契约变更递增 MAJOR。

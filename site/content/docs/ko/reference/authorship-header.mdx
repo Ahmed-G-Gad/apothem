@@ -2,13 +2,13 @@
 title: "작성자 헤더 — 파일별 SPDX 라이선스 줄"
 description: "각 파일 타입에 맞는 주석 구문의 정식 한 줄 헤더로 파일별 SPDX 라이선스 식별자 마커를 정의하고 강제합니다."
 machineTranslated: true
-sourceHash: "be2cac4bcbaa4744"
+sourceHash: "1433a9c4ee709a0d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 프로젝트 명세의 작성자 표기 및 파일 헤더 섹션(Spec §0.5 + §4.6)을 미러링합니다. 게시된 저장소와 함께 배포되는 독립형 참조입니다. 아키텍처 근거는 [ADR-0002](/docs/reference/authorship-header)에 기록되어 있습니다.
+> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 프로젝트 명세의 작성자 및 파일 헤더 섹션(명세 §0.5 + §4.6)을 미러링합니다. 게시된 저장소와 함께 배포되는 독립형 참조입니다. 아키텍처 근거는 ADR-0002에 기록되어 있습니다.
 
 ---
 
@@ -30,7 +30,7 @@ sourceHash: "be2cac4bcbaa4744"
 # SPDX-License-Identifier: MIT
 ```
 
-이 텍스트가 **유일한** 권위 있는 출처입니다. `file-header` 검증기(§8)는 이 바이트 단위로 정확한 픽스처를 기준으로 실행됩니다. 파일의 헤더 줄과 이 픽스처 사이의 모든 차이(§2에 따른 구문 치환을 적용한 뒤)는 CI 실패입니다.
+이 텍스트가 **유일한** 권위 있는 출처입니다. `file-header` 검증기(§8)는 이 바이트 단위로 정확한 픽스처를 기준으로 파일을 검사합니다. 파일의 헤더 줄과 이 픽스처 사이의 모든 차이(§2에 따른 구문 치환을 적용한 뒤)는 발견 사항으로 보고됩니다. 검증기는 권고 수준이므로 발견 사항은 빌드를 실패시키지 않습니다(§8).
 
 ---
 
@@ -61,7 +61,7 @@ HTML 주석(또는 MDX `{/* */}`) 래퍼는 보이지 않게 렌더링되므로,
 
 ## 3. 예외 목록(범주 전체 면제)
 
-다음 클래스는 SPDX 헤더 줄에서 **면제**됩니다. `file-header` 검증기의 적용 가능성 검사는 이들에 대해 `not-applicable`을 반환합니다.
+다음 클래스는 SPDX 헤더 줄에서 **면제**됩니다. `file-header` 검증기는 이 파일들을 검사하지 않고 통과시킵니다:
 
 - **`LICENSE`** — 그 자체가 법적 문서이며, `license-author-consistency` 검증기가 존재를 확인하는 권위 있는 저작권 줄을 담고 있습니다.
 - **`*.svg` 에셋** — XML 주석은 줄 주석 마커로 쓰기에 취약하므로, SVG의 출처 정보는 에셋 README와 생성된 래스터 출력이 담습니다.
@@ -103,7 +103,7 @@ SPDX 줄은 프로젝트의 라이선스를 기계가 읽을 수 있게 선언�
 
 ## 6. 헤더 가시성 정책
 
-특히 Markdown 파일에서 SPDX 줄은 **기본적으로 보이지 않으며**, `<!-- ... -->`(MDX에서는 `{/* */}`)로 감싸 소스에서만 보입니다. README, CONTRIBUTING, CLAUDE.md, 지원되는 하니스의 지침 파일, 스킬 SKILL.md, 명령 본문, 출력 스타일, 문서 페이지에는 이 정책이 맞습니다. **보이는** 렌더링(출력 맨 위에 SPDX 줄을 일반 텍스트 또는 펜스 블록으로 두는 방식)은 출처 정보를 바로 읽을 수 있다는 이점이 있는 독립형 참조 문서에 허용됩니다. 정책은 `src/apothem/schemas/header-visibility.yaml`에서 파일 클래스별로 정하며(기본값은 *보이지 않음*), 그 줄 바로 뒤에 파일 범위 재정의 마커 `<!-- header-visibility: visible -->`를 둘 수 있습니다.
+Markdown 및 MDX 파일의 경우, SPDX 줄은 항상 주석 래퍼(`<!-- ... -->` 또는 `{/* */}`) 안에 기록됩니다. 소스에서만 보이며 렌더링된 페이지에는 나타나지 않습니다. 인젝터에는 보이는 렌더링 기능이나 파일별 재정의 기능이 없습니다. 저장소의 어떤 도구도 `src/apothem/schemas/header-visibility.yaml` 픽스처를 읽지 않습니다.
 
 ---
 
@@ -112,22 +112,23 @@ SPDX 줄은 프로젝트의 라이선스를 기계가 읽을 수 있게 선언�
 다음을 수행하는 결정적 CLI입니다.
 
 - 하나 이상의 파일 경로(또는 glob)를 받습니다.
-- 예외 목록(§3)으로 적용 가능성을 판단합니다.
+- 예외 목록(§3)으로 적용 가능 여부를 판단합니다.
 - 기존 헤더 상태(정식 / 잘못된 형식 / 없음)를 감지하고, 발견한 비정식 배너 블록은 제거하여 다시 실행해도 멱등이 되게 합니다.
-- 파일 타입별로 올바른 SPDX 변형(§2)을 렌더링합니다.
+- 파일 종류별로 올바른 SPDX 변형(§2)을 렌더링합니다.
 - 셔뱅과 프런트매터를 존중하면서 올바른 위치(§5)에 삽입합니다.
-- 세 가지 모드로 동작합니다. `fix-in-place`(씀), `emit-patch`(통합 diff를 출력), `check`(차이가 있으면 0이 아닌 코드로 종료 — CI에서 사용).
-- 멱등: 두 번 실행해도 아무 변화가 없습니다.
+- 삽입 위치에 있으면서 빈 줄이 없는 SPDX 줄에는, 그 위에 두 번째 사본을 넣는 대신 빈 줄을 추가합니다.
+- 세 가지 모드로 동작합니다: `fix-in-place`(쓰기), `emit-patch`(통합 diff 출력), `check`(차이가 있으면 0이 아닌 코드로 종료. 추적 중인 트리에 대해 실행하는 CI 작업은 없습니다).
+- 멱등: 두 번 실행해도 아무 작업도 일어나지 않습니다.
 
 인젝터는 `make headers-fix` 타깃이 호출하며, 이 타깃은 `scripts/inject-header.py --mode fix-in-place`를 실행합니다.
 
 ---
 
-## 8. 검증기 — `file-header`(CI)
+## 8. 검증기 — `file-header`
 
-[`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)에 있습니다. 검증기는 작업 트리의 모든 파일에 대해 적용 가능성을(§3에 따라) 조회하고, 적용 대상이면 정식 SPDX 줄이 파일 맨 앞에 — 다른 모든 콘텐츠보다 앞에, 줄 앞에 허용되는 콘텐츠는 셔뱅뿐입니다(§5) — 있음을 단언합니다. Markdown 프런트매터 너머는 읽지 않습니다.
+[`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)에 있습니다. 검증기는 작업 트리의 모든 파일에 대해 적용 가능 여부를(§3에 따라) 조회하고, 적용 대상이면 정식 SPDX 줄이 파일 맨 앞에 있는지 단언합니다. 줄 앞에 허용되는 내용은 셔뱅뿐입니다(§5). 현재 코드에서는 두 가지 누락이 생깁니다. 첫째, 이 검증기는 YAML 프런트매터를 건너뛰지 않으므로, §5가 요구하는 대로 SPDX 줄이 프런트매터 뒤에 놓인 Markdown 파일을 발견 사항으로 보고합니다. 둘째, 변형 표에 `.mdx`가 없으므로 MDX 파일은 검사하지 않고 통과시킵니다.
 
-[`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt)의 바이트 단위로 정확한 픽스처가 뒷받침합니다. CI 요약에 파일별 diff와 전체 커버리지 %를 보고합니다. 차이가 있으면 빌드를 실패시킵니다.
+[`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt)에 있는 바이트 단위로 정확한 픽스처가 뒷받침합니다. 코퍼스 실행은 이 매처에 대해 발견 사항 수와 플래그된 파일의 샘플을 보고합니다. 파일별 diff나 커버리지 비율은 출력하지 않습니다. 이 매처는 권고 수준입니다. 발견 사항은 보고되며, `--strict` 사용 여부와 관계없이 빌드를 실패시키지 않습니다.
 
 ---
 
@@ -137,11 +138,11 @@ SPDX 줄은 프로젝트의 라이선스를 기계가 읽을 수 있게 선언�
 
 1. **`src/apothem/schemas/authorship-header.txt`** — 바이트 단위로 정확한 정식 픽스처. 진실 공급원은 하나입니다.
 2. **`scripts/inject-header.{sh,py}`** — 기계적 인젝터(§7).
-3. **`file-header` CI 검증기**(§8) — 차이가 있으면 빌드를 실패시킵니다.
-4. **Pre-commit 훅** — `conformity-corpus-perwrite` 훅이 추적되는 트리 전체에 대해 `file-header` 검증기(§8)를 실행합니다. 이 훅은 검사만 하며, 파일을 다시 쓰는 것은 인젝터(§7)이고 `make headers-fix`를 통해 수행합니다.
+3. **`file-header` 검증기**(§8) — 차이를 권고 수준의 발견 사항으로 보고하며, 빌드를 실패시키지 않습니다.
+4. **Pre-commit 훅** — `conformity-corpus-perwrite` 훅이 `--strict`로 추적 중인 트리 전체에 대해, `file-header` 검증기(§8)를 포함한 모든 Write별 매처를 실행합니다. `file-header` 매처는 권고 수준이므로 그 발견 사항은 보고되며 커밋을 막지 않습니다. 이 훅은 검사만 하며 수정 모드가 없고, 인젝터(§7)를 절대 실행하지 않습니다. 인젝터는 `make headers-fix`를 통해 실행됩니다.
 5. **`CLAUDE.md` 필수 동작 블록** — 해당되는 파일을 만들 때마다 정식 SPDX 줄을 주입하도록 어시스턴트에 지시합니다.
 6. `.github/copilot-instructions.md`에 있는 **GitHub Copilot 지침 파일** — 파일을 생성할 때 Copilot이 같은 일을 하도록 지시합니다.
-7. `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`의 **PreToolUse 훅** — 해당되는 경로에 대한 Write/Edit 도구 호출을 가로채, SPDX 줄이 나중에 CI 실패로 발견되는 대신 파일을 만들 때 주입되게 합니다.
+7. `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`의 **PreToolUse 훅** — 해당되는 경로에 대한 Write/Edit 도구 호출을 가로채, SPDX 줄이 나중에 검증기 발견 사항으로 드러나는 대신 파일을 만들 때 주입되게 합니다.
 8. **PR 템플릿 체크박스** — 모든 새 파일이 정식 SPDX 줄을 담고 있다는, 기여자 대상 확인 항목.
 9. **이 문서**(`site/content/docs/reference/authorship-header.mdx`) — 정식 규범 설명서.
 
@@ -149,8 +150,8 @@ SPDX 줄은 프로젝트의 라이선스를 기계가 읽을 수 있게 선언�
 
 ## 함께 보기
 
-- [ADR-0002](/docs/reference/authorship-header) — 아키텍처 근거, 검토한 대안.
-- [ADR-0006](/docs/reference/authorship-header) — 배너 범위 축소 비준.
+- ADR-0002 — 아키텍처 근거, 검토한 대안.
+- ADR-0006 — 배너 범위 축소 비준.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — 바이트 단위로 정확한 정식 픽스처.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — 예외 목록(정규식/glob 형태).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py)와 [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — 인젝터.

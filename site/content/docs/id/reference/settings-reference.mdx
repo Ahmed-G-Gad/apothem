@@ -2,7 +2,7 @@
 title: "Dokumentasi settings.json"
 description: "Konfigurasikan eksekusi hook Claude Code, izin, event, timeout, runtime Python, validasi, dan presedensi pengaturan berlapis untuk ekosistem Apothem."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,9 +63,10 @@ Tool read-only sudah disetujui sebelumnya; operasi tulis (`Write`, `Edit`, `Note
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | Sesi Claude Code baru | 30 detik | Inisialisasi konteks, baca memori, periksa status plan | CM-14 |
 | **PreToolUse** | Sebelum Write/Edit/NotebookEdit/Bash | 10 detik | Validasi kepatuhan CM-7 + frontmatter | CM-7, CM-22 |
-| **PreCompact** | Sebelum pemadatan konteks | 30 detik | Eksternalisasi status yang belum dieksternalisasi | CM-24 §2.3 |
-| **PostCompact** | Setelah pemadatan konteks | 30 detik | Bootstrap ulang dari status yang dieksternalisasi | CM-24 §6.2 |
+| **PostToolUse** | Setelah setiap pemanggilan tool (matcher `*`) | 10 detik | Saran kompaksi proaktif | Manajemen konteks (kompaksi proaktif) |
 | **Stop** | Keluar sesi | 60 detik | Eksternalisasi akhir-sesi | CM-14/CM-22/CM-24/CM-26 |
+
+Templat ini mendaftarkan empat peristiwa. Templat ini tidak mendaftarkan `PreCompact` atau `PostCompact`; templat Codex dan Qwen Code mendaftarkannya, dan [referensi hook](/docs/reference/hooks) mencantumkannya per harness.
 
 `dispatch.py` juga menerima `UserPromptSubmit` dan `Notification` pada daftar putih
 event-nya. Tidak satu pun yang dikabelkan di template yang dikirimkan; tambahkan blok matcher dengan pola

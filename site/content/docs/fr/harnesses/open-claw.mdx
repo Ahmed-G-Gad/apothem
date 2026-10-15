@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptateur d'environnement Apothem pour Open-Claw (préversion)."
 machineTranslated: true
-sourceHash: "2dca789e924d7381"
+sourceHash: "f13f9ce348ede92c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,21 +43,7 @@ comme matériel de support sous `~/.openclaw/.apothem/support/`.
 
 ## Notes de compatibilité
 
-Adaptateur en préversion. OpenClaw ne charge pas de lui-même l'arborescence de
-support ni le document de profil : aucun de ses emplacements de skills, aucun de
-ses fichiers d'instructions d'espace de travail ni sa configuration n'y
-pointent ; après l'installation, OpenClaw s'exécute donc sans les règles, les
-skills ni les serveurs MCP d'Apothem. OpenClaw lit les skills depuis les
-dossiers `skills/` et `.agents/skills/` de son espace de travail,
-`~/.agents/skills`, son répertoire d'état et tout dossier listé dans
-`skills.load.extraDirs` ; pour utiliser les skills Apothem, ajoutez vous-même
-`~/.openclaw/.apothem/support/skills` à cette liste ; `apothem update` conserve
-les clés que vous ajoutez à `openclaw.json`. Les serveurs MCP se trouvent dans
-le bloc `mcp.servers` de la configuration OpenClaw, que vous gérez avec
-`openclaw mcp add` et les sous-commandes associées ; l'adaptateur n'y écrit
-aucune entrée. (Comportement d'OpenClaw selon sa documentation sur les
-[skills](https://docs.openclaw.ai/tools/skills) et sur la
-[CLI MCP](https://docs.openclaw.ai/cli/mcp), consultée le 2026-10-02.)
+Adaptateur en préversion. OpenClaw ne charge pas de lui-même l'arborescence de support ni le document de profil : aucun de ses emplacements de skills, aucun de ses fichiers d'instructions d'espace de travail ni sa configuration n'y pointent ; après l'installation, OpenClaw s'exécute donc sans les règles, les skills ni les serveurs MCP d'Apothem. OpenClaw lit les skills depuis les dossiers `skills/` et `.agents/skills/` de son espace de travail, depuis `~/.agents/skills` et depuis son répertoire d'état, puis les filtre au moyen de la liste d'autorisation des noms de skills sous `agents.defaults.skills`. `skills.load.extraDirs` n'est pas un chargeur de skills : les skills d'Apothem situés sous `~/.openclaw/.apothem/support/skills` ne se chargent donc qu'une fois placés dans l'un de ces dossiers et nommés dans cette liste d'autorisation. `apothem update` conserve les clés que vous ajoutez à `openclaw.json`. Les serveurs MCP se trouvent dans le bloc `mcp.servers` de la configuration d'OpenClaw, que vous gérez avec `openclaw mcp add` et les sous-commandes associées ; l'adaptateur n'y écrit aucune entrée. (Comportement d'OpenClaw selon sa documentation sur les [skills](https://docs.openclaw.ai/tools/skills) et sur la [CLI MCP](https://docs.openclaw.ai/cli/mcp), consultées le 2026-10-02.)
 
 ## Vérification
 
@@ -110,7 +96,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Fichier de configuration introuvable | Relancez `apothem install --harness open-claw` |
 | Échec de la vérification | Exécutez `apothem update --harness open-claw`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez `apothem update --harness open-claw` |
+| Contenu de configuration inattendu | Apothem n'écrit aucune clé dans `openclaw.json` et conserve celles qui s'y trouvent déjà, si bien que le contenu du profil n'y est pas écrit. Le contenu du profil est écrit dans `~/.openclaw/apothem/rules/00-apothem-profile.md` : vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez la commande sous [Mise à jour](#mise-à-jour) |
 
 ## Paramètres de configuration
 

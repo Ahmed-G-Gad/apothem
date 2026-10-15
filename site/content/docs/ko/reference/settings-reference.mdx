@@ -2,7 +2,7 @@
 title: "settings.json 문서"
 description: "Apothem 생태계를 위해 Claude Code 훅 실행, 권한, 이벤트, 타임아웃, Python 런타임, 검증, 계층화된 설정 우선순위를 구성합니다."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,13 +59,14 @@ sourceHash: "e5e617ed964a9419"
 > **타임아웃 값은 정규 훅 이벤트 예산을 반영합니다** — 아래 표는
 > 독자 편의를 위해 이를 재현한 것이며, 정규 출처가 우선합니다.
 
-| 이벤트 | 트리거 | 타임아웃 | 목적 | 만데이트 |
+| 이벤트 | 트리거 | 타임아웃 | 목적 | 의무 |
 | ----- | ------- | ------- | ------- | ------- |
 | **SessionStart** | 새 Claude Code 세션 | 30초 | 컨텍스트 초기화, 메모리 읽기, 플랜 상태 확인 | CM-14 |
-| **PreToolUse** | Write/Edit/NotebookEdit/Bash 이전 | 10초 | CM-7 준수 + frontmatter 검증 | CM-7, CM-22 |
-| **PreCompact** | 컨텍스트 압축 이전 | 30초 | 외부화되지 않은 상태를 외부화 | CM-24 §2.3 |
-| **PostCompact** | 컨텍스트 압축 이후 | 30초 | 외부화된 상태에서 재부트스트랩 | CM-24 §6.2 |
+| **PreToolUse** | Write/Edit/NotebookEdit/Bash 이전 | 10초 | CM-7 준수 + 프런트매터 검증 | CM-7, CM-22 |
+| **PostToolUse** | 모든 도구 호출 이후(매처 `*`) | 10초 | 선제적 압축 권고 | 컨텍스트 관리(선제적 압축) |
 | **Stop** | 세션 종료 | 60초 | 세션 종료 시 외부화 | CM-14/CM-22/CM-24/CM-26 |
+
+이 템플릿은 네 개의 이벤트를 등록합니다. `PreCompact`나 `PostCompact`는 등록하지 않습니다. Codex와 Qwen Code 템플릿은 이를 등록하며, [훅 참조](/docs/reference/hooks)가 하니스별로 나열합니다.
 
 `dispatch.py` 는 이벤트 화이트리스트에 `UserPromptSubmit` 과 `Notification` 도
 추가로 받아들입니다. 둘 다 배포된 템플릿에서는 배선되어 있지 않으며, 동일한

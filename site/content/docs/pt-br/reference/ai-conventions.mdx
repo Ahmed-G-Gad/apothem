@@ -2,11 +2,11 @@
 title: "Convenções de harness multissuperfície"
 description: "Referência normativa canônica para a configuração e a coerência de harnesses multissuperfície entre os runtimes de chat, de autocompletar no IDE e de revisão de PR."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referência normativa canônica para colaboradores downstream.** Este documento espelha as seções de Convenções de harness multissuperfície da especificação do projeto (Especificação §0.6 + §2.8 + §4.7); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada no [ADR-0003](/docs/architecture).
+> **Referência normativa canônica para colaboradores downstream.** Este documento espelha as seções de Convenções de harness multissuperfície da especificação do projeto (Especificação §0.6 + §2.8 + §4.7); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada no ADR-0003.
 
 ---
 
@@ -39,10 +39,10 @@ As superfícies são *canais* diferentes que expressam uma única *especificaç�
 |---|---|---|---|
 | `AGENTS.md` | raiz do repositório (e/ou `.codex/AGENTS.md`) | **DEVE** | harnesses compatíveis com AGENTS |
 | `CLAUDE.md` | raiz do repositório (e/ou `.claude/CLAUDE.md`) | **DEVE** | Claude Code |
-| arquivo de instruções com raiz em `.github/` | `.github/copilot-instructions.md` | **DEVE** | runtime de autocompletar dentro do IDE |
-| manifesto de auxiliares com raiz em `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PODE** (adesão opcional pelo canal de indagação estruturada) | plataformas de orquestração de múltiplos auxiliares |
-| `.cursorrules` | raiz do repositório | **PODE** (adesão opcional) | runtime de editor dentro do IDE |
-| `.windsurfrules` | raiz do repositório | **PODE** (adesão opcional) | runtime companheiro dentro do IDE |
+| Arquivo de instruções no IDE | `.github/copilot-instructions.md` | **DEVE** | runtime de autocompletar no IDE |
+| Manifesto de auxiliares | `site/content/docs/architecture/agents.mdx` | **PODE** (adesão opcional pelo canal de indagação estruturada) | plataformas de orquestração de múltiplos auxiliares |
+| `.cursorrules` | raiz do repositório | **PODE** (adesão opcional) | runtime de editor no IDE |
+| `.windsurfrules` | raiz do repositório | **PODE** (adesão opcional) | runtime companheiro no IDE |
 
 Para este repositório, as superfícies de adesão opcional são as que a fixture da lista de afirmações ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) relaciona em `optional-in`. Configurações raiz não utilizadas e específicas de fornecedor estão ausentes de propósito; um arquivo de configuração específico de uma ferramenta só é adicionado quando essa ferramenta é uma superfície de edição ativa neste repositório.
 
@@ -130,7 +130,7 @@ Três validadores implementam em conjunto o contrato de coerência:
 
 ## Veja também
 
-- [ADR-0003](/docs/architecture) — justificativa arquitetural, alternativas consideradas.
+- ADR-0003 — justificativa arquitetural, alternativas consideradas.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — a fixture canônica da lista de afirmações.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — a voz canônica do projeto.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — o espelho para o Claude Code.

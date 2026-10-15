@@ -2,7 +2,7 @@
 title: "कस्टम नियम"
 description: "अपनी परियोजना के लिए एक कस्टम सदैव-सक्रिय नियम लिखना।"
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,10 +35,14 @@ When in doubt, err on the side of more hyphens.
 
 ## नियम सही रूप में बना है, इसकी पुष्टि करें
 
-अभी लिखी गई नियम फ़ाइल पर frontmatter वैलिडेटर चलाएँ। Apothem चेकआउट से, कमांड के आगे `PYTHONPATH=src` लगाएँ; स्क्रिप्ट इंस्टॉल के बाद, उसके आगे `PYTHONPATH="$HOME/.apothem/src"` लगाएँ:
+अभी लिखी गई नियम फ़ाइल पर frontmatter वैलिडेटर चलाएँ। Apothem चेकआउट से पहली कमांड का उपयोग करें, जहाँ `PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है। स्क्रिप्ट इंस्टॉल के बाद दूसरी कमांड का उपयोग करें, जहाँ स्रोत `$HOME/.apothem/src` के अंतर्गत रहता है:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 सही रूप में बना नियम एक साफ़ पास रिपोर्ट करता है:

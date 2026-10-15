@@ -2,21 +2,15 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "3f59b1e92bd11b92"
+sourceHash: "e2aec62fc27cb76c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **YAML-Frontmatter-Vorlagen pro Klasse und Pflichtfelder für alle Artefakte des Apothem-Ökosystems.**
 
-> **Maßgebliche Quelle.** Der maschinenlesbare, vom Gate erzwungene Vertrag sind
-> die JSON-Schemas pro Klasse unter [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
-> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), die
-> jeweils `additionalProperties` deklarieren, sodass das Konformitäts-Gate
-> unbekannte Schlüssel ablehnt. Diese Seite und [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
-> sind die beiden menschenlesbaren Projektionen dieser Schemas — diese Seite
-> enthält die **Vorlagen und ausgearbeiteten Beispiele** pro Klasse,
-> frontmatter-schema den knappen **Index der Pflichtschlüssel**. Wo eine Seite
-> den JSON-Schemas widerspricht, haben die Schemas Vorrang.
+> **Maßgebliche Quelle.** Der maschinenlesbare, vom Gate erzwungene Vertrag sind die JSON-Schemas pro Klasse unter [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …). Die Schemas für Skills und Befehle deklarieren `additionalProperties: false` und lehnen daher unbekannte Schlüssel ab; die Schemas für Agenten, Output-Styles und Pläne deklarieren `additionalProperties: true`.
+> Diese Seite und [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) sind die beiden menschenlesbaren Projektionen dieser Schemas; diese Seite enthält die **Vorlagen und ausgearbeiteten Beispiele** pro Klasse, frontmatter-schema den knappen **Index der Pflichtschlüssel**. Widerspricht eine Seite den JSON-Schemas, haben die Schemas Vorrang.
 
 ## Überblick
 
@@ -36,8 +30,9 @@ kanonische Schema für jeden Typ.
 
 **Versionierungskonvention (versionierte Artefaktklassen — Commands, Helfer, Skills, CLAUDE.md):**
 
-- `version` ist **semantisch** (`MAJOR.MINOR.PATCH`). Erhöhen Sie MAJOR bei inkompatiblen Schema- oder Vertragsänderungen; MINOR bei additiven, nicht inkompatiblen Änderungen (neue optionale Felder, zusätzliche Abschnitte, zusätzliche Antimuster); PATCH bei Klarstellungen, Formatierungskorrekturen oder reinen Dokumentationsbearbeitungen ohne Verhaltensänderung.
-- `updated` ist das **ISO-8601-Datum** (`YYYY-MM-DD`) der jüngsten Bearbeitung. Es muss sich mit jeder Anhebung von `version` ändern und darf für Link-Auffrischungen ohne Versionsanhebung unabhängig davon aktualisiert werden.
+- `version` ist **semantisch** (`MAJOR.MINOR.PATCH`). Erhöhen Sie MAJOR bei inkompatiblen Schema- oder Vertragsänderungen; MINOR bei additiven, nicht inkompatiblen Änderungen (neue optionale Felder, zusätzliche Abschnitte, zusätzliche Antimuster); PATCH bei einer Verhaltensänderung, die eine bestehende Direktive korrigiert, ohne den Vertrag zu brechen.
+- Tippfehlerkorrekturen, Linkkorrekturen, Formatierungen sowie reine Kommentar- oder Dokumentationsänderungen lassen `version` unverändert. Nur eine Verhaltensänderung erhöht sie.
+- `updated` ist das **ISO-8601-Datum** (`YYYY-MM-DD`) der jüngsten Bearbeitung. Es muss sich bei jeder Erhöhung von `version` ändern und ändert sich auch bei einer Tippfehler- oder Linkkorrektur ohne Versionserhöhung.
 - Neue Artefakte beginnen bei `v0.Y.Z`. Die Hochstufung auf `vX.Y.Z` zeigt an, dass der Vertrag des Artefakts stabil genug ist, um eine öffentliche Zusage zu sein.
 
 ---
@@ -416,13 +411,7 @@ Jedes Artefakt muss diese Prüfungen bestehen:
 
 ## Hinweise
 
-- **Konsistenz als Sicherheit:** Kanonisches Frontmatter ermöglicht
-  automatisierte Validierung, Tooling und artefaktübergreifende Verifikation.
-  Abweichungen summieren sich schnell.
-- **Portabilitätserklärung:** Nicht alle Artefakte können universell sein.
-  Deklarieren Sie Einschränkungen explizit — besser einen Vorbehalt
-  dokumentieren als einen stillen Fehler ausliefern.
-- **Kebab-Case für Namen:** Leicht in URLs, Skripten und
-  Kommandozeilenkontexten zu verwenden. Vermeiden Sie Leerzeichen, Unterstriche
-  und camelCase in Namen.
-- **Hygiene bei Versionsanhebungen:** Jede verhaltensändernde Bearbeitung muss `version` und `updated` gemeinsam anheben. Reine Formatierungs- oder Tippfehlerkorrekturen heben PATCH an; neue optionale Abschnitte oder Antimuster heben MINOR an; strukturelle Reorganisation oder Vertragsänderungen heben MAJOR an.
+- **Konsistenz als Sicherheit:** Kanonisches Frontmatter ermöglicht automatisierte Validierung, Tooling und artefaktübergreifende Verifikation. Abweichungen summieren sich schnell.
+- **Portabilitätserklärung:** Nicht alle Artefakte können universell sein. Deklarieren Sie Einschränkungen ausdrücklich — besser einen Vorbehalt dokumentieren, als einen stillen Fehler auszuliefern.
+- **Kebab-Case für Namen:** Leicht zu verwenden in URLs, Skripten und Kommandozeilenkontexten. Vermeiden Sie Leerzeichen, Unterstriche und camelCase bei Namen.
+- **Hygiene bei Versionsanhebungen:** Jede Bearbeitung, die das Verhalten ändert, muss `version` und `updated` gemeinsam erhöhen. Tippfehler-, Link- und Formatierungskorrekturen lassen die Version unverändert; neue optionale Abschnitte oder Antimuster erhöhen MINOR; strukturelle Umgestaltungen oder Vertragsänderungen erhöhen MAJOR.

@@ -2,7 +2,7 @@
 title: "Vergleich"
 description: "Wie Sie Apothem gegenüber handgepflegter Harness-Konfiguration und anderen Konfigurationsansätzen bewerten, mit einer Funktionsmatrix und Seiten je Harness."
 machineTranslated: true
-sourceHash: "4a833217abbbb01d"
+sourceHash: "0291d627acd6aa88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,46 +19,24 @@ Die Angaben zu vergleichbaren Projekten auf dieser Seite haben den Stand
 jeweiligen Projekts (siehe [Quellen](#quellen)); prüfen Sie sie bei jedem
 Minor-Release erneut.
 
-Andere Werkzeuge lösen angrenzende Teile dieses Problems. Dateibasierte
-Konfigurationsmanager wie **chezmoi** und **GNU Stow** legen Dateien ab,
-verlinken sie oder erzeugen sie aus Templates, übersetzen aber niemals eine
-Quelle in das *native* Konfigurationsschema jedes Harness.
-Werkzeugübergreifende Sync-CLIs erzeugen aus einer Quelle Dateien je Werkzeug:
-**rulesync** erzeugt native Konfiguration für 60 Coding-Werkzeuge und zwei
-offene Standards, über eine breitere synchronisierte Einheit als die von
-Apothem; **ruler** verteilt ein `.ruler/`-Verzeichnis auf 33 Ziele, verkettet
-dabei Regeln in die Anweisungsdatei jedes Werkzeugs und übersetzt MCP-Server,
-Skills und Subagenten in native Konfiguration. Das Unterscheidungsmerkmal von
-Apothem ist die **Governance- und Lebenszyklus-Disziplin, die rund um die
-Synchronisierung ausgeliefert wird**: ein mechanisiertes Konformitäts-Gate,
-deterministische Pipelines, eine Audit-Festung und ein reversibler,
-verifizierter Lebenszyklus.
+Andere Werkzeuge lösen angrenzende Teile dieses Problems. Dateibasierte Konfigurationsmanager wie **chezmoi** und **GNU Stow** legen Dateien ab, verlinken sie oder erzeugen sie aus Templates, übersetzen aber niemals eine Quelle in das *native* Konfigurationsschema jedes Harness. Werkzeugübergreifende Sync-CLIs erzeugen aus einer Quelle Dateien je Werkzeug: **rulesync** erzeugt native Konfiguration für 60 Coding-Werkzeuge und zwei offene Standards, und zwar über eine synchronisierte Einheit, die MCP, Ignore-Dateien, Berechtigungen und Review-Checks umfasst; keines davon synchronisiert das Apothem-Manifest. **ruler** verteilt ein `.ruler/`-Verzeichnis auf 33 Ziele, verkettet Regeln in die Anweisungsdatei jedes Werkzeugs und übersetzt MCP-Server, Skills und Subagenten in native Konfiguration. Das Unterscheidungsmerkmal von Apothem ist die **Governance- und Lebenszyklus-Disziplin, die rund um die Synchronisierung ausgeliefert wird**: ein mechanisiertes Konformitäts-Gate, deterministische Pipelines, eine Audit-Festung und ein reversibler, verifizierter Lebenszyklus.
 
 | Fähigkeit | Apothem | Dateibasierte Konfigurationsmanager (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Eine Quelle für die nativen Schemata vieler Werkzeuge | Ja — siebzehn Harness-Adapter | Nein — Kopie, Symlink oder Template, keine Übersetzung | Ja — 60 Werkzeuge plus die Standards AGENTS.md und Agent Skills | Teilweise — Regeln werden in die Anweisungsdatei jedes Werkzeugs verkettet; MCP, Skills und Subagenten werden in nativer Form geschrieben |
-| Synchronisierte Einheit | Regeln, Skills, Subagenten, Hooks, Slash-Befehle, Output-Styles, Einstellungen, MCP | beliebige Dateien | Regeln, Ignore, MCP, Befehle, Subagenten, Skills, Hooks, Berechtigungen, Checks (Anweisungen für Code-Review-Checks) | Regeln, MCP, Skills, Subagenten |
-| Governance-Korpus (Verhaltensregeln plus ein mechanisches Konformitäts-Gate) | Ja — `python -m apothem.conformity.gate` | Nein | Nein — seine Funktion `checks` synchronisiert Code-Review-Checks in die Werkzeuge; kein Konformitäts-Gate über den Regeln | Nein |
-| Deterministische Planungs- und Recherche-Pipelines | Ja — von `/plan-spec` bis `/plan-execute`, `/research` in dreizehn Stufen | Nein | Nein | Nein |
+| Synchronisierte Einheit | Regeln, Skills, Subagenten, Slash-Befehle, Hooks, Output-Styles, Statuslines, Templates, Konformitäts-Validatoren, Schemas, harness-spezifische Anweisungs-Templates und das Settings-Template für Claude Code | beliebige Dateien | Regeln, Ignore, MCP, Befehle, Subagenten, Skills, Hooks, Berechtigungen, Checks (Anweisungen für Code-Review-Checks) | Regeln, MCP, Skills, Subagenten |
+| Governance-Korpus (Verhaltensregeln und ein mechanisches Konformitäts-Gate) | Ja — `python -m apothem.conformity.gate` | Nein | Nein — seine Funktion `checks` synchronisiert Code-Review-Checks in die Werkzeuge; kein Konformitäts-Gate über den Regeln | Nein |
+| Deterministische Planungs- und Recherche-Pipelines | Ja — von `/plan-spec` bis `/plan-execute`, `/research` mit dreizehn Stufen | Nein | Nein | Nein |
 | Audit-Festung, die erkennt und behebt | Ja — Durchlauf mit elf Befehlen, `/fortress`-Re-Audit-Schleife | Nein | Nein | Nein |
+| Dauerhaftes Gedächtnis über Sitzungen hinweg | Ja — Speicher `memory/records.json` im Apothem-Datenverzeichnis, bei der Installation angelegt | Nicht verglichen | In seiner README nicht angegeben | In seiner README nicht angegeben |
 | Lieferketten-gehärtete Releases | Ja — SBOM, Sigstore, SLSA, Scorecard-Ziel | Nicht verglichen | In seiner README nicht angegeben | In seiner README nicht angegeben |
-| Reversibler, verifizierter Lebenszyklus | Ja — Sicherung, `apothem verify --json`, Deinstallation ohne Waisen | chezmoi: `chezmoi verify` prüft jedes Ziel; Stow: nur Symlinks | In seiner README nicht angegeben | `.bak`-Sicherungen und `ruler revert`; kein Verify-Befehl in seiner README |
+| Reversibler, verifizierter Lebenszyklus | Ja — Sicherung, `apothem verify --json`, Deinstallation ohne verwaiste Dateien | chezmoi: `chezmoi verify` prüft jedes Ziel; Stow: nur Symlinks | In seiner README nicht angegeben | `.bak`-Sicherungen und `ruler revert`; kein Verify-Befehl in seiner README |
 
-Wo ein vergleichbares Projekt stärker ist, wird es benannt: **rulesync**
-erreicht mehr als dreimal so viele Werkzeuge und synchronisiert eine breitere
-Einheit (einschließlich Berechtigungen und Review-Checks), und **ruler**
-erreicht fast doppelt so viele Werkzeuge und hat einen eigenen
-Revert-Befehl. Apothem tauscht die reine Werkzeuganzahl gegen die Governance-,
-Audit- und Lebenszyklus-Disziplin, die rund um die Synchronisierung
-ausgeliefert wird — ein Konformitäts-Gate, deterministische Planungs- und
-Recherche-Pipelines, eine Audit-Festung mit elf Befehlen, dauerhaftes
-Gedächtnis und ein reversibler, verifizierter Lebenszyklus —, die keines der
-beiden Sync-Werkzeuge mitbringt.
+Wo ein vergleichbares Projekt stärker ist, wird es benannt: **rulesync** erreicht mehr als dreimal so viele Werkzeuge und synchronisiert MCP, Ignore-Dateien, Berechtigungen und Review-Checks, was das Apothem-Manifest nicht synchronisiert. **ruler** erreicht fast doppelt so viele Werkzeuge und hat einen eigenen Revert-Befehl. Apothem tauscht die reine Werkzeuganzahl gegen die Governance-, Audit- und Lebenszyklus-Disziplin, die rund um die Synchronisierung ausgeliefert wird — ein Konformitäts-Gate, deterministische Planungs- und Recherche-Pipelines, eine Audit-Festung mit elf Befehlen, dauerhaftes Gedächtnis und einen reversiblen, verifizierten Lebenszyklus —, die keines der beiden Sync-Werkzeuge mitbringt.
 
 ### Quellen
 
-Alle am 2026-10-02 abgerufen, jeweils gegen das neueste Release des Projekts an
-diesem Datum.
+Alle Angaben wurden am 2026-10-02 abgerufen, jeweils gegen das neueste Release des Projekts an diesem Datum. Die READMEs von rulesync und ruler wurden am 2026-10-15 für die Zeile zum dauerhaften Gedächtnis erneut gelesen; keines der beiden erwähnt eine Gedächtnisfunktion.
 
 - rulesync (npm `rulesync`): [README](https://github.com/dyoshikawa/rulesync#readme)
   (Tabelle der unterstützten Werkzeuge: 60 Coding-Werkzeuge und zwei offene

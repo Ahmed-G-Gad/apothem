@@ -2,7 +2,7 @@
 title: "आर्किटेक्चर"
 description: "Apothem आर्किटेक्चर का अवलोकन — साझा प्रोफ़ाइल, हार्नेस अडैप्टर अमूर्तन, और सोर्स ट्री किस तरह संगठित है।"
 machineTranslated: true
-sourceHash: "a7b9ada8e97c193d"
+sourceHash: "66ba79aa992abb62"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,7 @@ Apothem एक ही विचार के इर्द-गिर्द बन
 flowchart TD
     accTitle: Apothem end-to-end materialization flow
     accDescr: One shared profile feeds the harness registry, which resolves seventeen per-harness adapters; each adapter runs its install, uninstall, update, and verify lifecycle, with four single-file-config adapters also rendering a native config file through a materializer, and writes the harness's own native configuration surface. A standing conformity gate checks every materialized surface.
-    P["Shared profile<br/>~/.config/apothem/profile.yaml<br/>rules, skills, hooks, slash-commands, MCP servers"]
+    P["Shared profile<br/>~/.config/apothem/profile.yaml<br/>synced unit: rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, settings template<br/>MCP servers"]
     R["Harness registry<br/>authoritative at runtime<br/>(resolves every adapter)"]
     A["17 per-harness adapters<br/>each: install / uninstall / update / verify<br/>+ materializer on 4 single-file-config adapters"]
     N["Each harness's native config surface<br/>Claude Code settings.json, Cursor .mdc,<br/>Gemini GEMINI.md, Copilot instructions.md, …"]

@@ -2,7 +2,7 @@
 title: "Реестры артефактов"
 description: "Полное перечисление артефактов экосистемы Apothem: команды, правила, помощники, хуки, навыки, стили вывода, дисциплина эволюции артефактов и объявления пустых классов артефактов."
 machineTranslated: true
-sourceHash: "45aeec5fdf08bdfd"
+sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,17 +90,17 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## 4. Хуки
 
-Установленные записи хуков Claude Code используют exec-форму: `command` — это `${PYTHON_BIN}`, а `args` содержит путь к скрипту в `${HARNESS_ROOT}/.apothem/support/` (например, `hooks/dispatch.py` и `conformity/gate.py`). Форма `-m apothem.hooks.dispatch` предназначена для разработки из чекаута исходного кода с `PYTHONPATH=src`. Диспетчер импортирует `src/apothem/hooks/lib/resolve_root.py` для определения корня экосистемы и делегирует работу двум помощникам, которые лежат рядом с ним, в самом `src/apothem/hooks/`: `src/apothem/hooks/emit_hook_context.py` форматирует полезные нагрузки событий для ассистента, а `src/apothem/hooks/session_start_bootstrap.py` выполняет подготовительную работу SessionStart, которую диспетчер передаёт при маршрутизации этого события. Сообщения хуков, которые показываются ассистенту при срабатывании поддерживаемых событий, хранятся как Markdown-файлы контекста в `src/apothem/hooks/messages/` — по одному на каждый вариант события: `postcompact.md`, `precompact.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`, `stop.md`. Каждый маршрутизируемый файл контекста загружается диспетчером, когда срабатывает его событие и его аргумент контекста зарегистрирован в `settings.json`. `pretooluse-conformity.md` поставляется как доступный вариант без текущей записи маршрутизации в `settings.json`. `pretooluse-dependency-guard.md` маршрутизируется по сопоставителям Write и Edit, а `pretooluse-eval-guard.md` — по сопоставителям Write, Edit и `Bash|PowerShell`.
+Установленные записи хуков Claude Code используют exec-форму: `command` — это `${PYTHON_BIN}`, а `args` содержит путь к скрипту в `${HARNESS_ROOT}/.apothem/support/` (например, `hooks/dispatch.py` и `conformity/gate.py`). Форма `-m apothem.hooks.dispatch` предназначена для разработки из чекаута исходного кода с `PYTHONPATH=src`. Диспетчер импортирует `src/apothem/hooks/lib/resolve_root.py` для определения корня экосистемы и делегирует работу двум вспомогательным модулям, которые лежат рядом с ним, в самом `src/apothem/hooks/`: `src/apothem/hooks/emit_hook_context.py` форматирует полезные нагрузки событий для ассистента, а `src/apothem/hooks/session_start_bootstrap.py` выполняет подготовительную работу SessionStart, которую диспетчер передаёт при маршрутизации этого события. Сообщения хуков, которые показываются ассистенту при срабатывании поддерживаемых событий, хранятся как Markdown-файлы контекста в `src/apothem/hooks/messages/` — по одному на каждый вариант события: `postcompact.md`, `precompact.md`, `posttooluse-proactive-compaction.md`, `pretooluse-askuserquestion-recommended.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`, `stop.md`. Каждый маршрутизируемый файл контекста загружается диспетчером, когда срабатывает его событие и его аргумент контекста зарегистрирован в `settings.json`. `pretooluse-conformity.md` поставляется как доступный вариант без текущей записи маршрутизации в `settings.json`. `pretooluse-dependency-guard.md` маршрутизируется по сопоставителям Write и Edit, а `pretooluse-eval-guard.md` — по сопоставителям Write, Edit и `Bash|PowerShell`.
 
 ```text
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
-PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher
 UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 ```

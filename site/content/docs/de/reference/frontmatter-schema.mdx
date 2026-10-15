@@ -2,11 +2,11 @@
 title: "Frontmatter-Schema"
 description: "Referenzleitfaden zur Struktur des YAML-Frontmatter-Blocks, zu den Pflichtschlüsseln pro Klasse und zu den Durchsetzungsregeln der Validatoren über alle Artefaktklassen hinweg."
 machineTranslated: true
-sourceHash: "d6c49336e4d3abf9"
+sourceHash: "e0fad965a556b755"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonische Referenz für YAML-Frontmatter in jeder Artefaktklasse.** Die Zusammenfassung im Abschnitt „Conventions“ von [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) ist die Inline-Deklaration; die JSON-Schemas pro Klasse unter [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` lehnt unbekannte Schlüssel ab) sind der maschinenlesbare Vertrag und haben bei jeder Abweichung Vorrang. Diese Seite ist der Index der Pflichtschlüssel, und [`artifact-schema.mdx`](/docs/reference/artifact-schema) enthält die Vorlagen und ausgearbeiteten Beispiele pro Klasse — beide sind menschenlesbare Projektionen dieser Schemas.
+> **Kanonische Referenz für YAML-Frontmatter in jeder Artefaktklasse.** Die Zusammenfassung unter „Conventions“ in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) ist die Inline-Deklaration; die JSON-Schemas pro Klasse unter [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties: false` in den Schemas für Skills und Befehle lehnt unbekannte Schlüssel ab; die Schemas für Agenten, Output-Styles und Pläne setzen `additionalProperties: true`) sind der maschinenlesbare Vertrag und haben bei jeder Abweichung Vorrang. Diese Seite ist der Index der Pflichtschlüssel; [`artifact-schema.mdx`](/docs/reference/artifact-schema) enthält die Vorlagen und ausgearbeiteten Beispiele pro Klasse. Beide sind menschenlesbare Projektionen dieser Schemas.
 
 ---
 

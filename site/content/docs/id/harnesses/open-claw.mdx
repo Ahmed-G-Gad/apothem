@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adapter harness Apothem untuk Open-Claw (Pratinjau)."
 machineTranslated: true
-sourceHash: "2dca789e924d7381"
+sourceHash: "f13f9ce348ede92c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,20 +43,7 @@ templat, dan prompt hook bersama dipasang sebagai materi pendukung di bawah
 
 ## Catatan kompatibilitas
 
-Adapter pratinjau. OpenClaw tidak memuat pohon pendukung maupun dokumen profil
-dengan sendirinya: tidak satu pun lokasi skill-nya, berkas instruksi
-workspace-nya, atau konfigurasinya menunjuk ke sana, sehingga setelah instalasi
-OpenClaw berjalan tanpa aturan, skill, atau server MCP Apothem. OpenClaw membaca
-skill dari folder `skills/` dan `.agents/skills/` di workspace-nya,
-`~/.agents/skills`, direktori state-nya, dan folder apa pun yang tercantum di
-`skills.load.extraDirs`; untuk menggunakan skill Apothem, tambahkan sendiri
-`~/.openclaw/.apothem/support/skills` ke daftar tersebut; `apothem update`
-mempertahankan kunci yang Anda tambahkan ke `openclaw.json`. Server MCP berada
-di blok `mcp.servers` dalam konfigurasi OpenClaw, yang Anda kelola dengan
-`openclaw mcp add` dan subperintah terkait; adapter tidak menulis entri apa pun
-di sana. (Perilaku OpenClaw menurut dokumentasinya tentang
-[skill](https://docs.openclaw.ai/tools/skills) dan
-[CLI MCP](https://docs.openclaw.ai/cli/mcp), dibaca 2026-10-02.)
+Adapter pratinjau. OpenClaw tidak memuat pohon pendukung maupun dokumen profil dengan sendirinya: tidak satu pun lokasi skill-nya, berkas instruksi workspace-nya, atau konfigurasinya menunjuk ke sana, sehingga setelah pemasangan OpenClaw berjalan tanpa aturan, skill, atau server MCP Apothem. OpenClaw membaca skill dari folder `skills/` dan `.agents/skills/` di workspace-nya, `~/.agents/skills`, dan direktori state-nya, lalu menyaringnya melalui daftar izin nama skill di bawah `agents.defaults.skills`. `skills.load.extraDirs` bukan pemuat skill, sehingga skill Apothem di bawah `~/.openclaw/.apothem/support/skills` baru dimuat setelah Anda menempatkannya di salah satu folder tersebut dan menyebutkan namanya di daftar izin itu. `apothem update` mempertahankan kunci yang Anda tambahkan ke `openclaw.json`. Server MCP berada di blok `mcp.servers` pada konfigurasi OpenClaw, yang Anda kelola dengan `openclaw mcp add` dan subperintah terkait; adapter tidak menulis entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasinya tentang [skill](https://docs.openclaw.ai/tools/skills) dan [CLI MCP](https://docs.openclaw.ai/cli/mcp), dibaca 2026-10-02.)
 
 ## Verifikasi
 
@@ -107,7 +94,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness open-claw` |
 | Verifikasi gagal | Jalankan `apothem update --harness open-claw`, lalu verifikasi lagi |
-| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness open-claw` |
+| Konten konfigurasi tidak terduga | Apothem tidak menulis kunci apa pun di `openclaw.json` dan mempertahankan kunci yang sudah ada di dalamnya, sehingga konten profil tidak masuk ke sana. Konten profil masuk ke `~/.openclaw/apothem/rules/00-apothem-profile.md`: periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang perintah di bawah [Pembaruan](#pembaruan) |
 
 ## Tombol konfigurasi
 

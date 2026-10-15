@@ -2,7 +2,7 @@
 title: "Conceptos"
 description: "Glosario que define los perfiles compartidos, los adaptadores de entorno, las reglas, los hooks, las puertas de conformidad, las skills y los trabajadores delegados en Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,7 @@ comportarse el entorno.
 
 ## Hook
 
-Un script de Python registrado en settings.json que se dispara ante eventos del ciclo de vida del entorno
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Los hooks aplican los mandatos de conformidad
-en tiempo real antes de que la salida llegue al disco. El modelo de eventos de hooks es hoy una superficie de Claude Code;
-los adaptadores de entornos sin un mecanismo de hooks simplemente lo omiten.
+Un script de Python registrado en la configuración de hooks de un entorno (settings.json en Claude Code) que se dispara ante eventos del ciclo de vida, como PreToolUse, PostToolUse, SessionStart y Stop; algunos adaptadores también registran PreCompact y PostCompact. Los hooks aplican los mandatos de conformidad en tiempo real, antes de que la salida llegue al disco. Los adaptadores de entornos sin mecanismo de hooks lo omiten.
 
 ## Puerta de conformidad
 

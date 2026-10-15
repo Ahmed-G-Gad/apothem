@@ -2,11 +2,11 @@
 title: "बहु-सतह हार्नेस परिपाटियाँ"
 description: "चैट, IDE पूर्णता और PR समीक्षा रनटाइम में बहु-सतह हार्नेस कॉन्फ़िगरेशन और सुसंगति के लिए कैनोनिकल मानक संदर्भ।"
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **डाउनस्ट्रीम योगदानकर्ताओं के लिए कैनोनिकल मानक संदर्भ।** यह दस्तावेज़ परियोजना विनिर्देश के बहु-सतह हार्नेस परिपाटी अनुभागों (Spec §0.6 + §2.8 + §4.7) को प्रतिबिंबित करता है; यह वह स्वतंत्र संदर्भ है जो प्रकाशित रिपॉज़िटरी के साथ शिप होता है। आर्किटेक्चरल औचित्य [ADR-0003](/docs/architecture) पर दर्ज है।
+> **डाउनस्ट्रीम योगदानकर्ताओं के लिए कैनोनिकल मानक संदर्भ।** यह दस्तावेज़ परियोजना विनिर्देश के बहु-सतह हार्नेस परिपाटी अनुभागों (Spec §0.6 + §2.8 + §4.7) को प्रतिबिंबित करता है; यह वह स्वतंत्र संदर्भ है जो प्रकाशित रिपॉज़िटरी के साथ शिप होता है। आर्किटेक्चरल औचित्य ADR-0003 में दर्ज है।
 
 ---
 
@@ -39,8 +39,8 @@ sourceHash: "8b401418bac95c44"
 |---|---|---|---|
 | `AGENTS.md` | रिपो रूट (और/या `.codex/AGENTS.md`) | **MUST** | AGENTS-जागरूक हार्नेस |
 | `CLAUDE.md` | रिपो रूट (और/या `.claude/CLAUDE.md`) | **MUST** | Claude Code |
-| `.github/`-आधारित निर्देश फ़ाइल | `.github/copilot-instructions.md` | **MUST** | IDE-आंतरिक पूर्णता रनटाइम |
-| `site/content/docs/architecture/`-आधारित सहायक मैनिफ़ेस्ट | `site/content/docs/architecture/agents.mdx` | **MAY** (संरचित-पूछताछ चैनल के माध्यम से ऑप्ट-इन) | बहु-सहायक ऑर्केस्ट्रेशन प्लेटफ़ॉर्म |
+| IDE-आंतरिक निर्देश फ़ाइल | `.github/copilot-instructions.md` | **MUST** | IDE-आंतरिक पूर्णता रनटाइम |
+| हेल्पर मैनिफ़ेस्ट | `site/content/docs/architecture/agents.mdx` | **MAY** (संरचित-पूछताछ चैनल के माध्यम से ऑप्ट-इन) | बहु-हेल्पर ऑर्केस्ट्रेशन प्लेटफ़ॉर्म |
 | `.cursorrules` | रिपो रूट | **MAY** (ऑप्ट-इन) | IDE-आंतरिक संपादक रनटाइम |
 | `.windsurfrules` | रिपो रूट | **MAY** (ऑप्ट-इन) | IDE-आंतरिक साथी रनटाइम |
 
@@ -130,7 +130,7 @@ IDE-आंतरिक निर्देश फ़ाइल `AGENTS.md` या 
 
 ## यह भी देखें
 
-- [ADR-0003](/docs/architecture) — आर्किटेक्चरल औचित्य, विचार किए गए विकल्प।
+- ADR-0003 — आर्किटेक्चरल औचित्य, विचार किए गए विकल्प।
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — कैनोनिकल दावा सूची फ़िक्स्चर।
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — कैनोनिकल परियोजना स्वर।
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — Claude Code प्रतिबिंब।

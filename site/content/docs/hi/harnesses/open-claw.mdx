@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "2dca789e924d7381"
+sourceHash: "f13f9ce348ede92c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,20 +42,7 @@ apothem install --harness open-claw
 
 ## संगतता टिप्पणियाँ
 
-पूर्वावलोकन अडैप्टर। OpenClaw समर्थन वृक्ष या प्रोफ़ाइल दस्तावेज़ को अपने आप
-लोड नहीं करता: न तो उसका कोई स्किल स्थान, न उसकी वर्कस्पेस निर्देश फ़ाइलें, और न
-ही उसका कॉन्फ़िग वहाँ इंगित करता है, इसलिए इंस्टॉल के बाद OpenClaw, Apothem के
-नियमों, स्किल, या MCP सर्वरों के बिना चलता है। OpenClaw स्किल अपने वर्कस्पेस के
-`skills/` और `.agents/skills/` फ़ोल्डरों, `~/.agents/skills`, अपनी स्टेट
-डायरेक्टरी, और `skills.load.extraDirs` में सूचीबद्ध किसी भी फ़ोल्डर से पढ़ता है;
-Apothem स्किल का उपयोग करने के लिए `~/.openclaw/.apothem/support/skills` को उस
-सूची में स्वयं जोड़ें; `apothem update` उन कुंजियों को बनाए रखता है जिन्हें आप
-`openclaw.json` में जोड़ते हैं। MCP सर्वर OpenClaw कॉन्फ़िग के `mcp.servers`
-ब्लॉक में रहते हैं, जिसे आप `openclaw mcp add` और संबंधित सबकमांड से प्रबंधित
-करते हैं; अडैप्टर वहाँ कोई प्रविष्टि नहीं लिखता। (OpenClaw के
-[स्किल](https://docs.openclaw.ai/tools/skills) और
-[MCP CLI](https://docs.openclaw.ai/cli/mcp) दस्तावेज़ों के अनुसार OpenClaw का
-व्यवहार, 2026-10-02 को पढ़ा गया।)
+पूर्वावलोकन अडैप्टर। OpenClaw समर्थन वृक्ष या प्रोफ़ाइल दस्तावेज़ को अपने आप नहीं लोड करता: उसका कोई भी स्किल स्थान, उसकी वर्कस्पेस निर्देश फ़ाइलें, या उसका कॉन्फ़िग वहाँ इंगित नहीं करता, इसलिए इंस्टॉल के बाद OpenClaw, Apothem के नियमों, स्किल या MCP सर्वरों के बिना चलता है। OpenClaw स्किल अपने वर्कस्पेस के `skills/` और `.agents/skills/` फ़ोल्डरों, `~/.agents/skills`, और अपनी स्टेट डायरेक्टरी से पढ़ता है, फिर उन्हें `agents.defaults.skills` के अंतर्गत स्किल नामों की अनुमति-सूची (allowlist) से छानता है। `skills.load.extraDirs` स्किल लोडर नहीं है, इसलिए `~/.openclaw/.apothem/support/skills` के अंतर्गत Apothem स्किल तभी लोड होते हैं जब आप उन्हें उन फ़ोल्डरों में से किसी एक में रखें और उस अनुमति-सूची में उनके नाम दर्ज करें। `apothem update` उन कुंजियों को बनाए रखता है जिन्हें आप `openclaw.json` में जोड़ते हैं। MCP सर्वर OpenClaw कॉन्फ़िग के `mcp.servers` ब्लॉक में रहते हैं, जिसे आप `openclaw mcp add` और संबंधित सबकमांड से प्रबंधित करते हैं; अडैप्टर वहाँ कोई प्रविष्टि नहीं लिखता। (OpenClaw का व्यवहार उसके [स्किल](https://docs.openclaw.ai/tools/skills) और [MCP CLI](https://docs.openclaw.ai/cli/mcp) दस्तावेज़ों के अनुसार है, 2026-10-02 को पढ़ा गया।)
 
 ## सत्यापन
 
@@ -105,7 +92,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness open-claw` फिर से चलाएँ |
 | सत्यापन विफल रहा | `apothem update --harness open-claw` चलाएँ, फिर दोबारा सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness open-claw` फिर से चलाएँ |
+| अप्रत्याशित कॉन्फ़िग सामग्री | Apothem `openclaw.json` में कोई कुंजी नहीं लिखता और उसमें पहले से मौजूद कुंजियों को रखता है, इसलिए प्रोफ़ाइल सामग्री वहाँ नहीं जाती। प्रोफ़ाइल सामग्री `~/.openclaw/apothem/rules/00-apothem-profile.md` में जाती है: `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर [अपडेट करना](#अपडेट-करना) में दिए गए कमांड को दोबारा चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 

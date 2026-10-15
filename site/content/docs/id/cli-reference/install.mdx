@@ -2,7 +2,7 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,12 +43,7 @@ pembuatan ini dilaporkan sebagai entri `warnings` dengan
 
 ## Pratinjau radius-dampak
 
-`install --harness all` menyebar ke cakupan campuran: adapter berlingkup-proyek
-menulis di bawah root `--project` yang diberikan, sedangkan adapter
-berlingkup-pengguna menulis di bawah direktori home Anda — di luar root
-tersebut. Sebelum berkas apa pun ditulis, perintah ini mencetak target konkret
-yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan
-yang berada di bawah direktori home Anda.
+`install --harness all` menyebar ke cakupan campuran: adapter berlingkup-proyek menulis di bawah root `--project` yang diberikan, sedangkan adapter berlingkup-pengguna menulis di bawah direktori home Anda — di luar root tersebut. Sebelum pemasangan menulis berkas apa pun, perintah ini mencetak target konkret yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan yang berada di bawah direktori home Anda. Satu-satunya pengecualian adalah `--clean`: langkah pembersihan menyeluruh berjalan sebelum pratinjau ini, menulis cadangan dan menghapus target sebelumnya, sebagaimana dijelaskan di bawah.
 
 Ketika pilihan tersebut menulis di luar root proyek, sebuah konfirmasi
 interaktif menjaga penulisan yang berakar di direktori home. `--yes`, shell
@@ -227,8 +222,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## Kode keluar

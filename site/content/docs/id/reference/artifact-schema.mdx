@@ -2,22 +2,15 @@
 title: "Spesifikasi Skema Artefak"
 description: "Skema frontmatter YAML kanonik dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan templat per-kelas dan aturan validasi."
 machineTranslated: true
-sourceHash: "3f59b1e92bd11b92"
+sourceHash: "e2aec62fc27cb76c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Templat frontmatter YAML per-kelas dan field wajib untuk semua artefak ekosistem Apothem.**
 
-> **Sumber kebenaran.** Kontrak yang terbaca mesin dan ditegakkan gerbang adalah
-> JSON Schema per-kelas di bawah [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
-> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), yang
-> masing-masing mendeklarasikan `additionalProperties` sehingga gerbang
-> konformitas menolak kunci yang tidak dikenal. Halaman ini dan
-> [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) adalah dua
-> proyeksi yang dapat dibaca manusia dari skema-skema tersebut — halaman ini
-> memuat **templat dan contoh lengkap** per-kelas, sedangkan frontmatter-schema
-> memuat **indeks kunci wajib** yang ringkas. Jika sebuah halaman tidak sesuai
-> dengan JSON Schema, skema yang berlaku.
+> **Sumber kebenaran.** Kontrak yang terbaca mesin dan ditegakkan gerbang adalah JSON Schema per-kelas di bawah [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …). Skema skill dan command mendeklarasikan `additionalProperties: false`, sehingga menolak kunci yang tidak dikenal; skema agent, output-style, dan plan mendeklarasikan `additionalProperties: true`.
+> Halaman ini dan [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) adalah dua proyeksi yang dapat dibaca manusia dari skema-skema tersebut — halaman ini memuat **templat dan contoh lengkap** per-kelas, sedangkan frontmatter-schema memuat **indeks kunci wajib** yang ringkas. Jika sebuah halaman tidak sesuai dengan JSON Schema, skema yang berlaku.
 
 ## Ikhtisar
 
@@ -36,8 +29,9 @@ Dokumen ini mendefinisikan skema kanonik untuk setiap tipe.
 
 **Konvensi Versioning (kelas artefak berversi — command, pembantu, skill, CLAUDE.md):**
 
-- `version` bersifat **semantik** (`MAJOR.MINOR.PATCH`). Naikkan MAJOR untuk perubahan skema atau kontrak yang tidak kompatibel; MINOR untuk perubahan aditif yang tetap kompatibel (field opsional baru, bagian tambahan, anti-pola tambahan); PATCH untuk klarifikasi, perbaikan format, atau suntingan khusus dokumentasi tanpa perubahan perilaku.
-- `updated` adalah **tanggal ISO 8601** (`YYYY-MM-DD`) dari suntingan terbaru. Nilainya harus berubah pada setiap kenaikan `version` dan boleh diperbarui secara terpisah untuk penyegaran tautan yang tidak menaikkan versi.
+- `version` bersifat **semantik** (`MAJOR.MINOR.PATCH`). Naikkan MAJOR untuk perubahan skema atau kontrak yang tidak kompatibel; MINOR untuk perubahan aditif yang tidak merusak (field opsional baru, bagian tambahan, anti-pola tambahan); PATCH untuk perubahan perilaku yang memperbaiki direktif yang sudah ada tanpa merusak kontrak.
+- Perbaikan salah ketik, perbaikan tautan, pemformatan, serta suntingan yang hanya menyentuh komentar atau dokumentasi tidak mengubah `version`. Hanya perubahan perilaku yang menaikkannya.
+- `updated` adalah **tanggal ISO 8601** (`YYYY-MM-DD`) dari suntingan terbaru. Nilainya harus berubah pada setiap kenaikan `version`, dan juga berubah pada perbaikan salah ketik atau tautan yang tidak menaikkan versi.
 - Artefak baru dimulai pada `v0.Y.Z`. Promosi ke `vX.Y.Z` menandakan bahwa kontrak artefak cukup stabil untuk menjadi komitmen publik.
 
 ---
@@ -414,12 +408,7 @@ Setiap artefak harus memenuhi pemeriksaan berikut:
 
 ## Catatan
 
-- **Konsistensi sebagai Keamanan:** Frontmatter kanonik memungkinkan validasi
-  otomatis, perkakas, dan verifikasi lintas artefak. Penyimpangan cepat
-  menumpuk.
-- **Deklarasi Portabilitas:** Tidak semua artefak dapat bersifat universal.
-  Deklarasikan batasan secara eksplisit — lebih baik mendokumentasikan sebuah
-  catatan peringatan daripada mengirimkan bug yang senyap.
-- **Kebab-case untuk Nama:** Mudah digunakan dalam URL, skrip, dan konteks
-  baris perintah. Hindari spasi, garis bawah, dan camelCase untuk nama.
-- **Higiene Kenaikan Versi:** Setiap suntingan yang mengubah perilaku harus menaikkan `version` dan `updated` bersamaan. Perbaikan format atau salah ketik murni menaikkan PATCH; bagian opsional atau anti-pola baru menaikkan MINOR; reorganisasi struktural atau perubahan kontrak menaikkan MAJOR.
+- **Konsistensi sebagai Keamanan:** Frontmatter kanonik memungkinkan validasi otomatis, perkakas, dan verifikasi lintas artefak. Penyimpangan cepat menumpuk.
+- **Deklarasi Portabilitas:** Tidak semua artefak dapat bersifat universal. Deklarasikan batasan secara eksplisit — lebih baik mendokumentasikan sebuah catatan peringatan daripada mengirimkan bug yang senyap.
+- **Kebab-case untuk Nama:** Mudah digunakan dalam URL, skrip, dan konteks baris perintah. Hindari spasi, garis bawah, dan camelCase untuk nama.
+- **Higiene Kenaikan Versi:** Setiap suntingan yang mengubah perilaku harus menaikkan `version` dan `updated` bersamaan. Perbaikan salah ketik, perbaikan tautan, dan perubahan format tidak mengubah versi; bagian opsional atau anti-pola baru menaikkan MINOR; reorganisasi struktural atau perubahan kontrak menaikkan MAJOR.

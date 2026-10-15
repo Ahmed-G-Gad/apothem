@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -149,14 +149,20 @@ GitHub Release aus. Der Maintainer durchsucht das Protokoll des Jobs
 
 ### 2.4 Die npm-Veröffentlichung bestätigen
 
-Der Tag-Push führt auch `publish-npm.yml` neben `release.yml` aus. Der
-npm-Workflow wartet nicht auf den Release-Workflow; die Genehmigung der
-Umgebung `release` ist das Gate. Sobald der Release-Workflow aus §2.3
-abgeschlossen ist, bestätigen Sie die Bereitschaft:
+Der Tag-Push führt auch `publish-npm.yml` neben `release.yml` aus. Der npm-Workflow wartet nicht auf den Release-Workflow; die Genehmigung der Umgebung `release` ist das Gate. Sobald der Release-Workflow aus §2.3 abgeschlossen ist, bestätigen Sie die Bereitschaft. Die Prüfung liest Releases, Workflow-Läufe und die veröffentlichte SBOM; richten Sie daher zuerst zwei Eingaben ein:
+
+- **`GH_TOKEN`.** Das Skript verweigert den Lauf ohne dieses Token, selbst wenn `gh` bereits angemeldet ist. Verwenden Sie ein feingranulares persönliches Zugriffstoken, das auf `ahmed-g-gad/apothem` beschränkt ist, mit **Actions: Read** (Workflow-Läufe) und **Contents: Read** (Releases). Die Prüfung schreibt nichts, daher ist keine Schreibberechtigung nötig. Ein Token aus `gh auth token` trägt jeden Geltungsbereich der Anmeldung; bevorzugen Sie daher das feingranulare Token.
+- **Die veröffentlichte SBOM.** Die Prüfung liest `dist/release-assets/sbom.cdx.json`, die CycloneDX-Datei, die das Release anhängt. Laden Sie die Kopie herunter, die das Release veröffentlicht hat, statt eines lokalen Builds.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Die Prüfung schlägt fehl, wenn das Release ein Entwurf oder eine Vorabversion ist, wenn ein erforderlicher Workflow für den Commit des Tags nicht grün ist, wenn die SBOM fehlt, wenn sie eine andere Version beschreibt oder wenn sie ein vendorisiertes Paket auslässt. Die Fehlermeldung nennt die Ursache.
 
 Genehmigen Sie dann das Deployment der Umgebung `release`, wenn Sie dazu
 aufgefordert werden. Der Workflow veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z`

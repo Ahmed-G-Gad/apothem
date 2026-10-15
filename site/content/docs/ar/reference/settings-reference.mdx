@@ -2,7 +2,7 @@
 title: "توثيق settings.json"
 description: "اضبط تنفيذ خطّافات Claude Code والأذونات والأحداث والمُهَل وزمن تشغيل Python والتحقّق وأسبقية الإعدادات الطبقيّة لمنظومة Apothem."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,11 +61,12 @@ sourceHash: "e5e617ed964a9419"
 
 | الحدث | المُطلِق | المُهلة | الغرض | التفويض |
 | ----- | ------- | ------- | ------- | ------- |
-| **SessionStart** | جلسة <bdi>Claude Code</bdi> جديدة | 30 ثانية | تهيئة السياق، قراءة الذاكرة، فحص حالة الخطّة | CM-14 |
-| **PreToolUse** | قبل <bdi>Write/Edit/NotebookEdit/Bash</bdi> | 10 ثوانٍ | التحقّق من امتثال <bdi>CM-7</bdi> + الفرونت-ماتر | CM-7، CM-22 |
-| **PreCompact** | قبل ضغط السياق | 30 ثانية | تخريج الحالة غير المُخرَّجة | CM-24 §2.3 |
-| **PostCompact** | بعد ضغط السياق | 30 ثانية | إعادة التمهيد من الحالة المُخرَّجة | CM-24 §6.2 |
-| **Stop** | الخروج من الجلسة | 60 ثانية | التخريج عند نهاية الجلسة | CM-14/CM-22/CM-24/CM-26 |
+| **<bdi>SessionStart</bdi>** | جلسة <bdi>Claude Code</bdi> جديدة | 30 ثانية | تهيئة السياق، وقراءة الذاكرة، وفحص حالة الخطّة | CM-14 |
+| **<bdi>PreToolUse</bdi>** | قبل <bdi>Write/Edit/NotebookEdit/Bash</bdi> | 10 ثوانٍ | التحقّق من امتثال <bdi>CM-7</bdi> + البيانات الأمامية | CM-7، CM-22 |
+| **<bdi>PostToolUse</bdi>** | بعد كل استدعاء أداة (المطابِق <bdi>`*`</bdi>) | 10 ثوانٍ | تنبيه استشاري للضغط الاستباقي | إدارة السياق (الضغط الاستباقي) |
+| **<bdi>Stop</bdi>** | الخروج من الجلسة | 60 ثانية | التخريج عند نهاية الجلسة | CM-14/CM-22/CM-24/CM-26 |
+
+يُسجِّل هذا القالب أربعة أحداث. ولا يُسجِّل <bdi>`PreCompact`</bdi> ولا <bdi>`PostCompact`</bdi>؛ أما قالبا <bdi>Codex</bdi> و<bdi>Qwen Code</bdi> فيسجّلانهما، ويسردهما [مرجع الخطّافات](/docs/reference/hooks) لكل إطار عمل على حدة.
 
 يقبل <bdi>`dispatch.py`</bdi> إضافةً <bdi>`UserPromptSubmit`</bdi> و<bdi>`Notification`</bdi> في قائمته
 البيضاء للأحداث. لم يُوصَّل أيٌّ منهما في القوالب المشحونة؛ أضِف كتلة matcher بنفس

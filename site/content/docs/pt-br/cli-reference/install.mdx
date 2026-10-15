@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "febcffe685c0b841"
+sourceHash: "d9add891b66c5fd9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,11 +44,13 @@ para aplicá-lo. Com `--json`, a criação é relatada como uma entrada de
 ## Prévia do raio de impacto
 
 `install --harness all` se ramifica em escopos mistos: os adaptadores com escopo
-de projeto gravam sob a raiz `--project` fornecida, enquanto os adaptadores com
-escopo de usuário gravam sob o seu diretório pessoal — fora dessa raiz. Antes
-que qualquer arquivo seja gravado, o comando imprime os destinos concretos
+de projeto gravam sob a raiz informada em `--project`, enquanto os adaptadores com
+escopo de usuário gravam sob o seu diretório pessoal — fora dessa raiz. Antes que
+a instalação grave qualquer arquivo, o comando imprime os destinos concretos
 agrupados sob dois títulos: os que ficam dentro da raiz do projeto e os que ficam
-sob o seu diretório pessoal.
+sob o seu diretório pessoal. A única exceção é `--clean`: a etapa de limpeza completa
+roda antes desta prévia e grava um backup e remove os destinos anteriores, como
+descrito abaixo.
 
 Quando a seleção grava fora da raiz do projeto, uma confirmação interativa
 protege as gravações com raiz no diretório pessoal. `--yes`, um shell não
@@ -226,8 +228,8 @@ apothem install --harness claude-code
 apothem install --harness claude-code --dry-run
 apothem install --harness cursor --project . --profile ~/profile.yaml --json
 apothem install --harness all --project . --dry-run --json
-apothem Installing --harness claude-code   # continuous-form alias
-apothem installing --harness claude-code   # lowercase variant
+apothem installing --harness claude-code   # continuous-form alias
+apothem Installing --harness claude-code   # capitalized variant
 ```
 
 ## Códigos de saída

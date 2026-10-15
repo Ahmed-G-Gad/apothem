@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "968c5a26a3906dc5"
+sourceHash: "cff52dcbcba63390"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,15 +60,7 @@ TTY)—, el comando se niega de antemano con un error estructurado
 proporcione `--yes`. `--install-id` y `--last` seleccionan la pasada de
 instalación y son mutuamente excluyentes.
 
-Una reversión con `--harness all` es exhaustiva de forma deliberada: abarca cada
-entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
-durante la instalación — restaurar el estado previo a la instalación es una
-operación de limpieza, así que alcanza los registros que una instalación
-anterior de mayor alcance pueda haber dejado. Un entorno sin ninguna instalación
-registrada falla como una fila `"outcome": "error"` en `results` (consulta la
-salida JSON), y la ejecución continúa con los demás entornos. Después el comando
-termina con el código 1, o con el 2 cuando se revirtió al menos un destino de
-otro entorno.
+Una reversión con `--harness all` es exhaustiva de forma deliberada: abarca cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite durante la instalación. Restaurar el estado previo a la instalación es una operación de limpieza, así que alcanza los registros que una instalación anterior de mayor alcance pueda haber dejado. Un entorno sin ninguna instalación registrada falla como una fila `"outcome": "error"` en `results` (consulta la salida JSON), y la ejecución continúa con los entornos restantes. Después, el comando termina con código 1 si no se revirtió nada, o con código 2 (resultado parcial) cuando se revirtió al menos un destino y, además, se registró un fallo.
 
 ## Opciones
 
@@ -87,6 +79,8 @@ otro entorno.
 | `-h`, `--help` | Muestra la ayuda y sale. |
 
 ## Salida JSON
+
+El ejemplo corresponde al objeto de salida de un único entorno con nombre. Con `--harness all`, `harness` vale `all`, `output_path` vale `null` y `results` contiene las filas de cada entorno seleccionado.
 
 ```json
 {

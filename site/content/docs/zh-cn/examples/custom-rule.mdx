@@ -2,7 +2,7 @@
 title: "自定义规则"
 description: "为你的项目编写一条自定义常驻规则。"
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## 验证规则格式正确
 
-针对刚写入的规则文件运行 frontmatter 校验器。在 Apothem 检出目录中，请在命令前加上 `PYTHONPATH=src`；脚本安装之后，则加上 `PYTHONPATH="$HOME/.apothem/src"`：
+针对刚写入的规则文件运行 frontmatter 校验器。在 Apothem 检出目录中使用第一条命令，其中 `PYTHONPATH=src` 使该包可被导入。脚本安装之后源码位于 `$HOME/.apothem/src` 之下，此时请使用第二条命令：
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 格式正确的规则会报告干净的通过结果：

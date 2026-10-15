@@ -2,7 +2,7 @@
 title: "カスタムルール"
 description: "あなたのプロジェクト向けにカスタムの常時オンルールを作成する。"
 machineTranslated: true
-sourceHash: "9afb0e5eed8c4fd2"
+sourceHash: "a54744455f93465a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## ルールの形式が正しいことを検証する
 
-ちょうど書いたルールファイルに対して、frontmatter のバリデーターを実行します。Apothem のチェックアウトからは、コマンドの先頭に `PYTHONPATH=src` を付けてください。スクリプトでインストールした後は、先頭に `PYTHONPATH="$HOME/.apothem/src"` を付けます。
+ちょうど書いたルールファイルに対して、フロントマターのバリデーターを実行します。Apothem のチェックアウトからは 1 つ目のコマンドを使ってください。そこでは `PYTHONPATH=src` によってパッケージがインポート可能になります。スクリプトでインストールした後は、ソースが `$HOME/.apothem/src` 配下にあるため、2 つ目のコマンドを使います：
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+# From an Apothem checkout
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+
+# After a script install
+PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 形式が正しいルールは、問題なく合格と報告されます。

@@ -2,7 +2,7 @@
 title: "settings.json-Dokumentation"
 description: "Konfigurieren Sie die Hook-Ausführung von Claude Code, Berechtigungen, Ereignisse, Timeouts, die Python-Laufzeit, Validierung und die geschichtete Einstellungspräzedenz für das Apothem-Ökosystem."
 machineTranslated: true
-sourceHash: "e5e617ed964a9419"
+sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,11 +61,12 @@ Nur-Lese-Werkzeuge sind vorab genehmigt; Schreiboperationen (`Write`, `Edit`, `N
 
 | Ereignis | Auslöser | Timeout | Zweck | Mandat |
 | ----- | ------- | ------- | ------- | ------- |
-| **SessionStart** | Neue Claude Code Sitzung | 30 Sekunden | Kontext initialisieren, Speicher lesen, Planzustand prüfen | CM-14 |
-| **PreToolUse** | Vor Write/Edit/NotebookEdit/Bash | 10 Sekunden | CM-7-Konformität + Frontmatter validieren | CM-7, CM-22 |
-| **PreCompact** | Vor der Kontextkompaktierung | 30 Sekunden | Nicht externalisierten Zustand externalisieren | CM-24 §2.3 |
-| **PostCompact** | Nach der Kontextkompaktierung | 30 Sekunden | Aus dem externalisierten Zustand neu hochfahren | CM-24 §6.2 |
+| **SessionStart** | Neue Claude-Code-Sitzung | 30 Sekunden | Kontext initialisieren, Speicher lesen, Planzustand prüfen | CM-14 |
+| **PreToolUse** | Vor Write/Edit/NotebookEdit/Bash | 10 Sekunden | CM-7-Konformität und Frontmatter validieren | CM-7, CM-22 |
+| **PostToolUse** | Nach jedem Tool-Aufruf (Matcher `*`) | 10 Sekunden | Hinweis zur proaktiven Kompaktierung | Kontextverwaltung (proaktive Kompaktierung) |
 | **Stop** | Sitzungsende | 60 Sekunden | Externalisierung am Sitzungsende | CM-14/CM-22/CM-24/CM-26 |
+
+Diese Vorlage registriert vier Ereignisse. Sie registriert weder `PreCompact` noch `PostCompact`; die Vorlagen für Codex und Qwen Code tun dies, und die [Hook-Referenz](/docs/reference/hooks) listet sie je Harness auf.
 
 `dispatch.py` akzeptiert zusätzlich `UserPromptSubmit` und `Notification` auf seiner
 Ereignis-Whitelist. Keines davon ist in den ausgelieferten Vorlagen verdrahtet; fügen Sie einen Matcher-Block mit demselben

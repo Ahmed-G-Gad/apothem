@@ -2,7 +2,7 @@
 title: "प्रकाशक खाता सेटअप"
 description: "@ahmed-g-gad/apothem के लिए npmjs.com विश्वसनीय प्रकाशक और GitHub-पक्ष की रिलीज़ पूर्वापेक्षाएँ कॉन्फ़िगर करें।"
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,11 +22,7 @@ Release, Pages, CI, अनुरूपता और हार्नेस वर
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-GitHub स्वामी को भविष्य में बदलने की अनुमति है। जहाँ कोई प्लेटफ़ॉर्म गतिशील
-रेज़ोल्यूशन की अनुमति देता है, वहाँ वर्कफ़्लो और इंस्टॉलर लॉजिक
-`github.repository`, `github.repository_owner`, या `APOTHEM_GITHUB_REPOSITORY`
-पढ़ता है। रजिस्ट्री पैकेज पहचानकर्ता स्थिर रहता है क्योंकि उपयोगकर्ता पैकेज का
-नाम इंस्टॉल करते हैं, अनुरक्षक के खाते का नाम नहीं।
+GitHub स्वामी को भविष्य में बदलने की अनुमति है। जहाँ कोई प्लेटफ़ॉर्म गतिशील रेज़ोल्यूशन की अनुमति देता है, वहाँ वर्कफ़्लो और इंस्टॉलर लॉजिक `github.repository`, `github.repository_owner`, या `APOTHEM_GITHUB_REPO` पढ़ता है। रजिस्ट्री पैकेज पहचानकर्ता स्थिर रहता है, क्योंकि उपयोगकर्ता पैकेज का नाम इंस्टॉल करते हैं, अनुरक्षक के खाते का नाम नहीं।
 
 ## npm (npmjs.com)
 
@@ -59,6 +55,8 @@ GitHub स्वामी को भविष्य में बदलने �
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   जाँच के लिए `GH_TOKEN` सेट होना चाहिए और `dist/release-assets/` में प्रकाशित `sbom.cdx.json` मौजूद होनी चाहिए। [रिलीज़-चक्र रनबुक](/docs/runbooks/release-cycle), §2.4, टोकन स्कोप और डाउनलोड कमांड बताता है।
 
 9. टैग पुश द्वारा शुरू किए गए `Publish npm` (`publish-npm.yml`) रन के लिए `release`
    एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित करें। यदि वह रन शुरू नहीं हुआ, तो GitHub

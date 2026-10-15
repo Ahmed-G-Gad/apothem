@@ -2,11 +2,13 @@
 title: "Désinstallation"
 description: "Supprimer Apothem et nettoyer les configurations d'environnement."
 machineTranslated: true
-sourceHash: "9d5c30cdd9a2bacc"
+sourceHash: "5480c1153c062495"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Supprimer d'abord les configurations d'environnement
+
+La commande `apothem` nue utilisée sur cette page est le shim que l'installateur en une étape (canal 3 du [guide d'installation](/docs/install)) écrit ; elle s'exécute dès que le répertoire de ce shim figure dans `PATH`. Sur les autres canaux d'installation, remplacez `apothem` par `npx @ahmed-g-gad/apothem`, comme le décrit le guide d'installation.
 
 Avant de désinstaller Apothem, supprimez la configuration de chaque adaptateur
 d'environnement afin de laisser vos environnements dans un état propre.

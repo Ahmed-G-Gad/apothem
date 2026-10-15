@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "968c5a26a3906dc5"
+sourceHash: "cff52dcbcba63390"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,15 +62,7 @@ sejak awal dengan galat terstruktur `rollback.confirmation_required` (keluar 1)
 kecuali `--yes` diberikan. `--install-id` dan `--last` memilih putaran
 pemasangan dan saling eksklusif.
 
-Rollback `--harness all` sengaja dibuat menyeluruh: rollback ini mencakup setiap
-harness yang terdaftar, termasuk yang dilewati oleh `exclude_harnesses` profil
-selama pemasangan — memulihkan keadaan pra-pemasangan adalah operasi
-pembersihan, sehingga rollback ini menjangkau catatan yang mungkin ditinggalkan
-oleh pemasangan sebelumnya yang cakupannya lebih luas. Harness tanpa pemasangan
-yang tercatat gagal sebagai baris `"outcome": "error"` di `results` (lihat
-keluaran JSON), dan proses berlanjut dengan harness yang tersisa. Perintah ini
-kemudian keluar dengan kode 1, atau 2 ketika setidaknya satu target milik
-harness lain telah di-rollback.
+Rollback `--harness all` sengaja dibuat menyeluruh: rollback ini mencakup setiap harness yang terdaftar, termasuk yang dilewati oleh `exclude_harnesses` profil selama pemasangan. Memulihkan keadaan pra-pemasangan adalah operasi pembersihan, sehingga rollback ini menjangkau catatan yang mungkin ditinggalkan oleh pemasangan sebelumnya yang cakupannya lebih luas. Harness yang tidak memiliki pemasangan tercatat gagal sebagai baris `"outcome": "error"` di `results` (lihat keluaran JSON), dan proses berlanjut dengan harness yang tersisa. Perintah ini kemudian keluar dengan kode 1 jika tidak ada yang di-rollback, atau 2 (hasil parsial) jika setidaknya satu target di-rollback dan sebuah kegagalan juga tercatat.
 
 ## Opsi
 
@@ -89,6 +81,8 @@ harness lain telah di-rollback.
 | `-h`, `--help` | Menampilkan bantuan dan keluar. |
 
 ## Keluaran JSON
+
+Contoh ini adalah struktur keluaran untuk satu harness yang disebutkan namanya. Di bawah `--harness all`, `harness` bernilai `all`, `output_path` bernilai `null`, dan `results` memuat baris dari setiap harness yang dipilih.
 
 ```json
 {

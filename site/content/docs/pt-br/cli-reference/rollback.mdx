@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referência da CLI para o comando apothem rollback."
 machineTranslated: true
-sourceHash: "968c5a26a3906dc5"
+sourceHash: "cff52dcbcba63390"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,13 +62,14 @@ comando recusa de antemão com um erro estruturado
 exclusivos.
 
 Um rollback com `--harness all` é deliberadamente exaustivo: ele cobre todos os
-harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula
-durante a instalação — restaurar o estado anterior à instalação é uma operação
-de limpeza, então ele alcança registros que uma instalação anterior mais ampla
-possa ter deixado. Um harness sem nenhuma instalação registrada falha como uma
-linha `"outcome": "error"` em `results` (consulte a saída JSON), e a execução
-continua com os demais harnesses. Em seguida, o comando sai com 1, ou com 2
-quando pelo menos um destino de outro harness foi revertido.
+harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula durante
+a instalação. Restaurar o estado anterior à instalação é uma operação de limpeza,
+então ele alcança registros que uma instalação anterior mais ampla possa ter
+deixado. Um harness sem nenhuma instalação registrada falha como uma linha
+`"outcome": "error"` em `results` (consulte a saída JSON), e a execução continua com
+os demais harnesses. Em seguida, o comando sai com código 1 quando nada foi revertido,
+ou com código 2 (resultado parcial) quando pelo menos um destino foi revertido e
+uma falha também foi registrada.
 
 ## Opções
 
@@ -87,6 +88,10 @@ quando pelo menos um destino de outro harness foi revertido.
 | `-h`, `--help` | Mostra a ajuda e sai. |
 
 ## Saída JSON
+
+O exemplo é o envelope de um único harness nomeado. Com `--harness all`,
+`harness` é `all`, `output_path` é `null`, e `results` traz as linhas de cada
+harness selecionado.
 
 ```json
 {

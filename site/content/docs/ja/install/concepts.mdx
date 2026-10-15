@@ -2,7 +2,7 @@
 title: "コンセプト"
 description: "Apothem における共有プロファイル、ハーネスアダプター、ルール、フック、コンフォーミティゲート、スキル、委任ワーカーを定義する用語集。"
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,11 +35,7 @@ Apothem をインストールするということは、常に次を意味しま
 
 ## フック
 
-settings.json に登録され、ハーネスのライフサイクルイベント
-（PreToolUse、PostToolUse、SessionStart、PreCompact、Stop、PostCompact）で発火する Python
-スクリプトです。フックは出力がディスクに到達する前に、リアルタイムでコンフォーミティ義務を
-強制します。フックイベントモデルは現時点では Claude Code のサーフェスです。フック機構を持たない
-ハーネス向けのアダプターは、単にこれを省略します。
+ハーネスのフック設定（Claude Code の場合は settings.json）に登録された Python スクリプトで、PreToolUse、PostToolUse、SessionStart、Stop などのライフサイクルイベントで発火します。一部のアダプターは PreCompact と PostCompact も登録します。フックは、出力がディスクに到達する前に、コンフォーミティ義務をリアルタイムで強制します。フック機構を持たないハーネス向けのアダプターは、フックを省略します。
 
 ## コンフォーミティゲート
 

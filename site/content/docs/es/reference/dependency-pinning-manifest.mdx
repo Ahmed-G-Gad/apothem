@@ -2,7 +2,7 @@
 title: "Manifiesto de fijación de dependencias"
 description: "Política de declaración de dependencias que abarca los rangos de tiempo de ejecución de Python, las herramientas de desarrollo, los archivos de bloqueo de las herramientas de lanzamiento y los pisos de versión ratificados para cada superficie de compilación."
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,13 @@ comentarios de versión y se actualizan mediante Renovate.
 
 | Superficie | Estado ratificado | Justificación |
 |---|---|---|
-| Dependencias de tiempo de ejecución | Los límites inferiores actuales viven en `pyproject.toml` `[project.dependencies]` | Pisos estables actuales ratificados antes del lanzamiento; sin CVE de tiempo de ejecución conocido que sea un impedimento |
+| Dependencias de tiempo de ejecución | Los límites inferiores actuales viven en `pyproject.toml` `[project.dependencies]` | Pisos estables actuales ratificados antes del lanzamiento; no hay ningún CVE de tiempo de ejecución conocido que lo bloquee |
 | Herramientas de desarrollo | Los límites inferiores actuales viven en el extra `dev` de `pyproject.toml` | Pisos estables más recientes ratificados antes del lanzamiento |
 | Herramientas de seguridad | Los límites inferiores actuales viven en el extra `security` de `pyproject.toml` | Pisos de escáner actuales ratificados antes del lanzamiento |
-| Herramientas de lanzamiento | El cierre bloqueado por hash vive en `scripts/release/requirements-build-linux.txt` | El flujo de trabajo de lanzamiento instala con `--require-hashes`; los scripts locales requieren que `build` ya exista en lugar de instalar silenciosamente dependencias cambiantes |
-| Herramientas de documentación | Los rangos actuales viven en `site/package.json`; la resolución exacta vive en `site/package-lock.json` | `npm outdated` no devuelve ninguna dependencia de documentación obsoleta tras refrescar el archivo de bloqueo |
-| GitHub Actions | Se conservan las fijaciones por SHA existentes para el lanzamiento actual; el flujo de trabajo reutilizable de SLSA sigue siendo la excepción documentada fijada por etiqueta | La reejecución de CI pública está en verde; las actualizaciones amplias de versión mayor de las actions se dejan intencionadamente a los pull requests de automatización de dependencias para evitar cambios innecesarios en la superficie de lanzamiento |
-| Empaquetado de npm | El flujo de trabajo `publish-npm.yml` se ejecuta con el push de la etiqueta `v*.*.*`, con `workflow_dispatch` como alternativa de respaldo | El único paquete npm público es `@ahmed-g-gad/apothem`; la publicación espera la aprobación del operador del entorno `release`, que se da después de que `scripts/release/check-release-ready.sh` se supera |
+| Herramientas de lanzamiento | El cierre bloqueado por hash vive en `scripts/release/requirements-build-linux.txt` | El flujo de trabajo de lanzamiento instala con `--require-hashes`; los scripts locales exigen que `build` ya exista en lugar de instalar en silencio dependencias cambiantes |
+| Herramientas de documentación | Los rangos actuales viven en `site/package.json`; la resolución exacta vive en `site/package-lock.json` | `npm outdated` no devuelve ninguna dependencia de documentación obsoleta tras actualizar el archivo de bloqueo |
+| GitHub Actions | Se conservan las fijaciones por SHA existentes para el lanzamiento actual; el flujo de trabajo reutilizable de SLSA sigue siendo la excepción documentada fijada por etiqueta, marcada con un comentario `action-pinning-exempt:` en `release.yml` | La reejecución de CI pública está en verde; las actualizaciones amplias de versión mayor de las actions se dejan intencionadamente a los pull requests de automatización de dependencias para evitar cambios innecesarios en la superficie de lanzamiento |
+| Empaquetado de npm | El flujo de trabajo `publish-npm.yml` se ejecuta con el push de la etiqueta `v*.*.*`, con `workflow_dispatch` como alternativa | El único paquete público de npm es `@ahmed-g-gad/apothem`; la publicación espera la aprobación del operador del entorno `release`, que se concede después de que `scripts/release/check-release-ready.sh` supere la verificación |
 
 ## Bloqueo
 

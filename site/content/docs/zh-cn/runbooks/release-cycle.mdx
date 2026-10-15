@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -97,11 +97,20 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 确认 npm 发布
 
-标签推送也会与 `release.yml` 并行运行 `publish-npm.yml`。npm 工作流不等待发布工作流；`release` 环境批准是把关点。待 §2.3 中的发布工作流完成之后，确认就绪状态：
+标签推送还会与 `release.yml` 并行运行 `publish-npm.yml`。npm 工作流不等待发布工作流；把关点是 `release` 环境的批准。待 §2.3 中的发布工作流结束之后，再确认就绪状态。该检查读取发布记录、工作流运行记录以及已发布的 SBOM，因此请先准备两项输入：
+
+- **`GH_TOKEN`。** 即便 `gh` 已登录，缺少该变量时脚本也会拒绝运行。请使用仅限于 `ahmed-g-gad/apothem` 的细粒度个人访问令牌，并授予 **Actions: Read**（工作流运行）与 **Contents: Read**（发布版本）权限。该检查不写入任何内容，因此无需写入权限。由 `gh auth token` 得到的令牌会带上该登录的全部权限范围，因此应优先使用细粒度令牌。
+- **已发布的 SBOM。** 该检查读取 `dist/release-assets/sbom.cdx.json`，即发布所附带的 CycloneDX 文件。请下载发布版本所发布的副本，而不是本地构建的版本。
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+以下任一情况都会使检查失败：发布为草稿或预发布版本；标签所指提交的某个必需工作流未通过；SBOM 缺失；SBOM 描述的是其他版本；或 SBOM 漏掉了某个 vendored 包。失败信息会指明原因。
 
 然后在出现提示时批准 `release` 环境部署。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。
 

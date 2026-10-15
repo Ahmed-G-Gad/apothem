@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Apothem-Harness-Adapter für GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,6 +95,12 @@ Profils und die Apothem-Engine bleiben unberührt.
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+Der Lauf mit `--all` umfasst die eigenständigen Validatoren. Er führt die unter „Kompatibilitätshinweise“ beschriebene Prüfung der Kohärenz über mehrere Oberflächen nicht aus. Um diese Prüfung in einem Checkout unter ihrem Namen auszuführen:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## Fehlerbehebung

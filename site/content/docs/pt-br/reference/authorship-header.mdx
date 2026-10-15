@@ -2,13 +2,13 @@
 title: "Cabeçalho de autoria — Linha de licença SPDX por arquivo"
 description: "Define e aplica marcadores de identificador de licença SPDX por arquivo usando cabeçalhos canônicos de uma única linha na sintaxe de comentário adequada para cada tipo de arquivo."
 machineTranslated: true
-sourceHash: "be2cac4bcbaa4744"
+sourceHash: "1433a9c4ee709a0d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Referência normativa canônica para colaboradores posteriores.** Este documento espelha as seções de Autoria e Cabeçalho de arquivo da especificação do projeto (Especificação §0.5 + §4.6); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada em [ADR-0002](/docs/reference/authorship-header).
+> **Referência normativa canônica para colaboradores downstream.** Este documento espelha as seções de Autoria e Cabeçalho de arquivo da especificação do projeto (Especificação §0.5 + §4.6); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada no ADR-0002.
 
 ---
 
@@ -30,7 +30,7 @@ O texto canônico — escrito aqui em sua forma de sintaxe de comentário `#` �
 # SPDX-License-Identifier: MIT
 ```
 
-Este texto é a **única** fonte autoritativa. O validador `file-header` (§8) é executado contra esta fixture exata byte a byte. Qualquer deriva entre a linha de cabeçalho de um arquivo e esta fixture (sob a substituição de sintaxe conforme §2) é uma falha de CI.
+Este texto é a **única** fonte autoritativa. O validador `file-header` (§8) verifica os arquivos contra esta fixture exata, byte a byte. Qualquer desvio entre a linha de cabeçalho de um arquivo e esta fixture (sob a substituição de sintaxe conforme §2) é relatado como um achado. O validador é consultivo, de modo que um achado não faz a compilação falhar (§8).
 
 ---
 
@@ -61,7 +61,7 @@ O invólucro de comentário HTML (ou MDX `{/* */}`) é renderizado de forma invi
 
 ## 3. Lista de exceções (categoricamente isentas)
 
-As classes a seguir estão **isentas** da linha de cabeçalho SPDX. A verificação de aplicabilidade do validador `file-header` retorna `not-applicable` para elas:
+As classes a seguir estão **isentas** da linha de cabeçalho SPDX. O validador `file-header` aprova esses arquivos sem verificá-los:
 
 - **`LICENSE`** — é em si o instrumento legal; carrega a linha de copyright autoritativa cuja presença o validador `license-author-consistency` confirma.
 - **Ativos `*.svg`** — comentários XML são frágeis para marcadores de comentário de linha, então a procedência de SVG é carregada pelo README de ativos e pelas saídas raster geradas.
@@ -103,7 +103,7 @@ A linha SPDX declara a licença do projeto de forma legível por máquina; o arq
 
 ## 6. Política de visibilidade do cabeçalho
 
-Para os arquivos Markdown especificamente, a linha SPDX é **invisível por padrão** — envolta em `<!-- ... -->` (ou `{/* */}` para MDX), visível apenas no código-fonte. Esta é a política correta para README, CONTRIBUTING, CLAUDE.md, os arquivos de instruções dos harnesses suportados, SKILL.md de skills, corpos de comandos, output-styles e páginas de documentação. Uma renderização **visível** (a linha SPDX como texto simples ou bloco cercado no topo da saída) é permitida para documentos de referência independentes que se beneficiam de uma procedência imediatamente legível; a política é definida por classe de arquivo em `src/apothem/schemas/header-visibility.yaml` (padrão *invisível*), com um marcador de sobreposição em escopo de arquivo `<!-- header-visibility: visible -->` permitido imediatamente após a linha.
+Nos arquivos Markdown e MDX, a linha SPDX é sempre escrita dentro do seu invólucro de comentário (`<!-- ... -->` ou `{/* */}`). Ela fica visível apenas no código-fonte e não aparece na página renderizada. O injetor não tem renderização visível nem substituição por arquivo. Nenhuma ferramenta do repositório lê a fixture `src/apothem/schemas/header-visibility.yaml`.
 
 ---
 
@@ -112,22 +112,23 @@ Para os arquivos Markdown especificamente, a linha SPDX é **invisível por padr
 Uma CLI determinística que:
 
 - Recebe um ou mais caminhos de arquivo (ou globs).
-- Determina a aplicabilidade por meio da lista de exceções (§3).
-- Detecta o estado do cabeçalho existente (canônico / malformado / ausente), removendo qualquer bloco de banner não canônico que encontre para que reexecuções sejam idempotentes.
+- Determina a aplicabilidade pela lista de exceções (§3).
+- Detecta o estado do cabeçalho existente (canônico / malformado / ausente), removendo qualquer bloco de banner não canônico que encontrar, para que as reexecuções sejam idempotentes.
 - Renderiza a variante SPDX correta por tipo de arquivo (§2).
 - Insere na posição correta (§5), respeitando shebangs e frontmatter.
-- Opera em três modos: `fix-in-place` (grava), `emit-patch` (imprime um diff unificado), `check` (sai com código diferente de zero em qualquer divergência — usado pelo CI).
+- Acrescenta a linha em branco ausente a uma linha SPDX que esteja no ponto de inserção sem ela, em vez de inserir uma segunda cópia acima dela.
+- Opera em três modos: `fix-in-place` (grava), `emit-patch` (imprime um diff unificado), `check` (sai com código diferente de zero em qualquer divergência; nenhum job de CI o executa sobre a árvore rastreada).
 - Idempotente: executar duas vezes é uma não-operação.
 
 O injetor é invocado pelo alvo `make headers-fix`, que executa `scripts/inject-header.py --mode fix-in-place`.
 
 ---
 
-## 8. O validador — `file-header` (CI)
+## 8. O validador — `file-header`
 
-Vive em [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Para cada arquivo da árvore de trabalho, o validador procura sua aplicabilidade (conforme §3) e, se aplicável, afirma que a linha SPDX canônica está presente no topo do arquivo — à frente de todo o resto do conteúdo, sendo um shebang o único conteúdo prévio que ele permite (§5). Ele não lê além do frontmatter do Markdown.
+Fica em [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Para cada arquivo da árvore de trabalho, o validador verifica sua aplicabilidade (conforme §3) e, se ela se aplicar, afirma que a linha SPDX canônica está presente no início do arquivo, sendo o shebang o único conteúdo anterior à linha que ele admite (§5). Duas lacunas decorrem do código atual. Ele não ignora o frontmatter YAML; por isso, relata como achados os arquivos Markdown cuja linha SPDX fica depois do frontmatter, posição que o §5 exige. Sua tabela de variantes não lista `.mdx`; por isso, ele aprova arquivos MDX sem verificá-los.
 
-Respaldado pela fixture exata byte a byte em [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Reporta o diff por arquivo e a % de cobertura agregada no resumo de CI. Faz a compilação falhar em qualquer divergência.
+Respaldado pela fixture exata, byte a byte, em [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). A execução sobre o corpus informa a contagem de achados e uma amostra dos arquivos sinalizados por este matcher. Não imprime diff por arquivo nem porcentagem de cobertura. O matcher é consultivo: seus achados são relatados e não fazem a compilação falhar, com `--strict` ou sem ele.
 
 ---
 
@@ -135,23 +136,23 @@ Respaldado pela fixture exata byte a byte em [`src/apothem/schemas/authorship-he
 
 A disciplina precisa sobreviver a toda sessão futura e a todo colaborador futuro. Superfícies de aplicação obrigatórias:
 
-1. **`src/apothem/schemas/authorship-header.txt`** — a fixture canônica exata byte a byte; uma única fonte de verdade.
+1. **`src/apothem/schemas/authorship-header.txt`** — a fixture canônica exata, byte a byte; uma única fonte de verdade.
 2. **`scripts/inject-header.{sh,py}`** — o injetor mecânico (§7).
-3. **Validador `file-header` de CI** (§8) — faz a compilação falhar em qualquer divergência.
-4. **Hook de pre-commit** — o hook `conformity-corpus-perwrite` executa o validador `file-header` (§8) sobre a árvore rastreada. Ele apenas verifica; o injetor (§7) reescreve os arquivos, por meio de `make headers-fix`.
+3. **Validador `file-header`** (§8) — relata divergências como achados consultivos; não faz a compilação falhar.
+4. **Hook de pre-commit** — o hook `conformity-corpus-perwrite` executa todo matcher por Write, incluindo o validador `file-header` (§8), sobre a árvore rastreada com `--strict`. O matcher `file-header` é consultivo; por isso, seus achados são relatados e não bloqueiam um commit. O hook apenas verifica. Ele não tem modo de correção e nunca executa o injetor (§7), que roda por meio de `make headers-fix`.
 5. **Bloco de comportamento obrigatório do `CLAUDE.md`** — instrui o assistente a injetar a linha SPDX canônica sempre que criar um arquivo aplicável.
 6. **O arquivo de instruções do GitHub Copilot** em `.github/copilot-instructions.md` — instrui o Copilot a fazer o mesmo na geração de arquivos.
-7. **Hooks PreToolUse** em `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptam as chamadas das ferramentas Write/Edit em caminhos aplicáveis para que a linha SPDX seja injetada na criação do arquivo em vez de ser descoberta como uma falha de CI mais tarde.
-8. **Caixa de seleção do template de PR** — afirmação voltada ao colaborador de que cada arquivo novo carrega a linha SPDX canônica.
+7. **Hooks PreToolUse** em `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptam chamadas das ferramentas Write/Edit em caminhos aplicáveis, para que a linha SPDX seja injetada na criação do arquivo em vez de ser descoberta depois como um achado do validador.
+8. **Caixa de seleção do template de PR** — afirmação voltada ao colaborador de que cada arquivo novo traz a linha SPDX canônica.
 9. **Este documento** (`site/content/docs/reference/authorship-header.mdx`) — o texto explicativo canônico e normativo.
 
 ---
 
 ## Veja também
 
-- [ADR-0002](/docs/reference/authorship-header) — justificativa arquitetural, alternativas consideradas.
-- [ADR-0006](/docs/reference/authorship-header) — ratificação do estreitamento do banner.
-- [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — a fixture canônica exata byte a byte.
+- ADR-0002 — justificativa arquitetural, alternativas consideradas.
+- ADR-0006 — ratificação do estreitamento do banner.
+- [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — a fixture canônica exata, byte a byte.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — a lista de exceções (forma regex/glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) e [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — o injetor.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — o validador.

@@ -2,11 +2,11 @@
 title: "Schema de frontmatter"
 description: "Guia de referência para a estrutura do bloco de frontmatter YAML, as chaves obrigatórias por classe e as regras de imposição dos validadores entre as classes de artefato."
 machineTranslated: true
-sourceHash: "d6c49336e4d3abf9"
+sourceHash: "e0fad965a556b755"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referência canônica do frontmatter YAML em todas as classes de artefato.** O resumo na seção Conventions do [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) é a declaração em linha; os JSON Schemas por classe em [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` rejeita chaves desconhecidas) são o contrato legível por máquina e prevalecem em qualquer divergência. Esta página é o índice de chaves obrigatórias, e [`artifact-schema.mdx`](/docs/reference/artifact-schema) traz os templates e exemplos práticos por classe — ambas são projeções legíveis por humanos desses schemas.
+> **Referência canônica do frontmatter YAML em todas as classes de artefato.** O resumo na seção Conventions do [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) é a declaração em linha; os JSON Schemas por classe em [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties: false` nos schemas de skill e de comando rejeita chaves desconhecidas; os schemas de agente, de output-style e de plano definem `additionalProperties: true`) são o contrato legível por máquina e prevalecem em qualquer divergência. Esta página é o índice de chaves obrigatórias, e [`artifact-schema.mdx`](/docs/reference/artifact-schema) traz os templates e exemplos práticos por classe — ambas são projeções legíveis por humanos desses schemas.
 
 ---
 

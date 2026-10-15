@@ -2,11 +2,11 @@
 title: "다중 표면 하니스 규약"
 description: "채팅, IDE 자동 완성, PR 리뷰 런타임 전반의 다중 표면 하니스 구성과 일관성에 관한 정식 규범 참조입니다."
 machineTranslated: true
-sourceHash: "8b401418bac95c44"
+sourceHash: "ab1c94a20aecac87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 프로젝트 명세의 다중 표면 하니스 규약 섹션(명세 §0.6 + §2.8 + §4.7)을 미러링하며, 게시된 저장소와 함께 배포되는 독립형 참조입니다. 아키텍처 근거는 [ADR-0003](/docs/architecture)에 기록되어 있습니다.
+> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 프로젝트 명세의 다중 표면 하니스 규약 섹션(명세 §0.6 + §2.8 + §4.7)을 미러링하며, 게시된 저장소와 함께 배포되는 독립형 참조입니다. 아키텍처 근거는 ADR-0003에 기록되어 있습니다.
 
 ---
 
@@ -39,10 +39,10 @@ sourceHash: "8b401418bac95c44"
 |---|---|---|---|
 | `AGENTS.md` | 저장소 루트(및/또는 `.codex/AGENTS.md`) | **MUST** | AGENTS를 인식하는 하니스 |
 | `CLAUDE.md` | 저장소 루트(및/또는 `.claude/CLAUDE.md`) | **MUST** | Claude Code |
-| `.github/` 기반 지침 파일 | `.github/copilot-instructions.md` | **MUST** | IDE 내 자동 완성 런타임 |
-| `site/content/docs/architecture/` 기반 헬퍼 매니페스트 | `site/content/docs/architecture/agents.mdx` | **MAY**(구조화된 질의 채널을 통한 옵트인) | 다중 헬퍼 오케스트레이션 플랫폼 |
-| `.cursorrules` | 저장소 루트 | **MAY**(옵트인) | IDE 내 편집기 런타임 |
-| `.windsurfrules` | 저장소 루트 | **MAY**(옵트인) | IDE 내 도우미 런타임 |
+| IDE 내 지침 파일 | `.github/copilot-instructions.md` | **MUST** | IDE 내 자동 완성 런타임 |
+| 헬퍼 매니페스트 | `site/content/docs/architecture/agents.mdx` | **MAY** (구조화된 질의 채널을 통한 옵트인) | 다중 헬퍼 오케스트레이션 플랫폼 |
+| `.cursorrules` | 저장소 루트 | **MAY** (옵트인) | IDE 내 편집기 런타임 |
+| `.windsurfrules` | 저장소 루트 | **MAY** (옵트인) | IDE 내 동반 런타임 |
 
 이 저장소에서 옵트인 표면은 주장 목록 픽스처([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml))가 `optional-in` 아래에 나열하는 표면입니다. 사용하지 않는 벤더별 루트 구성은 의도적으로 두지 않습니다. 도구별 구성 파일은 해당 도구가 이 저장소의 활성 편집 표면일 때에만 추가됩니다.
 
@@ -130,7 +130,7 @@ IDE 내 지침 파일은 `AGENTS.md`나 `CLAUDE.md`를 그대로 복사한 것�
 
 ## 함께 보기
 
-- [ADR-0003](/docs/architecture) — 아키텍처 근거, 검토한 대안.
+- ADR-0003 — 아키텍처 근거, 검토한 대안.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — 정식 주장 목록 픽스처.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — 정식 프로젝트 목소리.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — Claude Code 미러.

@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -145,13 +145,20 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 
 ### 2.4 تأكيد نشر <bdi>npm</bdi>
 
-يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi> بجانب <bdi>`release.yml`</bdi>.
-ولا ينتظر سيرُ عمل <bdi>npm</bdi> سيرَ عمل الإصدار؛ فموافقة بيئة <bdi>`release`</bdi>
-هي البوابة. بعد أن ينتهي سير عمل الإصدار من القسم 2.3، تأكّد من الجاهزية:
+يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi> بجانب <bdi>`release.yml`</bdi>. ولا ينتظر سيرُ عمل <bdi>npm</bdi> سيرَ عمل الإصدار؛ فموافقة بيئة <bdi>`release`</bdi> هي البوابة. وبعد أن ينتهي سير عمل الإصدار من القسم 2.3، تأكّد من الجاهزية. ويقرأ الفحص الإصدارات، وتشغيلات سير العمل، وملف <bdi>SBOM</bdi> المنشور، لذا جهّز مُدخلَين أولًا:
+
+- **<bdi>`GH_TOKEN`</bdi>.** يرفض السكربت العمل بدونه، حتى عندما يكون <bdi>`gh`</bdi> مُسجَّل الدخول أصلًا. استخدم رمز وصول شخصيًا دقيق النطاق (fine-grained) مقصورًا على <bdi>`ahmed-g-gad/apothem`</bdi>، مع صلاحية **<bdi>Actions: Read</bdi>** (تشغيلات سير العمل) و**<bdi>Contents: Read</bdi>** (الإصدارات). ولا يكتب الفحص شيئًا، لذا لا تلزم صلاحية كتابة. ويحمل الرمز الصادر عن <bdi>`gh auth token`</bdi> كل نطاقات تسجيل الدخول، لذا يُفضَّل الرمز دقيق النطاق.
+- **ملف <bdi>SBOM</bdi> المنشور.** يقرأ الفحص <bdi>`dist/release-assets/sbom.cdx.json`</bdi>، وهو ملف <bdi>CycloneDX</bdi> الذي يرفقه الإصدار. نزّل النسخة التي نشرها الإصدار بدلًا من بناء محلي.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+يفشل الفحص عندما يكون الإصدار مسودّةً أو إصدارًا تجريبيًا (prerelease)، أو عندما لا يكون سير عمل مطلوب لإيداع الوسم أخضر، أو عندما يغيب ملف <bdi>SBOM</bdi>، أو عندما يصف إصدارًا آخر، أو عندما يُغفل حزمةً مُضمَّنة (vendored). وتُسمّي رسالة الفشل السببَ.
 
 ثم وافِق على عملية النشر إلى بيئة <bdi>`release`</bdi> عند المطالبة. ينشر سير العمل
 <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق

@@ -2,7 +2,7 @@
 title: "Konsep"
 description: "Glosarium yang mendefinisikan profil bersama, adapter harness, aturan, hook, gerbang konformitas, skill, dan pekerja terdelegasi di Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,10 +34,7 @@ harness harus berperilaku.
 
 ## Hook
 
-Skrip Python yang terdaftar di settings.json yang dipicu pada peristiwa siklus hidup harness
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hook menegakkan mandat
-konformitas secara real-time sebelum keluaran mencapai disk. Model peristiwa hook adalah permukaan Claude Code
-saat ini; adapter untuk harness tanpa mekanisme hook cukup mengabaikannya.
+Skrip Python yang didaftarkan dalam konfigurasi hook sebuah harness (settings.json untuk Claude Code) dan dipicu pada peristiwa siklus-hidup seperti PreToolUse, PostToolUse, SessionStart, dan Stop; sebagian adapter juga mendaftarkan PreCompact dan PostCompact. Hook menegakkan mandat konformitas secara real-time sebelum keluaran mencapai disk. Adapter untuk harness yang tidak memiliki mekanisme hook tidak menyertakannya.
 
 ## Gerbang konformitas
 

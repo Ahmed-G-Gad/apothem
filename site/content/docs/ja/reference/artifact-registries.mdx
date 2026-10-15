@@ -2,7 +2,7 @@
 title: "アーティファクトレジストリ"
 description: "Apothem エコシステムのアーティファクトの完全な一覧：コマンド、ルール、委任ワーカー、フック、スキル、出力スタイル、アーティファクト進化の規律、および空のアーティファクトクラスの宣言。"
 machineTranslated: true
-sourceHash: "45aeec5fdf08bdfd"
+sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,17 +90,17 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## 4. フック
 
-インストールされた Claude Code のフックエントリーは exec 形式を使います。`command` は `${PYTHON_BIN}` で、`args` には `${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパス（例：`hooks/dispatch.py` と `conformity/gate.py`）が入ります。`-m apothem.hooks.dispatch` 形式は、`PYTHONPATH=src` を使ってソースチェックアウトから開発する場合のものです。ディスパッチャーは、エコシステムルートの解決のために `src/apothem/hooks/lib/resolve_root.py` をインポートし、それと並んで `src/apothem/hooks/` 自体の配下にある 2 つのヘルパーに処理を委譲します。`src/apothem/hooks/emit_hook_context.py` は、アシスタント向けにイベントのペイロードを整形します。`src/apothem/hooks/session_start_bootstrap.py` は、ディスパッチャーがそのイベントをルーティングする際に引き渡す SessionStart の準備作業を担います。サポートされるイベントが発火したときにアシスタントへ提示されるフックメッセージは、`src/apothem/hooks/messages/` 配下の Markdown コンテキストファイルとして保存されています。イベントのバリアントごとに 1 つです：`postcompact.md`、`precompact.md`、`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、`stop.md`。ルーティングされる各コンテキストファイルは、そのイベントが発火し、コンテキスト引数が `settings.json` に登録されているときに、ディスパッチャーによって読み込まれます。`pretooluse-conformity.md` は、現在の `settings.json` のルーティングエントリーを持たない、利用可能なバリアントとして同梱されています。`pretooluse-dependency-guard.md` は Write と Edit のマッチャーでルーティングされ、`pretooluse-eval-guard.md` は Write、Edit、`Bash|PowerShell` のマッチャーでルーティングされます。
+インストールされた Claude Code のフックエントリーは exec 形式を使います。`command` は `${PYTHON_BIN}` で、`args` には `${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパス（例：`hooks/dispatch.py` と `conformity/gate.py`）が入ります。`-m apothem.hooks.dispatch` 形式は、`PYTHONPATH=src` を使ってソースチェックアウトから開発する場合のものです。ディスパッチャーは、エコシステムルートの解決のために `src/apothem/hooks/lib/resolve_root.py` をインポートし、`src/apothem/hooks/` 自体の配下で並ぶ 2 つのヘルパーに処理を委譲します：`src/apothem/hooks/emit_hook_context.py` はアシスタント向けにイベントのペイロードを整形し、`src/apothem/hooks/session_start_bootstrap.py` は、ディスパッチャーがそのイベントをルーティングする際に引き渡す SessionStart の準備作業を担います。サポートされるイベントが発火したときにアシスタントへ提示されるフックメッセージは、`src/apothem/hooks/messages/` 配下に Markdown のコンテキストファイルとして置かれています。イベントのバリアントごとに 1 つです：`postcompact.md`、`precompact.md`、`posttooluse-proactive-compaction.md`、`pretooluse-askuserquestion-recommended.md`、`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、`stop.md`。ルーティングされる各コンテキストファイルは、そのイベントが発火し、かつそのコンテキスト引数が `settings.json` に登録されているときに、ディスパッチャーによって読み込まれます。`pretooluse-conformity.md` は、現在の `settings.json` にルーティングエントリーを持たない、利用可能なバリアントとして同梱されています。`pretooluse-dependency-guard.md` は Write と Edit のマッチャーでルーティングされ、`pretooluse-eval-guard.md` は Write、Edit、`Bash|PowerShell` のマッチャーでルーティングされます。
 
 ```text
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
-PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher
 UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 ```

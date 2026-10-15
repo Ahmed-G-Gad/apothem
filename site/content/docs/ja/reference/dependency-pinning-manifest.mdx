@@ -2,7 +2,7 @@
 title: "依存関係ピン留めマニフェスト"
 description: "Python ランタイムの範囲、開発ツール、リリースツールのロックファイル、各ビルド面に対する承認済みのバージョン下限を網羅する依存関係宣言ポリシー。"
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,9 +33,9 @@ Apothem は、小さなランタイム依存関係のセットに加えて、よ
 | ランタイム依存関係 | 現在の下限は `pyproject.toml` の `[project.dependencies]` にある | リリース前に承認された現在の安定下限。既知のランタイム CVE による阻害要因はなし |
 | 開発ツール | 現在の下限は `pyproject.toml` の `dev` extra にある | リリース前に承認された最新の安定下限 |
 | セキュリティツール | 現在の下限は `pyproject.toml` の `security` extra にある | リリース前に承認された現在のスキャナー下限 |
-| リリースツール | ハッシュロックされたクロージャは `scripts/release/requirements-build-linux.txt` にある | リリースワークフローは `--require-hashes` を付けてインストールする。ローカルスクリプトは、変動する依存関係を暗黙のうちにインストールする代わりに、`build` がすでに存在することを要求する |
+| リリースツール | ハッシュロックされたクロージャは `scripts/release/requirements-build-linux.txt` にある | リリースワークフローは `--require-hashes` を付けてインストールする。ローカルのスクリプトは、変動する依存関係を黙ってインストールする代わりに、`build` がすでに存在することを要求する |
 | ドキュメントツール | 現在の範囲は `site/package.json` にあり、厳密な解決は `site/package-lock.json` にある | ロックファイルの更新後、`npm outdated` は古くなったドキュメント依存関係を返さない |
-| GitHub Actions | 現在のリリースでは既存の SHA ピンを保持する。SLSA 再利用可能ワークフローは、文書化されたタグピンの例外のままである | 公開 CI の再実行はグリーン。リリース面の変動を避けるため、アクションのメジャーバージョンへの広範なアップグレードは、意図的に依存関係自動化の PR に委ねられる |
+| GitHub Actions | 現在のリリースでは既存の SHA ピンを保持する。SLSA の再利用可能ワークフローは、文書化されたタグピンの例外のままであり、`release.yml` 内で `action-pinning-exempt:` コメントによって示される | 公開 CI の再実行はグリーンである。リリース面の変動を避けるため、アクションのメジャーバージョンの広範なアップグレードは、意図的に依存関係自動化の PR に委ねられている |
 | npm パッケージング | `publish-npm.yml` ワークフローは `v*.*.*` のタグのプッシュで実行され、`workflow_dispatch` がフォールバックとなる | 唯一の公開 npm パッケージは `@ahmed-g-gad/apothem`。公開は、`scripts/release/check-release-ready.sh` が通過した後に与えられる、オペレーターによる `release` 環境の承認を待つ |
 
 ## ロック

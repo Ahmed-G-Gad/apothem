@@ -2,7 +2,7 @@
 title: "المفاهيم"
 description: "مسرد يعرّف الملفات التعريفية المشتركة، ومحوّلات أُطُر العمل، والقواعد، والخطّافات، وبوابات المطابقة، والمهارات، والعمّال المُفوَّضين في Apothem."
 machineTranslated: true
-sourceHash: "1a84322c09beb863"
+sourceHash: "629015f2d24e58a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,10 +33,7 @@ Claude Code, Cursor, Gemini CLI, etc.
 
 ## الخطّاف
 
-سكربت <bdi>Python</bdi> مُسجَّل في <bdi>settings.json</bdi> يُطلَق عند أحداث دورة حياة إطار العمل
-(<bdi>PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact</bdi>). تفرض الخطّافات
-متطلّبات المطابقة في الزمن الحقيقي قبل وصول المُخرَج إلى القرص. نموذج أحداث الخطّاف هو سطح خاص بـ
-<bdi>Claude Code</bdi> اليوم؛ ومحوّلات أُطُر العمل التي لا تملك آلية خطّافات تكتفي بحذفه.
+سكربت <bdi>Python</bdi> مُسجَّل في إعداد الخطّافات الخاص بإطار العمل (<bdi>settings.json</bdi> في <bdi>Claude Code</bdi>)، ويُطلَق عند أحداث دورة الحياة مثل <bdi>PreToolUse</bdi> و<bdi>PostToolUse</bdi> و<bdi>SessionStart</bdi> و<bdi>Stop</bdi>؛ وتسجّل بعض المحوّلات أيضًا <bdi>PreCompact</bdi> و<bdi>PostCompact</bdi>. وتفرض الخطّافات متطلّبات المطابقة في الزمن الحقيقي قبل أن يصل المُخرَج إلى القرص. أما المحوّلات الخاصة بأُطُر العمل التي لا تملك آلية خطّافات فتُغفِله.
 
 ## بوابة المطابقة
 

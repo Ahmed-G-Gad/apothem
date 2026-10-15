@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "محوّل إطار عمل Apothem لـ GitHub Copilot (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,6 +86,12 @@ apothem uninstall --harness github-copilot --project /path/to/project
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+يغطّي التشغيل <bdi>`--all`</bdi> المدقّقات المستقلّة، ولا يُشغّل فحص الاتساق متعدّد الأسطح المذكور ضمن ملاحظات التوافق. ولتشغيل ذلك الفحص باسمه من نسخة مسحوبة:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## استكشاف الأخطاء وإصلاحها

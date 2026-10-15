@@ -2,7 +2,7 @@
 title: "التثبيت"
 description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "1c900ce4c37b3e46"
+sourceHash: "2da59e39cc2cc8e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -189,14 +189,7 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 كل وسم وكيفية التحقّق منه.
 
-تُرخي التجاوزات الصريحة السلوك الافتراضي. فـ<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>
-يخفّض فشل التحقّق إلى تحذير ويتابع، وذلك للاستخدام المعزول عن الشبكة، أو المحلي،
-أو مع الإصدارات السابقة لاعتماد التوقيع. أما <bdi>`APOTHEM_REF=main`</bdi> فيسحب
-الفرع المتحرّك دون تحقّق، ولكن فقط مع <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>.
-ومع <bdi>`APOTHEM_REF=main`</bdi> وحده، يجلب المُثبِّت الفرع <bdi>`main`</bdi> إلى
-<bdi>`APOTHEM_HOME`</bdi> ثم يُجهِض قبل تجسيد أي تهيئة، لأن الفرع ليس وسم إصدار
-موقَّعًا. وأما النسخة المسحوبة المحلية عبر <bdi>`APOTHEM_SOURCE`</bdi> فلا تجلب
-شيئًا وتتخطّى التحقّق.
+تُرخي التجاوزات الصريحة السلوك الافتراضي. فـ<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> يخفّض فشل التحقّق إلى تحذير ويتابع، وذلك للاستخدام المعزول عن الشبكة أو المحلي، أو لتثبيت إصدار يسبق توقيع الوسوم. أما <bdi>`APOTHEM_REF=main`</bdi> فيسحب الفرع المتحرّك دون تحقّق، ولكن فقط مع <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>. ومع <bdi>`APOTHEM_REF=main`</bdi> وحده، يجلب المُثبِّت الفرعَ <bdi>`main`</bdi> إلى <bdi>`APOTHEM_HOME`</bdi> ثم يُجهِض قبل تجسيد أي تهيئة، لأن الفرع ليس وسم إصدار موقَّعًا. وأما النسخة المسحوبة المحلية عبر <bdi>`APOTHEM_SOURCE`</bdi> فلا تجلب شيئًا وتتخطّى التحقّق.
 
 <bdi>`APOTHEM_VERIFY=checksum`</bdi> هو الطريق الوسط لمضيف لا يحمل المفتاح العام
 للمشرف بعد: بدلًا من الاستنساخ، ينزّل المُثبِّت أرشيف المنصّة الخاص بالإصدار وملف

@@ -2,7 +2,7 @@
 title: "Настройка учётной записи издателя"
 description: "Настройка доверенного издателя npmjs.com для @ahmed-g-gad/apothem и предварительных требований к релизу на стороне GitHub."
 machineTranslated: true
-sourceHash: "ee07a06a98f62864"
+sourceHash: "f80ed311f9b18d0b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,11 +23,7 @@ sourceHash: "ee07a06a98f62864"
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Владельцу GitHub разрешено меняться в будущем. Логика рабочих процессов и
-установщиков читает `github.repository`, `github.repository_owner` или
-`APOTHEM_GITHUB_REPOSITORY` там, где платформа допускает динамическое
-разрешение. Идентификатор пакета в реестре остаётся стабильным, поскольку
-пользователи устанавливают имя пакета, а не имя учётной записи сопровождающего.
+Владельцу GitHub разрешено меняться в будущем. Логика рабочих процессов и установщиков читает `github.repository`, `github.repository_owner` или `APOTHEM_GITHUB_REPO` там, где платформа допускает динамическое разрешение. Идентификатор пакета в реестре остаётся стабильным, поскольку пользователи устанавливают имя пакета, а не имя учётной записи сопровождающего.
 
 ## npm (npmjs.com)
 
@@ -60,6 +56,8 @@ sourceHash: "ee07a06a98f62864"
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
+
+   Для проверки нужен заданный `GH_TOKEN` и опубликованный файл `sbom.cdx.json` в `dist/release-assets/`. В [руководстве по циклу релиза](/docs/runbooks/release-cycle), §2.4, указаны область действия токена и команда загрузки.
 
 9. Одобрите развёртывание в среде `release` для запуска `Publish npm`
    (`publish-npm.yml`), который запускает push тега. Если этот запуск не

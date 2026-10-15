@@ -2,7 +2,7 @@
 title: "Comparación"
 description: "Cómo evaluar Apothem frente a la configuración de entornos mantenida a mano y otros enfoques de configuración, con una matriz de funciones y páginas por entorno."
 machineTranslated: true
-sourceHash: "4a833217abbbb01d"
+sourceHash: "0291d627acd6aa88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,46 +18,24 @@ Los datos sobre otras herramientas de esta página corresponden al
 proyecto (consulta [Fuentes](#fuentes)); vuelve a comprobarlos en cada versión
 menor.
 
-Otras herramientas resuelven porciones adyacentes de este problema. Los
-gestores de configuración basados en archivos como **chezmoi** y **GNU Stow**
-colocan, enlazan o generan archivos a partir de plantillas, pero nunca traducen
-una fuente al esquema de configuración *nativo* de cada entorno. Las CLI de
-sincronización entre herramientas generan archivos por herramienta a partir de
-una sola fuente: **rulesync** genera configuración nativa para 60 herramientas
-de programación y dos estándares abiertos, con una unidad sincronizada más
-amplia que la de Apothem; **ruler** distribuye un único directorio `.ruler/` a
-33 destinos, concatena las reglas en el archivo de instrucciones de cada
-herramienta y traduce los servidores MCP, las skills y los subagentes a
-configuración nativa. Lo que distingue a Apothem es la **disciplina de
-gobernanza y de ciclo de vida que se distribuye en torno a la sincronización**:
-una puerta de conformidad mecanizada, canalizaciones deterministas, una
-fortaleza de auditoría y un ciclo de vida reversible y verificado.
+Otras herramientas resuelven porciones adyacentes de este problema. Los gestores de configuración basados en archivos, como **chezmoi** y **GNU Stow**, colocan, enlazan o generan archivos a partir de plantillas, pero nunca traducen una fuente al esquema de configuración *nativo* de cada entorno. Las CLI de sincronización entre herramientas generan archivos por herramienta a partir de una sola fuente: **rulesync** genera configuración nativa para 60 herramientas de programación y dos estándares abiertos, sobre una unidad sincronizada que añade MCP, archivos ignore, permisos y comprobaciones de revisión, ninguno de los cuales sincroniza el manifiesto de Apothem; **ruler** distribuye un único directorio `.ruler/` a 33 destinos, concatena las reglas en el archivo de instrucciones de cada herramienta y traduce los servidores MCP, las skills y los subagentes a configuración nativa. Lo que distingue a Apothem es la **disciplina de gobernanza y de ciclo de vida que se distribuye en torno a la sincronización**: una puerta de conformidad mecanizada, canalizaciones deterministas, una secuencia de revisión de auditoría y un ciclo de vida reversible y verificado.
 
 | Capacidad | Apothem | Gestores de configuración basados en archivos (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Una fuente hacia los esquemas nativos de muchas herramientas | Sí — diecisiete adaptadores de entorno | No — copia, enlace simbólico o plantilla, sin traducción | Sí — 60 herramientas más los estándares AGENTS.md y Agent Skills | En parte — reglas concatenadas en el archivo de instrucciones de cada herramienta; MCP, skills y subagentes escritos en forma nativa |
-| Unidad sincronizada | reglas, skills, subagentes, hooks, comandos de barra, output-styles, ajustes, MCP | archivos arbitrarios | reglas, ignore, MCP, comandos, subagentes, skills, hooks, permisos, checks (instrucciones de comprobación para la revisión de código) | reglas, MCP, skills, subagentes |
+| Unidad sincronizada | reglas, skills, subagentes, hooks, comandos de barra, output-styles, statuslines, plantillas, validadores de conformidad, esquemas, plantillas de instrucciones por entorno y la plantilla de ajustes de Claude Code | archivos arbitrarios | reglas, ignore, MCP, comandos, subagentes, skills, hooks, permisos, checks (instrucciones de comprobación para la revisión de código) | reglas, MCP, skills, subagentes |
 | Corpus de gobernanza (reglas de comportamiento más una puerta de conformidad mecánica) | Sí — `python -m apothem.conformity.gate` | No | No — su función `checks` sincroniza comprobaciones de revisión de código con las herramientas; no hay puerta de conformidad sobre las reglas | No |
 | Canalizaciones deterministas de planificación e investigación | Sí — de `/plan-spec` a `/plan-execute`, `/research` de trece etapas | No | No | No |
-| Fortaleza de auditoría que detecta y corrige | Sí — barrido de once comandos, bucle de reauditoría `/fortress` | No | No | No |
+| Secuencia de revisión de auditoría que detecta y corrige | Sí — barrido de once comandos, bucle de reauditoría `/fortress` | No | No | No |
+| Memoria duradera entre sesiones | Sí — almacén `memory/records.json` bajo el directorio de datos de Apothem, creado en la instalación | No comparado | No indicado en su README | No indicado en su README |
 | Lanzamientos con la cadena de suministro endurecida | Sí — SBOM, Sigstore, SLSA, objetivo de Scorecard | No comparado | No indicado en su README | No indicado en su README |
 | Ciclo de vida reversible y verificado | Sí — copia de seguridad, `apothem verify --json`, desinstalación sin huérfanos | chezmoi: `chezmoi verify` comprueba cada destino; Stow: solo enlaces simbólicos | No indicado en su README | Copias de seguridad `.bak` y `ruler revert`; ningún comando de verificación en su README |
 
-Donde otra herramienta es más fuerte, se la nombra: **rulesync** llega a más
-del triple de herramientas y sincroniza una unidad más amplia (incluidos los
-permisos y las comprobaciones de revisión), y **ruler** llega a casi el doble
-de herramientas y tiene su propio comando de reversión. Apothem cambia el
-recuento bruto de herramientas por la disciplina de gobernanza, auditoría y
-ciclo de vida que se distribuye en torno a la sincronización —una puerta de
-conformidad, canalizaciones deterministas de planificación e investigación,
-una fortaleza de auditoría de once comandos, memoria duradera y un ciclo de
-vida reversible y verificado— que ninguna de las dos herramientas de
-sincronización lleva.
+Donde otra herramienta es más fuerte, se la nombra: **rulesync** llega a más del triple de herramientas y sincroniza MCP, archivos ignore, permisos y comprobaciones de revisión, algo que el manifiesto de Apothem no sincroniza; **ruler** llega a casi el doble de herramientas y tiene un comando de reversión propio. Apothem cambia el número bruto de herramientas por la disciplina de gobernanza, auditoría y ciclo de vida que se distribuye en torno a la sincronización (una puerta de conformidad, canalizaciones deterministas de planificación e investigación, una secuencia de revisión de auditoría de once comandos, memoria duradera y un ciclo de vida reversible y verificado), que ninguna de las dos herramientas de sincronización lleva.
 
 ### Fuentes
 
-Todas consultadas el 2026-10-02, sobre la última versión de cada proyecto en
-esa fecha.
+Todas consultadas el 2026-10-02, sobre la última versión de cada proyecto en esa fecha. Los README de rulesync y ruler se volvieron a leer el 2026-10-15 para la fila de memoria duradera; ninguno menciona una función de memoria.
 
 - rulesync (npm `rulesync`): [README](https://github.com/dyoshikawa/rulesync#readme)
   (tabla de herramientas admitidas: 60 herramientas de programación y dos

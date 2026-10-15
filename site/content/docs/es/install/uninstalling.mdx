@@ -2,11 +2,13 @@
 title: "Desinstalación"
 description: "Elimina Apothem y limpia las configuraciones de entorno."
 machineTranslated: true
-sourceHash: "9d5c30cdd9a2bacc"
+sourceHash: "5480c1153c062495"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Elimina primero las configuraciones de entorno
+
+El comando `apothem` a secas que se usa en esta página es el shim que escribe el instalador de un solo paso (canal 3 de la [guía de instalación](/docs/install)); funciona cuando el directorio de ese shim está en `PATH`. En los demás canales de instalación, sustituye `apothem` por `npx @ahmed-g-gad/apothem`, tal como describe la guía de instalación.
 
 Antes de desinstalar Apothem, elimina la configuración de cada adaptador de
 entorno para dejar tus entornos en un estado limpio. Ejecuta

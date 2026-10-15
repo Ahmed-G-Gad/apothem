@@ -2,11 +2,13 @@
 title: "Desinstalação"
 description: "Remova o Apothem e limpe as configurações de harness."
 machineTranslated: true
-sourceHash: "9d5c30cdd9a2bacc"
+sourceHash: "5480c1153c062495"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## Remova primeiro as configurações de harness
+
+O comando `apothem` simples usado nesta página é o shim que o instalador de uma única etapa (canal 3 do [guia de instalação](/docs/install)) grava; ele funciona quando o diretório desse shim está em `PATH`. Nos demais canais de instalação, substitua `apothem` por `npx @ahmed-g-gad/apothem`, como descreve o guia de instalação.
 
 Antes de desinstalar o Apothem, remova a configuração de cada adaptador de
 harness para deixar seus harnesses em um estado limpo. Execute

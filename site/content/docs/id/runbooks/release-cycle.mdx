@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "f7e1f75b9dd83f7a"
+sourceHash: "5f0a7e3183712b33"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,14 +144,20 @@ memindai log job `publish GitHub Release` untuk konfirmasi unggahan aset.
 
 ### 2.4 Konfirmasi publikasi npm
 
-Push tag juga menjalankan `publish-npm.yml` di samping `release.yml`. Alur
-kerja npm tidak menunggu alur kerja rilis; persetujuan environment `release`
-adalah gerbangnya. Setelah alur kerja rilis dari §2.3 selesai, konfirmasikan
-kesiapan:
+Push tag juga menjalankan `publish-npm.yml` di samping `release.yml`. Alur kerja npm tidak menunggu alur kerja rilis; persetujuan environment `release` adalah gerbangnya. Setelah alur kerja rilis dari §2.3 selesai, konfirmasikan kesiapan. Pemeriksaan membaca rilis, eksekusi alur kerja, dan SBOM yang dipublikasikan, sehingga siapkan dua masukan terlebih dahulu:
+
+- **`GH_TOKEN`.** Skrip menolak berjalan tanpanya, bahkan ketika `gh` sudah masuk. Gunakan token akses pribadi berbutir-halus (fine-grained) yang dibatasi pada `ahmed-g-gad/apothem`, dengan **Actions: Read** (eksekusi alur kerja) dan **Contents: Read** (rilis). Pemeriksaan tidak menulis apa pun, sehingga izin tulis tidak diperlukan. Token dari `gh auth token` membawa setiap cakupan dari login tersebut, jadi utamakan token berbutir-halus.
+- **SBOM yang dipublikasikan.** Pemeriksaan membaca `dist/release-assets/sbom.cdx.json`, berkas CycloneDX yang dilampirkan rilis. Unduh salinan yang dipublikasikan rilis, bukan build lokal.
 
 ```bash
+read -rs GH_TOKEN && export GH_TOKEN
+mkdir -p dist/release-assets
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem \
+  --pattern sbom.cdx.json --dir dist/release-assets --clobber
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Pemeriksaan gagal ketika rilis berupa draf atau prarilis, ketika alur kerja yang diwajibkan untuk commit tag tidak hijau, ketika SBOM tidak ada, ketika SBOM menjelaskan versi lain, atau ketika SBOM menghilangkan paket yang di-vendor. Pesan kegagalan menyebutkan penyebabnya.
 
 Lalu setujui deployment environment `release` saat diminta. Alur kerja
 memublikasikan `@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm trusted

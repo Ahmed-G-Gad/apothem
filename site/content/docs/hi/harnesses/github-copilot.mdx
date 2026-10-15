@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "99dc7def3f713da4"
+sourceHash: "72bf51d743f95bc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -89,6 +89,12 @@ apothem uninstall --harness github-copilot --project /path/to/project
 
 ```bash
 python -m apothem.conformity.gate --all .
+```
+
+`--all` रन स्टैंडअलोन वैलिडेटर को कवर करता है। वह बहु-सतह संगति जाँच नहीं चलाता, जिसका वर्णन संगतता टिप्पणियाँ के अंतर्गत है। किसी चेकआउट में उस जाँच को नाम से चलाने के लिए:
+
+```bash
+python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 ```
 
 ## समस्या निवारण

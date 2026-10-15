@@ -2,7 +2,7 @@
 title: "Manifest zur Abhängigkeitsfixierung"
 description: "Richtlinie zur Abhängigkeitsdeklaration, die Python-Laufzeitbereiche, Entwicklungswerkzeuge, Lock-Dateien der Release-Werkzeuge und ratifizierte Versionsuntergrenzen für jede Build-Oberfläche abdeckt."
 machineTranslated: true
-sourceHash: "bde46b3dc263b56e"
+sourceHash: "bb9b1e385a680545"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,13 +33,13 @@ aktualisiert.
 
 | Oberfläche | Ratifizierter Zustand | Begründung |
 |---|---|---|
-| Laufzeitabhängigkeiten | Aktuelle Untergrenzen leben in `pyproject.toml` `[project.dependencies]` | Aktuelle stabile Untergrenzen vor dem Release ratifiziert; kein bekannter Laufzeit-CVE-Blocker |
-| Entwicklungswerkzeuge | Aktuelle Untergrenzen leben im `dev`-Extra von `pyproject.toml` | Neueste stabile Untergrenzen vor dem Release ratifiziert |
-| Sicherheitswerkzeuge | Aktuelle Untergrenzen leben im `security`-Extra von `pyproject.toml` | Aktuelle Scanner-Untergrenzen vor dem Release ratifiziert |
-| Release-Werkzeuge | Die hash-gesperrte Hülle lebt in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden ist, statt schwankende Abhängigkeiten stillschweigend zu installieren |
-| Dokumentationswerkzeuge | Aktuelle Bereiche leben in `site/package.json`; die exakte Auflösung lebt in `site/package-lock.json` | `npm outdated` liefert nach der Aktualisierung der Lock-Datei keine veraltete Dokumentationsabhängigkeit |
-| GitHub Actions | Bestehende SHA-Fixierungen werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte Tag-fixierte Ausnahme | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden absichtlich den Pull Requests der Abhängigkeitsautomatisierung überlassen, um unnötige Unruhe an der Release-Oberfläche zu vermeiden |
-| npm-Paketierung | Der Workflow `publish-npm.yml` läuft beim Push eines `v*.*.*`-Tags, mit `workflow_dispatch` als Ausweichweg | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung wartet auf die Genehmigung der `release`-Umgebung durch den Operator, die erteilt wird, nachdem `scripts/release/check-release-ready.sh` erfolgreich durchgelaufen ist |
+| Laufzeitabhängigkeiten | Aktuelle Untergrenzen stehen in `pyproject.toml` unter `[project.dependencies]` | Aktuelle stabile Untergrenzen vor dem Release ratifiziert; kein bekannter CVE-Blocker zur Laufzeit |
+| Entwicklungswerkzeuge | Aktuelle Untergrenzen stehen im Extra `dev` von `pyproject.toml` | Neueste stabile Untergrenzen vor dem Release ratifiziert |
+| Sicherheitswerkzeuge | Aktuelle Untergrenzen stehen im Extra `security` von `pyproject.toml` | Aktuelle Untergrenzen der Scanner vor dem Release ratifiziert |
+| Release-Werkzeuge | Die hash-gesperrte Abhängigkeitsmenge steht in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden ist, statt schwankende Abhängigkeiten stillschweigend zu installieren |
+| Dokumentationswerkzeuge | Aktuelle Bereiche stehen in `site/package.json`; die exakte Auflösung steht in `site/package-lock.json` | `npm outdated` meldet nach der Aktualisierung der Lock-Datei keine veraltete Dokumentationsabhängigkeit |
+| GitHub Actions | Bestehende SHA-Pins werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte, per Tag fixierte Ausnahme und ist in `release.yml` mit einem Kommentar `action-pinning-exempt:` gekennzeichnet | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden bewusst den PRs der Abhängigkeitsautomatisierung überlassen, um Unruhe an der Release-Oberfläche zu vermeiden |
+| npm-Paketierung | Der Workflow `publish-npm.yml` läuft beim Push des Tags `v*.*.*`; `workflow_dispatch` dient als Ausweichweg | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung wartet auf die Genehmigung der Umgebung `release` durch den Operator, die erteilt wird, nachdem `scripts/release/check-release-ready.sh` erfolgreich durchgelaufen ist |
 
 ## Sperrung
 
