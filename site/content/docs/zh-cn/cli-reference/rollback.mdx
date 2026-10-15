@@ -2,7 +2,7 @@
 title: "rollback"
 description: "apothem rollback 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "96531a4a5fa4a15e"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 - 移除该次安装创建的共享数据存储（`memory`、`contexts`、`learning`），除非另一个已安装的工具仍在使用它们；
 - 在该次安装创建的目录变空之后将其移除。
 
-回滚操作移除或替换的所有内容，都会先复制到 Apothem 备份根目录（`~/.apothem/backups/`）中，因此回滚本身也可以手动撤销。随后它会向工具账本追加一条 `rollback` 记录。回滚较早的安装时，只会恢复或移除该较早安装所记录的目标，并会将同一根目录下此后的每次安装从活动记录中剔除。之后的安装在这些目标之外添加的文件会保留在原位。
+回滚操作移除或替换的所有内容，都会先复制到 Apothem 备份根目录（`~/.apothem/backups/`）中，因此回滚本身也可以手动撤销。随后，回滚会向工具账本追加一条 `rollback` 记录。回滚较早的安装时，只会恢复或移除该较早安装所记录的目标，并会将同一根目录下此后的每次安装从账本的活动安装中剔除。之后的安装在这些目标之外添加的文件会保留在原位。
 
 账本为每个安装根目录保留最新的 10 条安装记录（以及它们所引用的备份）；更早的安装将无法再按 id 回滚，并会报告 `rollback.no_record`。[`apothem backups prune`](/docs/cli-reference/backups) 可按需降低这一上限，并且绝不会移除最近一次安装恢复时所依据的备份。
 
@@ -32,7 +32,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 
 除非提供了 `--yes`，否则会按工具逐一提示确认。当无法进行提示时——`--format json`（提示文本会破坏单一的 JSON 文档）或非交互式 shell（无 TTY）——除非提供了 `--yes`，否则该命令会预先以一个结构化的 `rollback.confirmation_required` 错误（退出码 1）拒绝执行。`--install-id` 和 `--last` 用于选择安装过程，二者互斥。
 
-`--harness all` 回滚有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装时跳过的工具——恢复安装前的状态是一项清理操作，因此它会触及先前一次范围更广的安装可能留下的记录。没有已记录安装的工具会以 `rollback.no_record` 失败（`results` 中的一行 `"outcome": "error"`），而本次运行会继续处理其余工具。随后该命令退出码为 1；如果另有工具已被回滚，则为 2。
+`--harness all` 回滚有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装时跳过的工具——恢复安装前的状态是一项清理操作，因此它会触及先前一次范围更广的安装可能留下的记录。没有已记录安装的工具会失败，表现为 `results` 中的一行 `"outcome": "error"`（参见 JSON 输出一节），而本次运行会继续处理其余工具。随后该命令退出码为 1；如果另一个工具至少有一个目标已被回滚，则为 2。
 
 ## 选项
 
@@ -69,7 +69,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 }
 ```
 
-每个被恢复或移除的目标都会出现在 `results` 中，带有 `"operation": "rollback"`，且 `outcome` 为 `created` 或 `updated`（同时出现在 `files_written` 中）；`message` 说明该路径是被恢复还是被移除。恢复失败（例如备份已被删除）为 `"outcome": "error"`。未记录任何更改的安装以 `"outcome": "skipped"` 报告。当不存在匹配的安装记录时，该命令会报告一个 `rollback.no_record` 错误，并带有 `"status": "error"`。
+每个被恢复或移除的目标都会出现在 `results` 中，带有 `"operation": "rollback"`，且 `outcome` 为 `created` 或 `updated`（同时出现在 `files_written` 中）；`message` 说明该路径是被恢复还是被移除。恢复失败（例如备份已被删除）为 `"outcome": "error"`。未记录任何更改的安装以 `"outcome": "skipped"` 报告。当针对单个指定的工具不存在匹配的安装记录时，该命令会报告一个 `rollback.no_record` 错误，并带有 `"status": "error"`。在 `--harness all` 下，没有匹配记录的工具则改为 `results` 中的一行 `"outcome": "error"`。
 
 ## 示例
 
@@ -85,7 +85,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | 回滚成功，或者没有可回滚的内容（该次安装未记录任何更改） |
 | 1 | 预期内的错误——没有安装记录、选择器冲突、未知的工具、缺少项目根目录，或者确认被拒绝或无法进行（非交互模式或 JSON 模式下未提供 `--yes`） |
-| 2 | 至少一个目标已回滚之后的部分恢复 |
+| 2 | 部分结果——至少一个目标已被回滚，同时还记录了一次失败（恢复失败，或者在 `--harness all` 下，某个工具没有安装记录） |
 | 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅

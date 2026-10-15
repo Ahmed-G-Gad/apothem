@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,7 +69,7 @@ sourceHash: "377ff92b24e0f52c"
 
 ## 共享根目录
 
-有些安装目标会被写入它们的那个工具之外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个所有者（唯一写入该路径的适配器）和若干读取者——这些读取者的厂商文档默认会加载该路径，并以厂商页面作为证据。安装所有者会把 Apothem 内容呈现在每个读取者面前，卸载所有者则会将其从每个读取者处移除。
+有些安装目标会被写入它们的那个工具以外的其他工具加载。注册表在 `SHARED_ROOTS` 中记录每个这样的路径，附带一个所有者（唯一写入该路径的适配器）和若干读取者（其厂商文档默认会加载该路径），以及显示这一点的厂商页面和这些页面的获取日期。安装所有者会把 Apothem 内容呈现在每个读取者面前，卸载所有者则会将其从每个读取者处移除。
 
 | 路径 | 所有者 | 读取者 |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ sourceHash: "377ff92b24e0f52c"
 | `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
 
-所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当某个注册表目标由两个适配器写入，或者被命名为类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）的名称，而没有声明所有者时，`tests/unit/test_shared_roots.py` 会失败。
+所有者写入共享指令文件的 Apothem 区块不会把任何单一工具指定为其读取者。当两个适配器写入同一个注册表目标时，以及当某个注册表目标的名称类似跨工具指令文件（`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`copilot-instructions.md`）却没有声明所有者时，`tests/unit/test_shared_roots.py` 都会失败。唯一的例外是 `~/.codex/AGENTS.md`，没有其他已注册的工具在其文档中说明会加载它。
 
 ## 校验钩子
 
@@ -89,7 +89,7 @@ sourceHash: "377ff92b24e0f52c"
 
 | 检查 | 用途 |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份不满 90 天的约定锁定，该锁定至少引用一个厂商 URL，且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份约定锁定，该锁定距今不超过 90 天，至少引用一个厂商 URL，并且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
 | `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在遇到已迁移或已失效的页面时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，并且不会导致它失败。每周的约定监视器会运行它。 |
 | `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规检查。 |
 | `python -m pytest` | 执行注册表夹具测试与适配器契约测试。 |

@@ -2,7 +2,7 @@
 title: "自包含运行时"
 description: "Apothem 的引擎如何从任意检出运行——vendored 依赖、PYTHONPATH=src 调用模型，以及插件树引导。"
 machineTranslated: true
-sourceHash: "c2671b7c39fdd8dd"
+sourceHash: "eaa8df0482200534"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,7 +56,7 @@ Claude Code 插件将引擎打包在 `<plugin_root>/lib/apothem` 下，而不依
 
 ## 运行时如何找到 Python
 
-一键安装器和 npx 垫片以相同方式定位解释器：探测 `python3`、`python`、带版本号的名称（`python3.14` 到 `python3.10`），以及 Windows 上的 `py -3`；拒绝 Microsoft Store 启动器垫片；并接受第一个报告版本为 3.10 或更高的候选项。从源码树运行时，安装器复用捆绑的 `hooks/lib/find-python` 定位器，它应用相同的版本下限。
+一键安装器和 npx 垫片探测的名称不同，但适用相同的规则。安装器探测 `python3`、`python` 以及带版本号的名称（`python3.14` 到 `python3.10`）。npx 垫片在设置了 `APOTHEM_PYTHON` 时先探测它，然后依次探测 `python3`、`python` 和 `py -3`；它没有带版本号的名称。两者都拒绝 Microsoft Store 启动器垫片，并接受第一个报告版本为 3.10 或更高的候选项。从源码树运行时，安装器复用捆绑的 `hooks/lib/find-python` 定位器，它应用相同的版本下限。
 
 ## 推荐的下一步
 

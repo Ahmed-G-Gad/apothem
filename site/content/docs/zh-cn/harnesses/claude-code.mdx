@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,7 +67,7 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-移除适配器写入的原生配置文件，并从 `CLAUDE.md` 中剥离 Apothem 区块，保留你自己编写的文字。
+从 `~/.claude/CLAUDE.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。移除适配器添加到 `~/.claude/settings.json` 中的条目（你自己的权限规则、键和钩子处理程序会保留，且仅当该文件由 Apothem 创建并且其中没有留下任何属于你的内容时，才会删除该文件）。同时移除 `~/.claude/agents/`、`~/.claude/rules/`、`~/.claude/skills/`、`~/.claude/statuslines/`、`~/.claude/output-styles/` 和 `~/.claude/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。
 已安装的 `apothem` 包和源代码仓库不受影响。
 
 ## 合规闸门

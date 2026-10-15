@@ -2,7 +2,7 @@
 title: "卸载"
 description: "移除 Apothem 并清理工具配置。"
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,19 +20,27 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## 移除引擎
 
-移除方式与你所使用的安装渠道相对应：
+移除方式与你所使用的安装渠道相对应。渠道编号取自[安装渠道表](/docs/install#选择一条渠道)：
 
-- **Claude Code 插件**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（插件市场条目可通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
-- **npx**——无需移除任何内容；`npx` 从其缓存中运行。如果你想删除缓存的副本，可使用 `npm cache clean --force` 清除缓存。
-- **一键安装器**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。两者在移除之前都会请求确认，并拒绝不安全的目标。
-- **VS Code 系扩展**——先从命令面板运行 **Apothem: Uninstall** 以移除工具配置，然后在扩展视图中移除该扩展，或使用 `code --uninstall-extension ahmed-g-gad.apothem` 移除。默认情况下，该扩展通过 `npx` 运行引擎，因此上面的 **npx** 条目已涵盖缓存。
-- **命令行引导入口（渠道 5–7）**——在工具配置被移除之后，使用其宿主工具移除该扩展或插件。该引导入口只添加通过 `npx` 调用引擎的助手上下文（一个上下文文件、一条命令或一项技能），因此不会残留其他任何内容。渠道 5 和 6 的扩展宿主提供卸载命令；对于渠道 7 的插件宿主，请在其插件浏览器中卸载 `apothem`。
+- **Claude Code 插件（渠道 1）**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（插件市场条目可通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
+- **npx（渠道 2）**——无需移除任何内容；`npx` 从其缓存中运行。如果你想删除缓存的副本，可使用 `npm cache clean --force` 清除缓存。
+- **一键安装器（渠道 3）**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。两者在移除之前都会请求确认，并拒绝不安全的目标。
+- **VS Code 系扩展（渠道 4）**——先从命令面板运行 **Apothem: Uninstall** 以移除工具配置，然后在扩展视图中移除该扩展，或使用 `code --uninstall-extension ahmed-g-gad.apothem` 移除。默认情况下，该扩展通过 `npx` 运行引擎，因此上面的 **npx** 条目已涵盖缓存。
+- **命令行引导入口（渠道 5–7）**——在工具配置被移除之后，使用其宿主工具移除该扩展或插件。各宿主如下：
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  该引导入口只添加通过 `npx` 调用引擎的助手上下文（一个上下文文件、一条命令或一项技能），因此不会残留其他任何内容。渠道 5 和 6 的扩展宿主提供卸载命令；对于渠道 7 的插件宿主，请在其插件浏览器中卸载 `apothem`。
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **直接引擎**——无需卸载任何内容；在工具配置被移除之后，删除该克隆即可。
+- **直接引擎（渠道 8）**——无需卸载任何内容；在工具配置被移除之后，删除该克隆即可。
 - **备份与状态**——安装备份位于 `~/.apothem/backups/` 下，安装台账位于 `~/.apothem/state/` 下。两者的规模都保持有界：每次安装、卸载和回滚之后，Apothem 会为每个安装根目录保留最新的 10 条安装记录，为每个工具保留最新的 10 组备份，并且绝不删除某条被保留的记录仍需要的备份，因此最近 10 次安装仍可回滚。若要保留更少，运行 [`apothem backups prune --keep N`](/docs/cli-reference/backups)（加上 `--dry-run` 可先查看它将移除哪些内容）；它绝不会移除回滚某个工具最近一次安装时所要恢复的那份备份。一旦引擎已被移除，且你不再需要任何历史记录，删除 `~/.apothem/`。
 
 ## 不会被移除的内容
@@ -40,10 +48,11 @@ apothem uninstall --harness all --project /path/to/project --yes
 - 位于 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 的共享配置档案 YAML 绝不会被 `apothem uninstall` 移除。
 - 工具目录中无关的、由操作者编写的文件会被保留。
 - 你添加到共享设置文件中的条目会被保留：你自己的权限规则、MCP 服务器和钩子处理程序都会保留。卸载只移除安装台账记录为属于 Apothem 的键和列表条目（参见[设置](/docs/reference/settings#合并到你自己的设置文件)）。
+- 安装根目录下 `.apothem/` 中的共享数据存储（`memory/`、`contexts/`、`learning/`）会保留，只要同一根目录下仍有另一个已安装的工具在使用它们。卸载该根目录下的最后一个工具时，会先将每个存储复制到 `~/.apothem/backups/` 中，然后将其连同其中的全部内容一并移除。
 - `<project>/.apothem/plans/`（以及旧版 `<project>/.plans/`）下的计划套件不受影响。
 
 ## 目录
 
 卸载还会移除安装所创建的目录（例如首次安装之前并不存在的 `~/.claude/`），前提是这些目录已为空。仍存放着你的文件、或存放着另一个已安装工具所使用数据的目录会被保留。安装之前就已存在的目录绝不会被移除。
 
-要彻底清理某个工具的根目录，请先确认你已备份所有想要保留的自定义规则、辅助程序或配置档案文件，然后移除[工具参考页面](/docs/harnesses)上记录的工具原生路径。
+要彻底清理某个工具的根目录，请先确认你已备份所有想要保留的自定义规则、辅助器或配置档案文件，然后移除[工具参考页面](/docs/harnesses)上记录的工具原生路径。

@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 加载并校验共享配置档案，选择一个具名适配器或覆盖整个注册表的 `all` 集合，校验物化计划，然后写入工具原生配置以及支持集合。项目作用域的适配器需要 `--project PATH`。
 
-连续式别名 `apothem installing` 解析到同一个处理程序。
+连续式别名 `apothem installing`（也接受 `apothem Installing`）解析到同一个处理程序。
 
 ## 没有配置档案时的首次运行
 
@@ -52,7 +52,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 ## 带注释的操作者配置
 
-某些工具配置是你也会编辑的文件，例如 `settings.json`、`opencode.json`（可能是 JSONC）、`openclaw.json`（JSON5）和 `config.yaml`。安装会将它的键合并到这些文件中，并保留你添加的每个键。
+某些工具配置是你也会编辑的文件，例如 `settings.json`、`opencode.json`（可能是 JSONC）、`openclaw.json`（JSON5）和 `config.yaml`。安装会将自己的键合并到这些文件中，并保留你添加的每个键。
 
 合并会将文件重写为纯 JSON 或 YAML，这会丢弃注释、尾随逗号和 JSON5 语法。因此：
 
@@ -73,7 +73,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 | `--verbose`, `-v` | 打印每项未投射能力的理由，而不是按工具分组的说明。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出

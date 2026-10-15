@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,7 @@ sourceHash: "04ae410c0eeaf642"
 
 ## 快速参考：制品类型
 
-Apothem 生态包含五种制品类型，每种都有各自特定的用途和 frontmatter 要求。
+本指南涵盖五种制品类型，每种都有各自特定的用途。规则、命令、辅助器和技能带有 YAML frontmatter；钩子注册在 `hooks.json` 和 `settings.json` 中，不带 frontmatter。输出样式是另一类制品，带有两个必填的 frontmatter 键，即 `name` 和 `description`；参见 [frontmatter schema](/docs/reference/frontmatter-schema)。
 
 | 制品 | 路径 | 用途 | 何时创建 |
 | -------- | ---- | ------- | -------------- |
@@ -29,7 +29,7 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 | 注册表行 | 公开 ID、包键、入口点、作用域、输出格式、目标路径、文档路径、能力文件、标准锁定、夹具测试、package-data 键、模板源以及能力状态。 |
 | 适配器包 | `__init__.py`、`install.py`、`update.py`、`uninstall.py`、`verify.py`；仅当该工具会渲染原生配置文件时才添加 `materializer.py`。 |
 | 传播清单 | 以清单为依据的适配器的模板与集合路径。 |
-| 能力 | `src/apothem/harnesses/<package>/capabilities.yml`，其中包含每项必需能力，以及对不支持或待发现状态的理由说明；此外，每个经过转换的命令、委派工作者或规则集合都需要一份 `conversion_losses` 映射（参见[工具注册表](/docs/reference/harness-registry)）。 |
+| 能力 | `src/apothem/harnesses/<package>/capabilities.yml`，其中列出每项必需能力，并对不支持或待发现的状态说明理由；另外，每个经过转换的命令、委派工作者或规则集合都要有一份 `conversion_losses` 映射（参见[工具注册表](/docs/reference/harness-registry)）。 |
 | 约定锁定 | `STANDARD-CONVENTION-PIN.md`，包含厂商 URL、快照日期、规范文件名/schema、证据引用，以及不支持能力的理由。 |
 | 测试 | 注册表对等性、适配器夹具测试、黄金安装计划行、试运行/不写入行为、幂等性以及 package-data 覆盖。 |
 | 文档 | 工具参考页、对比页、能力/MCP 说明，以及使用虚构占位符的示例。 |
@@ -46,7 +46,7 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 
 ## 脱敏与示例数据
 
-配置档案诊断会对形如 token、secret、password、credential、API key、private key、authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例和 JSON 片段使用 `example.invalid`、`Example User`、`example-user` 以及显而易见的占位符，而不是看起来像真实机密或个人账户的内容。
+配置档案诊断会对 token、secret、password、credential、API key、private key、authorization、auth 以及形似 header 的字段进行脱敏。文档、夹具、示例和 JSON 片段使用 `example.invalid`、`Example User`、`example-user` 以及显而易见的占位符，而不是看起来像真实机密或个人账户的内容。
 
 ## 动笔之前：规范 schema
 
@@ -90,7 +90,7 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 - **命令：** `{name}.md`
 - **辅助器：** `{name}.md`
 - **技能：** 位于文件夹 `src/apothem/skills/{name}/SKILL.md` 中（大小写须精确：`SKILL.md`）
-- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。Claude Code `settings.json` 模板中的每条钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。该模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。Claude Code 插件则改为在 `src/apothem/hooks/hooks.json` 中注册钩子，这些钩子是通过 `bash` 运行 `hooks/lib/bootstrap.sh` 的 shell 命令。在 `hooks.json` 和 Claude Code `settings.json` 模板中注册新钩子。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
+- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。Claude Code `settings.json` 模板中的每条钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。该模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。Claude Code 插件则改为在 `src/apothem/hooks/hooks.json` 中注册钩子，这些钩子是通过 `bash` 运行 `hooks/lib/bootstrap.sh` 的 shell 命令；该存根会定位 Python 并运行 `dispatch.py`，因此处理器仍然是 Python。在 `hooks.json` 和 Claude Code `settings.json` 模板中注册新钩子。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
 
 ### 交叉引用
 
@@ -105,9 +105,9 @@ Apothem 生态包含五种制品类型，每种都有各自特定的用途和 fr
 
 ## 可移植性：Windows 与 Unix
 
-每个命令都必须在 `portability` 字段中显式声明其可移植性状态，辅助器则可以声明。技能、规则和输出样式不带 `portability` 字段。
+每个命令都必须在 `portability` 字段中显式声明其可移植性状态。辅助器可以声明。技能、规则和输出样式不带 `portability` 字段。
 
-### 通用（默认）
+### 通用
 
 - 在 Windows、macOS 和 Linux 上的行为完全相同
 - 不对 shell 作任何假设
@@ -177,7 +177,7 @@ alwaysApply: false
 
 - `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH：拼写修正）
 - `vX.Y.Z` → `vX.(Y+1).0`（MINOR：新增一个可选章节）
-- `vX.Y.Z` → `v(X+1).0.0`（MAJOR：宣布契约稳定）
+- `v0.Y.Z` → `v(0+1).0.0`（MAJOR：宣布契约稳定；新制品以 `v0.Y.Z` 起始）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR：移除必填 frontmatter 字段）
 
 对于带有 `version` 和 `updated` 的制品，在每次改变行为的编辑中，一并提升这两个字段。对于捆绑了制品变更的发布，在生态级的 `CHANGELOG.md` 中追加一条相应的行。
@@ -186,13 +186,13 @@ alwaysApply: false
 
 ### 规则
 
-- 将“必需/可选”结构视为承重结构——重构它会波及每个依赖它的制品。
+- 将必需/可选结构视为承重结构——重构它会波及每个依赖它的制品。
 - 随着理解加深，精炼反模式、严肃度分级示例和引用。
 - 在相关的记忆主题文件中记录任何结构性变更的理由。
 
 ### 命令
 
-- 参数形态是公开契约的一部分——只有在明确有意时才打破它，并将该变更传播到每个调用方（MAJOR 递增）。
+- 参数形态是公开契约的一部分——只有在有明确意图时才打破它，并将该变更传播到每个调用方（MAJOR 递增）。
 - 保持工作流步骤和返回契约精简且最新。
 - 以内联方式记录不明显的步骤顺序。
 
@@ -279,7 +279,7 @@ Invoke the ecosystem-audit skill with --focus rules --fix
 
 ### 1. 确定角色
 
-命令**绝不**打算由工具单独调用。它们是由用户触发的工作流。请自问：
+命令是由用户触发的工作流。只有当命令的 `disable-model-invocation` 设置为 `false` 时（步骤 2），模型才会自行运行它。请自问：
 
 - 这是一个用户键入 `/command-name` 的工作流吗？
 - 它是否编排多个步骤？
@@ -306,7 +306,7 @@ allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-`disable-model-invocation: true` 使命令只能由操作者调用；设为 `false` 时，当某个请求与其描述相匹配，模型可以运行它。大多数命令使用 `true`，但大多数规划与研究流水线阶段使用 `false`。`src/apothem/commands/README.md` 中的调用表列出了每个命令的设置；新增命令时要为其添加一行。让 `allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。有副作用的工具只能以限定作用域的规则形式授予，例如 `Bash(git log *)`；schema 会拒绝 `"*"` 以及不带限定的 `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit` 和 `WebFetch`。
+`disable-model-invocation: true` 使命令只能由操作者调用；设为 `false` 时，当某个请求与其描述相匹配，模型可以运行它。大多数命令使用 `true`，但大多数规划与研究流水线阶段使用 `false`。`src/apothem/commands/README.md` 中的调用表列出了每个命令的设置；新增命令时要为其添加一行。让 `allowed-tools` 保持只读：遵循该字段的工具会直接运行其中所列的工具，而不先询问。有副作用的工具只能以限定作用域的规则形式授予，例如 `Bash(git log *)`；schema 会拒绝 `"*"`，也会拒绝任何一个未带作用域限定而写出的 `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit` 或 `WebFetch`。
 
 ### 3. 撰写内容
 
@@ -320,7 +320,7 @@ allowed-tools: "Read, Glob, Grep"
 
 ### 4. 更新 README 与 CHANGELOG.md
 
-向 `src/apothem/commands/README.md` 中对应的命令表添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+除了步骤 2 中的调用表那一行之外，还要向 `src/apothem/commands/README.md` 中该命令所在章节对应的表格添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 验证
 
@@ -380,7 +380,7 @@ portability: "universal"
 
 ### 4. 更新 README 与 CHANGELOG.md
 
-向 `src/apothem/agents/README.md` 中的“Index”表添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+向 `src/apothem/agents/README.md` 中的 Index 表添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 测试
 
@@ -446,7 +446,7 @@ argument-hint: "[args]"               # optional; if userInvocable
 
 ### 4. 更新 README 与 CHANGELOG.md
 
-向 `src/apothem/skills/README.md` 中的“Index”表和“Folder contents”表各添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
+向 `src/apothem/skills/README.md` 中的 Index 表添加一行，并向 Folder contents 表为该技能的每个文件各添加一行；在下一个发布的 `### Added` 部分下添加 CHANGELOG 行。
 
 ### 5. 验证
 
@@ -463,7 +463,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] `name` 字段使用 kebab-case
 - [ ] `version`（仅限带版本的类别；规则不带）为语义化版本（`MAJOR.MINOR.PATCH`），并且在行为变更时已递增
 - [ ] 对于你改动过的任何带有该字段的制品，`updated` 与今天的日期一致
-- [ ] `portability` 字段已设置且有效（仅限命令和辅助器）
+- [ ] `portability` 字段已设置且有效（命令必填，辅助器可选）
 - [ ] CHANGELOG.md 在下一个发布的部分下、以合适的类别记录了该变更
 - [ ] 没有计划内部引用（符合 CM-7）
 - [ ] 交叉引用与其他制品保持一致
@@ -559,7 +559,7 @@ CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/coll
 | 键 | 度量内容 |
 | --- | --- |
 | `coverage.engine`、`coverage.conformity`、`coverage.audit` | 每个包的行加分支覆盖百分比，附带 `coverage_floors`。 |
-| `always_on_bytes[harness]`、`always_on_files[harness]` | 对 17 个工具中的每一个，在向临时的 `HOME` 和项目执行 `profile init` 与 `install --harness <id>` 之后：该工具在启动时完整加载的指令文件在磁盘上的字节数。 |
+| `always_on_bytes[harness]`、`always_on_files[harness]` | 对 17 个工具中的每一个，在对临时的 `HOME` 和项目执行 `profile init` 与 `install --harness <id>` 之后：该工具在启动时完整加载的指令文件在磁盘上的字节数。 |
 | `cli_coldstart_ms` | `python -m apothem --version` 的中位数（`--help` 的结果位于 `cli_coldstart_detail_ms` 下）。 |
 | `hook_e2e_ms[event]`、`hook_injected_chars[event]` | 按每个已注册的事件和匹配器（`PreToolUse:Write`、`Stop`……）：钩子链在真实负载上的中位总耗时，以及它注入的上下文字符数。 |
 
@@ -604,7 +604,7 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### 基准测试
 
-`make benchmarks` 运行 `src/apothem/benchmarks/` 下按类别划分的驱动程序。每个驱动程序的退出码为：`0` 通过，`1` 超出预算，`2` 错误（被测运行未执行），或 `3` 未测量。
+`make benchmarks` 运行 `src/apothem/benchmarks/` 下按类别划分的驱动程序，但 `bench_agents.py` 除外。每个驱动程序的退出码为：`0` 通过，`1` 超出预算，`2` 错误（被测运行未执行），或 `3` 未测量。
 
 - `bench_hooks.py` 按每个事件和匹配器，在真实负载上按原样运行 `hooks/hooks.json` 注册的每条 `shell: bash` 命令，并报告中位总耗时、最慢的命令（对照该事件的预算进行检查）以及注入的字符数。无法按注册方式运行的命令（脚本缺少可执行位时退出码为 126）算作错误，而不是通过。
 - `bench_agents.py` 报告 `NOT MEASURED`（退出码 3）：生成子代理需要一个宿主工具和一次模型调用。`make benchmarks` 不会运行它。

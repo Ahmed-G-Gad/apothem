@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "适用于 GLM（Z.ai）的 Apothem 工具适配器，将其作为可配置的模型后端。"
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,7 @@ sourceHash: "3e05b3a651ffe5da"
 **状态：** GA
 **原生配置：** `<project>/.apothem/providers/glm.toml`
 
-GLM（Z.ai）是一个**模型后端**，而不是工具。Z.ai 不提供第一方的 GLM 命令行；取而代之的是，通过设置后端基础 URL 和密钥，让支持 Anthropic 兼容协议或 OpenAI 兼容协议的工具指向 GLM。`glm` 适配器写入一个提供方配置文件，记录这两种兼容表面，以便任何兼容的工具都能接入 GLM 模型系列。
+GLM（Z.ai）是一个**模型后端**，本身并不是编码工具。Z.ai 不提供第一方的 GLM 命令行；取而代之的是，通过设置后端基础 URL 和密钥，让支持 Anthropic 兼容协议或 OpenAI 兼容协议的工具指向 GLM。Apothem 仍将 GLM 计入其工具适配器之列，因此你可以像选择其他适配器一样，用 `--harness glm` 选择它。`glm` 适配器写入一个提供方配置文件，记录这两种兼容表面，以便任何兼容的工具都能接入 GLM 模型系列。
 
 ## 安装
 
@@ -25,11 +25,11 @@ apothem install --harness glm --project /path/to/project
 
 ## 配置档案到原生配置的映射
 
-提供方文件记录两个后端。Anthropic 兼容后端使用基础 URL `https://api.z.ai/api/anthropic`；支持 Anthropic 协议的工具通过设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 以及可选的 `API_TIMEOUT_MS` 路由到 GLM。同一个 env 表还列出了 `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，它们将该工具的 opus、sonnet 和 haiku 角色映射到 GLM 模型。OpenAI 兼容后端使用基础 URL `https://api.z.ai/api/coding/paas/v4`。认证令牌是一个占位符，需由你替换为自己的 Z.ai 密钥——Apothem 绝不写入真实的机密。模型 ID 随版本变化，因此 Apothem 不锁定任何模型 ID；该文件带有 `<GLM_MODEL_ID>` 占位符，由你根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填写。共享配置档案中的任何内容都不会进入此文件；它是一份固定的模板。
+提供方文件记录两个后端。Anthropic 兼容后端使用基础 URL `https://api.z.ai/api/anthropic`；支持 Anthropic 协议的工具通过设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 以及可选的 `API_TIMEOUT_MS` 路由到 GLM。文件中的 `[backends.anthropic_compatible.env]` 表列出了这些变量，还列出了 `ANTHROPIC_DEFAULT_OPUS_MODEL`、`ANTHROPIC_DEFAULT_SONNET_MODEL` 和 `ANTHROPIC_DEFAULT_HAIKU_MODEL`，它们将该工具的 opus、sonnet 和 haiku 角色映射到 GLM 模型。OpenAI 兼容后端使用基础 URL `https://api.z.ai/api/coding/paas/v4`。认证令牌是一个占位符，需由你替换为自己的 Z.ai 密钥——Apothem 绝不写入真实的机密。模型 ID 随版本变化，因此 Apothem 不锁定任何模型 ID；该文件带有 `<GLM_MODEL_ID>` 占位符，由你根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填写。共享配置档案中的任何内容都不会进入此文件；它是一份固定的模板。
 
 ## 兼容性说明
 
-由于 GLM 是后端而不是工具，它不暴露任何用于规则、命令、技能或钩子的表面——适配器只写入后端提供方文件，别无其他。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
+由于 GLM 是后端而不是编码工具，它不暴露任何用于规则、命令、技能或钩子的表面——适配器只写入后端提供方文件，别无其他。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
 
 GLM 运行来自 Z.ai 的 GLM 模型系列；有关当前的后端、模型以及 Anthropic 兼容配置表面，请参见[厂商配置参考](https://docs.z.ai/devpack/tool/claude)。
 
@@ -51,7 +51,7 @@ verify 命令确认：
 apothem update --harness glm --project /path/to/project
 ```
 
-提供方文件一旦存在就归你所有。`install` 只在 `.apothem/providers/glm.toml` 不存在时写入模板，此后 `install` 和 `update` 都绝不会覆盖它，因此你的密钥引用和模型选择在每次重新运行后都会保留。要获取较新的模板，请将你的文件移到别处，运行 `update`，然后将你的值复制到新文件中。
+提供方文件一旦存在就归你所有。`install` 和 `update` 都只在 `.apothem/providers/glm.toml` 不存在时写入模板，此后两者都绝不会覆盖它，因此你的密钥引用和模型选择在每次重新运行后都会保留。要获取较新的模板，请将你的文件移到别处，运行 `update`，然后将你的值复制到新文件中。
 
 ## 卸载
 

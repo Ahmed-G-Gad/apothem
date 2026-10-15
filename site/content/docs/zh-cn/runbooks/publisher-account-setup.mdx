@@ -2,11 +2,11 @@
 title: "发布者账户设置"
 description: "为 @ahmed-g-gad/apothem 配置 npmjs.com 受信任发布者，以及 GitHub 侧的发布前置条件。"
 machineTranslated: true
-sourceHash: "4f750a0f9fdb2429"
+sourceHash: "ee07a06a98f62864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-本操作手册配置发布表面的发布者一侧。分发形态只有一个注册表：npmjs.com 上的作用域 npm 包 `@ahmed-g-gad/apothem`，在 GitHub Release、Pages、CI、合规工作流和工具工作流都变绿之后，由 `publish-npm.yml` 工作流发布（该工作流在 `v*.*.*` 标签推送时运行；带 `tag` 输入的手动调度是后备方式）。其余每个产物都直接在 GitHub Release 页面上发布，无需外部发布者账户。
+本操作手册配置发布表面的发布者一侧。分发形态只有一个注册表：npmjs.com 上的作用域 npm 包 `@ahmed-g-gad/apothem`，由 `publish-npm.yml` 工作流发布。该工作流在 `v*.*.*` 标签推送时与 `release.yml` 并行运行，并且不等待它（带 `tag` 输入的手动调度是后备方式）。`release` 环境批准是把关点：操作者在 GitHub Release、Pages、CI、合规工作流和工具工作流都变绿之后批准它。其余每个产物都直接在 GitHub Release 页面上发布，无需外部发布者账户。
 
 ## 身份映射
 
@@ -51,7 +51,7 @@ GitHub 所有者将来允许变动。在平台允许动态解析之处，工作�
     npx @ahmed-g-gad/apothem@<version> --version
     ```
 
-不需要 `NPM_TOKEN`、用户名或密码机密。该工作流通过 npm 受信任发布（OIDC）进行发布，Node 版本和 npm CLI 的 OIDC 下限固定在 `.github/workflows/publish-npm.yml` 中。它针对 npmjs.com 运行 `npm publish --access public`；对于从公开 GitHub Actions 工作流发布的公开包，npm 会自动生成出处溯源。`PUT` 期间出现注册表 `404` 意味着 npm 侧的受信任发布者、包作用域或账户授权尚未对齐；在重试工作流之前先修正 npm 包设置。
+不需要 `NPM_TOKEN`、用户名或密码机密。该工作流通过 npm 受信任发布（OIDC）进行发布，Node 版本和 npm CLI 的 OIDC 下限固定在 `.github/workflows/publish-npm.yml` 中。它针对 npmjs.com 运行 `npm publish --provenance --access public`，因此 Sigstore 出处溯源声明是显式的；对于从公开 GitHub Actions 工作流发布的公开包，npm 默认也会生成出处溯源。`PUT` 期间出现注册表 `404` 意味着 npm 侧的受信任发布者、包作用域或账户授权尚未对齐；在重试工作流之前先修正 npm 包设置。
 
 一旦有一次受信任发布成功，就永久关闭令牌路径：在 npmjs.com 上该包的 **Settings → Publishing access** 中，选择 **Require two-factor authentication and disallow tokens**，并删除仓库中残留的任何 npm 令牌机密。该工作流已不再读取令牌。
 

@@ -1,20 +1,20 @@
 ---
 title: "概念"
-description: "术语表，定义 Apothem 中的共享配置档案、工具适配器、规则、钩子、合规闸门、技能和受托工作者。"
+description: "术语表，定义 Apothem 中的共享配置档案、工具适配器、规则、钩子、合规闸门、技能和委派工作者。"
 machineTranslated: true
-sourceHash: "62dff0efc0d0f672"
+sourceHash: "1a84322c09beb863"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-贯穿整个 Apothem 文档时你将遇到的术语的快速参考。
+对你在整个 Apothem 文档中会遇到的术语的快速参考。
 
 ## 共享配置档案
 
-位于 `~/.config/apothem/profile.yaml` 的经模式校验的 YAML 文件（用 `--profile PATH` 覆盖）。它是你的身份、偏好与配置的唯一真相来源；每个工具适配器在安装时读取它，并从中派生该工具的原生配置。
+位于 `~/.config/apothem/profile.yaml` 的经 schema 校验的 YAML 文件（可用 `--profile PATH` 覆盖）。它是你的身份、偏好与配置的唯一可信来源；每个工具适配器在安装时读取它，并从中派生该工具的原生配置。
 
 ## 工具适配器
 
-一种按平台划分的适配器，将共享配置档案转换为特定助手运行时的原生配置格式。受支持的运行时列举如下：
+一种按平台划分的适配器，将共享配置档案转换为特定工具的原生配置格式。受支持的运行时列举如下：
 
 ```text
 Claude Code, Cursor, Gemini CLI, etc.
@@ -24,15 +24,15 @@ Claude Code, Cursor, Gemini CLI, etc.
 
 ## 行为规则
 
-src/apothem/rules/ 下的 Markdown 文件，在每次交互时加载（始终启用），或仅在编辑特定路径下的文件时加载（路径过滤）。规则将助手运行时应如何行为加以编码固化。
+src/apothem/rules/ 下的 Markdown 文件，会在每次交互时加载（始终启用），或仅在编辑特定路径下的文件时加载（按路径过滤）。规则将工具应有的行为明确成文。
 
 ## 钩子
 
-注册在 settings.json 中的 Python 脚本，在工具生命周期事件（PreToolUse、PostToolUse、SessionStart、PreCompact、Stop、PostCompact）触发。钩子在输出落盘之前实时强制执行合规义务。钩子事件模型目前是 Claude Code 的一项界面；对于没有钩子机制的工具，其适配器直接将其省略。
+注册在 settings.json 中的 Python 脚本，在工具生命周期事件（PreToolUse、PostToolUse、SessionStart、PreCompact、Stop、PostCompact）上触发。钩子在输出落盘之前，实时执行合规强制规定。钩子事件模型目前是 Claude Code 的一个界面；对于没有钩子机制的工具，其适配器直接省略它。
 
 ## 合规闸门
 
-十五道预发布闸门（M1-M15）中的机械部分——任何制品发布前必须通过的独立校验器。预发布闸门是质量底线；合规闸门运行其中可由机器检查的关卡，而钩子则实时强制执行各道关卡。
+十五道预发布闸门（M1-M15）中的机械部分——在制品被发布之前运行的、可由机器检查的校验器；默认为建议性，在 `--strict` 下则为阻断性。预发布闸门是质量底线；合规闸门运行其中可由机器检查的关卡，而钩子则实时强制执行单项关卡。
 
 ## 计划套件
 
@@ -42,7 +42,7 @@ src/apothem/rules/ 下的 Markdown 文件，在每次交互时加载（始终启
 
 一种可复用、可通过斜杠命令调用的技术，打包为 src/apothem/skills/&lt;name&gt;/ 下的 SKILL.md 文件。技能将斜杠命令界面扩展到内置的 /plan 流水线之外。
 
-## 受托工作者
+## 委派工作者
 
 一种持久的、按目的划定范围的助手，定义于规范路径：
 
@@ -50,4 +50,4 @@ src/apothem/rules/ 下的 Markdown 文件，在每次交互时加载（始终启
 src/apothem/agents/<name>.md
 ```
 
-受托工作者负责处理调研、审计、质量检查和记忆管理。
+委派工作者负责处理调研、审计、质量检查和记忆管理。

@@ -2,7 +2,7 @@
 title: "Apothem 对比手工接入 GLM 后端"
 description: "为什么要通过 Apothem 来路由 GLM（Z.ai）后端配置，而不是按项目手工接入环境变量。"
 machineTranslated: true
-sourceHash: "869ef5c768dfec73"
+sourceHash: "5f27ebf7f953394a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,19 +13,20 @@ GLM（Z.ai）是一个模型后端，兼容的工具通过设置基础 URL 和�
 | 任务 | 手工配置 | Apothem 托管 |
 | ---- | --------------- | --------------- |
 | 记录后端 URL | 记住并在每个项目中重新导出 | 写入一个提供方文件 |
-| 真相来源 | 每个 shell 各自的导出 | 一个规范的提供方文件 |
-| 让各项目的后端保持一致 | 逐项目重新接入 | 同一份模板被写入每个项目 |
+| 事实来源 | 每个 shell 各自的导出 | 一个规范的提供方文件 |
+| 让各项目的后端保持一致 | 逐项目重新接入 | 文件不存在时，同一份模板会被写入每个项目；之后的编辑保留在各项目自己的文件中 |
 | 恢复配置 | 在每个项目中重新导出 | `apothem update --harness glm --project <path>` 仅在文件缺失时才会再次写入该文件 |
-| 移除配置 | 手动删除 | `apothem uninstall` 并附带备份 |
+| 移除配置 | 手动删除 | `apothem uninstall` 会先备份该文件，然后仅当它仍是 Apothem 所写入的未经编辑的模板时，才会将其移除 |
 
 ## Apothem 管理什么
 
-glm 适配器在 `<project>/.apothem/providers/glm.toml` 渲染单个提供方文件，别无其他写入。它记录 Anthropic 兼容基础 URL（`https://api.z.ai/api/anthropic`）、OpenAI 兼容基础 URL（`https://api.z.ai/api/coding/paas/v4`）、一个认证令牌占位符以及模型映射占位符。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有——Apothem 绝不写入真实的机密，也不锁定任何随版本变化的模型 ID。
+glm 适配器在 `<project>/.apothem/providers/glm.toml` 处写入单个提供方文件，不写入任何其他内容。它记录 Anthropic 兼容基础 URL（`https://api.z.ai/api/anthropic`）、OpenAI 兼容基础 URL（`https://api.z.ai/api/coding/paas/v4`）、一个认证令牌占位符以及模型映射占位符。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有——Apothem 绝不写入真实的机密，也不锁定任何随版本变化的模型 ID。
 
 ## 迁移路径
 
-1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
-2. 运行 `apothem install --harness glm --project <path>` 来渲染 `glm.toml` 提供方文件。
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init` 来创建它。
+   glm 文件不从配置档案中取用任何内容，但每次安装和更新运行都会加载它。
+2. 运行 `apothem install --harness glm --project <path>` 来写入 `glm.toml` 提供方文件。
 3. 根据当前的 [Z.ai 文档](https://docs.z.ai/devpack/tool/claude)填入你的 Z.ai 密钥和所需的模型 ID。
 4. 运行 `apothem verify --harness glm --project <path>` 来确认配置已落地。
 5. 之后的每次更改都编辑 `.apothem/providers/glm.toml`。Apothem 绝不会重写已存在的提供方文件；仅当该文件缺失时，`apothem update --harness glm --project
