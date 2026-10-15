@@ -8,9 +8,9 @@ The conformity gate at `src/apothem/conformity/gate.py` runs the
 mechanical fraction of the fifteen-bar pre-emission gate (M1-M15)
 against every artifact the operator authors.
 
-The commands on this page assume an Apothem checkout, so prefix each one with
-`PYTHONPATH=src`. After a script install, use `PYTHONPATH="$HOME/.apothem/src"`
-in place of `src`.
+The commands on this page assume an Apothem checkout, so prefix each one you run
+with `PYTHONPATH=src`. After a script install, use `PYTHONPATH="$HOME/.apothem/src"`
+in place of `PYTHONPATH=src`.
 
 ## Running the gate
 
@@ -38,11 +38,11 @@ validator runs, so `--all .` and `--all "$PWD"` inspect the same tree. Each
 validator reports `inspected` — how many targets it examined — and `--all`
 copies that count into every result entry. A validator that inspected nothing
 reports `passed: false`, so a wrong working directory cannot pass silently. The
-two plan-suite validators are the exception: plan suites live in the gitignored
+two plan-suite validators are one exception: plan suites live in the gitignored
 `.apothem/plans/` tree, so they report `empty_scope_expected: true` on a clean
 checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
-when the directory has no commit history.
+when the root has no commit history.
 
 ## Gate bars
 
@@ -84,10 +84,14 @@ form the deployed `PreToolUse` hook invokes; you rarely call it by hand.
 
 Hook mode is **scoped to a set of directories**. It runs the matcher chain
 only on writes whose target falls under one of them; a write outside every
-scope short-circuits to a silent pass. The defaults are the hook-capable
-user-scope harness roots Apothem installs into — each harness's page under
-Harnesses names its own root. Set `APOTHEM_CONFORMITY_SCOPE` to a directory
-to replace them:
+scope short-circuits to a silent pass. The defaults are two roots:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Set `APOTHEM_CONFORMITY_SCOPE` to a directory to replace them:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

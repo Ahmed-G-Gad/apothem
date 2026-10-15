@@ -2,7 +2,7 @@
 title: "Colores de marca de los entornos"
 description: "Paleta de colores por entorno usada en el sitio web del proyecto Apothem y en cada diagrama de arquitectura. Una única fuente de verdad: un color por entorno, un concentrador apothem."
 machineTranslated: true
-sourceHash: "8bd8ae0d07b55675"
+sourceHash: "1bade22f201192d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -104,7 +104,7 @@ graph LR
 
 ## Accesibilidad
 
-Cada token de modo claro conserva su color de marca sin distorsionarlo, por lo que ocho de ellos quedan por debajo del contraste WCAG 2.2 AA frente a texto blanco (≥4.5 : 1). Los demás tokens de modo claro lo cumplen. Los ocho, con su contraste frente al blanco:
+Cada token de modo claro de esta página, tanto del núcleo como de los entornos, conserva su color de marca sin distorsionarlo, por lo que ocho de ellos quedan por debajo del contraste WCAG 2.2 AA frente a texto blanco (≥4.5 : 1). Los demás tokens de modo claro lo cumplen. Los ocho, con su contraste frente al blanco:
 
 ```text
 shared-profile   2.54 : 1
@@ -117,7 +117,7 @@ trae             3.86 : 1
 windsurf         2.77 : 1
 ```
 
-La columna de modo oscuro es para fondos oscuros, y ninguno de sus tokens alcanza 4.5 : 1 frente a texto blanco. Un diagrama que necesite un contraste WCAG AA de texto sobre color en uno de esos ocho rellenos DEBE usar texto oscuro (`#0F172A`, que mide de 4.63 : 1 a 8.31 : 1 sobre ellos) en lugar de blanco.
+La columna de modo oscuro es para usarse sobre fondos oscuros, y ninguno de sus tokens alcanza 4.5 : 1 frente a texto blanco. El ejemplo de Mermaid anterior establece texto blanco en cada relleno, por lo que sus etiquetas sobre esos ocho rellenos no alcanzan 4.5 : 1. Un diagrama que necesite un contraste WCAG AA de texto sobre color en uno de esos ocho rellenos DEBE usar texto oscuro (`#0F172A`, que mide de 4.63 : 1 a 8.31 : 1 sobre ellos) en lugar de blanco.
 
 ## Actualizaciones
 

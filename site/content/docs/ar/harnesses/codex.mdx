@@ -2,7 +2,7 @@
 title: "Codex"
 description: "محوّل إطار عمل Apothem لـ Codex (تجريبي)."
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,14 +53,14 @@ apothem install --harness codex
 
 يضبط كل مساعِد مُحوَّل <bdi>`name`</bdi>، و<bdi>`description`</bdi>،
 و<bdi>`developer_instructions`</bdi>. والمساعِد الذي لا تتضمّن الأدوات الممنوحة له،
-بعد تطبيق قائمة المنع الخاصة به، أيّ أداة لتحرير الملفات (<bdi>`Write`</bdi>،
-أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>، أو <bdi>`NotebookEdit`</bdi>) يضبط
-أيضًا <bdi>`sandbox_mode = "read-only"`</bdi>، وهو قيد الكتابة الخاص بـ <bdi>Codex</bdi>
-نفسه. لا تُعَدّ <bdi>`Bash`</bdi> أداةً لتحرير الملفات، لذا يبقى المساعِد الذي مُنح
-<bdi>`Bash`</bdi> ولم يُمنح أيًّا من تلك الأدوات للقراءة فقط. لا يُضبَط أي نموذج أو
-جهد استدلال، لذا يرث كل مساعِد اختيارات الجلسة. لا يملك <bdi>Codex</bdi> قائمة أدوات
-أو حدًّا للأدوار لكل مساعِد، لذا لا يُنقَل <bdi>`tools`</bdi> و<bdi>`maxTurns`</bdi>
-الخاصان بالمساعِد.
+بعد إزالة الأدوات المذكورة في قائمة <bdi>`disallowedTools`</bdi> الخاصة به، أيّ أداة
+لتحرير الملفات (<bdi>`Write`</bdi>، أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>،
+أو <bdi>`NotebookEdit`</bdi>) يضبط أيضًا <bdi>`sandbox_mode = "read-only"`</bdi>، وهو
+قيد الكتابة الخاص بـ <bdi>Codex</bdi> نفسه. لا تُعَدّ <bdi>`Bash`</bdi> أداةً لتحرير
+الملفات، لذا يحصل المساعِد الذي مُنح <bdi>`Bash`</bdi> ولم يُمنح أيًّا من تلك الأدوات
+على هذا الإعداد مع ذلك. لا يُضبَط أي نموذج أو جهد استدلال، لذا يرث كل مساعِد
+اختيارات الجلسة. لا يملك <bdi>Codex</bdi> قائمة أدوات أو حدًّا للأدوار لكل مساعِد،
+لذا لا يُنقَل <bdi>`tools`</bdi> و<bdi>`maxTurns`</bdi> الخاصان بالمساعِد.
 
 ## ملاحظات التوافق
 
@@ -84,7 +84,9 @@ apothem verify --harness codex
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -101,8 +103,15 @@ apothem update --harness codex
 apothem uninstall --harness codex
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.codex/AGENTS.md`</bdi> ويُبقي أي نص خارجها،
+ويُزيل مدخلات <bdi>Apothem</bdi> من <bdi>`~/.codex/hooks.json`</bdi> ويُبقي مدخلاتك.
+ويُزيل كذلك ملفات <bdi>Apothem</bdi> في <bdi>`~/.codex/hooks/`</bdi>،
+و<bdi>`~/.codex/agents/`</bdi>، و<bdi>`~/.agents/skills/`</bdi>،
+و<bdi>`~/.config/apothem/{rules,templates}/`</bdi>؛ وتبقى الملفات الأخرى في تلك
+المجلدات. تختفي المهارات المُزالة من <bdi>`~/.agents/skills/`</bdi> من الأدوات
+الأخرى التي تُحمِّله هي أيضًا (راجع [ملاحظات التوافق](#ملاحظات-التوافق)). يُنسَخ كل
+ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو إزالته. لا يتأثّر
+ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

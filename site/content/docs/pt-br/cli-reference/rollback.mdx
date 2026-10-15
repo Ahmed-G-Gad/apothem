@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referência da CLI para o comando apothem rollback."
 machineTranslated: true
-sourceHash: "96531a4a5fa4a15e"
+sourceHash: "968c5a26a3906dc5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,11 +35,12 @@ mais recente para a mais antiga, ele:
 
 Tudo o que o rollback remove ou substitui é primeiro copiado para a raiz de
 backup do Apothem (`~/.apothem/backups/`), de modo que o próprio rollback pode
-ser desfeito manualmente. Em seguida, ele anexa um registro `rollback` ao ledger
-do harness. Reverter uma instalação mais antiga restaura ou remove apenas os
-destinos que essa instalação mais antiga registrou e descarta do registro ativo,
-na mesma raiz, todas as instalações posteriores a ela. Os arquivos que uma
-instalação posterior adicionou fora desses destinos permanecem no lugar.
+ser desfeito manualmente. Em seguida, o rollback anexa um registro `rollback` ao
+ledger do harness. Reverter uma instalação mais antiga restaura ou remove apenas
+os destinos que essa instalação mais antiga registrou e descarta todas as
+instalações posteriores a ela das instalações ativas do ledger, na mesma raiz.
+Os arquivos que uma instalação posterior adicionou fora desses destinos
+permanecem no lugar.
 
 O ledger mantém os 10 registros de instalação mais recentes por raiz de
 instalação (com os backups que eles referenciam); uma instalação mais antiga não
@@ -64,10 +65,10 @@ Um rollback com `--harness all` é deliberadamente exaustivo: ele cobre todos os
 harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula
 durante a instalação — restaurar o estado anterior à instalação é uma operação
 de limpeza, então ele alcança registros que uma instalação anterior mais ampla
-possa ter deixado. Um harness sem nenhuma instalação registrada falha com
-`rollback.no_record` (uma linha `"outcome": "error"` em `results`), e a execução
+possa ter deixado. Um harness sem nenhuma instalação registrada falha como uma
+linha `"outcome": "error"` em `results` (consulte a saída JSON), e a execução
 continua com os demais harnesses. Em seguida, o comando sai com 1, ou com 2
-quando outro harness foi revertido.
+quando pelo menos um destino de outro harness foi revertido.
 
 ## Opções
 
@@ -110,8 +111,10 @@ Cada alvo restaurado ou removido aparece em `results` com
 Uma restauração com falha (por exemplo, um backup que foi excluído) é
 `"outcome": "error"`. Uma instalação que não registrou nenhuma alteração é
 relatada com `"outcome": "skipped"`. Quando não existe nenhum registro de
-instalação correspondente, o comando relata um erro `rollback.no_record` com
-`"status": "error"`.
+instalação correspondente para um único harness nomeado, o comando relata um
+erro `rollback.no_record` com `"status": "error"`. Com `--harness all`, um
+harness sem nenhum registro correspondente é, em vez disso, uma linha
+`"outcome": "error"` em `results`.
 
 ## Exemplos
 
@@ -127,7 +130,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | Revertido com sucesso, ou nada a reverter (a instalação não registrou nenhuma alteração) |
 | 1 | Erro esperado — nenhum registro de instalação, seletores conflitantes, harness desconhecido, raiz do projeto ausente, ou confirmação recusada ou indisponível (modo não interativo ou JSON sem `--yes`) |
-| 2 | Restauração parcial após pelo menos um alvo ter sido revertido |
+| 2 | Resultado parcial — pelo menos um destino foi revertido e uma falha também foi registrada (uma restauração com falha ou, com `--harness all`, um harness sem registro de instalação) |
 | 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também

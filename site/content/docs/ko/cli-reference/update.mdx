@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "e6bb232cf7e7fd02"
+sourceHash: "e91dcc6ca6a07470"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,8 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 `install`과 같은 프로필 검증, `--harness all` 선택, 프로젝트 범위 검사, 드라이
 런 동작, JSON 봉투를 사용합니다.
 
-연속형 별칭 `apothem updating`은 같은 핸들러로 해석됩니다.
+연속형 별칭 `apothem updating`(`apothem Updating`으로도 받아들여짐)은 같은
+핸들러로 해석됩니다.
 
 ## 옵션
 
@@ -31,10 +32,10 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 | `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | 파일을 쓰지 않고 업데이트를 미리 봅니다. |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. 선택한 하니스 집합에 프로젝트 범위 어댑터가 포함되면 필수입니다. |
-| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제하며, 오류만 출력합니다. |
 | `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
-| `--json` | `--format json`의 축약형. |
+| `--json` | `--format json`의 단축형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
 | `-h`, `--help` | 도움말을 표시하고 종료합니다. |
 
@@ -76,7 +77,7 @@ apothem updating --harness claude-code   # lowercase variant
 | 0 | 어댑터가 성공적으로 업데이트되었거나 드라이 런이 문제없이 계획됨 |
 | 1 | 예상된 검증, 프로필, 하니스, 프로젝트, 또는 어댑터 오류 |
 | 2 | 적어도 한 번 쓴 뒤에 발생한 부분적인 일괄 머티리얼라이즈 |
-| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 이 오류가 코드 `cli.usage`를 담은 JSON 봉투로 출력됩니다. |
+| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 오류가 코드 `cli.usage`를 담은 JSON 봉투로 반환됩니다. |
 
 ## 함께 보기
 

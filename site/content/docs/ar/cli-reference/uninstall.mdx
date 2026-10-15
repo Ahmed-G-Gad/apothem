@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "مرجع واجهة سطر الأوامر لأمر apothem uninstall."
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,13 +25,20 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 <bdi>`--yes`</bdi>. وإذا لم يكن إطار عمل مختار مثبّتًا، ينجح الأمر (رمز الخروج 0) مع
 إشعار «لا شيء لإزالته».
 
+تبقى مخازن البيانات المشتركة تحت <bdi>`.apothem/`</bdi> في جذر التثبيت
+(<bdi>`memory/`</bdi>، و<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>) ما دام إطار
+عمل مثبّت آخر في الجذر نفسه ما يزال يستخدمها. وحين يكون إطار العمل الذي تزيله هو
+الأخير في ذلك الجذر، ينسخ الأمر كل مخزن أولًا إلى جذر النسخ الاحتياطي الخاص بـ
+<bdi>Apothem</bdi> (<bdi>`~/.apothem/backups/`</bdi>)، ثم يزيله بكل ما فيه. وأي شيء
+تحتفظ به في <bdi>`plans/`</bdi> لا يُزال أبدًا.
+
 الإزالة بـ <bdi>`--harness all`</bdi> شاملة عمدًا: تغطّي كل إطار عمل مُسجَّل، بما في
 ذلك أي إطار عمل يتخطّاه <bdi>`exclude_harnesses`</bdi> في الملف التعريفي أثناء
 التثبيت — فيصل التنظيف إلى حالةٍ ربما خلّفها تثبيت سابق أوسع نطاقًا. وأُطُر العمل
 التي لم تُثبَّت قطّ تُبلغ «لا شيء لإزالته».
 
-يُحَلّ الاسم المستعار بصيغة الاستمرار <bdi>`apothem uninstalling`</bdi> إلى المعالج
-نفسه.
+يُحَلّ الاسم المستعار بصيغة الاستمرار <bdi>`apothem uninstalling`</bdi> (ويُقبَل أيضًا
+بالصيغة <bdi>`apothem Uninstalling`</bdi>) إلى المعالج نفسه.
 
 ## الخيارات
 

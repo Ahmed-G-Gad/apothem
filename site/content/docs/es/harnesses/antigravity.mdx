@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptador de entorno de Apothem para Antigravity (vista previa)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,7 +90,9 @@ apothem verify --harness antigravity
 El comando verify confirma que:
 
 1. El archivo de contexto nativo existe en la ruta esperada.
-2. El manifiesto del plugin `plugin.json` existe, no está vacío y se analiza como JSON. La verificación no comprueba el nombre del plugin; revisa ese campo tú mismo tras cambiarlo.
+2. El manifiesto del plugin `plugin.json` existe, no está vacío y se analiza
+   como JSON. El comando verify no comprueba el nombre del plugin; revisa ese
+   campo tú mismo después de cambiarlo.
 
 ## Actualización
 
@@ -108,8 +110,15 @@ actualizar el paquete de Apothem instalado.
 apothem uninstall --harness antigravity
 ```
 
-Elimina los archivos de configuración nativa escritos por el adaptador.
-El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+Elimina el bloque de Apothem de `~/.gemini/GEMINI.md` y conserva cualquier otro
+texto que haya en él. El archivo se elimina solo cuando no queda nada más en él.
+También elimina las claves de Apothem de `plugin.json` en la carpeta del plugin
+`~/.gemini/antigravity-cli/plugins/apothem/` y conserva las tuyas, y elimina los
+archivos de Apothem en las subcarpetas `skills/`, `rules/`, `agents/` y
+`.apothem/support/` de esa carpeta; los demás archivos que hay allí permanecen.
+Cada archivo se respalda bajo `~/.apothem/backups/` antes de modificarse o
+eliminarse. El YAML del perfil compartido y el motor de Apothem no se ven
+afectados.
 
 ## Puerta de conformidad
 

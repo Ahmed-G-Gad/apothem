@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,16 +33,12 @@ Kimi Code は、汎用的な AGENTS.md 規約に従ってプロジェクトル�
 振る舞いルールとガバナンスコーパスは `AGENTS.md` の管理ブロックに置かれます。コマンド、スキル、フック、エージェント、ルール、テンプレートの各コホートは `.kimi-code/.apothem/support/` 配下に配置され、命令面から参照されます。
 これはアダプターが選択したレイアウトであり、Kimi Code の欠落ではありません。Kimi Code はスキルを `.kimi-code/skills/` と `.agents/skills/` から、カスタムエージェントを `.kimi-code/agents/` と `.agents/agents/` から、フックを `~/.kimi-code/config.toml` の `[[hooks]]` 配列から読み込みますが、サポートツリーからは読み込みません。そのため、そこにある Apothem のコピーは、`AGENTS.md` ブロックが指し示す参照用の素材です。
 ブロックは Apothem サポートファイルのセクションで終わります。このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の `.kimi-code/.apothem/support/` 配下のディレクトリを、プロジェクトルートからの相対パスで示します。そのため、コミットされた `AGENTS.md` にはマシン固有のパスが含まれません。
-（Kimi Code の振る舞いは、
-[スキル](https://moonshotai.github.io/kimi-code/en/customization/skills)、
-[サブエージェント](https://moonshotai.github.io/kimi-code/en/customization/agents)、
-[フック](https://moonshotai.github.io/kimi-code/en/customization/hooks)に関する
-カスタマイズページに基づき、2026-10-02 に参照したものです。）
+（Kimi Code の振る舞いは、[スキル](https://moonshotai.github.io/kimi-code/en/customization/skills)、[サブエージェント](https://moonshotai.github.io/kimi-code/en/customization/agents)、[フック](https://moonshotai.github.io/kimi-code/en/customization/hooks)に関するカスタマイズページに基づき、2026-10-02 に参照したものです。）
 
 ## 互換性に関する注意
 
 Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AGENTS.md` から読み込み、`.kimi-code/mcp.json` をオペレーター所有の MCP 面として認識します。Apothem はその面を名指ししますが、そこにエントリを一切作成しません。
-レンダリングされた命令面がプロジェクトを直接駆動します。
+2 つの命令ファイルのうち、アダプターが書き込むのはプロジェクトルートの `AGENTS.md` だけで、これは Kimi Code がプロジェクトの命令として読み込むファイルです。両方のファイルが存在する場合にどちらが優先されるかは、Kimi Code のドキュメントに記載がありません。
 Kimi Code はステータスラインや出力スタイルのファイル面を公開していないため、それらのコホートはマテリアライズされません。
 
 Kimi Code は Moonshot の Kimi モデルファミリーで動作します。

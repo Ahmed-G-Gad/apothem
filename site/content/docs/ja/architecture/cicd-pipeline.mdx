@@ -2,7 +2,7 @@
 title: "CI/CD パイプライン図"
 description: "あらゆるコード変更とリリースを門にかけるビルド・テスト・lint・セキュリティ・公開のワークフロー段階の視覚マップとレーン分解。"
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -71,9 +70,10 @@ flowchart LR
 
 - **静的解析レーン** —— 高速なフィードバック。Ruff は Python のスタイルと
   厳選されたルールセットを扱います。mypy は strict で型の規律を強制します。
-  markdownlint はドキュメント表面を取り締まります。frontmatter バリデーターは、
-  ルール・スキル・委任されたワーカー・コマンドのアーティファクトスキーマ準拠を
-  門にかけます。
+  frontmatter バリデーターは、ルール・スキル・委任されたワーカー・コマンドの
+  アーティファクトスキーマ準拠を門にかけます。markdownlint はこのレーンには
+  含まれません。pre-commit フックとしてのみ実行され、CI では実行されません
+  （[Markdown 規約](/docs/reference/markdown-conventions)を参照してください）。
 - **テストレーン** —— `pytest tests/hooks` はフックランタイムを完全な
   イベントマトリクスに対して走らせます。`validate_ecosystem.py` は
   アーティファクト横断の整合性に対する主要な構造ゲートです。`chaos_pass.py` と

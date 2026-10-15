@@ -2,7 +2,7 @@
 title: "status"
 description: "apothem status コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "4f32f92262a01d50"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ apothem status [--profile PATH] [--project PATH]
 ドリフトは報告されるものであり、エラーとして扱われることは決してありません。1 つ以上のハーネスが `drift` を報告しても、`status` は 0 で終了します。
 ドリフトはあなたのセットアップに関する事実であり、コマンドの失敗ではありません。
 
-デフォルトの共有プロファイルを読み込めない場合、走査を中止するのではなく、インストール済みのハーネスについてドリフトが `unknown` に格下げされます（installed/verified の事実は引き続き報告されます）。
+デフォルトの共有プロファイルを読み込めない場合、走査を中止するのではなく、インストール済みのハーネスについてドリフトが `unknown` に格下げされます（インストール済みかどうかと検証の事実は引き続き報告されます）。
 明示的に指定した `--profile` を読み込めない場合はユーザーエラーであり、その場合は代わりに構造化されたエラーで中止します。
 
 この格下げは常に報告されます。`status` はプロファイルと修正方法を示す注意喚起を出力し、`--json` のエンベロープは `warnings` に、対応する `drift_baseline_unavailable` エントリを含みます。
@@ -114,6 +114,6 @@ apothem status --json
 
 ## 関連項目
 
-- [apothem verify](/docs/cli-reference/verify) — 単一のハーネスのインストールを検証する
+- [apothem verify](/docs/cli-reference/verify) — ハーネスアダプターのインストールを検証する
 - [apothem diff](/docs/cli-reference/diff) — ハーネスの保留中の変更をプレビューする
 - [apothem harnesses](/docs/cli-reference/harnesses) — 登録済みのハーネスを一覧表示・検査する

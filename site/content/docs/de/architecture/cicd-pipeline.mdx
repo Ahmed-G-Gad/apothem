@@ -2,7 +2,7 @@
 title: "CI/CD-Pipeline-Diagramm"
 description: "Visuelle Karte und Spuraufschlüsselung der Workflow-Phasen für Build, Test, Lint, Sicherheit und Veröffentlichung, die jede Codeänderung und jedes Release kontrollieren."
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -72,9 +71,10 @@ flowchart LR
 
 - **Spur für statische Analyse** — schnelles Feedback. Ruff deckt den Python-Stil
   und ein kuratiertes Regelwerk ab; mypy erzwingt Typdisziplin im Strict-Modus;
-  markdownlint reguliert die Dokumentationsoberfläche; der Frontmatter-Validator
-  kontrolliert die Artefakt-Schema-Konformität für Regeln, Skills, delegierte
-  Worker und Befehle.
+  der Frontmatter-Validator kontrolliert die Artefakt-Schema-Konformität für
+  Regeln, Skills, delegierte Worker und Befehle. markdownlint gehört nicht zu
+  dieser Spur: Es läuft nur als Pre-Commit-Hook, und die CI führt es nicht aus
+  (siehe [Markdown-Konventionen](/docs/reference/markdown-conventions)).
 - **Test-Spur** — `pytest tests/hooks` übt die Hook-Laufzeit gegen die vollständige
   Ereignismatrix aus; `validate_ecosystem.py` ist das primäre strukturelle Gate
   für artefaktübergreifende Konsistenz; `chaos_pass.py` und die

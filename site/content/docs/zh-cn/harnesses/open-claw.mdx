@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ apothem install --harness open-claw
 
 **写入的文件：** `~/.openclaw/openclaw.json`、配置档案文档 `~/.openclaw/apothem/rules/00-apothem-profile.md`，以及 `~/.openclaw/.apothem/support/` 下的支持文件
 
-配置档案文档以一个 Apothem 支持文件小节结尾，该小节写明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.openclaw/.apothem/support/` 下的绝对目录。
+配置档案文档以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.openclaw/.apothem/support/` 下的绝对目录。
 
 ## 配置档案到原生配置的映射
 
@@ -49,8 +49,7 @@ verify 命令确认：
 apothem update --harness open-claw
 ```
 
-根据当前的共享配置档案状态重新派生配置档案文档，并刷新支持文件；`openclaw.json` 保留其已有的键。
-在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
+根据当前的共享配置档案状态重新派生配置档案文档，并刷新支持文件；`openclaw.json` 保留其已有的键。在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
 
@@ -58,8 +57,7 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-移除适配器写入的原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加的内容：配置档案文档和支持树。你自己在 `openclaw.json` 中的键会保留，只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

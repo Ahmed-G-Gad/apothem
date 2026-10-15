@@ -2,7 +2,7 @@
 title: "Puerta de conformidad"
 description: "Ejecuta la puerta de conformidad de Apothem para verificar la salud del ecosistema."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ fracción mecánica de la puerta de pre-emisión de quince barras (M1-M15)
 contra cada artefacto que redacta el operador.
 
 Los comandos de esta página suponen un checkout de Apothem, así que antepón
-`PYTHONPATH=src` a cada uno. Tras una instalación con script, usa
-`PYTHONPATH="$HOME/.apothem/src"` en lugar de `src`.
+`PYTHONPATH=src` a cada comando que ejecutes. Tras una instalación con script,
+usa `PYTHONPATH="$HOME/.apothem/src"` en lugar de `PYTHONPATH=src`.
 
 ## Ejecutar la puerta
 
@@ -43,11 +43,12 @@ el mismo árbol. Cada validador informa `inspected` — cuántos destinos examin
 y `--all` copia ese recuento en cada entrada del resultado. Un validador que no
 inspeccionó nada informa `passed: false`, de modo que un directorio de trabajo
 equivocado no puede pasar en silencio. Los dos validadores de suites de plan son
-la excepción: las suites de plan residen en el árbol `.apothem/plans/`, ignorado
-por git, así que informan `empty_scope_expected: true` en un checkout limpio y
-aun así pasan. Los validadores de flujos de trabajo hacen lo mismo cuando el
-proyecto todavía no tiene un directorio `.github/workflows/`, y el validador de
-asuntos de commit lo hace cuando el directorio no tiene historial de commits.
+una excepción: las suites de plan residen en el árbol `.apothem/plans/`,
+ignorado por git, así que informan `empty_scope_expected: true` en un checkout
+limpio y aun así pasan. Los validadores de flujos de trabajo hacen lo mismo
+cuando el proyecto todavía no tiene un directorio `.github/workflows/`, y el
+validador de asuntos de commit lo hace cuando la raíz no tiene historial de
+commits.
 
 ## Barras de la puerta
 
@@ -91,10 +92,14 @@ desplegado; rara vez lo llamas a mano.
 El modo hook está **limitado a un conjunto de directorios**. Ejecuta la cadena
 de comparadores solo en las escrituras cuyo destino está dentro de alguno de
 ellos; una escritura fuera de todos los alcances termina de inmediato como un
-pase silencioso. Los valores predeterminados son las raíces de entorno de
-alcance de usuario con capacidad de hooks en las que Apothem instala — la página
-de cada entorno bajo Adaptadores de entorno nombra su propia raíz. Establece
-`APOTHEM_CONFORMITY_SCOPE` en un directorio para reemplazarlos:
+pase silencioso. Los valores predeterminados son dos raíces:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Establece `APOTHEM_CONFORMITY_SCOPE` en un directorio para reemplazarlos:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead
@@ -103,7 +108,7 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 Un hook que parece no hacer nada suele deberse a un destino fuera de alcance más
 que a un fallo — compara primero el destino de la escritura con los alcances
-anteriores.
+indicados arriba.
 
 ## Integración con CI
 

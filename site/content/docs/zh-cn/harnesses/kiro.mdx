@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "适用于 Kiro（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "3c919d453670f9dc"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,7 +57,7 @@ apothem update --harness kiro --project /path/to/project
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `<project>/.kiro/steering/apothem-rules.md` 中移除 Apothem 块，以及 Apothem 写在该块上方的前置元数据，并保留文件中的其他任何文本。只有当文件中不再剩下其他内容时，才会删除该文件。更改之前，会在 `~/.apothem/backups/` 下保存该文件的一份带时间戳的副本；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,14 +43,14 @@ Die Statuswerte sind `native`, `converted`, `support-tree`,
 
 Eine `converted`-Kohorte wird in das eigene Format des Harness umgeschrieben,
 und manche Quellfelder haben darin keinen Platz. Für jede konvertierte
-Commands-, Agents- oder Regel-Kohorte trägt die `capabilities.yml` des Adapters
-eine `conversion_losses`-Map, die angibt, was mit jedem Frontmatter-Feld der
-Quelle geschieht:
+Kohorte aus Commands, Agenten oder Regeln trägt die `capabilities.yml` des
+Adapters eine `conversion_losses`-Map, die angibt, was mit jedem
+Frontmatter-Feld der Quelle geschieht:
 
 | Wert | Bedeutung |
 | --- | --- |
 | `native:<field>` | Der Harness liest es unter diesem Feld. |
-| `sidecar:<path>` | Es wird in eine separate Datei neben der konvertierten geschrieben, etwa Codex' `agents/openai.yaml`. |
+| `sidecar:<path>` | Es wird in eine separate Datei neben der konvertierten geschrieben, etwa `agents/openai.yaml` von Codex. |
 | `filename` | Der Datei- oder Ordnername trägt es. |
 | `inlined` | Es wandert in den Prompt- oder Body-Text. |
 | `ignored` | Es bleibt in der Datei, aber der Harness liest es nicht. |
@@ -58,34 +58,35 @@ Quelle geschieht:
 
 Ein Test rendert jede konvertierte Datei und prüft die Maps gegen die Ausgabe.
 
-| Harness | Native oder konvertierte Payloads | Support-Tree-Payloads | Warnungen: nicht unterstützt oder ausstehend |
+| Harness | Native oder konvertierte Payloads | Payloads im Unterstützungs-Teilbaum | Warnungen: nicht unterstützt oder ausstehend |
 | --- | --- | --- | --- |
-| Antigravity | konvertierte Commands, Agents und Regeln; native Skills, Sub-Agent-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Templates | Statuslines, Output-Styles; MCP- und Memory-Discovery ausstehend |
-| Claude Code | konvertierte Commands; native Skills, Hooks, Agents, Regeln, Statuslines, Output-Styles, Sub-Agent-Dispatch, Tool-Einschränkungen, Memory | Templates | `CLAUDE.md` bleibt im Besitz des Operators; kein vom Adapter geschriebenes System-Prompt-Template; MCP-Discovery ausstehend |
-| CodeBuddy | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch; MCP-Discovery ausstehend |
-| Codex | konvertierte Commands und Agents; native Skills, Hooks, Sub-Agent-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend, weil Apothem `config.toml` nicht überschreibt |
-| Cursor | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
-| Gemini CLI | konvertierte Commands und Agents; native Skills, Sub-Agent-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
-| GitHub Copilot | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, MCP, Sub-Agent-Dispatch, Memory |
-| GLM (Z.ai) | keine | keine | Commands, Skills, Hooks, Agents, Regeln, Templates, Statuslines, Output-Styles, MCP, Sub-Agent-Dispatch, Tool-Einschränkungen, System-Prompt-Templates, Memory — GLM ist ein Modell-Backend ohne native Konfigurationsoberfläche |
-| Hermes | konvertierte Commands; native System-Prompt-Templates, MCP; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agents, Regeln, Templates | Statuslines, Output-Styles, Sub-Agent-Dispatch |
-| Kimi Code | native Sub-Agent-Dispatch, System-Prompt-Templates, Memory | Commands, Skills, Hooks, Agents, Regeln, Templates | Statuslines, Output-Styles; Discovery für MCP und Tool-Einschränkungen ausstehend |
-| Kiro | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch; MCP-Discovery ausstehend |
-| Open-Claw | konvertierte Commands; native System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agents, Regeln, Templates | Statuslines, Output-Styles, MCP, Sub-Agent-Dispatch |
-| OpenCode | konvertierte Commands und Agents; native Skills, MCP, Sub-Agent-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles |
-| Qwen Code | konvertierte Commands und Agents; native Skills, Hooks, MCP, Sub-Agent-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles |
-| Trae | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
-| Windsurf | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
-| Zed | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
+| Antigravity | konvertierte Commands, Agenten und Regeln; native Skills, Subagenten-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Templates | Statuslines, Output-Styles; MCP- und Memory-Discovery ausstehend |
+| Claude Code | konvertierte Commands; native Skills, Hooks, Agenten, Regeln, Statuslines, Output-Styles, Subagenten-Dispatch, Tool-Einschränkungen, Memory | Templates | `CLAUDE.md` bleibt im Besitz des Operators; kein vom Adapter geschriebenes System-Prompt-Template; MCP-Discovery ausstehend |
+| CodeBuddy | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch; MCP-Discovery ausstehend |
+| Codex | konvertierte Commands und Agenten; native Skills, Hooks, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend, weil Apothem `config.toml` nicht überschreibt |
+| Cursor | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
+| Gemini CLI | konvertierte Commands und Agenten; native Skills, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles; MCP-Discovery ausstehend |
+| GitHub Copilot | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, MCP, Subagenten-Dispatch, Memory |
+| GLM (Z.ai) | keine | keine | Commands, Skills, Hooks, Agenten, Regeln, Templates, Statuslines, Output-Styles, MCP, Subagenten-Dispatch, Tool-Einschränkungen, System-Prompt-Templates, Memory — GLM ist ein Modell-Backend ohne native Konfigurationsoberfläche |
+| Hermes | konvertierte Commands; native System-Prompt-Templates, MCP; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles, Subagenten-Dispatch |
+| Kimi Code | native Subagenten-Dispatch, System-Prompt-Templates, Memory | Commands, Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles; Discovery für MCP und Tool-Einschränkungen ausstehend |
+| Kiro | native Regeln, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch; MCP-Discovery ausstehend |
+| Open-Claw | konvertierte Commands; native System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Skills, Hooks, Agenten, Regeln, Templates | Statuslines, Output-Styles, MCP, Subagenten-Dispatch |
+| OpenCode | konvertierte Commands und Agenten; native Skills, MCP, Subagenten-Dispatch, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | Hooks, Regeln, Templates | Statuslines, Output-Styles |
+| Qwen Code | konvertierte Commands und Agenten; native Skills, Hooks, MCP, Subagenten-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles |
+| Trae | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
+| Windsurf | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
+| Zed | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agenten, Statuslines, Output-Styles, Subagenten-Dispatch, Memory; MCP-Discovery ausstehend |
 
 ## Gemeinsame Wurzelverzeichnisse
 
-Manche Installationsziele werden von anderen Harnesses geladen als dem, der sie
-schreibt. Die Registry erfasst jeden solchen Pfad in `SHARED_ROOTS` mit einem
+Manche Installationsziele werden von anderen Harnesses geladen als von dem, der
+sie schreibt. Die Registry erfasst jeden solchen Pfad in `SHARED_ROOTS` mit einem
 Eigentümer (dem einzigen Adapter, der ihn schreibt) und den Lesern, deren
-Vendor-Dokumentation ihn standardmäßig lädt, mit den Vendor-Seiten als Nachweis.
-Die Installation des Eigentümers stellt Apothem-Inhalte jedem Leser bereit, und
-die Deinstallation des Eigentümers entfernt sie für jeden Leser.
+Vendor-Dokumentation ihn standardmäßig lädt, dazu die Vendor-Seiten, die das
+belegen, und das Datum, an dem sie abgerufen wurden. Die Installation des
+Eigentümers stellt Apothem-Inhalte jedem Leser bereit, und die Deinstallation des
+Eigentümers entfernt sie für jeden Leser.
 
 | Pfad | Eigentümer | Leser |
 | --- | --- | --- |
@@ -99,10 +100,12 @@ die Deinstallation des Eigentümers entfernt sie für jeden Leser.
 
 Der Apothem-Block, den ein Eigentümer in eine gemeinsame Anweisungsdatei
 schreibt, nennt kein einzelnes Werkzeug als seinen Leser.
-`tests/unit/test_shared_roots.py` schlägt fehl, wenn ein Registry-Ziel von zwei
-Adaptern geschrieben wird oder wie eine werkzeugübergreifende Anweisungsdatei
-benannt ist (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`), ohne einen deklarierten Eigentümer zu haben.
+`tests/unit/test_shared_roots.py` schlägt fehl, wenn zwei Adapter dasselbe
+Registry-Ziel schreiben und wenn ein Registry-Ziel, das wie eine
+werkzeugübergreifende Anweisungsdatei benannt ist (`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `copilot-instructions.md`), keinen deklarierten Eigentümer hat. Die
+einzige Ausnahme ist `~/.codex/AGENTS.md`; kein anderer registrierter Harness
+dokumentiert, dass er diese Datei lädt.
 
 ## Validierungs-Hooks
 
@@ -110,7 +113,7 @@ Die Registry bleibt durch diese Prüfungen synchron:
 
 | Prüfung | Zweck |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Bestätigt, dass jeder Adapter einen Konventions-Pin hat, der weniger als 90 Tage alt ist, mindestens eine Vendor-URL zitiert und kein überfälliges Discovery-Ziel hat. Die CI führt die Prüfung bei jedem Pull Request, wöchentlich und vor einem Release aus. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Bestätigt, dass jeder Adapter einen Konventions-Pin hat, der höchstens 90 Tage alt ist, mindestens eine Vendor-URL zitiert und kein überfälliges Discovery-Ziel hat. Die CI führt die Prüfung bei jedem Pull Request, wöchentlich und vor einem Release aus. |
 | `python scripts/dev/check_vendor_urls.py` | Ruft jede Vendor-URL ab, die die Pins und Harness-Templates zitieren, und schlägt bei einer verschobenen oder toten Seite fehl, einschließlich eines Hostnamens, der nicht mehr auflöst, oder eines Zertifikats, dessen Verifizierung fehlschlägt; ein Timeout, eine abgelehnte oder zurückgesetzte Verbindung oder ein 5xx-Serverfehler wird als nicht erreichbar gemeldet und lässt die Prüfung nicht fehlschlagen. Der wöchentliche Konventionsmonitor führt sie aus. |
 | `python -m apothem.conformity.gate --all .` | Führt die Konformitätsprüfungen für Dokumentation und Implementierung aus. |
 | `python -m pytest` | Führt die Registry-Fixture-Tests und die Adapter-Vertragstests aus. |

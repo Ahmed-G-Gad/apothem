@@ -2,7 +2,7 @@
 title: "Posicionamiento"
 description: "Entiende Apothem como una gobernanza de ratificación de artefactos con quince mandatos, disciplina de entrada por canal canónico y arquitectura creativa de identidad cognitiva para el trabajo dirigido por asistentes."
 machineTranslated: true
-sourceHash: "6d3d5fa705635db8"
+sourceHash: "bb4803081f68283f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ El encuadre convencional de las herramientas para asistentes es el **ajuste de p
 
 El punto de apalancamiento de un asistente que opera sobre un proyecto real no es la prosa que el operador entrega al modelo — es el **artefacto que el modelo está a punto de emitir**. Ese artefacto llegará a un espacio de trabajo, se confirmará en un commit, se revisará, se fusionará, se desplegará, será citado por artefactos posteriores y heredado por futuros contribuyentes. Su calidad es una propiedad irreversible aguas abajo que el prompt no puede reparar retroactivamente. Editar el prompt después de que llegue un commit mal formado es un impuesto sobre el operador, no una recuperación del artefacto.
 
-La disciplina que este proyecto codifica es la **inversión**: cada emisión pasa por una puerta estructurada, acordada y verificada mecánicamente **antes** de salir de las manos del asistente. La puerta hace cumplir quince mandatos que abarcan el descubrimiento del host, la divulgación, diez dimensiones de calidad, la higiene de autoridad, la incorporación de pericia, la anotación de opciones, la definitividad, el apalancamiento visual, el enlace bidireccional, el aparato de sprints ágiles, el diseño canónico, el oficio de código, la participación sistémica y la preparación para producción. Cada mandato es una **regla** con un ámbito filtrado por ruta y un cuerpo que operacionaliza una clase de fallo específica. Cada fallo de la puerta es un hallazgo estructural que el asistente expone — nunca una degradación silenciosa.
+La disciplina que este proyecto codifica es la **inversión**: cada emisión pasa por una puerta estructurada, acordada y verificada mecánicamente **antes** de salir de las manos del asistente. La puerta hace cumplir quince mandatos que abarcan el descubrimiento del host, la divulgación, diez dimensiones de calidad, la autoaplicación, la higiene de autoridad, la incorporación de pericia, la anotación de opciones, la definitividad, el apalancamiento visual, el enlace bidireccional, el aparato de sprints ágiles, el diseño canónico, el oficio de código, la participación sistémica y la preparación para producción. Cada mandato es una **regla** con un ámbito filtrado por ruta y un cuerpo que operacionaliza una clase de fallo específica. Cada fallo de la puerta es un hallazgo estructural que el asistente expone — nunca una degradación silenciosa.
 
 El corpus de reglas ES el producto. El binario `apothem` es su **empaquetado** — una superficie de distribución que lleva el corpus a la raíz de configuración de usuario de cada operador y lo registra como la postura operativa del asistente. El empaquetado es reemplazable; el corpus es el activo de cola larga.
 
@@ -38,7 +38,7 @@ El corpus descansa sobre tres pilares. Cada pilar es una superficie separable co
 
 ### Pilar A — El registro de mandatos (M1–M15 + CM-1..CM-28)
 
-El registro de mandatos es la superficie de gobernanza del **eje exterior**. **M1–M15** gobiernan cada artefacto que el asistente produce en un proyecto host: descubrimiento del host, divulgación, diez dimensiones de calidad, autoridad, pericia, anotación de opciones, definitividad, apalancamiento visual, enlace bidireccional, sprints ágiles, diseño canónico, oficio de código, participación sistémica y preparación para producción. El registro se canoniza como el registro de quince mandatos y se operacionaliza mediante los archivos de reglas enumerados en §3 más abajo.
+El registro de mandatos es la superficie de gobernanza del **eje exterior**. **M1–M15** gobiernan cada artefacto que el asistente produce en un proyecto host: descubrimiento del host, divulgación, diez dimensiones de calidad, autoaplicación, autoridad, pericia, anotación de opciones, definitividad, apalancamiento visual, enlace bidireccional, sprints ágiles, diseño canónico, oficio de código, participación sistémica y preparación para producción. El registro se canoniza como el registro de quince mandatos y se operacionaliza mediante los archivos de reglas enumerados en §3 más abajo.
 
 **CM-1..CM-28** son las contrapartes del **eje interior** — mandatos operativos que gobiernan la disciplina de interacción del asistente (evaluación crítica, cero suposiciones, buscar antes de implementar, evaluación de la mejor solución, honestidad brutal, velocidad de decisión, foco primero en el cuello de botella, producto coherente y veinte entradas más que cubren la localidad de los planes, la administración del contexto, la orquestación del trabajo delegado, la generación de archivos grandes y el ciclo de vida de la memoria). El eje interior se canoniza en la regla de mandatos operativos y en `site/content/docs/governance/cross-cutting-mandates.mdx`.
 
@@ -48,11 +48,11 @@ Cada emisión pasa por ambos ejes. La puerta de `src/apothem/rules/pre-emission-
 
 La disciplina del canal canónico vincula **cómo solicita el asistente la entrada del operador**. Los prompts de forma libre están retirados en todo el ecosistema; cada elección se enruta por el canal de consulta estructurada con un esquema estructurado de anotación de opciones (justificación + recomendación + puntero por defecto en cada opción), una taxonomía de recomendación cerrada, un piso de confirmación por archivo para las operaciones destructivas y un barrido heurístico que detecta la deriva hacia prompts conversacionales en cada superficie gobernada. La especificación completa vive en `src/apothem/rules/interactive-questions.md`; la profundidad la llevan los archivos compañeros filtrados por ruta `src/apothem/rules/interactive-questions-canonical-shapes.md` y `src/apothem/rules/interactive-questions-sweep-matchers.md`.
 
-El apalancamiento de la disciplina es la **auditabilidad de las decisiones**. Cada elección volitiva del operador lleva la evidencia que el asistente consideró, la recomendación que el asistente emitió y la justificación basada en motores concretos. Seis meses después de la elección, un auditor que lea el libro mayor de divulgación puede reconstruir la frontera de la decisión sin consultar la memoria del operador.
+El apalancamiento de la disciplina es la **auditabilidad de las decisiones**. Cada elección volitiva del operador lleva la evidencia que el asistente consideró, la recomendación que el asistente emitió y la justificación basada en impulsores concretos. Seis meses después de la elección, un auditor que lea el libro mayor de divulgación puede reconstruir la frontera de la decisión sin consultar la memoria del operador.
 
 ### Pilar C — La taxonomía de identidad cognitiva
 
-La taxonomía de identidad cognitiva vincula **cómo piensa el asistente**. Cinco filtros cognitivos secuenciales (Purga de lo Obvio, Exilio de Dominio, Prensa de Inversión, Explosión Combinatoria, Demanda Estética) componen una cadencia creativa aplicada en cada salida sustantiva. Seis técnicas de ideación (Saboteador Histórico, Paradoja de la Restricción, Lente de Sistemas Vivos, Narrativa de Segundo Orden, Marco del Villano, Zoom a 100 Años) se activan ante señales de detección cuando el enfoque estándar ha dado un resultado insatisfactorio. Siete ejes de amplitud (Arquitectura, Concurrencia, Rendimiento, Seguridad, Pruebas, Herramientas, Observabilidad) constituyen la superficie de profundidad frente a la cual atestigua cada decisión no trivial. La especificación completa vive en `src/apothem/rules/cognitive-identity.md`; la profundidad la lleva el archivo compañero filtrado por ruta `src/apothem/rules/cognitive-identity-techniques.md`.
+La taxonomía de identidad cognitiva vincula **cómo piensa el asistente**. Cinco filtros cognitivos secuenciales (Purga de lo Obvio, Exilio de Dominio, Prensa de Inversión, Explosión Combinatoria, Demanda Estética) componen una cadencia creativa. El primer y el último filtro se aplican a cada salida sustantiva; los tres intermedios se aplican a las decisiones no triviales. Seis técnicas de ideación (Saboteador Histórico, Paradoja de la Restricción, Lente de Sistemas Vivos, Narrativa de Segundo Orden, Marco del Villano, Zoom a 100 Años) se activan ante señales de detección cuando el enfoque estándar ha dado un resultado insatisfactorio. Siete ejes de amplitud (Arquitectura, Concurrencia, Rendimiento, Seguridad, Pruebas, Herramientas, Observabilidad) constituyen la superficie de profundidad frente a la cual atestigua cada decisión no trivial. La especificación completa vive en `src/apothem/rules/cognitive-identity.md`; la profundidad la lleva el archivo compañero filtrado por ruta `src/apothem/rules/cognitive-identity-techniques.md`.
 
 El apalancamiento de la taxonomía es la **novedad estructural**. El filtro de Purga de lo Obvio descarta la respuesta de primera idea a la que todos recurren; la Prensa de Inversión exige que al menos una suposición invertida sobreviva en la salida final; la Demanda Estética rechaza las formas funcionales pero olvidables. El resultado es un asistente que produce salidas que los operadores se detienen a releer — no porque la prosa esté decorada, sino porque la elección estructural no es obvia de una manera que, una vez vista, parece inevitable.
 
@@ -64,11 +64,11 @@ Los tres pilares **se sostienen mutuamente**. El registro de mandatos (Pilar A) 
 
 ## §3. Recorrido del registro de mandatos
 
-El registro de quince mandatos es la superficie de gobernanza canónica del eje exterior. Cada fila de abajo nombra el mandato, su ámbito operativo y el archivo de reglas que lleva la especificación canónica. Cada archivo de reglas está filtrado por ruta a las clases de artefactos que gobierna y se carga bajo demanda en el contexto operativo del asistente cuando se tocan esas clases.
+El registro de quince mandatos es la superficie de gobernanza canónica del eje exterior. Cada subsección de abajo nombra el mandato, su ámbito operativo y el archivo de reglas que lleva la especificación canónica. Cada archivo de reglas está filtrado por ruta a las clases de artefactos que gobierna y se carga bajo demanda en el contexto operativo del asistente cuando se tocan esas clases.
 
 ### M1 — Agnosticismo del proyecto host y descubrimiento de convenciones
 
-**Ámbito.** Todo lo que el asistente produce en un proyecto host está moldeado por lo que el proyecto host ya es — su pila tecnológica, lenguaje, framework, cadena de herramientas, formateador, linter, framework de pruebas, generador de documentación, estrategia de ramas, convención de mensajes de commit, diseño, nomenclatura, política de fijado de dependencias. Cada una de ellas se **descubre** en la fuente de verdad autorizada del host (manifiestos, archivos de bloqueo, archivos hermanos de tipo comparable, documentos de convenciones a nivel de repositorio) y se **respeta**. Donde el host guarda silencio sobre una convención que el asistente debe adoptar, el silencio aflora como una consulta de autoridad — nunca se resuelve eligiendo en silencio un valor por defecto interno.
+**Ámbito.** Todo lo que el asistente produce en un proyecto host está moldeado por lo que el proyecto host ya es — su pila tecnológica, lenguaje, framework, cadena de herramientas, formateador, linter, framework de pruebas, generador de documentación, estrategia de ramas, convención de mensajes de commit, diseño, nomenclatura, política de fijado de dependencias. Cada una de ellas se **descubre** en la fuente de verdad autorizada del host (manifiestos, archivos de bloqueo, archivos hermanos de tipo comparable, documentos de convenciones a nivel de repositorio) y se **respeta**. Donde el host guarda silencio sobre una convención que el asistente debe adoptar, el silencio aflora como una consulta de autoridad bajo M5 — nunca se resuelve eligiendo en silencio un valor por defecto interno.
 
 **Especificación canónica.** `src/apothem/rules/host-discovery.md` (con el catálogo de manifiestos por lenguaje en `src/apothem/rules/host-discovery-manifests.md`).
 
@@ -92,7 +92,7 @@ El registro de quince mandatos es la superficie de gobernanza canónica del eje 
 
 ### M4 — Autoaplicación — Puerta de pre-emisión
 
-**Ámbito.** Cada artefacto pasa una **puerta de pre-emisión de quince barras** antes de la emisión. Las barras mecánicas (M5, M7, M8, M10, M13) llevan matchers ejecutables en `src/apothem/conformity/*-grep.py`, orquestados por `src/apothem/conformity/gate.py`. Las barras M3, M12 y M15 son parcialmente mecánicas: los matchers ejecutables cubren una parte de cada barra y el asistente operativo evalúa el resto. Las barras razonadas (M1, M2, M6, M9, M11, M14) las evalúa el asistente operativo y se registran en el bloque de verificación. El fallo de una sola barra bloquea la emisión; la iteración continúa hasta que todas las barras pasan.
+**Ámbito.** Cada artefacto pasa una **puerta de pre-emisión de quince barras** antes de la emisión. Las barras mecánicas (M5, M7, M8, M10, M13) llevan matchers ejecutables en `src/apothem/conformity/*-grep.py`, orquestados por `src/apothem/conformity/gate.py`. Las barras M3, M12 y M15 son parcialmente mecánicas: los matchers ejecutables cubren una parte de cada barra y el asistente operativo evalúa el resto. Las barras razonadas (M1, M2, M6, M9, M11, M14) las evalúa el asistente operativo y se registran en el bloque de verificación. La propia barra M4 comprueba que el bloque de verificación esté presente en el rastro de trabajo del artefacto. El fallo de una sola barra bloquea la emisión; la iteración continúa hasta que todas las barras pasan.
 
 **Especificación canónica.** `src/apothem/rules/pre-emission-gate.md` (con la tabla completa de barras en `src/apothem/rules/pre-emission-gate-bars.md`).
 
@@ -120,7 +120,7 @@ El registro de quince mandatos es la superficie de gobernanza canónica del eje 
 
 **Especificación canónica.** `src/apothem/rules/option-annotation.md` (con la forma para prosa y documentos en `src/apothem/rules/option-annotation-form.md`).
 
-**Por qué importa.** Cada conjunto de opciones redactado es una superficie de auditoría. El lector ve no solo la elección sino el espacio de alternativas, la recomendación y el motor concreto que la respalda. La misma disciplina vincula las invocaciones de consulta estructurada del asistente y la prosa redactada en artefactos permanentes.
+**Por qué importa.** Cada conjunto de opciones redactado es una superficie de auditoría. El lector ve no solo la elección sino el espacio de alternativas, la recomendación y el impulsor concreto que la respalda. La misma disciplina vincula las invocaciones de consulta estructurada del asistente y la prosa redactada en artefactos permanentes.
 
 ### M8 — Definitividad, hermeticidad y la familia de virtudes de los sistemas rigurosos
 
@@ -136,7 +136,7 @@ El registro de quince mandatos es la superficie de gobernanza canónica del eje 
 
 **Especificación canónica.** `src/apothem/rules/visual-leverage.md`.
 
-**Por qué importa.** Una descripción arquitectónica de dos mil palabras sin diagrama es una **infrautilización sistemática** del medio y un fallo estructural del artefacto, no una preferencia estilística. Las relaciones espaciales son ilegibles en prosa lineal; el diagrama es una salida de primera clase en igualdad de condiciones, no una decoración.
+**Por qué importa.** Una descripción arquitectónica de dos mil palabras sin diagrama es una **infrautilización sistemática** del medio y un fallo estructural del artefacto, no una preferencia estilística. Las relaciones espaciales son ilegibles en prosa lineal; el diagrama es una salida de primera clase de igual rango, no una decoración.
 
 ### M10 — Enlace bidireccional y entrelazado de la ejecución de fases
 
@@ -199,21 +199,21 @@ La especificación canónica vive en `src/apothem/rules/interactive-questions.md
 Cada invocación lleva cuatro campos: una `question` de una sola frase que termina en signo de interrogación, un `header` corto (doce caracteres como máximo), un arreglo `options` de dos a cuatro elementos y un booleano `multiSelect`. Cada opción lleva un `label` de una a cinco palabras y un cuerpo `description` con tres segmentos en orden fijo:
 
 1. **justificación** — una frase que indica qué significa esta opción y su consecuencia directa y observable sobre el estado del ecosistema.
-2. **recomendación** — un valor de la taxonomía cerrada: recommended, acceptable, discouraged o destructive-no-default. Los valores no neutrales llevan una cláusula de porqué que cita al menos un **motor concreto** de una taxonomía cerrada de seis clases: decisiones bloqueadas, riesgos nombrados, restricciones nombradas, posturas ante preguntas abiertas, citas de reglas y estado observado del ecosistema. La lista de prohibiciones de justificaciones vagas no es conforme cuando figura como la única justificación de una recomendación no neutral.
+2. **recomendación** — un valor de la taxonomía cerrada: recommended, acceptable, discouraged o destructive-no-default. Los valores no neutrales llevan una cláusula de porqué que cita al menos un **impulsor concreto** de una taxonomía cerrada de seis clases: decisiones bloqueadas, riesgos nombrados, restricciones nombradas, posturas ante preguntas abiertas, citas de reglas y estado observado del ecosistema. Una frase de la lista de prohibiciones de justificaciones vagas no es conforme cuando figura como la única justificación de una recomendación no neutral.
 3. **puntero por defecto** — nombra el valor por defecto seguro con su justificación, O declara de forma explícita `no-default: user decision required`. Las operaciones destructivas usan siempre la forma sin valor por defecto.
 
-Exactamente una opción por invocación puede llevar el sufijo de etiqueta con el marcador de recomendado, vinculado de forma bidireccional al valor de recomendación del cuerpo. El matcher H6 detecta como hallazgos de la puerta las discrepancias entre el sufijo de la etiqueta y el valor del cuerpo.
+Una invocación de selección única (`multiSelect: false`) lleva como máximo una opción con el sufijo de etiqueta del marcador de recomendado; una invocación de selección múltiple PUEDE llevar varias, y una invocación sin ninguna opción recomendada no lleva ninguna. Cada sufijo está vinculado de forma bidireccional al valor de recomendación del cuerpo. El matcher H6 detecta como hallazgos de la puerta las discrepancias entre el sufijo de la etiqueta y el valor del cuerpo.
 
 ### Confirmación por archivo de las operaciones destructivas
 
-Cada operación destructiva — eliminar, renombrar, mover, sobrescribir sin retención, revertir modificaciones sin confirmar — se enruta por el canal de consulta estructurada archivo por archivo. Una invocación por archivo, siempre. `multiSelect: true` no es conforme en las invocaciones de operaciones destructivas; los conjuntos canónicos de opciones de las subsecciones de operaciones destructivas son el piso. La fatiga de confirmación es un costo aceptado; la destrucción silenciosa no lo es.
+Cada operación destructiva — eliminar, renombrar, mover, sobrescribir sin retención, revertir modificaciones sin commit — se enruta por el canal de consulta estructurada archivo por archivo. Una invocación por archivo, siempre. `multiSelect: true` no es conforme en las invocaciones de operaciones destructivas; los conjuntos canónicos de opciones de las subsecciones de operaciones destructivas son el piso. La fatiga de confirmación es un costo aceptado; la destrucción silenciosa no lo es.
 
 ### Barrido heurístico — de H1 a H7
 
 Siete matchers mecánicos barren las superficies del núcleo gobernado (comandos, reglas, skills, definiciones de trabajadores delegados, hooks, los archivos de configuración de los entornos y `CLAUDE.md`) en busca de dos clases de fallo:
 
 - **Heurísticas de forma conversacional (H1–H3).** H1 detecta prompts formados por un imperativo más un signo de interrogación. H2 detecta «Please confirm / approve / choose». H3 detecta «Which of the following / these». El número de coincidencias de cada matcher se compara con un recuento documentado de zonas de exclusión (autocitas definicionales y contextos de conversación preservada); las desviaciones son hallazgos de la puerta.
-- **Heurísticas de conformidad de la anotación (H4–H7).** H4 detecta opciones a las que les falta cualquiera de los tres segmentos del cuerpo. H5 detecta recomendaciones no neutrales sin una cita de motor concreto. H6 detecta discrepancias entre el sufijo de la etiqueta y el valor del cuerpo. H7 detecta invocaciones de operaciones destructivas a las que les falta el piso textual de sin valor por defecto.
+- **Heurísticas de conformidad de la anotación (H4–H7).** H4 detecta opciones a las que les falta cualquiera de los tres segmentos del cuerpo. H5 detecta recomendaciones no neutrales sin una cita de impulsor concreto. H6 detecta discrepancias entre el sufijo de la etiqueta y el valor del cuerpo. H7 detecta invocaciones de operaciones destructivas a las que les falta el piso textual de sin valor por defecto.
 
 El barrido es reproducible — cada matcher lleva una invocación de ripgrep que cualquier operador puede ejecutar contra el corpus. La disciplina es mecánica, no interpretativa.
 
@@ -222,7 +222,7 @@ El barrido es reproducible — cada matcher lleva una invocación de ripgrep que
 Los prompts conversacionales como entrada principal tienen tres modos de fallo estructural que la disciplina del canal canónico cierra:
 
 1. **Borrado del espacio de decisión.** Un prompt de forma libre presenta una única acción propuesta y pide al operador que la ratifique. Las alternativas que el asistente consideró, sus pesos relativos y la justificación del camino elegido son invisibles. El operador ratifica o rechaza sin ver el espacio de decisión.
-2. **Asimetría de sesgo.** Sin un marcador de recomendación explícito más una justificación con motor concreto, la preferencia del asistente se transmite mediante el tono de la prosa, el encuadre y el orden — canales que el operador no puede evaluar como evidencia. El marcador de recomendado más el motor citado hacen que el sesgo sea explícito y auditable.
+2. **Asimetría de sesgo.** Sin un marcador de recomendación explícito más una justificación con impulsor concreto, la preferencia del asistente se transmite mediante el tono de la prosa, el encuadre y el orden — canales que el operador no puede evaluar como evidencia. El marcador de recomendado más el impulsor citado hacen que el sesgo sea explícito y auditable.
 3. **Deterioro de la auditoría.** Seis meses después de la elección, un auditor que lea el registro de la conversación ve la pregunta y la respuesta, pero no puede reconstruir la frontera de la decisión. El cuerpo de tres segmentos de la invocación estructurada es evidencia duradera que el auditor lee con la misma forma con que la vio el operador en el momento de la decisión.
 
 La disciplina convierte cada elección volitiva del operador en un **artefacto de decisión** — un registro de qué se ofreció, qué se recomendó, qué se eligió y por qué.
@@ -237,7 +237,7 @@ La especificación canónica vive en `src/apothem/rules/cognitive-identity.md`. 
 
 ### Los cinco filtros cognitivos
 
-Cada salida sustantiva pasa por una cadencia de cinco filtros en orden canónico:
+Los cinco filtros se ejecutan en orden canónico. Los Filtros 1 y 5 se aplican a cada salida sustantiva; los Filtros 2 a 4 se aplican a las decisiones no triviales:
 
 1. **Filtro 1 — La Purga de lo Obvio.** La primera idea es a la que todos recurren. Descártala. La primera idea es un punto de partida de lo que NO se debe hacer. *Siempre activo; se activa en cada salida sustantiva.*
 2. **Filtro 2 — El Exilio de Dominio.** Replantea el problema a través de un dominio ajeno. Negocios → biología evolutiva. Educación → infraestructura urbana. Arquitectura de software → mecánica de las mareas. Las soluciones de dominios ajenos llevan el material genético de la novedad. *Se activa en las decisiones no triviales.*
@@ -253,7 +253,7 @@ Cuando un problema se resiste al enfoque estándar o exige una originalidad que 
 
 - **El Saboteador Histórico** — se activa cuando un problema ha sido «resuelto» varias veces con el mismo resultado insatisfactorio. Vuelve a convertir en arma el conocimiento olvidado de la época.
 - **La Paradoja de la Restricción** — se activa cuando el espacio de soluciones parece excesivamente restringido. Añade una restricción extrema y diseña una solución que solo funcione *gracias a* ella.
-- **La Lente de Sistemas Vivos** — se activa cuando el sistema muestra patologías de aspecto orgánico (bucles de retroalimentación, desperdicio que se perpetúa solo). Pregunta: qué lo alimenta, qué lo reproduce, qué lo mataría, qué presión evolutiva lo creó.
+- **La Lente de Sistemas Vivos** — se activa cuando el sistema muestra patologías de aspecto orgánico (bucles de retroalimentación, desperdicio que se perpetúa solo). Pregunta: ¿qué lo alimenta, qué lo reproduce, qué lo mataría, qué presión evolutiva lo creó?
 - **La Narrativa de Segundo Orden** — se activa cuando una propuesta resulta plana en lo técnico pero provoca resistencia social. Empieza por lo que la propuesta cambia en cómo piensa la gente, no por lo que hace.
 - **El Marco del Villano** — se activa cuando una propuesta contenta a todas las partes interesadas y no complace a nadie. Identifica quién ODIARÍA la idea y diseña específicamente para amplificar ese odio.
 - **El Zoom a 100 Años** — se activa cuando todo el encuadre del problema supone restricciones que difícilmente sobrevivirán diez años o más. Proyecta hacia adelante; trae hacia atrás la claridad del futuro.
@@ -272,7 +272,7 @@ Cada decisión no trivial atestigua frente a siete ejes canónicos de pericia:
 - **Herramientas** — lint / formato / CI / CD / instrumentación de observabilidad.
 - **Observabilidad** — registro, métricas, trazado, alertas, depurabilidad.
 
-Cada emisión atestigua qué ejes aplican, cuáles no aplican con motivo y cuáles están limitados por la envolvente (una brecha reconocida, enrutada para su cierre). Los siete ejes constituyen la superficie de profundidad frente a la cual se evalúan las diez dimensiones de calidad de M3; las enmiendas por eje se registran en `<harness-root>/memory/expertise-gap-log.md`. El eje de Rendimiento lleva su propia doctrina filtrada por ruta en `src/apothem/rules/performance-discipline.md`, con presupuestos por clase (manejadores de hooks, orquestador de la puerta de conformidad, suite de pruebas, creación de trabajadores delegados) y puertas cuantitativas en `src/apothem/benchmarks/`.
+Cada emisión atestigua qué ejes aplican, cuáles no aplican con motivo y cuáles están limitados por la envolvente (el eje aplica, pero excede la envolvente de pericia del asistente; la brecha se reconoce y se enruta para su cierre). Los siete ejes constituyen la superficie de profundidad frente a la cual se evalúan las diez dimensiones de calidad de M3; las enmiendas por eje se registran en `<harness-root>/memory/expertise-gap-log.md`. El eje de Rendimiento lleva su propia doctrina filtrada por ruta en `src/apothem/rules/performance-discipline.md`, con presupuestos por clase (manejadores de hooks, orquestador de la puerta de conformidad, suite de pruebas, creación de trabajadores delegados) y puertas cuantitativas en `src/apothem/benchmarks/`.
 
 ### Estándares de lenguaje
 
@@ -280,7 +280,7 @@ La taxonomía prohíbe una lista cerrada de vocabulario en las salidas sustantiv
 
 ### Por qué esta taxonomía y no «sé creativo»
 
-«Sé creativo» es una instrucción sin apalancamiento. La taxonomía de identidad cognitiva descompone la creatividad en superficies mecánicas: filtros que se activan en orden canónico, técnicas que se activan ante señales de detección, ejes frente a los cuales atestigua la salida y una disciplina de vocabulario que atrapa los atajos a los que un autor recurre bajo presión de costo. La taxonomía es **arquitectura cognitiva operacionalizada** — cada salida sustantiva pasa por una cadencia que el operador puede auditar, no por un ambiente que el operador espera que el asistente respete.
+«Sé creativo» es una instrucción sin apalancamiento. La taxonomía de identidad cognitiva descompone la creatividad en superficies mecánicas: filtros que se activan en orden canónico, técnicas que se activan ante señales de detección, ejes frente a los cuales atestigua la salida y una disciplina de vocabulario que atrapa los atajos a los que un autor recurre bajo presión de costo. La taxonomía es **arquitectura cognitiva operacionalizada** — cada salida sustantiva pasa por los filtros siempre activos y cada decisión no trivial pasa por la cadencia completa, un registro que el operador puede auditar, no una intuición vaga que el operador confía en que el asistente respete.
 
 ---
 

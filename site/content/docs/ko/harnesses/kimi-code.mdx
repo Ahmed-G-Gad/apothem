@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,14 +30,14 @@ Kimi Code는 범용 AGENTS.md 규약에 따라 프로젝트 루트의 `AGENTS.md
 명시하지만 항목은 작성하지 않습니다.
 
 **작성되는 파일:** `<project>/AGENTS.md`(관리 블록), 그리고
-`<project>/.kimi-code/.apothem/support/` 아래의 명령, 스킬, 훅, 에이전트, 규칙,
+`<project>/.kimi-code/.apothem/support/` 아래의 커맨드, 스킬, 훅, 에이전트, 규칙,
 템플릿 코호트.
 
 ## 프로필-네이티브 구성 매핑
 
 어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
 실행마다 프로젝트 루트의 `AGENTS.md` 지침 표면을 렌더링합니다. 동작 규칙과
-거버넌스 코퍼스는 `AGENTS.md`의 관리 블록에 안착하고, 명령, 스킬, 훅, 에이전트,
+거버넌스 코퍼스는 `AGENTS.md`의 관리 블록에 안착하고, 커맨드, 스킬, 훅, 에이전트,
 규칙, 템플릿 코호트는 `.kimi-code/.apothem/support/` 아래에 배치되어 지침
 표면에서 참조됩니다. 이는 Kimi Code의 기능 누락이 아니라 어댑터가 선택한
 레이아웃입니다. Kimi Code는 스킬을 `.kimi-code/skills/`와 `.agents/skills/`에서,
@@ -58,13 +58,15 @@ Code 사용자 지정 페이지에 따른 것이며, 2026-10-02에 확인했습�
 
 Kimi Code는 `AGENTS.md` 또는 `.kimi-code/AGENTS.md`에서 프로젝트 지침을 읽고,
 `.kimi-code/mcp.json`을 운영자 소유 MCP 표면으로 인식합니다. Apothem은 그
-표면을 명시하지만 그 안에 어떤 항목도 작성하지 않습니다. 렌더링된 지침 표면이
-프로젝트를 직접 구동합니다. Kimi Code는 상태 표시줄이나 출력 스타일 파일 표면을
+표면을 명시하지만 그 안에 어떤 항목도 작성하지 않습니다. 이 두 지침 파일 가운데
+어댑터는 프로젝트 루트의 `AGENTS.md`만 작성하며, Kimi Code는 이 파일을 프로젝트
+지침으로 읽습니다. 두 파일이 모두 있을 때 어느 쪽이 우선하는지는 Kimi Code
+문서에 나와 있지 않습니다. Kimi Code는 상태 표시줄이나 출력 스타일 파일 표면을
 노출하지 않으므로, 해당 코호트는 머티리얼라이즈되지 않습니다.
 
 Kimi Code는 Moonshot의 Kimi 모델 제품군에서 실행됩니다. 현재 모델과 구성 표면은
-[벤더 구성 레퍼런스](https://moonshotai.github.io/kimi-code/en/configuration/config-files)를
-참조하세요.
+[벤더 구성 참조](https://moonshotai.github.io/kimi-code/en/configuration/config-files)를
+확인하세요.
 
 ## 검증
 

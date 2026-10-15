@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "适用于 Kimi Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,11 +25,11 @@ Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` �
 
 ## 配置档案到原生配置的映射
 
-适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目根目录的 `AGENTS.md` 指令表面。行为规则和治理语料落在 `AGENTS.md` 的受管块中；命令、技能、钩子、智能体、规则和模板集合被放置在 `.kimi-code/.apothem/support/` 下，并从指令表面引用。这是适配器所选择的布局，而不是 Kimi Code 的缺口：Kimi Code 从 `.kimi-code/skills/` 和 `.agents/skills/` 加载技能，从 `.kimi-code/agents/` 和 `.agents/agents/` 加载自定义智能体，并从 `~/.kimi-code/config.toml` 中的 `[[hooks]]` 数组加载钩子，但它不会从支持树加载这些内容，因此 Apothem 放在那里的副本是 `AGENTS.md` 块所指向的参考材料。该块以一个 Apothem 支持文件小节结尾，该小节以相对于项目根目录的形式，指明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的 `.kimi-code/.apothem/support/` 下的目录，因此已提交的 `AGENTS.md` 不携带任何特定于机器的路径。（Kimi Code 的行为依据其关于[技能](https://moonshotai.github.io/kimi-code/en/customization/skills)、[子智能体](https://moonshotai.github.io/kimi-code/en/customization/agents)和[钩子](https://moonshotai.github.io/kimi-code/en/customization/hooks)的自定义页面，读取于 2026-10-02。）
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目根目录的 `AGENTS.md` 指令表面。行为规则和治理语料落在 `AGENTS.md` 的受管块中；命令、技能、钩子、智能体、规则和模板集合被放置在 `.kimi-code/.apothem/support/` 下，并从指令表面引用。这是适配器所选择的布局，而不是 Kimi Code 的缺口：Kimi Code 从 `.kimi-code/skills/` 和 `.agents/skills/` 加载技能，从 `.kimi-code/agents/` 和 `.agents/agents/` 加载自定义智能体，并从 `~/.kimi-code/config.toml` 中的 `[[hooks]]` 数组加载钩子，但它不会从支持树加载这些内容，因此 Apothem 放在那里的副本是 `AGENTS.md` 块所指向的参考材料。该块以一个 Apothem 支持文件小节结尾，该小节以相对于项目根目录的形式，指明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的 `.kimi-code/.apothem/support/` 下的目录，因此已提交的 `AGENTS.md` 不携带任何特定于机器的路径。（Kimi Code 的行为依据其关于[技能](https://moonshotai.github.io/kimi-code/en/customization/skills)、[子智能体](https://moonshotai.github.io/kimi-code/en/customization/agents)和[钩子](https://moonshotai.github.io/kimi-code/en/customization/hooks)的自定义页面，于 2026-10-02 查阅。）
 
 ## 兼容性说明
 
-Kimi Code 从 `AGENTS.md` 或 `.kimi-code/AGENTS.md` 读取项目指令，并将 `.kimi-code/mcp.json` 识别为归操作者所有的 MCP 表面；Apothem 会指明该表面，但不向其中编写任何条目。渲染出的指令表面直接驱动该项目。Kimi Code 不暴露状态栏或输出样式文件表面，因此这些集合不会被物化。
+Kimi Code 从 `AGENTS.md` 或 `.kimi-code/AGENTS.md` 读取项目指令，并将 `.kimi-code/mcp.json` 识别为归操作者所有的 MCP 表面；Apothem 会指明该表面，但不向其中编写任何条目。在这两个指令文件中，适配器只写入项目根目录的 `AGENTS.md`，Kimi Code 将其作为项目指令读取；Kimi Code 文档没有说明当两个文件同时存在时以哪一个为准。Kimi Code 不暴露状态栏或输出样式文件表面，因此这些集合不会被物化。
 
 Kimi Code 运行在 Moonshot 的 Kimi 模型系列上；当前的模型和配置表面参见[厂商配置参考](https://moonshotai.github.io/kimi-code/en/configuration/config-files)。
 

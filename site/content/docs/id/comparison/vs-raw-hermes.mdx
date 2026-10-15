@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi Hermes mentah"
 description: "Memelihara konfigurasi Hermes secara manual dibandingkan mengelolanya melalui profil bersama Apothem."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,10 @@ memuat skill tersebut hanya setelah Anda menambahkan
    dalam korpus bersama.
 3. Jalankan `apothem install --harness hermes` untuk merender konfigurasi
    native dan direktori skill pendukung.
-4. Jalankan `apothem verify --harness hermes` untuk mengonfirmasi bahwa
+4. Tambahkan `~/.hermes/.apothem/support/skills` ke `skills.external_dirs` di
+   `config.yaml` agar Hermes memuat skill yang terpasang. `apothem update`
+   mempertahankan kunci yang Anda tambahkan ke `config.yaml`.
+5. Jalankan `apothem verify --harness hermes` untuk mengonfirmasi bahwa
    konfigurasi telah mendarat.
 
 ## Baca berikutnya

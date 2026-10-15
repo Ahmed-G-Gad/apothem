@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptador de harness do Apothem para o Antigravity (Prévia)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,7 +88,8 @@ O comando verify confirma que:
 
 1. O arquivo de contexto nativo existe no caminho esperado.
 2. O manifesto do plugin `plugin.json` existe, não está vazio e é um JSON válido.
-   A verificação não confere o nome do plugin; inspecione esse campo você mesmo depois de alterá-lo.
+   O comando verify não confere o nome do plugin; inspecione esse campo você
+   mesmo depois de alterá-lo.
 
 ## Atualização
 
@@ -106,8 +107,14 @@ o pacote do Apothem instalado.
 apothem uninstall --harness antigravity
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `~/.gemini/GEMINI.md` e mantém qualquer outro texto
+nele. O arquivo é excluído somente quando nada mais resta nele. Também remove as
+chaves do Apothem de `plugin.json` na pasta do plugin
+`~/.gemini/antigravity-cli/plugins/apothem/` e mantém as suas, e remove os
+arquivos do Apothem nas subpastas `skills/`, `rules/`, `agents/` e
+`.apothem/support/` dessa pasta; os demais arquivos ali permanecem. Cada arquivo
+recebe backup em `~/.apothem/backups/` antes de ser alterado ou removido. O YAML
+do perfil compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

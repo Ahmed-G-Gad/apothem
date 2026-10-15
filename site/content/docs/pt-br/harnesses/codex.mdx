@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de harness do Apothem para o Codex (Beta)."
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,15 +52,15 @@ Markdown não nativos em `~/.config/apothem/` como material de suporte.
 
 Cada auxiliar convertido define `name`, `description` e
 `developer_instructions`. Um auxiliar cuja concessão de ferramentas, depois de
-aplicada a sua lista de negação, não inclui nenhuma ferramenta de edição de
-arquivos (`Write`, `Edit`, `MultiEdit` ou `NotebookEdit`) também define
-`sandbox_mode = "read-only"`, a restrição de gravação própria do Codex. `Bash`
-não conta como ferramenta de edição de arquivos, de modo que um auxiliar que
-recebe `Bash` e nenhuma dessas ferramentas continua em modo somente leitura.
-Nenhum modelo ou esforço de raciocínio é definido, de modo que cada auxiliar
-herda as escolhas da sessão. O Codex não tem lista de ferramentas nem limite de
-turnos por auxiliar, então os `tools` e o `maxTurns` de um auxiliar não são
-transferidos.
+removidas as ferramentas da sua própria lista `disallowedTools`, não inclui
+nenhuma ferramenta de edição de arquivos (`Write`, `Edit`, `MultiEdit` ou
+`NotebookEdit`) também define `sandbox_mode = "read-only"`, a restrição de
+gravação própria do Codex. `Bash` não conta como ferramenta de edição de
+arquivos, de modo que um auxiliar que recebe `Bash` e nenhuma dessas
+ferramentas ainda recebe essa configuração. Nenhum modelo ou esforço de
+raciocínio é definido, de modo que cada auxiliar herda as escolhas da sessão. O
+Codex não tem lista de ferramentas nem limite de turnos por auxiliar, então os
+`tools` e o `maxTurns` de um auxiliar não são transferidos.
 
 ## Notas de compatibilidade
 
@@ -105,8 +105,15 @@ suporte.
 apothem uninstall --harness codex
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `~/.codex/AGENTS.md` e mantém qualquer texto fora
+dele, e remove as entradas do Apothem de `~/.codex/hooks.json` e mantém as suas.
+Também remove os arquivos do Apothem em `~/.codex/hooks/`, `~/.codex/agents/`,
+`~/.agents/skills/` e `~/.config/apothem/{rules,templates}/`; os demais arquivos
+dessas pastas permanecem. As skills removidas de `~/.agents/skills/` também
+desaparecem das outras ferramentas que carregam esse diretório (consulte
+[Notas de compatibilidade](#notas-de-compatibilidade)). Cada arquivo recebe
+backup em `~/.apothem/backups/` antes de ser alterado ou removido. O YAML do
+perfil compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

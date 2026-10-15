@@ -2,7 +2,7 @@
 title: "status"
 description: "apothem status 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "4f32f92262a01d50"
+sourceHash: "8b2767bb799e4c2e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ apothem status [--profile PATH] [--project PATH]
 | `drift` | 하니스는 설치되어 있지만 투영된 프로필 내용이 더 이상 현재 공유 프로필과 일치하지 않음. 다시 투영하려면 `apothem install`을 다시 실행하세요. |
 | `absent` | 하니스가 설치되어 있지 않으므로 비교할 대상이 없음. |
 | `needs-project` | 프로젝트 범위 하니스가 `--project` 없이 보고되어 그 대상을 해석할 수 없음. 검사하려면 `--project PATH`를 전달하세요. |
-| `unknown` | 기본 프로필을 로드할 수 없어, 설치된 하니스에 비교할 기준이 없음. 드리프트 판정을 되살리려면 프로필을 수정하세요. |
+| `unknown` | 기본 프로필을 로드할 수 없어, 설치된 하니스에 비교할 기준이 없음. 드리프트 판정을 복구하려면 프로필을 수정하세요. |
 
 드리프트는 보고될 뿐 절대 오류로 취급되지 않습니다. 하나 이상의 하니스가
 `drift`를 보고하더라도 `status`는 0으로 종료합니다. 드리프트는 여러분의 설정에
@@ -48,8 +48,8 @@ apothem status [--profile PATH] [--project PATH]
 명시적으로 지정한 `--profile`을 로드할 수 없으면 사용자 오류이며, 대신 구조화된
 오류와 함께 중단합니다.
 
-이 저하는 항상 보고됩니다. `status`는 해당 프로필과 해결 방법을 명시한 권고를
-출력하고, `--json` 봉투는 `warnings`에 이에 대응하는
+이처럼 판정이 낮아진 경우는 항상 보고됩니다. `status`는 해당 프로필과 해결
+방법을 명시한 권고를 출력하고, `--json` 봉투는 `warnings`에 이에 대응하는
 `drift_baseline_unavailable` 항목을 담습니다. 이는 설치된 하니스가 없을 때 가장
 중요합니다. 이때는 모든 행이 `absent`로 표시되고 `unknown` 셀이 없으므로, 기준이
 로드되지 않았음을 알리는 신호는 권고뿐입니다.
@@ -60,7 +60,7 @@ apothem status [--profile PATH] [--project PATH]
 |---|---|
 | `--profile PATH` | 드리프트 기준을 선택하는 공유 프로필 YAML. 지정하지 않으면 기본 프로필(`~/.config/apothem/profile.yaml`)을 사용합니다. |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. 지정하지 않으면 프로젝트 범위 하니스는 `needs-project`를 보고합니다. |
-| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 내보냅니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제하며, 오류만 출력합니다. |
 | `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
 | `--json` | `--format json`의 단축형. |
@@ -124,6 +124,6 @@ apothem status --json
 
 ## 함께 보기
 
-- [apothem verify](/docs/cli-reference/verify) — 단일 하니스 설치를 검증합니다
+- [apothem verify](/docs/cli-reference/verify) — 하니스 어댑터 설치를 검증합니다
 - [apothem diff](/docs/cli-reference/diff) — 하니스의 대기 중인 변경 사항을 미리 봅니다
 - [apothem harnesses](/docs/cli-reference/harnesses) — 등록된 하니스를 나열하고 검사합니다

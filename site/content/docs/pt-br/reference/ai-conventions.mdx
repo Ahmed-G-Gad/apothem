@@ -2,7 +2,7 @@
 title: "Convenções de harness multissuperfície"
 description: "Referência normativa canônica para a configuração e a coerência de harnesses multissuperfície entre os runtimes de chat, de autocompletar no IDE e de revisão de PR."
 machineTranslated: true
-sourceHash: "d17a5f2f79af7cc9"
+sourceHash: "8b401418bac95c44"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ Uma superfície de engenharia moderna é tocada por vários harnesses — consol
 
 O custo de uma superfície ausente é o **desvio silencioso no código gerado por máquina** — a pior classe de defeito, porque se acumula de forma invisível. Cada artefato gerado por máquina agrava a divergência; quando um revisor humano percebe a contradição, a base de código já carrega semanas de convenções inconsistentes.
 
-A configuração dos runtimes de harness é plural pela realidade da implantação. O ecossistema publicado DEVE distribuir um arquivo de memória comportamental para o runtime de console de chat E um arquivo de instruções com escopo de repositório para o runtime de autocompletar dentro do IDE. As duas superfícies DEVEM ser mutuamente coerentes — sem contradição, sem desvio — e DEVEM codificar em conjunto as mesmas disciplinas.
+A configuração dos runtimes de harness é plural pela realidade da implantação. O ecossistema publicado DEVE distribuir as três superfícies obrigatórias da §3: `AGENTS.md`, um arquivo de memória comportamental para o runtime de console de chat (`CLAUDE.md`) e um arquivo de instruções com escopo de repositório para o runtime de autocompletar dentro do IDE. As superfícies DEVEM ser mutuamente coerentes — sem contradição, sem desvio — e DEVEM codificar em conjunto as mesmas disciplinas.
 
 ---
 
@@ -29,7 +29,7 @@ Cada superfície de convenções no escopo (§3) é um *canal* que expressa a es
 
 O validador `multi-surface-coherence` (§7) é executado em toda execução de CI e no pre-commit, verificando o contrato.
 
-As duas (ou mais) superfícies são *canais* diferentes que expressam uma única *especificação*. As seções compartilhadas DEVEM coincidir — semanticamente e, sempre que possível, lexicalmente — entre as superfícies. As seções específicas da superfície NÃO DEVEM contradizer as seções compartilhadas.
+As superfícies são *canais* diferentes que expressam uma única *especificação*. As seções compartilhadas DEVEM coincidir — semanticamente e, sempre que possível, lexicalmente — entre as superfícies. As seções específicas da superfície NÃO DEVEM contradizer as seções compartilhadas.
 
 ---
 
@@ -39,12 +39,12 @@ As duas (ou mais) superfícies são *canais* diferentes que expressam uma única
 |---|---|---|---|
 | `AGENTS.md` | raiz do repositório (e/ou `.codex/AGENTS.md`) | **DEVE** | harnesses compatíveis com AGENTS |
 | `CLAUDE.md` | raiz do repositório (e/ou `.claude/CLAUDE.md`) | **DEVE** | Claude Code |
-| arquivo de instruções com raiz em `.github/` | arquivo de instruções com raiz em `.github/` | **DEVE** | runtime de autocompletar dentro do IDE |
+| arquivo de instruções com raiz em `.github/` | `.github/copilot-instructions.md` | **DEVE** | runtime de autocompletar dentro do IDE |
 | manifesto de auxiliares com raiz em `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PODE** (adesão opcional pelo canal de indagação estruturada) | plataformas de orquestração de múltiplos auxiliares |
 | `.cursorrules` | raiz do repositório | **PODE** (adesão opcional) | runtime de editor dentro do IDE |
 | `.windsurfrules` | raiz do repositório | **PODE** (adesão opcional) | runtime companheiro dentro do IDE |
 
-Neste trabalho, o operador aderiu às superfícies opcionais de assistente registradas pela fixture. Configurações raiz não utilizadas e específicas de fornecedor estão ausentes de propósito; um arquivo de configuração específico de uma ferramenta só é adicionado quando essa ferramenta é uma superfície de edição ativa neste repositório.
+Para este repositório, as superfícies de adesão opcional são as que a fixture da lista de afirmações ([`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)) relaciona em `optional-in`. Configurações raiz não utilizadas e específicas de fornecedor estão ausentes de propósito; um arquivo de configuração específico de uma ferramenta só é adicionado quando essa ferramenta é uma superfície de edição ativa neste repositório.
 
 ---
 
@@ -62,7 +62,7 @@ O arquivo de instruções com escopo de repositório sob `.github/` DEVE conter,
 6. **Forbidden Patterns** — proibições explícitas: nada de adjetivos de marketing, nada de enchimento evasivo, nada de resíduos de depuração com console.log, nada de caminhos absolutos fixos para o diretório home do usuário, nada de commitar segredos, nada de commitar arquivos sob `.apothem/plans/` (ou o legado `.plans/`), nada de contradizer o arquivo canônico de instruções do projeto.
 7. **Output Format** — o código/a prosa gerados seguem as convenções unificadas de saída conversacional: assertividade, seccionamento uniforme, densidade, disciplina de resumo, citações. Para código: superfície pública documentada, tipado onde a linguagem suporta tipos, testado onde existe uma estrutura de testes.
 8. **Review Checklist** — o que um revisor (humano ou runtime em modo de revisão de PR) DEVE verificar antes de aprovar: cabeçalho presente, nomenclatura em conformidade, nenhuma gravação em `.apothem/plans/`, nenhuma contradição com o arquivo canônico de instruções do projeto, validadores em verde localmente.
-9. **Pointers** — links para `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, este documento de convenções, `schemas/` e `CONTRIBUTING.md`.
+9. **Pointers** — links para `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, este documento de convenções, `src/apothem/schemas/` e `CONTRIBUTING.md`.
 
 O arquivo começa com a linha SPDX canônica do cabeçalho de autoria (variante Markdown) conforme [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — visível ou invisível conforme a política de visibilidade de cabeçalho escolhida pelo projeto.
 
@@ -116,7 +116,7 @@ Três validadores implementam em conjunto o contrato de coerência:
 
 - O primeiro verifica se o arquivo de instruções dentro do IDE existe, é analisado sem erros, contém todas as seções canônicas enumeradas na §4 e começa com a linha canônica `SPDX-License-Identifier: MIT` (variante Markdown).
 - O segundo analisa as seções canônicas de cada superfície; verifica se as seções compartilhadas são mutuamente consistentes sob um comparador normalizado (sem distinção entre maiúsculas e minúsculas, tolerante a espaços em branco, que permite paráfrase lexical mas exige equivalência semântica na lista de afirmações definida pela fixture).
-- O terceiro verifica se o LICENSE da raiz traz uma linha `Copyright (c) <name>` analisável; os cabeçalhos por arquivo não carregam nome de autor.
+- O terceiro verifica apenas se o LICENSE da raiz traz uma linha `Copyright (c) <name>` analisável. Ele não lê os cabeçalhos por arquivo, que não carregam nome de autor.
 
 ---
 

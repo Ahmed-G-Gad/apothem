@@ -2,7 +2,7 @@
 title: "Diagram pipeline CI/CD"
 description: "Peta visual dan rincian per jalur dari tahap alur kerja build, uji, lint, keamanan, dan publikasi yang mengawal setiap perubahan kode dan rilis."
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -70,10 +69,11 @@ flowchart LR
 ## Peran jalur
 
 - **Jalur analisis statis** — umpan balik cepat. Ruff mencakup gaya Python dan
-  satu set aturan yang dikurasi; mypy menegakkan disiplin tipe pada strict;
-  markdownlint mengatur permukaan dokumentasi; validator frontmatter mengawal
-  kepatuhan skema artefak untuk aturan, skill, pekerja yang didelegasikan, dan
-  perintah.
+  satu set aturan yang dikurasi; mypy menegakkan disiplin tipe pada tingkat
+  strict; validator frontmatter mengawal kepatuhan skema artefak untuk aturan,
+  skill, pekerja yang didelegasikan, dan command. markdownlint tidak termasuk
+  dalam jalur ini: ia hanya berjalan sebagai hook pre-commit, dan CI tidak
+  menjalankannya (lihat [Konvensi Markdown](/docs/reference/markdown-conventions)).
 - **Jalur uji** — `pytest tests/hooks` menjalankan runtime hook terhadap matriks
   peristiwa lengkap; `validate_ecosystem.py` adalah gerbang struktural utama
   untuk konsistensi lintas-artefak; `chaos_pass.py` dan suite benchmark per-kelas

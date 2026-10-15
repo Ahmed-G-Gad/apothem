@@ -2,7 +2,7 @@
 title: "制品 Schema 规范"
 description: "Apothem 源码树中所有制品类型的规范 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
-sourceHash: "6c16d090e185c86c"
+sourceHash: "3f59b1e92bd11b92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ Apothem 源码树中的所有制品（位于 `src/apothem/` 下以及根配置�
 **通用规则：**
 
 - frontmatter 符合 YAML 1.2
-- 除空值外，所有字符串值都使用双引号
+- 所有字符串值都使用双引号，空字符串写作 `""`
 - 字段顺序：必填字段在前，可选字段按相关性分组
 - frontmatter 中的注释使用 `#` 加一个空格：`# comment`
 - 路径值必须为相对路径（不带前导 `/`），并使用正斜杠（`/`）以保证跨平台兼容性
@@ -138,7 +138,7 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**用途：** 用于并行探索、审计和质量闸门的持久化辅助器定义。
+**用途：** 用于并行探索、审计和质量闸门的持久化辅助器定义（也称为委派工作者）。
 
 ### 必填字段
 
@@ -297,7 +297,7 @@ argument-hint: "[--focus area] [--fix]"
 
 ### 必需事件
 
-Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreCompact 与 PostCompact 未在 Claude Code 上注册（参见[钩子参考](/docs/reference/hooks)），`scripts/dev/validate_hooks.py` 会将其中每一项作为缺失项以警告形式报告。下表列出 `validate_hooks.py` 检查的五个事件：
+Claude Code 模板注册四个事件：SessionStart、PreToolUse、PostToolUse 和 Stop。`scripts/dev/validate_hooks.py` 在 `settings.json` 中检查下表中的五个事件，这是不同的一组事件，并将其未找到的每一个事件作为警告而非失败报告。PostToolUse 已注册，但不在这五个事件之列。PreCompact 与 PostCompact 属于这五个事件，但未在 Claude Code 上注册（参见[钩子参考](/docs/reference/hooks)），因此检查器在 Claude Code 上会对这两者都发出警告。
 
 > **超时值镜像规范的钩子事件预算**——下表为方便读者而复现了这些值；以规范来源为准。
 
@@ -326,7 +326,7 @@ Claude Code 模板注册 SessionStart、PreToolUse、PostToolUse 和 Stop。PreC
 
 `scripts/dev/validate_hooks.py` 强制执行钩子契约：
 
-- `settings.json` 可解析为 JSON，并声明每个必需事件。
+- `settings.json` 可解析为 JSON，并声明表中五个事件中的每一个；缺失某个事件是警告，而非失败。
 - 全部三个 Python 脚本都存在，并可解析为有效的 Python。
 - 由 `--context-file` 参数引用的所有消息文件都存在。
 - `src/apothem/hooks/**.py` 中不出现硬编码的绝对用户路径（`C:\Users\...` 等）。
@@ -377,7 +377,7 @@ portability: "project-local"
 
 ### 内容校验
 
-- [ ] 内容在闭合 `---` 之后另起一行开始；在 Markdown 系列文件上，作者署名头横幅是其后的第一项内容
+- [ ] 内容在闭合 `---` 之后另起一行开始；在 Markdown 系列文件上，规范的 SPDX 头部行是其后的第一项内容
 - [ ] 没有计划内部引用（符合 CM-7）
 - [ ] 交叉引用可以解析（若列出了其他制品）
 - [ ] 链接使用带正斜杠的相对路径

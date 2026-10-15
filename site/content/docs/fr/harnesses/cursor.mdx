@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adaptateur d'environnement Apothem pour Cursor (GA)."
 machineTranslated: true
-sourceHash: "79efcc04715286ff"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,7 +56,10 @@ apothem verify --harness cursor --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -74,8 +77,13 @@ partagé.
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime le bloc Apothem, ainsi que le frontmatter qu'Apothem a écrit au-dessus
+de lui, de `<project>/.cursor/rules/apothem-rules.mdc` et conserve tout autre
+texte qui s'y trouve. Le fichier n'est supprimé que lorsqu'il n'y reste plus
+rien d'autre. Avant la modification, une copie horodatée du fichier est
+enregistrée sous `~/.apothem/backups/` ; aucun fichier de sauvegarde n'est laissé
+dans le projet. Le YAML du profil partagé et le moteur Apothem ne sont pas
+affectés.
 
 ## Portail de conformité
 

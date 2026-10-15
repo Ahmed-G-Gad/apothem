@@ -2,7 +2,7 @@
 title: "Variables de entorno del instalador"
 description: "Controla el instalador por script (destino, origen, entorno, perfil, verificación) con variables de entorno."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,13 +55,14 @@ aborta la instalación. Una etiqueta firmada cuya clave pública del mantenedor
 falta en el llavero local aborta, en cambio, con indicaciones para importar la
 clave: importa la clave y comprueba su huella digital con el valor publicado en
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Fija un lanzamiento conocido con `APOTHEM_REF=<tag>` (también verificado; una
-etiqueta de la
-[página de lanzamientos](https://github.com/ahmed-g-gad/apothem/releases)),
-selecciona la rama móvil con `APOTHEM_REF=main` (sin verificar) o establece
-`APOTHEM_ALLOW_UNVERIFIED=1` para continuar pese a un fallo de verificación con
-una advertencia (uso aislado de la red, local o anterior a los lanzamientos
-firmados).
+Fija un lanzamiento conocido con `APOTHEM_REF=<tag>`, tomando la etiqueta de la
+[página de lanzamientos](https://github.com/ahmed-g-gad/apothem/releases); una
+etiqueta fijada se verifica del mismo modo. Selecciona la rama móvil con
+`APOTHEM_REF=main` más `APOTHEM_ALLOW_UNVERIFIED=1`; esa instalación no está
+verificada, y `main` por sí sola aborta porque una rama no es una etiqueta
+firmada. Establece `APOTHEM_ALLOW_UNVERIFIED=1` por sí sola para continuar pese a
+un fallo de verificación con una advertencia (uso aislado de la red, local o
+anterior a los lanzamientos firmados).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

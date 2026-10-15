@@ -2,13 +2,13 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem 的安装用时不到两分钟，并可与你现有的工具配置并存。每条路径运行的都是同一个自包含引擎——源代码树携带其 vendored 依赖，可在系统 Python 3.10 或更新版本上从检出目录运行（参见[自包含运行时](/docs/architecture/self-contained-runtime)）。
 
-**每条路径共有两个前置条件：** `PATH` 上的系统 **Python 3.10 或更新版本**，且 `click` 和 `rich` 包可在该解释器下导入。npm 垫片路径和工具插件路径还需要 **Node.js 18 或更新版本** 来运行 `npx`。Python 3.10 以及 Node.js 18 和 20 已过上游生命周期终止时间；它们仍受支持并经过测试，但更推荐使用更新的版本（参见[前置条件一览](#前置条件一览)）。下面每条渠道各自的小节会重复列出其确切的前置条件、一条可直接复制的命令和一个验证步骤。
+**每条路径共有两个前置条件：** `PATH` 上的系统 **Python 3.10 或更新版本**，且 `click` 和 `rich` 包可在该解释器下导入。npm 垫片（渠道 2）、VS Code 系扩展（渠道 4）以及命令行引导（渠道 5–7）还需要 **Node.js 18 或更新版本** 来运行 `npx`。Python 3.10 以及 Node.js 18 和 20 已过上游生命周期终止时间；它们仍受支持并经过测试，但更推荐使用更新的版本（参见[前置条件一览](#前置条件一览)）。下面每条渠道各自的小节会重复列出其确切的前置条件、一条可直接复制的命令和一个验证步骤。
 
 ## 选择一条渠道
 
@@ -35,14 +35,14 @@ Apothem 的安装用时不到两分钟，并可与你现有的工具配置并存
 
 **前置条件：** Claude Code，以及 `PATH` 上的系统 Python 3.10+。
 
-插件路径完全在 Claude Code 内部运行。它将 Apothem 引擎与其斜杠命令、受托工作者、技能、规则和钩子打包在一起，全部可从自包含的插件目录树中运行：
+插件路径完全在 Claude Code 内部运行。它将 Apothem 引擎与其斜杠命令、委派工作者、技能、规则和钩子打包在一起，全部可从自包含的插件目录树中运行：
 
 ```text title="Inside Claude Code"
 /plugin marketplace add ahmed-g-gad/apothem
 /plugin install apothem@apothem
 ```
 
-安装之后，Apothem 命令集、随附的受托工作者、技能以及四种[输出样式](/docs/reference/output-styles)（用 `/output-style` 或从 `/config` 中选择一种）在每个 Claude Code 会话中都可用。插件命令带有插件的前缀：`/apothem:plan-spec`、`/apothem:security-audit` 等。只要没有其他命令使用该名称，Claude Code 也接受简写形式（`/plan-spec`）。有两个名称已被 Claude Code 自身占用：`/plan` 进入计划模式，`/code-review` 运行内置的评审，因此要使用 Apothem 的命令，请输入 `/apothem:plan` 和 `/apothem:code-review`。当由 Apothem 引擎而非插件安装到 Claude Code 中时，命令会成为 `~/.claude/skills/` 下不带前缀的个人技能，并且一个个人 `code-review` 技能会取代内置的 `/code-review`（其 `/review` 别名仍运行内置的那个）。有两个名称——`projectify` 和 `workflow`——同时以命令和技能的形式发布；两者都存在时，Claude Code 运行技能，因此插件运行的是技能，而引擎安装会将技能写入该位置。完整的命令目录见[斜杠命令](/docs/reference/commands)。
+安装之后，Apothem 命令集、随附的委派工作者、技能以及四种[输出样式](/docs/reference/output-styles)（用 `/output-style` 或从 `/config` 中选择一种）在每个 Claude Code 会话中都可用。插件命令带有插件的前缀：`/apothem:plan-spec`、`/apothem:security-audit` 等。只要没有其他命令使用该名称，Claude Code 也接受简写形式（`/plan-spec`）。有两个名称已被 Claude Code 自身占用：`/plan` 进入计划模式，`/code-review` 运行内置的评审，因此要使用 Apothem 的命令，请输入 `/apothem:plan` 和 `/apothem:code-review`。当由 Apothem 引擎而非插件安装到 Claude Code 中时，命令会成为 `~/.claude/skills/` 下不带前缀的个人技能，并且一个个人 `code-review` 技能会取代内置的 `/code-review`（其 `/review` 别名仍运行内置的那个）。有两个名称——`projectify` 和 `workflow`——同时以命令和技能的形式发布；两者都存在时，Claude Code 运行技能，因此插件运行的是技能，而引擎安装只会将该技能写入 `~/.claude/skills/<name>/`，不会写入由命令派生出的技能。完整的命令目录见[斜杠命令](/docs/reference/commands)。
 
 **验证：** 在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装，或从终端检查漂移报告：
 
@@ -98,7 +98,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### 信任模型
 
-未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签并检出*该标签*——绝不会检出移动中的 `main` 分支。在物化任何配置之前，会用 `git verify-tag` 验证所获取标签的签名；未签名、被篡改或无法验证的标签会在写入任何内容之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装则会中止并给出密钥导入指引：导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。用 `APOTHEM_REF` 锁定某个特定的发布：
+未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签并检出*该标签*——绝不会检出会持续变动的 `main` 分支。在物化任何配置之前，会用 `git verify-tag` 验证所获取标签的签名；未签名、被篡改或无法验证的标签会在写入任何内容之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装则会中止并给出密钥导入指引：导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。用 `APOTHEM_REF` 锁定某个特定的发布：
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -106,7 +106,7 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 
 将 `vMAJOR.MINOR.PATCH` 替换为[发布页面](https://github.com/ahmed-g-gad/apothem/releases)上的某个标签。最早的发布标签是一个轻量标签，本身没有签名，因此即使其提交已签名，标签检查也会在它上面中止；此后的每个发布标签都是经过签名的附注标签。[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 的发布签名部分列出了每个标签及其验证方法。
 
-显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续，适用于物理隔离网络、本地环境，或早于签名发布的版本。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出移动中的分支。仅设置 `APOTHEM_REF=main` 时，安装器会把 `main` 拉取到 `APOTHEM_HOME`，然后在物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
+显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续，适用于物理隔离网络、本地环境，或早于签名发布的版本。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出会持续变动的分支。仅设置 `APOTHEM_REF=main` 时，安装器会把 `main` 拉取到 `APOTHEM_HOME`，然后在物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
 
 `APOTHEM_VERIFY=checksum` 是为尚未持有维护者公钥的主机提供的折中路径：安装器不进行克隆，而是下载该发布的平台归档及其 `SHA256SUMS`，在解压任何内容之前若摘要不匹配即中止，并发出警告：摘要匹配只能证明该归档是发布所列出的那一个，而不能证明是谁发布了它。
 
@@ -133,7 +133,7 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **前置条件：** VS Code、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
 
-**Apothem** 扩展通过 `apothem.vsix` 包安装：运行 `code --install-extension apothem.vsix`，或使用编辑器的 *Install from VSIX…* 命令。发布工作流会为该包签名，并将其附加到每个 GitHub Release。在该工作流开始打包扩展之前的发布不含此包；当最新的发布缺少它时，请使用锁定在 `.github/vsce/` 中的 vsce 版本从检出目录构建该包，这需要 Node.js 22 或更高版本：先运行 `npm ci --prefix .github/vsce --ignore-scripts`，然后运行 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`。[Visual Studio Marketplace](https://marketplace.visualstudio.com/) 上的条目尚未发布。一个扩展即可覆盖 VS Code 及其编辑器内的配套助手界面。它的命令面板命令（`Apothem: Install`、`Verify`、`Update`、`Uninstall`、`Doctor`）通过所配置的运行器运行同一个引擎（默认为 `npx @ahmed-g-gad/apothem@<extension version>`，因此扩展运行的是它随附发布的引擎版本；将用户设置 `apothem.runner` 指向本地检出即可从源码运行）。Install、Verify、Update 和 Uninstall 会询问要作用于哪个工具，并优先提供编辑器自身对应的工具；`all` 是一个选项，但绝不是默认值。`apothem.runner` 设置的作用域为机器级，因此工作区无法更改它，并且该扩展只在受信任的工作区中运行。
+**Apothem** 扩展通过 `apothem.vsix` 包安装：运行 `code --install-extension apothem.vsix`，或使用编辑器的 *Install from VSIX…* 命令。发布工作流会为该包签名，并将其附加到每个 GitHub Release。在该工作流开始打包扩展之前就已发布的各个版本不含 `.vsix`；当最新的发布版本缺少它时，请使用锁定在 `.github/vsce/` 中的 vsce 版本从检出目录构建该包（该 vsce 版本需要 Node.js 22 或更高版本）：先运行 `npm ci --prefix .github/vsce --ignore-scripts`，然后运行 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`。[Visual Studio Marketplace](https://marketplace.visualstudio.com/) 上的条目尚未发布。一个扩展即可覆盖 VS Code 系的各个编辑器。它的命令面板命令（`Apothem: Install`、`Verify`、`Update`、`Uninstall`、`Doctor`）通过所配置的运行器运行同一个引擎（默认为 `npx @ahmed-g-gad/apothem@<extension version>`，因此扩展运行的是它随附发布的引擎版本；将用户设置 `apothem.runner` 指向本地检出即可从源码运行）。Install、Verify、Update 和 Uninstall 会询问要作用于哪个工具，并优先提供编辑器自身对应的工具；`all` 是一个选项，但绝不是默认值。`apothem.runner` 设置的作用域为机器级，因此工作区无法更改它，并且该扩展只在受信任的工作区中运行。
 
 **验证：** 从编辑器的命令面板运行 **Apothem: Verify** 命令，或从终端运行：
 
@@ -240,13 +240,13 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-将工具名称替换为你所安装的适配器；所有受支持的名称见[工具列表](/docs/harnesses)。要一次检查每个已安装的适配器（其验证及其钩子命令），请以相同形式运行 `apothem doctor`（或 `npx @ahmed-g-gad/apothem doctor`）。对于插件路径，在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装。
+将工具名称替换为你所安装的适配器；所有受支持的名称见[工具列表](/docs/harnesses)。要一次检查每个已安装的适配器（其验证及其钩子命令），请在你上面所用的同一种形式中，将 `verify --harness NAME` 换成 `doctor` 来运行：`apothem doctor`、`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` 或 `npx @ahmed-g-gad/apothem doctor`。对于插件路径，在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装。
 
 ## 前置条件一览
 
-- **Python 3.10 或更高版本**——每条运行引擎的路径都会探测它（`python3`、`python`、带版本号的名称，以及 Windows 上的 `py -3`）。
+- **Python 3.10 或更高版本**——负责查找它的各条路径都是按名称查找的，而且名称因路径而异。npm 垫片依次尝试 `python3`、`python`，然后是 `py -3`。安装器会尝试 `python3`、`python`，以及带版本号的名称，从 `python3.14` 一直到 `python3.10`。
 - **`click` 和 `rich` 可导入**（在该解释器下）——这是引擎没有 vendor 的两个面向终端的依赖。安装器会检查这两者，指出任何缺失项，并提出为你安装——经你确认后安装，或通过 `--yes`（在 PowerShell 上为 `-Yes`）或 `APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。在其他每条渠道上，缺失的包会使引擎以一个错误停止（退出码 1），该错误会针对它找到的解释器给出确切的命令，并附带 Apothem 经过测试的版本约束（`<interpreter> -m pip install "click==…" "rich>=…"`）；使用 `--json` 时，同一错误会以代码为 `runtime.dependency_missing` 的 JSON 信封形式返回。
-- **Node.js 18 或更高版本**——仅 npm 垫片路径和工具插件路径需要。
+- **Node.js 18 或更高版本**——仅限运行 `npx` 的路径：npm 垫片（2）、VS Code 系扩展（4）以及命令行引导（5–7）。
 - **生命周期已终止的运行时。** Python 3.10 于 2026-10-01 到达上游生命周期终止，Node.js 18 和 20 分别于 2025-04-30 和 2026-04-30 到达。Apothem 仍将它们作为其声明的下限予以支持，并在 CI 中逐一测试，但它们不再获得上游安全修复，因此请优先选用 Python 3.11 或更新版本以及 Node.js 22 或更新版本。[运行时下限策略](/docs/governance/release-engineering-policy#运行时下限)说明了下限如何提高。
 - **Git**——仅安装器路径需要，且仅用于网络形式（脚本会克隆源码；本地检出无需克隆）。
 - **Claude Code**——仅插件路径需要。**VS Code** 以及每个命令行引导各自的宿主工具，仅在其各自的渠道（4–7）中需要。

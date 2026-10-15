@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Apothem-Harness-Adapter für Antigravity (Vorschau)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,11 @@ beiden Schlüssel, die das Plugin-Schema von Antigravity zulässt.
 **Plugin-Helfer.** Helferdefinitionen im `agents/`-Verzeichnis des Plugins
 tragen `name` und `description`. Die `tools`-Liste von Antigravity verwendet
 eigene Werkzeugnamen, und die Dokumentation warnt, dass ein unbekannter Name
-den Subagent hängen lassen kann; daher wird keine Werkzeugliste ausgegeben, und
-die Helfer erben die Werkzeuge des übergeordneten Agents. Weil auf Antigravity
-nichts eine Nur-Lese-Beschränkung durchsetzt, entfällt in den Beschreibungen
-dieser Helfer die Kennzeichnung „read-only“.
+dazu führen kann, dass der Subagent hängen bleibt; daher wird keine
+Werkzeugliste ausgegeben, und die Helfer erben die Werkzeuge des
+Übergeordneten. Weil auf Antigravity nichts eine Nur-Lese-Beschränkung
+durchsetzt, entfällt in den Beschreibungen dieser Helfer die Kennzeichnung
+„read-only“.
 
 **Gemeinsamer Benutzeranker.** `~/.gemini/GEMINI.md` ist zugleich der Anker
 auf Benutzerebene für Werkzeuge der Gemini-Familie. Der Antigravity-Adapter
@@ -76,8 +77,7 @@ Unterstützungskohorten.
 Vorschau-Adapter. Der `GEMINI.md`-Anker ist aktiver Anweisungsinhalt; das
 Antigravity-Plugin bewahrt konvertierte Command-Skills, wiederverwendbare
 Skills, lokale Helferdefinitionen, Regeln, Templates und
-Hook-Unterstützungsmaterial in einem klar abgegrenzten, Apothem-eigenen
-Namensraum auf.
+Hook-Unterstützungsmaterial in einem klaren, Apothem-eigenen Namensraum auf.
 Hook-Dateien werden erst dann als aktive Antigravity-Hook-Ereignisse
 registriert, wenn der Adapter über eine Schema-Übersetzungsschicht für das
 `hooks.json` von Antigravity verfügt.
@@ -88,11 +88,12 @@ registriert, wenn der Adapter über eine Schema-Übersetzungsschicht für das
 apothem verify --harness antigravity
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Kontextdatei liegt am erwarteten Pfad.
-2. Das Plugin-Manifest `plugin.json` existiert, ist nicht leer und lässt sich als JSON parsen.
-   `verify` prüft den Plugin-Namen nicht; prüfen Sie dieses Feld nach einer Änderung selbst.
+1. Die native Kontextdatei existiert am erwarteten Pfad.
+2. Das Plugin-Manifest `plugin.json` existiert, ist nicht leer und lässt sich
+   als JSON parsen. Verify prüft den Plugin-Namen nicht; prüfen Sie dieses Feld
+   nach einer Änderung selbst.
 
 ## Aktualisierung
 
@@ -111,8 +112,15 @@ aktualisiert haben.
 apothem uninstall --harness antigravity
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block aus `~/.gemini/GEMINI.md` und behält jeden anderen
+Text darin. Die Datei wird nur gelöscht, wenn darin nichts anderes mehr übrig
+ist. Entfernt außerdem Apothems Schlüssel aus `plugin.json` im Plugin-Ordner
+`~/.gemini/antigravity-cli/plugins/apothem/` und behält Ihre eigenen, und
+entfernt die Apothem-Dateien in den Unterordnern `skills/`, `rules/`,
+`agents/` und `.apothem/support/` dieses Ordners; andere Dateien dort bleiben
+bestehen. Jede Datei wird unter `~/.apothem/backups/` gesichert, bevor sie
+geändert oder entfernt wird. Die YAML-Datei des gemeinsamen Profils und die
+Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 

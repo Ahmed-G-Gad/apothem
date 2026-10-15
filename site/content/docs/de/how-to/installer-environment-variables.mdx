@@ -2,7 +2,7 @@
 title: "Umgebungsvariablen des Installers"
 description: "Den Skript-Installer (Ziel, Quelle, Harness, Profil, Verifizierung) über Umgebungsvariablen steuern."
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,13 +58,16 @@ Maintainer-Schlüssel im lokalen Schlüsselbund fehlt, bricht stattdessen mit ei
 Anleitung zum Schlüsselimport ab — importieren Sie den Schlüssel und prüfen Sie
 seinen Fingerabdruck gegen den Wert, der in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-veröffentlicht ist. Pinnen Sie ein bekanntes
-Release mit `APOTHEM_REF=<tag>` (ebenfalls verifiziert; ein Tag von der
-[Release-Seite](https://github.com/ahmed-g-gad/apothem/releases)), wählen Sie
-den beweglichen Branch mit `APOTHEM_REF=main` (unverifiziert), oder setzen Sie
-`APOTHEM_ALLOW_UNVERIFIED=1`, um nach einem Verifizierungsfehlschlag mit einer
-Warnung fortzufahren (Air-Gapped-Betrieb, lokale Nutzung oder Nutzung vor
-signierten Releases).
+veröffentlicht ist.
+Pinnen Sie ein bekanntes
+Release mit `APOTHEM_REF=<tag>` und entnehmen Sie das Tag der
+[Release-Seite](https://github.com/ahmed-g-gad/apothem/releases); ein gepinntes
+Tag wird auf dieselbe Weise verifiziert. Wählen Sie den beweglichen Branch mit
+`APOTHEM_REF=main` zusammen mit `APOTHEM_ALLOW_UNVERIFIED=1`; diese Installation
+ist unverifiziert, und `main` allein bricht ab, weil ein Branch kein signiertes
+Tag ist. Setzen Sie `APOTHEM_ALLOW_UNVERIFIED=1` für sich allein, um nach einem
+Verifizierungsfehlschlag mit einer Warnung fortzufahren (Air-Gapped-Betrieb,
+lokale Nutzung oder Nutzung vor signierten Releases).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

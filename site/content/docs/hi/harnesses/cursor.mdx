@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "79efcc04715286ff"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,8 +73,12 @@ apothem update --harness cursor --project /path/to/project
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+`<project>/.cursor/rules/apothem-rules.mdc` से Apothem ब्लॉक, और उसके ऊपर Apothem
+द्वारा लिखा गया फ़्रंटमैटर, हटाता है और उसमें मौजूद बाकी सारा पाठ रहने देता है।
+फ़ाइल तभी हटाई जाती है जब उसमें और कुछ शेष न बचे। बदलाव से पहले फ़ाइल की एक
+टाइमस्टैम्प-युक्त प्रति `~/.apothem/backups/` के अंतर्गत सहेजी जाती है; प्रोजेक्ट में
+कोई बैकअप फ़ाइल नहीं छोड़ी जाती। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित
+रहते हैं।
 
 ## अनुरूपता गेट
 

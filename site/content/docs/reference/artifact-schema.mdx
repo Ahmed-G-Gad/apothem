@@ -27,15 +27,16 @@ each type.
 **Universal Rules:**
 
 - Frontmatter is YAML 1.2 compliant
-- All string values use double quotes unless empty
+- All string values use double quotes, and an empty string is written `""`
 - Field order: mandatory fields first, optional fields grouped by relevance
 - Comments in frontmatter use `#` with space: `# comment`
 - Path values must be relative (no leading `/`) and use forward slashes (`/`) for cross-platform compatibility
 
 **Versioning Convention (versioned artifact classes — commands, helpers, skills, CLAUDE.md):**
 
-- `version` is **semantic** (`MAJOR.MINOR.PATCH`). Bump MAJOR for breaking schema or contract changes; MINOR for additive non-breaking changes (new optional fields, additional sections, additional anti-patterns); PATCH for clarifications, formatting fixes, or doc-only edits without behavior change.
-- `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump and may be updated independently for non-version-bumping link refreshes.
+- `version` is **semantic** (`MAJOR.MINOR.PATCH`). Bump MAJOR for breaking schema or contract changes; MINOR for additive non-breaking changes (new optional fields, additional sections, additional anti-patterns); PATCH for a behavioral change that corrects an existing directive without breaking the contract.
+- Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave `version` unchanged. Only a behavioral change bumps it.
+- `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump, and it changes on a non-version-bumping typo or link fix as well.
 - New artifacts seed at `v0.Y.Z`. Promotion to `vX.Y.Z` indicates the artifact's contract is stable enough to be a public commitment.
 
 ---
@@ -148,8 +149,8 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Purpose:** Persistent helper definitions for parallel exploration,
-auditing, and quality gates.
+**Purpose:** Persistent helper definitions (also called delegated workers)
+for parallel exploration, auditing, and quality gates.
 
 ### Mandatory Fields
 
@@ -311,7 +312,7 @@ The `-m apothem.hooks.dispatch` form is for development from a source checkout w
 
 ### Required Events
 
-The Claude Code template registers SessionStart, PreToolUse, PostToolUse and Stop. PreCompact and PostCompact are not registered on Claude Code ([hooks reference](/docs/reference/hooks)), and `scripts/dev/validate_hooks.py` reports each one missing as a warning. The table lists the five events that `validate_hooks.py` checks for:
+The Claude Code template registers four events: SessionStart, PreToolUse, PostToolUse and Stop. `scripts/dev/validate_hooks.py` checks `settings.json` for the five events in the table below, a different set, and reports each one it does not find as a warning, not a failure. PostToolUse is registered but is not one of the five. PreCompact and PostCompact are among the five but are not registered on Claude Code ([hooks reference](/docs/reference/hooks)), so the checker warns about both there.
 
 > **Timeout values mirror the canonical hook-event budgets** — the table below
 > reproduces them for reader convenience; the canonical source governs.
@@ -343,7 +344,7 @@ Every hook command routes through the same Python dispatcher:
 
 `scripts/dev/validate_hooks.py` enforces the hook contract:
 
-- `settings.json` parses as JSON and declares every required event.
+- `settings.json` parses as JSON and declares each of the five events in the table; a missing event is a warning, not a failure.
 - All three Python scripts exist and parse as valid Python.
 - All message files referenced by `--context-file` arguments exist.
 - No hardcoded absolute user paths (`C:\Users\...` etc.) appear in `src/apothem/hooks/**.py`.
@@ -394,7 +395,7 @@ Every artifact must satisfy these checks:
 
 ### Content Validation
 
-- [ ] Content begins on a new line after the closing `---`; on Markdown-family files the authorship-header banner is the first content after it
+- [ ] Content begins on a new line after the closing `---`; on Markdown-family files the canonical SPDX header line is the first content after it
 - [ ] No plan-internal references (CM-7 compliance)
 - [ ] Cross-references resolve (if listing other artifacts)
 - [ ] Links use relative paths with forward slashes
@@ -417,4 +418,4 @@ Every artifact must satisfy these checks:
   constraints explicitly — better to document a caveat than ship a silent bug.
 - **Kebab-case for Names:** Easy to use in URLs, scripts, and command-line
   contexts. Avoid spaces, underscores, and camelCase for names.
-- **Version Bump Hygiene:** Every behavior-changing edit must bump `version` and `updated` together. Pure formatting or typo fixes bump PATCH; new optional sections or anti-patterns bump MINOR; structural reorganization or contract changes bump MAJOR.
+- **Version Bump Hygiene:** Every behavior-changing edit must bump `version` and `updated` together. Typo fixes, link fixes, and formatting changes leave the version unchanged; new optional sections or anti-patterns bump MINOR; structural reorganization or contract changes bump MAJOR.

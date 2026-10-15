@@ -2,7 +2,7 @@
 title: "Guía rápida"
 description: "Instala Apothem, redacta un perfil, materializa tu primer entorno y verifícalo — un recorrido para copiar y pegar con la salida esperada."
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ dedicarle.
 
 Al final tendrás una configuración de entorno funcional generada a partir de un
 perfil que escribiste tú — y conocerás el único comando que vuelve a enviar un
-cambio del perfil a cada herramienta.
+cambio del perfil a una herramienta o a todas.
 
 <Callout title="¿Quieres la versión pausada y narrada?">
   El [tutorial de primeros pasos](/docs/tutorials/getting-started) recorre el
@@ -44,10 +44,15 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-El instalador requiere un Python 3.10+ del sistema con `click` y `rich`
-importables, además de `git` para la forma por red. Comprueba los requisitos
-previos, coloca el motor en `~/.apothem` e imprime al terminar la invocación
-exacta del motor para tu shell:
+El instalador requiere un Python 3.10+ del sistema, además de `git` para la
+forma por red. Comprueba los requisitos previos y coloca el motor en
+`~/.apothem`. Cuando falta `click` o `rich`, instala el paquete con tu
+confirmación o cuando se pasa `--yes` (`-Yes` en PowerShell) o se define
+`APOTHEM_AUTO_INSTALL_DEPS=1`, y en caso contrario se detiene con el comando de
+pip que hay que ejecutar (consulta
+[Requisitos previos de un vistazo](/docs/install#requisitos-previos-de-un-vistazo)).
+Al terminar imprime un banner de próximos pasos; en POSIX, cuando el directorio
+del shim ya está en `PATH`, el banner tiene este aspecto:
 
 ```text
 Installation complete.
@@ -69,9 +74,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="El comando `apothem`">
-  El instalador coloca un shim `apothem` en tu `PATH`, de modo que ejecutas el
-  motor directamente como `apothem <command>`. Si el directorio del shim aún no
-  está en el `PATH`, el banner imprime una alternativa autónoma —
+  El instalador escribe un shim `apothem` en `$HOME/.local/bin` (POSIX) o en
+  `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) y nunca modifica tu `PATH`.
+  Una vez que ese directorio está en `PATH`, ejecutas el motor directamente como
+  `apothem <command>`. Si todavía no está en `PATH`,
+  el banner imprime una alternativa autónoma —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — que no
   necesita ningún shim; antepón a cada comando el prefijo exacto que imprimió tu
   banner.
@@ -87,7 +94,10 @@ entorno.
 ## 2. Crear el perfil compartido
 
 `apothem profile init` escribe el perfil más pequeño válido según el esquema en
-`~/.config/apothem/profile.yaml`. Pasa `--profile PATH` cuando mantengas en otra
+`~/.config/apothem/profile.yaml`. Si ya hay un perfil allí, como cuando el
+instalador del Paso 1 copió el ejemplo, `init` se detiene con un error y deja el
+archivo sin cambios; pasa `--force` para sobrescribirlo, o conserva el archivo y
+edítalo como se muestra más abajo. Pasa `--profile PATH` cuando mantengas en otra
 ubicación un perfil específico de un proyecto o de CI.
 
 ```bash
@@ -173,10 +183,10 @@ apothem verify --harness claude-code
 si un archivo gestionado está vacío o si una configuración JSON o YAML no se
 analiza. Añade `--profile PATH` para que también falle cuando un archivo
 instalado difiera de ese perfil, lo que convierte a `verify` en una comprobación
-de deriva; sin él, una configuración obsoleta sigue superando la verificación.
-Esto permite que sirva de puerta en un script de configuración. Para una
-comprobación del estado de toda la máquina en todos los adaptadores registrados,
-ejecuta:
+de deriva; sin él, una configuración obsoleta sigue superando la verificación. El
+código de salida distinto de cero permite que `verify` sirva de puerta en un
+script de configuración. Para una comprobación del estado de toda la máquina en
+todos los adaptadores registrados, ejecuta:
 
 ```bash
 apothem doctor
@@ -185,20 +195,26 @@ apothem doctor
 `doctor` comprueba cada entorno instalado: debe superar la verificación, y cada
 comando de hook que registró su instalación debe arrancar. Un entorno que no has
 instalado aparece en la lista, pero no cuenta como fallo, por lo que `doctor`
-termina con 0 con un entorno en buen estado.
+termina con 0 cuando ninguna comprobación falla, aunque solo haya un entorno
+instalado.
 
 ## 5. Tu primera ejecución
 
 Abre el entorno que acabas de configurar — Claude Code, en este ejemplo — e
-inicia una sesión en cualquier proyecto. Las reglas y preferencias que escribiste
-en el perfil en el Paso 2 ya forman parte del comportamiento de esa herramienta.
-Esa es la primera ejecución funcional: un perfil que da forma a una sesión real.
+inicia una sesión en cualquier proyecto. El perfil que configuraste en el Paso 2
+ya forma parte del comportamiento de esa herramienta. Esa es la primera
+ejecución funcional: un perfil que da forma a una sesión real.
 
 Cuando cambies el perfil más adelante, vuelve a aplicarlo sin reinstalar:
 
 ```bash
 apothem update --harness claude-code
 ```
+
+Indica otro adaptador para volver a aplicar el perfil a esa herramienta (añade
+`--project PATH` para un adaptador de ámbito de proyecto), o pasa
+`--harness all --project .` para volver a aplicarlo a todos los entornos
+admitidos.
 
 ## Próximos pasos
 

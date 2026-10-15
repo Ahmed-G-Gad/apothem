@@ -2,11 +2,11 @@
 title: "Qwen Code"
 description: "Qwen Code(베타)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**공급업체:** Alibaba Cloud
+**벤더:** Alibaba Cloud
 **설치 이름:** `qwen-code`
 **상태:** 베타
 **네이티브 구성:** `~/.qwen/`
@@ -18,31 +18,36 @@ apothem install --harness qwen-code
 ```
 
 어댑터는 Qwen Code 설정을 작성하고, `QWEN.md` 컨텍스트 앵커를 설치하며, Apothem
-훅 디스패처를 등록하고, Apothem 명령을 Qwen Markdown 명령 파일로 변환하며, 스킬을
-SKILL.md 디렉터리로 설치하고, 도우미 정의를 Qwen 서브에이전트로 조정합니다.
+훅 디스패처를 등록하고, Apothem 커맨드를 Qwen Markdown 커맨드 파일로 변환하며,
+스킬을 SKILL.md 디렉터리로 설치하고, 도우미 정의를 Qwen 서브에이전트로
+조정합니다.
 
 **작성되는 파일:**
 
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+파일 `~/.qwen/apothem/rules/00-apothem-profile.md`는 프로필 문서입니다. 이 문서는
+공유 프로필에서 가져온 여러분의 신원과 선호를 담고 있습니다.
+
 ## 프로필에서 네이티브 구성으로의 매핑
 
 어댑터는 컨텍스트와 훅을 위해 문서화된 `settings.json` 키를 렌더링하고,
-`QWEN.md`를 작성하며, Apothem 명령, 스킬, 도우미 정의를 Qwen Code의 네이티브
+`QWEN.md`를 작성하며, Apothem 커맨드, 스킬, 도우미 정의를 Qwen Code의 네이티브
 디스커버리 디렉터리 전반에 엮어 넣습니다. 규칙, 템플릿, 훅 소스 자료는
 `~/.qwen/.apothem/support/` 아래에 지원 자료로 남습니다.
 
 ## 호환성 참고 사항
 
 `~/.qwen/.apothem/support/`는 `QWEN.md`와 설정의 훅 명령이 참조하는 지원
-자료이며, 공급업체 소유의 디스커버리 네임스페이스가 아닙니다.
+자료이며, 벤더 소유의 디스커버리 네임스페이스가 아닙니다.
 `QWEN.md`의 Apothem 블록은 Apothem 지원 파일 섹션으로 끝납니다. 이 섹션은
 저장소 스타일의 각 인용(`rules/<name>.md`, `templates/...`, `hooks/...`)이
 해석되는 기준인 `~/.qwen/.apothem/support/` 아래의 절대 디렉터리를 명시합니다.
@@ -56,7 +61,9 @@ apothem verify --harness qwen-code
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -65,7 +72,7 @@ verify 명령은 다음을 확인합니다.
 apothem update --harness qwen-code
 ```
 
-`settings.json`, `QWEN.md`, 네이티브 명령, 스킬, 서브에이전트, 그리고 Apothem
+`settings.json`, `QWEN.md`, 네이티브 커맨드, 스킬, 서브에이전트, 그리고 Apothem
 지원 트리를 새로 고칩니다.
 
 ## 제거
@@ -74,8 +81,16 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+어댑터가 `~/.qwen/settings.json`에 추가한 항목을 제거합니다(여러분의 키, MCP
+서버, 훅 핸들러는 그대로 남으며, 이 파일은 Apothem이 직접 만들었고 여러분의
+항목이 하나도 남아 있지 않은 경우에만 삭제됩니다). `~/.qwen/QWEN.md`와 프로필
+문서 `~/.qwen/apothem/rules/00-apothem-profile.md`에서 Apothem 블록을 제거하고
+그 안의 다른 텍스트는 유지하며, 각 파일은 그 안에 다른 내용이 남아 있지 않은
+경우에만 삭제됩니다. 또한 `~/.qwen/commands/`, `~/.qwen/skills/`,
+`~/.qwen/agents/`, `~/.qwen/.apothem/support/`에 있는 Apothem 파일을 제거하며,
+그 폴더들의 다른 파일은 그대로 남습니다. 각 파일은 변경하거나 제거하기 전에
+`~/.apothem/backups/` 아래에 백업됩니다. 공유 프로필 YAML과 Apothem 엔진은 영향을
+받지 않습니다.
 
 ## 적합성 게이트
 
@@ -85,7 +100,7 @@ python -m apothem.conformity.gate --all .
 
 ## 문제 해결
 
-| 증상 | 해결 |
+| 증상 | 해결 방법 |
 |---------|-----|
 | 구성 파일을 찾을 수 없음 | `apothem install --harness qwen-code`를 다시 실행 |
 | 검증 실패 | `apothem update --harness qwen-code`를 실행한 다음 다시 검증 |

@@ -10,13 +10,13 @@ description: "Reference guide for YAML frontmatter block structure, per-class re
 
 ## 1. Frontmatter Block Shape
 
-Every artifact carries YAML frontmatter at the head, delimited by `---` lines. On Markdown-family files the frontmatter is the first content of the file, and the canonical authorship-header banner per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) follows the closing `---`.
+Every artifact carries YAML frontmatter at the head, delimited by `---` lines. On Markdown-family files the frontmatter is the first content of the file, and the canonical SPDX header line per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) follows the closing `---`.
 
 Command keys use `kebab-case`. Skill keys use `kebab-case` except `userInvocable`, the camelCase spelling the source corpus uses (the Claude Code install renames it to `user-invocable`). Rule and delegated-worker keys are camelCase, as the required-key table in section 2 lists. Scalar values are either bare or double-quoted; string values containing colons, hash marks, or other YAML-significant characters are quoted.
 
 ## 2. Per-Class Required Fields
 
-The required-key set varies by artifact class. The authoritative shape is enforced by `scripts/dev/validate_ecosystem.py` and the per-class JSON Schemas under the `src/apothem/schemas/` directory (one schema file per artifact class).
+The required-key set varies by artifact class. The authoritative shape is enforced by `scripts/dev/validate_ecosystem.py` and the per-class JSON Schemas under the `src/apothem/schemas/` directory. The helper, skill, command, output-style, and plan classes each have one schema file, listed below; the `CLAUDE.md` and rule classes have none, and `validate_ecosystem.py` checks their keys. Plan files are not in the table below; their keys are listed in [Plans discipline](/docs/reference/plans-discipline).
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -31,8 +31,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (root config) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Rules (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Commands (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Delegated workers (canonical directory shown below) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; the Claude Code install and plugin rename `userInvocable` to `user-invocable`, and the schema accepts exactly one of the two spellings |
+| Helpers, also called delegated workers (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; the Claude Code install and plugin rename `userInvocable` to `user-invocable`, and the schema requires each skill to carry exactly one of the two spellings, never both |
 | Output styles (`src/apothem/output-styles/*.md`) | `name`, `description`; every shipped style also sets `keep-coding-instructions: true` so Claude Code keeps its software engineering instructions |
 
 Per-class schemas at [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) carry the full constraint set including type, format, enum, and pattern restrictions, and length limits: a skill or command `description` is at most 1,024 characters, the [Agent Skills](https://agentskills.io/specification) limit.

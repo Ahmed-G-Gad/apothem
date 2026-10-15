@@ -2,7 +2,7 @@
 title: "Fluxos de trabalho principais"
 description: "Os quatro fluxos de trabalho principais do Apothem — perfil, regras, planos e o portão de conformidade."
 machineTranslated: true
-sourceHash: "53658e5bd065d27f"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ um portão de conformidade em tempo real.
 
 Seu perfil do Apothem fica em `~/.config/apothem/profile.yaml`, a menos que você
 passe `--profile PATH`. Ele é a única fonte de verdade da qual cada adaptador de
-ambiente deriva sua configuração nativa:
+harness deriva sua configuração nativa:
 
 ```yaml
 identity:
@@ -32,7 +32,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-Crie e inspecione o perfil:
+Crie o perfil se ele ainda não existir e, em seguida, inspecione-o. Os
+instaladores de um único passo e o `apothem install` já gravam um perfil inicial
+na primeira execução, e o `profile init` para com um erro e deixa um arquivo
+existente inalterado, a menos que você passe `--force`.
 
 ```bash
 apothem profile init
@@ -42,7 +45,7 @@ apothem profile show --json
 ## A primeira regra
 
 Adicione regras compartilhadas ao YAML do perfil e, em seguida, rematerialize o
-ambiente selecionado. Quando essas regras incluírem dados de exemplo, use
+harness selecionado. Quando essas regras incluírem dados de exemplo, use
 marcadores fictícios para que nenhuma identidade ou credencial real acabe em um
 perfil compartilhado ou em uma execução de CI.
 
@@ -54,17 +57,18 @@ apothem verify --harness claude-code
 
 ## O primeiro plano
 
-O pipeline `/plan` é executado dentro da sua ferramenta como
-comandos de barra, não pelo binário `apothem`. Depois que um ambiente é
-instalado, inicie um plano a partir do chat da ferramenta:
+O pipeline `/plan` é executado dentro do seu harness como comandos de barra, e
+não pelo binário `apothem`. Depois que um harness é instalado, inicie um plano a
+partir do chat da ferramenta:
 
 ```text
 /plan-spec
 ```
 
 O `/plan-spec` refina sua prosa em uma especificação, e o `/plan-generate`
-materializa um conjunto de planos em `<project-root>/.apothem/plans/{suite}/`. Consulte a
-[referência de comandos do pipeline](/docs/pipeline) para ver o fluxo completo.
+materializa uma suíte de planejamento em `<project-root>/.apothem/plans/{suite}/`.
+Consulte a [referência de comandos do pipeline](/docs/pipeline) para ver o fluxo
+completo.
 
 ## Portão de conformidade
 

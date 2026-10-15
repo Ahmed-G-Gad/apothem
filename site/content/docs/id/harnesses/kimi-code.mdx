@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adapter harness Apothem untuk Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,9 +62,11 @@ Kimi Code menurut halaman kustomisasinya untuk
 Kimi Code membaca instruksi proyek dari `AGENTS.md` atau
 `.kimi-code/AGENTS.md` dan mengenali `.kimi-code/mcp.json` sebagai permukaan
 MCP milik operator; Apothem menyebut permukaan tersebut tetapi tidak menulis
-entri apa pun ke dalamnya. Permukaan instruksi yang dirender menggerakkan proyek
-secara langsung. Kimi Code tidak mengekspos permukaan berkas statusline atau
-output-style, sehingga kohor tersebut tidak dimaterialisasikan.
+entri apa pun ke dalamnya. Dari kedua berkas instruksi itu, adapter hanya
+menulis `AGENTS.md` di akar proyek, yang dibaca Kimi Code sebagai instruksi
+proyek; dokumentasi Kimi Code tidak menyebutkan mana di antara kedua berkas itu
+yang diutamakan ketika keduanya ada. Kimi Code tidak mengekspos permukaan berkas
+statusline atau output-style, sehingga kohor tersebut tidak dimaterialisasikan.
 
 Kimi Code berjalan pada keluarga model Kimi dari Moonshot; lihat
 [referensi konfigurasi vendor](https://moonshotai.github.io/kimi-code/en/configuration/config-files)

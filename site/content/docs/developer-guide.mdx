@@ -9,8 +9,11 @@ SOTA quality standards.
 
 ## Quick Reference: Artifact Types
 
-The Apothem ecosystem contains five artifact types, each with specific
-purposes and frontmatter requirements.
+This guide covers five artifact types, each with a specific purpose. Rules,
+commands, helpers, and skills carry YAML frontmatter; hooks are registered in
+`hooks.json` and `settings.json` and carry none. Output styles are a further
+artifact class with two required frontmatter keys, `name` and `description`;
+see the [Frontmatter Schema](/docs/reference/frontmatter-schema).
 
 | Artifact | Path | Purpose | When to Create |
 | -------- | ---- | ------- | -------------- |
@@ -125,7 +128,8 @@ Pattern: lowercase, hyphens between words, no spaces or underscores.
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` by absolute path, so
   the installed copy needs no importable `apothem` package. The Claude Code plugin
   registers hooks in `src/apothem/hooks/hooks.json` instead, as shell commands that
-  run `hooks/lib/bootstrap.sh` through `bash`. Register a new hook in `hooks.json`
+  run `hooks/lib/bootstrap.sh` through `bash`; that stub locates Python and runs
+  `dispatch.py`, so the handlers stay Python. Register a new hook in `hooks.json`
   and in the Claude Code `settings.json` template. `dispatch.py` routes
   `SessionStart` to
   `session_start_bootstrap.main()` and
@@ -148,10 +152,10 @@ Never use file paths or truncated names in prose.
 ## Portability: Windows vs. Unix
 
 Every command MUST explicitly declare its portability status in the
-`portability` field, and a helper MAY. Skills, rules, and output styles carry no
-`portability` field.
+`portability` field. A helper MAY declare it. Skills, rules, and output styles
+carry no `portability` field.
 
-### Universal (Default)
+### Universal
 
 - Works identically on Windows, macOS, and Linux
 - No shell assumptions
@@ -216,15 +220,18 @@ Each versioned artifact carries its own semantic version (`MAJOR.MINOR.PATCH`).
 Commands and skills require it, helpers and output styles MAY carry it, and
 rules carry none:
 
-- **PATCH** — typo fixes, formatting, link refresh, comment-only edits. Behavior unchanged.
+- **PATCH** — a behavioral change that corrects an existing directive without breaking the contract.
 - **MINOR** — additive non-breaking changes: new optional sections, new optional frontmatter fields, new examples. Existing consumers continue to work without change.
 - **MAJOR** — breaking schema or contract changes: removed sections, renamed fields, altered behavior of an existing directive, changes that require downstream artifacts to adapt.
 
+Typo fixes, link fixes, formatting, and comment-only or documentation-only edits leave the version unchanged. Only a behavioral change bumps it. Such an edit still updates the artifact's `updated` date.
+
 Examples:
 
-- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: typo fix)
+- `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: a corrected directive that changes behavior)
+- `vX.Y.Z` → `vX.Y.Z` (no bump: typo or link fix; `updated` changes)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: added a new optional section)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: declared contract stable)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: declared contract stable; new artifacts seed at `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: removed mandatory frontmatter field)
 
 Bump `version` and `updated` together on every behavior-changing edit to an
@@ -338,8 +345,8 @@ Commands are slash commands like `/plan-spec`, `/plan-execute`, `/security-audit
 
 ### 1. Determine Role
 
-Commands are **never** meant to be called by the harness in isolation. They are
-user-triggered workflows. Ask:
+Commands are user-triggered workflows. The model runs one on its own only when
+its `disable-model-invocation` setting is `false` (step 2). Ask:
 
 - Is this a workflow the user types `/command-name`?
 - Does it orchestrate multiple steps?
@@ -373,8 +380,8 @@ The invocation table in `src/apothem/commands/README.md` lists every
 command's setting; add a row for a new command. Keep
 `allowed-tools` read-only: a harness that honors it runs those tools without
 asking. Grant a side-effecting tool only as a scoped rule, such as
-`Bash(git log *)`; the schema rejects `"*"` and bare `Bash`, `PowerShell`,
-`Write`, `Edit`, `NotebookEdit`, and `WebFetch`.
+`Bash(git log *)`; the schema rejects `"*"` and any of `Bash`, `PowerShell`,
+`Write`, `Edit`, `NotebookEdit`, or `WebFetch` written without a scope.
 
 ### 3. Write Content
 
@@ -388,7 +395,7 @@ Structure:
 
 ### 4. Update the README and CHANGELOG.md
 
-Add a row to the matching command table in `src/apothem/commands/README.md`; add a CHANGELOG row under the next release's `### Added` section.
+Add a row to the table for the command's section in `src/apothem/commands/README.md`, in addition to the invocation-table row from step 2; add a CHANGELOG row under the next release's `### Added` section.
 
 ### 5. Validate
 
@@ -516,7 +523,7 @@ Content structure:
 
 ### 4. Update the README and CHANGELOG.md
 
-Add a row to the Index and Folder contents tables in `src/apothem/skills/README.md`; add a CHANGELOG row under the next release's `### Added` section.
+Add a row to the Index table and a row for each of the skill's files to the Folder contents table in `src/apothem/skills/README.md`; add a CHANGELOG row under the next release's `### Added` section.
 
 ### 5. Validate
 
@@ -533,7 +540,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] `name` field uses kebab-case
 - [ ] `version` (versioned classes only; rules carry none) is semantic (`MAJOR.MINOR.PATCH`) and was bumped if behavior changed
 - [ ] `updated` matches today's date for any artifact you touched that carries the field
-- [ ] `portability` field set and valid (commands and helpers only)
+- [ ] `portability` field set and valid (required on commands, optional on helpers)
 - [ ] CHANGELOG.md carries the change in the appropriate category under the next release's section
 - [ ] No plan-internal references (CM-7 compliance)
 - [ ] Cross-references are consistent with other artifacts
@@ -696,9 +703,9 @@ that has a pair, run `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmarks
 
-`make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`.
-Each exits `0` pass, `1` over budget, `2` error (the measured run did not
-execute), or `3` not measured.
+`make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`,
+except `bench_agents.py`. Each driver exits `0` pass, `1` over budget, `2` error
+(the measured run did not execute), or `3` not measured.
 
 - `bench_hooks.py` runs every `shell: bash` command that `hooks/hooks.json`
   registers, as written, on a real payload per event and matcher, and reports

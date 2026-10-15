@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Адаптер окружения Apothem для OpenCode (бета)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,7 @@ apothem install --harness opencode
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -77,7 +78,10 @@ apothem verify --harness opencode
 Команда verify подтверждает, что:
 
 1. Нативная конфигурация существует по ожидаемому пути.
-2. Каждая управляемая цель существует; управляемые файлы не пусты, а конфигурации JSON или YAML разбираются. Добавьте `--profile PATH`, чтобы дополнительно подтвердить, что установленные файлы соответствуют этому профилю.
+2. Каждая управляемая цель существует; управляемые файлы не пусты, а
+   конфигурации JSON или YAML разбираются. Добавьте `--profile PATH`, чтобы
+   дополнительно подтвердить, что установленные файлы соответствуют этому
+   профилю.
 3. Процедура проверки, специфичная для адаптера, сообщает об успехе.
 
 ## Обновление
@@ -95,8 +99,17 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-Удаляет файлы нативной конфигурации, записанные адаптером.
-YAML общего профиля и движок Apothem не затрагиваются.
+Удаляет записи, которые адаптер добавил в `~/.config/opencode/opencode.json`
+(ваши собственные ключи, серверы MCP и записи `instructions` остаются на месте, а
+сам файл удаляется только тогда, когда его создал Apothem и от вас в нём ничего
+не осталось). Удаляет блок Apothem из документа профиля
+`~/.config/opencode/apothem/rules/00-apothem-profile.md` и сохраняет любой другой
+текст в нём; этот файл удаляется только тогда, когда в нём не остаётся ничего
+другого. Также удаляет файлы Apothem в `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/` и
+`~/.config/opencode/.apothem/support/`; остальные файлы в этих папках остаются.
+Перед изменением или удалением каждого файла создаётся его резервная копия в
+`~/.apothem/backups/`. YAML общего профиля и движок Apothem не затрагиваются.
 
 ## Шлюз соответствия
 

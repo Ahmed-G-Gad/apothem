@@ -1,8 +1,8 @@
 ---
 title: "OpenCode"
-description: "Adaptor harness Apothem untuk OpenCode (Beta)."
+description: "Adapter harness Apothem untuk OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "2c4709aed2cf9905"
 apothem install --harness opencode
 ```
 
-Adaptor menulis konfigurasi JSON OpenCode, memasang skill Apothem ke permukaan
+Adapter menulis konfigurasi JSON OpenCode, memasang skill Apothem ke permukaan
 skill OpenCode, mengonversi prompt command menjadi berkas command Markdown
 OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 
@@ -25,6 +25,7 @@ OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -33,7 +34,7 @@ OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor merender `opencode.json` dengan daftar berkas `instructions` yang
+Adapter merender `opencode.json` dengan daftar berkas `instructions` yang
 menyebut dokumen profil Anda dan aturan always-on Apothem, lalu menyebarkan
 setiap kohor Apothem bersama ke permukaan native OpenCode atau ke support
 subtree milik Apothem. Anak yang dikelola Apothem dan cocok yang sudah ada
@@ -72,10 +73,12 @@ Anda sendiri dipertahankan dalam setiap kasus.
 apothem verify --harness opencode
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
@@ -93,8 +96,17 @@ dukungan Apothem.
 apothem uninstall --harness opencode
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus entri yang ditambahkan adapter ke `~/.config/opencode/opencode.json`
+(kunci Anda sendiri, server MCP, dan entri `instructions` tetap ada, dan berkas
+itu dihapus hanya ketika Apothem yang membuatnya dan tidak ada lagi yang
+tersisa milik Anda). Menghapus blok Apothem dari dokumen profil
+`~/.config/opencode/apothem/rules/00-apothem-profile.md` dan mempertahankan teks
+lain di dalamnya; berkas itu dihapus hanya ketika tidak ada lagi yang tersisa di
+dalamnya. Juga menghapus berkas Apothem di `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/`, dan
+`~/.config/opencode/.apothem/support/`; berkas lain di folder-folder tersebut
+tetap ada. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum
+diubah atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -120,4 +132,4 @@ python -m apothem.conformity.gate --all .
 
 - [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
 - [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
-- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adapter dari CLI

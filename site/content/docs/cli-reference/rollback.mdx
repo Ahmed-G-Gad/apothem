@@ -30,11 +30,11 @@ first, it:
 - removes the directories the install created, once they are empty.
 
 Everything rollback removes or replaces is first copied into the Apothem backup
-root (`~/.apothem/backups/`), so a rollback can itself be undone by hand. It
-then appends a `rollback` record to the harness ledger. Rolling back an older
-install restores or removes only the targets that older install recorded, and
-drops every install after it from the active record at the same root. Files a
-later install added outside those targets stay in place.
+root (`~/.apothem/backups/`), so a rollback can itself be undone by hand.
+Rollback then appends a `rollback` record to the harness ledger. Rolling back an
+older install restores or removes only the targets that older install recorded,
+and drops every install after it from the ledger's active installs at the same
+root. Files a later install added outside those targets stay in place.
 
 The ledger keeps the newest 10 install records per install root (with the
 backups they reference); an older install can no longer be rolled back by id
@@ -57,9 +57,9 @@ A `--harness all` rollback is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips
 during install — restoring pre-install state is a cleanup operation, so it
 reaches records a previously broader install may have left. A harness with no
-recorded install fails with `rollback.no_record` (an `"outcome": "error"` row in
-`results`), and the run continues with the remaining harnesses. The command
-then exits 1, or 2 when another harness was rolled back.
+recorded install fails as an `"outcome": "error"` row in `results` (see JSON
+output), and the run continues with the remaining harnesses. The command then
+exits 1, or 2 when at least one target of another harness was rolled back.
 
 ## Options
 
@@ -101,8 +101,10 @@ Each restored or removed target appears in `results` with
 `files_written`); the `message` says whether the path was restored or removed.
 A failed restore (for example, a backup that was deleted) is
 `"outcome": "error"`. An install that recorded no changes is reported with
-`"outcome": "skipped"`. When no matching install record exists, the command
-reports a `rollback.no_record` error with `"status": "error"`.
+`"outcome": "skipped"`. When no matching install record exists for a single
+named harness, the command reports a `rollback.no_record` error with
+`"status": "error"`. Under `--harness all`, a harness with no matching record
+is an `"outcome": "error"` row in `results` instead.
 
 ## Examples
 
@@ -118,7 +120,7 @@ apothem rollback --harness cursor --project . --last --json
 |---|---|
 | 0 | Rolled back successfully, or nothing to roll back (the install recorded no changes) |
 | 1 | Expected error — no install record, conflicting selectors, unknown harness, missing project root, or confirmation declined or unavailable (non-interactive or JSON mode without `--yes`) |
-| 2 | Partial restore after at least one target was rolled back |
+| 2 | Partial result — at least one target was rolled back and a failure was also recorded (a failed restore or, under `--harness all`, a harness with no install record) |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

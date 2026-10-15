@@ -2,7 +2,7 @@
 title: "Portão de conformidade"
 description: "Execute o portão de conformidade do Apothem para verificar a saúde do ecossistema."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,9 +10,9 @@ O portão de conformidade em `src/apothem/conformity/gate.py` executa a
 fração mecânica do portão de pré-emissão de quinze barras (M1-M15)
 contra cada artefato que o operador redige.
 
-Os comandos desta página pressupõem um checkout do Apothem, então prefixe cada
-um com `PYTHONPATH=src`. Após uma instalação por script, use
-`PYTHONPATH="$HOME/.apothem/src"` no lugar de `src`.
+Os comandos desta página pressupõem um checkout do Apothem, então prefixe com
+`PYTHONPATH=src` cada um que você executar. Após uma instalação por script, use
+`PYTHONPATH="$HOME/.apothem/src"` no lugar de `PYTHONPATH=src`.
 
 ## Executar o portão
 
@@ -43,12 +43,12 @@ inspecionam a mesma árvore. Cada validador relata `inspected` — quantos alvos
 ele examinou — e `--all` copia essa contagem para cada entrada de resultado. Um
 validador que não inspecionou nada relata `passed: false`, de modo que um
 diretório de trabalho errado não pode passar silenciosamente. Os dois
-validadores de suíte de planejamento são a exceção: as suítes de planejamento
+validadores de suíte de planejamento são uma exceção: as suítes de planejamento
 ficam na árvore `.apothem/plans/`, ignorada pelo git, então eles relatam
 `empty_scope_expected: true` em um checkout limpo e ainda assim passam. Os
 validadores de fluxo de trabalho fazem o mesmo quando o projeto ainda não tem um
 diretório `.github/workflows/`, e o validador de assunto de commit faz o mesmo
-quando o diretório não tem histórico de commits.
+quando a raiz não tem histórico de commits.
 
 ## Barras do portão
 
@@ -92,10 +92,14 @@ raramente você o chama manualmente.
 O modo hook tem **escopo limitado a um conjunto de diretórios**. Ele executa a
 cadeia de matchers apenas em gravações cujo alvo esteja sob um deles; uma
 gravação fora de todos os escopos é encerrada antecipadamente com uma aprovação
-silenciosa. Os padrões são as raízes de harness de escopo de usuário com suporte
-a hooks nas quais o Apothem instala — a página de cada harness em Harnesses
-nomeia a sua própria raiz. Defina `APOTHEM_CONFORMITY_SCOPE` como um diretório
-para substituí-los:
+silenciosa. Os padrões são duas raízes:
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Defina `APOTHEM_CONFORMITY_SCOPE` como um diretório para substituí-las:
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

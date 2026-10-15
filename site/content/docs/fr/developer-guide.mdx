@@ -2,7 +2,7 @@
 title: "Contribuer à Apothem — Guide du développeur"
 description: "Maintenir et étendre l'écosystème Apothem en rédigeant des règles, des commandes, des auxiliaires, des skills et des hooks à l'aide de schémas canoniques, d'exigences de frontmatter et de procédures de validation."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,12 @@ selon des standards de qualité SOTA.
 
 ## Référence rapide : types d'artefacts
 
-L'écosystème Apothem contient cinq types d'artefacts, chacun avec ses finalités
-et ses exigences de frontmatter propres.
+Ce guide couvre cinq types d'artefacts, chacun avec une finalité précise. Les
+règles, les commandes, les auxiliaires et les skills portent un frontmatter
+YAML ; les hooks sont enregistrés dans `hooks.json` et `settings.json` et n'en
+portent aucun. Les output-styles forment une classe d'artefacts supplémentaire,
+avec deux clés de frontmatter requises, `name` et `description` ; voir le
+[schéma du frontmatter](/docs/reference/frontmatter-schema).
 
 | Artefact | Chemin | Finalité | Quand le créer |
 | -------- | ---- | ------- | -------------- |
@@ -84,7 +88,7 @@ classe et exemples détaillés). Lorsqu'une page diverge des schémas JSON, les
 schémas l'emportent.
 
 - Lisez le schéma JSON de votre type d'artefact sous `src/apothem/schemas/`
-- Lisez `site/content/docs/reference/artifact-schema.mdx` § « Schema » pour le
+- Lisez `site/content/docs/reference/artifact-schema.mdx` § « Schéma » pour le
   template et un exemple détaillé
 - Copiez les champs requis, renseignez les valeurs obligatoires, ajoutez les champs optionnels selon les besoins
 
@@ -127,22 +131,24 @@ soulignement.
 - **Skills :** dans le dossier `src/apothem/skills/{name}/SKILL.md` (casse exacte : `SKILL.md`)
 - **Hooks :** dans le dossier `src/apothem/hooks/`. Tous les gestionnaires
   d'événements sont en Python. Chaque commande de hook du template `settings.json`
-  de Claude Code utilise la forme exec : `command` est le marqueur d'interpréteur
-  `${PYTHON_BIN}`, résolu au moment de l'installation, et `args` contient le
-  chemin du script et ses arguments. Ce template exécute
+  de Claude Code utilise la forme exec : `command` est l'espace réservé
+  d'interpréteur `${PYTHON_BIN}`, résolu au moment de l'installation, et `args`
+  contient le chemin du script et ses arguments. Ce template exécute
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` et
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` par chemin absolu,
   de sorte que la copie installée n'a pas besoin d'un paquet `apothem` importable.
   Le plugin Claude Code enregistre à la place les hooks dans
   `src/apothem/hooks/hooks.json`, sous forme de commandes shell qui exécutent
-  `hooks/lib/bootstrap.sh` via `bash`. Enregistrez un nouveau hook dans
-  `hooks.json` et dans le template `settings.json` de Claude Code. `dispatch.py`
-  achemine `SessionStart` vers `session_start_bootstrap.main()` et tout autre
-  événement de la liste blanche vers `emit_hook_context.main()`. Les seuls stubs
-  shell autorisés sous `src/apothem/hooks/` ou `scripts/` sont les six fichiers de
-  localisation et d'amorçage (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`,
-  `bootstrap.{ps1,sh}`) ; tout autre fichier `.ps1` / `.sh` échoue à la
-  vérification d'hygiène de `scripts/dev/validate_hooks.py`.
+  `hooks/lib/bootstrap.sh` via `bash` ; ce stub localise Python et exécute
+  `dispatch.py`, de sorte que les gestionnaires restent en Python. Enregistrez un
+  nouveau hook dans `hooks.json` et dans le template `settings.json` de Claude
+  Code. `dispatch.py` achemine `SessionStart` vers
+  `session_start_bootstrap.main()` et tout autre événement de la liste blanche
+  vers `emit_hook_context.main()`. Les seuls stubs shell autorisés sous
+  `src/apothem/hooks/` ou `scripts/` sont les six fichiers de localisation et
+  d'amorçage (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`) ;
+  tout autre fichier `.ps1` / `.sh` échoue à la vérification d'hygiène de
+  `scripts/dev/validate_hooks.py`.
 
 ### Références croisées
 
@@ -158,10 +164,10 @@ N'utilisez jamais de chemins de fichiers ni de noms tronqués dans la prose.
 ## Portabilité : Windows vs. Unix
 
 Chaque commande DOIT déclarer explicitement son statut de portabilité dans le
-champ `portability`, et un auxiliaire PEUT le faire. Les skills, les règles et
+champ `portability`. Un auxiliaire PEUT le déclarer. Les skills, les règles et
 les output-styles ne portent aucun champ `portability`.
 
-### Universel (par défaut)
+### Universel
 
 - Fonctionne à l'identique sous Windows, macOS et Linux
 - Aucune hypothèse sur le shell
@@ -234,7 +240,7 @@ Exemples :
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH : correction d'une faute de frappe)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR : ajout d'une nouvelle section optionnelle)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR : contrat déclaré stable)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR : contrat déclaré stable ; les nouveaux artefacts démarrent à `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR : suppression d'un champ de frontmatter obligatoire)
 
 Faites évoluer `version` et `updated` ensemble à chaque modification qui change
@@ -300,7 +306,7 @@ Suivez la structure :
 
 ### 3. Créer le frontmatter
 
-Utilisez le schéma de `site/content/docs/reference/artifact-schema.mdx` § Schema: Rules. Définissez :
+Utilisez le schéma de `site/content/docs/reference/artifact-schema.mdx` § Schéma : règles. Définissez :
 
 - `name:` identifiant en kebab-case
 - `description:` résumé d'une ligne pour les registres
@@ -353,9 +359,9 @@ Les commandes sont des commandes slash telles que `/plan-spec`, `/plan-execute`,
 
 ### 1. Déterminer le rôle
 
-Les commandes ne sont **jamais** destinées à être appelées isolément par
-l'environnement. Ce sont des flux de travail déclenchés par l'utilisateur.
-Demandez-vous :
+Les commandes sont des flux de travail déclenchés par l'utilisateur. Le modèle
+n'en exécute une de son propre chef que lorsque son réglage
+`disable-model-invocation` vaut `false` (étape 2). Demandez-vous :
 
 - S'agit-il d'un flux de travail que l'utilisateur déclenche en tapant `/command-name` ?
 - Orchestre-t-il plusieurs étapes ?
@@ -368,7 +374,7 @@ d'une skill, pas d'une commande.
 
 Chemin : `src/apothem/commands/{name}.md`
 
-Frontmatter (d'après `site/content/docs/reference/artifact-schema.mdx` § Schema: Commands) :
+Frontmatter (d'après `site/content/docs/reference/artifact-schema.mdx` § Schéma : commandes) :
 
 ```yaml
 ---
@@ -383,7 +389,7 @@ allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-`disable-model-invocation: true` réserve l'invocation d'une commande à
+`disable-model-invocation: true` réserve une commande à l'invocation par
 l'opérateur ; avec `false`, le modèle peut l'exécuter lorsqu'une requête
 correspond à sa description. La plupart des commandes utilisent `true`, mais la
 plupart des étapes des pipelines de planification et de recherche utilisent
@@ -392,8 +398,8 @@ réglage de chaque commande ; ajoutez-y une ligne pour toute nouvelle commande.
 Gardez `allowed-tools` en lecture seule : un environnement qui le respecte
 exécute ces outils sans demander. N'accordez un outil à effets de bord que sous
 forme de règle délimitée, comme `Bash(git log *)` ; le schéma rejette `"*"`
-ainsi que `Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit` et `WebFetch`
-employés seuls.
+ainsi que tout élément parmi `Bash`, `PowerShell`, `Write`, `Edit`,
+`NotebookEdit` ou `WebFetch` écrit sans portée.
 
 ### 3. Rédiger le contenu
 
@@ -407,7 +413,7 @@ Structure :
 
 ### 4. Mettre à jour le README et CHANGELOG.md
 
-Ajoutez une ligne au tableau de commandes correspondant dans `src/apothem/commands/README.md` ; ajoutez une ligne de CHANGELOG sous la section `### Added` de la prochaine publication.
+Ajoutez une ligne au tableau de la section de la commande dans `src/apothem/commands/README.md`, en plus de la ligne du tableau d'invocation de l'étape 2 ; ajoutez une ligne de CHANGELOG sous la section `### Added` de la prochaine publication.
 
 ### 5. Valider
 
@@ -538,7 +544,7 @@ Structure du contenu :
 
 ### 4. Mettre à jour le README et CHANGELOG.md
 
-Ajoutez une ligne aux tableaux Index et Folder contents de `src/apothem/skills/README.md` ; ajoutez une ligne de CHANGELOG sous la section `### Added` de la prochaine publication.
+Ajoutez une ligne au tableau Index et une ligne pour chacun des fichiers de la skill au tableau Folder contents de `src/apothem/skills/README.md` ; ajoutez une ligne de CHANGELOG sous la section `### Added` de la prochaine publication.
 
 ### 5. Valider
 
@@ -555,7 +561,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Le champ `name` utilise le kebab-case
 - [ ] `version` (classes versionnées uniquement ; les règles n'en portent aucune) est sémantique (`MAJOR.MINOR.PATCH`) et a été incrémentée si le comportement a changé
 - [ ] `updated` correspond à la date du jour pour tout artefact que vous avez modifié et qui porte ce champ
-- [ ] Le champ `portability` est défini et valide (commandes et auxiliaires uniquement)
+- [ ] Le champ `portability` est défini et valide (obligatoire sur les commandes, optionnel sur les auxiliaires)
 - [ ] CHANGELOG.md consigne le changement dans la catégorie appropriée, sous la section de la prochaine publication
 - [ ] Aucune référence interne au plan (conformité CM-7)
 - [ ] Les références croisées sont cohérentes avec les autres artefacts
@@ -711,24 +717,24 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 ### Évaluations comportementales
 
 La suite sous `evals/` mesure le comportement plutôt que la forme : 64 cas de
-déclenchement (chaque commande et chaque sous-assistant invocables par le modèle se
-déclenchent sur une requête de leur domaine et restent silencieux face à une
-requête voisine hors domaine), 32 cas de résultat (un par étape de
-planification, étape de recherche et dimension d'audit) et 6 paires d'effet de
-règle (le texte d'une règle toujours active, activé puis désactivé). Les cas
-sont de simples données, validées gratuitement par
-`python -m pytest tests/unit/test_eval_suite.py` ; leur exécution est facturée
-et manuelle. Voir [Exécuter les évaluations comportementales](/docs/how-to/evals)
-pour le flux de travail `Evals`, une exécution locale et la façon d'ajouter un
-cas. Après avoir modifié une règle toujours active dotée d'une paire, exécutez
+déclenchement (chaque commande et chaque sous-assistant invocables par le modèle
+se déclenchent sur une requête de leur domaine et restent silencieux face à une
+requête voisine), 32 cas de résultat (un par étape de planification, étape de
+recherche et dimension d'audit) et 6 paires d'effet de règle (le texte d'une
+règle toujours active, activé puis désactivé). Les cas sont de simples données,
+validées gratuitement par `python -m pytest tests/unit/test_eval_suite.py` ;
+leur exécution est facturée et manuelle. Voir
+[Exécuter les évaluations comportementales](/docs/how-to/evals) pour le flux de
+travail `Evals`, une exécution locale et la façon d'ajouter un cas. Après avoir
+modifié une règle toujours active dotée d'une paire, exécutez
 `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmarks
 
-`make benchmarks` exécute les pilotes par classe sous `src/apothem/benchmarks/`.
-Chacun se termine avec `0` en cas de réussite, `1` en cas de dépassement du
-budget, `2` en cas d'erreur (l'exécution mesurée n'a pas eu lieu) ou `3` en
-l'absence de mesure.
+`make benchmarks` exécute les pilotes par classe sous `src/apothem/benchmarks/`,
+à l'exception de `bench_agents.py`. Chaque pilote se termine avec `0` en cas de
+réussite, `1` en cas de dépassement du budget, `2` en cas d'erreur (l'exécution
+mesurée n'a pas eu lieu) ou `3` en l'absence de mesure.
 
 - `bench_hooks.py` exécute chaque commande `shell: bash` que `hooks/hooks.json`
   enregistre, telle qu'elle est écrite, sur une charge utile réelle par

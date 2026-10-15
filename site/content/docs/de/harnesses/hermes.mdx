@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,10 +53,10 @@ Adapter schreibt das MCP-Inventar des Profils unter den Top-Level-Schlüssel
 `mcp_servers`, wo Hermes MCP-Server liest.
 Frühere Apothem-Releases schrieben es unter `auxiliary.mcp`, das Hermes als
 Hilfsmodell für den Dispatch von MCP-Werkzeugen liest; sowohl `apothem update`
-als auch `apothem uninstall` entfernen diesen Block, solange er noch dem
-entspricht, was ein solches Release aus Ihrem gemeinsamen Profil schreiben
-würde (siehe [Deinstallation](#deinstallation)). (Verhalten von Hermes gemäß
-den Seiten seines Benutzerhandbuchs zu
+als auch `apothem uninstall` entfernen diesen Block, wenn er noch dem
+entspricht, was ein solches Release aus Ihrem aktuellen gemeinsamen Profil
+schreiben würde (siehe [Deinstallation](#deinstallation), wann er stehen
+bleibt). (Verhalten von Hermes gemäß den Seiten seines Benutzerhandbuchs zu
 [Skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 und [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 gelesen am 2026-10-02.)
@@ -70,7 +70,10 @@ apothem verify --harness hermes
 Der Befehl verify bestätigt Folgendes:
 
 1. Die native Konfiguration existiert am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung

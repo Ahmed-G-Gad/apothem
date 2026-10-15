@@ -2,7 +2,7 @@
 title: "Instalação"
 description: "Visão geral da instalação do Apothem — oito canais de instalação, cada um com seus pré-requisitos, um comando pronto para copiar e uma etapa de verificação: o plugin do Claude Code, o shim do npm, os instaladores de uma única etapa, a extensão da família VS Code, as três extensões de bootstrap de linha de comando e o motor direto."
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,11 @@ e é executada a partir de um checkout no Python 3.10 ou mais recente do sistema
 
 **Dois pré-requisitos são compartilhados por todas as vias:** o **Python 3.10
 ou mais recente** do sistema no `PATH`, com os pacotes `click` e `rich`
-importáveis sob ele. As vias do shim do npm e dos plugins de ferramentas
-precisam adicionalmente do **Node.js 18 ou mais recente** para executar o
-`npx`. O Python 3.10 e o Node.js 18 e 20 já passaram do fim de vida upstream;
-eles continuam suportados e testados, mas versões mais recentes são preferíveis
+importáveis sob ele. O shim do npm (canal 2), a extensão da família VS Code
+(canal 4) e os bootstraps de linha de comando (canais 5–7) precisam
+adicionalmente do **Node.js 18 ou mais recente** para executar o `npx`. O
+Python 3.10 e o Node.js 18 e 20 já passaram do fim de vida upstream; eles
+continuam suportados e testados, mas versões mais recentes são preferíveis
 (consulte [Pré-requisitos de relance](#pré-requisitos-de-relance)). A seção
 própria de cada canal abaixo repete seus pré-requisitos exatos, um comando
 pronto para copiar e uma etapa de verificação.
@@ -81,8 +82,9 @@ tornam skills pessoais sob `~/.claude/skills/` sem prefixo, e uma skill pessoal
 `code-review` substitui o `/code-review` integrado (seu alias `/review` ainda
 executa o integrado). Dois nomes, `projectify` e `workflow`, são distribuídos
 tanto como comando quanto como skill; o Claude Code executa a skill quando
-ambos existem, então o plugin executa a skill e a instalação do motor grava a
-skill nesse espaço. Consulte [Comandos de barra](/docs/reference/commands)
+ambos existem, então o plugin executa a skill e a instalação do motor grava
+somente a skill, e não uma skill derivada do comando, em
+`~/.claude/skills/<name>/`. Consulte [Comandos de barra](/docs/reference/commands)
 para o catálogo completo de comandos.
 
 **Verifique:** execute `/plugin` dentro do Claude Code e confirme que
@@ -251,14 +253,14 @@ A extensão **Apothem** é instalada a partir de um pacote `apothem.vsix`:
 `code --install-extension apothem.vsix`, ou o comando *Install from VSIX…* do
 editor. O fluxo de trabalho de lançamento assina o pacote e o anexa a cada
 GitHub Release. Os lançamentos publicados antes de o fluxo de trabalho
-empacotar a extensão não trazem nenhum; quando o mais recente não o traz, gere
-o pacote a partir de um checkout com a versão do vsce travada em
-`.github/vsce/`, que exige Node.js 22 ou posterior: execute
+empacotar a extensão não trazem nenhum `.vsix`; quando o lançamento mais recente
+não o traz, gere o pacote a partir de um checkout com a versão do vsce travada
+em `.github/vsce/` (essa versão do vsce exige Node.js 22 ou posterior): execute
 `npm ci --prefix .github/vsce --ignore-scripts` e depois
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Uma listagem no [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-ainda não foi publicada. Uma única extensão cobre o VS Code e sua superfície de
-assistente companheiro no editor. Seus comandos de paleta (`Apothem: Install`,
+ainda não foi publicada. Uma única extensão cobre os editores da família VS
+Code. Seus comandos de paleta (`Apothem: Install`,
 `Verify`, `Update`, `Uninstall`, `Doctor`) executam o mesmo motor por meio do
 executor configurado (`npx @ahmed-g-gad/apothem@<extension version>` por padrão,
 de modo que a extensão executa a versão do motor com a qual foi distribuída;
@@ -397,15 +399,19 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 Substitua o nome do harness pelo adaptador que você instalou; consulte a
 [lista de harnesses](/docs/harnesses) para todos os nomes suportados. Para
 verificar de uma só vez cada adaptador instalado (sua verificação e seus
-comandos de hook), execute `apothem doctor` (ou
-`npx @ahmed-g-gad/apothem doctor`) na mesma forma. Para a via do plugin, execute
+comandos de hook), execute `doctor` no lugar de `verify --harness NAME`, na
+mesma forma que você usou acima: `apothem doctor`,
+`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` ou
+`npx @ahmed-g-gad/apothem doctor`. Para a via do plugin, execute
 `/plugin` dentro do Claude Code e confirme que **apothem** aparece listado como
 instalado.
 
 ## Pré-requisitos de relance
 
-- **Python 3.10 ou posterior** — cada via que executa o motor o procura
-  (`python3`, `python`, os nomes com versão e `py -3` no Windows).
+- **Python 3.10 ou posterior** — as vias que o localizam fazem isso pelo nome, e
+  os nomes diferem de uma via para outra. O shim do npm tenta `python3`,
+  `python` e depois `py -3`. Os instaladores tentam `python3`, `python` e os
+  nomes com versão, de `python3.14` até `python3.10`.
 - **`click` e `rich` importáveis** sob esse interpretador — as duas
   dependências voltadas ao terminal que o motor não incorpora. Os instaladores
   verificam ambas, indicam o que estiver faltando e se oferecem para instalá-lo
@@ -416,8 +422,9 @@ instalado.
   versão contra as quais o Apothem é testado
   (`<interpreter> -m pip install "click==…" "rich>=…"`); com `--json`, o mesmo
   erro chega como um envelope JSON com o código `runtime.dependency_missing`.
-- **Node.js 18 ou posterior** — apenas as vias do shim do npm e dos plugins de
-  ferramentas.
+- **Node.js 18 ou posterior** — apenas as vias que executam `npx`: o shim do npm
+  (2), a extensão da família VS Code (4) e os bootstraps de linha de comando
+  (5–7).
 - **Runtimes em fim de vida.** O Python 3.10 chegou ao fim de vida upstream em
   2026-10-01, e o Node.js 18 e o 20, em 2025-04-30 e 2026-04-30. O Apothem
   ainda os suporta como seus pisos declarados e testa cada um deles no CI, mas

@@ -2,7 +2,7 @@
 title: "Registre des environnements"
 description: "Référence technique du registre des adaptateurs d'environnement intégrés d'Apothem."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,10 +84,10 @@ sortie.
 Certaines cibles d'installation sont chargées par d'autres environnements que
 celui qui les écrit. Le registre consigne chacun de ces chemins dans
 `SHARED_ROOTS` avec un unique propriétaire (le seul adaptateur qui l'écrit) et
-les lecteurs dont la documentation éditeur le charge par défaut, avec les pages
-de l'éditeur pour preuve. Installer le propriétaire place le contenu d'Apothem
-devant chaque lecteur, et désinstaller le propriétaire le retire de chaque
-lecteur.
+les lecteurs dont la documentation éditeur le charge par défaut, ainsi que les
+pages de l'éditeur qui le montrent et la date à laquelle elles ont été
+récupérées. Installer le propriétaire place le contenu d'Apothem devant chaque
+lecteur, et désinstaller le propriétaire le retire de chaque lecteur.
 
 | Chemin | Propriétaire | Lecteurs |
 | --- | --- | --- |
@@ -101,10 +101,12 @@ lecteur.
 
 Le bloc Apothem qu'un propriétaire écrit dans un fichier d'instructions partagé
 ne désigne aucun outil unique comme son lecteur.
-`tests/unit/test_shared_roots.py` échoue lorsqu'une cible du registre est écrite
-par deux adaptateurs, ou porte le nom d'un fichier d'instructions inter-outils
-(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `copilot-instructions.md`), sans
-propriétaire déclaré.
+`tests/unit/test_shared_roots.py` échoue lorsque deux adaptateurs écrivent la
+même cible du registre, et lorsqu'une cible du registre nommée comme un fichier
+d'instructions inter-outils (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`copilot-instructions.md`) n'a aucun propriétaire déclaré. La seule exception est
+`~/.codex/AGENTS.md`, dont aucun autre environnement enregistré ne documente le
+chargement.
 
 ## Hooks de validation
 
@@ -112,7 +114,7 @@ Le registre reste synchronisé grâce à ces vérifications :
 
 | Vérification | Objectif |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirme que chaque adaptateur possède un épinglage de convention datant de moins de 90 jours, qui cite au moins une URL d'éditeur et n'a aucune cible de découverte en retard. La CI l'exécute à chaque pull request, chaque semaine et avant une publication. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirme que chaque adaptateur possède un épinglage de convention qui date d'au plus 90 jours, cite au moins une URL d'éditeur et n'a aucune cible de découverte en retard. La CI l'exécute à chaque pull request, chaque semaine et avant une publication. |
 | `python scripts/dev/check_vendor_urls.py` | Récupère chaque URL d'éditeur citée par les épinglages et les templates d'environnement, et échoue sur une page déplacée ou morte, y compris un nom d'hôte qui ne se résout plus ou un certificat dont la vérification échoue ; un dépassement de délai, une connexion refusée ou réinitialisée, ou une erreur serveur 5xx est signalé comme injoignable et ne le fait pas échouer. Le moniteur hebdomadaire des conventions l'exécute. |
 | `python -m apothem.conformity.gate --all .` | Exécute les vérifications de conformité de la documentation et de l'implémentation. |
 | `python -m pytest` | Exécute les tests de fixtures du registre et les tests de contrat des adaptateurs. |

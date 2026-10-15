@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptateur d'environnement Apothem pour Claude Code (GA)."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -112,7 +112,10 @@ apothem verify --harness claude-code
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -133,8 +136,17 @@ réécrit que le bloc Apothem situé entre ses sentinelles.
 apothem uninstall --harness claude-code
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur et retire
-le bloc Apothem de `CLAUDE.md`, en laissant votre propre texte en place.
+Supprime le bloc Apothem de `~/.claude/CLAUDE.md` et conserve tout autre texte
+qui s'y trouve. Le fichier n'est supprimé que lorsqu'il n'y reste plus rien
+d'autre. Supprime les entrées que l'adaptateur a ajoutées à
+`~/.claude/settings.json` (vos propres règles de permission, clés et
+gestionnaires de hook restent en place, et le fichier n'est supprimé que
+lorsque Apothem l'a créé et qu'il ne reste plus rien qui vous appartienne).
+Supprime aussi les fichiers Apothem de `~/.claude/agents/`, `~/.claude/rules/`,
+`~/.claude/skills/`, `~/.claude/statuslines/`, `~/.claude/output-styles/` et
+`~/.claude/.apothem/support/` ; les autres fichiers de ces dossiers restent en
+place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant d'être
+modifié ou supprimé.
 Le paquet `apothem` installé et le dépôt source ne sont pas affectés.
 
 ## Portail de conformité

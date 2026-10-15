@@ -1,10 +1,10 @@
 ---
 title: "Markdown Conventions"
-description: "Standardize Markdown flavor, heading structure, code fence declarations, internal link formats, authorship banners, and validator enforcement."
+description: "Standardize Markdown flavor, heading structure, code fence declarations, internal link formats, authorship headers, and validator enforcement."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical reference for Markdown shape and formatting across every authored `.md` artifact.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
+> **Canonical reference for Markdown shape and formatting across every authored `.md` and `.mdx` artifact.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
 
 ---
 
@@ -12,15 +12,15 @@ description: "Standardize Markdown flavor, heading structure, code fence declara
 
 GitHub-Flavored Markdown (GFM) is the host flavor. Every artifact renders correctly on GitHub's web UI, in the Fumadocs documentation site, and in standard Markdown-aware editors.
 
-## 2. Heading Hierarchy
+## 2. Heading hierarchy
 
-One H1 per file. Subsequent headings descend monotonically (H2 → H3 → H4) without skipping levels. Sentence-case headings; no ALL-CAPS, no Title Case Across Every Word. The H1 carries the document's primary title and IS the document's anchor in the docs-site nav.
+One H1 per file. Subsequent headings descend monotonically (H2 → H3 → H4) without skipping levels. Sentence-case headings; no ALL-CAPS, no Title Case Across Every Word. The H1 carries the document's primary title. On a docs-site page the frontmatter `title` renders as the H1 and is the page's anchor in the docs-site nav, so the page body starts at H2.
 
-## 3. Code Blocks
+## 3. Code blocks
 
 Fenced code blocks declare their language (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Untagged blocks suppress syntax highlighting and signal authoring drift; the markdownlint MD040 rule, configured in [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), enforces the language tag.
 
-## 4. Internal Links
+## 4. Internal links
 
 Internal cross-references use **site-root paths** (e.g., `[Authorship header](/docs/reference/authorship-header)`). Bare repository-relative paths with a `.md`/`.mdx` extension (`/docs/foo.md`) and full URLs to the same repo (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) are avoided for in-site links because they resist page renames and section reorganizations.
 
@@ -28,9 +28,9 @@ These `/docs/...` site-root paths — and the `/<locale>/docs/...` form for the 
 
 External links to mutable refs (`main`, `master`, `latest`, `HEAD`) are pinned to commit SHAs or release tags whenever the linked content's stability matters; volatile references are documented as such with a `{/* volatile */}` adjacent comment.
 
-## 5. Authorship Banner
+## 5. Authorship header
 
-Every Markdown artifact (with the exceptions enumerated at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) carries the canonical authorship-header banner in the HTML-comment variant per [Authorship header](/docs/reference/authorship-header). Without frontmatter, the banner is line 1. With YAML frontmatter, the frontmatter stays at byte 0 and the banner follows the closing `---`.
+Every Markdown artifact (with the exceptions enumerated at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) carries the canonical authorship header, the single `SPDX-License-Identifier: MIT` line, in the comment variant of its filetype per [Authorship header](/docs/reference/authorship-header): an HTML comment on `.md` files and a `{/* ... */}` comment on `.mdx` files. Without frontmatter, the header line is line 1. With YAML frontmatter, the frontmatter stays at byte 0 and the header line follows the closing `---`.
 
 ## 6. Validators
 

@@ -1,8 +1,8 @@
 ---
 title: "Open-Claw"
-description: "Open-Claw(미리 보기)용 Apothem 하니스 어댑터."
+description: "Open-Claw(미리 보기)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ OpenClaw의 네이티브 구성은 JSON이며, 머티리얼라이저는 빈 JSON
 인용(`rules/<name>.md`, `templates/...`, `hooks/...`)이 해석되는 기준인
 `~/.openclaw/.apothem/support/` 아래의 절대 디렉터리를 명시합니다.
 
-## 프로필-네이티브 구성 매핑
+## 프로필에서 네이티브 구성으로의 매핑
 
 어댑터는 Apothem의 공유 프로필을 읽지만 구성 키는 작성하지 않습니다. 새 파일이거나
 비어 있는 `openclaw.json`은 빈 객체로 작성되고, 기존 파일은 자신의 키를
@@ -85,8 +85,10 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거합니다.
-공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+어댑터가 추가한 항목, 즉 프로필 문서와 지원 트리를 제거합니다. `openclaw.json`에
+있는 여러분의 키는 그대로 남으며, 이 파일은 Apothem이 직접 만들었고 여러분의
+항목이 하나도 남아 있지 않은 경우에만 삭제됩니다. 공유 프로필 YAML과 Apothem
+엔진은 영향을 받지 않습니다.
 
 ## 적합성 게이트
 

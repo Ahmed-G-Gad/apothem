@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "适用于 Antigravity（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,8 +66,7 @@ apothem update --harness antigravity
 apothem uninstall --harness antigravity
 ```
 
-移除适配器写入的原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+从 `~/.gemini/GEMINI.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。同时从插件文件夹 `~/.gemini/antigravity-cli/plugins/apothem/` 中的 `plugin.json` 移除 Apothem 的键并保留你自己的键，并移除该文件夹 `skills/`、`rules/`、`agents/` 和 `.apothem/support/` 子文件夹中的 Apothem 文件；其中的其他文件保持不变。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 

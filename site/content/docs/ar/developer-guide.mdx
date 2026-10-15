@@ -2,7 +2,7 @@
 title: "المساهمة في Apothem — دليل المطوّر"
 description: "صُن منظومة Apothem ووسّعها بتأليف القواعد والأوامر والمساعِدات والمهارات والخطّافات وفق المخططات المرجعية ومتطلّبات البيانات الأمامية وإجراءات التحقّق."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,12 @@ sourceHash: "04ae410c0eeaf642"
 
 ## مرجع سريع: أنواع المُنتَجات
 
-تضمّ منظومة <bdi>Apothem</bdi> خمسة أنواع من المُنتَجات، لكلٍّ منها أغراض محدّدة
-ومتطلّبات خاصة بالبيانات الأمامية.
+يغطّي هذا الدليل خمسة أنواع من المُنتَجات، لكلٍّ منها غرض محدّد. تحمل القواعد
+والأوامر والمساعِدات والمهارات بيانات أمامية بصيغة <bdi>YAML</bdi>؛ أمّا الخطّافات
+فتُسجَّل في <bdi>`hooks.json`</bdi> و<bdi>`settings.json`</bdi> ولا تحمل بيانات أمامية.
+وأنماط الإخراج صنف إضافي من المُنتَجات، له مفتاحان إلزاميان في البيانات الأمامية هما
+<bdi>`name`</bdi> و<bdi>`description`</bdi>؛ راجع
+[مخطط البيانات الأمامية](/docs/reference/frontmatter-schema).
 
 | المُنتَج | المسار | الغرض | متى يُنشأ |
 | -------- | ---- | ------- | -------------- |
@@ -117,7 +121,7 @@ sourceHash: "04ae410c0eeaf642"
 - **الأوامر:** <bdi>`{name}.md`</bdi>
 - **المساعِدات:** <bdi>`{name}.md`</bdi>
 - **المهارات:** داخل المجلّد <bdi>`src/apothem/skills/{name}/SKILL.md`</bdi> (بحالة الأحرف نفسها تمامًا: <bdi>`SKILL.md`</bdi>)
-- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل مسار النص البرمجي ووسائطه. ويشغّل ذلك القالب الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. أمّا إضافة <bdi>Claude Code</bdi> فتسجّل الخطّافات بدلًا من ذلك في <bdi>`src/apothem/hooks/hooks.json`</bdi>، بوصفها أوامر صدفة تشغّل <bdi>`hooks/lib/bootstrap.sh`</bdi> عبر <bdi>`bash`</bdi>. سجّل أي خطّاف جديد في <bdi>`hooks.json`</bdi> وفي قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
+- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل مسار النص البرمجي ووسائطه. ويشغّل ذلك القالب الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. أمّا إضافة <bdi>Claude Code</bdi> فتسجّل الخطّافات بدلًا من ذلك في <bdi>`src/apothem/hooks/hooks.json`</bdi>، بوصفها أوامر صدفة تشغّل <bdi>`hooks/lib/bootstrap.sh`</bdi> عبر <bdi>`bash`</bdi>؛ ويحدّد ذلك الملف الهيكلي موضع <bdi>Python</bdi> ويشغّل <bdi>`dispatch.py`</bdi>، فتبقى المعالجات بلغة <bdi>Python</bdi>. سجّل أي خطّاف جديد في <bdi>`hooks.json`</bdi> وفي قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
 
 ### الإحالات المتبادلة
 
@@ -132,11 +136,11 @@ sourceHash: "04ae410c0eeaf642"
 
 ## قابلية النقل: <bdi>Windows</bdi> مقابل <bdi>Unix</bdi>
 
-يجب على كل أمر أن يُعلن صراحةً حالة قابليته للنقل في الحقل <bdi>`portability`</bdi>،
-ويجوز ذلك للمساعِد. ولا تحمل المهارات والقواعد وأنماط الإخراج حقل
+يجب على كل أمر أن يُعلن صراحةً حالة قابليته للنقل في الحقل <bdi>`portability`</bdi>.
+ويجوز للمساعِد أن يُعلنها. ولا تحمل المهارات والقواعد وأنماط الإخراج حقل
 <bdi>`portability`</bdi>.
 
-### عامّ (الافتراضي)
+### عامّ
 
 - يعمل بالطريقة نفسها على <bdi>Windows</bdi> و<bdi>macOS</bdi> و<bdi>Linux</bdi>
 - لا افتراضات بشأن الصدفة
@@ -209,7 +213,7 @@ alwaysApply: false
 
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`vX.Y.(Z+1)`</bdi> (<bdi>PATCH</bdi>: إصلاح خطأ مطبعي)
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`vX.(Y+1).0`</bdi> (<bdi>MINOR</bdi>: إضافة قسم اختياري جديد)
-- <bdi>`vX.Y.Z`</bdi> → <bdi>`v(X+1).0.0`</bdi> (<bdi>MAJOR</bdi>: إعلان استقرار العقد)
+- <bdi>`v0.Y.Z`</bdi> → <bdi>`v(0+1).0.0`</bdi> (<bdi>MAJOR</bdi>: إعلان استقرار العقد؛ وتبدأ المُنتَجات الجديدة عند <bdi>`v0.Y.Z`</bdi>)
 - <bdi>`vX.Y.Z`</bdi> → <bdi>`v(X+1).0.0`</bdi> (<bdi>MAJOR</bdi>: حذف حقل إلزامي من البيانات الأمامية)
 
 ارفع <bdi>`version`</bdi> و<bdi>`updated`</bdi> معًا في كل تعديل يغيّر السلوك في مُنتَج
@@ -298,7 +302,7 @@ alwaysApply: true
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-اختر جدول العائلة الذي يطابق مجالُ اهتمامه القاعدةَ.
+اختر جدول العائلة الذي يتّفق مجال اهتمامه مع القاعدة.
 
 ### 5. ألحِق بملف <bdi>CHANGELOG.md</bdi>
 
@@ -320,8 +324,9 @@ Invoke the ecosystem-audit skill with --focus rules --fix
 
 ### 1. حدّد الدور
 
-لا يُقصَد **أبدًا** أن يستدعي إطار العمل الأوامر بشكل منفرد. فهي سيرورات عمل
-يُطلقها المستخدم. اسأل:
+الأوامر سيرورات عمل يُطلقها المستخدم. ولا يشغّل النموذج أمرًا منها من تلقاء نفسه إلا
+عندما يكون إعداد <bdi>`disable-model-invocation`</bdi> الخاص به <bdi>`false`</bdi>
+(الخطوة 2). اسأل:
 
 - هل هذا سير عمل يكتب فيه المستخدم <bdi>`/command-name`</bdi>؟
 - هل يُنسِّق خطوات متعدّدة؟
@@ -355,8 +360,8 @@ allowed-tools: "Read, Glob, Grep"
 أمر؛ أضف صفًّا للأمر الجديد. وأبقِ
 <bdi>`allowed-tools`</bdi> للقراءة فقط: فإطار العمل الذي يلتزم به يُشغِّل تلك الأدوات دون
 أن يسأل. لا تمنح أداةً ذات آثار جانبية إلا بوصفها قاعدة محدودة النطاق، مثل
-<bdi>`Bash(git log *)`</bdi>؛ إذ يرفض المخطط <bdi>`"*"`</bdi> والأدوات المجرّدة <bdi>`Bash`</bdi> و<bdi>`PowerShell`</bdi>
-و<bdi>`Write`</bdi> و<bdi>`Edit`</bdi> و<bdi>`NotebookEdit`</bdi> و<bdi>`WebFetch`</bdi>.
+<bdi>`Bash(git log *)`</bdi>؛ إذ يرفض المخطط <bdi>`"*"`</bdi> وأيًّا من <bdi>`Bash`</bdi> أو <bdi>`PowerShell`</bdi>
+أو <bdi>`Write`</bdi> أو <bdi>`Edit`</bdi> أو <bdi>`NotebookEdit`</bdi> أو <bdi>`WebFetch`</bdi> إذا كُتب دون نطاق.
 
 ### 3. اكتب المحتوى
 
@@ -370,7 +375,7 @@ allowed-tools: "Read, Glob, Grep"
 
 ### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
-أضف صفًّا إلى جدول الأوامر المطابق في <bdi>`src/apothem/commands/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
+أضف صفًّا إلى جدول قسم الأمر في <bdi>`src/apothem/commands/README.md`</bdi>، إضافةً إلى صفّ جدول الاستدعاء من الخطوة 2؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
 
 ### 5. تحقّق
 
@@ -498,7 +503,7 @@ argument-hint: "[args]"               # optional; if userInvocable
 
 ### 4. حدّث ملف <bdi>README</bdi> وملف <bdi>CHANGELOG.md</bdi>
 
-أضف صفًّا إلى جدولَي الفهرس ومحتويات المجلّد في <bdi>`src/apothem/skills/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
+أضف صفًّا إلى جدول الفهرس، وصفًّا لكل ملف من ملفات المهارة إلى جدول محتويات المجلّد، في <bdi>`src/apothem/skills/README.md`</bdi>؛ وأضف صفًّا في <bdi>CHANGELOG</bdi> تحت قسم <bdi>`### Added`</bdi> الخاص بالإصدار التالي.
 
 ### 5. تحقّق
 
@@ -515,7 +520,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] يستخدم الحقل <bdi>`name`</bdi> صيغة <bdi>kebab-case</bdi>
 - [ ] <bdi>`version`</bdi> (للأصناف ذات النسخ فقط؛ فالقواعد لا تحمل نسخة) دلالي (<bdi>`MAJOR.MINOR.PATCH`</bdi>) ورُفِع إن تغيّر السلوك
 - [ ] <bdi>`updated`</bdi> يطابق تاريخ اليوم لأيّ مُنتَج عدّلته يحمل هذا الحقل
-- [ ] الحقل <bdi>`portability`</bdi> مضبوط وصالح (للأوامر والمساعِدات فقط)
+- [ ] الحقل <bdi>`portability`</bdi> مضبوط وصالح (إلزامي في الأوامر، واختياري في المساعِدات)
 - [ ] يحمل <bdi>CHANGELOG.md</bdi> التغيير في الفئة المناسبة تحت قسم الإصدار التالي
 - [ ] لا إحالات داخلية خاصة بالخطط (امتثالًا لـ <bdi>CM-7</bdi>)
 - [ ] الإحالات المتبادلة متّسقة مع المُنتَجات الأخرى
@@ -678,9 +683,10 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### اختبارات الأداء المرجعية
 
-يُشغِّل <bdi>`make benchmarks`</bdi> برامج التشغيل الخاصة بكل صنف تحت <bdi>`src/apothem/benchmarks/`</bdi>.
-ويخرج كلٌّ منها بالرمز <bdi>`0`</bdi> عند النجاح، أو <bdi>`1`</bdi> عند تجاوز الميزانية، أو <bdi>`2`</bdi> عند
-الخطأ (لم يُنفَّذ التشغيل المقيس)، أو <bdi>`3`</bdi> عند عدم القياس.
+يُشغِّل <bdi>`make benchmarks`</bdi> برامج التشغيل الخاصة بكل صنف تحت <bdi>`src/apothem/benchmarks/`</bdi>،
+باستثناء <bdi>`bench_agents.py`</bdi>. ويخرج كلٌّ من برامج التشغيل بالرمز <bdi>`0`</bdi> عند النجاح،
+أو <bdi>`1`</bdi> عند تجاوز الميزانية، أو <bdi>`2`</bdi> عند الخطأ (لم يُنفَّذ التشغيل المقيس)،
+أو <bdi>`3`</bdi> عند عدم القياس.
 
 - يُشغِّل <bdi>`bench_hooks.py`</bdi> كل أمر <bdi>`shell: bash`</bdi> يسجّله <bdi>`hooks/hooks.json`</bdi>،
   كما هو مكتوب، على حمولة حقيقية لكل حدث ومُطابِق، ويُبلغ عن الزمن الإجمالي

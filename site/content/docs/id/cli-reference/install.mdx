@@ -2,7 +2,7 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,8 @@ Memuat dan memvalidasi profil bersama, memilih adapter bernama atau himpunan
 konfigurasi native-harness beserta kohor pendukung. Adapter berlingkup-proyek
 memerlukan `--project PATH`.
 
-Alias bentuk-kontinu `apothem installing` di-resolve ke handler yang sama.
+Alias bentuk-kontinu `apothem installing` (juga diterima sebagai
+`apothem Installing`) di-resolve ke handler yang sama.
 
 ## Eksekusi pertama tanpa profil
 
@@ -49,7 +50,17 @@ tersebut. Sebelum berkas apa pun ditulis, perintah ini mencetak target konkret
 yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan
 yang berada di bawah direktori home Anda.
 
-Ketika pilihan tersebut menulis di luar root proyek, konfirmasi interaktif menjaga penulisan yang berakar di home. `--yes`, shell non-interaktif (tanpa TTY), `--dry-run`, dan `--format json` masing-masing melanjutkan tanpa meminta konfirmasi. Hanya `--dry-run` yang tidak menulis apa pun; `--format json` melewati pratinjau dan prompt konfirmasi tetapi tetap melakukan penulisan. Menolak prompt direktori home membatalkan proses sebelum penulisan instalasi. Dengan `--clean`, langkah awal-bersih dijalankan lebih dulu di bawah konfirmasi per-target tersendiri: ia menulis cadangan di bawah `~/.apothem/backups` dan menghapus target yang dikonfirmasinya. Penghapusan tersebut dan cadangan tetap berada di tempatnya ketika prompt instalasi ditolak.
+Ketika pilihan tersebut menulis di luar root proyek, sebuah konfirmasi
+interaktif menjaga penulisan yang berakar di direktori home. `--yes`, shell
+non-interaktif (tanpa TTY), `--dry-run`, dan `--format json` masing-masing
+melanjutkan tanpa meminta konfirmasi. Hanya `--dry-run` yang tidak menulis apa
+pun; `--format json` melewati pratinjau dan prompt konfirmasi tetapi tetap
+melakukan penulisan. Menolak prompt direktori home membatalkan proses sebelum
+pemasangan menulis. Dengan `--clean`, langkah awal bersih dijalankan lebih dulu
+di bawah konfirmasi per target tersendiri: langkah itu menulis cadangan di bawah
+`~/.apothem/backups` dan menghapus target yang dikonfirmasinya. Penghapusan
+tersebut dan cadangannya tetap berada di tempatnya ketika prompt pemasangan
+ditolak.
 
 ## Catatan kemampuan
 
@@ -114,7 +125,7 @@ membuang komentar, koma di akhir, dan sintaks JSON5. Oleh karena itu:
 | `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mempratinjau pemasangan tanpa menulis berkas. |
 | `--clean`, `--fresh` | Awal bersih opt-in: mencadangkan dan menghapus keadaan pemasangan per-harness sebelumnya sebelum memasang. |
-| `--yes` | Melewati konfirmasi per target selama penghapusan awal-bersih (wajib untuk eksekusi `--clean` non-interaktif). |
+| `--yes` | Melewati konfirmasi per target selama penghapusan awal bersih (wajib untuk eksekusi `--clean` non-interaktif). |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan alih-alih catatan terkelompok per harness. |
@@ -187,7 +198,7 @@ run):
 }
 ```
 
-Dry run awal-bersih mempratinjau kedua fase dalam satu dokumen: pratinjau
+Dry run awal bersih mempratinjau kedua fase dalam satu dokumen: pratinjau
 penghapusan di bawah `clean` dan pratinjau penulisan baru di bawah `results`.
 
 Galat validasi yang diharapkan menggunakan amplop yang sama dan menyertakan

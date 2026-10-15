@@ -1,8 +1,8 @@
 ---
 title: "Runbook do ciclo de lançamento"
-description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até o despacho opcional da publicação no npm."
+description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -146,15 +146,19 @@ confirmações de upload dos ativos.
 
 ### 2.4 Confirmar a publicação no npm
 
-O push da tag também executa `publish-npm.yml`. Aprove a implantação do ambiente
-`release` quando solicitado. O fluxo de trabalho publica
-`@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da publicação confiável do
-npm (OIDC); nenhum token de registro é armazenado no repositório. Em seguida,
-confirme a prontidão:
+O push da tag também executa `publish-npm.yml` ao lado de `release.yml`. O fluxo
+de trabalho do npm não espera pelo fluxo de trabalho de lançamento; a aprovação
+do ambiente `release` é o portão. Quando o fluxo de trabalho de lançamento da
+§2.3 tiver terminado, confirme a prontidão:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Em seguida, aprove a implantação do ambiente `release` quando solicitado. O
+fluxo de trabalho publica `@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da
+publicação confiável do npm (OIDC); nenhum token de registro é armazenado no
+repositório.
 
 Para publicar novamente após uma execução com falha, despache o fluxo de
 trabalho para a mesma tag (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`).
@@ -164,7 +168,7 @@ npm são imutáveis.
 ## 3. Superfícies de distribuição
 
 Cada superfície tem um comando de verificação que responde "o lançamento
-aterrissou aqui?":
+chegou aqui?":
 
 | # | Superfície | Artefato | Verificação |
 |---|---|---|---|
@@ -288,11 +292,11 @@ de lançamento e o publicador do npm:
 | Publicação no npmjs.com rejeitada | O job do npm sai com código diferente de zero durante `npm publish`; um `404` do registro durante `PUT` é uma incompatibilidade de autorização / publicador confiável, não prova de que o código do pacote está ausente | Verifique se o npm Trusted Publishing para `@ahmed-g-gad/apothem` nomeia o proprietário `ahmed-g-gad`, o repositório `apothem`, o fluxo de trabalho `publish-npm.yml` e a ação permitida `npm publish`; confirme que o job é executado com a versão do Node e o piso OIDC da CLI do npm fixados no fluxo de trabalho |
 | Tag visível, mas ativos ausentes | `gh release view vX.Y.Z` retorna um lançamento vazio | Execute novamente o job de publicação do fluxo de trabalho de lançamento; ele edita o lançamento existente e reenvia todos os ativos. Exclua a tag e marque-a novamente somente quando nada da tag tiver chegado aos usuários (nenhum ativo, nenhuma versão do npm); caso contrário, corrija para frente com o próximo lançamento de patch ([runbook de recuperação de lançamento](/docs/runbooks/release-recovery) §2) |
 
-Se um ciclo de recuperação não conseguir aterrissar uma superfície em um único
-passe de diagnóstico, a superfície é registrada como uma falha conhecida nas
-notas de lançamento, com um link para a issue aberta; os usuários a jusante são
-direcionados às superfícies que funcionam enquanto a quebrada é corrigida em um
-lançamento de patch.
+Se um ciclo de recuperação não conseguir fazer uma superfície chegar ao destino
+em um único passe de diagnóstico, a superfície é registrada como uma falha
+conhecida nas notas de lançamento, com um link para a issue aberta; os usuários
+a jusante são direcionados às superfícies que funcionam enquanto a quebrada é
+corrigida em um lançamento de patch.
 
 ## 7. Referências cruzadas
 

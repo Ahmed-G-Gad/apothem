@@ -1,12 +1,12 @@
 ---
 title: "Conventions Markdown"
-description: "Normaliser la variante Markdown, la structure des titres, la déclaration des blocs de code, le format des liens internes, les bannières de paternité et leur application par les validateurs."
+description: "Normaliser la variante Markdown, la structure des titres, la déclaration des blocs de code, le format des liens internes, les en-têtes de paternité et leur application par les validateurs."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence canonique pour la forme et la mise en forme Markdown de chaque artefact `.md` rédigé.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; cette page est la référence autonome que citent les contributeurs en aval.
+> **Référence canonique pour la forme et la mise en forme Markdown de chaque artefact `.md` et `.mdx` rédigé.** Le résumé de la section Conventions de [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) est la déclaration en ligne ; cette page est la référence autonome que citent les contributeurs en aval.
 
 ---
 
@@ -16,7 +16,7 @@ GitHub-Flavored Markdown (GFM) est la variante hôte. Chaque artefact s'affiche 
 
 ## 2. Hiérarchie des titres
 
-Un seul H1 par fichier. Les titres suivants descendent de façon monotone (H2 → H3 → H4) sans sauter de niveau. Titres en casse de phrase ; pas de TOUT EN MAJUSCULES, pas de Majuscule À Chaque Mot. Le H1 porte le titre principal du document et EST l'ancre du document dans la navigation du site de documentation.
+Un seul H1 par fichier. Les titres suivants descendent de façon monotone (H2 → H3 → H4) sans sauter de niveau. Titres en casse de phrase ; pas de TOUT EN MAJUSCULES, pas de Majuscule À Chaque Mot. Le H1 porte le titre principal du document. Sur une page du site de documentation, le `title` du frontmatter s'affiche comme H1 et sert d'ancre à la page dans la navigation du site de documentation ; le corps de la page commence donc au niveau H2.
 
 ## 3. Blocs de code
 
@@ -30,9 +30,9 @@ Ces chemins `/docs/...` depuis la racine du site, ainsi que la forme `/<locale>/
 
 Les liens externes vers des références mutables (`main`, `master`, `latest`, `HEAD`) sont épinglés à des SHA de commit ou à des étiquettes de publication chaque fois que la stabilité du contenu lié importe ; les références volatiles sont documentées comme telles par un commentaire adjacent `{/* volatile */}`.
 
-## 5. Bannière de paternité
+## 5. En-tête de paternité
 
-Chaque artefact Markdown (hors exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) porte la bannière canonique d'en-tête de paternité, dans la variante en commentaire HTML définie dans [En-tête de paternité](/docs/reference/authorship-header). Sans frontmatter, la bannière occupe la ligne 1. Avec un frontmatter YAML, le frontmatter reste à l'octet 0 et la bannière suit le `---` de fermeture.
+Chaque artefact Markdown (hors exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) porte l'en-tête de paternité canonique, la ligne unique `SPDX-License-Identifier: MIT`, dans la variante de commentaire propre à son type de fichier, selon [En-tête de paternité](/docs/reference/authorship-header) : un commentaire HTML sur les fichiers `.md` et un commentaire `{/* ... */}` sur les fichiers `.mdx`. Sans frontmatter, la ligne d'en-tête est la ligne 1. Avec un frontmatter YAML, le frontmatter reste à l'octet 0 et la ligne d'en-tête suit le `---` de fermeture.
 
 ## 6. Validateurs
 

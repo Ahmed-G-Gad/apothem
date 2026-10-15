@@ -2,7 +2,7 @@
 title: "install"
 description: "Référence de la CLI pour la commande apothem install."
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,8 +23,8 @@ l'ensemble `all` couvrant tout le registre, valide le plan de matérialisation,
 puis écrit la configuration native de l'environnement ainsi que les cohortes de
 support. Les adaptateurs à portée de projet exigent `--project PATH`.
 
-L'alias en forme continue `apothem installing` se résout vers le même
-gestionnaire.
+L'alias en forme continue `apothem installing` (également accepté sous la forme
+`apothem Installing`) se résout vers le même gestionnaire.
 
 ## Première exécution sans profil
 
@@ -53,7 +53,17 @@ affiche les cibles concrètes regroupées sous deux en-têtes : celles situées 
 l'intérieur de la racine du projet et celles situées sous votre répertoire
 personnel.
 
-Lorsque la sélection écrit en dehors de la racine du projet, une confirmation interactive protège les écritures enracinées dans le répertoire personnel. `--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json` poursuivent chacun sans demander de confirmation. Seul `--dry-run` n'écrit rien ; `--format json` ignore l'aperçu et l'invite de confirmation, mais effectue tout de même les écritures. Refuser l'invite du répertoire personnel interrompt l'installation avant toute écriture. Avec `--clean`, l'étape de remise à zéro s'exécute d'abord, sous sa propre confirmation par cible : elle écrit une sauvegarde sous `~/.apothem/backups` et supprime les cibles qu'elle confirme. Ces suppressions et la sauvegarde restent en place lorsque l'invite d'installation est refusée.
+Lorsque la sélection écrit en dehors de la racine du projet, une confirmation
+interactive protège les écritures enracinées dans le répertoire personnel.
+`--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json`
+poursuivent chacun sans demander de confirmation. Seul `--dry-run` n'écrit
+rien ; `--format json` ignore l'aperçu et l'invite de confirmation, mais
+effectue tout de même les écritures. Refuser l'invite du répertoire personnel
+interrompt l'installation avant que celle-ci n'écrive. Avec `--clean`, l'étape de
+remise à zéro s'exécute d'abord, sous sa propre confirmation par cible : elle
+écrit une sauvegarde sous `~/.apothem/backups` et supprime les cibles qu'elle
+confirme. Ces suppressions et la sauvegarde restent en place lorsque l'invite
+d'installation est refusée.
 
 ## Notes sur les capacités
 
@@ -65,7 +75,7 @@ seule note groupée par environnement (par exemple
 sous `--verbose`, chaque capacité affiche sa propre ligne de justification. Tout
 autre avertissement d'adaptateur s'affiche aussi sur sa propre ligne `Warning:`
 en mode plain, par exemple l'avertissement de Zed qui nomme un fichier
-d'instructions masqué par le nouveau `.rules`. L'enveloppe `--format json`
+d'instructions que le nouveau `.rules` masque. L'enveloppe `--format json`
 porte toujours le tableau `warnings` complet, quel que soit le niveau de
 détail.
 

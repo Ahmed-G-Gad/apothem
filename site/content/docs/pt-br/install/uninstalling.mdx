@@ -2,7 +2,7 @@
 title: "Desinstalação"
 description: "Remova o Apothem e limpe as configurações de harness."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,40 +20,51 @@ apothem uninstall --harness cursor --project /path/to/project
 apothem uninstall --harness all --project /path/to/project --yes
 ```
 
-Passe `--yes` para pular a solicitação de confirmação por harness.
+Passe `--yes` para pular o prompt de confirmação de cada harness.
 
 ## Remova o motor
 
-A remoção corresponde ao canal de instalação que você usou:
+A remoção corresponde ao canal de instalação que você usou. Os números dos
+canais são os da
+[tabela de canais de instalação](/docs/install#escolha-um-canal):
 
-- **Plugin do Claude Code** — remova o plugin de dentro do Claude Code:
+- **Plugin do Claude Code (canal 1)** — remova o plugin de dentro do Claude Code:
   `/plugin uninstall apothem@apothem` (a entrada do marketplace pode ser
   removida com `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — nada a remover; o `npx` é executado a partir do seu cache. Limpe-o
-  com `npm cache clean --force` se quiser eliminar a cópia em cache.
-- **Instalador de uma única etapa** — execute o script de desinstalação
-  correspondente a partir do checkout: `scripts/installer/uninstall.sh` (POSIX)
-  ou `scripts/installer/uninstall.ps1` (PowerShell). Ambos pedem confirmação
-  antes de remover e recusam alvos inseguros.
-- **Extensão da família VS Code** — execute **Apothem: Uninstall** na paleta de
-  comandos primeiro, para remover as configurações de harness, e depois remova a
-  extensão na visualização Extensões ou com
+- **npx (canal 2)** — nada a remover; o `npx` é executado a partir do seu cache.
+  Limpe-o com `npm cache clean --force` se quiser eliminar a cópia em cache.
+- **Instalador de uma única etapa (canal 3)** — execute o script de
+  desinstalação correspondente a partir do checkout:
+  `scripts/installer/uninstall.sh` (POSIX) ou `scripts/installer/uninstall.ps1`
+  (PowerShell). Ambos pedem confirmação antes de remover e recusam alvos
+  inseguros.
+- **Extensão da família VS Code (canal 4)** — execute **Apothem: Uninstall** na
+  paleta de comandos primeiro, para remover as configurações de harness, e depois
+  remova a extensão na visualização Extensões ou com
   `code --uninstall-extension ahmed-g-gad.apothem`. Por padrão, a extensão
   executa o motor por meio do `npx`, de modo que a entrada **npx** acima cobre o
   cache.
 - **Bootstraps de linha de comando (canais 5–7)** — remova a extensão ou o
   plugin com a ferramenta do respectivo host depois que as configurações de
-  harness tiverem sido removidas. O bootstrap apenas adiciona contexto do
-  assistente (um arquivo de contexto, um comando ou uma skill) que chama o motor
-  por meio do `npx`, de modo que nada mais permanece. Os hosts de extensão dos
-  canais 5 e 6 aceitam um comando de desinstalação; para o host de plugin do
-  canal 7, desinstale `apothem` no navegador de plugins dele.
+  harness tiverem sido removidas. Os hosts:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  O bootstrap apenas adiciona contexto do assistente (um arquivo de contexto,
+  um comando ou uma skill) que chama o motor por meio do `npx`, de modo que nada
+  mais permanece. Os hosts de extensão dos canais 5 e 6 aceitam um comando de
+  desinstalação; para o host de plugin do canal 7, desinstale `apothem` no
+  navegador de plugins dele.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Motor direto** — nada a desinstalar; exclua o clone depois que as
+- **Motor direto (canal 8)** — nada a desinstalar; exclua o clone depois que as
   configurações de harness forem removidas.
 - **Backups e estado** — os backups de instalação ficam sob
   `~/.apothem/backups/` e o livro-razão de instalação sob `~/.apothem/state/`.
@@ -79,6 +90,11 @@ A remoção corresponde ao canal de instalação que você usou:
   de hook permanecem. A desinstalação remove somente as chaves e as entradas de
   lista que o livro-razão de instalação registra como do Apothem (consulte
   [Configurações](/docs/reference/settings#mesclagem-no-seu-próprio-arquivo-de-configurações)).
+- Os armazenamentos de dados compartilhados sob `.apothem/` na raiz de
+  instalação (`memory/`, `contexts/`, `learning/`) permanecem enquanto outro
+  harness instalado na mesma raiz ainda os usar. Desinstalar o último harness
+  nessa raiz copia cada armazenamento para `~/.apothem/backups/` primeiro e
+  depois o remove com tudo o que há dentro dele.
 - As suítes de planejamento sob `<project>/.apothem/plans/` (e o legado `<project>/.plans/`) não são afetadas.
 
 ## Diretórios
@@ -91,5 +107,5 @@ instalação nunca são removidos.
 
 Para limpar completamente uma raiz de harness, remova o caminho nativo do
 harness documentado nas [páginas de referência de harnesses](/docs/harnesses)
-depois de confirmar que você fez backup de quaisquer regras, helpers ou
+depois de confirmar que você fez backup de quaisquer regras, auxiliares ou
 arquivos de perfil personalizados que deseja manter.

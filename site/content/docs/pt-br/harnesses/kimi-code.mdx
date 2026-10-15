@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptador de harness do Apothem para o Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,9 +65,11 @@ personalização de
 O Kimi Code lê as instruções do projeto de `AGENTS.md` ou de
 `.kimi-code/AGENTS.md` e reconhece `.kimi-code/mcp.json` como a superfície MCP
 de propriedade do operador; o Apothem nomeia essa superfície, mas não redige
-nenhuma entrada nela. A superfície de instruções renderizada conduz o projeto
-diretamente. O Kimi Code não expõe nenhuma superfície de arquivos de statusline
-ou de output-style, então esses cohorts não são materializados.
+nenhuma entrada nela. Dos dois arquivos de instruções, o adaptador grava apenas
+o `AGENTS.md` da raiz do projeto, que o Kimi Code lê como instruções do projeto;
+a documentação do Kimi Code não diz qual dos dois arquivos prevalece quando
+ambos existem. O Kimi Code não expõe nenhuma superfície de arquivos de
+statusline ou de output-style, então esses cohorts não são materializados.
 
 O Kimi Code roda sobre a família de modelos Kimi da Moonshot; consulte a
 [referência de configuração do fornecedor](https://moonshotai.github.io/kimi-code/en/configuration/config-files)

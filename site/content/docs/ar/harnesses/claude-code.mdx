@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -109,7 +109,9 @@ apothem verify --harness claude-code
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -129,8 +131,16 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل ويَنزِع كتلة <bdi>Apothem</bdi> من
-<bdi>`CLAUDE.md`</bdi>، تاركًا نصّك الخاص في مكانه.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.claude/CLAUDE.md`</bdi> ويُبقي أي نص آخر
+فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل المدخلات التي أضافها
+المحوّل إلى <bdi>`~/.claude/settings.json`</bdi> (تبقى قواعد الأذونات والمفاتيح
+ومعالجات الخطّافات الخاصة بك، ولا يُحذَف الملف إلا عندما يكون <bdi>Apothem</bdi> هو
+من أنشأه ولا يبقى فيه شيء يخصّك). ويُزيل كذلك ملفات <bdi>Apothem</bdi> في
+<bdi>`~/.claude/agents/`</bdi>، و<bdi>`~/.claude/rules/`</bdi>،
+و<bdi>`~/.claude/skills/`</bdi>، و<bdi>`~/.claude/statuslines/`</bdi>،
+و<bdi>`~/.claude/output-styles/`</bdi>، و<bdi>`~/.claude/.apothem/support/`</bdi>؛
+وتبقى الملفات الأخرى في تلك المجلدات. يُنسَخ كل ملف احتياطيًا تحت
+<bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو إزالته.
 لا تتأثّر حزمة <bdi>`apothem`</bdi> المُثبَّتة ولا مستودع المصدر.
 
 ## بوابة المطابقة

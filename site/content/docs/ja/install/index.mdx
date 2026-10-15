@@ -2,7 +2,7 @@
 title: "インストール"
 description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップがあります: Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,7 @@ Apothem は 2 分未満でインストールでき、既存のハーネス構成
 どの経路も同じ自己完結型エンジンを実行します——ソースツリーはベンダリングした依存関係を同梱しており、システムの Python 3.10 以降でチェックアウトから実行されます（[自己完結型ランタイム](/docs/architecture/self-contained-runtime)を参照）。
 
 **すべての経路に共通する 2 つの前提条件:** `PATH` 上のシステム **Python 3.10 以降**と、そのもとでインポート可能な `click` および `rich` パッケージです。
-npm シムとツールプラグインの経路は、`npx` を実行するために、さらに **Node.js 18 以降**を必要とします。
+npm シム（チャネル 2）、VS Code 系拡張機能（チャネル 4）、コマンドラインブートストラップ（チャネル 5–7）は、`npx` を実行するために、さらに **Node.js 18 以降**を必要とします。
 Python 3.10 と Node.js 18 および 20 は上流のサポート終了を過ぎています。引き続きサポートされテストされていますが、より新しいバージョンが推奨されます（[前提条件の一覧](#前提条件の一覧)を参照）。
 以下の各チャネル固有の節では、その正確な前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップを改めて示します。
 
@@ -55,7 +55,7 @@ Apothem エンジンを、そのスラッシュコマンド、委任ワーカー
 他のコマンドがその名前を使っていない間は、Claude Code は短い形式（`/plan-spec`）も受け付けます。
 2 つの名前は Claude Code 自身が使用しています。`/plan` はプランモードに入り、`/code-review` は同梱のレビューを実行するため、Apothem のコマンドには `/apothem:plan` と `/apothem:code-review` を入力してください。
 プラグインではなく Apothem エンジンが Claude Code へのインストールを行う場合、コマンドは接頭辞のない、`~/.claude/skills/` 配下の個人用スキルになり、個人用の `code-review` スキルが同梱の `/code-review` を置き換えます（その `/review` エイリアスは引き続き同梱のものを実行します）。
-`projectify` と `workflow` の 2 つの名前は、コマンドとスキルの両方として出荷されます。両方が存在する場合は Claude Code がスキルを実行するため、プラグインはスキルを実行し、エンジンのインストールはそのスロットにスキルを書き込みます。
+`projectify` と `workflow` の 2 つの名前は、コマンドとスキルの両方として出荷されます。両方が存在する場合は Claude Code がスキルを実行するため、プラグインはスキルを実行し、エンジンのインストールは、コマンドから派生させたスキルではなく、スキルだけを `~/.claude/skills/<name>/` に書き込みます。
 コマンドの完全なカタログは[スラッシュコマンド](/docs/reference/commands)を参照してください。
 
 **検証:** Claude Code 内で `/plugin` を実行し、**apothem** がインストール済みとして一覧に表示されることを確認するか、ターミナルからドリフトレポートを確認します。
@@ -118,7 +118,7 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
-### トラストモデル
+### 信頼モデル
 
 `APOTHEM_REF` が設定されていない場合、インストーラーは最も高い `vMAJOR.MINOR.PATCH` リリースタグを解決し、*その*タグをチェックアウトします——動き続ける `main` ブランチをチェックアウトすることは決してありません。
 いずれかの設定がマテリアライズされる前に、フェッチしたタグの署名が `git verify-tag` で検証されます。署名のない、改ざんされた、または検証できないタグは、何かが書き込まれる前にインストールを中止させます。
@@ -167,10 +167,11 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Apothem** 拡張機能は `apothem.vsix` パッケージからインストールします: `code --install-extension apothem.vsix`、またはエディターの *Install from VSIX…* コマンドを使います。
 リリースワークフローがパッケージに署名し、各 GitHub Release に添付します。
-ワークフローが拡張機能をパッケージ化するようになる前に公開されたリリースには、パッケージは含まれていません。最新のリリースにパッケージがない場合は、`.github/vsce/` にロックされた vsce リリースを使ってチェックアウトからパッケージをビルドしてください。これには Node.js 22 以降が必要です。`npm ci --prefix .github/vsce --ignore-scripts` を実行し、続いて
+ワークフローが拡張機能をパッケージ化するようになる前に公開されたリリースには、`.vsix` は含まれていません。最新のリリースにそれがない場合は、`.github/vsce/` にロックされた vsce リリース（その vsce リリースには Node.js 22 以降が必要です）を使って、チェックアウトからパッケージをビルドしてください。
+`npm ci --prefix .github/vsce --ignore-scripts` を実行し、続いて
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix` を実行します。
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/) への掲載はまだ公開されていません。
-1 つの拡張機能で、VS Code とそのエディター内のコンパニオンアシスタント面をカバーします。
+1 つの拡張機能で、VS Code 系のエディターをカバーします。
 そのパレットコマンド（`Apothem: Install`、`Verify`、`Update`、`Uninstall`、`Doctor`）は、設定されたランナーを通して同じエンジンを実行します（デフォルトは `npx @ahmed-g-gad/apothem@<extension version>` で、拡張機能は自身とともに出荷されたバージョンのエンジンを実行します。ソースから実行するには、ユーザー設定 `apothem.runner` をローカルチェックアウトに向けます）。
 Install、Verify、Update、Uninstall はどのハーネスを対象にするかを尋ね、エディター自身のハーネスを最初に提示します。`all` は選択肢の 1 つであり、決してデフォルトにはなりません。
 `apothem.runner` 設定はマシンスコープであるため、ワークスペースから変更することはできません。また、拡張機能は信頼されたワークスペースでのみ動作します。
@@ -285,17 +286,20 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
 ハーネス名は、インストールしたアダプターに置き換えてください。サポートされているすべての名前は[ハーネス一覧](/docs/harnesses)を参照してください。
-インストール済みのすべてのアダプター（その検証とフックコマンド）を一度にチェックするには、同じ形式で `apothem doctor`（または `npx @ahmed-g-gad/apothem doctor`）を実行します。
+インストール済みのすべてのアダプター（その検証とフックコマンド）を一度にチェックするには、`verify --harness NAME` の代わりに `doctor` を、上で使用した形式のまま実行します。
+形式は `apothem doctor`、`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor`、`npx @ahmed-g-gad/apothem doctor` のいずれかです。
 プラグイン経路の場合は、Claude Code 内で `/plugin` を実行し、**apothem** がインストール済みとして一覧に表示されることを確認してください。
 
 ## 前提条件の一覧
 
-- **Python 3.10 以降** —— エンジンを実行するすべての経路がこれを探します（`python3`、`python`、バージョン付きの名前、そして Windows では `py -3`）。
+- **Python 3.10 以降** —— Python を見つける経路は名前で見つけます。その名前は経路によって異なります。
+  npm シムは `python3`、`python`、`py -3` の順に試します。
+  インストーラーは `python3`、`python`、およびバージョン付きの名前 `python3.14` から `python3.10` まで順に試します。
 - そのインタープリターで **`click` と `rich` がインポート可能であること** —— エンジンがベンダリングしない、ターミナル向けの 2 つの依存関係です。
   インストーラーは両方をチェックし、欠けているものを示し、あなたの代わりにインストールすることを提案します——あなたの確認を得て、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` によって自動的に。
   その他のすべてのチャネルでは、パッケージが欠けているとエンジンはエラー（終了コード 1）で停止します。このエラーは、見つかったインタープリター用の正確なコマンドを、Apothem がテストされているバージョン制約とともに示します（`<interpreter> -m pip install "click==…" "rich>=…"`）。
   `--json` を指定すると、同じエラーがコード `runtime.dependency_missing` を持つ JSON エンベロープとして届きます。
-- **Node.js 18 以降** —— npm シムとツールプラグインの経路のみ。
+- **Node.js 18 以降** —— `npx` を実行する経路のみ: npm シム（2）、VS Code 系拡張機能（4）、コマンドラインブートストラップ（5–7）。
 - **サポート終了したランタイム。** Python 3.10 は 2026-10-01 に、Node.js 18 と 20 はそれぞれ 2025-04-30 と 2026-04-30 に、上流のサポート終了を迎えました。
   Apothem は宣言された下限としてこれらを引き続きサポートし、CI でそれぞれをテストしていますが、これらはもう上流のセキュリティ修正を受け取らないため、Python 3.11 以降と Node.js 22 以降を優先して使用してください。
   下限の引き上げ方は[ランタイム下限ポリシー](/docs/governance/release-engineering-policy#ランタイムの下限)で説明しています。

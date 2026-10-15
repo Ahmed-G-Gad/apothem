@@ -2,7 +2,7 @@
 title: "इंस्टॉलर पर्यावरण चर"
 description: "पर्यावरण चरों से स्क्रिप्ट इंस्टॉलर (गंतव्य, स्रोत, हार्नेस, प्रोफ़ाइल, सत्यापन) को नियंत्रित करें।"
 machineTranslated: true
-sourceHash: "ac08049d8506b135"
+sourceHash: "64d4512dc0ce59b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,11 +55,14 @@ sourceHash: "ac08049d8506b135"
 में नहीं है, वह इसके बजाय कुंजी-आयात मार्गदर्शन के साथ निरस्त होता है — कुंजी
 आयात करें और उसके फ़िंगरप्रिंट की जाँच
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) में
-प्रकाशित मान से करें। किसी ज्ञात रिलीज़ को `APOTHEM_REF=<tag>` से पिन करें (यह भी
-सत्यापित होता है; [रिलीज़ पृष्ठ](https://github.com/ahmed-g-gad/apothem/releases)
-से कोई टैग), `APOTHEM_REF=main` से चलती ब्रांच चुनें (असत्यापित), या चेतावनी के
-साथ किसी सत्यापन विफलता से आगे बढ़ने के लिए `APOTHEM_ALLOW_UNVERIFIED=1` सेट करें
-(एयर-गैप्ड, स्थानीय, या हस्ताक्षरित रिलीज़ से पहले के उपयोग के लिए)।
+प्रकाशित मान से करें।
+किसी ज्ञात रिलीज़ को `APOTHEM_REF=<tag>` से पिन करें, टैग
+[रिलीज़ पृष्ठ](https://github.com/ahmed-g-gad/apothem/releases) से लें; पिन किया
+गया टैग उसी तरह सत्यापित होता है। चलती ब्रांच को `APOTHEM_REF=main` के साथ
+`APOTHEM_ALLOW_UNVERIFIED=1` जोड़कर चुनें; वह इंस्टॉल असत्यापित होता है, और अकेला
+`main` इंस्टॉल को निरस्त कर देता है क्योंकि ब्रांच हस्ताक्षरित टैग नहीं होती। किसी
+सत्यापन विफलता से चेतावनी के साथ आगे बढ़ने के लिए `APOTHEM_ALLOW_UNVERIFIED=1` को
+अकेले सेट करें (एयर-गैप्ड, स्थानीय, या पूर्व-हस्ताक्षरित रिलीज़ के उपयोग के लिए)।
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh

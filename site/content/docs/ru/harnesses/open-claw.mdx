@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Адаптер окружения Apothem для Open-Claw (предварительная версия)."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,8 +90,10 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-Удаляет файлы нативной конфигурации, записанные адаптером.
-YAML общего профиля и движок Apothem не затрагиваются.
+Удаляет то, что добавил адаптер: документ профиля и дерево поддержки. Ваши
+собственные ключи в `openclaw.json` остаются на месте, а сам файл удаляется
+только тогда, когда его создал Apothem и от вас в нём ничего не осталось. YAML
+общего профиля и движок Apothem не затрагиваются.
 
 ## Шлюз соответствия
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de harness do Apothem para o Hermes (Prévia)."
 machineTranslated: true
-sourceHash: "3f8418d01d08fe73"
+sourceHash: "d9218fbdb9417528"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,9 +52,10 @@ perfil sob a chave de nível superior `mcp_servers`, onde o Hermes lê os
 servidores MCP. Lançamentos anteriores do Apothem o gravavam sob
 `auxiliary.mcp`, que o Hermes lê como o modelo auxiliar para o despacho de
 ferramentas MCP; tanto `apothem update` quanto `apothem uninstall` removem esse
-bloco enquanto ele ainda corresponder ao que um desses lançamentos gravaria a
-partir do seu perfil compartilhado (consulte [Desinstalação](#desinstalação)).
-(Comportamento do Hermes conforme as páginas do seu guia do usuário sobre
+bloco quando ele ainda corresponde ao que um desses lançamentos gravaria a
+partir do seu perfil compartilhado atual (consulte
+[Desinstalação](#desinstalação) para saber quando ele permanece). (Comportamento
+do Hermes conforme as páginas do seu guia do usuário sobre
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 e [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 lidas em 2026-10-02.)

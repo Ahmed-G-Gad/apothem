@@ -2,7 +2,7 @@
 title: "إلغاء التثبيت"
 description: "أزِل Apothem ونظِّف إعدادات أُطُر العمل."
 machineTranslated: true
-sourceHash: "39bf18da03eaad73"
+sourceHash: "9d5c30cdd9a2bacc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,35 +22,46 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 ## أزِل المحرّك
 
-تتبع الإزالة قناة التثبيت التي استخدمتها:
+تتبع الإزالة قناة التثبيت التي استخدمتها. أرقام القنوات هي أرقامها في
+[جدول قنوات التثبيت](/docs/install#اختر-قناة):
 
-- **إضافة <bdi>Claude Code</bdi>** — أزِل الإضافة من داخل <bdi>Claude Code</bdi>:
-  <bdi>`/plugin uninstall apothem@apothem`</bdi> (ويمكن إزالة مُدخَل السوق عبر
+- **إضافة <bdi>Claude Code</bdi> (القناة 1)** — أزِل الإضافة من داخل
+  <bdi>Claude Code</bdi>: <bdi>`/plugin uninstall apothem@apothem`</bdi> (ويمكن
+  إزالة مُدخَل سوق الإضافات عبر
   <bdi>`/plugin marketplace remove ahmed-g-gad/apothem`</bdi>).
-- **<bdi>npx</bdi>** — لا شيء لإزالته؛ يعمل <bdi>`npx`</bdi> من ذاكرته المؤقتة.
-  امسحها عبر <bdi>`npm cache clean --force`</bdi> إن أردت التخلّص من النسخة المخزّنة
-  مؤقتًا.
-- **المُثبِّت بخطوة واحدة** — شغِّل سكربت إلغاء التثبيت المطابق من النسخة المسحوبة:
-  <bdi>`scripts/installer/uninstall.sh`</bdi> (<bdi>POSIX</bdi>) أو
+- **<bdi>npx</bdi> (القناة 2)** — لا شيء لإزالته؛ يعمل <bdi>`npx`</bdi> من ذاكرته
+  المؤقتة. امسحها عبر <bdi>`npm cache clean --force`</bdi> إن أردت التخلّص من
+  النسخة المخزّنة مؤقتًا.
+- **المُثبِّت بخطوة واحدة (القناة 3)** — شغِّل سكربت إلغاء التثبيت المطابق من النسخة
+  المسحوبة: <bdi>`scripts/installer/uninstall.sh`</bdi> (<bdi>POSIX</bdi>) أو
   <bdi>`scripts/installer/uninstall.ps1`</bdi> (<bdi>PowerShell</bdi>). كلاهما يطلب
   التأكيد قبل الإزالة ويرفض الأهداف غير الآمنة.
-- **امتداد عائلة <bdi>VS Code</bdi>** — شغِّل **<bdi>Apothem: Uninstall</bdi>** من لوحة
-  الأوامر أولًا لإزالة إعدادات أُطُر العمل، ثم أزِل الامتداد من عرض الامتدادات أو
-  عبر <bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>. يشغّل الامتداد
+- **امتداد عائلة <bdi>VS Code</bdi> (القناة 4)** — شغِّل
+  **<bdi>Apothem: Uninstall</bdi>** من لوحة الأوامر أولًا لإزالة إعدادات أُطُر
+  العمل، ثم أزِل الامتداد من عرض الامتدادات أو عبر
+  <bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>. يشغّل الامتداد
   المحرّكَ افتراضيًا عبر <bdi>`npx`</bdi>، لذا يغطّي بند **<bdi>npx</bdi>** أعلاه
   الذاكرة المؤقتة.
 - **مداخل سطر الأوامر التمهيدية (القنوات 5–7)** — أزِل الامتداد أو الإضافة بأداته
-  المضيفة بعد إزالة إعدادات أُطُر العمل. لا يضيف المدخل التمهيدي سوى سياق للمساعد
-  (ملف سياق، أو أمر، أو مهارة) يستدعي المحرّك عبر <bdi>`npx`</bdi>، فلا يبقى شيء
-  آخر. يقبل مضيفا الامتدادات في القناتين 5 و6 أمرًا لإلغاء التثبيت؛ أما مضيف
-  الإضافات في القناة 7 فألغِ تثبيت <bdi>`apothem`</bdi> من متصفّح الإضافات الخاص به.
+  المضيفة بعد إزالة إعدادات أُطُر العمل. المضيفات:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  لا يضيف المدخل التمهيدي سوى سياق للمساعد (ملف سياق، أو أمر، أو مهارة) يستدعي
+  المحرّك عبر <bdi>`npx`</bdi>، فلا يبقى شيء آخر. يقبل مضيفا الامتدادات في
+  القناتين 5 و6 أمرًا لإلغاء التثبيت؛ أما مضيف الإضافات في القناة 7 فألغِ تثبيت
+  <bdi>`apothem`</bdi> من متصفّح الإضافات الخاص به.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **المحرّك المباشر** — لا شيء لإلغاء تثبيته؛ احذف النسخة المسحوبة بعد إزالة
-  إعدادات أُطُر العمل.
+- **المحرّك المباشر (القناة 8)** — لا شيء لإلغاء تثبيته؛ احذف النسخة المسحوبة بعد
+  إزالة إعدادات أُطُر العمل.
 - **النسخ الاحتياطية والحالة** — تقع النسخ الاحتياطية للتثبيت تحت
   <bdi>`~/.apothem/backups/`</bdi>، وسجلّ التثبيت تحت <bdi>`~/.apothem/state/`</bdi>.
   يبقى كلاهما محدود الحجم: بعد كل تثبيت وإلغاء تثبيت وتراجع، يحتفظ
@@ -72,6 +83,11 @@ apothem uninstall --harness all --project /path/to/project --yes
   بك، وخوادم <bdi>MCP</bdi>، ومعالِجات الخطّافات. لا يُزيل إلغاء التثبيت إلا المفاتيح
   ومُدخَلات القوائم التي يُسجّلها سجلّ التثبيت بوصفها تابعة لـ <bdi>Apothem</bdi>
   (راجع [الإعدادات](/docs/reference/settings#الدمج-في-ملف-إعداداتك-الخاص)).
+- تبقى مخازن البيانات المشتركة الواقعة تحت <bdi>`.apothem/`</bdi> في جذر التثبيت
+  (<bdi>`memory/`</bdi>، و<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>) ما دام
+  إطار عمل مُثبَّت آخر في الجذر نفسه لا يزال يستخدمها. أما إلغاء تثبيت آخر إطار عمل
+  في ذلك الجذر فينسخ كل مخزن إلى <bdi>`~/.apothem/backups/`</bdi> أولًا، ثم يزيله
+  بكل ما فيه.
 - لا تتأثّر حِزم الخطط الواقعة تحت <bdi>`<project>/.apothem/plans/`</bdi> (ولا تلك
   الواقعة تحت المسار القديم <bdi>`<project>/.plans/`</bdi>).
 

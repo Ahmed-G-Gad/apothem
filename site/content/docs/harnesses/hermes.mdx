@@ -47,9 +47,10 @@ keeps keys you add to `config.yaml`. The adapter writes the profile's MCP
 inventory under the top-level `mcp_servers` key, where Hermes reads MCP servers.
 Earlier Apothem releases wrote it under `auxiliary.mcp`, which Hermes reads as
 the auxiliary model for MCP tool dispatch; both `apothem update` and
-`apothem uninstall` remove that block while it still matches what such a
-release would write from your shared profile (see
-[Uninstalling](#uninstalling)). (Hermes behavior per its user guide pages on
+`apothem uninstall` remove that block when it still matches what such a
+release would write from your current shared profile (see
+[Uninstalling](#uninstalling) for when it stays). (Hermes behavior per its user
+guide pages on
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 and [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 read 2026-10-02.)

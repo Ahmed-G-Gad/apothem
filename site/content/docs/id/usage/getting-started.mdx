@@ -1,25 +1,26 @@
 ---
 title: "Alur kerja inti"
-description: "Empat alur kerja inti Apothem — profil, aturan, rencana, dan gerbang kesesuaian."
+description: "Empat alur kerja inti Apothem — profil, aturan, rencana, dan gerbang konformitas."
 machineTranslated: true
-sourceHash: "53658e5bd065d27f"
+sourceHash: "a53e8d62d7df7ef4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem menyediakan empat kemampuan inti: profil tata kelola bersama, korpus
-aturan, alur perencanaan terstruktur, dan gerbang kesesuaian waktu nyata.
+aturan, pipeline perencanaan terstruktur, dan gerbang konformitas waktu nyata.
 
 <Callout title="Baru di sini?">
-  Untuk panduan terbimbing dari nol hingga jalan pertama, mulailah dari
-  [tutorial memulai](/docs/tutorials/getting-started). Halaman ini adalah rujukan
-  cepat ke empat alur kerja inti setelah Anda selesai menyiapkan.
+  Untuk panduan terbimbing dari nol hingga eksekusi pertama, mulailah dengan
+  [tutorial Memulai](/docs/tutorials/getting-started). Halaman ini adalah
+  referensi cepat untuk keempat alur kerja inti setelah Anda selesai
+  menyiapkan.
 </Callout>
 
 ## Profil bersama
 
 Profil Apothem Anda berada di `~/.config/apothem/profile.yaml` kecuali Anda
-meneruskan `--profile PATH`. Ia adalah satu-satunya sumber kebenaran yang menjadi
-asal setiap adaptor lingkungan menurunkan konfigurasi native-nya:
+meneruskan `--profile PATH`. Profil ini adalah satu-satunya sumber kebenaran
+tempat setiap adapter harness menurunkan konfigurasi native:
 
 ```yaml
 identity:
@@ -30,7 +31,10 @@ rules:
   - "Validate external input before writing files."
 ```
 
-Buat dan periksa profil:
+Buat profil jika belum ada, lalu periksa. Pemasang satu langkah dan
+`apothem install` sudah menulis profil awal pada eksekusi pertama, dan
+`profile init` berhenti dengan kesalahan serta membiarkan berkas yang sudah ada
+tidak berubah kecuali Anda meneruskan `--force`.
 
 ```bash
 apothem profile init
@@ -39,10 +43,10 @@ apothem profile show --json
 
 ## Aturan pertama
 
-Tambahkan aturan bersama ke YAML profil, lalu materialisasikan ulang lingkungan
-yang dipilih. Saat aturan itu menyertakan data contoh, gunakan placeholder fiktif
-agar tidak ada identitas atau kredensial nyata yang masuk ke profil bersama atau
-jalannya CI.
+Tambahkan aturan bersama ke YAML profil, lalu materialisasikan ulang harness
+yang dipilih. Saat aturan itu menyertakan data contoh, gunakan placeholder
+palsu agar tidak ada identitas atau kredensial nyata yang masuk ke profil
+bersama atau ke run CI.
 
 ```bash
 apothem profile set rules '["Always include a brief summary at the end of every response."]'
@@ -52,19 +56,19 @@ apothem verify --harness claude-code
 
 ## Rencana pertama
 
-Alur `/plan` berjalan di dalam harness Anda sebagai perintah garis
-miring, bukan melalui biner `apothem`. Setelah sebuah lingkungan terpasang, mulai
-sebuah rencana dari obrolan alat:
+Pipeline `/plan` berjalan di dalam harness Anda sebagai slash command, bukan
+melalui biner `apothem`. Setelah sebuah harness terpasang, mulai sebuah rencana
+dari obrolan perkakas tersebut:
 
 ```text
 /plan-spec
 ```
 
 `/plan-spec` menyempurnakan prosa Anda menjadi spesifikasi, dan `/plan-generate`
-mewujudkan suite rencana di bawah `<project-root>/.apothem/plans/{suite}/`. Lihat
-[rujukan perintah alur](/docs/pipeline) untuk alur lengkapnya.
+mematerialisasikan suite rencana di bawah `<project-root>/.apothem/plans/{suite}/`.
+Lihat [referensi perintah pipeline](/docs/pipeline) untuk alur lengkapnya.
 
-## Gerbang kesesuaian
+## Gerbang konformitas
 
 Dari checkout Apothem, jalankan:
 
@@ -78,5 +82,5 @@ Setelah pemasangan skrip, jalankan:
 PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
-Menjalankan semua pemeriksaan kesesuaian mekanis dan melaporkan lulus/gagal per
-bilah.
+Menjalankan semua pemeriksaan konformitas mekanis dan melaporkan lulus/gagal per
+bar.

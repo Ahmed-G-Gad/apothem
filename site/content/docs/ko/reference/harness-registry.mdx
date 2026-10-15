@@ -2,7 +2,7 @@
 title: "하니스 레지스트리"
 description: "내장 Apothem 하니스 어댑터에 대한 기술 레지스트리 레퍼런스입니다."
 machineTranslated: true
-sourceHash: "377ff92b24e0f52c"
+sourceHash: "6bb38868494e5b55"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,7 @@ sourceHash: "377ff92b24e0f52c"
 
 `converted` 코호트는 하니스 자체 형식으로 다시 작성되며, 일부 소스 필드는 그
 형식 안에 들어갈 자리가 없습니다. 변환된 명령, 에이전트, 규칙 코호트마다
-어댑터의 `capabilities.yml`은 모든 소스 frontmatter 필드가 어떻게 되는지
+어댑터의 `capabilities.yml`은 모든 소스 프런트매터 필드가 어떻게 되는지
 밝히는 `conversion_losses` 맵을 담습니다.
 
 | 값 | 의미 |
@@ -80,9 +80,10 @@ sourceHash: "377ff92b24e0f52c"
 
 일부 설치 대상은 그 대상을 쓰는 하니스가 아닌 다른 하니스가 로드합니다.
 레지스트리는 그런 경로마다 `SHARED_ROOTS`에 소유자 하나(그 경로를 쓰는 유일한
-어댑터)와, 벤더 문서에서 기본적으로 그 경로를 로드하는 리더를 기록하며, 벤더
-페이지를 증거로 삼습니다. 소유자를 설치하면 모든 리더 앞에 Apothem 콘텐츠가
-놓이고, 소유자를 제거하면 모든 리더에서 그 콘텐츠가 제거됩니다.
+어댑터)와, 벤더 문서에서 기본적으로 그 경로를 로드하는 리더를 기록하며, 그
+사실을 보여 주는 벤더 페이지와 그 페이지를 가져온 날짜도 함께 기록합니다.
+소유자를 설치하면 모든 리더 앞에 Apothem 콘텐츠가 놓이고, 소유자를 제거하면
+모든 리더에서 그 콘텐츠가 제거됩니다.
 
 | 경로 | 소유자 | 리더 |
 | --- | --- | --- |
@@ -95,10 +96,11 @@ sourceHash: "377ff92b24e0f52c"
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
 
 소유자가 공유 지침 파일에 쓰는 Apothem 블록은 어느 단일 도구도 자신의
-리더로 지명하지 않습니다. `tests/unit/test_shared_roots.py`는 선언된 소유자가
-없는 레지스트리 대상이 두 어댑터에 의해 쓰이거나, 도구 간 지침 파일
-(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`copilot-instructions.md`)처럼 이름이 붙은 경우에 실패합니다.
+리더로 지명하지 않습니다. `tests/unit/test_shared_roots.py`는 두 어댑터가 같은
+레지스트리 대상을 쓰는 경우, 그리고 도구 간 지침 파일(`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `copilot-instructions.md`)처럼 이름이 붙은 레지스트리 대상에
+선언된 소유자가 없는 경우에 실패합니다. 유일한 예외는 `~/.codex/AGENTS.md`이며,
+등록된 다른 하니스는 이 파일을 로드한다고 문서화하지 않습니다.
 
 ## 검증 훅
 
@@ -106,7 +108,7 @@ sourceHash: "377ff92b24e0f52c"
 
 | 검사 | 목적 |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 각 어댑터에 작성된 지 90일 미만이고, 벤더 URL을 하나 이상 인용하며, 기한이 지난 디스커버리 대상이 없는 규약 핀이 있는지 확인합니다. CI가 모든 풀 리퀘스트마다, 매주, 그리고 릴리스 전에 실행합니다. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 각 어댑터에 작성된 지 90일 이내이고, 벤더 URL을 하나 이상 인용하며, 기한이 지난 디스커버리 대상이 없는 규약 핀이 있는지 확인합니다. CI가 모든 풀 리퀘스트마다, 매주, 그리고 릴리스 전에 실행합니다. |
 | `python scripts/dev/check_vendor_urls.py` | 핀과 하니스 템플릿이 인용하는 모든 벤더 URL을 가져와, 이동했거나 사라진 페이지가 있으면 실패합니다. 더 이상 해석되지 않는 호스트 이름이나 검증에 실패하는 인증서도 여기에 포함됩니다. 타임아웃, 거부되거나 재설정된 연결, 5xx 서버 오류는 도달 불가로 보고되며 검사를 실패시키지 않습니다. 주간 규약 모니터가 이를 실행합니다. |
 | `python -m apothem.conformity.gate --all .` | 문서 및 구현 적합성 검사를 실행합니다. |
 | `python -m pytest` | 레지스트리 픽스처 테스트와 어댑터 계약 테스트를 실행합니다. |

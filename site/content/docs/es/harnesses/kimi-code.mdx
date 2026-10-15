@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptador de entorno de Apothem para Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "2a345b2d45ab630e"
+sourceHash: "8e9f4f62c583aebb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,9 +66,12 @@ consultadas el 2026-10-02.)
 Kimi Code lee las instrucciones del proyecto desde `AGENTS.md` o
 `.kimi-code/AGENTS.md` y reconoce `.kimi-code/mcp.json` como la superficie MCP
 propiedad del operador; Apothem nombra esa superficie, pero no redacta ninguna
-entrada en ella. La superficie de instrucciones renderizada dirige el proyecto
-directamente. Kimi Code no expone ninguna superficie de archivo de línea de
-estado ni de estilo de salida, así que esas cohortes no se materializan.
+entrada en ella. De los dos archivos de instrucciones, el adaptador escribe solo
+el `AGENTS.md` de la raíz del proyecto, que Kimi Code lee como instrucciones del
+proyecto; la documentación de Kimi Code no indica cuál de los dos archivos
+prevalece cuando existen ambos. Kimi Code no expone ninguna superficie de
+archivo de línea de estado ni de estilo de salida, así que esas cohortes no se
+materializan.
 
 Kimi Code funciona con la familia de modelos Kimi de Moonshot; consulta la
 [referencia de configuración del proveedor](https://moonshotai.github.io/kimi-code/en/configuration/config-files)

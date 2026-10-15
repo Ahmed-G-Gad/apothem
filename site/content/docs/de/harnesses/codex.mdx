@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Apothem-Harness-Adapter für Codex (Beta)."
 machineTranslated: true
-sourceHash: "cda00c0b540ac6fb"
+sourceHash: "f4911b88f3d560a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ apothem install --harness codex
 ```
 
 Der Adapter installiert Codex-native Anweisungen und Hooks, konvertiert
-Apothem-Agents in Codex-TOML-Agents und verpackt wiederverwendbare
+Apothem-Agenten in Codex-TOML-Agenten und verpackt wiederverwendbare
 Command-Prompts als Codex-Skills.
 
 **Geschriebene Dateien:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
@@ -49,21 +49,21 @@ ausführen. Siehe die
 
 Der Adapter liest die gemeinsamen Kohorten von Apothem und installiert jede in
 die passende Codex-Oberfläche: Anweisungen nach `AGENTS.md`, Hooks nach
-`hooks.json` und `hooks/`, Agents als TOML, Skills nach `~/.agents/skills/` und
+`hooks.json` und `hooks/`, Agenten als TOML, Skills nach `~/.agents/skills/` und
 nicht native Markdown-Regeln/-Templates als Unterstützungsmaterial nach
 `~/.config/apothem/`.
 
 Jeder konvertierte Helfer setzt `name`, `description` und
-`developer_instructions`. Ein Helfer, dessen Werkzeugfreigabe nach Abzug ihrer
-Sperrliste kein Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`,
-`MultiEdit` oder `NotebookEdit`) enthält, setzt zusätzlich
-`sandbox_mode = "read-only"`, die Codex-eigene Schreibbeschränkung. `Bash`
-zählt nicht als Werkzeug zum Bearbeiten von Dateien, sodass ein Helfer, dem
-`Bash` und keines dieser Werkzeuge freigegeben ist, weiterhin schreibgeschützt
-ist. Weder Modell noch Reasoning-Aufwand werden gesetzt, sodass jeder Helfer
-die Einstellungen der Sitzung erbt. Codex kennt keine Werkzeugliste und kein
-Turn-Limit pro Helfer, daher werden `tools` und `maxTurns` eines Helfers nicht
-übernommen.
+`developer_instructions`. Ein Helfer, dessen Werkzeugfreigabe, nachdem die
+Werkzeuge aus seiner eigenen `disallowedTools`-Liste entfernt wurden, kein
+Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`, `MultiEdit` oder
+`NotebookEdit`) enthält, setzt zusätzlich `sandbox_mode = "read-only"`, die
+Codex-eigene Schreibbeschränkung. `Bash` zählt nicht als Werkzeug zum
+Bearbeiten von Dateien, sodass ein Helfer, dem `Bash` und keines dieser
+Werkzeuge freigegeben ist, diese Einstellung dennoch erhält. Weder Modell noch
+Reasoning-Aufwand werden gesetzt, sodass jeder Helfer die Einstellungen der
+Sitzung erbt. Codex kennt keine Werkzeugliste und kein Turn-Limit pro Helfer,
+daher werden `tools` und `maxTurns` eines Helfers nicht übernommen.
 
 ## Kompatibilitätshinweise
 
@@ -88,7 +88,10 @@ apothem verify --harness codex
 Der Befehl verify bestätigt Folgendes:
 
 1. Die native Konfiguration existiert am erwarteten Pfad.
-2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und
+   JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH`
+   hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem
+   Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
@@ -97,7 +100,7 @@ Der Befehl verify bestätigt Folgendes:
 apothem update --harness codex
 ```
 
-Aktualisiert den Codex-Bootstrap, die konvertierten Agents, die Skills und die
+Aktualisiert den Codex-Bootstrap, die konvertierten Agenten, die Skills und die
 Unterstützungskohorten.
 
 ## Deinstallation
@@ -106,8 +109,16 @@ Unterstützungskohorten.
 apothem uninstall --harness codex
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block aus `~/.codex/AGENTS.md` und behält jeden Text
+außerhalb davon, und entfernt Apothems Einträge aus `~/.codex/hooks.json` und
+behält Ihre eigenen. Entfernt außerdem die Apothem-Dateien in `~/.codex/hooks/`,
+`~/.codex/agents/`, `~/.agents/skills/` und
+`~/.config/apothem/{rules,templates}/`; andere Dateien in diesen Ordnern bleiben
+bestehen. Aus `~/.agents/skills/` entfernte Skills verschwinden auch aus den
+anderen Werkzeugen, die es ebenfalls laden (siehe
+[Kompatibilitätshinweise](#kompatibilitätshinweise)). Jede Datei wird unter
+`~/.apothem/backups/` gesichert, bevor sie geändert oder entfernt wird. Die
+YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 

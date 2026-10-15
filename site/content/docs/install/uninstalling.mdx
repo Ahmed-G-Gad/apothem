@@ -21,34 +21,42 @@ Pass `--yes` to skip the per-harness confirmation prompt.
 
 ## Remove the engine
 
-Removal matches the install channel you used:
+Removal matches the install channel you used. Channel numbers are those of the
+[install channel table](/docs/install#choose-a-channel):
 
-- **Claude Code plugin** — remove the plugin from inside Claude Code:
+- **Claude Code plugin (channel 1)** — remove the plugin from inside Claude Code:
   `/plugin uninstall apothem@apothem` (the marketplace entry can be removed
   with `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx** — nothing to remove; `npx` runs from its cache. Clear it with
+- **npx (channel 2)** — nothing to remove; `npx` runs from its cache. Clear it with
   `npm cache clean --force` if you want the cached copy gone.
-- **One-shot installer** — run the matching uninstall script from the
+- **One-shot installer (channel 3)** — run the matching uninstall script from the
   checkout: `scripts/installer/uninstall.sh` (POSIX) or
   `scripts/installer/uninstall.ps1` (PowerShell). Both confirm before
   removing and refuse unsafe targets.
-- **VS Code-family extension** — run **Apothem: Uninstall** from the command
+- **VS Code-family extension (channel 4)** — run **Apothem: Uninstall** from the command
   palette first to remove the harness configs, then remove the extension from
   the Extensions view or with `code --uninstall-extension ahmed-g-gad.apothem`.
   By default the extension runs the engine through `npx`, so the **npx** entry
   above covers the cache.
 - **Command-line bootstraps (channels 5–7)** — remove the extension or plugin
-  with its host tool after the harness configs are gone. The bootstrap only
-  adds assistant context (a context file, a command, or a skill) that calls the
-  engine through `npx`, so nothing else remains. The extension hosts of
-  channels 5 and 6 take an uninstall command; for the plugin host of channel 7,
-  uninstall `apothem` in its plugin browser.
+  with its host tool after the harness configs are gone. The hosts:
+
+  ```text
+  channel 5   Gemini CLI extension
+  channel 6   Qwen Code extension
+  channel 7   Codex plugin
+  ```
+
+  The bootstrap only adds assistant context (a context file, a command, or a
+  skill) that calls the engine through `npx`, so nothing else remains. The
+  extension hosts of channels 5 and 6 take an uninstall command; for the plugin
+  host of channel 7, uninstall `apothem` in its plugin browser.
 
   ```bash
   gemini extensions uninstall apothem   # channel 5
   qwen extensions uninstall apothem     # channel 6
   ```
-- **Direct engine** — nothing to uninstall; delete the clone once the harness
+- **Direct engine (channel 8)** — nothing to uninstall; delete the clone once the harness
   configs are removed.
 - **Backups and state** — install backups live under `~/.apothem/backups/`
   and the install ledger under `~/.apothem/state/`. Both stay bounded: after
@@ -70,6 +78,10 @@ Removal matches the install channel you used:
   permission rules, MCP servers and hook handlers stay. Uninstall removes only
   the keys and list entries the install ledger records as Apothem's (see
   [Settings](/docs/reference/settings#merging-into-your-own-settings-file)).
+- The shared data stores under `.apothem/` at the install root (`memory/`,
+  `contexts/`, `learning/`) stay while another installed harness at the same
+  root still uses them. Uninstalling the last harness at that root copies each
+  store into `~/.apothem/backups/` first, then removes it with everything in it.
 - Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
 
 ## Directories

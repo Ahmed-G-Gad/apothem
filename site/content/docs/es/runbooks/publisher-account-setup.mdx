@@ -2,18 +2,20 @@
 title: "Configuración de la cuenta de publicador"
 description: "Configura el publicador de confianza de npmjs.com para @ahmed-g-gad/apothem y los requisitos previos de lanzamiento del lado de GitHub."
 machineTranslated: true
-sourceHash: "4f750a0f9fdb2429"
+sourceHash: "ee07a06a98f62864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Este runbook configura el lado del publicador de la superficie de lanzamiento.
 El esquema de distribución tiene un único registro: el paquete npm con alcance
 `@ahmed-g-gad/apothem` en npmjs.com, publicado por el flujo de trabajo
-`publish-npm.yml` (se ejecuta con el push de la etiqueta `v*.*.*`; un despacho
-manual con una entrada `tag` es la alternativa de respaldo) después de que los
-flujos de trabajo de GitHub Release, Pages, CI, conformidad y entornos estén en
-verde. Todos los demás artefactos se distribuyen en la propia página del GitHub
-Release y no necesitan ninguna cuenta de publicador externa.
+`publish-npm.yml`. El flujo de trabajo se ejecuta con el push de la etiqueta
+`v*.*.*` junto a `release.yml` y no espera a que este termine (un despacho
+manual con una entrada `tag` es la alternativa de respaldo). La aprobación del
+entorno `release` es la puerta: el operador la aprueba después de que los flujos
+de trabajo de GitHub Release, Pages, CI, conformidad y entornos estén en verde.
+Todos los demás artefactos se distribuyen en la propia página del GitHub Release
+y no necesitan ninguna cuenta de publicador externa.
 
 ## Mapa de identidades
 
@@ -76,12 +78,13 @@ No se requiere ningún secreto `NPM_TOKEN`, de nombre de usuario ni de
 contraseña. El flujo de trabajo publica mediante npm Trusted Publishing (OIDC),
 con la versión de Node y la versión mínima de la CLI de npm para OIDC fijadas
 dentro de `.github/workflows/publish-npm.yml`. Ejecuta
-`npm publish --access public` contra npmjs.com; npm emite automáticamente la
-procedencia para los paquetes públicos publicados desde un flujo de trabajo
-público de GitHub Actions. Un `404` del registro durante `PUT` significa que el
-publicador de confianza del lado de npm, el alcance del paquete o la
-autorización de la cuenta todavía no están alineados; corrige la configuración
-del paquete en npm antes de reintentar el flujo de trabajo.
+`npm publish --provenance --access public` contra npmjs.com, de modo que la
+declaración de procedencia de Sigstore es explícita; npm también emite la
+procedencia de forma predeterminada para los paquetes públicos publicados desde
+un flujo de trabajo público de GitHub Actions. Un `404` del registro durante
+`PUT` significa que el publicador de confianza del lado de npm, el alcance del
+paquete o la autorización de la cuenta todavía no están alineados; corrige la
+configuración del paquete en npm antes de reintentar el flujo de trabajo.
 
 Una vez que una publicación de confianza haya tenido éxito, cierra
 definitivamente la vía de los tokens: en **Settings → Publishing access** del

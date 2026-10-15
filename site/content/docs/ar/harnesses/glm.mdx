@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "محوّل إطار عمل Apothem لـ GLM (Z.ai) بوصفه واجهة خلفية للنماذج قابلة للضبط."
 machineTranslated: true
-sourceHash: "3e05b3a651ffe5da"
+sourceHash: "1de53f25ee125b1a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,12 +11,14 @@ sourceHash: "3e05b3a651ffe5da"
 **الحالة:** إتاحة عامة
 **الإعداد الأصلي:** <bdi>`<project>/.apothem/providers/glm.toml`</bdi>
 
-<bdi>GLM (Z.ai)</bdi> **واجهة خلفية للنماذج**، لا إطار عمل. لا تشحن <bdi>Z.ai</bdi> سطر
-أوامر رسميًا من إنتاجها لـ <bdi>GLM</bdi>؛ بل تُوجَّه إلى <bdi>GLM</bdi> أداةٌ تتحدّث
-البروتوكول المتوافق مع <bdi>Anthropic</bdi> أو المتوافق مع <bdi>OpenAI</bdi>، بضبط عنوان
-<bdi>URL</bdi> أساسي للواجهة الخلفية ومفتاح. يكتب محوّل <bdi>`glm`</bdi> ملف إعداد
-مزوّد يُسجِّل سطحَي التوافق كليهما، بحيث يمكن ربط أي أداة متوافقة بعائلة نماذج
-<bdi>GLM</bdi>.
+<bdi>GLM (Z.ai)</bdi> **واجهة خلفية للنماذج**، وليس أداة برمجة قائمة بذاتها. لا تشحن
+<bdi>Z.ai</bdi> سطر أوامر رسميًا من إنتاجها لـ <bdi>GLM</bdi>؛ بل تُوجَّه إلى
+<bdi>GLM</bdi> أداةٌ تتحدّث البروتوكول المتوافق مع <bdi>Anthropic</bdi> أو المتوافق مع
+<bdi>OpenAI</bdi>، بضبط عنوان <bdi>URL</bdi> أساسي للواجهة الخلفية ومفتاح. ومع ذلك
+ما يزال <bdi>Apothem</bdi> يعدّ <bdi>GLM</bdi> من محوّلات أُطُر العمل لديه، لذا
+تختاره بالراية <bdi>`--harness glm`</bdi> مثل أي محوّل آخر. يكتب محوّل
+<bdi>`glm`</bdi> ملف إعداد مزوّد يُسجِّل سطحَي التوافق كليهما، بحيث يمكن ربط أي أداة
+متوافقة بعائلة نماذج <bdi>GLM</bdi>.
 
 ## التثبيت
 
@@ -35,8 +37,9 @@ apothem install --harness glm --project /path/to/project
 <bdi>Anthropic</bdi> عنوان <bdi>URL</bdi> الأساسي
 <bdi>`https://api.z.ai/api/anthropic`</bdi>؛ وتتوجّه الأداة التي تتحدّث بروتوكول
 <bdi>Anthropic</bdi> إلى <bdi>GLM</bdi> بضبط <bdi>`ANTHROPIC_BASE_URL`</bdi>،
-و<bdi>`ANTHROPIC_AUTH_TOKEN`</bdi>، و<bdi>`API_TIMEOUT_MS`</bdi> اختياريًا. ويسرد جدول
-<bdi>env</bdi> نفسه <bdi>`ANTHROPIC_DEFAULT_OPUS_MODEL`</bdi>،
+و<bdi>`ANTHROPIC_AUTH_TOKEN`</bdi>، و<bdi>`API_TIMEOUT_MS`</bdi> اختياريًا. ويسرد
+الجدول <bdi>`[backends.anthropic_compatible.env]`</bdi> في الملف تلك المتغيّرات، ويسرد
+كذلك <bdi>`ANTHROPIC_DEFAULT_OPUS_MODEL`</bdi>،
 و<bdi>`ANTHROPIC_DEFAULT_SONNET_MODEL`</bdi>، و<bdi>`ANTHROPIC_DEFAULT_HAIKU_MODEL`</bdi>،
 التي تربط أدوار <bdi>opus</bdi> و<bdi>sonnet</bdi> و<bdi>haiku</bdi> في الأداة بنماذج
 <bdi>GLM</bdi>. تستخدم الواجهة الخلفية المتوافقة مع <bdi>OpenAI</bdi> عنوان
@@ -49,7 +52,7 @@ apothem install --harness glm --project /path/to/project
 
 ## ملاحظات التوافق
 
-لأن <bdi>GLM</bdi> واجهة خلفية لا إطار عمل، فهو لا يكشف أي سطح للقواعد أو الأوامر أو
+لأن <bdi>GLM</bdi> واجهة خلفية لا أداة برمجة، فهو لا يكشف أي سطح للقواعد أو الأوامر أو
 المهارات أو الخطّافات — لا يكتب المحوّل سوى ملف مزوّد الواجهة الخلفية ولا شيء غيره.
 يبقى مفتاح <bdi>Z.ai</bdi> الخاص بك واختياراتك لمُعرِّفات النماذج ملكًا للمُشغِّل.
 اصطلاحات سطح المورّد التي يعتمد عليها المحوّل مُثبَّتة في
@@ -78,11 +81,11 @@ apothem verify --harness glm --project /path/to/project
 apothem update --harness glm --project /path/to/project
 ```
 
-يصبح ملف المزوّد ملكًا لك بمجرّد وجوده. لا يكتب <bdi>`install`</bdi> القالب إلا حين
-يكون <bdi>`.apothem/providers/glm.toml`</bdi> غائبًا، ولا يكتب <bdi>`install`</bdi> ولا
-<bdi>`update`</bdi> فوقه أبدًا بعد ذلك، لذا يبقى مرجع مفتاحك واختياراتك للنماذج بعد
-كل إعادة تشغيل. لاعتماد قالب أحدث، انقل ملفك جانبًا، وشغّل <bdi>`update`</bdi>، وانسخ
-قيمك إلى الملف الجديد.
+يصبح ملف المزوّد ملكًا لك بمجرّد وجوده. لا يكتب <bdi>`install`</bdi> ولا
+<bdi>`update`</bdi> القالب إلا حين يكون <bdi>`.apothem/providers/glm.toml`</bdi>
+غائبًا، ولا يكتب أيٌّ منهما فوقه أبدًا بعد ذلك، لذا يبقى مرجع مفتاحك واختياراتك
+للنماذج بعد كل إعادة تشغيل. لاعتماد قالب أحدث، انقل ملفك جانبًا، وشغّل
+<bdi>`update`</bdi>، وانسخ قيمك إلى الملف الجديد.
 
 ## إلغاء التثبيت
 
@@ -90,7 +93,7 @@ apothem update --harness glm --project /path/to/project
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-لا يُزيل ملف المزوّد إلا حين يكون <bdi>Apothem</bdi> قد أنشأه وما يزال القالب غير
+لا يُزيل ملف المزوّد إلا حين يكون <bdi>Apothem</bdi> قد أنشأه وما يزال هو القالب غير
 المُعدَّل، وينسخه احتياطيًا أولًا تحت جذر النسخ الاحتياطية في <bdi>Apothem</bdi>.
 ويُترَك في مكانه أي ملف أنشأته أنت أو عدّلته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص
 بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.

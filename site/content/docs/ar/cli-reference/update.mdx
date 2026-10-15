@@ -2,7 +2,7 @@
 title: "update"
 description: "مرجع واجهة سطر الأوامر لأمر apothem update."
 machineTranslated: true
-sourceHash: "e6bb232cf7e7fd02"
+sourceHash: "e91dcc6ca6a07470"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,8 +22,8 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 وفحص نطاق المشروع نفسه، وسلوك التشغيل التجريبي نفسه، وغلاف <bdi>JSON</bdi> نفسه التي
 يستخدمها <bdi>`install`</bdi>.
 
-يُحَلّ الاسم المستعار بصيغة الاستمرار <bdi>`apothem updating`</bdi> إلى المعالج
-نفسه.
+يُحَلّ الاسم المستعار بصيغة الاستمرار <bdi>`apothem updating`</bdi> (ويُقبَل أيضًا
+بالصيغة <bdi>`apothem Updating`</bdi>) إلى المعالج نفسه.
 
 ## الخيارات
 
@@ -33,12 +33,12 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 | <bdi>`--profile PATH`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
 | <bdi>`--dry-run`</bdi> | يعاين التحديث دون كتابة ملفات. |
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. مطلوب عندما تتضمّن مجموعة أُطُر العمل المختارة محوّلات ذات نطاق المشروع. |
-| <bdi>`--quiet`, `-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
-| <bdi>`--verbose`, `-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
 | <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
 | <bdi>`--json`</bdi> | اختصار لـ <bdi>`--format json`</bdi>. |
 | <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
-| <bdi>`-h`, `--help`</bdi> | يعرض المساعدة ويخرج. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
 
 ## مخرجات <bdi>JSON</bdi>
 

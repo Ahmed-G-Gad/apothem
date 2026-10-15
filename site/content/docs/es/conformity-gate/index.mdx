@@ -2,7 +2,7 @@
 title: "Puerta de conformidad"
 description: "Puerta de conformidad de Apothem — la fracción mecánica de la puerta de pre-emisión de quince barras (M1-M15) que todo artefacto emitido debe superar."
 machineTranslated: true
-sourceHash: "56cca9f8f53e7f52"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,9 +26,11 @@ sourceHash: "56cca9f8f53e7f52"
 | 14 | M14 | Sistemicidad (declara aguas arriba / aguas abajo / pares / aplicadores) | Razonada | Declarar; indexar en los registros |
 | 15 | M15 | Listo para producción (pruebas + documentación + CHANGELOG + commit conforme + CI en verde + estabilidad semver) | Mecánica + razonada | Agregar las superficies que faltan |
 
+La puerta ejecuta solo validadores comprobables por máquina. El juicio razonado que exigen las barras Razonadas, y la mitad razonada de cada barra Mecánica + razonada, se evalúa en la revisión.
+
 ## Escala de severidad
 
-La puerta de conformidad no tiene escala Crítica, Importante ni Consultiva, y tampoco umbral de dos hallazgos. Sin `--strict` (o `APOTHEM_CONFORMITY_STRICT=1`), la puerta informa los hallazgos y termina con `0`. Con `--strict`, una comprobación de un archivo o de hook termina con `2` cuando falla cualquier comparador, y una ejecución sobre el corpus (`--all-perwrite`) termina con `2` cuando falla un comparador bloqueante; los comparadores consultivos solo se informan. El hook de Write/Edit instalado no pasa `--strict`, así que informa los hallazgos y la escritura continúa, salvo que `APOTHEM_CONFORMITY_STRICT=1` esté definido en el entorno de ese hook.
+La puerta de conformidad no tiene escala Crítica, Importante ni Consultiva, y tampoco umbral de dos hallazgos. Sin `--strict` (o `APOTHEM_CONFORMITY_STRICT=1`), la puerta informa los hallazgos y termina con `0`. Con `--strict`, una comprobación de un archivo o de hook termina con `2` cuando falla cualquier comparador, y una ejecución sobre el corpus (`--all` o `--all-perwrite`) termina con `2` cuando falla un validador o comparador bloqueante; los hallazgos consultivos solo se informan. El hook de Write/Edit instalado no pasa `--strict`, así que informa los hallazgos y la escritura continúa, salvo que `APOTHEM_CONFORMITY_STRICT=1` esté definido en el entorno de ese hook.
 
 ## Validadores
 
@@ -108,11 +110,14 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 En un entorno instalado, la puerta se ejecuta automáticamente: el
 `settings.json` de Claude Code la conecta como un hook `PreToolUse` que invoca
 la copia materializada en `~/.claude/.apothem/support/conformity/gate.py` antes
-de cada Write/Edit. Desde un checkout del código fuente, la forma de módulo
-ejecuta el mismo código. La puerta es consultiva de forma predeterminada:
-informa los hallazgos y termina con `0`. Agrega `--strict` para terminar con
-`2` ante un hallazgo bloqueante. Un nombre de validador desconocido termina con
-`3`.
+de cada Write/Edit. Entonces la puerta comprueba solo las escrituras que caen
+bajo el alcance de su hook, y una escritura fuera de ese alcance pasa en
+silencio; [Ejecutar la puerta de conformidad](/docs/usage/conformity-gate)
+enumera el alcance. Desde un checkout del código fuente, la forma de módulo
+ejecuta el mismo código; antepón `PYTHONPATH=src` a cada comando `python` de más
+abajo. La puerta es consultiva de forma predeterminada: informa los hallazgos y
+termina con `0`. Agrega `--strict` para terminar con `2` ante un hallazgo
+bloqueante. Un nombre de validador desconocido termina con `3`.
 
 ```shell
 # Every standalone validator across the repository:

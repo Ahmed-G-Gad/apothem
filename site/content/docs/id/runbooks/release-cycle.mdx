@@ -1,8 +1,8 @@
 ---
 title: "Runbook siklus rilis"
-description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga dispatch publikasi npm opsional."
+description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,14 +144,18 @@ memindai log job `publish GitHub Release` untuk konfirmasi unggahan aset.
 
 ### 2.4 Konfirmasi publikasi npm
 
-Push tag juga menjalankan `publish-npm.yml`. Setujui deployment environment
-`release` saat diminta. Alur kerja memublikasikan `@ahmed-g-gad/apothem@X.Y.Z`
-ke npmjs.com melalui npm trusted publishing (OIDC); tidak ada token registri
-yang disimpan di repositori. Lalu konfirmasi kesiapan:
+Push tag juga menjalankan `publish-npm.yml` di samping `release.yml`. Alur
+kerja npm tidak menunggu alur kerja rilis; persetujuan environment `release`
+adalah gerbangnya. Setelah alur kerja rilis dari §2.3 selesai, konfirmasikan
+kesiapan:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Lalu setujui deployment environment `release` saat diminta. Alur kerja
+memublikasikan `@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm trusted
+publishing (OIDC); tidak ada token registri yang disimpan di repositori.
 
 Untuk memublikasikan lagi setelah run yang gagal, dispatch alur kerja untuk
 tag yang sama (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Alur

@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "محوّل إطار عمل Apothem لـ Cursor (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "79efcc04715286ff"
+sourceHash: "555c36a18537fc13"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,7 +55,9 @@ apothem verify --harness cursor --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi>
+   أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات
+   المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -72,8 +74,12 @@ apothem update --harness cursor --project /path/to/project
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi>، والبيانات الأمامية التي كتبها <bdi>Apothem</bdi> فوقها،
+من <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> ويُبقي أي نص آخر فيه.
+ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. قبل التغيير، تُحفَظ نسخة مختومة
+بالوقت من الملف تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترَك أي ملف نسخة
+احتياطية في المشروع. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا
+محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

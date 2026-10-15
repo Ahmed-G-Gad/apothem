@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "适用于 OpenCode（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,6 +23,7 @@ apothem install --harness opencode
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -37,7 +38,7 @@ apothem install --harness opencode
 
 OpenCode 会将 `instructions` 列表指明的每个文件合并到每个会话中（[OpenCode 规则](https://opencode.ai/docs/rules/)）。因此，该列表首先指明你的配置档案文档，然后只列出 `alwaysApply` 为 `true` 的规则，每条规则一个明确的 `~/.config/opencode/.apothem/support/rules/<name>.md` 路径；OpenCode 会将开头的 `~/` 展开为你的主目录。按路径筛选的规则、模板和钩子提示词仍作为参考材料安装在 `~/.config/opencode/.apothem/support/` 下，引用其中某一项的规则、技能或命令会按需读取它。命令、技能和辅助器定义使用原生发现位置。
 
-配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 携带共享配置档案中你的身份和偏好，并以一个 Apothem 支持文件部分结尾，该部分指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `~/.config/opencode/.apothem/support/` 下的绝对目录。它是第一个 `instructions` 条目，因此 OpenCode 会在每个会话中加载它。
+配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 携带共享配置档案中你的身份和偏好，并以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.config/opencode/.apothem/support/` 下的绝对目录。它是第一个 `instructions` 条目，因此 OpenCode 会在每个会话中加载它。
 
 由较早发布写入的 `opencode.json` 列出单个通配模式 `~/.config/opencode/.apothem/support/rules/*.md`，它会加载每条规则。`apothem install` 和 `apothem update` 会将其替换为始终启用的列表，而 `apothem uninstall` 会移除这两种形式。在任何情况下，你自己的 `instructions` 条目都会被保留。
 
@@ -67,7 +68,7 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加到 `~/.config/opencode/opencode.json` 的条目（你自己的键、MCP 服务器和 `instructions` 条目会保留；只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件）。从配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 中移除 Apothem 块，并保留其中的其他任何文本；只有当该文件中不再剩下其他内容时，才会删除该文件。同时移除 `~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/` 和 `~/.config/opencode/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件会保留。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 
