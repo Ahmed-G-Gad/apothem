@@ -18,6 +18,11 @@ Verdict matrix:
               or an SPDX line sits at the insertion site in a non-canonical
               form (wrong comment family, wrong license, or a missing
               mandatory trailing blank).
+
+Insertion site. A shebang line stays first. For Markdown and MDX heads, a
+YAML frontmatter block (a ``---`` line closed by a later ``---`` line) is
+skipped, and the canonical block sits after it, the same placement
+scripts/inject-header.py uses.
 """
 
 from __future__ import annotations
@@ -56,6 +61,7 @@ SPDX_PREFIX_TEXT: Final[str] = "SPDX-License-Identifier:"
 VARIANT_HASH: Final[str] = "hash"
 VARIANT_DOUBLE_SLASH: Final[str] = "double-slash"
 VARIANT_HTML: Final[str] = "html"
+VARIANT_MDX: Final[str] = "mdx"
 VARIANT_C_BLOCK: Final[str] = "c-block"
 VARIANT_SEMICOLON: Final[str] = "semicolon"
 VARIANT_DOUBLE_DASH: Final[str] = "double-dash"
@@ -96,6 +102,7 @@ SUFFIX_VARIANT: Final[dict[str, str]] = {
     ".htm": VARIANT_HTML,
     ".md": VARIANT_HTML,
     ".markdown": VARIANT_HTML,
+    ".mdx": VARIANT_MDX,
     ".xml": VARIANT_HTML,
     ".svg": VARIANT_HTML,
     ".vue": VARIANT_HTML,
@@ -254,6 +261,8 @@ def _render_variant(
         return [_replace_marker(hash_form_line, "#", "--")]
     if variant == VARIANT_HTML:
         return [f"<!-- {spdx_text} -->"]
+    if variant == VARIANT_MDX:
+        return [f"{{/* {spdx_text} */}}"]
     if variant == VARIANT_C_BLOCK:
         return [f"/* {spdx_text} */"]
     raise ValueError(f"variant not renderable: {variant!r}")
@@ -352,12 +361,40 @@ def _is_canonical_at_position(
     return content_lines[insertion_index:end] == canonical_block
 
 
-def _determine_insertion_index(content: str) -> int:
-    """Return the zero-based line index for banner insertion.
+def _frontmatter_close_index(content_lines: list[str], start_index: int) -> int | None:
+    """Return the index of the closing YAML fence, or ``None`` when absent.
 
-    A shebang (``#!``) on the first line pushes the banner to line index 1.
+    The opening fence must sit exactly at *start_index* as a bare ``---`` line.
+    Mirrors scripts/inject-header.py ``_frontmatter_close_index``.
     """
-    return 1 if content.startswith("#!") else 0
+    if start_index >= len(content_lines) or content_lines[start_index] != "---":
+        return None
+    for index in range(start_index + 1, len(content_lines)):
+        if content_lines[index] == "---":
+            return index
+    return None
+
+
+def _determine_insertion_index(content_lines: list[str], variant: str) -> int:
+    """Return the zero-based line index for the canonical block.
+
+    A shebang (``#!``) on the first line pushes the block to line index 1.
+    For the html and mdx variants, a YAML frontmatter block at the head pushes
+    it past the closing fence, and one blank line directly after the fence is
+    skipped. Mirrors scripts/inject-header.py ``determine_insertion_index``, so
+    the validator and the injector place the block at the same index.
+    """
+    insertion_index = 1 if content_lines and content_lines[0].startswith("#!") else 0
+    if variant in (VARIANT_HTML, VARIANT_MDX):
+        frontmatter_end = _frontmatter_close_index(content_lines, insertion_index)
+        if frontmatter_end is not None:
+            insertion_index = frontmatter_end + 1
+            if (
+                insertion_index < len(content_lines)
+                and content_lines[insertion_index].strip() == ""
+            ):
+                insertion_index += 1
+    return insertion_index
 
 
 # ---------------------------------------------------------------------------
@@ -430,7 +467,7 @@ def check(content: str, path: Path | None = None) -> GrepResult:
 
     canonical_block = _render_canonical_block(hash_form_line, spdx_text, variant)
     content_lines = content.split("\n")
-    insertion_index = _determine_insertion_index(content)
+    insertion_index = _determine_insertion_index(content_lines, variant)
 
     if _is_canonical_at_position(content_lines, canonical_block, insertion_index):
         return GrepResult(grep=GREP_NAME, path=str(path), passed=True)
