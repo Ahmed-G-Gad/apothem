@@ -1,8 +1,8 @@
 ---
 title: "Concepts"
-description: "Glossaire définissant les profils partagés, les adaptateurs d'environnement, les règles, les hooks, les portails de conformité, les compétences et les travailleurs délégués dans Apothem."
+description: "Glossaire définissant les profils partagés, les adaptateurs d'environnement, les règles, les hooks, les portails de conformité, les skills et les travailleurs délégués dans Apothem."
 machineTranslated: true
-sourceHash: "62dff0efc0d0f672"
+sourceHash: "1a84322c09beb863"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ préférences et de votre configuration ; chaque adaptateur d'environnement le l
 ## Adaptateur d'environnement
 
 Un adaptateur propre à chaque plateforme qui traduit le profil partagé vers le format de configuration natif d'un
-environnement d'exécution d'assistant spécifique. Les environnements pris en charge sont listés dans :
+environnement spécifique. Les runtimes pris en charge sont listés dans :
 
 ```text
 Claude Code, Cursor, Gemini CLI, etc.
@@ -31,19 +31,20 @@ adaptateurs.
 
 Un fichier Markdown sous src/apothem/rules/ qui est chargé à chaque interaction (toujours actif) ou
 seulement lors de l'édition de fichiers sous un chemin spécifique (filtré par chemin). Les règles codifient la manière dont
-l'environnement d'exécution de l'assistant doit se comporter.
+l'environnement doit se comporter.
 
 ## Hook
 
 Un script Python enregistré dans settings.json qui se déclenche sur les événements du cycle de vie de l'environnement
-(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Les hooks appliquent les exigences de conformité
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Les hooks appliquent les mandats de conformité
 en temps réel avant que la sortie n'atteigne le disque. Le modèle d'événements de hook est aujourd'hui une surface propre à Claude Code ;
 les adaptateurs pour les environnements dépourvus de mécanisme de hook l'omettent simplement.
 
 ## Portail de conformité
 
-La fraction mécanique du portail de pré-émission à quinze barres (M1-M15) — les validateurs autonomes
-qui doivent réussir avant l'émission de tout artefact. Le portail de pré-émission est le seuil de qualité ;
+La fraction mécanique du portail de pré-émission à quinze barres (M1-M15) — les validateurs vérifiables par machine
+qui s'exécutent avant l'émission d'un artefact ; consultatifs par défaut, bloquants
+avec `--strict`. Le portail de pré-émission est le seuil de qualité ;
 le portail de conformité exécute ses barres vérifiables par machine, et les hooks appliquent les barres individuelles en temps réel.
 
 ## Suite de planification

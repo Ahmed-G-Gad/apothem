@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptateur d'environnement Apothem pour Antigravity (préversion)."
 machineTranslated: true
-sourceHash: "5c4311df7cdf88b7"
+sourceHash: "684a01ac9350b73f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,8 +52,8 @@ deux clés qu'admet le schéma de plugin d'Antigravity.
 **Auxiliaires du plugin.** Les définitions d'auxiliaires du répertoire `agents/`
 du plugin portent `name` et `description`. La liste `tools` d'Antigravity
 utilise ses propres noms d'outils, et la documentation avertit qu'un nom
-inconnu peut bloquer le sous-assistant ; aucune liste d'outils n'est donc émise et
-les auxiliaires héritent des outils du parent. Comme rien dans Antigravity
+inconnu peut bloquer le sous-assistant ; aucune liste d'outils n'est donc émise
+et les auxiliaires héritent des outils du parent. Comme rien dans Antigravity
 n'impose de limite en lecture seule, les descriptions de ces auxiliaires
 abandonnent l'étiquette « lecture seule ».
 
@@ -91,7 +91,9 @@ apothem verify --harness antigravity
 La commande verify confirme que :
 
 1. Le fichier de contexte natif existe au chemin attendu.
-2. Le manifeste de plugin `plugin.json` existe, n'est pas vide et s'analyse comme du JSON. La vérification ne contrôle pas le nom du plugin ; inspectez ce champ vous-même après l'avoir modifié.
+2. Le manifeste de plugin `plugin.json` existe, n'est pas vide et s'analyse
+   comme du JSON. La vérification ne contrôle pas le nom du plugin ; inspectez
+   ce champ vous-même après l'avoir modifié.
 
 ## Mise à jour
 
@@ -109,8 +111,15 @@ mis à niveau le paquet Apothem installé.
 apothem uninstall --harness antigravity
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime le bloc Apothem de `~/.gemini/GEMINI.md` et conserve tout autre texte
+qui s'y trouve. Le fichier n'est supprimé que lorsqu'il n'y reste plus rien
+d'autre. Supprime aussi les clés d'Apothem de `plugin.json` dans le dossier du
+plugin `~/.gemini/antigravity-cli/plugins/apothem/` et conserve les vôtres, et
+supprime les fichiers Apothem des sous-dossiers `skills/`, `rules/`, `agents/`
+et `.apothem/support/` de ce dossier ; les autres fichiers qui s'y trouvent
+restent en place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant
+d'être modifié ou supprimé. Le YAML du profil partagé et le moteur Apothem ne
+sont pas affectés.
 
 ## Portail de conformité
 

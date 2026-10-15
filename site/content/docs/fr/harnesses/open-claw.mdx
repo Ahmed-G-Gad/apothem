@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptateur d'environnement Apothem pour Open-Claw (préversion)."
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,8 +92,11 @@ mis à niveau le paquet Apothem installé.
 apothem uninstall --harness open-claw
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime ce que l'adaptateur a ajouté : le document de profil et
+l'arborescence de support. Vos propres clés dans `openclaw.json` restent en
+place, et le fichier n'est supprimé que si Apothem l'a créé et qu'il n'y reste
+plus rien qui vous appartienne. Le YAML du profil partagé et le moteur Apothem
+ne sont pas affectés.
 
 ## Portail de conformité
 

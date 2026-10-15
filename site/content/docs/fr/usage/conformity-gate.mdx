@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,9 @@ fraction mécanique du portail de pré-émission à quinze barres (M1-M15) sur
 chaque artefact que rédige l'opérateur.
 
 Les commandes de cette page supposent un checkout d'Apothem : faites précéder
-chacune d'elles de `PYTHONPATH=src`. Après une installation par script, utilisez
-`PYTHONPATH="$HOME/.apothem/src"` à la place de `src`.
+chacune de celles que vous exécutez de `PYTHONPATH=src`. Après une installation
+par script, utilisez `PYTHONPATH="$HOME/.apothem/src"` à la place de
+`PYTHONPATH=src`.
 
 ## Exécuter le portail
 
@@ -44,12 +45,12 @@ même arborescence. Chaque validateur signale `inspected` — le nombre de cible
 qu'il a examinées — et `--all` recopie ce nombre dans chaque entrée de
 résultat. Un validateur qui n'a rien inspecté signale `passed: false`, de sorte
 qu'un mauvais répertoire de travail ne peut pas réussir silencieusement. Les
-deux validateurs de suites de planification font exception : les suites de
-planification vivent dans l'arborescence `.apothem/plans/` ignorée par git ;
-ils signalent donc `empty_scope_expected: true` sur un checkout propre et
+deux validateurs de suites de planification sont l'une des exceptions : les
+suites de planification vivent dans l'arborescence `.apothem/plans/` ignorée par
+git ; ils signalent donc `empty_scope_expected: true` sur un checkout propre et
 réussissent malgré tout. Les validateurs de flux de travail font de même
 lorsque le projet n'a pas encore de répertoire `.github/workflows/`, et le
-validateur des sujets de commit également lorsque le répertoire n'a aucun
+validateur des sujets de commit également lorsque la racine n'a aucun
 historique de commits.
 
 ## Barres du portail
@@ -94,11 +95,14 @@ l'appelez rarement à la main.
 Le mode hook est **limité à un ensemble de répertoires**. Il n'exécute la
 chaîne de matchers que sur les écritures dont la cible relève de l'un d'eux ;
 une écriture située hors de toutes les portées est court-circuitée en une
-réussite silencieuse. Les valeurs par défaut sont les racines d'environnement
-de portée utilisateur, compatibles avec les hooks, dans lesquelles Apothem
-s'installe — la page de chaque environnement, dans la section Adaptateurs
-d'environnement, nomme sa propre racine. Définissez `APOTHEM_CONFORMITY_SCOPE`
-sur un répertoire pour les remplacer :
+réussite silencieuse. Les valeurs par défaut sont deux racines :
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+Définissez `APOTHEM_CONFORMITY_SCOPE` sur un répertoire pour les remplacer :
 
 ```bash
 # Run the per-write matcher chain against one project tree instead

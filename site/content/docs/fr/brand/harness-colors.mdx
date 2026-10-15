@@ -2,7 +2,7 @@
 title: "Couleurs de marque des environnements"
 description: "Palette de couleurs par environnement utilisée sur tout le site web du projet Apothem et dans chaque diagramme d'architecture. Une source de vérité unique : une couleur par environnement, un concentrateur apothem."
 machineTranslated: true
-sourceHash: "8bd8ae0d07b55675"
+sourceHash: "1bade22f201192d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -105,7 +105,7 @@ graph LR
 
 ## Accessibilité
 
-Chaque jeton du mode clair conserve sa couleur de marque sans la déformer ; huit d'entre eux se situent donc sous le contraste WCAG 2.2 AA face à un texte blanc (≥4.5 : 1). Les autres jetons du mode clair l'atteignent. Les huit, avec leur contraste face au blanc :
+Chaque jeton du mode clair de cette page, qu'il appartienne au cœur ou aux environnements, conserve sa couleur de marque sans la déformer ; huit d'entre eux se situent donc sous le contraste WCAG 2.2 AA face à un texte blanc (≥4.5 : 1). Les autres jetons du mode clair l'atteignent. Les huit, avec leur contraste face au blanc :
 
 ```text
 shared-profile   2.54 : 1
@@ -118,7 +118,7 @@ trae             3.86 : 1
 windsurf         2.77 : 1
 ```
 
-La colonne du mode sombre est destinée aux fonds sombres, et aucun de ses jetons n'atteint 4.5 : 1 face à un texte blanc. Un diagramme qui exige un contraste WCAG AA du texte sur la couleur pour l'un de ces huit remplissages DOIT utiliser un texte sombre (`#0F172A`, qui mesure de 4.63 : 1 à 8.31 : 1 sur ceux-ci) au lieu du blanc.
+La colonne du mode sombre est destinée à être utilisée sur des fonds sombres, et aucun de ses jetons n'atteint 4.5 : 1 face à un texte blanc. L'exemple Mermaid ci-dessus définit un texte blanc sur chaque remplissage ; ses libellés sur ces huit remplissages n'atteignent donc pas 4.5 : 1. Un diagramme qui exige un contraste WCAG AA du texte sur la couleur pour l'un de ces huit remplissages DOIT utiliser un texte sombre (`#0F172A`, qui mesure de 4.63 : 1 à 8.31 : 1 sur ceux-ci) au lieu du blanc.
 
 ## Mises à jour
 

@@ -1,8 +1,8 @@
 ---
 title: "Runbook du cycle de publication"
-description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé, jusqu'au déclenchement optionnel de la publication npm."
+description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "2373679e2d500c4a"
+sourceHash: "f7e1f75b9dd83f7a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -149,15 +149,20 @@ recherche des confirmations de téléversement des ressources.
 
 ### 2.4 Confirmer la publication npm
 
-Le push de l'étiquette exécute aussi `publish-npm.yml`. Approuvez le
-déploiement de l'environnement `release` lorsque vous y êtes invité. Le flux de
-travail publie `@ahmed-g-gad/apothem@X.Y.Z` sur npmjs.com via la publication de
-confiance npm (OIDC) ; aucun jeton de registre n'est stocké dans le dépôt.
-Confirmez ensuite l'état de préparation :
+Le push de l'étiquette exécute aussi `publish-npm.yml` à côté de `release.yml`.
+Le flux de travail npm n'attend pas le flux de travail de publication ;
+l'approbation de l'environnement `release` est le point de contrôle. Une fois le
+flux de travail de publication du §2.3 terminé, confirmez l'état de
+préparation :
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
 ```
+
+Approuvez ensuite le déploiement de l'environnement `release` lorsque vous y
+êtes invité. Le flux de travail publie `@ahmed-g-gad/apothem@X.Y.Z` sur
+npmjs.com via la publication de confiance npm (OIDC) ; aucun jeton de registre
+n'est stocké dans le dépôt.
 
 Pour publier de nouveau après une exécution en échec, déclenchez le flux de
 travail pour la même étiquette

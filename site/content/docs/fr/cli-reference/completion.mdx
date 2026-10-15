@@ -2,7 +2,7 @@
 title: "completion"
 description: "Référence de la CLI pour la commande apothem completion."
 machineTranslated: true
-sourceHash: "660a40ccf40c550b"
+sourceHash: "fccf7d9dc0484b37"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,10 +36,12 @@ des shells pris en charge.
 
 ## Activer la complétion pour chaque shell
 
-La commande `apothem` doit d'abord se trouver dans votre `PATH` (les
-installateurs en une seule étape l'y placent). Activez ensuite la complétion en
-ajoutant le script au fichier de complétion du shell, puis redémarrez le
-shell :
+La commande `apothem` doit d'abord se trouver dans votre `PATH`. Les
+installateurs en une seule étape écrivent un shim `apothem` dans
+`$HOME/.local/bin` (POSIX) ou `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows)
+et ne modifient jamais votre `PATH` ; ajoutez donc ce répertoire s'il n'y figure
+pas déjà. Activez ensuite la complétion en ajoutant le script au fichier de
+complétion du shell, puis redémarrez le shell :
 
 ```bash
 # bash — append to your bashrc

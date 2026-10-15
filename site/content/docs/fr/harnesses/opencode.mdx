@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adaptateur d'environnement Apothem pour OpenCode (bêta)."
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,7 @@ d'auxiliaires Apothem en sous-auxiliaires OpenCode.
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -77,7 +78,10 @@ apothem verify --harness opencode
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -95,8 +99,19 @@ d'auxiliaires et l'arborescence de support Apothem.
 apothem uninstall --harness opencode
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime les entrées que l'adaptateur a ajoutées à
+`~/.config/opencode/opencode.json` (vos propres clés, vos serveurs MCP et vos
+entrées `instructions` restent en place, et le fichier n'est supprimé que si
+Apothem l'a créé et qu'il n'y reste plus rien qui vous appartienne). Supprime le
+bloc Apothem du document de profil
+`~/.config/opencode/apothem/rules/00-apothem-profile.md` et conserve tout autre
+texte qu'il contient ; ce fichier n'est supprimé que si rien d'autre n'y
+subsiste. Supprime aussi les fichiers Apothem de `~/.config/opencode/commands/`,
+`~/.config/opencode/skills/`, `~/.config/opencode/agents/` et
+`~/.config/opencode/.apothem/support/` ; les autres fichiers de ces dossiers
+restent en place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant
+d'être modifié ou supprimé. Le YAML du profil partagé et le moteur Apothem ne
+sont pas affectés.
 
 ## Portail de conformité
 

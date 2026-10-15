@@ -2,7 +2,7 @@
 title: "Manifeste d'épinglage des dépendances"
 description: "Politique de déclaration des dépendances couvrant les plages du runtime Python, l'outillage de développement, les fichiers de verrouillage de l'outillage de publication et les planchers de version ratifiés pour chaque surface de build."
 machineTranslated: true
-sourceHash: "6a526875e42d6686"
+sourceHash: "bde46b3dc263b56e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ avec des commentaires de version et sont mises à niveau par Renovate.
 |---|---|---|
 | Dépendances d'exécution Python | `[project.dependencies]` dans `pyproject.toml` | Plages à borne inférieure ; aucun verrou d'exécution Python commité |
 | Outillage de développement / sécurité | extras de `[project.optional-dependencies]` | Plages à borne inférieure ; la CI installe les versions correspondantes actuelles |
-| Outillage de publication | `scripts/release/requirements-build-linux.txt` | Verrouillé par hash pour les flux de travail de publication ; généré à partir de la fermeture de l'outillage de publication |
+| Outillage de publication | `scripts/release/requirements-build-linux.txt` pour les flux de travail de publication ; l'extra `release` de `[project.optional-dependencies]` pour les builds locaux | Verrouillé par hash pour les flux de travail de publication ; généré à partir de la fermeture de l'outillage de publication. L'extra `release` est une plage à borne inférieure |
 | Outils propres à la CI | `.github/workflows/*.yml` | Les outils pip propres au flux de travail utilisent des épinglages exacts (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
 | Site de documentation | `site/package.json` | `site/package-lock.json` commité et consommé par `npm ci` |
 | GitHub Actions | Références `uses:` épinglées par SHA avec commentaires de version | Renovate propose des mises à jour ; les exceptions portent des marqueurs `action-pinning-exempt:` |
@@ -39,7 +39,7 @@ avec des commentaires de version et sont mises à niveau par Renovate.
 | Outillage de publication | La fermeture verrouillée par hash vit dans `scripts/release/requirements-build-linux.txt` | Le flux de travail de publication installe avec `--require-hashes` ; les scripts locaux exigent que `build` existe déjà au lieu d'installer silencieusement des dépendances mouvantes |
 | Outillage de documentation | Les plages actuelles vivent dans `site/package.json` ; la résolution exacte vit dans `site/package-lock.json` | `npm outdated` ne renvoie aucune dépendance de documentation obsolète après l'actualisation du fichier de verrouillage |
 | GitHub Actions | Les épinglages SHA existants sont conservés pour la publication actuelle ; le flux de travail réutilisable SLSA reste l'exception documentée épinglée par étiquette | La réexécution de la CI publique est au vert ; les mises à niveau larges de version majeure des actions sont intentionnellement laissées aux pull requests d'automatisation des dépendances pour éviter les remaniements fréquents de la surface de publication |
-| Empaquetage npm | Le flux de travail `publish-npm.yml` s'exécute au push de l'étiquette `v*.*.*`, avec `workflow_dispatch` comme solution de repli | Le seul paquet npm public est `@ahmed-g-gad/apothem` ; la publication s'exécute une fois la préparation à la publication réussie |
+| Empaquetage npm | Le flux de travail `publish-npm.yml` s'exécute au push de l'étiquette `v*.*.*`, avec `workflow_dispatch` comme solution de repli | Le seul paquet npm public est `@ahmed-g-gad/apothem` ; la publication attend l'approbation de l'environnement `release` par l'opérateur, donnée une fois que `scripts/release/check-release-ready.sh` réussit |
 
 ## Verrouillage
 

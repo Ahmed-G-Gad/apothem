@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "58c69738b25d5cf1"
+sourceHash: "1c900ce4c37b3e46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,13 +14,14 @@ depuis un checkout sur le Python 3.10 ou plus récent du système (voir
 
 **Deux prérequis sont communs à toutes les voies :** **Python 3.10 ou plus
 récent** du système sur le `PATH`, avec les paquets `click` et `rich`
-importables sous cet interpréteur. Les voies du shim npm et des plugins d'outils
-ont en plus besoin de **Node.js 18 ou plus récent** pour exécuter `npx`.
-Python 3.10 ainsi que Node.js 18 et 20 ont dépassé leur fin de vie en amont ;
-ils restent pris en charge et testés, mais les versions plus récentes sont à
-privilégier (voir [Prérequis en un coup d'œil](#prérequis-en-un-coup-dœil)). La
-section propre à chaque canal ci-dessous reprend ses prérequis exacts, une
-commande prête à copier et une étape de vérification.
+importables sous cet interpréteur. Le shim npm (canal 2), l'extension de la
+famille VS Code (canal 4) et les amorçages en ligne de commande (canaux 5–7) ont
+en plus besoin de **Node.js 18 ou plus récent** pour exécuter `npx`. Python 3.10
+ainsi que Node.js 18 et 20 ont dépassé leur fin de vie en amont ; ils restent
+pris en charge et testés, mais les versions plus récentes sont à privilégier
+(voir [Prérequis en un coup d'œil](#prérequis-en-un-coup-dœil)). La section
+propre à chaque canal ci-dessous reprend ses prérequis exacts, une commande
+prête à copier et une étape de vérification.
 
 ## Choisir un canal
 
@@ -58,16 +59,17 @@ même état.
 **Prérequis :** Claude Code, et Python 3.10+ du système sur le `PATH`.
 
 La voie du plugin s'exécute entièrement dans Claude Code. Elle embarque le
-moteur Apothem avec ses commandes slash, ses workers délégués, ses skills, ses
-règles et ses hooks, tous exécutables depuis l'arborescence autonome du plugin :
+moteur Apothem avec ses commandes slash, ses travailleurs délégués, ses skills,
+ses règles et ses hooks, tous exécutables depuis l'arborescence autonome du
+plugin :
 
 ```text title="Inside Claude Code"
 /plugin marketplace add ahmed-g-gad/apothem
 /plugin install apothem@apothem
 ```
 
-Après l'installation, l'ensemble des commandes Apothem, les workers délégués
-inclus, les skills et les quatre [styles de sortie](/docs/reference/output-styles)
+Après l'installation, l'ensemble des commandes Apothem, les travailleurs
+délégués inclus, les skills et les quatre [styles de sortie](/docs/reference/output-styles)
 (choisissez-en un avec `/output-style` ou depuis `/config`) sont disponibles dans
 chaque session Claude Code. Les commandes du plugin portent le préfixe du
 plugin : `/apothem:plan-spec`, `/apothem:security-audit` et les autres. Claude
@@ -81,9 +83,10 @@ skill personnelle `code-review` remplace le `/code-review` intégré (son alias
 `/review` exécute toujours la revue intégrée). Deux noms, `projectify` et
 `workflow`, sont livrés à la fois comme commande et comme skill ; Claude Code
 exécute la skill lorsque les deux existent, si bien que le plugin exécute la
-skill et que l'installation par le moteur écrit la skill à cet emplacement.
-Consultez [Commandes slash](/docs/reference/commands) pour le catalogue complet
-des commandes.
+skill et que l'installation par le moteur écrit uniquement la skill, et non une
+skill dérivée de la commande, dans `~/.claude/skills/<name>/`. Consultez
+[Commandes slash](/docs/reference/commands) pour le catalogue complet des
+commandes.
 
 **Vérifiez :** exécutez `/plugin` dans Claude Code et confirmez qu'**apothem**
 figure comme installé, ou consultez le rapport de dérive depuis un terminal :
@@ -171,15 +174,15 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### Modèle de confiance
 
-Sans `APOTHEM_REF` défini, l'installateur résout l'étiquette de publication
-`vMAJOR.MINOR.PATCH` la plus élevée et extrait *celle-ci* — jamais la branche
-mouvante `main`. Avant toute matérialisation de configuration, la signature de
-l'étiquette récupérée est vérifiée avec `git verify-tag` ; une étiquette non
-signée, altérée ou invérifiable interrompt l'installation avant toute écriture.
-Une étiquette signée dont la clé publique du mainteneur ne figure pas encore
-dans le trousseau local interrompt plutôt l'installation avec des instructions
-d'importation de la clé : importez la clé, comparez son empreinte à la valeur
-publiée dans
+Lorsque `APOTHEM_REF` n'est pas définie, l'installateur résout l'étiquette de
+publication `vMAJOR.MINOR.PATCH` la plus élevée et extrait *celle-ci* — jamais
+la branche mouvante `main`. Avant toute matérialisation de configuration, la
+signature de l'étiquette récupérée est vérifiée avec `git verify-tag` ; une
+étiquette non signée, altérée ou invérifiable interrompt l'installation avant
+toute écriture. Une étiquette signée dont la clé publique du mainteneur ne
+figure pas encore dans le trousseau local interrompt plutôt l'installation avec
+des instructions d'importation de la clé : importez la clé, comparez son
+empreinte à la valeur publiée dans
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
 puis relancez. Épinglez une publication précise avec `APOTHEM_REF` :
 
@@ -207,12 +210,12 @@ s'interrompt avant que la configuration ne soit matérialisée, car une branche
 n'est pas une étiquette de publication signée. Un checkout local via
 `APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
 
-`APOTHEM_VERIFY=checksum` est la voie intermédiaire pour un hôte qui ne détient
-pas encore la clé publique du mainteneur : au lieu de cloner, l'installateur
-télécharge l'archive de plateforme de la publication et son `SHA256SUMS`,
-s'interrompt en cas de non-concordance du condensé avant d'extraire quoi que ce
-soit, et avertit qu'un condensé concordant prouve que l'archive est celle que
-liste la publication, et non qui l'a publiée.
+`APOTHEM_VERIFY=checksum` est la voie intermédiaire pour une machine qui ne
+détient pas encore la clé publique du mainteneur : au lieu de cloner,
+l'installateur télécharge l'archive de plateforme de la publication et son
+`SHA256SUMS`, s'interrompt en cas de non-concordance du condensé avant d'extraire
+quoi que ce soit, et avertit qu'un condensé concordant prouve que l'archive est
+celle que liste la publication, et non qui l'a publiée.
 
 Le moteur s'exécute ensuite directement depuis l'arborescence placée. Toutes
 les dépendances tierces, à l'exception de `click` et `rich`, sont vendorisées
@@ -257,14 +260,15 @@ L'extension **Apothem** s'installe depuis un paquet `apothem.vsix` :
 `code --install-extension apothem.vsix`, ou la commande *Install from VSIX…* de
 l'éditeur. Le flux de travail de publication signe le paquet et le joint à
 chaque GitHub Release. Les publications parues avant que le flux de travail
-n'empaquette l'extension n'en contiennent aucun ; lorsque la plus récente en
-est dépourvue, construisez le paquet depuis un checkout avec la version de vsce
-verrouillée dans `.github/vsce/`, qui requiert Node.js 22 ou ultérieur :
+n'empaquette l'extension ne contiennent aucun `.vsix` ; lorsque la dernière
+publication en est dépourvue, construisez le paquet depuis un checkout avec la
+version de vsce verrouillée dans `.github/vsce/` (cette version de vsce requiert
+Node.js 22 ou ultérieur) :
 exécutez `npm ci --prefix .github/vsce --ignore-scripts`, puis
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Une fiche sur le [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-n'est pas encore publiée. Une seule extension couvre VS Code et sa surface
-d'assistant compagnon intégrée à l'éditeur. Ses commandes de palette
+n'est pas encore publiée. Une seule extension couvre les éditeurs de la famille
+VS Code. Ses commandes de palette
 (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) exécutent le même
 moteur via le lanceur configuré (`npx @ahmed-g-gad/apothem@<extension version>`
 par défaut, si bien que l'extension exécute la version du moteur avec laquelle
@@ -403,15 +407,18 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 Remplacez le nom de l'environnement par celui de l'adaptateur que vous avez
 installé ; consultez la [liste des environnements](/docs/harnesses) pour tous
 les noms pris en charge. Pour contrôler d'un coup chaque adaptateur installé (sa
-vérification et ses commandes de hook), exécutez `apothem doctor` (ou
-`npx @ahmed-g-gad/apothem doctor`) sous la même forme. Pour la voie du plugin,
-exécutez `/plugin` dans Claude Code et confirmez qu'**apothem** figure comme
-installé.
+vérification et ses commandes de hook), exécutez `doctor` à la place de
+`verify --harness NAME`, sous la forme que vous avez utilisée ci-dessus :
+`apothem doctor`, `PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` ou
+`npx @ahmed-g-gad/apothem doctor`. Pour la voie du plugin, exécutez `/plugin`
+dans Claude Code et confirmez qu'**apothem** figure comme installé.
 
 ## Prérequis en un coup d'œil
 
-- **Python 3.10 ou ultérieur** — chaque voie qui exécute le moteur le recherche
-  (`python3`, `python`, les noms versionnés et `py -3` sous Windows).
+- **Python 3.10 ou ultérieur** — les voies qui le localisent le font par son
+  nom, et les noms diffèrent selon la voie. Le shim npm essaie `python3`,
+  `python`, puis `py -3`. Les installateurs essaient `python3`, `python` et les
+  noms versionnés, en ordre décroissant de `python3.14` à `python3.10`.
 - **`click` et `rich` importables** sous cet interpréteur — les deux dépendances
   orientées terminal que le moteur ne vendorise pas. Les installateurs vérifient
   les deux, nomment ce qui manque et proposent de l'installer pour vous — avec
@@ -423,8 +430,9 @@ installé.
   (`<interpreter> -m pip install "click==…" "rich>=…"`) ; avec `--json`, la même
   erreur arrive sous la forme d'une enveloppe JSON portant le code
   `runtime.dependency_missing`.
-- **Node.js 18 ou ultérieur** — voies du shim npm et des plugins d'outils
-  uniquement.
+- **Node.js 18 ou ultérieur** — uniquement les voies qui exécutent `npx` : le
+  shim npm (2), l'extension de la famille VS Code (4) et les amorçages en ligne
+  de commande (5–7).
 - **Runtimes en fin de vie.** Python 3.10 a atteint sa fin de vie en amont le
   2026-10-01, et Node.js 18 et 20 respectivement le 2025-04-30 et le
   2026-04-30. Apothem les prend toujours en charge en tant que planchers
