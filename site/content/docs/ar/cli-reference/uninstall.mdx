@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "مرجع واجهة سطر الأوامر لأمر apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,14 +16,18 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-يزيل أهداف إطار العمل التي يديرها المحوّل، ثم الأدلة التي أنشأها التثبيت متى صارت
-فارغة (يبقى الدليل الذي يحوي أي شيء يخصّك). يطلب التأكيد ما لم يُمرَّر
-<bdi>`--yes`</bdi>. وحين يتعذّر عرض مطالبة — مع <bdi>`--format json`</bdi> (إذ
-سيُفسد نصُّ المطالبة مستندَ <bdi>JSON</bdi> الوحيد) أو في صدفة غير تفاعلية (دون
-<bdi>TTY</bdi>) — يرفض الأمر منذ البداية بخطأ مُهيكَل
-<bdi>`uninstall.confirmation_required`</bdi> (رمز الخروج 1) ما لم يُمرَّر
-<bdi>`--yes`</bdi>. وإذا لم يكن إطار عمل مختار مثبّتًا، ينجح الأمر (رمز الخروج 0) مع
-إشعار «لا شيء لإزالته».
+يزيل أهداف إطار العمل التي يديرها المحوّل، ثم الأدلة التي أنشأها التثبيت متى صارت فارغة
+(يبقى الدليل الذي يحوي أي شيء يخصّك).
+
+تُنسَخ الذاكرةُ والسياقاتُ ومخازنُ التعلّم في دليل العمل المشترك احتياطيًا وتُزال فقط حين
+يكون هذا آخرَ إطار عمل مُثبَّت في ذلك الدليل. ويُزيلها أمرُ الإزالة في الموقع الذي سجّله التثبيت،
+فيجدها أينما كتبها التثبيت (راجِع حقول <bdi>`workspace`</bdi> في الملف التعريفي). ولا يُزال دليل <bdi>`plans/`</bdi> أبدًا.
+
+يطلب التأكيد ما لم يُمرَّر <bdi>`--yes`</bdi>. وحين يتعذّر عرض مطالبة — مع <bdi>`--format json`</bdi>
+(إذ سيُفسد نصُّ المطالبة مستندَ <bdi>JSON</bdi> الوحيد) أو في صدفة غير تفاعلية (دون <bdi>TTY</bdi>) —
+يرفض الأمر منذ البداية بخطأ مُهيكَل <bdi>`uninstall.confirmation_required`</bdi> (رمز الخروج 1) ما لم
+يُمرَّر <bdi>`--yes`</bdi>. وإذا لم يكن إطار عمل مختار مثبّتًا، ينجح الأمر (رمز الخروج 0)، ويطبع في
+المخرج النصي العادي <bdi>`NAME is not installed; nothing to remove.`</bdi>، حيث <bdi>`NAME`</bdi> هو معرّف إطار العمل.
 
 تبقى مخازن البيانات المشتركة تحت <bdi>`.apothem/`</bdi> في جذر التثبيت
 (<bdi>`memory/`</bdi>، و<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>) ما دام إطار
@@ -32,10 +36,9 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 <bdi>Apothem</bdi> (<bdi>`~/.apothem/backups/`</bdi>)، ثم يزيله بكل ما فيه. وأي شيء
 تحتفظ به في <bdi>`plans/`</bdi> لا يُزال أبدًا.
 
-الإزالة بـ <bdi>`--harness all`</bdi> شاملة عمدًا: تغطّي كل إطار عمل مُسجَّل، بما في
-ذلك أي إطار عمل يتخطّاه <bdi>`exclude_harnesses`</bdi> في الملف التعريفي أثناء
-التثبيت — فيصل التنظيف إلى حالةٍ ربما خلّفها تثبيت سابق أوسع نطاقًا. وأُطُر العمل
-التي لم تُثبَّت قطّ تُبلغ «لا شيء لإزالته».
+الإزالة بـ <bdi>`--harness all`</bdi> شاملة عمدًا: تغطّي كل إطار عمل مُسجَّل، بما في ذلك أي إطار عمل
+يتخطّاه <bdi>`exclude_harnesses`</bdi> في الملف التعريفي أثناء التثبيت، فيصل التنظيف إلى حالة ربما
+خلّفها تثبيتٌ سابق أوسع نطاقًا. وتتلقّى أُطُر العمل التي لم تُثبَّت قطّ الإشعارَ نفسه.
 
 يُحَلّ الاسم المستعار بصيغة الاستمرار <bdi>`apothem uninstalling`</bdi> (ويُقبَل أيضًا
 بالصيغة <bdi>`apothem Uninstalling`</bdi>) إلى المعالج نفسه.
@@ -92,7 +95,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## رموز الخروج

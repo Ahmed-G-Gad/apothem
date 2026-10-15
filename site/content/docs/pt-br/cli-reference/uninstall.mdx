@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referência da CLI para o comando apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,15 +16,11 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-Remove os destinos do harness gerenciados pelo adaptador e, em seguida, os
-diretórios que a instalação criou, assim que estiverem vazios (um diretório que
-contenha qualquer coisa sua permanece). Pede confirmação, a menos que `--yes`
-seja fornecido. Quando nenhum prompt é possível — `--format json` (o texto do
-prompt corromperia o documento JSON único) ou um shell não interativo (sem
-TTY) — o comando recusa de antemão com um erro estruturado
-`uninstall.confirmation_required` (saída 1), a menos que `--yes` seja
-fornecido. Se um harness selecionado não estiver instalado, o comando é
-concluído com sucesso (saída 0) com um aviso "nada a remover".
+Remove os destinos do harness gerenciados pelo adaptador e, em seguida, os diretórios que a instalação criou, assim que estiverem vazios (um diretório que contenha qualquer coisa sua permanece).
+
+Os armazenamentos de memória, contextos e aprendizado do diretório de trabalho compartilhado são salvos em backup e removidos somente quando este for o último harness instalado nesse diretório. A desinstalação remove-os no local que a instalação registrou, de modo que os encontra onde quer que a instalação os tenha gravado (consulte os campos `workspace` do perfil). O diretório `plans/` nunca é removido.
+
+Pede confirmação, a menos que `--yes` seja fornecido. Quando nenhum prompt é possível — `--format json` (o texto do prompt corromperia o documento JSON único) ou um shell não interativo (sem TTY) — o comando recusa de antemão com um erro estruturado `uninstall.confirmation_required` (saída 1), a menos que `--yes` seja fornecido. Se um harness selecionado não estiver instalado, o comando é concluído com sucesso (saída 0) e, na saída simples, exibe a mensagem `NAME is not installed; nothing to remove.`, em que `NAME` é o id do harness.
 
 Os armazenamentos de dados compartilhados em `.apothem/`, na raiz da instalação
 (`memory/`, `contexts/`, `learning/`), permanecem enquanto outro harness
@@ -33,11 +29,7 @@ instalado na mesma raiz ainda os usar. Quando o harness que você remove é o
 backups do Apothem (`~/.apothem/backups/`) e depois o remove com tudo o que há
 nele. Tudo o que você mantém em `plans/` nunca é removido.
 
-Uma remoção com `--harness all` é deliberadamente exaustiva: ela abrange todos
-os harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula
-durante a instalação — a limpeza alcança o estado que uma instalação anterior
-mais ampla possa ter deixado para trás. Os harnesses que nunca foram instalados
-relatam "nada a remover".
+A remoção com `--harness all` é deliberadamente exaustiva: ela abrange todos os harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula durante a instalação — a limpeza alcança o estado que uma instalação anterior, mais ampla, possa ter deixado para trás. Os harnesses que nunca foram instalados recebem o mesmo aviso.
 
 O alias na forma contínua `apothem uninstalling` (também aceito como
 `apothem Uninstalling`) resolve para o mesmo manipulador.
@@ -97,7 +89,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Códigos de saída

@@ -2,7 +2,7 @@
 title: "Registry des Vor-Emissions-Gates — Verpflichtende Fünfzehn-Balken-Prüfung"
 description: "Verpflichtende Fünfzehn-Balken-Konformitätsprüfung, die vor der Emission von bedeutsamem Umfang ausgeführt wird, mit Fehler-Aktion-Zuordnungen und Release-Nachweis-Schema."
 machineTranslated: true
-sourceHash: "ae70067b5dcc7f40"
+sourceHash: "be81c64b8d309fc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,23 +10,23 @@ sourceHash: "ae70067b5dcc7f40"
 
 Vor jeder Artefakt-Emission von bedeutsamem Umfang (gemäß der Trivial-vs.-Nicht-trivial-Schwelle in `site/content/docs/governance/outward-conformity-registry.mdx` §1) führe das Fünfzehn-Balken-Vor-Emissions-Gate aus. Mechanisiere über PreToolUse-Hooks, wo möglich (die mechanischen Greps in `src/apothem/conformity/*-grep.py`, orchestriert von `src/apothem/conformity/gate.py`); räsoniere, wo Mechanisierung unmöglich ist. **Das Versagen eines einzelnen Balkens blockiert die Emission; revidiere, bis jeder Balken besteht; emittiere mit aufgezeichnetem Gate-Release-Nachweis.**
 
-| # | Balken | Prüfungsart | Versagen → Aktion |
+| # | Stufe | Prüfungsart | Fehlschlag → Maßnahme |
 | - | --- | ---------- | ---------------- |
-| 1 | M1 Host-Agnostizismus | räsoniert | revidieren, um den Host-Konventionen zu entsprechen |
-| 2 | M2 redaktionelle Offenlegung | räsoniert | Offenlegungs-Ledger hinzufügen |
-| 3 | M3 zehn Dimensionen | gemischt (mechanisch + räsoniert) | auf der versagenden Dimension revidieren |
-| 4 | M4 Selbstanwendung | mechanisch (Release-Nachweis vorhanden) | Release-Nachweis aufzeichnen |
-| 5 | M5 Autorität | mechanisch (`<USER-CONFIRM:…>`-Platzhalter-Grep) | zur Rückfrageoberfläche umleiten |
-| 6 | M6 Expertise | räsoniert (Abschnitt aufgedeckter Lücken vorhanden) | Lücken aufdecken; zitieren |
+| 1 | M1 Host-Agnostizismus | abwägungsbasiert | überarbeiten, um den Host-Konventionen zu entsprechen |
+| 2 | M2 redaktionelle Offenlegung | abwägungsbasiert | Offenlegungsregister hinzufügen |
+| 3 | M3 zehn Dimensionen | gemischt (mechanisch + abwägungsbasiert) | auf der nicht bestandenen Dimension überarbeiten |
+| 4 | M4 Selbstanwendung | abwägungsbasiert (Verifizierungsblock vorhanden) | Verifizierungsblock erfassen |
+| 5 | M5 Autorität | mechanisch (`<USER-CONFIRM:…>`-Platzhalter-Grep) | an die Rückfrageoberfläche weiterleiten |
+| 6 | M6 Expertise | abwägungsbasiert (Abschnitt aufgedeckter Lücken vorhanden) | Lücken aufdecken; zitieren |
 | 7 | M7 Optionsannotation | mechanisch (Optionssatz trägt Empfehlungsmarkierung) | annotieren |
-| 8 | M8 Bestimmtheit | mechanisch (Grep für ausweichendes Vokabular) | das Ausweichen zu Konditionalen heben |
-| 9 | M9 visuelle Hebelwirkung | räsoniert (Diagramm vorhanden, wo strukturell) | Diagramm erstellen / aktualisieren |
-| 10 | M10 bidirektionale Bindung | mechanisch (Binding-Reziprozitäts-Grep) | Halb-Kanten schließen |
-| 11 | M11 agile Sprints | räsoniert (Sprint-Apparat instanziiert) | als Sprints umstrukturieren |
-| 12 | M12 Phasenbericht und Layout | mechanisch (Waisen-Output-Grep) + räsoniert | Zusammenfassung erstellen; umlagern |
-| 13 | M13 Code-Handwerk | mechanisch (Lint / Formatierung / Typprüfung; Grep für bare-except, Magic-Number, auskommentierten Code) | revidieren |
-| 14 | M14 Systematizität | räsoniert (deklariert vorgelagert / nachgelagert / Peers / Durchsetzer) | deklarieren; indexieren |
-| 15 | M15 produktionsreif | mechanisch (production-ready-pr-Grep) + räsoniert | Tests / Dokumentation / CHANGELOG hinzufügen |
+| 8 | M8 Bestimmtheit | mechanisch (Grep für Absicherungsvokabular) | Absicherungsfloskeln zu Bedingungen aufwerten |
+| 9 | M9 visuelle Hebelwirkung | abwägungsbasiert (Diagramm vorhanden, wo strukturell) | Diagramm erstellen / aktualisieren |
+| 10 | M10 bidirektionale Bindung | mechanisch (Grep für Bindungsreziprozität) | Halb-Kanten schließen |
+| 11 | M11 agile Sprints | abwägungsbasiert (Sprint-Apparat instanziiert) | als Sprints umstrukturieren |
+| 12 | M12 Phasenbericht und Layout | mechanisch (Waisen-Output-Grep) + abwägungsbasiert | Zusammenfassung erstellen; umlagern |
+| 13 | M13 Code-Handwerk | mechanisch (Lint / Formatierung / Typprüfung; Grep für bare-except, Magic-Number, auskommentierten Code) | überarbeiten |
+| 14 | M14 Systemizität | abwägungsbasiert (deklariert vorgelagert / nachgelagert / Gleichrangige / Durchsetzer) | deklarieren; indexieren |
+| 15 | M15 produktionsreif | mechanisch (production-ready-pr-Grep) + abwägungsbasiert | Tests / Dokumentation / CHANGELOG hinzufügen |
 
 ## 1. Release-Nachweis-Schema
 

@@ -2,7 +2,7 @@
 title: "インストールワークフロー"
 description: "apothem install、update、uninstall がエンドツーエンドでどのように動作するか。"
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,10 @@ flowchart TD
 1. `Adapter.uninstall()` を呼び出します。
 2. アダプターは自身が書き込んだファイルのみを削除します。共有プロファイル
    YAML と、無関係なオペレーター作成ファイルには手を付けません。
+3. 共有の作業ディレクトリにあるメモリ、コンテキスト、学習ストアは、このハーネスがそこに
+   インストールされた最後のハーネスである場合に、バックアップしたうえで削除
+   されます。削除は、インストール時に記録された場所で行われます。`plans/`
+   ディレクトリは決して削除されません。
 
 ## スコープ解決
 

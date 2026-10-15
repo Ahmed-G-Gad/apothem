@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referencia de la CLI para el comando apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,11 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 Elimina los destinos del entorno gestionados por el adaptador y luego los
 directorios que creó la instalación, una vez que están vacíos (un directorio que
-contiene algo tuyo se queda). Pide confirmación a menos que se proporcione
-`--yes`. Cuando no es posible mostrar una solicitud — `--format json` (el texto
-de la solicitud corrompería el único documento JSON) o una shell no interactiva
-(sin TTY) — el comando se niega de antemano con un error estructurado
-`uninstall.confirmation_required` (código de salida 1) a menos que se
-proporcione `--yes`. Si un entorno seleccionado no está instalado, el comando
-tiene éxito (código de salida 0) con un aviso «nada que eliminar».
+contiene algo tuyo se queda).
+
+La memoria, los contextos y los almacenes de aprendizaje del directorio de trabajo compartido se respaldan y se eliminan solo cuando este es el último entorno instalado en ese directorio. La desinstalación los elimina en la ubicación que registró la instalación, de modo que los encuentra dondequiera que la instalación los haya escrito (consulta los campos `workspace` del perfil). El directorio `plans/` nunca se elimina.
+
+Pide confirmación a menos que se proporcione `--yes`. Cuando no es posible mostrar una solicitud — `--format json` (el texto de la solicitud corrompería el único documento JSON) o una shell no interactiva (sin TTY) — el comando se niega de antemano con un error estructurado `uninstall.confirmation_required` (código de salida 1) a menos que se proporcione `--yes`. Si un entorno seleccionado no está instalado, el comando tiene éxito (código de salida 0) y, en la salida de texto plano, imprime `NAME is not installed; nothing to remove.`, donde `NAME` es el identificador del entorno.
 
 Los almacenes de datos compartidos bajo `.apothem/` en la raíz de instalación
 (`memory/`, `contexts/`, `learning/`) se conservan mientras otro entorno
@@ -33,11 +31,7 @@ instalado en la misma raíz siga usándolos. Cuando el entorno que eliminas es e
 seguridad de Apothem (`~/.apothem/backups/`) y luego lo elimina con todo su
 contenido. Lo que conserves en `plans/` nunca se elimina.
 
-Una eliminación con `--harness all` es exhaustiva de forma deliberada: abarca
-cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
-durante la instalación — la limpieza alcanza el estado que una instalación
-anterior de mayor alcance pueda haber dejado atrás. Los entornos que nunca se
-instalaron informan «nada que eliminar».
+Una eliminación con `--harness all` es deliberadamente exhaustiva: abarca cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite durante la instalación — la limpieza alcanza el estado que una instalación anterior de mayor alcance pueda haber dejado atrás. Los entornos que nunca se instalaron reciben el mismo aviso.
 
 El alias en forma continua `apothem uninstalling` (también aceptado como
 `apothem Uninstalling`) se resuelve en el mismo manejador.
@@ -98,7 +92,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Códigos de salida

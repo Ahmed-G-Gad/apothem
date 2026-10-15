@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,17 +16,32 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-アダプターが管理するハーネスのターゲットを削除し、続いて、インストールが作成したディレクトリを、空になった時点で削除します（あなたのものが何か入っているディレクトリは残ります）。
-`--yes` が指定されない限り、確認を求めます。
-プロンプトを表示できない場合 — `--format json`（プロンプトのテキストが単一の JSON ドキュメントを壊してしまうため）または非対話型のシェル（TTY なし）— は、`--yes` が指定されない限り、コマンドは処理を始める前に、構造化された `uninstall.confirmation_required` エラー（終了コード 1）で拒否します。
-選択したハーネスがインストールされていない場合、コマンドは「削除するものがありません」という通知とともに成功します（終了コード 0）。
+アダプターが管理するハーネスのターゲットを削除し、続いて、インストールが作成した
+ディレクトリを、空になった時点で削除します（あなたのものが何か入っている
+ディレクトリは残ります）。
+
+共有の作業ディレクトリのメモリ、コンテキスト、学習ストアは、このハーネスがそのディレクトリに
+インストールされた最後のハーネスである場合にのみ、バックアップしたうえで削除
+されます。アンインストールは、インストール時に記録された場所でそれらを削除する
+ため、インストールがそれらを書き込んだ場所に関係なく見つけられます（`workspace`
+プロファイルのフィールドを参照）。`plans/` ディレクトリは決して削除されません。
+
+`--yes` が指定されない限り、確認を求めます。プロンプトを表示できない場合 —
+`--format json`（プロンプトのテキストが単一の JSON ドキュメントを壊してしまうため）
+または非対話型のシェル（TTY なし）— の場合、`--yes` が指定されない限り、
+コマンドは処理を始める前に、構造化された `uninstall.confirmation_required`
+エラー（終了コード 1）で拒否します。選択したハーネスがインストールされていない
+場合、コマンドは成功し（終了コード 0）、通常の出力では
+`NAME is not installed; nothing to remove.` と表示します（`NAME` はハーネス ID です）。
 
 インストールルートの `.apothem/` 配下にある共有データストア（`memory/`、`contexts/`、`learning/`）は、同じルートにある別のインストール済みハーネスがそれらをまだ使用している間は残ります。
 削除するハーネスがそのルートで最後の 1 つである場合、コマンドは各ストアをまず Apothem のバックアップルート（`~/.apothem/backups/`）へコピーし、その後、中身ごとストアを削除します。
 あなたが `plans/` に保管しているものは、決して削除されません。
 
-`--harness all` による削除は、意図的に網羅的です。登録済みのすべてのハーネスを対象とし、プロファイルの `exclude_harnesses` がインストール時にスキップするハーネスも含みます — クリーンアップは、以前のより広範なインストールが残した可能性のある状態にまで及びます。
-一度もインストールされていないハーネスは「削除するものがありません」と報告します。
+`--harness all` による削除は意図的に網羅的です。登録済みのすべてのハーネスを対象とし、
+インストール時にプロファイルの `exclude_harnesses` がスキップするハーネスも含みます。
+クリーンアップは、以前のより広範なインストールが残した可能性のある状態にまで及びます。
+一度もインストールされていないハーネスにも、同じ通知が表示されます。
 
 進行形のエイリアス `apothem uninstalling`（`apothem Uninstalling` としても受け付けられます）は、同じハンドラーに解決されます。
 
@@ -83,7 +98,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## 終了コード

@@ -2,7 +2,7 @@
 title: "Installations-Workflow"
 description: "Wie apothem install, update und uninstall durchgängig funktionieren."
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,9 +37,13 @@ Bei `apothem update --harness X`:
 Bei `apothem uninstall --harness X`:
 
 1. Ruft `Adapter.uninstall()` auf.
-2. Der Adapter entfernt nur die von ihm geschriebenen Dateien; das gemeinsame
+2. Der Adapter entfernt nur die Dateien, die er geschrieben hat; das gemeinsame
    Profil-YAML und nicht zugehörige, vom Operator verfasste Dateien bleiben
    unberührt.
+3. Das Memory, die Kontexte und die Lernspeicher des gemeinsamen
+   Arbeitsverzeichnisses werden gesichert und entfernt, wenn dies der letzte
+   dort installierte Harness ist. Sie werden an dem Ort entfernt, den die
+   Installation vermerkt hat. Das Verzeichnis `plans/` wird nie entfernt.
 
 ## Geltungsbereich-Auflösung
 

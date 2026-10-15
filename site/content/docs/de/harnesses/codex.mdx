@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Apothem-Harness-Adapter für Codex (Beta)."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,14 @@ Command-Prompts als Codex-Skills.
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` für
 vom Benutzer aufgerufene Skills sowie Unterstützungsdateien unter
 `~/.config/apothem/{rules,templates}/`.
+
+**Hook-Interpreter.** Bevor sie etwas schreibt, ermittelt die Installation einen
+CPython-Interpreter ab Version 3.10. Unter Windows verwendet der Eintrag
+`commandWindows` jedes Hooks in `hooks.json` den absoluten Pfad dieses
+Interpreters statt des `py -3`-Launchers; die POSIX-Einträge `command` behalten
+`python3` bei. Führen Sie `apothem update --harness codex` erneut aus, nachdem
+der Interpreter verschoben oder entfernt wurde. Wird kein CPython 3.10+ gefunden,
+bricht die Installation ab, bevor sie eine Datei schreibt.
 
 Der Apothem-Block in `AGENTS.md` endet mit einem Abschnitt zu den
 Apothem-Unterstützungsdateien, der das absolute Verzeichnis nennt, gegen das

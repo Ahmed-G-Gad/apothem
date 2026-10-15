@@ -2,7 +2,7 @@
 title: "설치 워크플로"
 description: "apothem install, update, uninstall이 처음부터 끝까지 어떻게 동작하는지."
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,8 +37,9 @@ flowchart TD
 `apothem uninstall --harness X` 실행 시:
 
 1. `Adapter.uninstall()`을 호출합니다.
-2. 어댑터는 자신이 쓴 파일만 제거합니다. 공유 프로파일 YAML과 관련 없는
+2. 어댑터는 자신이 쓴 파일만 제거합니다. 공유 프로필 YAML과 관련 없는
    운영자 작성 파일은 그대로 둡니다.
+3. 공유 작업 디렉터리의 메모리, 컨텍스트, 학습 저장소는, 그 디렉터리에 설치된 하니스가 이 하니스 하나뿐일 때 백업된 뒤 제거됩니다. 제거는 설치가 기록해 둔 위치에서 이루어집니다. `plans/` 디렉터리는 절대 제거되지 않습니다.
 
 ## 범위 해석
 

@@ -2,7 +2,7 @@
 title: "Positionierung"
 description: "Verstehen Sie Apothem als Artefakt-Ratifizierungs-Governance mit fünfzehn Mandaten, kanonischer Kanal-Eingabedisziplin und kognitiver Identitäts-Kreativarchitektur für assistentengestützte Arbeit."
 machineTranslated: true
-sourceHash: "bb4803081f68283f"
+sourceHash: "f3d0b1757dd0e823"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +92,7 @@ Die Fünfzehn-Mandate-Registry ist die kanonische Governance-Oberfläche der Au�
 
 ### M4 — Selbstanwendung — Pre-Emission-Gate
 
-**Geltungsbereich.** Jedes Artefakt durchläuft vor der Emission ein **fünfzehnstufiges Pre-Emission-Gate**. Mechanische Stufen (M5, M7, M8, M10, M13) tragen ausführbare Matcher unter `src/apothem/conformity/*-grep.py`, orchestriert von `src/apothem/conformity/gate.py`. Die Stufen M3, M12 und M15 sind teilweise mechanisch: Ausführbare Matcher decken jeweils einen Teil der Stufe ab, und den Rest bewertet der ausführende Assistent. Abwägungsbasierte Stufen (M1, M2, M6, M9, M11, M14) bewertet der ausführende Assistent, und sie werden im Verifizierungsblock festgehalten. Die Stufe M4 selbst prüft, ob der Verifizierungsblock in der Arbeitsspur des Artefakts vorhanden ist. Das Scheitern einer einzelnen Stufe blockiert die Emission; die Iteration läuft weiter, bis jede Stufe besteht.
+**Geltungsbereich.** Jedes Artefakt durchläuft vor der Emission ein **fünfzehnstufiges Pre-Emission-Gate**. Mechanische Stufen (M5, M7, M8, M10, M13) tragen ausführbare Matcher unter `src/apothem/conformity/*-grep.py`, orchestriert von `src/apothem/conformity/gate.py`. Die Stufen M3, M12 und M15 sind teilweise mechanisch: Ausführbare Matcher decken jeweils einen Teil der Stufe ab, und den Rest bewertet der ausführende Assistent. Abwägungsbasierte Stufen (M1, M2, M4, M6, M9, M11, M14) bewertet der ausführende Assistent und hält sie im Verifizierungsblock fest. Die Stufe M4 selbst prüft, ob der Verifizierungsblock in der Arbeitsspur des Artefakts vorhanden ist. Das Scheitern einer einzelnen Stufe blockiert die Emission; die Iteration läuft weiter, bis jede Stufe besteht.
 
 **Kanonische Spezifikation.** `src/apothem/rules/pre-emission-gate.md` (mit der vollständigen Tabelle der Stufen unter `src/apothem/rules/pre-emission-gate-bars.md`).
 

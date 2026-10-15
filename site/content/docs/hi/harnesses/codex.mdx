@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex (बीटा) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,12 @@ TOML एजेंटों में परिवर्तित करता �
 `~/.agents/skills/*/SKILL.md`, उपयोगकर्ता-आह्वानित स्किल के लिए
 `~/.agents/skills/*/agents/openai.yaml`, और
 `~/.config/apothem/{rules,templates}/` के अंतर्गत समर्थन फ़ाइलें।
+
+**हुक इंटरप्रेटर।** कुछ भी लिखने से पहले, इंस्टॉल एक CPython 3.10+ इंटरप्रेटर खोजता है। Windows पर,
+`hooks.json` में प्रत्येक हुक की `commandWindows` प्रविष्टि `py -3` लॉन्चर के बजाय उस इंटरप्रेटर का
+निरपेक्ष पथ चलाती है; POSIX `command` प्रविष्टियाँ `python3` ही रखती हैं। इंटरप्रेटर का स्थान बदलने
+या उसे हटाने के बाद `apothem update --harness codex` फिर से चलाएँ। यदि कोई CPython 3.10+ नहीं मिलता,
+तो इंस्टॉल कोई भी फ़ाइल लिखने से पहले रुक जाता है।
 
 `AGENTS.md` में Apothem ब्लॉक एक Apothem समर्थन फ़ाइल अनुभाग के साथ समाप्त होता
 है, जो इंस्टॉल किए गए स्किल और नियमों में प्रत्येक रिपॉज़िटरी-शैली उद्धरण के लिए

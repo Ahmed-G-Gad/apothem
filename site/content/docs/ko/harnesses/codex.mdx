@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex(베타)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,8 @@ apothem install --harness codex
 `~/.agents/skills/*/SKILL.md`, 사용자 호출 스킬용
 `~/.agents/skills/*/agents/openai.yaml`, 그리고
 `~/.config/apothem/{rules,templates}/` 아래의 지원 파일.
+
+**훅 인터프리터.** 설치는 어떤 파일도 쓰기 전에 CPython 3.10+ 인터프리터를 찾습니다. Windows에서는 `hooks.json`의 각 훅 `commandWindows` 항목이 `py -3` 런처 대신 해당 인터프리터의 절대 경로를 실행합니다. POSIX `command` 항목은 `python3`을 그대로 유지합니다. 인터프리터가 이동하거나 제거된 뒤에는 `apothem update --harness codex`를 다시 실행하세요. CPython 3.10+를 찾지 못하면 설치는 어떤 파일도 쓰기 전에 중단됩니다.
 
 `AGENTS.md`의 Apothem 블록은 Apothem 지원 파일 섹션으로 끝나며, 이 섹션은
 설치된 스킬과 규칙에 있는 저장소 스타일의 각 인용이 해석되는 기준 절대

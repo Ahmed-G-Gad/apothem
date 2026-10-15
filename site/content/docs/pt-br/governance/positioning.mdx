@@ -2,7 +2,7 @@
 title: "Posicionamento"
 description: "Compreenda o Apothem como governança de ratificação de artefatos com quinze mandatos, disciplina de entrada por canal canônico e arquitetura criativa de identidade cognitiva para o trabalho conduzido por assistentes."
 machineTranslated: true
-sourceHash: "bb4803081f68283f"
+sourceHash: "f3d0b1757dd0e823"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +92,7 @@ O registro de quinze mandatos é a superfície canônica de governança do eixo 
 
 ### M4 — Autoaplicação — portão de pré-emissão
 
-**Escopo.** Todo artefato passa por um **portão de pré-emissão de quinze barras** antes da emissão. As barras mecânicas (M5, M7, M8, M10, M13) carregam matchers executáveis em `src/apothem/conformity/*-grep.py`, orquestrados por `src/apothem/conformity/gate.py`. As barras M3, M12 e M15 são parcialmente mecânicas: matchers executáveis cobrem uma parte de cada barra e o assistente operante avalia o restante. As barras de raciocínio (M1, M2, M6, M9, M11, M14) são avaliadas pelo assistente operante e registradas no bloco de verificação. A própria barra M4 verifica que o bloco de verificação está presente no rastro de trabalho do artefato. A falha de uma única barra bloqueia a emissão; a iteração continua até que todas as barras passem.
+**Escopo.** Todo artefato passa por um **portão de pré-emissão de quinze barras** antes da emissão. As barras mecânicas (M5, M7, M8, M10, M13) carregam matchers executáveis em `src/apothem/conformity/*-grep.py`, orquestrados por `src/apothem/conformity/gate.py`. As barras M3, M12 e M15 são parcialmente mecânicas: matchers executáveis cobrem uma parte de cada barra e o assistente operante avalia o restante. As barras de raciocínio (M1, M2, M4, M6, M9, M11, M14) são avaliadas pelo assistente operante e registradas no bloco de verificação. A própria barra M4 verifica que o bloco de verificação está presente no rastro de trabalho do artefato. A falha de uma única barra bloqueia a emissão; a iteração continua até que todas as barras passem.
 
 **Especificação canônica.** `src/apothem/rules/pre-emission-gate.md` (com a tabela completa de barras em `src/apothem/rules/pre-emission-gate-bars.md`).
 

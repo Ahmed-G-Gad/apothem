@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Référence de la CLI pour la commande apothem uninstall."
 machineTranslated: true
-sourceHash: "60b136fc4994f39d"
+sourceHash: "2ad0a78a426c95b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,13 +19,22 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 Supprime les cibles de l'environnement gérées par l'adaptateur, puis les
 répertoires que l'installation a créés, une fois qu'ils sont vides (un
 répertoire contenant quoi que ce soit qui vous appartient est conservé).
-Demande une confirmation, sauf si
-`--yes` est fourni. Lorsqu'aucune invite n'est possible — `--format json` (le
-texte de l'invite corromprait l'unique document JSON) ou un shell non
-interactif (sans TTY) —, la commande refuse d'emblée avec une erreur structurée
-`uninstall.confirmation_required` (code de sortie 1), sauf si `--yes` est
-fourni. Si un environnement sélectionné n'est pas installé, la commande réussit
-(code de sortie 0) avec un avis « nothing to remove ».
+
+La mémoire, les contextes et les magasins d'apprentissage du répertoire de
+travail partagé sont sauvegardés et supprimés uniquement lorsque c'est le
+dernier environnement installé dans ce répertoire. La désinstallation les
+supprime à l'emplacement enregistré par l'installation : elle les retrouve donc
+là où l'installation les a écrits (voir les champs `workspace` du profil). Le
+répertoire `plans/` n'est jamais supprimé.
+
+Demande une confirmation, sauf si `--yes` est fourni. Lorsqu'aucune invite
+n'est possible (`--format json`, car le texte de l'invite corromprait l'unique
+document JSON, ou un shell non interactif, sans TTY), la commande refuse
+d'emblée avec une erreur structurée `uninstall.confirmation_required` (code de
+sortie 1), sauf si `--yes` est fourni. Si un environnement sélectionné n'est pas
+installé, la commande réussit (code de sortie 0) et, en sortie texte, affiche
+`NAME is not installed; nothing to remove.`, où `NAME` est l'identifiant de
+l'environnement.
 
 Les magasins de données partagés sous `.apothem/` à la racine d'installation
 (`memory/`, `contexts/`, `learning/`) restent en place tant qu'un autre
@@ -36,11 +45,10 @@ copie d'abord chaque magasin dans la racine de sauvegarde d'Apothem
 vous conservez dans `plans/` n'est jamais supprimé.
 
 Une suppression `--harness all` est délibérément exhaustive : elle couvre
-chaque environnement enregistré, y compris ceux que le champ
-`exclude_harnesses` du profil ignore lors de l'installation — le nettoyage
-atteint l'état qu'une installation antérieure de portée plus large a pu
-laisser derrière elle. Les environnements qui n'ont jamais été installés
-signalent « nothing to remove ».
+chaque environnement enregistré, y compris ceux que le champ `exclude_harnesses`
+du profil ignore lors de l'installation. Le nettoyage atteint l'état qu'une
+installation antérieure, de portée plus large, a pu laisser derrière elle. Les
+environnements qui n'ont jamais été installés reçoivent le même avis.
 
 L'alias en forme continue `apothem uninstalling` (également accepté sous la
 forme `apothem Uninstalling`) se résout vers le même gestionnaire.
@@ -97,7 +105,7 @@ apothem uninstall --harness claude-code
 apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
-apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
 ```
 
 ## Codes de sortie

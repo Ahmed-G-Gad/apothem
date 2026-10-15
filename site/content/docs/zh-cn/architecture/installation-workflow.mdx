@@ -2,7 +2,7 @@
 title: "安装工作流"
 description: "apothem install、update 和 uninstall 的端到端工作原理。"
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,8 +37,8 @@ flowchart TD
 执行 `apothem uninstall --harness X` 时：
 
 1. 调用 `Adapter.uninstall()`。
-2. 适配器仅移除它写入的文件；共享配置档案 YAML 和
-   无关的、由操作者编写的文件不会被触及。
+2. 适配器仅移除它写入的文件；共享配置档案 YAML 和无关的、由操作者编写的文件不会被触及。
+3. 当这是该目录中最后一个已安装的工具时，共享工作目录的记忆、上下文和学习存储会被备份并移除。它们在安装所记录的位置被移除。`plans/` 目录永远不会被移除。
 
 ## 范围解析
 

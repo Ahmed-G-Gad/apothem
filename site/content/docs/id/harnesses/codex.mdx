@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,6 +27,8 @@ ulang sebagai skill Codex.
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` untuk
 skill yang dipanggil pengguna, dan berkas pendukung di bawah
 `~/.config/apothem/{rules,templates}/`.
+
+**Interpreter hook.** Sebelum menulis apa pun, pemasangan me-resolve interpreter CPython 3.10+. Di Windows, entri `commandWindows` pada setiap hook di `hooks.json` menjalankan path absolut interpreter tersebut, bukan peluncur `py -3`; entri `command` POSIX tetap menggunakan `python3`. Jalankan ulang `apothem update --harness codex` setelah interpreter dipindahkan atau dihapus. Jika tidak ada CPython 3.10+ yang ditemukan, pemasangan berhenti sebelum menulis berkas apa pun.
 
 Blok Apothem di `AGENTS.md` diakhiri dengan bagian berkas pendukung Apothem
 yang menyebutkan direktori absolut tempat setiap kutipan bergaya repositori

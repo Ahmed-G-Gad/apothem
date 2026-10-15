@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex（ベータ）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f4911b88f3d560a8"
+sourceHash: "7f434952ef208581"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,6 +24,14 @@ apothem install --harness codex
 `~/.codex/hooks/`、`~/.codex/agents/*.toml`、
 `~/.agents/skills/*/SKILL.md`、ユーザー起動スキル向けの `~/.agents/skills/*/agents/openai.yaml`、
 および `~/.config/apothem/{rules,templates}/` 配下のサポートファイル。
+
+**フックインタープリター。** 何かを書き込む前に、インストールは CPython 3.10+ の
+インタープリターを解決します。Windows では、`hooks.json` 内の各フックの
+`commandWindows` エントリは、`py -3` ランチャーの代わりにそのインタープリターの
+絶対パスを実行します。POSIX の `command` エントリは `python3` のままです。
+インタープリターが移動または削除された後は、`apothem update --harness codex` を
+再実行してください。CPython 3.10+ が見つからない場合、インストールは
+ファイルを 1 つも書き込む前に停止します。
 
 `AGENTS.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。
 このセクションは、インストールされたスキルとルール内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` と `templates/...` は `~/.config/apothem/` 配下に、`hooks/...` は `~/.codex/hooks/` 配下に解決されます。

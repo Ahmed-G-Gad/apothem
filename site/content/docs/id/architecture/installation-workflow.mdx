@@ -2,7 +2,7 @@
 title: "Alur kerja instalasi"
 description: "Bagaimana apothem install, update, dan uninstall bekerja secara menyeluruh."
 machineTranslated: true
-sourceHash: "38922071ec3c0bdc"
+sourceHash: "78eac5e560d75cd8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,6 +39,10 @@ Pada `apothem uninstall --harness X`:
 1. Memanggil `Adapter.uninstall()`.
 2. Adapter hanya menghapus berkas yang ditulisnya; profil bersama YAML dan berkas
    tak terkait yang ditulis operator tetap utuh.
+3. Memori, konteks, dan penyimpanan pembelajaran dari direktori kerja bersama
+   dicadangkan dan dihapus ketika ini adalah harness terakhir yang dipasang di sana.
+   Penghapusan dilakukan di lokasi yang dicatat oleh pemasangan. Direktori `plans/`
+   tidak pernah dihapus.
 
 ## Resolusi cakupan
 
