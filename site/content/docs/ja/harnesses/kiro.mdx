@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Kiro（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3c919d453670f9dc"
+sourceHash: "d53472ff7c450563"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,29 +17,23 @@ sourceHash: "3c919d453670f9dc"
 apothem install --harness kiro --project /path/to/project
 ```
 
-アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Kiro
-ステアリングファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Kiro ステアリングファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.kiro/steering/apothem-rules.md`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
-実行するたびに、プロジェクトのステアリングファイルをレンダリングします。共有プロファイルが
-信頼できる情報源です。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が
-Apothem 管理のコンテンツを置き換える前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、プロジェクトのステアリングファイルをレンダリングします。
+信頼できる情報源は共有プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の管理するコンテンツを置き換える前にバックアップされます。
 
-Kiro はインクルージョン設定がファイルの最初の内容であることを要求するため、このファイルは
-`inclusion: always` フロントマターで始まります。Apothem 管理のブロックはその後に続きます。
-ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
+Kiro はインクルージョン設定がファイルの最初の内容であることを要求するため、このファイルは `inclusion: always` フロントマターで始まります。
+Apothem 管理のブロックはその後に続きます。ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Kiro のステアリング面は `.kiro/steering/` 配下のプロジェクトスコープです。アダプターは
-`inclusion: always` フロントマターを持つ専用の `apothem-rules.md` ステアリングファイルを書き込み、
-オペレーターが作成した Kiro の基盤ファイル（`product.md`、`tech.md`、`structure.md`）を
-決して上書きしません。Kiro のスペック（`.kiro/specs/`）とエージェントフックはオペレーターの
-所有です。Apothem はそれらを書き込みません。
+Kiro のステアリング面は `.kiro/steering/` 配下のプロジェクトスコープです。
+アダプターは `inclusion: always` フロントマターを持つ専用の `apothem-rules.md` ステアリングファイルを書き込み、オペレーターが作成した Kiro の基盤ファイル（`product.md`、`tech.md`、`structure.md`）を決して上書きしません。
+Kiro のスペック（`.kiro/specs/`）とエージェントフックはオペレーターの所有です。Apothem はそれらを書き込みません。
 
 ## 検証
 
@@ -67,7 +61,9 @@ apothem update --harness kiro --project /path/to/project
 apothem uninstall --harness kiro --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+`<project>/.kiro/steering/apothem-rules.md` から、Apothem ブロックと、その上に Apothem が書き込んだフロントマターを削除し、ファイル内のそれ以外のテキストは保持します。
+ファイルが削除されるのは、その中に他に何も残っていない場合のみです。
+変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

@@ -1,8 +1,8 @@
 ---
 title: "ブランドパレット"
-description: "Apothem のコアブランドカラーと、17 のハーネスのブランドカラー。コアカラーの信頼できる唯一の情報源は、assets/design-tokens.css にある正規のデザイントークンで、サイトはそれらの値をミラーします。"
+description: "Apothem のコアブランドカラーと、15 のハーネスブランドカラー（ハーネスの色ページで定義されています）。コアカラーの信頼できる唯一の情報源は、assets/design-tokens.css にある正規のデザイントークンで、サイトはそれらの値をミラーします。"
 machineTranslated: true
-sourceHash: "64e22fc5ac4c9da8"
+sourceHash: "7bb26cf570fc6357"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,7 +12,8 @@ sourceHash: "64e22fc5ac4c9da8"
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 （およびそのミラーである `assets/design-tokens.json`）にあるデザイントークンが所有します。
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-にあるサイトテーマは、これらのトークン値を、Fumadocs テーマが使用する CSS 変数へミラーします。以下のすべての値は、正規のランプのステップにたどれます。
+にあるサイトテーマは、これらのトークン値を、Fumadocs テーマが使用する CSS 変数へミラーします。以下のすべての値は、
+これらのデザイントークンにおけるスレートまたはエメラルドのランプのステップです。slate-600 のようなステップ名は、そのランプの値を指します。
 
 | 役割 | トークン（CSS） | ライトモード | ダークモード | 用途 |
 |---|---|---|---|---|
@@ -24,7 +25,7 @@ sourceHash: "64e22fc5ac4c9da8"
 
 ## ハーネスパレット
 
-ハーネスの色は[ハーネスの色](/docs/brand/harness-colors)にあります。Apothem マークの六角形 — その中心ノードと終端ノード — へのジオメトリックなマッピングは、ブランドセクションに折り込まれています。ハーネスの色はそのページで定義されており、デザイントークンや [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) では定義されません。これらはコアパレットのみを保持します。
+ハーネスの色は[ハーネスの色](/docs/brand/harness-colors)にあります。Apothem のマークはハーネスの色を持ちません。その六角形、中心ノード、終端ノードについては、[`assets/DESIGN-SYSTEM.md`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/DESIGN-SYSTEM.md) のマークのセクションで説明されています。ハーネスの色はそのページで定義されており、デザイントークンや [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) では定義されません。これらはコアパレットのみを保持します。
 
 ## ドキュメントでの使用
 
@@ -32,4 +33,4 @@ sourceHash: "64e22fc5ac4c9da8"
 
 ## 更新
 
-パレットが更新されるのは、コアカラー（slate / emerald）が変化したとき、またはハーネスが上流でブランドカラーの変更を正式に決定したときだけです。ハーネスごとの変更は、[ハーネスの色](/docs/brand/harness-colors)と、`assets/src/` 配下の影響を受けるすべての SVG マスターにわたって、アトミックに伝播します。
+パレットが更新されるのは、コアカラー（slate / emerald）が変化したとき、またはハーネスが上流でブランドカラーの変更を正式に承認したときだけです。ハーネスごとの変更は、[ハーネスの色](/docs/brand/harness-colors)と、`assets/src/` 配下の影響を受けるすべての SVG マスターにわたって、アトミックに伝播します。

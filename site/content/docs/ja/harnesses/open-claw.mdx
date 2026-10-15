@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,7 +69,8 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+アダプターが追加したもの、つまりプロファイルドキュメントとサポートツリーを削除します。
+`openclaw.json` 内のあなた自身のキーは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

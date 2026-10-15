@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ sourceHash: "04ae410c0eeaf642"
 
 ## クイックリファレンス: アーティファクトの種類
 
-Apothem エコシステムには 5 種類のアーティファクトがあり、それぞれに固有の目的とフロントマターの要件があります。
+このガイドは 5 種類のアーティファクトを扱い、それぞれに固有の目的があります。
+ルール、コマンド、ヘルパー、スキルは YAML フロントマターを持ちます。フックは `hooks.json` と `settings.json` に登録され、フロントマターを持ちません。
+出力スタイルは、`name` と `description` の 2 つの必須フロントマターキーを持つ、さらに別のアーティファクトクラスです。[フロントマタースキーマ](/docs/reference/frontmatter-schema)を参照してください。
 
 | アーティファクト | パス | 目的 | 作成する時機 |
 | -------- | ---- | ------- | -------------- |
@@ -99,7 +101,7 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 - **コマンド:** `{name}.md`
 - **ヘルパー:** `{name}.md`
 - **スキル:** フォルダ `src/apothem/skills/{name}/SKILL.md` の中（大文字小文字は厳密に `SKILL.md`）
-- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。Claude Code の `settings.json` テンプレートにあるすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` にはスクリプトのパスとその引数が入ります。このテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。Claude Code プラグインは、代わりに `src/apothem/hooks/hooks.json` にフックを登録します。これらは `bash` を介して `hooks/lib/bootstrap.sh` を実行するシェルコマンドです。新しいフックは、`hooks.json` と Claude Code の `settings.json` テンプレートの両方に登録します。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
+- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。Claude Code の `settings.json` テンプレートにあるすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` にはスクリプトのパスとその引数が入ります。このテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。Claude Code プラグインは、代わりに `src/apothem/hooks/hooks.json` にフックを登録します。これらは `bash` を介して `hooks/lib/bootstrap.sh` を実行するシェルコマンドです。このスタブが Python を見つけて `dispatch.py` を実行するため、ハンドラーは Python のままです。新しいフックは、`hooks.json` と Claude Code の `settings.json` テンプレートの両方に登録します。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
 
 ### 相互参照
 
@@ -114,10 +116,11 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 
 ## ポータビリティ: Windows と Unix
 
-すべてのコマンドは、`portability` フィールドでポータビリティのステータスを明示的に宣言しなければなりません（MUST）。ヘルパーは宣言してもかまいません（MAY）。
+すべてのコマンドは、`portability` フィールドでポータビリティのステータスを明示的に宣言しなければなりません（MUST）。
+ヘルパーは宣言してもかまいません（MAY）。
 スキル、ルール、出力スタイルは `portability` フィールドを持ちません。
 
-### ユニバーサル（デフォルト）
+### ユニバーサル
 
 - Windows、macOS、Linux で同一に動作する
 - シェルに関する前提を置かない
@@ -189,7 +192,7 @@ alwaysApply: false
 
 - `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH: 誤字の修正）
 - `vX.Y.Z` → `vX.(Y+1).0`（MINOR: 新しい任意セクションを追加）
-- `vX.Y.Z` → `v(X+1).0.0`（MAJOR: 契約を安定版と宣言）
+- `v0.Y.Z` → `v(0+1).0.0`（MAJOR: 契約を安定版と宣言。新しいアーティファクトは `v0.Y.Z` から始まる）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR: 必須のフロントマターフィールドを削除）
 
 それらを持つアーティファクトに対する、挙動を変えるすべての編集で、`version` と `updated` をそろえて更新します。
@@ -293,8 +296,8 @@ Invoke the ecosystem-audit skill with --focus rules --fix
 
 ### 1. 役割を決める
 
-コマンドは、ハーネスが単独で呼び出すことを**決して**意図していません。
-コマンドは、ユーザーが起動するワークフローです。次を確認します:
+コマンドは、ユーザーが起動するワークフローです。
+モデルがコマンドを単独で実行するのは、その `disable-model-invocation` 設定が `false` の場合に限られます（手順 2）。次を確認します:
 
 - ユーザーが `/command-name` と入力するワークフローか。
 - 複数のステップをオーケストレーションするか。
@@ -325,7 +328,7 @@ allowed-tools: "Read, Glob, Grep"
 ほとんどのコマンドは `true` を使いますが、計画パイプラインとリサーチパイプラインのステージの大半は `false` を使います。
 `src/apothem/commands/README.md` の呼び出し表には、すべてのコマンドの設定が列挙されています。新しいコマンドには行を追加してください。
 `allowed-tools` は読み取り専用に保ってください: それを尊重するハーネスは、確認を求めずにそれらのツールを実行します。
-副作用のあるツールは、`Bash(git log *)` のようなスコープ付きのルールとしてのみ許可してください。スキーマは `"*"` と、修飾なしの `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit`、`WebFetch` を拒否します。
+副作用のあるツールは、`Bash(git log *)` のようなスコープ付きのルールとしてのみ許可してください。スキーマは `"*"` と、スコープなしで書かれた `Bash`、`PowerShell`、`Write`、`Edit`、`NotebookEdit`、`WebFetch` のいずれかを拒否します。
 
 ### 3. 内容を書く
 
@@ -339,7 +342,7 @@ allowed-tools: "Read, Glob, Grep"
 
 ### 4. README と CHANGELOG.md を更新する
 
-`src/apothem/commands/README.md` の該当するコマンドの表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
+手順 2 の呼び出し表の行に加えて、`src/apothem/commands/README.md` にある、そのコマンドのセクションの表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
 
 ### 5. 検証する
 
@@ -466,7 +469,7 @@ argument-hint: "[args]"               # optional; if userInvocable
 
 ### 4. README と CHANGELOG.md を更新する
 
-`src/apothem/skills/README.md` の Index 表と Folder contents 表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
+`src/apothem/skills/README.md` の Index 表に 1 行、Folder contents 表にそのスキルの各ファイルにつき 1 行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
 
 ### 5. 検証する
 
@@ -483,7 +486,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] `name` フィールドが kebab-case を使っている
 - [ ] `version`（バージョンを持つクラスのみ。ルールは持たない）がセマンティック（`MAJOR.MINOR.PATCH`）であり、挙動が変わった場合は引き上げられている
 - [ ] そのフィールドを持つ、触れたすべてのアーティファクトについて、`updated` が今日の日付と一致している
-- [ ] `portability` フィールドが設定され、有効である（コマンドとヘルパーのみ）
+- [ ] `portability` フィールドが設定され、有効である（コマンドでは必須、ヘルパーでは任意）
 - [ ] CHANGELOG.md が、次のリリースのセクションの下の適切なカテゴリに変更を記載している
 - [ ] プラン内部への参照がない（CM-7 への準拠）
 - [ ] 相互参照が他のアーティファクトと一貫している
@@ -636,7 +639,7 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### ベンチマーク
 
-`make benchmarks` は、`src/apothem/benchmarks/` 配下のクラスごとのドライバーを実行します。
+`make benchmarks` は、`bench_agents.py` を除き、`src/apothem/benchmarks/` 配下のクラスごとのドライバーを実行します。
 各ドライバーは、合格で `0`、予算超過で `1`、エラー（測定対象の実行が行われなかった）で `2`、未測定で `3` を返して終了します。
 
 - `bench_hooks.py` は、`hooks/hooks.json` が登録しているすべての `shell: bash` コマンドを、書かれたとおりに、イベントとマッチャーごとの実際のペイロードで実行し、合計時間の中央値、最も遅いコマンド（イベントの予算と照合）、注入された文字数を報告します。

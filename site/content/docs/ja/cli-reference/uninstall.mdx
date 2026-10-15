@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "4803f58a031908d1"
+sourceHash: "60b136fc4994f39d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,10 +21,14 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 プロンプトを表示できない場合 — `--format json`（プロンプトのテキストが単一の JSON ドキュメントを壊してしまうため）または非対話型のシェル（TTY なし）— は、`--yes` が指定されない限り、コマンドは処理を始める前に、構造化された `uninstall.confirmation_required` エラー（終了コード 1）で拒否します。
 選択したハーネスがインストールされていない場合、コマンドは「削除するものがありません」という通知とともに成功します（終了コード 0）。
 
+インストールルートの `.apothem/` 配下にある共有データストア（`memory/`、`contexts/`、`learning/`）は、同じルートにある別のインストール済みハーネスがそれらをまだ使用している間は残ります。
+削除するハーネスがそのルートで最後の 1 つである場合、コマンドは各ストアをまず Apothem のバックアップルート（`~/.apothem/backups/`）へコピーし、その後、中身ごとストアを削除します。
+あなたが `plans/` に保管しているものは、決して削除されません。
+
 `--harness all` による削除は、意図的に網羅的です。登録済みのすべてのハーネスを対象とし、プロファイルの `exclude_harnesses` がインストール時にスキップするハーネスも含みます — クリーンアップは、以前のより広範なインストールが残した可能性のある状態にまで及びます。
 一度もインストールされていないハーネスは「削除するものがありません」と報告します。
 
-進行形のエイリアス `apothem uninstalling` は、同じハンドラーに解決されます。
+進行形のエイリアス `apothem uninstalling`（`apothem Uninstalling` としても受け付けられます）は、同じハンドラーに解決されます。
 
 ## オプション
 

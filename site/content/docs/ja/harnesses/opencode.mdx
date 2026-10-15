@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "OpenCode（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "2c4709aed2cf9905"
+sourceHash: "f70b4b53a67405ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,14 +17,13 @@ sourceHash: "2c4709aed2cf9905"
 apothem install --harness opencode
 ```
 
-アダプターは OpenCode の JSON 設定を書き込み、Apothem のスキルを OpenCode のスキル面に
-インストールし、コマンドプロンプトを OpenCode の Markdown コマンドファイルに変換し、
-Apothem のヘルパー定義を OpenCode のサブヘルパーとして正規化します。
+アダプターは OpenCode の JSON 設定を書き込み、Apothem のスキルを OpenCode のスキル面にインストールし、コマンドプロンプトを OpenCode の Markdown コマンドファイルに変換し、Apothem のヘルパー定義を OpenCode のサブヘルパーとして正規化します。
 
 **書き込まれるファイル：**
 
 ```text
 ~/.config/opencode/opencode.json
+~/.config/opencode/apothem/rules/00-apothem-profile.md
 ~/.config/opencode/commands/
 ~/.config/opencode/skills/
 ~/.config/opencode/agents/
@@ -33,36 +32,24 @@ Apothem のヘルパー定義を OpenCode のサブヘルパーとして正規�
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、あなたのプロファイルドキュメントと Apothem の常時適用ルールを指定する
-`instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された
-各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーの
-いずれかへ伝播します。既存の、一致する Apothem 管理の子要素は、置き換えの前に
-バックアップされます。
+アダプターは、あなたのプロファイルドキュメントと Apothem の常時適用ルールを指定する `instructions` ファイルリストを含めて `opencode.json` をレンダリングし、その後、共有された各 Apothem コホートを、OpenCode のネイティブ面または Apothem 所有のサポートサブツリーのいずれかへ伝播します。
+既存の、一致する Apothem 管理の子要素は、置き換えの前にバックアップされます。
 
 ## 互換性に関する注意
 
-OpenCode は、`instructions` リストが指定するすべてのファイルを、すべてのセッションに
-結合します（[OpenCode のルール](https://opencode.ai/docs/rules/)）。そのため、このリストは
-最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` である
-ルールのみを、それぞれ 1 つの明示的な
-`~/.config/opencode/.apothem/support/rules/<name>.md` パスとして指定します。OpenCode は
-先頭の `~/` をあなたのホームディレクトリに展開します。パスでフィルタリングされるルール、
-テンプレート、フックプロンプトは、`~/.config/opencode/.apothem/support/` 配下に参照素材として
-インストールされたまま残り、それを参照するルール、スキル、コマンドがオンデマンドで読み込みます。
+OpenCode は、`instructions` リストが指定するすべてのファイルを、すべてのセッションに結合します（[OpenCode のルール](https://opencode.ai/docs/rules/)）。
+そのため、このリストは最初にあなたのプロファイルドキュメントを指定し、続いて `alwaysApply` が `true` であるルールのみを、それぞれ 1 つの明示的な `~/.config/opencode/.apothem/support/rules/<name>.md` パスとして指定します。
+OpenCode は先頭の `~/` をあなたのホームディレクトリに展開します。
+パスでフィルタリングされるルール、テンプレート、フックプロンプトは、`~/.config/opencode/.apothem/support/` 配下に参照素材としてインストールされたまま残り、それを参照するルール、スキル、コマンドがオンデマンドで読み込みます。
 コマンド、スキル、ヘルパー定義はネイティブの検出場所を使用します。
 
-プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` は、
-共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持し、Apothem
-サポートファイルのセクションで終わります。このセクションは、リポジトリ形式の各参照
-（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、
-`~/.config/opencode/.apothem/support/` 配下の絶対ディレクトリを示します。このドキュメントは
-最初の `instructions` エントリであるため、OpenCode はすべてのセッションでこれを読み込みます。
+プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` は、共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持し、Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.config/opencode/.apothem/support/` 配下の絶対ディレクトリを示します。
+このドキュメントは最初の `instructions` エントリであるため、OpenCode はすべてのセッションでこれを読み込みます。
 
-以前のリリースが書き込んだ `opencode.json` には、すべてのルールを読み込む単一のグロブ
-`~/.config/opencode/.apothem/support/rules/*.md` が記載されています。
-`apothem install` と `apothem update` はそれを常時適用のリストに置き換え、
-`apothem uninstall` は両方の形式を削除します。あなた自身の `instructions` エントリは、
-いずれの場合も保持されます。
+以前のリリースが書き込んだ `opencode.json` には、すべてのルールを読み込む単一のグロブ `~/.config/opencode/.apothem/support/rules/*.md` が記載されています。
+`apothem install` と `apothem update` はそれを常時適用のリストに置き換え、`apothem uninstall` は両方の形式を削除します。
+あなた自身の `instructions` エントリは、いずれの場合も保持されます。
 
 ## 検証
 
@@ -82,8 +69,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness opencode
 ```
 
-`opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、Apothem サポートツリーを
-更新します。
+`opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、Apothem サポートツリーを更新します。
 
 ## アンインストール
 
@@ -91,7 +77,10 @@ apothem update --harness opencode
 apothem uninstall --harness opencode
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+アダプターが `~/.config/opencode/opencode.json` に追加したエントリを削除します（あなた自身のキー、MCP サーバー、`instructions` エントリは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます）。
+プロファイルドキュメント `~/.config/opencode/apothem/rules/00-apothem-profile.md` から Apothem のブロックを削除し、その中の他のテキストは残します。このファイルは、その中に他に何も残っていない場合にのみ削除されます。
+また、`~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/`、`~/.config/opencode/.apothem/support/` 内の Apothem のファイルも削除します。これらのフォルダー内のその他のファイルは残ります。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

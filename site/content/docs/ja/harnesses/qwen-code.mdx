@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,36 +17,33 @@ sourceHash: "4052897d8ab07b22"
 apothem install --harness qwen-code
 ```
 
-アダプターは Qwen Code の設定を書き込み、`QWEN.md` コンテキストアンカーをインストールし、
-Apothem のフックディスパッチャーを登録し、Apothem のコマンドを Qwen の Markdown
-コマンドファイルに変換し、スキルを SKILL.md ディレクトリとしてインストールし、ヘルパー定義を
-Qwen のサブエージェントとして適合させます。
+アダプターは Qwen Code の設定を書き込み、`QWEN.md` コンテキストアンカーをインストールし、Apothem のフックディスパッチャーを登録し、Apothem のコマンドを Qwen の Markdown コマンドファイルに変換し、スキルを SKILL.md ディレクトリとしてインストールし、ヘルパー定義を Qwen のサブエージェントとして適合させます。
 
 **書き込まれるファイル：**
 
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+ファイル `~/.qwen/apothem/rules/00-apothem-profile.md` はプロファイルドキュメントです。
+共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持します。
+
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、コンテキストとフック向けに文書化された `settings.json` のキーをレンダリングし、
-`QWEN.md` を書き込み、Apothem のコマンド、スキル、ヘルパー定義を Qwen Code のネイティブな
-検出ディレクトリに組み込みます。ルール、テンプレート、フックのソース素材は、
-`~/.qwen/.apothem/support/` 配下のサポート素材として残ります。
+アダプターは、コンテキストとフック向けに文書化された `settings.json` のキーをレンダリングし、`QWEN.md` を書き込み、Apothem のコマンド、スキル、ヘルパー定義を Qwen Code のネイティブな検出ディレクトリに組み込みます。
+ルール、テンプレート、フックのソース素材は、`~/.qwen/.apothem/support/` 配下のサポート素材として残ります。
 
 ## 互換性に関する注意
 
-`~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドから参照されるサポート素材で
-あり、ベンダー所有の検出名前空間ではありません。
+`~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドから参照されるサポート素材であり、ベンダー所有の検出名前空間ではありません。
 `QWEN.md` 内の Apothem ブロックは Apothem サポートファイルのセクションで終わります。
-このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が
-解決される先の、`~/.qwen/.apothem/support/` 配下の絶対ディレクトリを示します。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.qwen/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## 検証
 
@@ -66,8 +63,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness qwen-code
 ```
 
-`settings.json`、`QWEN.md`、ネイティブコマンド、スキル、サブエージェント、Apothem
-サポートツリーを更新します。
+`settings.json`、`QWEN.md`、ネイティブコマンド、スキル、サブエージェント、Apothem サポートツリーを更新します。
 
 ## アンインストール
 
@@ -75,7 +71,10 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+アダプターが `~/.qwen/settings.json` に追加したエントリを削除します（あなた自身のキー、MCP サーバー、フックハンドラーは残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます）。
+`~/.qwen/QWEN.md` と、プロファイルドキュメント `~/.qwen/apothem/rules/00-apothem-profile.md` から Apothem のブロックを削除し、それぞれの中の他のテキストは残します。各ファイルは、その中に他に何も残っていない場合にのみ削除されます。
+また、`~/.qwen/commands/`、`~/.qwen/skills/`、`~/.qwen/agents/`、`~/.qwen/.apothem/support/` 内の Apothem のファイルも削除します。これらのフォルダー内のその他のファイルは残ります。
+各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

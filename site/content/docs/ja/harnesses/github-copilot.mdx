@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "7759dbb2505688c7"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "7759dbb2505688c7"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-このアダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトの命令ファイルを導出します。
+アダプターは、あなたの共有プロファイルと、共有の Apothem ルールおよびガバナンス面から、プロジェクトの命令ファイルを導出します。
 
 **書き込まれるファイル：** `<project>/.github/copilot-instructions.md`
 
@@ -26,16 +26,17 @@ apothem install --harness github-copilot --project /path/to/project
 アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、リポジトリ全体に適用される Copilot の命令ファイルをレンダリングします。
 信頼できる情報源は共有プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の管理するコンテンツを置き換える前にバックアップされます。
 
-Apothem ブロック内では、あなたのプロファイルからレンダリングされるセクション（オペレーター、プリファレンス、カスタムルール、オプトインした振る舞い、MCP サーバー名）が、共有のガバナンステキストより前の先頭に置かれます。
-GitHub は、短い命令ファイルほどコードレビューで全体が処理される可能性が高いと述べているため（[コードレビューのカスタマイズ](https://docs.github.com/en/copilot/tutorials/customize-code-review)）、あなたに固有の部分をファイルの先頭に置いています。
+Apothem ブロック内では、あなたのプロファイルからレンダリングされるセクション（オペレーター、プリファレンス、カスタムルール、オプトインした振る舞い、MCP サーバー名）が最初に置かれ、共有のガバナンステキストがその後に続きます。
+GitHub は、短い命令ファイルほどコードレビューで全体が処理される可能性が高いと述べているため（[コードレビューのカスタマイズ](https://docs.github.com/en/copilot/tutorials/customize-code-review)）、あなたに固有の部分がファイルの先頭に置かれます。
 
 ## 互換性に関する注意
 
 GitHub Copilot は、このアダプターが管理できる、ファイルベースのユーザーグローバルな命令パスを公開していません。
 Apothem は文書化されたプロジェクトスコープの命令ファイルを対象とし、IDE レベルのユーザー設定はオペレーターの所有のままにします。
 
-Apothem リポジトリ内では、`.github/copilot-instructions.md` は、プロジェクトのアシスタント命令面の中の 1 つの声です。
-Apothem のチェックアウトでは、コンフォーミティゲートの複数面整合性チェックが `AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` に共通する主張を比較し、そのいずれかが欠いている、または矛盾している主張を報告します。
+Apothem リポジトリ内では、`.github/copilot-instructions.md` は、そのリポジトリのアシスタント命令面の中の 1 つの声です。
+そのリポジトリのチェックアウトでは、コンフォーミティゲートの複数面整合性チェックが、`AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` に共通する主張を比較します。
+報告されるのは、3 つのファイルのうち 1 つが欠いている共通の主張と、`AGENTS.md` が述べる主張に矛盾しているファイルです。
 このチェックは、Apothem があなたのプロジェクトに書き込む命令ファイルを読み取りません。
 ゲートはデフォルトでは助言的です。所見を報告し、`0` で終了します。
 
@@ -65,7 +66,9 @@ apothem update --harness github-copilot --project /path/to/project
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+`<project>/.github/copilot-instructions.md` から Apothem ブロックを削除し、その外側にあるテキストは保持します。
+ファイルが削除されるのは、その中に他に何も残っていない場合のみです。
+変更の前に、ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

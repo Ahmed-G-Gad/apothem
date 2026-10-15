@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f40933a9d485e4be"
+sourceHash: "0e9e61064d66a5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,30 +17,23 @@ sourceHash: "f40933a9d485e4be"
 apothem install --harness trae --project /path/to/project
 ```
 
-アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Trae
-ルールファイルを 1 つ書き込みます。
+アダプターは、共有の Apothem ルールとガバナンス面から、プロジェクトスコープの Trae ルールファイルを 1 つ書き込みます。
 
 **書き込まれるファイル：** `<project>/.trae/rules/apothem-rules.md`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
-実行するたびに、プロジェクトのルールファイルをレンダリングします。共有プロファイルが
-信頼できる情報源です。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が
-Apothem 管理のコンテンツを置き換える前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、プロジェクトのルールファイルをレンダリングします。
+共有プロファイルが信頼できる情報源です。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem 管理のコンテンツを置き換える前にバックアップされます。
 
-このファイルは、`alwaysApply: true` と `description` を設定する YAML フロントマターで
-始まります。これは、[Trae のルールに関するドキュメント](https://docs.trae.ai/ide/rules)に
-よれば Trae の Always Apply モードです。Apothem 管理のブロックはその後に続きます。
-ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
+このファイルは、`alwaysApply: true` と `description` を設定する YAML フロントマターで始まります。これは、[Trae のルールに関するドキュメント](https://docs.trae.ai/ide/rules)によれば Trae の Always Apply モードです。
+Apothem 管理のブロックはその後に続きます。ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。
 
 ## 互換性に関する注意
 
-Trae の現在のルール面は `.trae/rules/` 配下のプロジェクトスコープです。グローバルルールは
-`~/.trae/user_rules` 配下に置かれます。アダプターは専用の `apothem-rules.md` ファイルを
-書き込み、そのディレクトリ内の他のルールファイルやあなたのグローバルルールを決して
-上書きしません。`.trae/mcp.json` のツールサーバー面と `.trae/skills/` のスキル面は
-オペレーターの所有であり、Apothem はそれらを書き込みません。
+Trae の現在のルール面は `.trae/rules/` 配下のプロジェクトスコープです。グローバルルールは `~/.trae/user_rules` 配下に置かれます。
+アダプターは専用の `apothem-rules.md` ファイルを書き込み、そのディレクトリ内の他のルールファイルやあなたのグローバルルールを決して上書きしません。
+`.trae/mcp.json` のツールサーバー面と `.trae/skills/` のスキル面はオペレーターの所有であり、Apothem はそれらを書き込みません。
 
 ## 検証
 
@@ -68,7 +61,9 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+`<project>/.trae/rules/apothem-rules.md` から、Apothem のブロックと、Apothem がその上に書き込んだフロントマターを削除し、その中の他のテキストは残します。
+このファイルは、その中に他に何も残っていない場合にのみ削除されます。
+変更の前に、このファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

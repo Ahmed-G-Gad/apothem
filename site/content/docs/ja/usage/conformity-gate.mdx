@@ -2,7 +2,7 @@
 title: "コンフォーミティゲート"
 description: "Apothem のコンフォーミティゲートを実行して、エコシステムの健全性を検証します。"
 machineTranslated: true
-sourceHash: "882e6fbc7b8fa34c"
+sourceHash: "96fc3a60b412e44e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,9 +10,9 @@ sourceHash: "882e6fbc7b8fa34c"
 （M1-M15）のうち機械的に判定される部分を、オペレーターが作成するすべてのアーティファクトに
 対して実行します。
 
-このページのコマンドは Apothem のチェックアウトを前提としているため、それぞれの先頭に
-`PYTHONPATH=src` を付けてください。スクリプトでインストールした後は、`src` の代わりに
-`PYTHONPATH="$HOME/.apothem/src"` を使います。
+このページのコマンドは Apothem のチェックアウトを前提としているため、実行するコマンド
+それぞれの先頭に `PYTHONPATH=src` を付けてください。スクリプトでインストールした後は、
+`PYTHONPATH=src` の代わりに `PYTHONPATH="$HOME/.apothem/src"` を使います。
 
 ## ゲートの実行
 
@@ -39,11 +39,11 @@ PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 `--all .` と `--all "$PWD"` は同じツリーを検査します。各バリデーターは `inspected`
 （検査した対象の数）を報告し、`--all` はその数をすべての結果エントリにコピーします。何も
 検査しなかったバリデーターは `passed: false` を報告するため、誤った作業ディレクトリでも無言の
-まま合格することはありません。2 つのプランスイートバリデーターは例外です。プランスイートは
-gitignore 対象の `.apothem/plans/` ツリーに置かれるため、これらはクリーンなチェックアウトでは
-`empty_scope_expected: true` を報告し、それでも合格します。ワークフローバリデーターも、
-プロジェクトにまだ `.github/workflows/` ディレクトリがない場合に同じ動作をし、コミット
-サブジェクトバリデーターは、ディレクトリにコミット履歴がない場合に同じ動作をします。
+まま合格することはありません。2 つのプランスイートバリデーターは、その例外の 1 つです。
+プランスイートは gitignore 対象の `.apothem/plans/` ツリーに置かれるため、これらはクリーンな
+チェックアウトでは `empty_scope_expected: true` を報告し、それでも合格します。ワークフロー
+バリデーターも、プロジェクトにまだ `.github/workflows/` ディレクトリがない場合に同じ動作を
+し、コミットサブジェクトバリデーターは、ルートにコミット履歴がない場合に同じ動作をします。
 
 ## ゲートのバー
 
@@ -85,10 +85,14 @@ PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 
 フックモードは**一連のディレクトリにスコープされます**。マッチャーチェーンは、ターゲットが
 それらのいずれかの配下にある書き込みに対してのみ実行されます。どのスコープにも含まれない
-書き込みは短絡され、無言で合格となります。デフォルトは、Apothem がインストール先とする、
-フックに対応したユーザースコープのハーネスルートです — 各ハーネスのルートは、
-「ハーネスアダプター」配下にあるそのハーネスのページに記載されています。それらを置き換えるには、
-`APOTHEM_CONFORMITY_SCOPE` にディレクトリを設定します。
+書き込みは短絡され、無言で合格となります。デフォルトは次の 2 つのルートです。
+
+```text
+~/.claude      Claude Code
+$CODEX_HOME    Codex (~/.codex when CODEX_HOME is not set)
+```
+
+それらを置き換えるには、`APOTHEM_CONFORMITY_SCOPE` にディレクトリを設定します。
 
 ```bash
 # Run the per-write matcher chain against one project tree instead
