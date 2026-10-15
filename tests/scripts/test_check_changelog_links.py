@@ -98,9 +98,20 @@ def test_cli_exit_code_on_findings(tmp_path: Path) -> None:
     assert check_changelog_links.main(["--changelog", str(bad)]) == 1
 
 
-@pytest.mark.parametrize("version", ["1.1.1", "1.2.0", "2.0.0"])
-def test_bump_version_output_passes(tmp_path: Path, version: str) -> None:
+def _next_version(part: str) -> str:
+    """Return the next patch, minor or major release after the repository's version."""
+    major, minor, patch = (int(n) for n in bump_version.current_version(REPO_ROOT).split("."))
+    return {
+        "patch": f"{major}.{minor}.{patch + 1}",
+        "minor": f"{major}.{minor + 1}.0",
+        "major": f"{major + 1}.0.0",
+    }[part]
+
+
+@pytest.mark.parametrize("part", ["patch", "minor", "major"])
+def test_bump_version_output_passes(tmp_path: Path, part: str) -> None:
     """The release bumper leaves a changelog this checker accepts."""
+    version = _next_version(part)
     root = tmp_path / "repo"
     for rel in bump_version.anchor_files():
         src = REPO_ROOT / rel

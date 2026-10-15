@@ -19,6 +19,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-15
+
 ### Added
 
 - **Each install says where Apothem's support files are.** The instruction
@@ -217,6 +219,32 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The POSIX installers skip the Microsoft Store launcher.** When
+  `install.sh`, `update.sh` or `uninstall.sh` probes the interpreter names on
+  `PATH` for Python, it now skips a match under a `WindowsApps` directory, the
+  Store alias that opens the Store page instead of running Python, as the
+  PowerShell scripts and the npm shim already did.
+- **The Windows statusline runs when the interpreter path has a space.** The
+  statusline command is written unquoted, so a path such as
+  `C:\Program Files\Python314\python.exe` broke at the space. Install now
+  writes the interpreter's 8.3 short form into the statusline command when the
+  path has a space. The hook entries keep the full path.
+- **The header check understands frontmatter and MDX.** `file_header_grep`
+  accepts the SPDX line after YAML frontmatter, where the injector writes it,
+  and knows the MDX comment form. Its advisory findings fell from 808 to 7. The
+  check stays advisory.
+- **Each pre-emission bar is classified by the matchers that check it.** M2 is
+  reasoned; M5, M7, M8, M10 and M13 are mechanical; M3, M9, M12, M14 and M15
+  are mechanical and reasoned. The rule files, the session-start text and the
+  docs now give the same split.
+- **More documentation matches the code.** A check of the pages not reviewed
+  before corrected 88 statements on 44 pipeline, architecture, runbook,
+  security and governance pages. The instruction files list the synced unit
+  as the propagation manifest defines it. The Hermes page says where Hermes MCP
+  servers are written. "Release proof" gives way to plain terms such as "gate
+  result". The plan templates say that a typo fix in a plan is a PATCH
+  revision, while a typo fix in an artifact leaves its version unchanged. Every
+  translated page follows the new English text.
 - **The release readiness check can pass.** `scripts/release/check-release-ready.sh`
   and its PowerShell twin looked for an SPDX file the release never builds, so
   they could never pass. They now check the CycloneDX `sbom.cdx.json` the release
@@ -712,7 +740,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0
 [1.0.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.2
 [1.0.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1
