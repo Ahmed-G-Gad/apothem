@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,8 +81,7 @@ apothem verify --harness antigravity
 verify コマンドは次のことを確認します。
 
 1. ネイティブのコンテキストファイルが想定されたパスに存在すること。
-2. Apothem の Antigravity CLI プラグインのメタデータが存在し、
-   `apothem` というプラグイン名を宣言していること。
+2. プラグインのマニフェスト `plugin.json` が存在し、空ではなく、JSON として解析できること。検証はプラグイン名を確認しません。名前を変更したあとは、そのフィールドを自分で確認してください。
 
 ## 更新
 

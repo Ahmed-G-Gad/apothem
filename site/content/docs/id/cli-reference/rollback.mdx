@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "96531a4a5fa4a15e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,10 +36,13 @@ dimulai dari perubahan terbaru, perintah ini:
   kosong.
 
 Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin
-ke root cadangan Apothem (`~/.apothem/backups/`), sehingga sebuah rollback itu
-sendiri dapat dibatalkan secara manual. Perintah ini kemudian menambahkan
-catatan `rollback` ke ledger harness. Me-rollback pemasangan yang lebih lama
-juga membatalkan setiap pemasangan sesudahnya pada root yang sama.
+ke root cadangan Apothem (`~/.apothem/backups/`), sehingga rollback itu sendiri
+dapat dibatalkan secara manual. Perintah ini kemudian menambahkan catatan
+`rollback` ke ledger harness. Me-rollback pemasangan yang lebih lama hanya
+memulihkan atau menghapus target yang dicatat oleh pemasangan lama tersebut, dan
+mengeluarkan setiap pemasangan sesudahnya dari catatan aktif pada root yang
+sama. Berkas yang ditambahkan oleh pemasangan yang lebih baru di luar target
+tersebut tetap berada di tempatnya.
 
 Ledger menyimpan 10 catatan pemasangan terbaru per root pemasangan (beserta
 cadangan yang dirujuknya); pemasangan yang lebih lama tidak lagi dapat
@@ -64,7 +67,9 @@ harness yang terdaftar, termasuk yang dilewati oleh `exclude_harnesses` profil
 selama pemasangan — memulihkan keadaan pra-pemasangan adalah operasi
 pembersihan, sehingga rollback ini menjangkau catatan yang mungkin ditinggalkan
 oleh pemasangan sebelumnya yang cakupannya lebih luas. Harness tanpa pemasangan
-yang tercatat melaporkan "tidak ada yang perlu di-rollback" per harness.
+yang tercatat gagal dengan `rollback.no_record` (baris `"outcome": "error"` di
+`results`), dan proses berlanjut dengan harness yang tersisa. Perintah ini
+kemudian keluar dengan kode 1, atau 2 ketika harness lain telah di-rollback.
 
 ## Opsi
 

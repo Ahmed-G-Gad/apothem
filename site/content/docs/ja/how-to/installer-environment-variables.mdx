@@ -2,7 +2,7 @@
 title: "インストーラーの環境変数"
 description: "環境変数でスクリプトインストーラー（インストール先、ソース、ハーネス、プロファイル、検証）を制御します。"
 machineTranslated: true
-sourceHash: "4a6a53ca733a16ef"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,8 @@ sourceHash: "4a6a53ca733a16ef"
 
 ## 前提条件
 
-- POSIX シェル（`bash`）または PowerShell 5.1+。
+- POSIX シェル（`bash`）または PowerShell 5.1+。以下の PowerShell の例は `pwsh`（PowerShell 7+）を実行します。Windows PowerShell 5.1 では、代わりに
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` を実行します。
 - 変数はインストーラーの冒頭で一度だけ読み込まれるため、同じコマンド内で設定し（または先にエクスポートし）、それからインストーラーを実行します。
 
 ## インストーラーの変数
@@ -19,17 +20,17 @@ sourceHash: "4a6a53ca733a16ef"
 | --- | --- | --- |
 | `APOTHEM_HOME` | クローンしたソースツリーのインストール先 | `$HOME/.apothem` |
 | `APOTHEM_REPO` | クローンする Git リモート | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決し、タグの値はそのタグに固定し、`main` は移動するブランチを選択します | 未設定（最新の署名付きタグ） |
-| `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、タグ署名検証の失敗を、致命的な中断から警告に格下げします | `0`（検証する、フェイルクローズ） |
-| `APOTHEM_VERIFY` | `signature` はリリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォームアーカイブの SHA-256 をリリースの `SHA256SUMS` と照合した後に、そのアーカイブをインストールします（完全性の確認であり、誰が公開したかの証明ではありません） | `signature` |
-| `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロードベース | `<APOTHEM_REPO>/releases/download` |
-| `APOTHEM_SOURCE` | クローンする代わりに使用する、明示的なローカルソースツリー | 未設定（クローンする） |
+| `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決します。タグの値を指定するとそのタグに固定され、`main` は移動するブランチを選びます。`main` のような、タグではない ref は、`APOTHEM_ALLOW_UNVERIFIED=1` が設定されていない限り中止します | 未設定（最新の署名付きタグ） |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、タグ署名の検証失敗を、致命的な中断から警告へ格下げします | `0`（検証する、フェイルクローズ） |
+| `APOTHEM_VERIFY` | `signature` は、リリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォーム用アーカイブを、その SHA-256 をリリースの `SHA256SUMS` と照合したうえでインストールします（完全性を確認するものであり、誰が公開したかの証明ではありません） | `signature` |
+| `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_SOURCE` | クローンの代わりに使う、明示的なローカルソースツリー | 未設定（クローン） |
 | `APOTHEM_HARNESS` | インストールするハーネス | `claude-code` |
 | `APOTHEM_PROFILE` | 共有プロファイル YAML へのパス | `$HOME/.config/apothem/profile.yaml` |
-| `APOTHEM_SKIP_VERIFY` | `1` に設定すると、インストール後の検証ステップをスキップします | `0`（検証を実行する） |
+| `APOTHEM_SKIP_VERIFY` | `1` に設定すると、インストール後の検証ステップをスキップします | `0`（検証を実行） |
 | `APOTHEM_AUTO_INSTALL_DEPS` | `1` に設定すると、不足している `click` / `rich` の前提条件を、確認なしで自動的にインストールします | `0`（確認する。非対話のパイプでは拒否する） |
-| `APOTHEM_BIN_DIR` | 配置される `apothem` コマンド shim のディレクトリ | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
-| `NO_COLOR` | 任意の値に設定すると、色付き出力をオフにします（[no-color.org](https://no-color.org/)）。出力が端末でない場合（パイプ、ファイル、CI ログ）も、色は常にオフになります | 未設定（対話型の端末でのみ色を付ける） |
+| `APOTHEM_BIN_DIR` | 配置される `apothem` コマンドのシムのディレクトリ | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+| `NO_COLOR` | 任意の値に設定すると、色付きの出力をオフにします（[no-color.org](https://no-color.org/)）。出力が端末ではない場合（パイプ、ファイル、CI ログ）も、色は常にオフになります | 未設定（対話型の端末でのみ色を付ける） |
 
 `APOTHEM_SOURCE` はクローンよりも優先されます。`src/apothem` を含むチェックアウトに設定されている場合、インストーラーはそれを直接使用し、`APOTHEM_REPO` / `APOTHEM_REF` には決して触れず、タグの解決と署名の検証をスキップします（検証対象として取得されるものが何もないためです）。
 
@@ -62,10 +63,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. ソースの ref とインストール先を固定します。
+2. インストール先を固定し、移動する `main` ブランチを選択します。ブランチは署名付きタグではないため、インストーラーには `APOTHEM_ALLOW_UNVERIFIED=1` も必要です。
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. ローカルチェックアウトとカスタムプロファイルを使用し、検証をスキップします。
@@ -87,6 +88,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1

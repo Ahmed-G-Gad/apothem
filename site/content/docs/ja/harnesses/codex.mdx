@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex（ベータ）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,51 +18,40 @@ sourceHash: "1fc0b9dae2c44d90"
 apothem install --harness codex
 ```
 
-アダプターは Codex ネイティブの命令とフックをインストールし、Apothem のエージェントを Codex の
-TOML エージェントに変換し、再利用可能なコマンドプロンプトを Codex のスキルとしてラップします。
+アダプターは Codex ネイティブの命令とフックをインストールし、Apothem のエージェントを Codex の TOML エージェントに変換し、再利用可能なコマンドプロンプトを Codex のスキルとしてラップします。
 
 **書き込まれるファイル：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
 `~/.codex/hooks/`、`~/.codex/agents/*.toml`、
 `~/.agents/skills/*/SKILL.md`、ユーザー起動スキル向けの `~/.agents/skills/*/agents/openai.yaml`、
 および `~/.config/apothem/{rules,templates}/` 配下のサポートファイル。
 
-`AGENTS.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。この
-セクションは、インストールされたスキルとルール内にあるリポジトリ形式の各参照が解決される先の
-絶対ディレクトリを示します。`rules/<name>.md` と `templates/...` は `~/.config/apothem/` 配下に、
-`hooks/...` は `~/.codex/hooks/` 配下に解決されます。Codex のインストールは `schemas/` ツリーも
-`conformity/` ツリーも同梱しないため、このセクションはどちらも列挙しません。
+`AGENTS.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。
+このセクションは、インストールされたスキルとルール内にあるリポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` と `templates/...` は `~/.config/apothem/` 配下に、`hooks/...` は `~/.codex/hooks/` 配下に解決されます。
+Codex のインストールは `schemas/` ツリーも `conformity/` ツリーも同梱しないため、このセクションはどちらも列挙しません。
 
-**ユーザー起動スキル。** Codex は `disable-model-invocation` キーを無視します。ソースで
-`disable-model-invocation: true` が設定されているすべてのスキルまたはコマンドについて、アダプターは
-`SKILL.md` の隣に `policy.allow_implicit_invocation: false` を指定した `agents/openai.yaml` を
-書き込みます。これにより、Codex がそのスキルを自ら選ぶことはありません。`$skill-name` を使えば、
-引き続き明示的に実行できます。
+**ユーザー起動スキル。** Codex は `disable-model-invocation` キーを無視します。
+ソースで `disable-model-invocation: true` が設定されているすべてのスキルまたはコマンドについて、アダプターは `SKILL.md` の隣に `policy.allow_implicit_invocation: false` を指定した `agents/openai.yaml` を書き込みます。
+これにより、Codex がそのスキルを自ら選ぶことはありません。`$skill-name` を使えば、引き続き明示的に実行できます。
 [Codex のスキルに関するドキュメント](https://developers.openai.com/codex/skills)を参照してください。
 
 ## プロファイルからネイティブ設定へのマッピング
 
 アダプターは Apothem の共有コホートを読み取り、それぞれを正しい Codex の面にインストールします。
-命令は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは TOML へ、スキルは
-`~/.agents/skills/` へ、ネイティブでない Markdown のルール/テンプレートはサポート素材として
-`~/.config/apothem/` へインストールされます。
+命令は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは TOML へ、スキルは `~/.agents/skills/` へ、ネイティブでない Markdown のルール/テンプレートはサポート素材として `~/.config/apothem/` へインストールされます。
 
 変換された各ヘルパーは `name`、`description`、`developer_instructions` を設定します。
-ツールの付与によってファイルを書き込めないヘルパーは、Codex 独自の書き込み制限である
-`sandbox_mode = "read-only"` も設定します。モデルも推論エフォートも設定されないため、各ヘルパーは
-セッションの選択を継承します。Codex にはヘルパーごとのツールリストもターン数の上限もないため、
-ヘルパーの `tools` と `maxTurns` は引き継がれません。
+拒否リストを適用した後のツール付与にファイル編集ツール（`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、Codex 独自の書き込み制限である `sandbox_mode = "read-only"` も設定します。
+`Bash` はファイル編集ツールに数えられないため、`Bash` を付与され、それらのツールを 1 つも付与されていないヘルパーも、引き続き読み取り専用です。
+モデルも推論エフォートも設定されないため、各ヘルパーはセッションの選択を継承します。
+Codex にはヘルパーごとのツールリストもターン数の上限もないため、ヘルパーの `tools` と `maxTurns` は引き継がれません。
 
 ## 互換性に関する注意
 
-`~/.agents/skills/` は Codex が所有する共有ルートです。サポート対象の他の 8 つのツールもこれを
-読み込むため（[ハーネスレジストリ](/docs/reference/harness-registry)に列挙されています）、
-Codex のインストールがそこに書き込む Apothem のスキルはそれらのツールにも表示され、Codex の
-アンインストールはそれらのツールからもスキルを取り除きます。インストール時には、それらのツールを
-名指しする注記が出力されます。
+`~/.agents/skills/` は Codex が所有する共有ルートです。サポート対象の他の 8 つのツールもこれを読み込むため（[ハーネスレジストリ](/docs/reference/harness-registry)に列挙されています）、Codex のインストールがそこに書き込む Apothem のスキルはそれらのツールにも表示され、Codex のアンインストールはそれらのツールからもスキルを取り除きます。
+インストール時には、それらのツールを名指しする注記が出力されます。
 
-Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。Apothem は Markdown の
-振る舞いルールをそこに配置しません。それらを `~/.config/apothem/` に保持し、`AGENTS.md` と
-インストールされたスキルから参照します。
+Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。
+Apothem は Markdown の振る舞いルールをそこに配置しません。それらを `~/.config/apothem/` に保持し、`AGENTS.md` とインストールされたスキルから参照します。
 
 ## 検証
 
@@ -73,7 +62,7 @@ apothem verify --harness codex
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新

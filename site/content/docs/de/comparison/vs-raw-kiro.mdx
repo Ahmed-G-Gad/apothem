@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Kiro-Konfiguration"
 description: "Die Steuerungsdateien von Kiro unter .kiro/steering/ von Hand pflegen, verglichen mit dem Rendern aus dem geteilten Profil von Apothem."
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ der Verwaltung mit Apothem gegenüber.
 
 | Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
-| Steuerungsregeln schreiben | Jede Datei unter `.kiro/steering/` von Hand schreiben | Aus dem geteilten Korpus gerendert |
+| Steuerungsregeln verfassen | Jede Datei unter `.kiro/steering/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | Fundamentdateien unberührt halten | Daran denken, `product.md` / `tech.md` / `structure.md` nicht zu überschreiben | Der Adapter schreibt nur `apothem-rules.md` |
-| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
-| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness kiro` |
+| Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness kiro --project <path>` |
 
 ## Was Apothem verwaltet
 
@@ -31,11 +31,13 @@ beim nächsten `apothem update` neu.
 
 ## Migrationspfad
 
-1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
-2. Verschieben Sie die Regeln aus Ihrem vorhandenen `.kiro/steering/` in das geteilte Korpus.
-3. Führen Sie `apothem install --harness kiro` aus, um die `apothem-rules.md`-Steuerungsdatei zu rendern.
-4. Führen Sie `apothem verify --harness kiro` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
-5. Verwenden Sie `apothem update --harness kiro` für jede spätere Änderung.
+1. Führen Sie `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie die Regeln aus Ihrem vorhandenen `.kiro/steering/` in das gemeinsame Korpus.
+3. Führen Sie `apothem install --harness kiro --project <path>` aus, um die Steuerungsdatei
+   `apothem-rules.md` zu rendern.
+4. Führen Sie `apothem verify --harness kiro --project <path>` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness kiro --project <path>` für jede spätere Änderung.
 
 ## Als Nächstes lesen
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de harness do Apothem para o Hermes (Prévia)."
 machineTranslated: true
-sourceHash: "f077a9851e126be5"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,9 +52,9 @@ perfil sob a chave de nível superior `mcp_servers`, onde o Hermes lê os
 servidores MCP. Lançamentos anteriores do Apothem o gravavam sob
 `auxiliary.mcp`, que o Hermes lê como o modelo auxiliar para o despacho de
 ferramentas MCP; tanto `apothem update` quanto `apothem uninstall` removem esse
-bloco enquanto ele ainda contiver exatamente o que um desses lançamentos gravou
-(consulte [Desinstalação](#desinstalação)). (Comportamento do Hermes conforme as
-páginas do seu guia do usuário sobre
+bloco enquanto ele ainda corresponder ao que um desses lançamentos gravaria a
+partir do seu perfil compartilhado (consulte [Desinstalação](#desinstalação)).
+(Comportamento do Hermes conforme as páginas do seu guia do usuário sobre
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 e [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 lidas em 2026-10-02.)
@@ -68,8 +68,10 @@ apothem verify --harness hermes
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
-3. A rotina de verificação específica do adaptador relata sucesso.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML podem ser analisadas. Adicione `--profile PATH`
+   para também confirmar que os arquivos instalados correspondem a esse perfil.
+3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -96,12 +98,14 @@ motor do Apothem não são afetados.
 
 Uma instalação feita por um lançamento anterior, que gravava os servidores do
 perfil sob `auxiliary.mcp`, também tem esse bloco removido quando ele ainda
-contém exatamente o que aquele lançamento gravou, conforme renderizado a partir
-do perfil compartilhado em `~/.config/apothem/profile.yaml`. Esta é a mesma
-regra que `apothem update` aplica, então desinstalar sem atualizar antes não
-deixa nenhum bloco obsoleto. Um bloco que você editou, ou um bloco sem perfil
-compartilhado legível com o qual comparar, permanece no lugar, e o restante das
-suas configurações de `auxiliary` sempre permanece.
+corresponde ao que aquele lançamento gravaria a partir do seu perfil
+compartilhado atual em `~/.config/apothem/profile.yaml`. Esta é a mesma regra
+que `apothem update` aplica, então desinstalar sem atualizar antes não deixa
+nenhum bloco obsoleto enquanto os servidores MCP do perfil não mudarem. Um bloco
+que você editou, um bloco que não corresponde mais aos servidores MCP do seu
+perfil atual, ou um bloco sem perfil compartilhado legível com o qual comparar,
+permanece no lugar, e o restante das suas configurações de `auxiliary` sempre
+permanece.
 
 ## Conformity gate
 

@@ -476,6 +476,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Code stopped with a traceback ending in `no real CPython >= 3.10 interpreter
   found`. The resolver now uses that interpreter as it reports itself. Its
   search of `PATH` still skips the Store launcher stub.
+- **English docs pages state what the code does.** Translators of the docs
+  reported 44 statements that could lead a reader to act wrongly. Seven had
+  been corrected already; the other 37 are fixed on 33 pages. For example,
+  `APOTHEM_PYTHON` is tried first and the npm shim falls back to `python3`,
+  `python` and `py -3` when it fails, so it does not skip the probe.
+  `apothem diff` rejects `all`. `apothem rollback` fails with
+  `rollback.no_record` for a harness with no recorded install and carries on
+  with the others. `apothem update --harness glm` writes `glm.toml` only when
+  the file is missing. Eight light-mode brand colors fall below WCAG AA
+  against white text, and no dark-mode color reaches it. `publish-npm.yml`
+  runs on the tag push, with manual dispatch as the fallback. The
+  conformity-gate pages call M2 reasoned and M3, M12 and M15 part mechanical,
+  and say the semver-stability validator runs on its own, not through the
+  gate. The uninstall page now covers the VS Code-family extension, the
+  command-line bootstraps and the direct engine.
 
 ### Security
 

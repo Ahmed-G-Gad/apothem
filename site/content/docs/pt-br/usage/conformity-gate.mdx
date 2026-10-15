@@ -2,7 +2,7 @@
 title: "Portão de conformidade"
 description: "Execute o portão de conformidade do Apothem para verificar a saúde do ecossistema."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,28 +10,32 @@ O portão de conformidade em `src/apothem/conformity/gate.py` executa a
 fração mecânica do portão de pré-emissão de quinze barras (M1-M15)
 contra cada artefato que o operador redige.
 
+Os comandos desta página pressupõem um checkout do Apothem, então prefixe cada
+um com `PYTHONPATH=src`. Após uma instalação por script, use
+`PYTHONPATH="$HOME/.apothem/src"` no lugar de `src`.
+
 ## Executar o portão
 
-O portão é **consultivo por padrão**: ele relata as constatações e sai com `0`,
-de modo que uma execução local nunca bloqueia você. Adicione `--strict` (ou
-defina `APOTHEM_CONFORMITY_STRICT=1`) para sair com código diferente de zero
-diante de uma constatação bloqueante — o modo que o CI e o pre-commit usam para
-fazer falhar uma mudança que viola as regras.
+O portão é **consultivo por padrão**: ele relata os achados e sai com `0`, de
+modo que uma execução local nunca bloqueia você. Adicione `--strict` (ou defina
+`APOTHEM_CONFORMITY_STRICT=1`) para sair com código diferente de zero diante de
+um achado bloqueante — o modo que o CI e o pre-commit usam para fazer falhar uma
+mudança que viola as regras.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
-Códigos de saída: `0` limpo (ou consultivo), `2` um bloqueio por constatações no
-modo estrito, `3` um erro de uso: um sinalizador ou nome de validador
-desconhecido, um arquivo que não existe ou um diretório raiz que não existe.
-`--help` imprime o uso completo e sai com `0`. Todo validador independente
-aceita o mesmo `--help` e sai com `3` diante de um sinalizador desconhecido ou
-de uma raiz ausente.
+Códigos de saída: `0` limpo (ou consultivo), `2` um bloqueio por achados no modo
+estrito, `3` um erro de uso: um sinalizador ou nome de validador desconhecido,
+um arquivo que não existe ou um diretório raiz que não existe. `--help` imprime
+o uso completo e sai com `0`. Todo validador independente aceita o mesmo
+`--help` e sai com `3` diante de um sinalizador desconhecido ou de uma raiz
+ausente.
 
 Uma raiz relativa como `.` é resolvida para um caminho absoluto antes que
 qualquer validador seja executado, de modo que `--all .` e `--all "$PWD"`
@@ -51,8 +55,8 @@ quando o diretório não tem histórico de commits.
 | Barra | Verificação | Tipo |
 |-----|-------|------|
 | M1 | Agnosticismo quanto ao projeto anfitrião | Raciocinada |
-| M2 | Divulgação editorial | Mecânica |
-| M3 | Dez dimensões de qualidade | Raciocinada |
+| M2 | Divulgação editorial | Raciocinada |
+| M3 | Dez dimensões de qualidade | Mecânica + raciocinada |
 | M4 | Autoaplicação | Mecânica |
 | M5 | Autoridade (sem identidade / endpoint / segredo fabricados) | Mecânica |
 | M6 | Incorporação de expertise | Raciocinada |
@@ -61,32 +65,32 @@ quando o diretório não tem histórico de commits.
 | M9 | Alavancagem visual | Raciocinada |
 | M10 | Vinculação bidirecional | Mecânica |
 | M11 | Sprints ágeis | Raciocinada |
-| M12 | Relatórios de fase e disposição canônica | Mecânica |
+| M12 | Relatórios de fase e disposição canônica | Mecânica + raciocinada |
 | M13 | Ofício de código | Mecânica |
 | M14 | Sistemicidade | Raciocinada |
-| M15 | Pronto para produção | Mecânica |
+| M15 | Pronto para produção | Mecânica + raciocinada |
 
 ## Verificações direcionadas
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
-O modo `--hook` (`python -m apothem.conformity.gate --hook`) é o
-ponto de entrada despachado pelo harness: ele lê um payload JSON de entrada de
-ferramenta da stdin e executa a cadeia de comparadores por gravação contra a
+O modo `--hook` (`python -m apothem.conformity.gate --hook`) é o ponto de
+entrada despachado pelo harness: ele lê um payload JSON de entrada de
+ferramenta da stdin e executa a cadeia de matchers por gravação contra a
 gravação pendente. Essa é a forma que o hook `PreToolUse` implantado invoca;
 raramente você o chama manualmente.
 
 O modo hook tem **escopo limitado a um conjunto de diretórios**. Ele executa a
-cadeia de comparadores apenas em gravações cujo alvo esteja sob um deles; uma
+cadeia de matchers apenas em gravações cujo alvo esteja sob um deles; uma
 gravação fora de todos os escopos é encerrada antecipadamente com uma aprovação
 silenciosa. Os padrões são as raízes de harness de escopo de usuário com suporte
 a hooks nas quais o Apothem instala — a página de cada harness em Harnesses
@@ -98,9 +102,14 @@ para substituí-los:
 export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 ```
 
-Um hook que parece não fazer nada geralmente é um alvo fora do escopo, e não uma
-falha — verifique primeiro o alvo da gravação em relação aos escopos acima.
+Um hook que parece não fazer nada geralmente é um caso de alvo fora do escopo, e
+não uma falha — verifique primeiro o alvo da gravação em relação aos escopos
+acima.
 
 ## Integração com CI
 
-O portão é executado no CI via `.github/workflows/conformity.yml` a cada push.
+O job de qualidade em `.github/workflows/ci.yml` executa o portão em modo
+estrito (`python -m apothem.conformity.gate --all . --strict`) em pushes para
+`main` e em pull requests para `main` que alterem os caminhos que esse job
+monitora. O fluxo de trabalho separado `.github/workflows/conformity.yml`
+executa a varredura de fixtures (`tests/conformity-scenarios/verify.py --strict`).

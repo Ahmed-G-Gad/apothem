@@ -2,7 +2,7 @@
 title: "Zu Apothem beitragen — Entwicklerhandbuch"
 description: "Pflegen und erweitern Sie das Apothem-Ökosystem, indem Sie Regeln, Befehle, Helfer, Skills und Hooks mit kanonischen Schemas, Frontmatter-Anforderungen und Validierungsverfahren verfassen."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ und Frontmatter-Anforderungen.
 | **Befehl** | `src/apothem/commands/*.md` | Slash-Befehl (`/command-name`) für komplexe Workflows | Neuer mehrstufiger Benutzer-Workflow |
 | **Helfer** | `src/apothem/agents/*.md` | Persistente Definition eines delegierten Workers für parallele Aufgaben | Neue wiederkehrende Spezialaufgabe (Audit, Erkundung, Qualitätsprüfung) |
 | **Skill** | `src/apothem/skills/{name}/SKILL.md` | Wiederverwendbare Technik mit Erkennungssignal | Neues erkennbares, wiederverwendbares Technikmuster |
-| **Hook** | `src/apothem/hooks/` + `settings.json` | Ereignisgesteuerte Validierung oder Zustandsverwaltung | Neues Lebenszyklus-Ereignis oder neuer Validierungsbedarf |
+| **Hook** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | Ereignisgesteuerte Validierung oder Zustandsverwaltung | Neues Lebenszyklus-Ereignis oder neuer Validierungsbedarf |
 
 ## Harness-Adapter-Vertrag
 
@@ -90,7 +90,10 @@ JSON-Schemas widerspricht, haben die Schemas Vorrang.
 
 ## Frontmatter-Schnellprüfung
 
-Jedes Artefakt-Frontmatter muss diese Prüfungen bestehen:
+Das Frontmatter jedes Artefakts muss diese Prüfungen bestehen. Wenden Sie die
+Prüfungen zu `version`, `updated` und `portability` nur auf eine Klasse an, die
+den Schlüssel trägt: Regeln tragen keinen davon, und Skills tragen kein
+`portability`.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -123,23 +126,28 @@ Unterstriche.
 - **Befehle:** `{name}.md`
 - **Helfer:** `{name}.md`
 - **Skills:** Im Ordner `src/apothem/skills/{name}/SKILL.md` (exakte Schreibweise: `SKILL.md`)
-- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Event-Handler sind Python. Jeder
-  `settings.json`-Hook-Befehl verwendet die Exec-Form (`python` plus `args`), um
-  `-m apothem.hooks.dispatch <event> [<message-name>]` oder
-  `-m apothem.conformity.gate --hook` aufzurufen. `dispatch.py` leitet
-  `SessionStart` an `session_start_bootstrap.main()` und
-  jedes andere zugelassene Ereignis an `emit_hook_context.main()` weiter. Die
-  einzigen Shell-Stubs, die unter `src/apothem/hooks/` oder `scripts/` zulässig
-  sind, sind die vier Locator- und Bootstrap-Dateien (`find-python.{ps1,sh}`,
-  `bootstrap.{ps1,sh}`); jede andere `.ps1`- /
-  `.sh`-Datei fällt bei der Hygieneprüfung `scripts/dev/validate_hooks.py` durch.
+- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Ereignis-Handler sind Python-Skripte. Jeder
+  Hook-Befehl in der `settings.json`-Vorlage für Claude Code verwendet die Exec-Form: `command`
+  ist der Interpreter-Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird, und
+  `args` enthält den Skriptpfad und seine Argumente. Diese Vorlage ruft
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` und
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` über absolute Pfade auf, daher
+  benötigt die installierte Kopie kein importierbares `apothem`-Paket. Das Claude Code-Plugin
+  registriert Hooks stattdessen in `src/apothem/hooks/hooks.json`, und zwar als Shell-Befehle,
+  die `hooks/lib/bootstrap.sh` über `bash` ausführen. Registrieren Sie einen neuen Hook in
+  `hooks.json` und in der `settings.json`-Vorlage für Claude Code. `dispatch.py` leitet
+  `SessionStart` an `session_start_bootstrap.main()` weiter und jedes andere zugelassene Ereignis
+  an `emit_hook_context.main()`. Die einzigen Shell-Stubs, die unter `src/apothem/hooks/` oder
+  `scripts/` zulässig sind, sind die sechs Locator- und Bootstrap-Dateien (`find-python.{ps1,sh}`,
+  `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); jede andere `.ps1`- oder `.sh`-Datei fällt bei der
+  Hygieneprüfung `scripts/dev/validate_hooks.py` durch.
 
 ### Querverweise
 
 Verwenden Sie beim Verweisen auf andere Artefakte exakte Namen:
 
 - Regeln: `"operational-mandates"` (Wert des Felds name)
-- Befehle: `/plan-execute` (mit Schrägstrich in Doku für Menschen; ohne im Code)
+- Befehle: `/plan-execute` (mit Schrägstrich in Dokumentation für Menschen; im Code ohne)
 - Helfer: `codebase-explorer` (Wert des Felds name)
 - Skills: `plan-suite` (Wert des Felds name)
 
@@ -147,7 +155,9 @@ Verwenden Sie im Fließtext niemals Dateipfade oder gekürzte Namen.
 
 ## Portabilität: Windows vs. Unix
 
-Jedes Artefakt muss seinen Portabilitätsstatus ausdrücklich deklarieren.
+Jeder Befehl MUSS seinen Portabilitätsstatus im Feld `portability` ausdrücklich
+deklarieren, ein Helfer KANN dies tun. Skills, Regeln und Output-Styles tragen kein
+Feld `portability`.
 
 ### Universal (Standard)
 
@@ -183,7 +193,7 @@ Dokumentieren Sie den Vorbehalt in einem Hinweis unmittelbar nach dem Titel.
 portability: "unix-only"
 ```
 
-Dokumentieren Sie den Grund im ersten Abschnitt der Regel.
+Dokumentieren Sie den Grund im ersten Abschnitt des Artefakts.
 
 ## Geltungsbereich: immer aktiv vs. pfadgefiltert
 
@@ -192,7 +202,8 @@ Dokumentieren Sie den Grund im ersten Abschnitt der Regel.
 Die Regel gilt überall.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### Pfadgefiltert
@@ -200,8 +211,8 @@ scope: "always-on"
 Die Regel gilt bedingt, abhängig vom Dateipfad.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter` verwendet Glob-Muster (dasselbe Format wie `.gitignore`). Wenn
@@ -209,32 +220,34 @@ eine Datei dem Filter entspricht, wird die Regel aktiviert.
 
 ## Versionssemantik
 
-Jedes Artefakt trägt seine eigene semantische Version (`MAJOR.MINOR.PATCH`):
+Jedes versionierte Artefakt trägt seine eigene semantische Version
+(`MAJOR.MINOR.PATCH`). Befehle und Skills verlangen sie, Helfer und
+Output-Styles KÖNNEN sie tragen, und Regeln tragen keine:
 
 - **PATCH** — Tippfehlerkorrekturen, Formatierung, Auffrischen von Links, reine Kommentaränderungen. Verhalten unverändert.
-- **MINOR** — additive, nicht inkompatible Änderungen: neue optionale Abschnitte, zusätzliche Antimuster, neue optionale Frontmatter-Felder, neue Beispiele. Bestehende Konsumenten funktionieren ohne Änderung weiter.
+- **MINOR** — additive, nicht inkompatible Änderungen: neue optionale Abschnitte, neue optionale Frontmatter-Felder, neue Beispiele. Bestehende Konsumenten funktionieren ohne Änderung weiter.
 - **MAJOR** — inkompatible Schema- oder Vertragsänderungen: entfernte Abschnitte, umbenannte Felder, geändertes Verhalten einer bestehenden Direktive, Änderungen, die nachgelagerte Artefakte zur Anpassung zwingen.
 
 Beispiele:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: Tippfehlerkorrektur)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: neuen Anti-Patterns-Eintrag hinzugefügt)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: neuen optionalen Abschnitt hinzugefügt)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: Vertrag als stabil deklariert)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: verpflichtendes Frontmatter-Feld entfernt)
 
 Heben Sie `version` und `updated` bei jeder verhaltensändernden Bearbeitung
-gemeinsam an. Hängen Sie für Releases, die Artefaktänderungen bündeln, eine
-passende Zeile an die ökosystemweite `CHANGELOG.md` an.
+eines Artefakts, das diese Felder trägt, gemeinsam an. Hängen Sie für Releases,
+die Artefaktänderungen bündeln, eine passende Zeile an die ökosystemweite
+`CHANGELOG.md` an.
 
 ## Wann ein Artefakt zu bearbeiten ist
 
 ### Regeln
 
 - Behandeln Sie die Mandatory/Optional-Struktur als tragend — eine
-  Umstrukturierung wirkt sich auf jedes abhängige Artefakt aus (MAJOR-Anhebung
-  erforderlich).
+  Umstrukturierung wirkt sich auf jedes abhängige Artefakt aus.
 - Verfeinern Sie Anti-Patterns, Seriousness-Scaling-Beispiele und
-  Quellenangaben, wenn sich das Verständnis vertieft (MINOR-Anhebung).
+  Quellenangaben, wenn sich das Verständnis vertieft.
 - Halten Sie die Begründung jeder strukturellen Änderung in der zugehörigen
   Memory-Topic-Datei fest.
 
@@ -307,15 +320,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. CLAUDE.md aktualisieren
+### 4. Rules-README aktualisieren
 
-Fügen Sie der Registry-Tabelle `§7.2 Rules` einen Eintrag hinzu:
+Fügen Sie der Tabelle für die Familie der Regel im Abschnitt Rule families von
+`src/apothem/rules/README.md` eine Zeile hinzu:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Halten Sie die alphabetische Reihenfolge innerhalb der Tabelle ein.
+Wählen Sie die Familientabelle, deren Thema zur Regel passt.
 
 ### 5. An CHANGELOG.md anhängen
 
@@ -391,9 +405,9 @@ Struktur:
 - Workflow-Abschnitt mit Schritten
 - Return Contract / Ausgabeformat
 
-### 4. CLAUDE.md und CHANGELOG.md aktualisieren
+### 4. README und CHANGELOG.md aktualisieren
 
-Registry-Zeile in `§7.1 Commands`; CHANGELOG-Zeile unter dem Abschnitt `### Added` des nächsten Releases.
+Fügen Sie der passenden Befehlstabelle in `src/apothem/commands/README.md` eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
 
 ### 5. Validieren
 
@@ -454,9 +468,9 @@ Abschnitte:
 - Workflow (nummerierte Schritte)
 - Return Contract (max. Tokens, Struktur, erforderliche Felder)
 
-### 4. CLAUDE.md und CHANGELOG.md aktualisieren
+### 4. README und CHANGELOG.md aktualisieren
 
-Registry-Zeile in `§7.3 Helpers`; CHANGELOG-Zeile unter dem Abschnitt `### Added` des nächsten Releases.
+Fügen Sie der Index-Tabelle in `src/apothem/agents/README.md` eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
 
 ### 5. Testen
 
@@ -485,8 +499,8 @@ Wenn alle drei Fragen mit „ja“ beantwortet werden, schreiben Sie einen Skill
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -521,9 +535,9 @@ Inhaltsstruktur:
 - Common Mistakes
 - Examples
 
-### 4. CLAUDE.md und CHANGELOG.md aktualisieren
+### 4. README und CHANGELOG.md aktualisieren
 
-Registry-Zeile in `§7.5 Skills`; CHANGELOG-Zeile unter dem Abschnitt `### Added` des nächsten Releases.
+Fügen Sie den Tabellen Index und Folder contents in `src/apothem/skills/README.md` eine Zeile hinzu; fügen Sie unter dem Abschnitt `### Added` des nächsten Releases eine CHANGELOG-Zeile hinzu.
 
 ### 5. Validieren
 
@@ -538,13 +552,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Frontmatter besteht die YAML-Syntaxprüfung
 - [ ] Alle verpflichtenden Felder gemäß Schema vorhanden
 - [ ] Das Feld `name` verwendet kebab-case
-- [ ] `version` ist semantisch (`MAJOR.MINOR.PATCH`) und wurde angehoben, falls sich das Verhalten geändert hat
-- [ ] `updated` entspricht dem heutigen Datum für jedes Artefakt, das Sie bearbeitet haben
-- [ ] Feld `portability` gesetzt und gültig
+- [ ] `version` (nur versionierte Klassen; Regeln tragen keine) ist semantisch (`MAJOR.MINOR.PATCH`) und wurde angehoben, falls sich das Verhalten geändert hat
+- [ ] `updated` entspricht dem heutigen Datum für jedes Artefakt, das Sie bearbeitet haben und das das Feld trägt
+- [ ] Feld `portability` gesetzt und gültig (nur Befehle und Helfer)
 - [ ] CHANGELOG.md führt die Änderung in der passenden Kategorie unter dem Abschnitt des nächsten Releases
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
 - [ ] Querverweise sind mit anderen Artefakten konsistent
-- [ ] Neues Artefakt in der CLAUDE.md-Registry registriert
+- [ ] Neues Artefakt im Index der README seines Ordners registriert
 - [ ] Artefakt getestet (falls zutreffend)
 - [ ] Skill `ecosystem-audit` läuft ohne Fehler
 - [ ] Inhalt folgt den strukturellen Konventionen (Titelformat, Abschnitte usw.)
@@ -584,8 +598,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### Auf CLAUDE.md-Abschnitte verweisen
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## Linting und Format
@@ -613,8 +627,7 @@ python -m pytest tests/property       # Hypothesis properties (profile loader, f
 Die Suite ist hermetisch: Sie besteht mit dem Checkout unter `$TMPDIR` und mit
 einem `python` auf dem `PATH`, dem die CLI-Voraussetzungen fehlen, weil die
 Integrationstests den Interpreter ausführen, der pytest ausführt, und
-verschachtelte temporäre und Quellpfade nach Länge absteigend (die längsten
-zuerst) tokenisieren.
+verschachtelte temporäre Pfade und Quellpfade, längste zuerst, tokenisieren.
 
 ### Abdeckung pro Paket
 
@@ -649,7 +662,7 @@ jeden Wert, der `null` ist, steht der Grund unter `nulls`.
 | Schlüssel | Was er misst |
 | --- | --- |
 | `coverage.engine`, `coverage.conformity`, `coverage.audit` | Zeilen- plus Zweigprozentsatz pro Paket, mit `coverage_floors`. |
-| `always_on_bytes[harness]`, `always_on_files[harness]` | Für jeden der 17 Harnesses, nach `profile init` und `install --harness <id>` in ein Wegwerf-`HOME` und ein Wegwerf-Projekt: die Bytes auf der Festplatte der Anweisungsdateien, die dieser Harness beim Start vollständig lädt. |
+| `always_on_bytes[harness]`, `always_on_files[harness]` | Für jeden der 17 Harnesses, nach `profile init` und `install --harness <id>` in ein temporäres `HOME`-Verzeichnis und ein temporäres Projekt: die Bytes der Anweisungsdateien auf dem Datenträger, die dieser Harness beim Start vollständig lädt. |
 | `cli_coldstart_ms` | Median von `python -m apothem --version` (mit `--help` unter `cli_coldstart_detail_ms`). |
 | `hook_e2e_ms[event]`, `hook_injected_chars[event]` | Pro registriertem Ereignis und Matcher (`PreToolUse:Write`, `Stop`, …): die mediane Gesamtzeit der Hook-Kette mit einer realen Payload und die Kontextzeichen, die sie injiziert. |
 
@@ -750,7 +763,7 @@ Konventionen:
 /ecosystem-audit --focus all --fix
 ```
 
-Dies läuft parallel:
+Dies führt parallel aus:
 
 - **Struktur-Audit:** Registry-Genauigkeit, Dateiexistenz, Gültigkeit des Frontmatters
 - **Artefakt-Audit:** Querverweise, Mandatsabdeckung, Pipeline-Reihenfolge

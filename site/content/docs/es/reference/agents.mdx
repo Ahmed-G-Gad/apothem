@@ -2,7 +2,7 @@
 title: "Trabajadores delegados"
 description: "Trabajadores delegados persistentes para investigación, auditoría, calidad y orquestación, con contratos de frontmatter y protocolos de aislamiento del despliegue."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,7 +51,8 @@ maxTurns: <integer>
 ## Conversión por entorno
 
 Un trabajador delegado cuya concesión `tools`, después de aplicar
-`disallowedTools`, no incluye `Write` ni `Edit` es de solo lectura. Cada entorno
+`disallowedTools`, no incluye ninguna herramienta de edición de archivos
+(`Write`, `Edit`, `MultiEdit` o `NotebookEdit`) es de solo lectura. Cada entorno
 que convierte trabajadores delegados aplica ese límite de forma nativa o elimina
 la etiqueta de solo lectura:
 

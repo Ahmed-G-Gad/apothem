@@ -2,7 +2,7 @@
 title: "Perbandingan"
 description: "Cara mengevaluasi Apothem dibandingkan konfigurasi harness yang dipelihara secara manual dan pendekatan konfigurasi lainnya, dengan matriks fitur dan halaman per harness."
 machineTranslated: true
-sourceHash: "bb767de9bd99533a"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ benteng audit, serta siklus hidup terverifikasi yang dapat dibalik.
 | Kemampuan | Apothem | Pengelola konfigurasi berkas (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Satu sumber ke skema native banyak alat | Ya — tujuh belas adapter harness | Tidak — salin, symlink, atau templat, tanpa terjemahan | Ya — 60 alat ditambah standar AGENTS.md dan Agent Skills | Sebagian — aturan digabungkan ke dalam berkas instruksi setiap alat; MCP, skill, dan subagen ditulis dalam bentuk native |
-| Unit tersinkron | aturan, skill, hook, slash-command, MCP | berkas sembarang | aturan, ignore, MCP, command, subagen, skill, hook, izin, checks (instruksi pemeriksaan tinjauan kode) | aturan, MCP, skill, subagen |
+| Unit tersinkron | aturan, skill, subagen, hook, slash-command, output-style, pengaturan, MCP | berkas sembarang | aturan, ignore, MCP, command, subagen, skill, hook, izin, checks (instruksi pemeriksaan tinjauan kode) | aturan, MCP, skill, subagen |
 | Korpus tata kelola (aturan perilaku ditambah gerbang konformitas mekanis) | Ya — `python -m apothem.conformity.gate` | Tidak | Tidak — fitur `checks` miliknya menyinkronkan pemeriksaan tinjauan kode ke alat; tidak ada gerbang konformitas atas aturan | Tidak |
 | Pipeline rencana dan riset yang deterministik | Ya — `/plan-spec` hingga `/plan-execute`, `/research` tiga belas tahap | Tidak | Tidak | Tidak |
 | Benteng audit yang mendeteksi dan memperbaiki | Ya — sapuan sebelas perintah, loop audit ulang `/fortress` | Tidak | Tidak | Tidak |

@@ -2,7 +2,7 @@
 title: "Primeiros passos: do zero a um harness funcional"
 description: "Um passo a passo de ponta a ponta, de uma máquina vazia até uma configuração de harness materializada e verificada."
 machineTranslated: true
-sourceHash: "0ca03fcd4603a084"
+sourceHash: "35d8b7420a9a02a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,14 +31,9 @@ suportado — troque o nome quando chegar à [lista de harnesses](/docs/harnesse
 
 ## O que você precisa antes
 
-- Um shell do tipo Unix (macOS, Linux ou WSL). O instalador do PowerShell cobre
-  o Windows; este tutorial mostra a rota do `bash`.
-- Python 3.10 ou mais recente no seu `PATH`. Confira com `python3 --version`.
-- As duas bibliotecas de runtime que o motor importa do seu interpretador:
-  `click` e `rich`. O restante da pilha (`pyyaml`, `jsonschema`) vem incorporado
-  na árvore, então apenas essas duas precisam ser importáveis. O instalador as
-  procura, nomeia o que estiver faltando e oferece instalar para você as partes
-  ausentes — assim você pode confirmar e continuar.
+- Um shell do tipo Unix (macOS, Linux ou WSL). O instalador do PowerShell cobre o Windows; este tutorial mostra o caminho do `bash`.
+- Python 3.10 ou mais recente no seu `PATH`. Verifique com `python3 --version`.
+- As duas bibliotecas de runtime que o motor importa do seu interpretador: `click` e `rich`. O restante da pilha (`pyyaml`, `jsonschema`) vem incorporado à árvore, então apenas essas duas precisam ser importáveis. Se `click` ou `rich` estiver ausente, o instalador para e imprime o comando de instalação. O comando de uma linha envia o script para o bash por um pipe, então ele não pode perguntar; defina `APOTHEM_AUTO_INSTALL_DEPS=1` (por exemplo, `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`) ou instale primeiro os dois pacotes.
 
 O Apothem é distribuído como uma árvore de código-fonte empacotada, e não como
 um pacote publicado — não existe uma etapa `pip install`. O instalador clona a
@@ -54,21 +49,9 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 
 O instalador executa estas etapas:
 
-1. **Verificação de pré-requisitos.** O instalador encontra um interpretador
-   Python 3.10+ real e confirma que as duas bibliotecas de runtime (`click` e
-   `rich`) são importáveis. Se uma estiver faltando, ele a nomeia e oferece
-   instalá-la para você — ou defina `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar
-   sem perguntar.
-2. **Posicionamento do código-fonte.** A árvore empacotada é clonada em
-   `~/.apothem` (substitua o local com a variável de ambiente `APOTHEM_HOME`).
-   Uma nova execução avança o clone existente por fast-forward em vez de
-   duplicá-lo.
-3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador
-   copia o perfil de exemplo para `~/.config/apothem/profile.yaml` e então
-   **para e pede que você o edite** antes de continuar. Isso é intencional — o
-   exemplo usa dados de identidade que são marcadores de posição, e você deve
-   torná-lo seu antes que qualquer configuração de harness seja gravada. Fazemos
-   isso na Etapa 2.
+1. **Verificação de pré-requisitos.** O instalador encontra um interpretador Python 3.10+ real e confirma que as duas bibliotecas de runtime (`click` e `rich`) são importáveis. Se uma estiver faltando, ele a nomeia, para e imprime o comando de instalação; defina `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sem pedir confirmação, já que uma execução por pipe não pode perguntar.
+2. **Posicionamento do código-fonte.** A árvore empacotada é clonada em `~/.apothem` (substitua esse local pela variável de ambiente `APOTHEM_HOME`). Uma nova execução faz fast-forward do clone existente, em vez de duplicá-lo.
+3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para `~/.config/apothem/profile.yaml`, instala e verifica o Claude Code a partir dele na mesma execução, e avisa que os campos de identidade são marcadores de posição.
 
 Você pode orientar a instalação com variáveis de ambiente. As que você
 provavelmente mais usará:
@@ -80,13 +63,7 @@ APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
   curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto
-clonar e qual ref do git fazer checkout — sem definir, resolve e verifica a tag
-de lançamento assinada mais recente; defina uma tag para fixá-la ou `main` para
-a branch móvel), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa para um aviso uma falha
-na verificação da assinatura da tag), `APOTHEM_SOURCE` (usa um checkout local
-existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (pula a verificação
-pós-instalação, que queremos executar, então deixe-a sem definir).
+Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto clonar e qual ref do git fazer checkout; sem definir, resolve e verifica a tag de lançamento assinada mais recente; defina uma tag para fixá-la, ou `main` para a branch móvel, que também exige `APOTHEM_ALLOW_UNVERIFIED=1`, pois uma branch não é uma tag assinada), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa uma falha na verificação da assinatura da tag para um aviso e permite uma ref que não seja tag, como `main`), `APOTHEM_SOURCE` (usa um checkout local existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (pula a verificação pós-instalação, que queremos executar, então deixe-a sem definir).
 
 Quando o instalador conclui uma execução completa, ele imprime um banner que
 mostra como invocar o motor. Ele coloca um shim `apothem` no seu `PATH` (POSIX:
@@ -149,12 +126,11 @@ novamente antes de seguir em frente.
 
 ## Etapa 3 — Materializar uma configuração de harness
 
-Se a sua execução da Etapa 1 completou uma passagem inteira — ou seja, você já
-tinha um perfil, então o instalador não parou na inicialização —, ela
-materializou o harness padrão para você. Em uma primeira execução, o instalador
-parou na inicialização do perfil, então execute `install` agora para
-materializar o harness a partir do perfil que você acabou de editar (isso também
-adiciona um segundo harness):
+Se a sua execução da Etapa 1 criou o perfil, ela já instalou o Claude Code a partir da identidade de marcador de posição. Edite o perfil na Etapa 2 e, em seguida, aplique a sua identidade com:
+
+```bash
+apothem update --harness claude-code
+```
 
 ```bash
 apothem install --harness claude-code

@@ -2,7 +2,7 @@
 title: "Variáveis de ambiente do instalador"
 description: "Controle o instalador por script (destino, origem, harness, perfil, verificação) com variáveis de ambiente."
 machineTranslated: true
-sourceHash: "4a6a53ca733a16ef"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,9 @@ variáveis de ambiente antes de executá-lo.
 
 ## Pré-requisitos
 
-- Um shell POSIX (`bash`) ou PowerShell 5.1+.
+- Um shell POSIX (`bash`) ou PowerShell 5.1+. Os exemplos de PowerShell abaixo
+  executam `pwsh` (PowerShell 7+). No Windows PowerShell 5.1, execute
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` em vez disso.
 - As variáveis são lidas uma única vez no início do instalador, então defina-as
   no mesmo comando (ou exporte-as antes) e depois execute o instalador.
 
@@ -21,17 +23,17 @@ variáveis de ambiente antes de executá-lo.
 | --- | --- | --- |
 | `APOTHEM_HOME` | Destino de instalação da árvore de código-fonte clonada | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Remoto do Git a clonar | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | Ref do Git para fazer checkout; sem definir, resolve a tag `vMAJOR.MINOR.PATCH` assinada mais recente, um valor de tag a fixa, `main` seleciona a branch móvel | sem definir (tag assinada mais recente) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Rebaixa uma falha na verificação da assinatura da tag de um aborto fatal para um aviso quando definida como `1` | `0` (verifica, fail-closed) |
-| `APOTHEM_VERIFY` | `signature` verifica a assinatura GPG da tag de lançamento; `checksum` instala o arquivo de plataforma do lançamento depois de conferir o SHA-256 dele com o `SHA256SUMS` do lançamento (integridade, não prova de quem o publicou) | `signature` |
+| `APOTHEM_REF` | Ref do Git para fazer checkout; sem definir, resolve a tag `vMAJOR.MINOR.PATCH` assinada mais recente, um valor de tag a fixa, `main` seleciona a branch móvel. Uma ref que não seja tag, como `main`, aborta a operação, a menos que `APOTHEM_ALLOW_UNVERIFIED=1` esteja definido. | não definida (tag assinada mais recente) |
+| `APOTHEM_ALLOW_UNVERIFIED` | Rebaixa uma falha na verificação da assinatura da tag, de um aborto fatal para um aviso, quando definida como `1` | `0` (verifica, fail-closed) |
+| `APOTHEM_VERIFY` | `signature` verifica a assinatura GPG da tag de lançamento; `checksum` instala o arquivo da plataforma do lançamento depois de conferir o SHA-256 dele com o `SHA256SUMS` do lançamento (integridade, não prova de quem o publicou) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de download para o modo checksum | `<APOTHEM_REPO>/releases/download` |
-| `APOTHEM_SOURCE` | Árvore de código-fonte local explícita a usar em vez de clonar | sem definir (clona) |
+| `APOTHEM_SOURCE` | Árvore de código-fonte local explícita a usar em vez de clonar | não definida (clona) |
 | `APOTHEM_HARNESS` | Harness a instalar | `claude-code` |
 | `APOTHEM_PROFILE` | Caminho para o YAML do perfil compartilhado | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Pula a etapa de verificação pós-instalação quando definida como `1` | `0` (a verificação é executada) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Instala automaticamente, sem perguntar, os pré-requisitos `click` / `rich` ausentes quando definida como `1` | `0` (pergunta, ou recusa em um pipe não interativo) |
-| `APOTHEM_BIN_DIR` | Diretório do shim de comando `apothem` posicionado | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
-| `NO_COLOR` | Desativa a saída colorida quando definida com qualquer valor ([no-color.org](https://no-color.org/)); a cor também fica desativada sempre que a saída não é um terminal (um pipe, um arquivo, um log de CI) | sem definir (cor apenas em um terminal interativo) |
+| `APOTHEM_BIN_DIR` | Diretório do shim do comando `apothem` posicionado | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `NO_COLOR` | Desativa a saída colorida quando definida com qualquer valor ([no-color.org](https://no-color.org/)); a cor também fica desativada sempre que a saída não é um terminal (um pipe, um arquivo, um log de CI) | não definida (cor apenas em um terminal interativo) |
 
 `APOTHEM_SOURCE` tem precedência sobre um clone: quando definida como um
 checkout que contém `src/apothem`, o instalador o usa diretamente, nunca toca em
@@ -79,10 +81,12 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Fixe a ref de origem e o destino da instalação:
+2. Fixe o destino da instalação e selecione a branch móvel `main`. Uma branch
+   não é uma tag assinada, então o instalador também precisa de
+   `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. Use um checkout local e um perfil personalizado, pulando a verificação:
@@ -104,6 +108,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1

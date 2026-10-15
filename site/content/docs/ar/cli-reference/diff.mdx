@@ -2,7 +2,7 @@
 title: "diff"
 description: "مرجع واجهة سطر الأوامر لأمر apothem diff."
 machineTranslated: true
-sourceHash: "5a48bbf5c36bbcdf"
+sourceHash: "eadb04c11c65af92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,8 @@ apothem diff --harness NAME [--profile PATH] [--project PATH]
 ونتيجتها. ولا تؤثّر طبقة العرض في غلاف <bdi>`--json`</bdi>: فهو يحمل دائمًا الحقلين
 الخامّين <bdi>`operation`</bdi> و<bdi>`outcome`</bdi> للمستهلكين الآليين.
 
-يعمل <bdi>`diff`</bdi> على إطار عمل واحد. وبخلاف <bdi>`status`</bdi>، لا يقبل
-<bdi>`all`</bdi>؛ مرِّر اسم إطار عمل واحد.
+يعمل <bdi>`diff`</bdi> على إطار عمل واحد. وبخلاف <bdi>`install`</bdi> أو
+<bdi>`verify`</bdi>، لا يقبل <bdi>`all`</bdi>؛ مرِّر اسم إطار عمل واحد.
 
 ## الخيارات
 
@@ -67,8 +67,8 @@ apothem diff --harness NAME [--profile PATH] [--project PATH]
 يعكس غلاف <bdi>`--json`</bdi> غلاف التثبيت في وضع التشغيل التجريبي. قيمة
 <bdi>`status`</bdi> هي <bdi>`dry_run`</bdi>، و<bdi>`files_written`</bdi> فارغة دائمًا،
 وتحمل كتلة <bdi>`materialization`</bdi> وقائمة <bdi>`results`</bdi> التفاصيل الكاملة
-للأهداف المُخطَّطة. ويحمل الحقل <bdi>`detail.diff`</bdi> في كل صف نتيجة يملكه
-المُشغِّل سلسلة الفرق الموحّد.
+للأهداف المُخطَّطة. ويحمل الحقل <bdi>`detail.diff`</bdi> في كل صف نتيجة خاص بهدف
+يملكه المُشغِّل سلسلة الفرق الموحّد.
 
 ```json
 {

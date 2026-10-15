@@ -2,7 +2,7 @@
 title: "Apothem 대 수동 Gemini CLI 구성"
 description: "Gemini CLI의 GEMINI.md 규칙 파일을 수작업으로 유지 관리하는 것과 Apothem의 공유 프로필에서 렌더링하는 것의 비교."
 machineTranslated: true
-sourceHash: "c50d2b16083b08a0"
+sourceHash: "1571985a6318fd28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,27 +12,24 @@ Gemini CLI는 단일 `GEMINI.md` 규칙 파일을 읽습니다. Apothem의 gemin
 
 ## 노력 비교
 
-| 태스크 | 수동 구성 | Apothem 관리 |
+| 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
-| 규칙 작성 | 하나의 `GEMINI.md`를 수작업으로 편집 | 렌더링됨: 공유 규칙을 `GEMINI.md`에 임베드 |
-| 다른 환경과 규칙을 정렬 상태로 유지 | 수작업, 도구별 | `apothem update` 시 자동 |
-| 구성 설치 / 제거 | `GEMINI.md`를 수작업으로 작성·삭제 | `apothem install` / `apothem uninstall` |
-| 구성이 올바른지 검증 | 수작업 점검 | `apothem verify --harness gemini-cli` |
+| 규칙 작성 | 하나의 `GEMINI.md`를 직접 편집 | 렌더링: 프로젝트 전반 지침은 `GEMINI.md`에, 규칙은 `.gemini/.apothem/support/`에 |
+| 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성 설치 / 제거 | `GEMINI.md`를 직접 작성하고 삭제 | `apothem install` / `apothem uninstall` |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness gemini-cli --project <path>` |
 
 ## Apothem이 관리하는 것
 
-gemini-cli 어댑터는 공유 규칙을 단일 `GEMINI.md`에 임베드합니다. Gemini CLI에는
-PreToolUse 훅이 없으므로, 가드레일 의도는 도구 호출 가로채기 지점이 아니라 규칙의
-문장으로 표현됩니다. 공유 규칙에 대한 모든 변경은 다음 `apothem update` 시
-`GEMINI.md`를 다시 렌더링합니다.
+gemini-cli 어댑터는 `<project>/GEMINI.md`에 센티넬 마커로 구분된 Apothem 블록을 씁니다. 이 블록은 프로젝트 전반 지침을 담고 Apothem의 자료를 가리킵니다. 규칙, 템플릿, 훅은 `<project>/.gemini/.apothem/support/` 아래에 지원 파일로 배치되며, 커맨드, 스킬, 에이전트는 `<project>/.gemini/` 아래에 배치됩니다. Gemini CLI에는 PreToolUse 훅이 없으므로, 가드레일 의도는 도구 호출 가로채기 지점이 아니라 규칙 문장으로 표현됩니다. 공유 규칙을 바꿀 때마다 다음 `apothem update`에서 `GEMINI.md`가 다시 렌더링됩니다.
 
 ## 마이그레이션 경로
 
-1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행해 생성하세요.
-2. 기존 `GEMINI.md`의 규칙을 공유 코퍼스로 옮기세요.
-3. `apothem install --harness gemini-cli`를 실행해 `GEMINI.md`를 렌더링하고 작성하세요.
-4. `apothem verify --harness gemini-cli`를 실행해 구성이 안착했는지 확인하세요.
-5. 이후의 모든 변경에는 `apothem update --harness gemini-cli`를 사용하세요.
+1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행해 만듭니다.
+2. 기존 `GEMINI.md`의 규칙을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness gemini-cli --project <path>`를 실행해 `GEMINI.md`를 렌더링하고 씁니다.
+4. `apothem verify --harness gemini-cli --project <path>`를 실행해 구성이 반영되었는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness gemini-cli --project <path>`를 사용합니다.
 
 ## 다음으로 읽기
 

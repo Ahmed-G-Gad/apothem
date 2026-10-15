@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Apothem-Harness-Adapter für Kiro (GA)."
 machineTranslated: true
-sourceHash: "bfe95271c18cd23e"
+sourceHash: "3c919d453670f9dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,9 +52,9 @@ apothem verify --harness kiro --project /path/to/project
 
 Der verify-Befehl bestätigt, dass:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration liegt am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

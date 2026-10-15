@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ persyaratan frontmatter yang spesifik.
 | **Command** | `src/apothem/commands/*.md` | Slash command (`/command-name`) untuk alur kerja yang kompleks | Alur kerja pengguna multi-langkah yang baru |
 | **Helper** | `src/apothem/agents/*.md` | Definisi pekerja terdelegasi persisten untuk tugas paralel | Tugas khusus berulang yang baru (audit, eksplorasi, pemeriksaan kualitas) |
 | **Skill** | `src/apothem/skills/{name}/SKILL.md` | Teknik yang dapat dipakai ulang dengan sinyal deteksi | Pola teknik baru yang dapat dideteksi dan dapat dipakai ulang |
-| **Hook** | `src/apothem/hooks/` + `settings.json` | Validasi atau pengelolaan state yang dipicu peristiwa | Peristiwa siklus hidup atau kebutuhan validasi baru |
+| **Hook** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | Validasi atau pengelolaan state yang dipicu peristiwa | Peristiwa siklus hidup atau kebutuhan validasi baru |
 
 ## Kontrak Adapter Harness
 
@@ -87,7 +87,10 @@ berlaku.
 
 ## Pemeriksaan Cepat Frontmatter
 
-Setiap frontmatter artefak harus lolos pemeriksaan berikut:
+Setiap frontmatter artefak harus lolos pemeriksaan berikut. Terapkan pemeriksaan
+`version`, `updated`, dan `portability` hanya pada kelas yang membawa kuncinya:
+aturan tidak membawa satu pun dari ketiganya, dan skill tidak membawa
+`portability`.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -119,15 +122,26 @@ Pola: huruf kecil, tanda hubung di antara kata, tanpa spasi atau garis bawah.
 - **Command:** `{name}.md`
 - **Helper:** `{name}.md`
 - **Skill:** Di dalam folder `src/apothem/skills/{name}/SKILL.md` (huruf besar-kecil persis: `SKILL.md`)
-- **Hook:** Di dalam folder `src/apothem/hooks/`. Semua penangan peristiwa ditulis dalam Python. Setiap
-  command hook di `settings.json` menggunakan bentuk exec (`python` ditambah `args`) untuk memanggil
-  `-m apothem.hooks.dispatch <event> [<message-name>]` atau
-  `-m apothem.conformity.gate --hook`. `dispatch.py` merutekan `SessionStart` ke
+- **Hook:** Di dalam folder `src/apothem/hooks/`. Semua penangan peristiwa ditulis
+  dengan Python. Setiap command hook dalam templat `settings.json` Claude Code
+  menggunakan bentuk exec: `command` adalah placeholder interpreter
+  `${PYTHON_BIN}`, yang di-resolve saat pemasangan, dan `args` berisi jalur
+  skrip beserta argumennya. Templat tersebut menjalankan
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` dan
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` dengan jalur
+  absolut, sehingga salinan yang terpasang tidak memerlukan paket `apothem`
+  yang dapat diimpor. Plugin Claude Code mendaftarkan hook di
+  `src/apothem/hooks/hooks.json` sebagai gantinya, berupa command shell yang
+  menjalankan `hooks/lib/bootstrap.sh` melalui `bash`. Daftarkan hook baru di
+  `hooks.json` dan di templat `settings.json` Claude Code. `dispatch.py`
+  merutekan `SessionStart` ke
   `session_start_bootstrap.main()` dan
-  setiap peristiwa lain yang masuk daftar izin ke `emit_hook_context.main()`. Satu-satunya stub
-  shell yang diizinkan di bawah `src/apothem/hooks/` atau `scripts/` adalah empat berkas pelokasi + bootstrap
-  (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); berkas `.ps1` /
-  `.sh` lain mana pun gagal dalam pemeriksaan higiene `scripts/dev/validate_hooks.py`.
+  setiap peristiwa lain yang masuk daftar izin ke `emit_hook_context.main()`.
+  Satu-satunya stub shell yang diizinkan di bawah `src/apothem/hooks/` atau
+  `scripts/` adalah enam berkas pelokasi dan bootstrap
+  (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); berkas
+  `.ps1` / `.sh` lain mana pun gagal dalam pemeriksaan higiene
+  `scripts/dev/validate_hooks.py`.
 
 ### Rujukan Silang
 
@@ -142,7 +156,9 @@ Jangan pernah menggunakan jalur berkas atau nama yang terpotong di dalam prosa.
 
 ## Portabilitas: Windows vs. Unix
 
-Setiap artefak harus mendeklarasikan status portabilitasnya secara eksplisit.
+Setiap command HARUS mendeklarasikan status portabilitasnya secara eksplisit
+dalam bidang `portability`, dan sebuah helper BOLEH melakukannya. Skill, aturan,
+dan output-style tidak membawa bidang `portability`.
 
 ### Universal (Default)
 
@@ -178,7 +194,7 @@ Dokumentasikan peringatan tersebut dalam sebuah catatan tepat setelah judul.
 portability: "unix-only"
 ```
 
-Dokumentasikan alasannya di bagian pertama aturan.
+Dokumentasikan alasannya di bagian pertama artefak.
 
 ## Cakupan: Selalu Aktif vs. Difilter Jalur
 
@@ -187,7 +203,8 @@ Dokumentasikan alasannya di bagian pertama aturan.
 Aturan berlaku di mana saja.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### Difilter Jalur
@@ -195,8 +212,8 @@ scope: "always-on"
 Aturan berlaku secara kondisional berdasarkan jalur berkas.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter` menggunakan pola glob (format yang sama dengan `.gitignore`). Ketika
@@ -204,22 +221,24 @@ sebuah berkas cocok dengan filter tersebut, aturan menjadi aktif.
 
 ## Semantik Versi
 
-Setiap artefak membawa versi semantiknya sendiri (`MAJOR.MINOR.PATCH`):
+Setiap artefak berversi membawa versi semantiknya sendiri (`MAJOR.MINOR.PATCH`).
+Command dan skill mewajibkannya, helper dan output-style BOLEH membawanya, dan
+aturan tidak membawanya sama sekali:
 
 - **PATCH** — perbaikan salah ketik, pemformatan, penyegaran tautan, suntingan yang hanya menyentuh komentar. Perilaku tidak berubah.
-- **MINOR** — perubahan aditif yang tidak merusak: bagian opsional baru, anti-pola tambahan, bidang frontmatter opsional baru, contoh baru. Konsumen yang sudah ada tetap berfungsi tanpa perubahan.
+- **MINOR** — perubahan aditif yang tidak merusak: bagian opsional baru, bidang frontmatter opsional baru, contoh baru. Konsumen yang sudah ada tetap berfungsi tanpa perubahan.
 - **MAJOR** — perubahan skema atau kontrak yang merusak: bagian yang dihapus, bidang yang diganti namanya, perilaku direktif yang sudah ada yang diubah, perubahan yang mengharuskan artefak hilir beradaptasi.
 
 Contoh:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: perbaikan salah ketik)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: menambahkan entri Anti-Patterns baru)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: menambahkan bagian opsional baru)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: menyatakan kontrak stabil)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: menghapus bidang frontmatter wajib)
 
 Naikkan `version` dan `updated` bersama-sama pada setiap suntingan yang mengubah
-perilaku. Tambahkan baris yang sesuai ke `CHANGELOG.md` tingkat ekosistem untuk
-rilis yang membundel perubahan artefak.
+perilaku pada artefak yang membawa keduanya. Tambahkan baris yang sesuai ke
+`CHANGELOG.md` tingkat ekosistem untuk rilis yang membundel perubahan artefak.
 
 ## Kapan Menyunting Artefak
 
@@ -227,16 +246,17 @@ rilis yang membundel perubahan artefak.
 
 - Perlakukan struktur Mandatory/Optional sebagai struktur penopang —
   merestrukturisasinya berdampak berantai ke setiap artefak yang bergantung
-  padanya (wajib kenaikan MAJOR).
+  padanya.
 - Perhalus Anti-Patterns, contoh Seriousness Scaling, dan sitasi seiring
-  pemahaman yang makin mendalam (kenaikan MINOR).
+  pemahaman yang makin mendalam.
 - Catat alasan setiap perubahan struktural di berkas topik memori yang
   relevan.
 
 ### Command
 
-- Bentuk argumen adalah bagian dari kontrak publik — rusak kompatibilitasnya hanya
-  dengan niat yang eksplisit dan propagasikan perubahannya ke setiap pemanggil (kenaikan MAJOR).
+- Bentuk argumen adalah bagian dari kontrak publik — ubah secara tidak kompatibel
+  hanya dengan niat yang eksplisit dan propagasikan perubahannya ke setiap
+  pemanggil (kenaikan MAJOR).
 - Jaga langkah alur kerja dan kontrak pengembalian tetap ringkas dan mutakhir.
 - Dokumentasikan urutan langkah yang tidak jelas secara inline.
 
@@ -297,15 +317,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. Perbarui CLAUDE.md
+### 4. Perbarui README Aturan
 
-Tambahkan entri ke tabel registri `§7.2 Rules`:
+Tambahkan satu baris ke tabel untuk keluarga aturan tersebut di bagian Rule
+families dalam `src/apothem/rules/README.md`:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Pertahankan urutan alfabetis di dalam tabel.
+Pilih tabel keluarga yang bidang perhatiannya sesuai dengan aturan tersebut.
 
 ### 5. Tambahkan ke CHANGELOG.md
 
@@ -360,11 +381,11 @@ operator; dengan `false`, model dapat menjalankannya ketika sebuah permintaan co
 dengan deskripsinya. Sebagian besar command menggunakan `true`, tetapi sebagian
 besar tahap pipeline perencanaan dan riset menggunakan `false`. Tabel pemanggilan
 di `src/apothem/commands/README.md` mencantumkan setelan setiap command;
-tambahkan satu baris untuk command baru. Jaga `allowed-tools` tetap hanya-baca:
-harness yang mematuhinya menjalankan alat-alat tersebut tanpa meminta konfirmasi.
-Berikan alat yang berefek samping hanya sebagai aturan bercakupan, seperti
-`Bash(git log *)`; skema menolak `"*"` serta `Bash`, `PowerShell`,
-`Write`, `Edit`, `NotebookEdit`, dan `WebFetch` tanpa cakupan.
+tambahkan satu baris untuk command baru. Jaga
+`allowed-tools` tetap hanya-baca: harness yang mematuhinya menjalankan alat-alat
+tersebut tanpa bertanya. Berikan alat yang berefek samping hanya sebagai aturan
+bercakupan, seperti `Bash(git log *)`; skema menolak `"*"` dan bentuk polos
+`Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit`, serta `WebFetch`.
 
 ### 3. Tulis Konten
 
@@ -376,9 +397,9 @@ Struktur:
 - Bagian Workflow dengan langkah-langkah
 - Kontrak pengembalian / format keluaran
 
-### 4. Perbarui CLAUDE.md dan CHANGELOG.md
+### 4. Perbarui README dan CHANGELOG.md
 
-Baris registri di `§7.1 Commands`; baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
+Tambahkan satu baris ke tabel command yang sesuai di `src/apothem/commands/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
 
 ### 5. Validasi
 
@@ -438,9 +459,9 @@ Bagian:
 - Workflow (langkah-langkah bernomor)
 - Return Contract (token maksimum, struktur, bidang wajib)
 
-### 4. Perbarui CLAUDE.md dan CHANGELOG.md
+### 4. Perbarui README dan CHANGELOG.md
 
-Baris registri di `§7.3 Helpers`; baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
+Tambahkan satu baris ke tabel Index di `src/apothem/agents/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
 
 ### 5. Uji
 
@@ -468,8 +489,8 @@ Jika jawaban ketiganya ya, tulis sebuah skill.
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -504,9 +525,9 @@ Struktur konten:
 - Common Mistakes
 - Examples
 
-### 4. Perbarui CLAUDE.md dan CHANGELOG.md
+### 4. Perbarui README dan CHANGELOG.md
 
-Baris registri di `§7.5 Skills`; baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
+Tambahkan satu baris ke tabel Index dan tabel Folder contents di `src/apothem/skills/README.md`; tambahkan satu baris CHANGELOG di bawah bagian `### Added` rilis berikutnya.
 
 ### 5. Validasi
 
@@ -521,13 +542,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Frontmatter lolos pemeriksaan sintaks YAML
 - [ ] Semua bidang wajib ada sesuai skema
 - [ ] Bidang `name` menggunakan kebab-case
-- [ ] `version` bersifat semantik (`MAJOR.MINOR.PATCH`) dan telah dinaikkan jika perilaku berubah
-- [ ] `updated` cocok dengan tanggal hari ini untuk setiap artefak yang Anda sentuh
-- [ ] Bidang `portability` disetel dan valid
+- [ ] `version` (hanya kelas berversi; aturan tidak membawanya) bersifat semantik (`MAJOR.MINOR.PATCH`) dan telah dinaikkan jika perilaku berubah
+- [ ] `updated` cocok dengan tanggal hari ini untuk setiap artefak yang Anda sentuh dan yang membawa bidang tersebut
+- [ ] Bidang `portability` disetel dan valid (hanya command dan helper)
 - [ ] CHANGELOG.md memuat perubahan dalam kategori yang sesuai di bawah bagian rilis berikutnya
 - [ ] Tidak ada rujukan internal rencana (kepatuhan CM-7)
 - [ ] Rujukan silang konsisten dengan artefak lain
-- [ ] Artefak baru terdaftar di registri CLAUDE.md
+- [ ] Artefak baru terdaftar di indeks README foldernya
 - [ ] Artefak telah diuji (jika berlaku)
 - [ ] Skill `ecosystem-audit` berjalan tanpa kesalahan
 - [ ] Konten mengikuti konvensi struktural (format judul, bagian, dan sebagainya)
@@ -567,8 +588,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### Merujuk Bagian CLAUDE.md
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## Linting dan Format
@@ -681,7 +702,7 @@ Suite di bawah `evals/` mengukur perilaku, bukan bentuk: 64 kasus pemicu
 (setiap command dan subagen yang dapat dipanggil model terpicu oleh permintaan
 dalam domainnya dan tetap diam pada permintaan yang nyaris cocok), 32 kasus hasil
 (satu per tahap rencana, tahap riset, dan dimensi audit) dan 6 pasangan efek
-aturan (teks sebuah aturan selalu aktif dalam keadaan disertakan dan tidak
+aturan (teks aturan yang selalu aktif dalam keadaan disertakan dan tidak
 disertakan). Kasus-kasus tersebut adalah data biasa yang divalidasi tanpa biaya
 oleh `python -m pytest tests/unit/test_eval_suite.py`; menjalankannya dikenai
 biaya dan dilakukan secara manual. Lihat
@@ -700,7 +721,7 @@ yang diukur tidak berjalan), atau `3` tidak diukur.
   matcher, lalu melaporkan median waktu total, command yang paling lambat
   (diperiksa terhadap anggaran peristiwa tersebut), dan jumlah karakter yang
   disuntikkan. Command yang tidak dapat berjalan sebagaimana terdaftar (exit 126
-  ketika sebuah skrip tidak memiliki bit eksekusinya) adalah galat, bukan kelulusan.
+  ketika sebuah skrip tidak memiliki bit eksekusinya) adalah galat, bukan lolos.
 - `bench_agents.py` melaporkan `NOT MEASURED` (exit 3): spawn subagen memerlukan
   harness host dan pemanggilan model. `make benchmarks` tidak menjalankannya.
 

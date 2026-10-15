@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Apothem-Harness-Adapter für Antigravity (Vorschau)."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,9 +90,9 @@ apothem verify --harness antigravity
 
 Der Befehl verify bestätigt, dass:
 
-1. die native Kontextdatei am erwarteten Pfad existiert.
-2. die Metadaten des Apothem-Antigravity-CLI-Plugins existieren und den
-   Plugin-Namen `apothem` deklarieren.
+1. Die native Kontextdatei liegt am erwarteten Pfad.
+2. Das Plugin-Manifest `plugin.json` existiert, ist nicht leer und lässt sich als JSON parsen.
+   `verify` prüft den Plugin-Namen nicht; prüfen Sie dieses Feld nach einer Änderung selbst.
 
 ## Aktualisierung
 

@@ -2,7 +2,7 @@
 title: "Apothem बनाम हस्तचालित Kiro कॉन्फ़िगरेशन"
 description: ".kiro/steering/ के अंतर्गत Kiro की स्टीयरिंग फ़ाइलों को हाथ से बनाए रखना बनाम उन्हें Apothem के साझा प्रोफ़ाइल से रेंडर करना।"
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ Apothem का kiro अडैप्टर साझा प्रोफ़ाइ�
 | ---- | --------------- | --------------- |
 | स्टीयरिंग नियम लिखना | `.kiro/steering/` के अंतर्गत हर फ़ाइल हाथ से लिखें | साझा कॉर्पस से रेंडर |
 | फ़ाउंडेशन फ़ाइलों को अछूता रखना | `product.md` / `tech.md` / `structure.md` को अधिलेखित न करना याद रखें | अडैप्टर केवल `apothem-rules.md` लिखता है |
-| नियमों को अन्य एनवायरनमेंट के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
-| कॉन्फ़िग सही है यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness kiro` |
+| नियमों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness kiro --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
@@ -30,11 +30,11 @@ kiro अडैप्टर साझा नियमों को `inclusion: al
 
 ## माइग्रेशन पथ
 
-1. यदि आपने अभी तक नहीं बनाया है तो साझा प्रोफ़ाइल बनाने के लिए `apothem profile init` चलाएँ।
+1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
 2. अपने मौजूदा `.kiro/steering/` के नियमों को साझा कॉर्पस में ले जाएँ।
-3. `apothem-rules.md` स्टीयरिंग फ़ाइल रेंडर करने के लिए `apothem install --harness kiro` चलाएँ।
-4. कॉन्फ़िग पहुँच गया इसकी पुष्टि के लिए `apothem verify --harness kiro` चलाएँ।
-5. हर बाद के बदलाव के लिए `apothem update --harness kiro` का उपयोग करें।
+3. `apothem-rules.md` स्टीयरिंग फ़ाइल रेंडर करने के लिए `apothem install --harness kiro --project <path>` चलाएँ।
+4. कॉन्फ़िग सही जगह पहुँची है, इसकी पुष्टि के लिए `apothem verify --harness kiro --project <path>` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness kiro --project <path>` का उपयोग करें।
 
 ## आगे पढ़ें
 

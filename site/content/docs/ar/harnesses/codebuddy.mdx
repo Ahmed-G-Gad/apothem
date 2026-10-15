@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "محوّل إطار عمل Apothem لـ Tencent CodeBuddy (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,9 +80,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل، بإعادة تسمية ملف القواعد المُدار إلى
-نسخة احتياطية ذات طابع زمني. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي
-المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل الكتلة الخاصة بـ <bdi>Apothem</bdi> من <bdi>`apothem-rules.md`</bdi> ويُبقي أي نصّ آخر فيه. ولا يُحذف الملف إلا إذا لم يبقَ فيه شيء آخر. وقبل التغيير تُحفَظ نسخة من الملف بطابع زمني تحت <bdi>`~/.apothem/backups/`</bdi>، ولا تبقى أي نسخة احتياطية في المشروع. ولا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

@@ -2,7 +2,7 @@
 title: "Comparación"
 description: "Cómo evaluar Apothem frente a la configuración de entornos mantenida a mano y otros enfoques de configuración, con una matriz de funciones y páginas por entorno."
 machineTranslated: true
-sourceHash: "bb767de9bd99533a"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ fortaleza de auditoría y un ciclo de vida reversible y verificado.
 | Capacidad | Apothem | Gestores de configuración basados en archivos (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Una fuente hacia los esquemas nativos de muchas herramientas | Sí — diecisiete adaptadores de entorno | No — copia, enlace simbólico o plantilla, sin traducción | Sí — 60 herramientas más los estándares AGENTS.md y Agent Skills | En parte — reglas concatenadas en el archivo de instrucciones de cada herramienta; MCP, skills y subagentes escritos en forma nativa |
-| Unidad sincronizada | reglas, skills, hooks, comandos de barra, MCP | archivos arbitrarios | reglas, ignore, MCP, comandos, subagentes, skills, hooks, permisos, checks (instrucciones de comprobación para la revisión de código) | reglas, MCP, skills, subagentes |
+| Unidad sincronizada | reglas, skills, subagentes, hooks, comandos de barra, output-styles, ajustes, MCP | archivos arbitrarios | reglas, ignore, MCP, comandos, subagentes, skills, hooks, permisos, checks (instrucciones de comprobación para la revisión de código) | reglas, MCP, skills, subagentes |
 | Corpus de gobernanza (reglas de comportamiento más una puerta de conformidad mecánica) | Sí — `python -m apothem.conformity.gate` | No | No — su función `checks` sincroniza comprobaciones de revisión de código con las herramientas; no hay puerta de conformidad sobre las reglas | No |
 | Canalizaciones deterministas de planificación e investigación | Sí — de `/plan-spec` a `/plan-execute`, `/research` de trece etapas | No | No | No |
 | Fortaleza de auditoría que detecta y corrige | Sí — barrido de once comandos, bucle de reauditoría `/fortress` | No | No | No |

@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "437b67b49cf5a7ee"
+sourceHash: "4052897d8ab07b22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,7 +57,7 @@ apothem verify --harness qwen-code
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新

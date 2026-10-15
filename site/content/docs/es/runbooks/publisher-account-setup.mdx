@@ -2,17 +2,18 @@
 title: "Configuración de la cuenta de publicador"
 description: "Configura el publicador de confianza de npmjs.com para @ahmed-g-gad/apothem y los requisitos previos de lanzamiento del lado de GitHub."
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Este runbook configura el lado del publicador de la superficie de lanzamiento.
 El esquema de distribución tiene un único registro: el paquete npm con alcance
 `@ahmed-g-gad/apothem` en npmjs.com, publicado por el flujo de trabajo
-`publish-npm.yml`, despachado manualmente, después de que los flujos de trabajo
-de GitHub Release, Pages, CI, conformidad y entornos estén en verde. Todos los
-demás artefactos se distribuyen en la propia página del GitHub Release y no
-necesitan ninguna cuenta de publicador externa.
+`publish-npm.yml` (se ejecuta con el push de la etiqueta `v*.*.*`; un despacho
+manual con una entrada `tag` es la alternativa de respaldo) después de que los
+flujos de trabajo de GitHub Release, Pages, CI, conformidad y entornos estén en
+verde. Todos los demás artefactos se distribuyen en la propia página del GitHub
+Release y no necesitan ninguna cuenta de publicador externa.
 
 ## Mapa de identidades
 
@@ -60,8 +61,10 @@ nombre de la cuenta del mantenedor.
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. Ejecuta `Publish — npm` (`publish-npm.yml`) desde la pestaña GitHub Actions
-   con `tag=<release-tag>` y aprueba el despliegue del entorno `release`.
+9. Aprueba el despliegue del entorno `release` para la ejecución de
+   `Publish npm` (`publish-npm.yml`) que inicia el push de la etiqueta. Si esa
+   ejecución no se inició, despacha el flujo de trabajo desde la pestaña GitHub
+   Actions con `tag=<release-tag>`.
 10. Verifica el paquete publicado:
 
     ```bash title="npm verification"

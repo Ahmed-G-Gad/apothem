@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "4bcd687aeabc46b7"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,18 +17,11 @@ sourceHash: "4bcd687aeabc46b7"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-アダプターは、共有の Apothem ガバナンス面を、センチネルで区切られた管理ブロックとして
-プロジェクトルートの `AGENTS.md` に書き込み（センチネルの外側にあるオペレーターの文章は
-保持されます）、ネイティブではない Markdown コホートを
-`<project>/.kimi-code/.apothem/support/` にある Apothem 所有のサポートツリー配下に保持します。
-プロジェクトの `AGENTS.md` は Kimi Code 以外にも多くのコーディングツールに読み込まれるため、
-このブロックは、単一のツールを読み手として名指ししない、プロジェクト全体のガイダンスとして
-書かれます。
+アダプターは、共有の Apothem ガバナンス面を、センチネルで区切られた管理ブロックとしてプロジェクトルートの `AGENTS.md` に書き込み（センチネルの外側にあるオペレーターの文章は保持されます）、ネイティブではない Markdown コホートを `<project>/.kimi-code/.apothem/support/` にある Apothem 所有のサポートツリー配下に保持します。
+プロジェクトの `AGENTS.md` は Kimi Code 以外にも多くのコーディングツールに読み込まれるため、このブロックは、単一のツールを読み手として名指ししない、プロジェクト全体のガイダンスとして書かれます。
 
-Kimi Code は、汎用的な AGENTS.md 規約に従ってプロジェクトルートの `AGENTS.md` 命令ファイルを
-読み込み、プロジェクト設定は `<project>/.kimi-code/` 配下に置かれます。
-`<project>/.kimi-code/mcp.json` 面はオペレーターの所有です。Apothem はそれを名指ししますが、
-エントリは一切作成しません。
+Kimi Code は、汎用的な AGENTS.md 規約に従ってプロジェクトルートの `AGENTS.md` 命令ファイルを読み込み、プロジェクト設定は `<project>/.kimi-code/` 配下に置かれます。
+`<project>/.kimi-code/mcp.json` 面はオペレーターの所有です。Apothem はそれを名指ししますが、エントリは一切作成しません。
 
 **書き込まれるファイル：** `<project>/AGENTS.md`（管理ブロック）と、
 `<project>/.kimi-code/.apothem/support/` 配下のコマンド、スキル、フック、エージェント、
@@ -36,35 +29,24 @@ Kimi Code は、汎用的な AGENTS.md 規約に従ってプロジェクトル�
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
-実行するたびに、プロジェクトルートの `AGENTS.md` 命令面をレンダリングします。振る舞いルールと
-ガバナンスコーパスは `AGENTS.md` の管理ブロックに置かれます。コマンド、スキル、フック、
-エージェント、ルール、テンプレートの各コホートは `.kimi-code/.apothem/support/` 配下に配置され、
-命令面から参照されます。これはアダプターが選択したレイアウトであり、Kimi Code の欠落では
-ありません。Kimi Code はスキルを `.kimi-code/skills/` と `.agents/skills/` から、カスタム
-エージェントを `.kimi-code/agents/` と `.agents/agents/` から、フックを
-`~/.kimi-code/config.toml` の `[[hooks]]` 配列から読み込みますが、サポートツリーからは
-読み込みません。そのため、そこにある Apothem のコピーは、`AGENTS.md` ブロックが指し示す
-参照用の素材です。ブロックは Apothem サポートファイルのセクションで終わります。このセクションは、
-リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の
-`.kimi-code/.apothem/support/` 配下のディレクトリを、プロジェクトルートからの相対パスで示します。
-そのため、コミットされた `AGENTS.md` にはマシン固有のパスが含まれません。（Kimi Code の振る舞いは、
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を実行するたびに、プロジェクトルートの `AGENTS.md` 命令面をレンダリングします。
+振る舞いルールとガバナンスコーパスは `AGENTS.md` の管理ブロックに置かれます。コマンド、スキル、フック、エージェント、ルール、テンプレートの各コホートは `.kimi-code/.apothem/support/` 配下に配置され、命令面から参照されます。
+これはアダプターが選択したレイアウトであり、Kimi Code の欠落ではありません。Kimi Code はスキルを `.kimi-code/skills/` と `.agents/skills/` から、カスタムエージェントを `.kimi-code/agents/` と `.agents/agents/` から、フックを `~/.kimi-code/config.toml` の `[[hooks]]` 配列から読み込みますが、サポートツリーからは読み込みません。そのため、そこにある Apothem のコピーは、`AGENTS.md` ブロックが指し示す参照用の素材です。
+ブロックは Apothem サポートファイルのセクションで終わります。このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の `.kimi-code/.apothem/support/` 配下のディレクトリを、プロジェクトルートからの相対パスで示します。そのため、コミットされた `AGENTS.md` にはマシン固有のパスが含まれません。
+（Kimi Code の振る舞いは、
 [スキル](https://moonshotai.github.io/kimi-code/en/customization/skills)、
 [サブエージェント](https://moonshotai.github.io/kimi-code/en/customization/agents)、
 [フック](https://moonshotai.github.io/kimi-code/en/customization/hooks)に関する
-カスタマイズページに基づきます。2026-10-02 に参照。）
+カスタマイズページに基づき、2026-10-02 に参照したものです。）
 
 ## 互換性に関する注意
 
-Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AGENTS.md` から読み込み、
-`.kimi-code/mcp.json` をオペレーター所有の MCP 面として認識します。Apothem はその面を
-名指ししますが、そこにエントリを一切作成しません。レンダリングされた命令面がプロジェクトを
-直接駆動します。Kimi Code はステータスラインや出力スタイルのファイル面を公開していないため、
-それらのコホートはマテリアライズされません。
+Kimi Code はプロジェクトの命令を `AGENTS.md` または `.kimi-code/AGENTS.md` から読み込み、`.kimi-code/mcp.json` をオペレーター所有の MCP 面として認識します。Apothem はその面を名指ししますが、そこにエントリを一切作成しません。
+レンダリングされた命令面がプロジェクトを直接駆動します。
+Kimi Code はステータスラインや出力スタイルのファイル面を公開していないため、それらのコホートはマテリアライズされません。
 
-Kimi Code は Moonshot の Kimi モデルファミリーで動作します。現在のモデルと設定面については、
-[ベンダーの設定リファレンス](https://moonshotai.github.io/kimi-code/en/configuration/config-files)を
-参照してください。
+Kimi Code は Moonshot の Kimi モデルファミリーで動作します。
+現在のモデルと設定面については、[ベンダーの設定リファレンス](https://moonshotai.github.io/kimi-code/en/configuration/config-files)を参照してください。
 
 ## 検証
 
@@ -75,7 +57,7 @@ apothem verify --harness kimi-code --project /path/to/project
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -84,8 +66,7 @@ verify コマンドは次のことを確認します。
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-現在の共有プロファイルの状態から、プロジェクトルートの `AGENTS.md` 管理ブロックと
-サポートコホートを再導出します。
+現在の共有プロファイルの状態から、プロジェクトルートの `AGENTS.md` 管理ブロックとサポートコホートを再導出します。
 
 ## アンインストール
 
@@ -93,7 +74,10 @@ apothem update --harness kimi-code --project /path/to/project
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除します。
+プロジェクトルートの `AGENTS.md` から Apothem ブロックを削除し、センチネルの外側にあるテキストは保持します。
+ファイルが削除されるのは、その中に他に何も残っていない場合のみです。
+また、Apothem が `<project>/.kimi-code/.apothem/support/` 配下に配置したサポートファイルも削除します。
+変更の前に、各ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート

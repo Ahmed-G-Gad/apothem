@@ -2,7 +2,7 @@
 title: "快速开始"
 description: "安装 Apothem、编写配置档案、物化你的第一个工具并验证它——一份可复制粘贴的导览，附预期输出。"
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ Apothem 以自包含运行时的形式发布——引擎携带 vendored 依赖�
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -96,7 +96,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-使用 `--harness all` 一次性安装由注册表支撑的整个集合。由于该选择会同时写入项目作用域和用户作用域的文件，命令会打印按位置分组的具体目标，并在写入项目根目录之外的位置之前请求确认：
+使用 `--harness all` 一次性安装由注册表支撑的整个集合。由于该选择会同时写入项目作用域和用户作用域的文件，命令会按位置分组打印具体目标。在交互式终端中，它会在写入项目根目录之外的位置之前询问确认。没有终端的运行、带 `--yes` 的运行或带 `--format json` 的运行会直接写入而不询问；`--dry-run` 则不写入任何内容。运行完整集合的命令如下：
 
 ```bash
 apothem install --harness all --project .
@@ -106,7 +106,7 @@ apothem install --harness all --project .
 
 ## 4. 验证
 
-物化只完成了一半的工作——`verify` 会确认该工具预期的配置文件已经落地，并且与配置档案所声明的内容相符：
+物化只完成了一半的工作——`verify` 会确认该工具预期的配置文件已经落地，并且内容有效：
 
 ```bash
 apothem verify --harness claude-code
@@ -116,7 +116,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-如果配置缺失或发生了漂移，`verify` 会以非零状态退出，因此它也可以在配置脚本中充当闸门。要对每个已注册的适配器进行一次全机健康检查，运行：
+如果受管目标缺失、受管文件为空，或 JSON 或 YAML 配置无法解析，`verify` 会以非零状态退出。添加 `--profile PATH` 后，若已安装的文件与该配置档案不同，`verify` 也会失败，此时它就成为一项漂移检查；未添加时，过期的配置仍会通过验证。因此它可以在配置脚本中充当闸门。要对每个已注册的适配器进行整机健康检查，请运行：
 
 ```bash
 apothem doctor

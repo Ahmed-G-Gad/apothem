@@ -1,22 +1,22 @@
 ---
 title: "Convenciones de entorno multi-superficie"
-description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los entornos de ejecución de chat, de autocompletado en el IDE y de revisión de PR."
+description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los tiempos de ejecución de chat, de autocompletado en el IDE y de revisión de pull requests."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "d17a5f2f79af7cc9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referencia normativa canónica para los colaboradores posteriores.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en [ADR-0003](/docs/architecture).
+> **Referencia normativa canónica para colaboradores de aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en [ADR-0003](/docs/architecture).
 
 ---
 
 ## 1. Por qué en plural
 
-Una superficie de ingeniería moderna la tocan varios entornos: consolas de chat, motores de autocompletado dentro del IDE, compañeros de programación en pareja y revisores de pull requests. Cada uno lee su propio archivo de configuración canónico. Si el proyecto distribuye solo uno de esos archivos, los entornos de ejecución restantes improvisan en silencio frente a convenciones no declaradas; la memoria dentro del repositorio que falta se filtra de inmediato.
+Una superficie de ingeniería moderna la tocan varios entornos: consolas de chat, motores de autocompletado dentro del IDE, compañeros de programación en pareja y revisores de pull requests. Cada uno lee su propio archivo de configuración canónico. Si el proyecto distribuye solo uno de esos archivos, los tiempos de ejecución restantes improvisan en silencio frente a convenciones no declaradas; la memoria dentro del repositorio que falta se filtra de inmediato.
 
 El costo de una superficie ausente es la **deriva silenciosa en el código generado por máquina**, la peor clase de defecto porque se acumula de forma invisible. Cada artefacto generado por máquina agrava la divergencia; para cuando un revisor humano detecta la contradicción, la base de código ya arrastra semanas de convenciones incoherentes.
 
-La configuración de los entornos de ejecución de los entornos es plural por la realidad del despliegue. El ecosistema publicado DEBE distribuir un archivo de memoria de comportamiento para el entorno de ejecución de la consola de chat Y un archivo de instrucciones con alcance de repositorio para el entorno de ejecución de autocompletado dentro del IDE. Las dos superficies DEBEN ser mutuamente coherentes —sin contradicción, sin deriva— y DEBEN codificar conjuntamente las mismas disciplinas.
+La configuración del tiempo de ejecución de los entornos es plural por la realidad del despliegue. El ecosistema publicado DEBE distribuir un archivo de memoria de comportamiento para el tiempo de ejecución de la consola de chat Y un archivo de instrucciones con alcance de repositorio para el tiempo de ejecución de autocompletado dentro del IDE. Las dos superficies DEBEN ser mutuamente coherentes —sin contradicción, sin deriva— y DEBEN codificar conjuntamente las mismas disciplinas.
 
 ---
 
@@ -27,7 +27,7 @@ Cada superficie de convenciones dentro del alcance (§3) es un *canal* que expre
 - **Secciones compartidas**: Disciplina de planes, indagación estructurada (o su equivalente en la superficie), Encabezado de autoría, Nomenclatura, Antipatrones, Jerarquía modal. Estas DEBEN aparecer en cada superficie obligatoria y DEBEN ser semánticamente equivalentes entre superficies.
 - **Secciones específicas de cada superficie**: encuadres de capacidades, patrones de llamada a herramientas, diferencias entre la generación de código y el chat. Estas PUEDEN diferir entre superficies, pero NO DEBEN contradecir las secciones compartidas.
 
-El validador `multi-surface-coherence` (§7) se ejecuta en cada ejecución de CI y en el pre-commit, y verifica el contrato.
+El validador `multi-surface-coherence` (§7) se ejecuta en cada ejecución de CI y en el pre-commit, y comprueba el contrato.
 
 Las dos (o más) superficies son *canales* distintos que expresan una sola *especificación*. Las secciones compartidas DEBEN coincidir —semánticamente y, donde sea posible, léxicamente— entre superficies. Las secciones específicas de cada superficie NO DEBEN contradecir las secciones compartidas.
 
@@ -39,10 +39,10 @@ Las dos (o más) superficies son *canales* distintos que expresan una sola *espe
 |---|---|---|---|
 | `AGENTS.md` | raíz del repositorio (y/o `.codex/AGENTS.md`) | **DEBE** | entornos compatibles con AGENTS |
 | `CLAUDE.md` | raíz del repositorio (y/o `.claude/CLAUDE.md`) | **DEBE** | Claude Code |
-| archivo de instrucciones con raíz en `.github/` | archivo de instrucciones con raíz en `.github/` | **DEBE** | entorno de ejecución de autocompletado dentro del IDE |
-| manifiesto de ayudantes con raíz en `site/content/docs/architecture/` | raíz del repositorio | **PUEDE** (activación opcional mediante el canal de indagación estructurada) | plataformas de orquestación de varios ayudantes |
-| `.cursorrules` | raíz del repositorio | **PUEDE** (activación opcional) | entorno de ejecución de editor dentro del IDE |
-| `.windsurfrules` | raíz del repositorio | **PUEDE** (activación opcional) | entorno de ejecución acompañante dentro del IDE |
+| archivo de instrucciones con raíz en `.github/` | archivo de instrucciones con raíz en `.github/` | **DEBE** | tiempo de ejecución de autocompletado dentro del IDE |
+| manifiesto de ayudantes con raíz en `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PUEDE** (activación opcional mediante el canal de indagación estructurada) | plataformas de orquestación de varios ayudantes |
+| `.cursorrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución de editor dentro del IDE |
+| `.windsurfrules` | raíz del repositorio | **PUEDE** (activación opcional) | tiempo de ejecución acompañante dentro del IDE |
 
 Para este encargo, el operador activó las superficies de asistente opcionales que registra el fixture. Las configuraciones raíz específicas de proveedor que no se usan están ausentes de forma intencional; un archivo de configuración específico de una herramienta se agrega solo cuando esa herramienta es una superficie de edición activa para este repositorio.
 
@@ -53,20 +53,20 @@ Para este encargo, el operador activó las superficies de asistente opcionales q
 El archivo de instrucciones con alcance de repositorio bajo `.github/` DEBE contener, en este orden, las siguientes secciones (cada una con el texto de encabezado exacto que figura abajo; los cuerpos de las secciones se redactan, no se estampan desde una plantilla, pero cada uno DEBE cubrir las afirmaciones listadas):
 
 1. **Project Context** — un párrafo: qué es este repositorio, quién lo usa, su forma de nivel superior. Concreto; sin marketing.
-2. **Coding Conventions** — nomenclatura, jerarquía modal, frontmatter, estilo de Markdown, puntos de estilo específicos del lenguaje donde divergen de los valores predeterminados.
+2. **Coding Conventions** — nomenclatura, jerarquía modal, frontmatter, estilo de markdown, puntos de estilo específicos del lenguaje donde divergen de los valores predeterminados.
 {/* REUSE-IgnoreStart */}
-3. **File Headers** — todo archivo que genere el entorno de ejecución DEBE comenzar con la única línea canónica `SPDX-License-Identifier: MIT` según [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), en la variante de comentario que corresponda al tipo de archivo. Referencia a `scripts/inject-header.*` y a `site/content/docs/reference/authorship-header.mdx`.
+3. **File Headers** — todo archivo que genere el tiempo de ejecución DEBE comenzar con la única línea canónica `SPDX-License-Identifier: MIT` según [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), en la variante de comentario que corresponda al tipo de archivo. Referencia a `scripts/inject-header.*` y a `site/content/docs/reference/authorship-header.mdx`.
 {/* REUSE-IgnoreEnd */}
-4. **Plans Discipline** — el entorno de ejecución NO DEBE generar código ni scripts que escriban en un directorio de configuración de un entorno (por ejemplo `~/.claude/plans/` o `~/.codex/.plans/`) ni en ninguna otra ubicación global de planes. Los artefactos de planificación van a `<project-root>/.apothem/plans/` (un árbol heredado `<project-root>/.plans/` se actualiza mediante `apothem migrate-workspace`) según [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
-5. **Structured Inquiry Behavior** — cuando el entorno de ejecución tiene dudas, NO DEBE fabricar en silencio. En su lugar, inserta un bloque de aclaración claramente marcado (p. ej., un comentario `# TODO(clarify): <question>`) y plantea la pregunta en el chat cuando la superficie lo permite. Sin API inventadas, sin nombres de modelo inventados, sin rutas de archivo inventadas.
+4. **Plans Discipline** — el tiempo de ejecución NO DEBE generar código ni scripts que escriban en un directorio de configuración de un entorno (por ejemplo `~/.claude/plans/` o `~/.codex/.plans/`) ni en ninguna otra ubicación global de planes. Los artefactos de planificación van a `<project-root>/.apothem/plans/` (un árbol heredado `<project-root>/.plans/` se actualiza mediante `apothem migrate-workspace`) según [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
+5. **Structured Inquiry Behavior** — cuando el tiempo de ejecución tiene dudas, NO DEBE fabricar en silencio. En su lugar, inserta un bloque de aclaración claramente marcado (p. ej., un comentario `# TODO(clarify): <question>`) y plantea la pregunta en el chat cuando la superficie lo permite. Sin API inventadas, sin nombres de modelo inventados, sin rutas de archivo inventadas.
 6. **Forbidden Patterns** — prohibiciones explícitas: sin adjetivos de marketing, sin relleno evasivo, sin restos de depuración con console.log, sin rutas absolutas codificadas de forma fija al directorio personal del usuario, sin hacer commit de secretos, sin hacer commit de archivos bajo `.apothem/plans/` (o el heredado `.plans/`), sin contradecir el archivo canónico de instrucciones del proyecto.
 7. **Output Format** — el código y la prosa generados se ajustan a las convenciones unificadas de salida conversacional: carácter definitivo, seccionado uniforme, densidad, disciplina de resumen, citas. Para el código: superficie pública documentada, con tipos donde el lenguaje admite tipos, con pruebas donde existe una estructura de pruebas.
-8. **Review Checklist** — lo que un revisor (humano o entorno de ejecución en modo de revisión de PR) DEBE verificar antes de aprobar: encabezado presente, nomenclatura conforme, ninguna escritura en `.apothem/plans/`, ninguna contradicción con el archivo canónico de instrucciones del proyecto, validadores en verde localmente.
+8. **Review Checklist** — lo que un revisor (humano o tiempo de ejecución en modo de revisión de pull requests) DEBE verificar antes de aprobar: encabezado presente, nomenclatura conforme, ninguna escritura en `.apothem/plans/`, ninguna contradicción con el archivo canónico de instrucciones del proyecto, validadores en verde localmente.
 9. **Pointers** — enlaces a `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, este documento de convenciones, `schemas/` y `CONTRIBUTING.md`.
 
 El archivo comienza con la línea SPDX canónica del encabezado de autoría (variante Markdown) según [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2, visible o invisible según la política de visibilidad del encabezado que haya elegido el proyecto.
 
-El archivo de instrucciones dentro del IDE **no** es una copia literal de `AGENTS.md` ni de `CLAUDE.md`. `AGENTS.md` es la superficie canónica de instrucciones del proyecto, `CLAUDE.md` la refleja para Claude Code, y el archivo de instrucciones dentro del IDE está redactado para un entorno de ejecución de autocompletado de código en el editor que emite sugerencias que un desarrollador acepta o rechaza. La *información* (disciplinas, convenciones, antipatrones) es idéntica; el *encuadre* difiere.
+El archivo de instrucciones dentro del IDE **no** es una copia literal de `AGENTS.md` ni de `CLAUDE.md`. `AGENTS.md` es la superficie canónica de instrucciones del proyecto, `CLAUDE.md` la refleja para Claude Code, y el archivo de instrucciones dentro del IDE está redactado para un tiempo de ejecución de autocompletado de código en el editor que emite sugerencias que un desarrollador acepta o rechaza. La *información* (disciplinas, convenciones, antipatrones) es idéntica; el *encuadre* difiere.
 
 ---
 
@@ -80,7 +80,7 @@ El fixture en [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ah
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -114,15 +114,15 @@ Tres validadores implementan conjuntamente el contrato de coherencia:
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- El primero verifica que el archivo de instrucciones dentro del IDE existe, se puede analizar, contiene cada sección canónica enumerada en §4 y comienza con el banner de autoría canónico.
+- El primero verifica que el archivo de instrucciones dentro del IDE existe, se puede analizar, contiene cada sección canónica enumerada en §4 y comienza con la línea canónica `SPDX-License-Identifier: MIT` (variante Markdown).
 - El segundo analiza las secciones canónicas de cada superficie y verifica que las secciones compartidas son mutuamente coherentes según un comparador normalizado (insensible a mayúsculas y minúsculas, tolerante a los espacios en blanco, que admite la paráfrasis léxica pero exige equivalencia semántica en la lista de afirmaciones definida por el fixture).
-- El tercero verifica que la línea de copyright de LICENSE y la línea «Copyright (c)» del banner canónico nombran al mismo autor.
+- El tercero verifica que el LICENSE de la raíz lleva una línea `Copyright (c) <name>` que se puede analizar; los encabezados por archivo no llevan nombre de autor.
 
 ---
 
 ## 8. Ciclo de vida de las superficies
 
-- **Agregar una superficie.** El operador la activa mediante el canal de indagación estructurada o mediante un `make surfaces-add <name>` posterior. El generador redacta la superficie a partir de la lista de afirmaciones, ejecuta el validador y registra un ADR si se necesita una anulación específica de la superficie.
+- **Agregar una superficie.** El operador la activa mediante el canal de indagación estructurada. El generador redacta la superficie según la lista de afirmaciones, ejecuta el validador y registra un ADR si hace falta una anulación específica de la superficie.
 - **Eliminar una superficie.** La indagación estructurada confirma la eliminación, un ADR registra la justificación y se modifica la lista required-in del validador.
 - **Detección de deriva.** El pre-commit / CI rechaza cualquier commit que se desvíe de la lista de afirmaciones; el autor del commit reescribe la superficie para restaurar la coherencia.
 

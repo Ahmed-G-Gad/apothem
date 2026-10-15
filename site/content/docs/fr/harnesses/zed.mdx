@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptateur d'environnement Apothem pour Zed (GA)."
 machineTranslated: true
-sourceHash: "03b431e47b5d9acd"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,7 +72,7 @@ apothem verify --harness zed --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -90,9 +90,7 @@ partagé.
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-Supprime le fichier de configuration native écrit par l'adaptateur, en le
-renommant d'abord en une sauvegarde horodatée. Le YAML du profil partagé et le
-moteur Apothem ne sont pas affectés.
+Supprime le bloc géré d'Apothem du fichier de configuration native `.rules` et conserve votre propre texte. Le fichier n'est supprimé que si rien d'autre n'y subsiste. Avant la modification, une copie horodatée du fichier est enregistrée sous `~/.apothem/backups/` ; aucun fichier de sauvegarde ne reste dans le projet. Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
 ## Portail de conformité
 

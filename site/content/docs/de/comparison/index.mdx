@@ -2,7 +2,7 @@
 title: "Vergleich"
 description: "Wie Sie Apothem gegenüber handgepflegter Harness-Konfiguration und anderen Konfigurationsansätzen bewerten, mit einer Funktionsmatrix und Seiten je Harness."
 machineTranslated: true
-sourceHash: "bb767de9bd99533a"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ verifizierter Lebenszyklus.
 | Fähigkeit | Apothem | Dateibasierte Konfigurationsmanager (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Eine Quelle für die nativen Schemata vieler Werkzeuge | Ja — siebzehn Harness-Adapter | Nein — Kopie, Symlink oder Template, keine Übersetzung | Ja — 60 Werkzeuge plus die Standards AGENTS.md und Agent Skills | Teilweise — Regeln werden in die Anweisungsdatei jedes Werkzeugs verkettet; MCP, Skills und Subagenten werden in nativer Form geschrieben |
-| Synchronisierte Einheit | Regeln, Skills, Hooks, Slash-Befehle, MCP | beliebige Dateien | Regeln, Ignore, MCP, Befehle, Subagenten, Skills, Hooks, Berechtigungen, Checks (Anweisungen für Code-Review-Checks) | Regeln, MCP, Skills, Subagenten |
+| Synchronisierte Einheit | Regeln, Skills, Subagenten, Hooks, Slash-Befehle, Output-Styles, Einstellungen, MCP | beliebige Dateien | Regeln, Ignore, MCP, Befehle, Subagenten, Skills, Hooks, Berechtigungen, Checks (Anweisungen für Code-Review-Checks) | Regeln, MCP, Skills, Subagenten |
 | Governance-Korpus (Verhaltensregeln plus ein mechanisches Konformitäts-Gate) | Ja — `python -m apothem.conformity.gate` | Nein | Nein — seine Funktion `checks` synchronisiert Code-Review-Checks in die Werkzeuge; kein Konformitäts-Gate über den Regeln | Nein |
 | Deterministische Planungs- und Recherche-Pipelines | Ja — von `/plan-spec` bis `/plan-execute`, `/research` in dreizehn Stufen | Nein | Nein | Nein |
 | Audit-Festung, die erkennt und behebt | Ja — Durchlauf mit elf Befehlen, `/fortress`-Re-Audit-Schleife | Nein | Nein | Nein |

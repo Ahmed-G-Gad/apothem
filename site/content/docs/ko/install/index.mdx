@@ -2,7 +2,7 @@
 title: "설치"
 description: "Apothem 설치 개요 — 여덟 개의 설치 채널과 각 채널의 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 검증 단계: Claude Code 플러그인, npm 심, 원샷 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 직접 엔진."
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "58c69738b25d5cf1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,9 @@ npm 심과 도구 플러그인 경로는 `npx`를 실행하기 위해 추가로 
   전체 하니스를 머티리얼라이즈하기 위해 엔진으로 셸 아웃하는
   (`npx @ahmed-g-gad/apothem install`) 작은 **부트스트랩**을 설치합니다 — 이
   확장들은 진입점일 뿐, 그 자체로 전체를 제공하지는 않습니다. Claude Code
-  플러그인(1)과 VS Code 계열 확장(4)은 엔진을 담고 있으며 엔진을 직접 실행합니다.
+  플러그인(1)은 엔진을 담고 있으며 엔진을 직접 실행합니다. VS Code 계열
+  확장(4)은 자체 엔진을 담고 있지 않습니다. 이 확장의 명령은 기본적으로 npm 심을
+  통해 엔진을 실행합니다.
 </Callout>
 
 모든 경로는 멱등적입니다. 재실행은 안전하며 같은 상태로 수렴합니다.
@@ -86,9 +88,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 **사전 요건:** Node.js 18+(`npx`용)와 `PATH`에 있는 시스템 Python 3.10+. 심은
 인터프리터를 찾아 모든 CLI 명령을 번들된 엔진으로 전달합니다 — 시스템에 영구적으로
 배치되는 것은 없습니다. 심은 `python3`, `python`, `py -3`을 이 순서대로 시도합니다.
-탐지를 건너뛰려면 **`APOTHEM_PYTHON`** 환경 변수를 인터프리터 경로로 설정하세요. Python이
-설치되어 있지만 `PATH`에 없을 때, 또는 여러 버전이 있고 그중 특정 버전을 원할 때
-필요한 방법입니다.
+**`APOTHEM_PYTHON`**을 인터프리터 경로로 설정하면 그 인터프리터를 먼저 시도하며,
+Python이 설치되어 있지만 `PATH`에 없을 때, 또는 여러 버전이 설치되어 있고 그중 특정
+버전을 원할 때 필요한 설정입니다. 지정한 인터프리터도 여전히 Python 3.10+ 검사를
+통과해야 합니다. 통과하지 못하면 심은 대신 `python3`, `python`, `py -3`을 이
+순서대로 시도합니다.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -174,10 +178,13 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)의
 릴리스 서명 섹션에 각 태그와 그 검증 방법이 나열되어 있습니다.
 
-두 가지 명시적 재정의가 기본 동작을 완화합니다. `APOTHEM_REF=main`은 움직이는
-브랜치를 (검증 없이) 체크아웃하고, `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를
-경고로 격하하고 계속 진행합니다 — 에어갭, 로컬, 또는 서명 도입 이전 릴리스 용도입니다.
-`APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도 가져오지 않으며 검증을 건너뜁니다.
+명시적 재정의는 기본 동작을 완화합니다. `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를
+경고로 낮추고 계속 진행합니다. 에어갭, 로컬, 또는 서명된 릴리스 이전의 용도입니다.
+`APOTHEM_REF=main`은 `APOTHEM_ALLOW_UNVERIFIED=1`과 함께 있을 때에만 검증 없이 움직이는
+브랜치를 체크아웃합니다. `APOTHEM_REF=main`만 지정하면 브랜치는 서명된 릴리스 태그가
+아니므로, 설치 프로그램은 `main`을 `APOTHEM_HOME`으로 가져온 뒤 구성을
+머티리얼라이즈하기 전에 중단합니다. `APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도
+가져오지 않고 검증도 건너뜁니다.
 
 `APOTHEM_VERIFY=checksum`은 메인테이너의 공개 키를 아직 보유하지 않은 호스트를 위한
 중간 경로입니다. 설치 프로그램은 클론하는 대신 릴리스의 플랫폼 아카이브와 그
@@ -378,8 +385,8 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
   이름을 알려 주며, 대신 설치하겠다고 제안합니다 — 여러분의 확인을 받아서, 또는
   `--yes`(PowerShell에서는 `-Yes`)나 `APOTHEM_AUTO_INSTALL_DEPS=1`이 있으면
   자동으로. 그 밖의 모든 채널에서는 누락된 패키지가 오류(종료 코드 1)와 함께 엔진을
-  중지시키며, 이 오류는 엔진이 찾은 인터프리터에 맞는 정확한 명령을 Apothem이
-  테스트된 버전 제약 조건과 함께 제시합니다
+  중지시키며, 이 오류는 엔진이 찾은 인터프리터에 맞는 정확한 명령을, Apothem을
+  테스트하는 기준이 되는 버전 제약 조건과 함께 제시합니다
   (`<interpreter> -m pip install "click==…" "rich>=…"`). `--json`을 사용하면 같은
   오류가 코드 `runtime.dependency_missing`이 담긴 JSON 엔벨로프로 전달됩니다.
 - **Node.js 18 이상** — npm 심과 도구 플러그인 경로에서만 필요합니다.
@@ -399,7 +406,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 | 목표 | 가이드 |
 |------|-------|
-| 가장 짧은 설정 | [퀵스타트](/docs/install/quickstart) |
+| 가장 짧은 설정 | [빠른 시작](/docs/install/quickstart) |
 | 하니스 추가 | [하니스 설정](/docs/install/harness-setup) |
 | 업데이트 | [업데이트](/docs/install/updating) |
 | 제거 | [제거](/docs/install/uninstalling) |

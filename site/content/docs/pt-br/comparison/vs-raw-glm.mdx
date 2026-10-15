@@ -1,50 +1,55 @@
 ---
-title: "Apothem vs. raw GLM backend wiring"
-description: "Why route GLM (Z.ai) backend configuration through Apothem instead of hand-wiring environment variables per project."
+title: "Apothem versus a conexão manual do backend GLM"
+description: "Por que rotear a configuração do backend GLM (Z.ai) pelo Apothem em vez de conectar à mão as variáveis de ambiente em cada projeto."
 machineTranslated: true
-sourceHash: "ae1dbfedf034219a"
+sourceHash: "869ef5c768dfec73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-GLM (Z.ai) is a model backend a compatible harness points at by setting a
-base URL and a key. You can export those environment variables by hand, per
-project, per machine, forever. Apothem's glm adapter records the backend
-endpoints and operator-configurable placeholders in one provider file and keeps
-that file consistent across every project. This page contrasts hand-wiring that
-backend against managing it with Apothem.
+O GLM (Z.ai) é um backend de modelo para o qual um harness compatível é apontado
+pela definição de uma URL base e de uma chave. Você pode exportar essas
+variáveis de ambiente à mão, por projeto, por máquina, para sempre. O adaptador
+glm do Apothem registra os endpoints do backend e marcadores de posição
+configuráveis pelo operador em um único arquivo de provedor e grava o mesmo
+template em todos os projetos. Esta página contrasta a conexão manual desse
+backend com o gerenciamento dele pelo Apothem.
 
-## Effort comparison
+## Comparação de esforço
 
-| Task | Raw hand-config | Apothem-managed |
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Record the backend URLs | Memorize and re-export per project | Written into one provider file |
-| Source of truth | Each shell's own exports | One canonical provider file |
-| Keep backends aligned across projects | Re-wire per project | Rendered the same way every time |
-| Update the config | Hand-edit every project | `apothem update --harness glm --project <path>` |
-| Remove the config | Manual delete | `apothem uninstall` with a backup |
+| Registrar as URLs do backend | Memorizar e reexportar por projeto | Gravadas em um único arquivo de provedor |
+| Fonte da verdade | As exportações de cada shell | Um único arquivo de provedor canônico |
+| Manter os backends alinhados entre projetos | Reconectar por projeto | O mesmo template é gravado em cada projeto |
+| Restaurar a configuração | Reexportar em cada projeto | `apothem update --harness glm --project <path>` grava o arquivo novamente somente quando ele está ausente |
+| Remover a configuração | Exclusão manual | `apothem uninstall` com backup |
 
-## What Apothem manages
+## O que o Apothem gerencia
 
-The glm adapter renders a single provider file at
-`<project>/.apothem/providers/glm.toml` and writes nothing else. It records the
-Anthropic-compatible base URL (`https://api.z.ai/api/anthropic`), the
-OpenAI-compatible base URL (`https://api.z.ai/api/coding/paas/v4`), an
-auth-token placeholder, and model-mapping placeholders. Your Z.ai key and your
-model-id choices stay operator-owned — Apothem never writes a real secret and
-pins no version-volatile model id.
+O adaptador glm renderiza um único arquivo de provedor em
+`<project>/.apothem/providers/glm.toml` e não grava nada além disso. Ele
+registra a URL base compatível com a Anthropic (`https://api.z.ai/api/anthropic`),
+a URL base compatível com a OpenAI (`https://api.z.ai/api/coding/paas/v4`), um
+marcador de posição para o token de autenticação e marcadores de posição de
+mapeamento de modelos. Sua chave da Z.ai e suas escolhas de ID de modelo
+permanecem de propriedade do operador — o Apothem nunca grava um segredo real e
+não fixa nenhum ID de modelo volátil entre versões.
 
-## Migration path
+## Caminho de migração
 
-1. Run `apothem profile init` to create the shared profile if you have not yet.
-2. Run `apothem install --harness glm --project <path>` to render the
-   `glm.toml` provider file.
-3. Fill in your Z.ai key and the model ids you want from the current
-   [Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
-4. Run `apothem verify --harness glm --project <path>` to confirm the config
-   landed.
-5. Use `apothem update --harness glm --project <path>` for every later change.
+1. Execute `apothem profile init` para criar o perfil compartilhado se você
+   ainda não tiver.
+2. Execute `apothem install --harness glm --project <path>` para renderizar o
+   arquivo de provedor `glm.toml`.
+3. Preencha a sua chave da Z.ai e os IDs de modelo que você deseja a partir da
+   [documentação da Z.ai](https://docs.z.ai/devpack/tool/claude) atual.
+4. Execute `apothem verify --harness glm --project <path>` para confirmar que a
+   configuração foi gravada.
+5. Edite `.apothem/providers/glm.toml` a cada mudança posterior. O Apothem nunca
+   reescreve um arquivo de provedor existente; `apothem update --harness glm --project
+   <path>` o grava novamente somente quando ele está ausente.
 
-## Read next
+## Leia a seguir
 
-- [GLM adapter reference](/docs/harnesses/glm)
-- [Comparison overview](/docs/comparison)
+- [Referência do adaptador GLM](/docs/harnesses/glm)
+- [Visão geral da comparação](/docs/comparison)

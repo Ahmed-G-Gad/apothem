@@ -2,7 +2,7 @@
 title: "Apothem vs raw Kimi Code config"
 description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
 machineTranslated: true
-sourceHash: "5f69887592d86e7a"
+sourceHash: "3973fe015cf877a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,13 +17,13 @@ against managing it with Apothem.
 
 ## Effort comparison
 
-| Task | Raw hand-config | Apothem-managed |
+| 작업 | 수동 구성 | Apothem 관리 |
 | ---- | --------------- | --------------- |
-| Author the `AGENTS.md` instruction surface | Hand-write and re-sync per project | One managed block rendered from the shared profile |
-| Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
-| Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
-| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code` |
+| `AGENTS.md` 지침 표면 작성 | 프로젝트마다 직접 작성하고 다시 동기화 | 공유 프로필에서 렌더링된 관리 블록 하나 |
+| 규칙, 커맨드, 스킬, 에이전트를 동기화 상태로 유지 | 프로젝트마다 수동 복사 | 설치할 때마다 `<project>/.kimi-code/.apothem/support/` 아래에 머티리얼라이즈 |
+| 갱신 시 운영자 산문 보존 | 수동 병합 | 센티넬 마커로 구분된 블록. 그 바깥의 운영자 산문은 보존됨 |
+| 다른 하니스와 규칙을 일치 상태로 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness kimi-code --project <path>` |
 
 ## What Apothem manages
 
@@ -36,12 +36,11 @@ rules re-renders the files on the next `apothem update`.
 
 ## Migration path
 
-1. Run `apothem profile init` to create the shared profile if you have not yet.
-2. Move the rules from your existing `AGENTS.md` into the shared corpus.
-3. Run `apothem install --harness kimi-code` to render the `AGENTS.md`
-   instruction surface and the `.kimi-code/.apothem/support/` support tree.
-4. Run `apothem verify --harness kimi-code` to confirm the config landed.
-5. Use `apothem update --harness kimi-code` for every later change.
+1. 아직 공유 프로필을 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 `AGENTS.md`의 규칙을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness kimi-code --project <path>`를 실행해 `AGENTS.md` 지침 표면과 `.kimi-code/.apothem/support/` 지원 하위 트리를 렌더링합니다.
+4. `apothem verify --harness kimi-code --project <path>`를 실행해 구성이 반영되었는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness kimi-code --project <path>`를 사용합니다.
 
 ## Read next
 

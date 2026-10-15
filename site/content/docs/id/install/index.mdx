@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "58c69738b25d5cf1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,8 +43,9 @@ Delapan kanal instalasi tersedia. Pilih berdasarkan cara Anda sudah bekerja.
   sendirinya. Tiga ekstensi baris perintah (5–7) memasang **bootstrap** kecil
   yang memanggil mesin melalui shell (`npx @ahmed-g-gad/apothem install`) untuk
   mematerialisasikan harness lengkap — ketiganya adalah titik masuk, bukan
-  penghantaran penuh dengan sendirinya. Plugin Claude Code (1) dan ekstensi
-  keluarga VS Code (4) membawa mesin dan menjalankannya secara langsung.
+  penghantaran penuh dengan sendirinya. Plugin Claude Code (1) membawa mesin dan
+  menjalankannya secara langsung. Ekstensi keluarga VS Code (4) tidak membawa
+  mesin sendiri: perintahnya menjalankan mesin melalui shim npm secara default.
 </Callout>
 
 Setiap jalur bersifat idempoten: menjalankan ulang aman dan konvergen ke
@@ -93,10 +94,12 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 **Prasyarat:** Node.js 18+ (untuk `npx`) dan Python sistem 3.10+ pada `PATH`.
 Shim menemukan interpreter dan meneruskan setiap perintah CLI ke mesin yang
 disertakan — tidak ada yang ditempatkan secara permanen di sistem Anda. Shim
-mencoba `python3`, `python`, lalu `py -3` dalam urutan itu; tetapkan
-**`APOTHEM_PYTHON`** ke jalur interpreter untuk melewati pencarian tersebut,
-yang Anda perlukan ketika Python terpasang tetapi tidak ada di `PATH`, atau
-ketika beberapa versi terpasang dan Anda menginginkan versi tertentu.
+mencoba `python3`, `python`, lalu `py -3` dalam urutan itu; setel
+**`APOTHEM_PYTHON`** ke jalur interpreter agar interpreter itu dicoba lebih
+dahulu, yang Anda perlukan ketika Python terpasang tetapi tidak ada di `PATH`,
+atau ketika beberapa versi terpasang dan Anda menginginkan versi tertentu.
+Interpreter yang Anda sebutkan tetap harus lolos pemeriksaan Python 3.10+;
+jika tidak lolos, shim kembali ke `python3`, `python`, lalu `py -3`.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -142,7 +145,7 @@ Profil awal membawa bidang identitas placeholder: sunting profil itu, lalu
 jalankan `apothem update --harness <name>` untuk menerapkan nilai milik Anda.
 Menjalankan ulang bersifat idempoten: pohon yang sudah ada di-checkout ulang ke
 tag yang di-resolve dan harness dimaterialisasikan ulang. Instalasi
-terverifikasi yang dipatok ke tag adalah jalur bawaan dan yang direkomendasikan.
+terverifikasi yang dipatok ke tag adalah jalur default dan yang direkomendasikan.
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -163,7 +166,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### Model kepercayaan
 
-Bila `APOTHEM_REF` tidak ditetapkan, pemasang me-resolve tag rilis
+Bila `APOTHEM_REF` tidak disetel, pemasang me-resolve tag rilis
 `vMAJOR.MINOR.PATCH` tertinggi dan melakukan checkout *tag itu* — tidak pernah
 branch `main` yang terus bergerak. Sebelum konfigurasi apa pun
 dimaterialisasikan, tanda tangan tag yang diambil diverifikasi dengan
@@ -188,12 +191,15 @@ Bagian penandatanganan rilis di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 mencantumkan setiap tag dan cara memverifikasinya.
 
-Dua penggantian eksplisit melonggarkan perilaku bawaan: `APOTHEM_REF=main`
-melakukan checkout branch yang bergerak (tanpa verifikasi), dan
-`APOTHEM_ALLOW_UNVERIFIED=1` menurunkan kegagalan verifikasi menjadi peringatan
-lalu melanjutkan — untuk penggunaan air-gapped, lokal, atau dengan rilis dari
-masa sebelum rilis ditandatangani. Checkout lokal melalui `APOTHEM_SOURCE`
-tidak mengambil apa pun dan melewati verifikasi.
+Penggantian eksplisit melonggarkan perilaku default. `APOTHEM_ALLOW_UNVERIFIED=1`
+menurunkan kegagalan verifikasi menjadi peringatan lalu melanjutkan, untuk
+penggunaan air-gapped, lokal, atau rilis pra-penandatanganan.
+`APOTHEM_REF=main` melakukan checkout branch yang bergerak tanpa verifikasi
+hanya bersama `APOTHEM_ALLOW_UNVERIFIED=1`. Dengan `APOTHEM_REF=main` saja,
+pemasang mengambil `main` ke dalam `APOTHEM_HOME`, lalu membatalkan proses
+sebelum konfigurasi apa pun dimaterialisasikan, karena branch bukan tag rilis
+yang bertanda tangan. Checkout lokal melalui `APOTHEM_SOURCE` tidak mengambil
+apa pun dan melewati verifikasi.
 
 `APOTHEM_VERIFY=checksum` adalah jalan tengah untuk host yang belum memegang
 kunci publik pemelihara: alih-alih mengkloning, pemasang mengunduh arsip
@@ -223,7 +229,7 @@ model pemanggilan `python -m`.
 **Perintah `apothem`.** Setelah instalasi berhasil, pemasang menulis shim
 `apothem` yang meneruskan ke mesin yang disertakan — di POSIX ke dalam
 `$HOME/.local/bin`, di Windows ke dalam `%LOCALAPPDATA%\Microsoft\WindowsApps`
-(direktori pengguna yang sudah ada pada `PATH` bawaan Windows). Pemasang tidak
+(direktori pengguna yang sudah ada pada `PATH` default Windows). Pemasang tidak
 pernah menyunting `PATH` Anda. Setelah direktori tersebut ada di `PATH`, Anda
 menjalankan `apothem <command>` secara langsung, tanpa `PYTHONPATH` manual.
 
@@ -254,12 +260,12 @@ belum dipublikasikan. Satu ekstensi mencakup VS Code dan permukaan asisten
 pendampingnya di dalam editor. Perintah paletnya (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) menjalankan mesin yang sama melalui runner
 yang dikonfigurasi (`npx @ahmed-g-gad/apothem@<extension version>` secara
-bawaan, sehingga ekstensi menjalankan versi mesin yang dikirim bersamanya;
+default, sehingga ekstensi menjalankan versi mesin yang dikirim bersamanya;
 arahkan pengaturan pengguna `apothem.runner` ke checkout lokal untuk
 menjalankan dari sumber). Install, Verify, Update, dan Uninstall menanyakan
 harness mana yang akan ditangani, dengan menawarkan harness milik editor itu
 sendiri terlebih dahulu; `all` adalah salah satu pilihan, tidak pernah menjadi
-bawaan. Pengaturan `apothem.runner` berlingkup komputer (machine-scoped),
+default. Pengaturan `apothem.runner` berlingkup komputer (machine-scoped),
 sehingga workspace tidak dapat mengubahnya, dan ekstensi hanya berjalan di
 workspace tepercaya.
 
@@ -404,7 +410,7 @@ Code dan konfirmasikan bahwa **apothem** tercantum sebagai terpasang.
   untuk memasangnya untuk Anda — dengan konfirmasi Anda, atau secara otomatis
   dengan `--yes` (`-Yes` di PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1`. Di
   setiap kanal lainnya, paket yang hilang menghentikan mesin dengan galat
-  (exit 1) yang menyebutkan perintah persis untuk interpreter yang
+  (kode keluar 1) yang menyebutkan perintah persis untuk interpreter yang
   ditemukannya, dengan batasan versi yang diuji oleh Apothem
   (`<interpreter> -m pip install "click==…" "rich>=…"`); dengan `--json`, galat
   yang sama tiba sebagai amplop JSON dengan kode `runtime.dependency_missing`.

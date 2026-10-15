@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adapter harness Apothem untuk Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "84593cdc3207e035"
+sourceHash: "05c030cc3a187fcb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ apothem verify --harness gemini-cli --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama ada.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan

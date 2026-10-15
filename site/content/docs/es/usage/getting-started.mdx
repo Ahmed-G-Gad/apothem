@@ -2,7 +2,7 @@
 title: "Flujos de trabajo principales"
 description: "Los cuatro flujos de trabajo principales de Apothem: perfil, reglas, planes y la puerta de conformidad."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,10 +69,16 @@ completo.
 
 ## Puerta de conformidad
 
-Ejecuta desde la raíz del repositorio:
+Desde un checkout de Apothem, ejecuta:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+Tras una instalación con script, ejecuta:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Ejecuta todas las comprobaciones mecánicas de conformidad e informa de

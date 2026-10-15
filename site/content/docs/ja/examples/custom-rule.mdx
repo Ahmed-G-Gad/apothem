@@ -2,12 +2,11 @@
 title: "カスタムルール"
 description: "あなたのプロジェクト向けにカスタムの常時オンルールを作成する。"
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-この例では、すべてのファイルにわたって命名規約を強制する、プロジェクト固有の
-常時オンルールを追加します。
+この例では、すべてのファイルにわたって命名規則を強制する、プロジェクト固有の常時オンのルールを追加します。
 
 ## ルールファイル
 
@@ -31,17 +30,29 @@ no camelCase, no PascalCase).
 When in doubt, err on the side of more hyphens.
 ```
 
-これを harness のインストールルート内の `rules/kebab-filenames.md` に保存します（Claude Code アダプターでは `~/.claude/`。それ以外は harness ネイティブのパスに置き換えてください）。
+これを、ハーネスのインストールルート内の `rules/kebab-filenames.md` に保存します（Claude Code アダプターでは `~/.claude/`。それ以外のハーネスでは、ハーネスネイティブのパスに置き換えてください）。
 
-## ルールが読み込まれたことを検証する
+## ルールの形式が正しいことを検証する
+
+ちょうど書いたルールファイルに対して、frontmatter のバリデーターを実行します。Apothem のチェックアウトからは、コマンドの先頭に `PYTHONPATH=src` を付けてください。スクリプトでインストールした後は、先頭に `PYTHONPATH="$HOME/.apothem/src"` を付けます。
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
-## 各 harness へ伝播する
+形式が正しいルールは、問題なく合格と報告されます。
 
-インストール済みの harness ごとに更新コマンドを 1 回ずつ実行します。
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
+```
+
+## ハーネスへ伝播する
+
+インストール済みのハーネスごとに、更新コマンドを 1 回ずつ実行します。
 
 ```bash
 apothem update --harness claude-code

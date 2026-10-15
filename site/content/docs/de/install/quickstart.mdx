@@ -2,7 +2,7 @@
 title: "Schnellstart"
 description: "Apothem installieren, ein Profil verfassen, den ersten Harness materialisieren und verifizieren — eine Tour zum Kopieren und Einfügen mit erwarteter Ausgabe."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,7 +39,7 @@ Quellcode, legt die Engine ab und materialisiert Ihren ersten Harness:
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -77,7 +77,7 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 Die [Installationsanleitung](/docs/install) behandelt die anderen
-Installationswege — das Plugin für Claude Code
+Installationswege — das Claude Code-Plugin
 (`/plugin marketplace add ahmed-g-gad/apothem`, dann
 `/plugin install apothem@apothem`); die Erweiterung für die VS Code-Familie und
 weitere werkzeugeigene Erweiterungen; und die npx-Form auf Abruf
@@ -140,11 +140,13 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Installieren Sie mit `--harness all` den gesamten registry-gestützten Satz auf
-einmal. Da diese Auswahl sowohl Dateien im Projektbereich als auch Dateien im
-Benutzerbereich schreibt, gibt der Befehl die konkreten Ziele nach Ort gruppiert
-aus und fragt nach einer Bestätigung, bevor er außerhalb der Projektwurzel
-schreibt:
+Installieren Sie den gesamten durch die Harness-Registry gestützten Satz auf
+einmal mit `--harness all`. Da diese Auswahl sowohl Dateien im Projektbereich
+als auch Dateien im Benutzerbereich schreibt, gibt der Befehl die konkreten
+Ziele nach Ort gruppiert aus. In einem interaktiven Terminal fragt er nach,
+bevor er außerhalb der Projektwurzel schreibt. Ein Lauf ohne Terminal, ein Lauf
+mit `--yes` oder ein Lauf mit `--format json` schreibt ohne Nachfrage;
+`--dry-run` schreibt nichts. Führen Sie den vollständigen Satz so aus:
 
 ```bash
 apothem install --harness all --project .
@@ -156,9 +158,8 @@ der [install-Referenz](/docs/cli-reference/install).
 
 ## 4. Verifizieren
 
-Das Materialisieren ist nur die halbe Arbeit — `verify` bestätigt, dass die
-erwarteten Konfigurationsdateien des Harness angekommen sind und dem entsprechen,
-was das Profil deklariert:
+Das Materialisieren ist nur die halbe Arbeit: `verify` bestätigt, dass die
+erwarteten Konfigurationsdateien des Harness angekommen und gültig sind:
 
 ```bash
 apothem verify --harness claude-code
@@ -168,10 +169,14 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` endet mit einem Exit-Code ungleich null, wenn die Konfiguration fehlt
-oder abgedriftet ist, und dient damit zugleich als Gate in einem
-Einrichtungsskript. Für eine Zustandsprüfung der gesamten Maschine über jeden
-registrierten Adapter führen Sie Folgendes aus:
+`verify` endet mit einem Code ungleich null, wenn ein verwaltetes Ziel fehlt,
+eine verwaltete Datei leer ist oder eine JSON- oder YAML-Konfiguration nicht
+geparst werden kann. Fügen Sie `--profile PATH` hinzu, damit die Prüfung
+außerdem fehlschlägt, wenn sich eine installierte Datei von diesem Profil
+unterscheidet; damit wird `verify` zu einer Drift-Prüfung. Ohne diese Angabe
+besteht eine veraltete Konfiguration die Prüfung weiterhin. So kann es als Gate
+in einem Einrichtungsskript dienen. Für eine Zustandsprüfung der gesamten
+Maschine über jeden registrierten Adapter führen Sie Folgendes aus:
 
 ```bash
 apothem doctor
@@ -180,7 +185,7 @@ apothem doctor
 `doctor` prüft jeden installierten Harness: Er muss die Verifizierung bestehen,
 und jeder Hook-Befehl, den seine Installation registriert hat, muss starten. Ein
 Harness, den Sie nicht installiert haben, wird aufgeführt, gilt aber nicht als
-Fehlschlag, sodass `doctor` bei einem gesunden Harness mit 0 endet.
+Fehlschlag, sodass `doctor` bei einem gesunden Harness mit Exit-Code 0 endet.
 
 ## 5. Ihr erster Lauf
 

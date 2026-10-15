@@ -2,30 +2,30 @@
 title: "Frontmatter 模式"
 description: "YAML frontmatter 块结构、逐类必需键，以及各制品类别校验器强制规则的参考指南。"
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "482f970f0b254769"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **每个制品类别上 YAML frontmatter 的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 的 Conventions 部分中的摘要是内联声明；[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) 下的逐类 JSON Schema（`additionalProperties` 会拒绝未知键）是机器可读的契约，出现任何不一致时以其为准。本页是必需键索引，而 [`artifact-schema.mdx`](/docs/reference/artifact-schema) 承载逐类模板与完整示例——两者都是这些 schema 的人类可读投影。
+> **每个制品类别上 YAML frontmatter 的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 的 Conventions 部分中的摘要是内联声明；[`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 JSON Schema（`additionalProperties` 会拒绝未知键）是机器可读的契约，出现任何不一致时以其为准。本页是必需键索引，而 [`artifact-schema.mdx`](/docs/reference/artifact-schema) 承载逐类模板与完整示例——两者都是这些 schema 的人类可读投影。
 
 ---
 
 ## 1. Frontmatter 块形态
 
-每个制品都在头部带有 YAML frontmatter，由 `---` 行分隔。在 Markdown 系列文件上，按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范作者署名头横幅位于 frontmatter 之上；frontmatter 紧随其后。
+每个制品都在头部带有 YAML frontmatter，由 `---` 行分隔。在 Markdown 系列文件上，frontmatter 是文件的第一项内容，而按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范作者署名头横幅紧随闭合的 `---` 之后。
 
-键使用 `kebab-case`。标量值要么不加引号，要么使用双引号；包含冒号、井号或其他在 YAML 中有特殊含义的字符的字符串值要加引号。
+命令键使用 `kebab-case`。技能键使用 `kebab-case`，但 `userInvocable` 除外；它是源语料库所用的 camelCase 拼写（Claude Code 安装时会将其重命名为 `user-invocable`）。规则与委派工作者的键使用 camelCase，如第 2 节的必需键表所列。标量值可以不加引号，也可以使用双引号；包含冒号、井号或其他对 YAML 有特殊含义字符的字符串值需要加引号。
 
 ## 2. 逐类必需字段
 
-必需键集合因制品类别而异。权威形态由 `scripts/dev/validate_ecosystem.py` 和 `schemas/` 目录下的逐类 JSON Schema（每个制品类别一个 schema 文件）强制执行。
+必需键集合因制品类别而异。权威形态由 `scripts/dev/validate_ecosystem.py` 和 `src/apothem/schemas/` 目录下的逐类 JSON Schema（每个制品类别一个 schema 文件）强制执行。
 
 ```text
-schemas/agent.schema.json
-schemas/skill.schema.json
-schemas/command.schema.json
-schemas/output-style.schema.json
-schemas/plan.schema.json
+src/apothem/schemas/agent.schema.json
+src/apothem/schemas/skill.schema.json
+src/apothem/schemas/command.schema.json
+src/apothem/schemas/output-style.schema.json
+src/apothem/schemas/plan.schema.json
 ```
 
 | 类别 | 必需键 |
@@ -35,9 +35,9 @@ schemas/plan.schema.json
 | 命令（`src/apothem/commands/*.md`） | `name`、`version`、`updated`、`description`、`argument-hint`、`disable-model-invocation`、`portability`、`allowed-tools` |
 | 委派工作者（规范目录见下方） | `name`、`version`、`updated`、`description`、`tools`、`disallowedTools`、`maxTurns`、`effort` |
 | 技能（`src/apothem/skills/*/SKILL.md`） | `name`、`version`、`updated`、`description`、`archetype`、`userInvocable`、`disable-model-invocation`、`allowed-tools`；Claude Code 安装和插件会将 `userInvocable` 重命名为 `user-invocable`，并且 schema 恰好接受这两种拼写中的一种 |
-| 输出样式（`src/apothem/output-styles/*.md`） | `name`、`description`；每个随附样式还会设置 `keep-coding-instructions: true`，从而让 Claude Code 保留其软件工程指令 |
+| 输出样式（`src/apothem/output-styles/*.md`） | `name`、`description`；每个随附样式还会设置 `keep-coding-instructions: true`，以便 Claude Code 保留其软件工程指令 |
 
-[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) 下的逐类 schema 承载完整的约束集，包括类型、格式、枚举和模式限制，以及长度限制：技能或命令的 `description` 最多 1,024 个字符，即 [Agent Skills](https://agentskills.io/specification) 的限制。
+[`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 下的逐类 schema 承载完整的约束集，包括类型、格式、枚举和模式限制，以及长度限制：技能或命令的 `description` 最多 1,024 个字符，即 [Agent Skills](https://agentskills.io/specification) 的限制。
 
 ## 3. 校验器
 

@@ -1,8 +1,8 @@
 ---
 title: "अनुरूपता गेट"
-description: "Apothem अनुरूपता गेट — पंद्रह-बार प्री-एमिशन गेट (M1-M15) का यांत्रिक अंश, जिसे हर एमिट किए गए आर्टिफ़ैक्ट को पास करना ही होगा।"
+description: "Apothem अनुरूपता गेट — पंद्रह-बार प्री-एमिशन गेट (M1-M15) का यांत्रिक अंश, जिसे हर एमिट किए गए आर्टिफ़ैक्ट को पास करना होगा।"
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "c3c719c0c1a0e92e"
 | बार | ID | मैंडेट | जाँच वर्ग | विफलता → कार्रवाई |
 |---|---|---|---|---|
 | 1 | M1 | होस्ट-प्रोजेक्ट अज्ञेयता | तर्क-आधारित | होस्ट परिपाटियों से मेल खाने के लिए संशोधित करें |
-| 2 | M2 | संपादकीय अनुशासन (प्रकटीकरण बही) | यांत्रिक | प्रकटीकरण चिह्न जोड़ें |
-| 3 | M3 | दस गुणवत्ता आयाम | तर्क-आधारित | विफल आयामों पर संशोधित करें |
+| 2 | M2 | संपादकीय अनुशासन (प्रकटीकरण बही) | तर्क-आधारित | प्रकटीकरण चिह्न जोड़ें |
+| 3 | M3 | दस गुणवत्ता आयाम | यांत्रिक + तर्क-आधारित | विफल आयामों पर संशोधित करें |
 | 4 | M4 | स्व-अनुप्रयोग (गेट का हस्ताक्षरित रिकॉर्ड मौजूद) | यांत्रिक | हस्ताक्षरित-रिकॉर्ड ब्लॉक दर्ज करें |
 | 5 | M5 | प्राधिकार सिद्धांत (कोई गढ़ी हुई पहचान / एंडपॉइंट / सीक्रेट नहीं) | यांत्रिक | पूछताछ की ओर भेजें |
 | 6 | M6 | विशेषज्ञता समावेशन (उजागर की गई कमियाँ) | तर्क-आधारित | कमियाँ उजागर करें; परिष्कारों का हवाला दें |
@@ -21,53 +21,29 @@ sourceHash: "c3c719c0c1a0e92e"
 | 9 | M9 | दृश्य प्रभाव (संरचनात्मक विषयों के साथ आरेख) | तर्क-आधारित | आरेख बनाएँ / ताज़ा करें |
 | 10 | M10 | द्विदिश बंधन (पारस्परिक पश्च-संकेतक पूरे) | यांत्रिक | अर्ध-किनारे पूरे करें |
 | 11 | M11 | एजाइल स्प्रिंट (Goal / Backlog / DoR / DoD / Review / Retrospective) | तर्क-आधारित | स्प्रिंट के रूप में पुनर्गठित करें |
-| 12 | M12 | चरण रिपोर्टिंग और कैनोनिकल लेआउट | यांत्रिक | रोलअप लिखें; कैनोनिकल लेआउट में स्थानांतरित करें |
+| 12 | M12 | चरण रिपोर्टिंग और कैनोनिकल लेआउट | यांत्रिक + तर्क-आधारित | रोलअप लिखें; कैनोनिकल लेआउट में स्थानांतरित करें |
 | 13 | M13 | कोड शिल्प (लिंट / फ़ॉर्मैट / टाइप-जाँच; मैजिक नंबर; bare-except) | यांत्रिक | प्रति-भाषा कोड-शिल्प नियम लागू करें |
 | 14 | M14 | प्रणालीगतता (अपस्ट्रीम / डाउनस्ट्रीम / समकक्ष / प्रवर्तक घोषित करता है) | तर्क-आधारित | घोषित करें; रजिस्ट्रियों में अनुक्रमित करें |
-| 15 | M15 | प्रोडक्शन-तैयार (परीक्षण + दस्तावेज़ + CHANGELOG + अनुरूप कमिट + CI हरा + semver-स्थिरता) | यांत्रिक | लुप्त सतहें जोड़ें |
+| 15 | M15 | प्रोडक्शन-तैयार (परीक्षण + दस्तावेज़ + CHANGELOG + अनुरूप कमिट + CI हरा + semver-स्थिरता) | यांत्रिक + तर्क-आधारित | लुप्त सतहें जोड़ें |
 
 ## गंभीरता सीढ़ी
 
-| गंभीरता | गेट पर प्रभाव |
-|---|---|
-| **गंभीर** | गेट FAIL — एमिशन बिना शर्त अवरुद्ध |
-| **महत्वपूर्ण** | गेट FAIL जब 2+ महत्वपूर्ण बार एक साथ विफल हों |
-| **परामर्शी** | गेट WARN — हस्ताक्षरित रिकॉर्ड में दर्ज; एमिशन को अवरुद्ध नहीं करता |
-
-यांत्रिक-अंश के अधिकांश मैचर डिफ़ॉल्ट रूप से **महत्वपूर्ण** होते हैं। M5 (प्राधिकार — सीक्रेट, गढ़े हुए एंडपॉइंट) और M12 (अनाथ आउटपुट) **गंभीर** हैं।
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+गेट में गंभीर, महत्वपूर्ण या परामर्शी स्तर की कोई सीढ़ी नहीं है, और दो-निष्कर्ष की कोई सीमा नहीं है। `--strict` (या `APOTHEM_CONFORMITY_STRICT=1`) के बिना गेट निष्कर्ष रिपोर्ट करता है और `0` के साथ बाहर निकलता है। `--strict` के साथ, एकल-फ़ाइल या हुक जाँच किसी भी मैचर के विफल होने पर `2` के साथ बाहर निकलती है, और कॉर्पस रन (`--all-perwrite`) जब कोई ब्लॉकिंग मैचर विफल होता है तो `2` के साथ बाहर निकलता है; परामर्शी मैचर केवल रिपोर्ट किए जाते हैं। इंस्टॉल किया गया Write/Edit हुक `--strict` पास नहीं करता, इसलिए वह निष्कर्ष रिपोर्ट करता है और लेखन आगे बढ़ता है, जब तक उसके एनवायरनमेंट में `APOTHEM_CONFORMITY_STRICT=1` सेट न हो।
 
 ## वैलिडेटर
 
 यांत्रिक अंश [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity) में रहता है, और [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) इसका संचालन करता है।
-गेट प्रत्येक वैलिडेटर को तीन में से किसी एक तरीके से चलाता है:
+प्रत्येक वैलिडेटर तीन में से किसी एक तरीके से चलता है:
 
 - **per-write**: हर लंबित लेखन पर (`--hook`), या `--all-perwrite` के साथ हर ट्रैक की गई फ़ाइल पर।
 - **standalone**: `--all` के साथ पूरी रिपॉज़िटरी पर, या `--check <name>` के साथ एक-एक करके।
-- **change-set**: किसी स्टेज किए गए डिफ़ के विरुद्ध, गेट के स्वीप के बाहर।
+- **change-set**: किसी स्टेज किए गए डिफ़ के विरुद्ध, सीधे `python -m apothem.conformity.semver_stability_grep --staged` के रूप में चलाया जाता है, गेट के माध्यम से नहीं।
 
 नीचे दी गई तालिका वैलिडेटर मॉड्यूल से उत्पन्न होती है।
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -131,8 +107,8 @@ The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
 
 इंस्टॉल किए गए हार्नेस पर गेट अपने आप चलता है: Claude Code की
 `settings.json` इसे एक `PreToolUse` हुक के रूप में जोड़ती है, जो हर Write/Edit से
-पहले `~/.claude/.apothem/support/conformity/gate.py` पर मटेरियलाइज़ की गई प्रति को
-आह्वान करता है। स्रोत चेकआउट से, मॉड्यूल रूप वही कोड चलाता है। गेट डिफ़ॉल्ट रूप से
+पहले `~/.claude/.apothem/support/conformity/gate.py` पर मौजूद मटेरियलाइज़ की गई प्रति
+को चलाता है। स्रोत चेकआउट से, मॉड्यूल रूप वही कोड चलाता है। गेट डिफ़ॉल्ट रूप से
 परामर्शी है: यह निष्कर्षों की रिपोर्ट करता है और `0` के साथ बाहर निकलता है। किसी
 अवरोधक निष्कर्ष पर `2` के साथ बाहर निकलने के लिए `--strict` जोड़ें। अज्ञात वैलिडेटर
 नाम `3` के साथ बाहर निकलता है।

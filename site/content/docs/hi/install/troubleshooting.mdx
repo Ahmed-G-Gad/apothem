@@ -2,7 +2,7 @@
 title: "समस्या निवारण"
 description: "प्लगइन, npx और इंस्टॉलर पथों में आम Apothem इंस्टॉलेशन विफलताओं और रनटाइम समस्याओं के समाधान।"
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,9 +39,7 @@ CPython 3.10 या नया इंस्टॉल करें, पुष्�
 
 ### इंस्टॉलर चलाने के बाद `apothem` नहीं मिला
 
-इंस्टॉलर स्रोत ट्री को `~/.apothem` पर रखता है और आपके `PATH` में एक
-`apothem` एक्ज़ीक्यूटेबल नहीं जोड़ता। इंजन को उस आह्वान के माध्यम से चलाएँ
-जिसे इंस्टॉलर पूरा होने पर प्रिंट करता है:
+इंस्टॉलर डिफ़ॉल्ट रूप से स्रोत ट्री को `~/.apothem` पर रखता है और एक `apothem` शिम `~/.local/bin` (POSIX) या `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) में लिखता है। यह आपका `PATH` नहीं बदलता। यदि `apothem` नहीं मिलता, तो वह डायरेक्टरी `PATH` पर नहीं है; उसे जोड़ें, या तब तक नीचे दिए `PYTHONPATH` रूप का उपयोग करें। इंजन को उस आह्वान के माध्यम से चलाएँ जिसे इंस्टॉलर पूरा होने पर प्रिंट करता है:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,8 +76,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ設定ファイルを削除し、管理対象のルールファイルをタイムスタンプ付きの
-バックアップにリネームします。共有プロファイルの YAML と Apothem エンジンには影響しません。
+`apothem-rules.md` から Apothem のブロックを削除し、そこにあるほかの文章は残します。ファイルは、ほかに何も残っていない場合にのみ削除されます。変更の前に、ファイルのタイムスタンプ付きのコピーが `~/.apothem/backups/` の下に保存されます。プロジェクトにバックアップファイルは残りません。共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート
 

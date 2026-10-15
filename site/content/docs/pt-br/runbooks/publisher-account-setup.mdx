@@ -2,14 +2,15 @@
 title: "Configuração da conta de publicador"
 description: "Configure o publicador confiável do npmjs.com para @ahmed-g-gad/apothem e os pré-requisitos de lançamento do lado do GitHub."
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Este runbook configura o lado do publicador da superfície de lançamento. A
 distribuição tem um único registro: o pacote npm com escopo
 `@ahmed-g-gad/apothem` no npmjs.com, publicado pelo fluxo de trabalho
-`publish-npm.yml`, despachado manualmente depois que os fluxos de trabalho de
+`publish-npm.yml` (ele é executado no push da tag `v*.*.*`; um despacho manual
+com uma entrada `tag` é a alternativa) depois que os fluxos de trabalho de
 GitHub Release, Pages, CI, conformidade e harness estiverem verdes. Todos os
 demais artefatos são distribuídos na própria página do GitHub Release e não
 precisam de nenhuma conta de publicador externa.
@@ -44,7 +45,7 @@ instalam o nome do pacote, não o nome da conta do mantenedor.
    Mantenha o nome com escopo: `@ahmed-g-gad/apothem`.
 5. Configure o Trusted Publishing para `@ahmed-g-gad/apothem` a partir do
    GitHub Actions:
-   - Proprietário no GitHub: `ahmed-g-gad`
+   - Proprietário do GitHub: `ahmed-g-gad`
    - Repositório: `apothem`
    - Nome do arquivo do fluxo de trabalho: `publish-npm.yml`
    - Ambiente: `release` (o `environment:` do job de publicação em
@@ -60,8 +61,10 @@ instalam o nome do pacote, não o nome da conta do mantenedor.
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. Execute `Publish — npm` (`publish-npm.yml`) na aba GitHub Actions com
-   `tag=<release-tag>` e aprove a implantação do ambiente `release`.
+9. Aprove a implantação do ambiente `release` para a execução de `Publish npm`
+   (`publish-npm.yml`) que o push da tag inicia. Se essa execução não foi
+   iniciada, despache o fluxo de trabalho na aba GitHub Actions com
+   `tag=<release-tag>`.
 10. Verifique o pacote publicado:
 
     ```bash title="npm verification"

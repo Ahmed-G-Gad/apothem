@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Trae"
 description: "Manter à mão as regras do Trae sob .trae/rules/ versus renderizá-las a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ página contrasta manter essa configuração à mão com gerenciá-la com o Apot
 
 | Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Escrever regras | Escrever à mão cada arquivo sob `.trae/rules/` | Renderizadas a partir do corpus compartilhado |
+| Escrever regras | Escrever à mão cada arquivo em `.trae/rules/` | Renderizadas a partir do corpus compartilhado |
 | Manter a superfície do Apothem separada | Lembrar de não sobrecarregar `project_rules.md` | O adaptador escreve um `apothem-rules.md` dedicado |
-| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
-| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness trae` |
+| Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness trae --project <path>` |
 
 ## O que o Apothem gerencia
 
@@ -31,11 +31,11 @@ re-renderiza o arquivo no próximo `apothem update`.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se você ainda não tiver.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
 2. Mova as regras dos seus arquivos `.trae/rules/` existentes para o corpus compartilhado.
-3. Execute `apothem install --harness trae` para renderizar o arquivo `apothem-rules.md`.
-4. Execute `apothem verify --harness trae` para confirmar que a configuração foi instalada.
-5. Use `apothem update --harness trae` para cada mudança posterior.
+3. Execute `apothem install --harness trae --project <path>` para renderizar o arquivo `apothem-rules.md`.
+4. Execute `apothem verify --harness trae --project <path>` para confirmar que a configuração foi gravada.
+5. Use `apothem update --harness trae --project <path>` para cada mudança posterior.
 
 ## Leia a seguir
 

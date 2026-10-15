@@ -2,7 +2,7 @@
 title: "合规闸门"
 description: "Apothem 合规闸门——每个发布的工件都必须通过的十五道预发布闸门关卡（M1-M15）中的机械部分。"
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "c3c719c0c1a0e92e"
 | 关卡 | ID | 强制规定 | 检查类别 | 失败 → 行动 |
 |---|---|---|---|---|
 | 1 | M1 | 宿主项目无关性 | 推理判断 | 修订以匹配宿主约定 |
-| 2 | M2 | 编辑纪律（披露账本） | 机械 | 添加披露标记 |
-| 3 | M3 | 十项质量维度 | 推理判断 | 针对未通过的维度进行修订 |
+| 2 | M2 | 编辑纪律（披露账本） | 推理判断 | 添加披露标记 |
+| 3 | M3 | 十项质量维度 | 机械 + 推理判断 | 针对未通过的维度进行修订 |
 | 4 | M4 | 自我适用（存在闸门签署记录） | 机械 | 记录签署记录块 |
 | 5 | M5 | 权威原则（不编造身份 / 端点 / 机密） | 机械 | 转交询问 |
 | 6 | M6 | 专业知识融入（揭示的缺口） | 推理判断 | 揭示缺口；引用改进之处 |
@@ -21,52 +21,28 @@ sourceHash: "c3c719c0c1a0e92e"
 | 9 | M9 | 视觉杠杆（结构性主题配有图示） | 推理判断 | 编写 / 刷新图示 |
 | 10 | M10 | 双向绑定（互逆的反向指针已闭合） | 机械 | 闭合半边 |
 | 11 | M11 | 敏捷冲刺（目标 / 待办列表 / DoR / DoD / 评审 / 回顾） | 推理判断 | 重构为冲刺 |
-| 12 | M12 | 阶段报告与规范布局 | 机械 | 编写汇总；迁移到规范布局 |
+| 12 | M12 | 阶段报告与规范布局 | 机械 + 推理判断 | 编写汇总；迁移到规范布局 |
 | 13 | M13 | 代码工艺（lint / 格式化 / 类型检查；魔法数字；裸 except） | 机械 | 应用各语言的代码工艺规则 |
 | 14 | M14 | 系统性（声明上游 / 下游 / 同级 / 执行者） | 推理判断 | 声明；在登记册中编入索引 |
-| 15 | M15 | 生产就绪（测试 + 文档 + CHANGELOG + 合规提交 + CI 绿色 + semver 稳定性） | 机械 | 补齐缺失的表面 |
+| 15 | M15 | 生产就绪（测试 + 文档 + CHANGELOG + 合规提交 + CI 绿色 + semver 稳定性） | 机械 + 推理判断 | 补齐缺失的表面 |
 
 ## 严重级别阶梯
 
-| 严重级别 | 对闸门的影响 |
-|---|---|
-| **关键** | 闸门 FAIL——无条件阻止发布 |
-| **重要** | 当 2 道及以上“重要”关卡同时失败时，闸门 FAIL |
-| **建议性** | 闸门 WARN——记录在签署记录中；不阻止发布 |
-
-大多数机械部分的匹配器默认为**重要**。M5（权威——机密、编造的端点）和 M12（孤儿输出）为**关键**。
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all-perwrite`）在阻断性匹配器失败时以 `2` 退出；建议性匹配器只报告。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
 
 ## 校验器
 
-机械部分位于 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)，由 [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) 编排。闸门以下列三种方式之一运行每个校验器：
+机械部分位于 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)，由 [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) 编排。每个校验器以下列三种方式之一运行：
 
 - **per-write**：在每次待处理的写入时运行（`--hook`），或用 `--all-perwrite` 对每个已跟踪的文件运行。
 - **standalone**：用 `--all` 在整个仓库范围内运行，或用 `--check <name>` 逐个运行。
-- **change-set**：针对已暂存的差异运行，位于闸门的扫查之外。
+- **change-set**：针对已暂存的差异，直接以 `python -m apothem.conformity.semver_stability_grep --staged` 运行，不经由闸门。
 
 下表由校验器模块生成。
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |

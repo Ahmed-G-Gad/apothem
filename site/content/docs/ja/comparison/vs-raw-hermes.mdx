@@ -2,7 +2,7 @@
 title: "Apothem と素の Hermes 設定の比較"
 description: "Hermes の設定を手作業で保守する方法と、Apothem の共有プロファイルを通じて管理する方法の比較。"
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,8 @@ Hermes 自身の `skills.config` はレジストリパッケージのリスト�
 
 ## Apothem が管理するもの
 
-Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキルとしてラップし、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、テンプレート、エージェント、フックの素材を Apothem のサポートサブツリー配下に保持します。
+Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキルとしてラップし、Apothem のスキルをサポートディレクトリへコピーし、ルール、テンプレート、エージェント、フックの素材を Apothem のサポートサブツリー配下に保持します。
+Hermes がそれらのスキルを読み込むのは、`~/.hermes/.apothem/support/skills` を `config.yaml` の `skills.external_dirs` に追加した後のみです。
 
 ## 移行パス
 

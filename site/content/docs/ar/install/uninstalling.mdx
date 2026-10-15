@@ -2,7 +2,7 @@
 title: "إلغاء التثبيت"
 description: "أزِل Apothem ونظِّف إعدادات أُطُر العمل."
 machineTranslated: true
-sourceHash: "11d7a265fc5e60b9"
+sourceHash: "39bf18da03eaad73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,23 @@ apothem uninstall --harness all --project /path/to/project --yes
   <bdi>`scripts/installer/uninstall.sh`</bdi> (<bdi>POSIX</bdi>) أو
   <bdi>`scripts/installer/uninstall.ps1`</bdi> (<bdi>PowerShell</bdi>). كلاهما يطلب
   التأكيد قبل الإزالة ويرفض الأهداف غير الآمنة.
+- **امتداد عائلة <bdi>VS Code</bdi>** — شغِّل **<bdi>Apothem: Uninstall</bdi>** من لوحة
+  الأوامر أولًا لإزالة إعدادات أُطُر العمل، ثم أزِل الامتداد من عرض الامتدادات أو
+  عبر <bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>. يشغّل الامتداد
+  المحرّكَ افتراضيًا عبر <bdi>`npx`</bdi>، لذا يغطّي بند **<bdi>npx</bdi>** أعلاه
+  الذاكرة المؤقتة.
+- **مداخل سطر الأوامر التمهيدية (القنوات 5–7)** — أزِل الامتداد أو الإضافة بأداته
+  المضيفة بعد إزالة إعدادات أُطُر العمل. لا يضيف المدخل التمهيدي سوى سياق للمساعد
+  (ملف سياق، أو أمر، أو مهارة) يستدعي المحرّك عبر <bdi>`npx`</bdi>، فلا يبقى شيء
+  آخر. يقبل مضيفا الامتدادات في القناتين 5 و6 أمرًا لإلغاء التثبيت؛ أما مضيف
+  الإضافات في القناة 7 فألغِ تثبيت <bdi>`apothem`</bdi> من متصفّح الإضافات الخاص به.
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **المحرّك المباشر** — لا شيء لإلغاء تثبيته؛ احذف النسخة المسحوبة بعد إزالة
+  إعدادات أُطُر العمل.
 - **النسخ الاحتياطية والحالة** — تقع النسخ الاحتياطية للتثبيت تحت
   <bdi>`~/.apothem/backups/`</bdi>، وسجلّ التثبيت تحت <bdi>`~/.apothem/state/`</bdi>.
   يبقى كلاهما محدود الحجم: بعد كل تثبيت وإلغاء تثبيت وتراجع، يحتفظ
@@ -55,8 +72,8 @@ apothem uninstall --harness all --project /path/to/project --yes
   بك، وخوادم <bdi>MCP</bdi>، ومعالِجات الخطّافات. لا يُزيل إلغاء التثبيت إلا المفاتيح
   ومُدخَلات القوائم التي يُسجّلها سجلّ التثبيت بوصفها تابعة لـ <bdi>Apothem</bdi>
   (راجع [الإعدادات](/docs/reference/settings#الدمج-في-ملف-إعداداتك-الخاص)).
-- لا تتأثّر حِزم الخطط تحت <bdi>`<project>/.apothem/plans/`</bdi> (ولا تحت المسار
-  القديم <bdi>`<project>/.plans/`</bdi>).
+- لا تتأثّر حِزم الخطط الواقعة تحت <bdi>`<project>/.apothem/plans/`</bdi> (ولا تلك
+  الواقعة تحت المسار القديم <bdi>`<project>/.plans/`</bdi>).
 
 ## الأدلة
 

@@ -2,7 +2,7 @@
 title: "Apothem 对比手工 Kiro 配置"
 description: "手工维护 Kiro 在 .kiro/steering/ 下的引导文件，对比通过 Apothem 的共享配置档案来渲染它们。"
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,12 +12,12 @@ kiro 适配器从共享配置档案渲染一个专用的 `apothem-rules.md` 引�
 
 ## 工作量对比
 
-| 任务 | 手工配置 | Apothem 托管 |
+| 任务 | 手工配置 | Apothem 管理 |
 | ---- | --------------- | --------------- |
 | 编写引导规则 | 在 `.kiro/steering/` 下手写每个文件 | 从共享语料库渲染 |
 | 保持基础文件不受触碰 | 记得不要覆盖 `product.md` / `tech.md` / `structure.md` | 适配器只写入 `apothem-rules.md` |
-| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
-| 验证配置是否正确 | 手工检查 | `apothem verify --harness kiro` |
+| 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness kiro --project <path>` |
 
 ## Apothem 管理什么
 
@@ -30,9 +30,9 @@ PreToolUse 钩子，因此防护意图寄居于规则散文中，而非工具调
 
 1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
 2. 把现有 `.kiro/steering/` 中的规则迁入共享语料库。
-3. 运行 `apothem install --harness kiro` 来渲染 `apothem-rules.md` 引导文件。
-4. 运行 `apothem verify --harness kiro` 来确认配置已落地。
-5. 之后的每次更改都使用 `apothem update --harness kiro`。
+3. 运行 `apothem install --harness kiro --project <path>`，以渲染 `apothem-rules.md` 引导文件。
+4. 运行 `apothem verify --harness kiro --project <path>` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness kiro --project <path>`。
 
 ## 接下来阅读
 

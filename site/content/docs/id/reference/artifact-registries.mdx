@@ -2,7 +2,7 @@
 title: "Registri Artefak"
 description: "Enumerasi lengkap artefak ekosistem Apothem: command, rule, pembantu terdelegasi, hook, skill, output style, disiplin evolusi artefak, dan deklarasi kelas-artefak-kosong."
 machineTranslated: true
-sourceHash: "497e545938ce858d"
+sourceHash: "45aeec5fdf08bdfd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,24 +90,7 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         di
 
 ## 4. Hook
 
-Setiap command hook terdaftar menggunakan bentuk command exec-form Claude Code
-(`command: "python"` ditambah array `args`) dan menginvokasi entah
-`-m apothem.hooks.dispatch` atau `-m apothem.conformity.gate`. Dispatcher
-mengimpor `src/apothem/hooks/lib/resolve_root.py` untuk resolusi root-ekosistem dan
-mendelegasikan ke dua helper yang berada di sampingnya di bawah `src/apothem/hooks/` itu sendiri:
-`src/apothem/hooks/emit_hook_context.py` memformat payload event untuk asisten, dan
-`src/apothem/hooks/session_start_bootstrap.py` membawa kerja persiapan SessionStart yang
-dilimpahkan dispatcher saat ia merutekan event itu. Pesan hook yang dimunculkan ke
-asisten saat event yang didukung terpicu hidup sebagai berkas konteks Markdown di bawah
-`src/apothem/hooks/messages/` — satu per varian event: `postcompact.md`, `precompact.md`,
-`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
-`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
-`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
-`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
-`stop.md`. Setiap berkas konteks yang dirutekan dimuat oleh dispatcher saat event-nya terpicu
-dan argumen konteksnya terdaftar di `settings.json`; tiga berkas konteks
-(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)
-dikirim sebagai varian tersedia tanpa entri perutean `settings.json` saat ini.
+Entri hook Claude Code yang terpasang menggunakan bentuk exec: `command` adalah `${PYTHON_BIN}`, dan `args` berisi jalur skrip di bawah `${HARNESS_ROOT}/.apothem/support/` (misalnya `hooks/dispatch.py` dan `conformity/gate.py`). Bentuk `-m apothem.hooks.dispatch` diperuntukkan bagi pengembangan dari checkout sumber dengan `PYTHONPATH=src`. Dispatcher mengimpor `src/apothem/hooks/lib/resolve_root.py` untuk resolusi root ekosistem dan mendelegasikan ke dua helper yang berada di sampingnya di bawah `src/apothem/hooks/` itu sendiri: `src/apothem/hooks/emit_hook_context.py` memformat payload peristiwa untuk asisten, dan `src/apothem/hooks/session_start_bootstrap.py` memuat pekerjaan persiapan SessionStart yang dilimpahkan dispatcher ketika ia merutekan peristiwa tersebut. Pesan hook yang ditampilkan kepada asisten ketika peristiwa yang didukung terpicu hidup sebagai berkas konteks Markdown di bawah `src/apothem/hooks/messages/`, satu per varian peristiwa: `postcompact.md`, `precompact.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`, `stop.md`. Setiap berkas konteks yang dirutekan dimuat oleh dispatcher ketika peristiwanya terpicu, dan argumen konteksnya terdaftar di `settings.json`. `pretooluse-conformity.md` disertakan sebagai varian yang tersedia tanpa entri perutean `settings.json` saat ini. `pretooluse-dependency-guard.md` dirutekan pada matcher Write dan Edit, dan `pretooluse-eval-guard.md` pada matcher Write, Edit, dan `Bash|PowerShell`.
 
 ```text
 Event             Mengotomatiskan          Timeout  Tujuan

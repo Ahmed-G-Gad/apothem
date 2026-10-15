@@ -1,6 +1,6 @@
 ---
 title: "Brand palette"
-description: "Apothem core brand colors and the seventeen harness brand colors. The single source of truth is the canonical design tokens at assets/design-tokens.css; the site mirrors those values."
+description: "Apothem core brand colors and the seventeen harness brand colors. The single source of truth for the core colors is the canonical design tokens at assets/design-tokens.css; the site mirrors those values."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ traces to a canonical ramp step.
 
 ## Harness palette
 
-The harness colors live at [Harness colors](/docs/brand/harness-colors). The geometric mapping onto the Apothem mark's hexagon — its center node and terminus node — is folded into the brand section. The CSS source of truth at [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) wires every token to its CSS variable.
+The harness colors live at [Harness colors](/docs/brand/harness-colors). The geometric mapping onto the Apothem mark's hexagon — its center node and terminus node — is folded into the brand section. The harness colors are defined on that page, not in the design tokens or in [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), which carry the core palette only.
 
 ## Usage in documentation
 
@@ -32,4 +32,4 @@ The palette is wired through the global stylesheet `site/app/global.css`, import
 
 ## Updates
 
-The palette updates only when a core color shifts (slate / emerald) or a harness ratifies a brand-color change upstream. Per-harness changes propagate atomically across [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), [Harness colors](/docs/brand/harness-colors), and every affected SVG master under `assets/src/`.
+The palette updates only when a core color shifts (slate / emerald) or a harness ratifies a brand-color change upstream. Per-harness changes propagate atomically across [Harness colors](/docs/brand/harness-colors) and every affected SVG master under `assets/src/`.

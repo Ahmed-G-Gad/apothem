@@ -2,13 +2,17 @@
 title: "Gerbang konformitas"
 description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Gerbang konformitas di `src/apothem/conformity/gate.py` menjalankan bagian
 mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) terhadap setiap artefak
 yang ditulis operator.
+
+Perintah pada halaman ini mengasumsikan checkout Apothem, sehingga awali setiap
+perintah dengan `PYTHONPATH=src`. Setelah pemasangan skrip, gunakan
+`PYTHONPATH="$HOME/.apothem/src"` sebagai pengganti `src`.
 
 ## Menjalankan gerbang
 
@@ -20,16 +24,16 @@ pre-commit untuk menggagalkan perubahan yang melanggar.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Kode keluar: `0` bersih (atau advisori), `2` pemblokiran temuan mode strict,
 `3` kesalahan penggunaan: flag atau nama validator yang tidak dikenal, berkas
 yang tidak ada, atau direktori root yang tidak ada. `--help` mencetak
-penggunaan lengkap dan keluar dengan `0`. Setiap validator mandiri menerima
+penggunaan lengkap dan keluar dengan `0`. Setiap validator standalone menerima
 `--help` yang sama dan keluar dengan `3` pada flag yang tidak dikenal atau root
 yang hilang.
 
@@ -51,32 +55,32 @@ commit.
 | Bar | Pemeriksaan | Jenis |
 |-----|-------|------|
 | M1 | Keagnostikan proyek-inang | Bernalar |
-| M2 | Pengungkapan editorial | Mekanis |
-| M3 | Sepuluh dimensi kualitas | Bernalar |
+| M2 | Pengungkapan editorial | Bernalar |
+| M3 | Sepuluh dimensi kualitas | Mekanis + bernalar |
 | M4 | Penerapan-diri | Mekanis |
-| M5 | Otoritas (tanpa identitas / endpoint / rahasia rekaan) | Mekanis |
+| M5 | Otoritas (tanpa identitas / endpoint / rahasia yang dikarang) | Mekanis |
 | M6 | Penggabungan keahlian | Bernalar |
 | M7 | Anotasi opsi | Mekanis |
 | M8 | Ketegasan | Mekanis |
-| M9 | Daya-ungkit visual | Bernalar |
-| M10 | Ikatan dua-arah | Mekanis |
+| M9 | Daya ungkit visual | Bernalar |
+| M10 | Pengikatan dua arah | Mekanis |
 | M11 | Sprint agile | Bernalar |
-| M12 | Pelaporan fase & tata letak kanonik | Mekanis |
+| M12 | Pelaporan fase & tata letak kanonik | Mekanis + bernalar |
 | M13 | Kriya kode | Mekanis |
-| M14 | Sifat sistemik | Bernalar |
-| M15 | Siap-produksi | Mekanis |
+| M14 | Sistemisitas | Bernalar |
+| M15 | Siap produksi | Mekanis + bernalar |
 
 ## Pemeriksaan tertarget
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 Mode `--hook` (`python -m apothem.conformity.gate --hook`) adalah entry point
@@ -104,5 +108,8 @@ cakupan di atas.
 
 ## Integrasi CI
 
-Gerbang berjalan di CI melalui `.github/workflows/conformity.yml` pada setiap
-push.
+Job quality di `.github/workflows/ci.yml` menjalankan gerbang dalam mode strict
+(`python -m apothem.conformity.gate --all . --strict`) pada push ke `main` dan
+pada pull request ke `main` yang menyentuh jalur yang dipantau job tersebut.
+Alur kerja terpisah `.github/workflows/conformity.yml` menjalankan sapuan
+fixture (`tests/conformity-scenarios/verify.py --strict`).

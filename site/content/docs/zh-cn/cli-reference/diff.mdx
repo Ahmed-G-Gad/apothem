@@ -2,7 +2,7 @@
 title: "diff"
 description: "apothem diff 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "5a48bbf5c36bbcdf"
+sourceHash: "eadb04c11c65af92"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ apothem diff --harness NAME [--profile PATH] [--project PATH]
 
 默认视图只列出待应用的更改。传入 `--verbose` 可查看完整计划，包括未更改的目标，并标注原始的内部操作类型和结果。`--json` 信封不受显示层影响：它始终为机器使用者携带原始的 `operation` 和 `outcome` 字段。
 
-`diff` 作用于单个工具。与 `status` 不同，它不接受 `all`；请传入一个工具名称。
+`diff` 作用于单个工具。与 `install` 或 `verify` 不同，它不接受 `all`；请传入一个工具名称。
 
 ## 选项
 

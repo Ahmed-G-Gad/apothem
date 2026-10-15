@@ -2,7 +2,7 @@
 title: "クイックスタート"
 description: "Apothem をインストールし、プロファイルを作成し、最初のハーネスをマテリアライズして検証する — 期待される出力付きの、コピー＆ペーストで進めるツアー。"
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Apothem は自己完結型ランタイムとして出荷されます — エン�
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -53,8 +53,8 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="`apothem` コマンド">
-  インストーラーは `apothem` の shim を `PATH` 上に配置するため、エンジンを `apothem <command>` として直接実行します。
-  shim のディレクトリがまだ `PATH` 上にない場合、バナーは shim を必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。
+  インストーラーは `apothem` シムを `PATH` 上に配置するため、エンジンを `apothem <command>` として直接実行します。
+  シムのディレクトリがまだ `PATH` 上にない場合、バナーはシムを必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。
 </Callout>
 
 [インストールガイド](/docs/install)は、環境変数のオプションとあわせて、その他のインストール経路 — Claude Code プラグイン（`/plugin marketplace add ahmed-g-gad/apothem` の後に `/plugin install apothem@apothem`）、VS Code 系およびその他のツールネイティブな拡張機能、そしてオンデマンドの npx 形式（`npx @ahmed-g-gad/apothem <command>`） — を扱います。
@@ -110,8 +110,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-`--harness all` で、レジストリに基づくセット全体を一度にインストールします。
-この選択はプロジェクトスコープとユーザースコープの両方のファイルを書き込むため、コマンドは具体的な書き込み先を場所ごとにグループ化して出力し、プロジェクトルートの外へ書き込む前に確認を求めます。
+`--harness all` を使うと、レジストリに登録されたセット全体を一度にインストールできます。この選択はプロジェクトスコープとユーザースコープの両方のファイルを書き込むため、コマンドは具体的な対象を場所ごとにまとめて表示します。対話型のターミナルでは、プロジェクトルートの外に書き込む前に確認を求めます。ターミナルがない実行、`--yes` を付けた実行、`--format json` を付けた実行は、確認なしで書き込みます。`--dry-run` は何も書き込みません。セット全体は、次のコマンドで実行します。
 
 ```bash
 apothem install --harness all --project .
@@ -121,7 +120,7 @@ apothem install --harness all --project .
 
 ## 4. 検証する
 
-マテリアライズは仕事の半分にすぎません — `verify` は、ハーネスに期待される設定ファイルが配置され、プロファイルの宣言内容と一致していることを確認します。
+マテリアライズは作業の半分にすぎません。`verify` で、ハーネスに期待される設定ファイルが配置され、有効であることを確認します。
 
 ```bash
 apothem verify --harness claude-code
@@ -131,8 +130,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` は、設定が存在しない、またはドリフトしている場合に非ゼロで終了するため、セットアップスクリプトのゲートとしても機能します。
-登録済みのすべてのアダプターを対象とする、マシン全体のヘルスチェックを行うには、次を実行します。
+管理対象のターゲットが欠けている場合、管理対象のファイルが空の場合、または JSON か YAML の設定が解析できない場合、`verify` は非ゼロで終了します。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと異なる場合にも失敗するようになり、`verify` はドリフトのチェックとして機能します。指定しない場合、古い設定でも検証に通ります。これにより、セットアップスクリプトのゲートとして使えます。登録済みのすべてのアダプターを対象とする、マシン全体のヘルスチェックを行うには、次を実行します。
 
 ```bash
 apothem doctor

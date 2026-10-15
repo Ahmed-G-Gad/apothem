@@ -24,13 +24,13 @@ Fenced code blocks declare their language (` ```python `, ` ```bash `, ` ```yaml
 
 Internal cross-references use **site-root paths** (e.g., `[Authorship header](/docs/reference/authorship-header)`). Bare repository-relative paths with a `.md`/`.mdx` extension (`/docs/foo.md`) and full URLs to the same repo (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) are avoided for in-site links because they resist page renames and section reorganizations.
 
-These `/docs/...` site-root paths — and the `/<locale>/docs/...` form for the non-default cohort locales — are resolved against the on-disk page set under `site/content/docs/` by the `link-check` validator: `/docs/a/b` maps to `site/content/docs/a/b.mdx` or the folder index `site/content/docs/a/b/index.mdx`, and the locale form maps under the `site/content/docs/<locale>/` subtree. A link to a removed or renamed route resolves to neither file and is caught as a dead route (a user-facing 404) at the conformity gate rather than only by the site build.
+These `/docs/...` site-root paths — and the `/<locale>/docs/...` form for the non-default cohort locales — are resolved against the on-disk page set under `site/content/docs/` by the `link-check` validator: `/docs/a/b` maps to `site/content/docs/a/b.mdx` or the folder index `site/content/docs/a/b/index.mdx`, and the locale form maps under the `site/content/docs/<locale>/` subtree. A link to a removed or renamed route resolves to neither file and is reported as a dead route (a user-facing 404) by `link-check`, an advisory matcher that does not fail the run (see §6).
 
 External links to mutable refs (`main`, `master`, `latest`, `HEAD`) are pinned to commit SHAs or release tags whenever the linked content's stability matters; volatile references are documented as such with a `{/* volatile */}` adjacent comment.
 
 ## 5. Authorship Banner
 
-Every Markdown artifact (with the exceptions enumerated at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) carries the canonical authorship-header banner at byte 0, in the HTML-comment variant per [Authorship header](/docs/reference/authorship-header). The banner sits above the YAML frontmatter where both are present.
+Every Markdown artifact (with the exceptions enumerated at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) carries the canonical authorship-header banner in the HTML-comment variant per [Authorship header](/docs/reference/authorship-header). Without frontmatter, the banner is line 1. With YAML frontmatter, the frontmatter stays at byte 0 and the banner follows the closing `---`.
 
 ## 6. Validators
 

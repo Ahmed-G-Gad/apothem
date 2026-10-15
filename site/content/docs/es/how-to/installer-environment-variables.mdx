@@ -2,7 +2,7 @@
 title: "Variables de entorno del instalador"
 description: "Controla el instalador por script (destino, origen, entorno, perfil, verificación) con variables de entorno."
 machineTranslated: true
-sourceHash: "4a6a53ca733a16ef"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,9 @@ estableciendo variables de entorno antes de ejecutarlo.
 
 ## Requisitos previos
 
-- Una shell POSIX (`bash`) o PowerShell 5.1+.
+- Una shell POSIX (`bash`) o PowerShell 5.1+. Los ejemplos de PowerShell de más
+  abajo ejecutan `pwsh` (PowerShell 7+). En Windows PowerShell 5.1, ejecuta en su
+  lugar `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 - Las variables se leen una sola vez al principio del instalador, así que
   establécelas en el mismo comando (o expórtalas antes) y después ejecuta el
   instalador.
@@ -22,27 +24,27 @@ estableciendo variables de entorno antes de ejecutarlo.
 | --- | --- | --- |
 | `APOTHEM_HOME` | Destino de instalación del árbol de código fuente clonado | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Remoto de git que se clona | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | Ref de git que se extrae; sin definir, resuelve la etiqueta `vMAJOR.MINOR.PATCH` firmada más reciente; un valor de etiqueta la fija; `main` selecciona la rama móvil | sin definir (etiqueta firmada más reciente) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Con el valor `1`, degrada un fallo de verificación de la firma de la etiqueta de una interrupción fatal a una advertencia | `0` (se verifica; fail-closed) |
-| `APOTHEM_VERIFY` | `signature` verifica la firma GPG de la etiqueta de lanzamiento; `checksum` instala el archivo comprimido del lanzamiento para la plataforma después de comprobar su SHA-256 contra el `SHA256SUMS` del lanzamiento (integridad, no prueba de quién lo publicó) | `signature` |
+| `APOTHEM_REF` | Ref de git de la que se hace checkout; sin definir, resuelve la etiqueta `vMAJOR.MINOR.PATCH` firmada más reciente, un valor de etiqueta la fija y `main` selecciona la rama móvil. Una ref que no es una etiqueta, como `main`, aborta a menos que se defina `APOTHEM_ALLOW_UNVERIFIED=1`. | sin definir (etiqueta firmada más reciente) |
+| `APOTHEM_ALLOW_UNVERIFIED` | Con el valor `1`, degrada un fallo de verificación de la firma de la etiqueta de aborto fatal a advertencia | `0` (verifica; fail-closed) |
+| `APOTHEM_VERIFY` | `signature` verifica la firma GPG de la etiqueta de lanzamiento; `checksum` instala el archivo comprimido de la plataforma del lanzamiento después de comprobar su SHA-256 con el `SHA256SUMS` del lanzamiento (integridad, no prueba de quién lo publicó) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de descarga para el modo de suma de comprobación | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Árbol de código fuente local explícito que se usa en lugar de clonar | sin definir (se clona) |
 | `APOTHEM_HARNESS` | Entorno que se instala | `claude-code` |
 | `APOTHEM_PROFILE` | Ruta al YAML del perfil compartido | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Con el valor `1`, omite el paso de verificación posterior a la instalación | `0` (la verificación se ejecuta) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | Con el valor `1`, instala automáticamente, sin preguntar, los requisitos previos `click` / `rich` que falten | `0` (pregunta, o rechaza en una tubería no interactiva) |
-| `APOTHEM_BIN_DIR` | Directorio para el shim del comando `apothem` que se coloca | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
-| `NO_COLOR` | Con cualquier valor, desactiva la salida en color ([no-color.org](https://no-color.org/)); el color también se desactiva siempre que la salida no es un terminal (una tubería, un archivo, un registro de CI) | sin definir (color solo en un terminal interactivo) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | Con el valor `1`, instala automáticamente y sin preguntar los requisitos previos `click` / `rich` que falten | `0` (pregunta, o rechaza en una tubería no interactiva) |
+| `APOTHEM_BIN_DIR` | Directorio del shim del comando `apothem` que se coloca | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `NO_COLOR` | Con cualquier valor, desactiva la salida en color ([no-color.org](https://no-color.org/)); el color también se desactiva siempre que la salida no sea una terminal (una tubería, un archivo, un registro de CI) | sin definir (color solo en una terminal interactiva) |
 
 `APOTHEM_SOURCE` tiene prioridad sobre un clon: cuando apunta a un checkout que
 contiene `src/apothem`, el instalador lo usa directamente, nunca toca
 `APOTHEM_REPO` / `APOTHEM_REF` y omite la resolución de la etiqueta y la
 verificación de la firma (no se descarga nada que haya que verificar).
 
-Cuando `APOTHEM_HOME` apunta a un directorio existente que no es un clon de
-git, el instalador se niega a eliminarlo: apártalo, apunta `APOTHEM_HOME` a
-otro lugar o pasa `--yes` (`-Yes` en Windows) para autorizar el reemplazo. Un
-directorio vacío obsoleto se reemplaza sin la opción.
+Cuando `APOTHEM_HOME` apunta a un directorio existente que no es un clon de git,
+el instalador se niega a eliminarlo: apártalo, apunta `APOTHEM_HOME` a otro lugar
+o pasa `--yes` (`-Yes` en Windows) para autorizar el reemplazo. Un directorio
+vacío obsoleto se reemplaza sin la opción.
 
 ## Modelo de confianza
 
@@ -81,10 +83,12 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Fija la ref del código fuente y el destino de instalación:
+2. Fija el destino de instalación y selecciona la rama móvil `main`. Una rama no
+   es una etiqueta firmada, así que el instalador también necesita
+   `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. Usa un checkout local y un perfil personalizado, omitiendo la verificación:
@@ -106,6 +110,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1
@@ -127,9 +132,9 @@ El instalador imprime `✓ Harness <name> installed` y después (a menos que
 apothem verify --harness cursor
 ```
 
-Cuando el perfil todavía no existía, el instalador crea uno a partir del
-ejemplo y continúa hasta instalar y verificar en la misma ejecución. Los campos
-de identidad del ejemplo son marcadores de posición, por lo que la instalación
+Cuando el perfil todavía no existía, el instalador crea uno a partir del ejemplo
+y continúa hasta instalar y verificar en la misma ejecución. Los campos de
+identidad del ejemplo son marcadores de posición, por lo que la instalación
 imprime un aviso; edita `$APOTHEM_PROFILE` y después ejecuta
 `apothem update --harness <name>` para aplicar tu identidad. Un `--dry-run` sin
 perfil hace la vista previa con el ejemplo en su sitio y no escribe nada.

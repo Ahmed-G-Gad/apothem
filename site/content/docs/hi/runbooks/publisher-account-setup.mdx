@@ -2,16 +2,17 @@
 title: "प्रकाशक खाता सेटअप"
 description: "@ahmed-g-gad/apothem के लिए npmjs.com विश्वसनीय प्रकाशक और GitHub-पक्ष की रिलीज़ पूर्वापेक्षाएँ कॉन्फ़िगर करें।"
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 यह रनबुक रिलीज़ सतह के प्रकाशक पक्ष को कॉन्फ़िगर करता है। वितरण व्यवस्था में एक
 ही रजिस्ट्री है: npmjs.com पर स्कोप्ड npm पैकेज `@ahmed-g-gad/apothem`, जिसे
 GitHub Release, Pages, CI, अनुरूपता और हार्नेस वर्कफ़्लो के हरे होने के बाद
-मैन्युअल रूप से डिस्पैच किया गया `publish-npm.yml` वर्कफ़्लो प्रकाशित करता है। हर
-अन्य आर्टिफ़ैक्ट स्वयं GitHub Release पृष्ठ पर शिप होता है और उसे किसी बाहरी
-प्रकाशक खाते की आवश्यकता नहीं होती।
+`publish-npm.yml` वर्कफ़्लो प्रकाशित करता है (यह `v*.*.*` टैग पुश पर चलता है;
+`tag` इनपुट के साथ मैन्युअल डिस्पैच फ़ॉलबैक है)। हर अन्य आर्टिफ़ैक्ट स्वयं GitHub
+Release पृष्ठ पर शिप होता है और उसे किसी बाहरी प्रकाशक खाते की आवश्यकता नहीं
+होती।
 
 ## पहचान मानचित्र
 
@@ -58,9 +59,9 @@ GitHub स्वामी को भविष्य में बदलने �
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. GitHub Actions टैब से `tag=<release-tag>` के साथ `Publish — npm`
-   (`publish-npm.yml`) चलाएँ और `release` एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित
-   करें।
+9. टैग पुश द्वारा शुरू किए गए `Publish npm` (`publish-npm.yml`) रन के लिए `release`
+   एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित करें। यदि वह रन शुरू नहीं हुआ, तो GitHub
+   Actions टैब से `tag=<release-tag>` के साथ वर्कफ़्लो डिस्पैच करें।
 10. लाइव पैकेज सत्यापित करें:
 
     ```bash title="npm verification"

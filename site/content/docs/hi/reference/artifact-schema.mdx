@@ -2,7 +2,7 @@
 title: "आर्टिफ़ैक्ट स्कीमा विनिर्देश"
 description: "Apothem स्रोत वृक्ष में सभी आर्टिफ़ैक्ट प्रकारों के लिए कैनोनिकल YAML frontmatter स्कीमा और आवश्यक फ़ील्ड, प्रति-वर्ग टेम्पलेट और सत्यापन नियमों के साथ।"
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -288,8 +288,8 @@ argument-hint: "[--focus area] [--fix]"
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -299,19 +299,20 @@ argument-hint: "[--focus area] [--fix]"
 }
 ```
 
+`-m apothem.hooks.dispatch` रूप उस स्रोत चेकआउट से विकास के लिए है जिसमें `PYTHONPATH=src` हो।
+
 | फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | टूल-नाम पैटर्न (या टूल-अज्ञेय इवेंटों के लिए `"*"`) | `"Write"` |
 | `hooks[].type` | शाब्दिक `"command"` | आज समर्थित एकमात्र हुक हैंडलर प्रकार | `"command"` |
-| `hooks[].command` | string | निष्पादन-योग्य कमांड; Apothem `python` का उपयोग करता है | `"python"` |
-| `hooks[].args` | string की array | `-m apothem.hooks.dispatch` या `-m apothem.conformity.gate` का आह्वान करने वाले exec-form आर्ग्युमेंट | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer सेकंड | होस्ट द्वारा हुक को समाप्त करने से पहले का अधिकतम रनटाइम | `30` |
+| `hooks[].command` | string | निष्पादन-योग्य कमांड; Apothem इंस्टॉल के समय हल होने वाला `${PYTHON_BIN}` प्लेसहोल्डर उपयोग करता है | `"${PYTHON_BIN}"` |
+| `hooks[].args` | स्ट्रिंग्स की ऐरे | exec-रूप आर्ग्युमेंट: `${HARNESS_ROOT}/.apothem/support/` के अंतर्गत एक स्क्रिप्ट पथ, फिर उसके आर्ग्युमेंट | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | पूर्णांक सेकंड | होस्ट द्वारा हुक को समाप्त करने से पहले अधिकतम रनटाइम | `30` |
 | `hooks[].statusMessage` | string | होस्ट UI में दिखाया जाने वाला संक्षिप्त लेबल | `"Session start"` |
 
 ### आवश्यक इवेंट
 
-शिप किए गए टेम्पलेट निम्नलिखित इवेंट पंजीकृत करते हैं। वैलिडेटरों के PASS रिपोर्ट
-करने के लिए पाँचों आवश्यक हैं:
+Claude Code टेम्पलेट SessionStart, PreToolUse, PostToolUse और Stop पंजीकृत करता है। PreCompact और PostCompact Claude Code पर पंजीकृत नहीं हैं ([हुक संदर्भ](/docs/reference/hooks)), और `scripts/dev/validate_hooks.py` इनमें से प्रत्येक के गायब होने को चेतावनी के रूप में रिपोर्ट करता है। नीचे की तालिका उन पाँच इवेंटों की सूची देती है जिनकी `validate_hooks.py` जाँच करता है:
 
 > **टाइमआउट मान कैनोनिकल हुक-इवेंट बजट को प्रतिबिंबित करते हैं** — नीचे दी गई
 > तालिका उन्हें पाठक की सुविधा के लिए दोहराती है; कैनोनिकल स्रोत ही निर्णायक है।
@@ -355,7 +356,7 @@ argument-hint: "[--focus area] [--fix]"
 
 **पथ:** `CLAUDE.md` (रूट)
 
-**उद्देश्य:** वैश्विक ईकोसिस्टम कॉन्फ़िगरेशन अनुक्रमणिका।
+**उद्देश्य:** परियोजना-दायरे वाले Claude Code निर्देश।
 
 ### अनिवार्य YAML frontmatter
 
@@ -364,27 +365,15 @@ argument-hint: "[--focus area] [--fix]"
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### आवश्यक अनुभाग (क्रम में)
+### अनुभाग
 
-1. **§1 Plan Suite** — टेम्पलेट स्थान का संदर्भ
-2. **§2 Cognitive Identity** — रचनात्मक आर्किटेक्चर अधिदेश
-3. **§3 Artifact Directories** — पथों और उद्देश्यों की तालिका
-4. **§4 Seriousness-Scaled Governance** — चार स्तरों की परिभाषा
-5. **§5 Operational Directives** — समस्या-समाधान, संचार सिद्धांत
-6. **§6 Cross-Cutting Mandates** — CM-1–28 का अवलोकन
-7. **§7 Registries** — आर्टिफ़ैक्ट की तालिकाएँ:
-   - 7.1 Commands
-   - 7.2 Rules
-   - 7.3 Helpers
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Artifact Evolution
+`CLAUDE.md` गद्य अनुभागों में लिखा जाता है, जिनका वर्णन [`CLAUDE.md`](/docs/reference/claude-md) पर है। कोई भी वैलिडेटर निश्चित अनुभाग-सूची की माँग नहीं करता: `scripts/dev/validate_ecosystem.py` ऊपर की frontmatter कुंजियों की जाँच करता है।
 
 ---
 
@@ -406,7 +395,7 @@ portability: "universal"
 
 ### सामग्री सत्यापन
 
-- [ ] सामग्री समापन `---` के ठीक बाद नई पंक्ति पर शुरू होती है
+- [ ] सामग्री समापन `---` के बाद नई पंक्ति पर शुरू होती है; Markdown-परिवार की फ़ाइलों में उसके बाद की पहली सामग्री authorship-header बैनर होती है
 - [ ] कोई प्लान-आंतरिक संदर्भ नहीं (CM-7 अनुपालन)
 - [ ] क्रॉस-संदर्भ हल होते हैं (यदि अन्य आर्टिफ़ैक्ट सूचीबद्ध हों)
 - [ ] लिंक फ़ॉरवर्ड स्लैश वाले सापेक्ष पथों का उपयोग करते हैं

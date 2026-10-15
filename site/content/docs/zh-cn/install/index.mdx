@@ -2,13 +2,13 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "58c69738b25d5cf1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem 的安装用时不到两分钟，并可与你现有的工具配置并存。每条路径运行的都是同一个自包含引擎——源代码树携带其 vendored 依赖，可在系统 Python 3.10 或更新版本上从检出目录运行（参见[自包含运行时](/docs/architecture/self-contained-runtime)）。
 
-**每条路径共有两个前置条件：** `PATH` 上的系统 **Python 3.10 或更新版本**，且 `click` 和 `rich` 包可在该解释器下导入。npm 垫片路径和工具插件路径还需要 **Node.js 18 或更新版本** 来运行 `npx`。Python 3.10 以及 Node.js 18 和 20 已过上游生命周期终止日期；它们仍受支持并经过测试，但更推荐使用更新的版本（参见[前置条件一览](#前置条件一览)）。下面每条渠道各自的小节会重复列出其确切的前置条件、一条可直接复制的命令和一个验证步骤。
+**每条路径共有两个前置条件：** `PATH` 上的系统 **Python 3.10 或更新版本**，且 `click` 和 `rich` 包可在该解释器下导入。npm 垫片路径和工具插件路径还需要 **Node.js 18 或更新版本** 来运行 `npx`。Python 3.10 以及 Node.js 18 和 20 已过上游生命周期终止时间；它们仍受支持并经过测试，但更推荐使用更新的版本（参见[前置条件一览](#前置条件一览)）。下面每条渠道各自的小节会重复列出其确切的前置条件、一条可直接复制的命令和一个验证步骤。
 
 ## 选择一条渠道
 
@@ -26,7 +26,7 @@ Apothem 的安装用时不到两分钟，并可与你现有的工具配置并存
 | 8 | [直接引擎（`python -m apothem`）](#8-直接引擎python--m-apothem) | 从检出目录获得完整工具配置 | Python 3.10+（`click`、`rich`） |
 
 <Callout title="哪些渠道交付完整工具配置">
-  npm 垫片（2）、一键安装器（3）和直接引擎（8）可自行为任何工具物化整个同步单元。三个命令行扩展（5–7）安装一个小型**引导入口**，它通过 shell 调用引擎（`npx @ahmed-g-gad/apothem install`）来物化完整工具配置——它们是入口，本身并不构成完整交付。Claude Code 插件（1）和 VS Code 系扩展（4）携带引擎并直接运行它。
+  npm 垫片（2）、一键安装器（3）和直接引擎（8）可自行为任何工具物化整个同步单元。三个命令行扩展（5–7）安装一个小型**引导入口**，它通过 shell 调用引擎（`npx @ahmed-g-gad/apothem install`）来物化完整工具配置——它们是入口，本身并不构成完整交付。Claude Code 插件（1）携带引擎并直接运行它。VS Code 系扩展（4）自身不携带引擎：其命令默认通过 npm 垫片运行引擎。
 </Callout>
 
 每条路径都是幂等的：重新运行是安全的，并会收敛到同一状态。
@@ -52,7 +52,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 2. npm 垫片（`npx`）
 
-**前置条件：** Node.js 18+（用于 `npx`）以及 `PATH` 上的系统 Python 3.10+。垫片会定位解释器，并将每条 CLI 命令转发给随附的引擎——不会在你的系统上永久放置任何内容。它依次尝试 `python3`、`python`，然后是 `py -3`；将 **`APOTHEM_PYTHON`** 设置为某个解释器路径即可跳过探测——当 Python 已安装但不在 `PATH` 上，或者装有多个版本而你想使用特定的一个时，就需要这样做。
+**前置条件：** Node.js 18+（用于 `npx`）以及 `PATH` 上的系统 Python 3.10+。垫片会定位解释器，并将每条 CLI 命令转发给随附的引擎——不会在你的系统上永久放置任何内容。它依次尝试 `python3`、`python`，然后是 `py -3`；将 **`APOTHEM_PYTHON`** 设置为某个解释器路径，即可让垫片优先尝试该解释器——当 Python 已安装但不在 `PATH` 上，或者装有多个版本而你想使用特定的一个时，就需要这样做。你所指定的解释器仍须通过 Python 3.10+ 检查；未通过时，垫片会回退到依次尝试 `python3`、`python`，然后是 `py -3`。
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
@@ -106,7 +106,7 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 
 将 `vMAJOR.MINOR.PATCH` 替换为[发布页面](https://github.com/ahmed-g-gad/apothem/releases)上的某个标签。最早的发布标签是一个轻量标签，本身没有签名，因此即使其提交已签名，标签检查也会在它上面中止；此后的每个发布标签都是经过签名的附注标签。[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 的发布签名部分列出了每个标签及其验证方法。
 
-有两个显式覆盖项会放宽默认行为：`APOTHEM_REF=main` 会检出移动中的分支（不验证），`APOTHEM_ALLOW_UNVERIFIED=1` 会将验证失败降级为警告并继续——适用于隔离网络、本地或早于签名发布的版本等场景。通过 `APOTHEM_SOURCE` 使用的本地检出不获取任何内容，并跳过验证。
+显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续，适用于物理隔离网络、本地环境，或早于签名发布的版本。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出移动中的分支。仅设置 `APOTHEM_REF=main` 时，安装器会把 `main` 拉取到 `APOTHEM_HOME`，然后在物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
 
 `APOTHEM_VERIFY=checksum` 是为尚未持有维护者公钥的主机提供的折中路径：安装器不进行克隆，而是下载该发布的平台归档及其 `SHA256SUMS`，在解压任何内容之前若摘要不匹配即中止，并发出警告：摘要匹配只能证明该归档是发布所列出的那一个，而不能证明是谁发布了它。
 

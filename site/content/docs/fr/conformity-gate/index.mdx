@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Portail de conformité d'Apothem — la fraction mécanique du portail de pré-émission à quinze barres (M1-M15) que chaque artefact émis doit franchir."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "c3c719c0c1a0e92e"
 | Barre | ID | Mandat | Classe de vérification | Échec → action |
 |---|---|---|---|---|
 | 1 | M1 | Agnosticisme vis-à-vis du projet hôte | Raisonnée | Réviser pour correspondre aux conventions de l'hôte |
-| 2 | M2 | Discipline éditoriale (registre de divulgation) | Mécanique | Ajouter les marqueurs de divulgation |
-| 3 | M3 | Dix dimensions de qualité | Raisonnée | Réviser sur les dimensions en échec |
+| 2 | M2 | Discipline éditoriale (registre de divulgation) | Raisonnée | Ajouter les marqueurs de divulgation |
+| 3 | M3 | Dix dimensions de qualité | Mécanique + raisonnée | Réviser sur les dimensions en échec |
 | 4 | M4 | Auto-application (enregistrement signé du portail présent) | Mécanique | Consigner le bloc d'enregistrement signé |
 | 5 | M5 | Principe d'autorité (aucune identité / aucun endpoint / aucun secret fabriqué) | Mécanique | Acheminer vers une demande de précision |
 | 6 | M6 | Incorporation de l'expertise (lacunes mises au jour) | Raisonnée | Mettre les lacunes au jour ; citer les affinements |
@@ -21,53 +21,29 @@ sourceHash: "c3c719c0c1a0e92e"
 | 9 | M9 | Levier visuel (les sujets structurels portent des diagrammes) | Raisonnée | Créer / actualiser le diagramme |
 | 10 | M10 | Liaison bidirectionnelle (pointeurs de retour réciproques fermés) | Mécanique | Fermer les demi-arêtes |
 | 11 | M11 | Sprints agiles (Objectif / Backlog / DoR / DoD / Revue / Rétrospective) | Raisonnée | Restructurer en sprints |
-| 12 | M12 | Rapports de phase et disposition canonique | Mécanique | Rédiger la synthèse ; déplacer vers la disposition canonique |
+| 12 | M12 | Rapports de phase et disposition canonique | Mécanique + raisonnée | Rédiger la synthèse ; déplacer vers la disposition canonique |
 | 13 | M13 | Artisanat du code (lint / formatage / vérification de types ; nombre magique ; bare-except) | Mécanique | Appliquer les règles d'artisanat du code propres à chaque langage |
 | 14 | M14 | Systémicité (déclare amont / aval / pairs / garants d'application) | Raisonnée | Déclarer ; indexer dans les registres |
-| 15 | M15 | Prêt pour la production (tests + documentation + CHANGELOG + commit conforme + CI au vert + stabilité semver) | Mécanique | Ajouter les surfaces manquantes |
+| 15 | M15 | Prêt pour la production (tests + documentation + CHANGELOG + commit conforme + CI au vert + stabilité semver) | Mécanique + raisonnée | Ajouter les surfaces manquantes |
 
 ## Échelle de sévérité
 
-| Sévérité | Effet sur le portail |
-|---|---|
-| **Critique** | Portail FAIL — émission bloquée inconditionnellement |
-| **Importante** | Portail FAIL lorsque 2 barres Importantes ou plus échouent simultanément |
-| **Consultative** | Portail WARN — consigné dans l'enregistrement signé ; ne bloque pas l'émission |
-
-La plupart des détecteurs de la fraction mécanique ont par défaut la sévérité **Importante**. M5 (autorité — secrets, endpoints fabriqués) et M12 (sorties orphelines) sont de sévérité **Critique**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+Le portail ne comporte ni échelle de sévérité Critique, Importante ou Consultative, ni seuil de deux constats. Sans `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), le portail signale les constats et se termine avec le code `0`. Avec `--strict`, un contrôle sur un seul fichier ou un hook se termine avec le code `2` dès qu'un matcher échoue, et une exécution sur le corpus (`--all-perwrite`) se termine avec le code `2` lorsqu'un matcher bloquant échoue ; les matchers consultatifs ne sont que signalés. Le hook Write/Edit installé ne passe pas `--strict` : il signale les constats et l'écriture se poursuit, sauf si `APOTHEM_CONFORMITY_STRICT=1` est défini dans son environnement.
 
 ## Validateurs
 
 La fraction mécanique vit dans [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orchestrée par [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-Le portail exécute chaque validateur de l'une des trois façons suivantes :
+Chaque validateur s'exécute de l'une des trois façons suivantes :
 
 - **par écriture** : sur chaque écriture en attente (`--hook`), ou sur chaque fichier suivi avec `--all-perwrite`.
 - **autonome** : sur l'ensemble du dépôt avec `--all`, ou un par un avec `--check <name>`.
-- **par ensemble de modifications** : sur un diff indexé, en dehors des balayages du portail.
+- **par ensemble de modifications** : sur un diff indexé, exécuté directement avec `python -m apothem.conformity.semver_stability_grep --staged`, et non via le portail.
 
 Le tableau ci-dessous est généré à partir des modules de validateurs.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |

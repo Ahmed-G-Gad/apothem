@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptateur d'environnement Apothem pour Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "84593cdc3207e035"
+sourceHash: "05c030cc3a187fcb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,7 +77,7 @@ apothem verify --harness gemini-cli --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour

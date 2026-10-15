@@ -2,7 +2,7 @@
 title: "Convenções de harness multissuperfície"
 description: "Referência normativa canônica para a configuração e a coerência de harnesses multissuperfície entre os runtimes de chat, de autocompletar no IDE e de revisão de PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "d17a5f2f79af7cc9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,7 @@ As duas (ou mais) superfícies são *canais* diferentes que expressam uma única
 | `AGENTS.md` | raiz do repositório (e/ou `.codex/AGENTS.md`) | **DEVE** | harnesses compatíveis com AGENTS |
 | `CLAUDE.md` | raiz do repositório (e/ou `.claude/CLAUDE.md`) | **DEVE** | Claude Code |
 | arquivo de instruções com raiz em `.github/` | arquivo de instruções com raiz em `.github/` | **DEVE** | runtime de autocompletar dentro do IDE |
-| manifesto de auxiliares com raiz em `site/content/docs/architecture/` | raiz do repositório | **PODE** (adesão opcional pelo canal de indagação estruturada) | plataformas de orquestração de múltiplos auxiliares |
+| manifesto de auxiliares com raiz em `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PODE** (adesão opcional pelo canal de indagação estruturada) | plataformas de orquestração de múltiplos auxiliares |
 | `.cursorrules` | raiz do repositório | **PODE** (adesão opcional) | runtime de editor dentro do IDE |
 | `.windsurfrules` | raiz do repositório | **PODE** (adesão opcional) | runtime companheiro dentro do IDE |
 
@@ -80,7 +80,7 @@ A fixture em [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahm
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -114,16 +114,16 @@ Três validadores implementam em conjunto o contrato de coerência:
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- O primeiro verifica se o arquivo de instruções dentro do IDE existe, é analisado sem erros, contém todas as seções canônicas enumeradas na §4 e começa com o banner de autoria canônico.
+- O primeiro verifica se o arquivo de instruções dentro do IDE existe, é analisado sem erros, contém todas as seções canônicas enumeradas na §4 e começa com a linha canônica `SPDX-License-Identifier: MIT` (variante Markdown).
 - O segundo analisa as seções canônicas de cada superfície; verifica se as seções compartilhadas são mutuamente consistentes sob um comparador normalizado (sem distinção entre maiúsculas e minúsculas, tolerante a espaços em branco, que permite paráfrase lexical mas exige equivalência semântica na lista de afirmações definida pela fixture).
-- O terceiro verifica se a linha de copyright do LICENSE e a linha "Copyright (c)" do banner canônico nomeiam o mesmo autor.
+- O terceiro verifica se o LICENSE da raiz traz uma linha `Copyright (c) <name>` analisável; os cabeçalhos por arquivo não carregam nome de autor.
 
 ---
 
 ## 8. Ciclo de vida das superfícies
 
-- **Adicionar uma superfície.** O operador adere pelo canal de indagação estruturada ou por um `make surfaces-add <name>` posterior. O gerador redige a superfície com base na lista de afirmações, executa o validador e registra um ADR se for necessária uma substituição específica da superfície.
-- **Remover uma superfície.** A indagação estruturada confirma a remoção, um ADR registra a justificativa e a lista required-in do validador é alterada.
+- **Adicionar uma superfície.** O operador adere pelo canal de indagação estruturada. O gerador redige a superfície com base na lista de afirmações, executa o validador e registra um ADR se for necessária uma substituição específica da superfície.
+- **Remover uma superfície.** A indagação estruturada confirma a remoção, um ADR registra a justificativa, e a lista required-in do validador é alterada.
 - **Detecção de desvio.** Qualquer commit que divirja da lista de afirmações é rejeitado pelo pre-commit / CI; o autor do commit reescreve a superfície para restaurar a coerência.
 
 ---

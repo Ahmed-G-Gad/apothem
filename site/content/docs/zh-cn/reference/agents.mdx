@@ -2,7 +2,7 @@
 title: "辅助器"
 description: "用于研究、审计、质量与编排的持久化辅助智能体，附带 frontmatter 契约和部署隔离协议。"
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,7 +12,7 @@ sourceHash: "9aeb014bc69c5163"
 src/apothem/agents/
 ```
 
-每个辅助器都是一个研究、审计、质量或编排角色，拥有各自的工具限制和系统提示词。
+每个辅助器都是一个研究、审计、质量或编排角色，各有自己的工具限制和系统提示词。
 
 | 辅助器 | 文件 | 模式 | 模型策略 |
 |-------|------|---------|--------------|
@@ -46,16 +46,16 @@ maxTurns: <integer>
 
 ## 按工具转换
 
-如果某个辅助器的 `tools` 授权在减去 `disallowedTools` 之后不包含 `Write` 或 `Edit`，它就是只读的。每个转换辅助器的工具要么原生地强制执行该限制，要么去掉只读标签：
+如果某个辅助器的 `tools` 授权在减去 `disallowedTools` 之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它就是只读的。每个转换辅助器的工具要么原生地强制执行该限制，要么去掉只读标签：
 
 | 工具 | 工具限制 | 轮次限制 | 模型与推理强度 |
 | --- | --- | --- | --- |
-| Claude Code | 按原样使用 `tools` / `disallowedTools` | `maxTurns` | 继承（不设置） |
-| Codex | 对只读辅助器设置 `sandbox_mode = "read-only"` | 不可用 | 继承（不设置） |
-| Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表 | `max_turns` | 继承（不设置） |
+| Claude Code | 按原样使用 `tools` / `disallowedTools` | `maxTurns` | 继承（未设置） |
+| Codex | 对只读辅助器使用 `sandbox_mode = "read-only"` | 不可用 | 继承（未设置） |
+| Gemini CLI | 由 Gemini 工具名称组成的 `tools` 允许列表 | `max_turns` | 继承（未设置） |
 | Qwen Code | 使用 Qwen 工具名称的 `tools` / `disallowedTools` | 未映射 | `model: inherit` |
-| OpenCode | `permission`（按工具设置 `allow` / `deny`） | 未映射 | 继承（不设置） |
-| Antigravity | 不生成任何限制；描述会去掉“只读” | 不可用 | 继承（不设置） |
+| OpenCode | `permission`（每个工具的 `allow` / `deny`） | 未映射 | 继承（未设置） |
+| Antigravity | 不输出任何限制；描述中去掉“只读” | 不可用 | 继承（未设置） |
 
 Hermes、Open-Claw 和 Kimi Code 以支持材料的形式接收辅助器文件，而不是将其作为原生辅助器。
 

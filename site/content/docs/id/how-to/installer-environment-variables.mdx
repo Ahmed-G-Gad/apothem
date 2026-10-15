@@ -2,7 +2,7 @@
 title: "Variabel lingkungan pemasang"
 description: "Kendalikan pemasang skrip (tujuan, sumber, harness, profil, verifikasi) dengan variabel lingkungan."
 machineTranslated: true
-sourceHash: "4a6a53ca733a16ef"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,10 @@ menyetel variabel lingkungan sebelum Anda menjalankannya.
 
 ## Prasyarat
 
-- Shell POSIX (`bash`) atau PowerShell 5.1+.
+- Shell POSIX (`bash`) atau PowerShell 5.1+. Contoh PowerShell di bawah ini
+  menjalankan `pwsh` (PowerShell 7+). Di Windows PowerShell 5.1, jalankan
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` sebagai
+  gantinya.
 - Variabel dibaca satu kali di bagian atas pemasang, jadi setel variabel tersebut
   dalam perintah yang sama (atau ekspor terlebih dahulu), lalu jalankan pemasang.
 
@@ -21,11 +24,11 @@ menyetel variabel lingkungan sebelum Anda menjalankannya.
 | --- | --- | --- |
 | `APOTHEM_HOME` | Tujuan instalasi untuk pohon sumber yang dikloning | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Remote Git yang dikloning | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | Ref Git yang di-checkout; jika tidak disetel, me-resolve tag `vMAJOR.MINOR.PATCH` bertanda tangan terbaru, nilai berupa tag mematoknya, `main` memilih branch yang bergerak | tidak disetel (tag bertanda tangan terbaru) |
+| `APOTHEM_REF` | Ref Git yang di-checkout; jika tidak disetel, me-resolve tag `vMAJOR.MINOR.PATCH` bertanda tangan terbaru, sebuah nilai tag mematoknya, dan `main` memilih branch yang bergerak. Ref non-tag seperti `main` membatalkan proses kecuali `APOTHEM_ALLOW_UNVERIFIED=1`. | tidak disetel (tag bertanda tangan terbaru) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Menurunkan kegagalan verifikasi tanda tangan tag dari pembatalan fatal menjadi peringatan ketika disetel ke `1` | `0` (verifikasi, gagal-tertutup) |
 | `APOTHEM_VERIFY` | `signature` memverifikasi tanda tangan GPG tag rilis; `checksum` memasang arsip platform rilis setelah memeriksa SHA-256-nya terhadap `SHA256SUMS` rilis (integritas, bukan bukti siapa yang memublikasikannya) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Basis unduhan untuk mode checksum | `<APOTHEM_REPO>/releases/download` |
-| `APOTHEM_SOURCE` | Pohon sumber lokal eksplisit yang digunakan alih-alih mengkloning | tidak disetel (klon) |
+| `APOTHEM_SOURCE` | Pohon sumber lokal eksplisit yang digunakan alih-alih mengkloning | tidak disetel (kloning) |
 | `APOTHEM_HARNESS` | Harness yang dipasang | `claude-code` |
 | `APOTHEM_PROFILE` | Jalur ke YAML profil bersama | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Melewati langkah verifikasi pasca-instalasi ketika disetel ke `1` | `0` (verifikasi berjalan) |
@@ -54,10 +57,9 @@ tidak ada di keyring lokal justru membatalkan instalasi dengan panduan impor
 kunci — impor kunci tersebut dan periksa sidik jarinya terhadap nilai yang
 dipublikasikan di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Patok rilis yang
-diketahui dengan `APOTHEM_REF=<tag>` (juga diverifikasi; sebuah tag dari
-[halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih branch
-yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
+Patok rilis yang diketahui dengan `APOTHEM_REF=<tag>` (juga diverifikasi; sebuah
+tag dari [halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih
+branch yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
 `APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan melewati kegagalan verifikasi
 dengan peringatan (penggunaan air-gapped, lokal, atau rilis
 pra-penandatanganan).
@@ -82,10 +84,12 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Patok ref sumber dan tujuan instalasi:
+2. Patok tujuan instalasi dan pilih branch `main` yang bergerak. Branch bukan tag
+   bertanda tangan, sehingga pemasang juga memerlukan
+   `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. Gunakan checkout lokal dan profil khusus, dengan melewati verifikasi:
@@ -107,6 +111,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1

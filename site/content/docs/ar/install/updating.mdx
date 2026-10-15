@@ -2,7 +2,7 @@
 title: "التحديث"
 description: "تحديث Apothem ومحوّلات أُطُر العمل."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,17 +41,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-يعيد نص التحديث سحب شجرة المصدر في `APOTHEM_HOME` (الافتراضي
-`~/.apothem`) إلى `APOTHEM_REF` — وإن لم يُضبَط يحلّ إلى أحدث وسم إصدار
-موقّع بصيغة `vMAJOR.MINOR.PATCH`، وقيمة الوسم تثبّته، ويختار `main`
-الفرع المتحرّك. يتحقّق من توقيع الوسم بـ `git verify-tag` قبل
-إعادة التجسيد؛ ويُجهَض عند وسم غير موقّع أو مُتلاعَب به ما لم
-يخفّض `APOTHEM_ALLOW_UNVERIFIED=1` الإجهاض إلى تحذير. ثم
-يعيد تجسيد إطار العمل المُسمّى بـ `APOTHEM_HARNESS` عبر تشغيل
-`apothem update` من الشجرة المُحدَّثة (ويأخذ إطار العمل قيمته الافتراضية وفق جدول
-[متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables)). ويتطلّب تثبيتًا سابقًا: فعندما
-لا توجد شجرة في `APOTHEM_HOME` ولم يُضبَط `APOTHEM_SOURCE`، يخرج برسالة
-توجّهك إلى المُثبِّت أولًا.
+يعيد نص التحديث سحب شجرة المصدر في <bdi>`APOTHEM_HOME`</bdi> (الافتراضي <bdi>`~/.apothem`</bdi>) إلى <bdi>`APOTHEM_REF`</bdi>؛ فإن لم يُضبَط يحلّ إلى أحدث وسم إصدار موقَّع بصيغة <bdi>`vMAJOR.MINOR.PATCH`</bdi>، وقيمة الوسم تثبّته، ويختار <bdi>`main`</bdi> الفرع المتحرّك فقط عندما يُضبط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> أيضًا. ومن دون هذا التجاوز، يسحب التحديث المرجع ثم يُجهِض قبل إعادة التجسيد، لأن الفرع ليس وسم إصدار موقَّعًا. ويتحقّق من توقيع الوسم بـ <bdi>`git verify-tag`</bdi> قبل إعادة التجسيد؛ فيُجهَض عند وسم غير موقَّع أو مُتلاعَب به، ما لم يُخفِّض <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> الإجهاض إلى تحذير. والوسم الموقَّع الذي لا يوجد مفتاح ناشره العام في حلقة المفاتيح المحلية يُجهَض مع إرشادات لاستيراد المفتاح، تشير إلى البصمة المنشورة في [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). ثم يُعيد تجسيد إطار العمل المُسمّى بـ <bdi>`APOTHEM_HARNESS`</bdi> بتشغيل <bdi>`apothem update`</bdi> من الشجرة المُحدَّثة (ويأخذ إطار العمل قيمته الافتراضية وفق جدول [متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables)). ويتطلّب تثبيتًا سابقًا: فعندما لا توجد شجرة في <bdi>`APOTHEM_HOME`</bdi> ولم يُضبَط <bdi>`APOTHEM_SOURCE`</bdi>، يخرج برسالة توجّهك إلى المُثبِّت أولًا.
 
 ## إعادة تجسيد مُخرَج إطار العمل
 

@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Claude Code"
 description: "Manter à mão toda a árvore de configuração nativa do Claude Code versus gerenciá-la através do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,20 +28,15 @@ statuslines e `settings.json` para `~/.claude/`. Os hooks nativos PreToolUse,
 PostToolUse, Stop e SessionStart são configurados a partir do corpus
 compartilhado.
 
-O Apothem **não** gerencia o `CLAUDE.md` — esse arquivo é território do
-operador. Suas instruções de projeto e pessoais no `CLAUDE.md` continuam suas; o
-Apothem governa as superfícies propagadas ao redor dele.
+O Apothem grava um único bloco gerenciado, delimitado por sentinelas, no seu `~/.claude/CLAUDE.md`, no escopo de usuário. O `apothem update` reescreve apenas esse bloco e mantém o seu texto fora dele. Os arquivos `CLAUDE.md` de projeto não são tocados. O Apothem governa as superfícies propagadas ao redor dele.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se você
-   ainda não tiver.
-2. Mova suas regras, agentes, comandos e skills existentes de `~/.claude/` para
-   o corpus compartilhado.
-3. Deixe o `CLAUDE.md` no lugar — o Apothem não vai tocá-lo.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
+2. Mova suas regras, agentes, comandos e skills existentes de `~/.claude/` para o corpus compartilhado.
+3. Deixe o `CLAUDE.md` onde está. O Apothem mantém o seu texto fora do bloco gerenciado dele e reescreve apenas esse bloco.
 4. Execute `apothem install --harness claude-code` para propagar o corpus.
-5. Execute `apothem verify --harness claude-code` para confirmar que a
-   configuração foi instalada.
+5. Execute `apothem verify --harness claude-code` para confirmar que a configuração foi gravada.
 6. Use `apothem update --harness claude-code` para cada mudança posterior.
 
 ## Leia a seguir

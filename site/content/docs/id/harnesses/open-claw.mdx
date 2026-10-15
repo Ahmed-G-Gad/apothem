@@ -1,8 +1,8 @@
 ---
 title: "Open-Claw"
-description: "Adaptor harness Apothem untuk Open-Claw (Pratinjau)."
+description: "Adapter harness Apothem untuk Open-Claw (Pratinjau)."
 machineTranslated: true
-sourceHash: "435a8075d4d83b4f"
+sourceHash: "3325613cf689ffc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,43 +17,46 @@ sourceHash: "435a8075d4d83b4f"
 apothem install --harness open-claw
 ```
 
-Adaptor menerjemahkan profil bersama ke berkas konfigurasi global-pengguna
-OpenClaw dan memasang kohor dukungan Apothem di bawah akar harness. Konfigurasi
-native OpenClaw adalah JSON; materializer merender JSON agar sesuai.
+Adapter menulis berkas konfigurasi global-pengguna OpenClaw, memproyeksikan
+profil bersama ke dalam dokumen profil, dan memasang kohor pendukung Apothem di
+bawah akar harness. Konfigurasi native OpenClaw adalah JSON; materializer
+merender objek JSON kosong, dan berkas yang sudah ada tetap mempertahankan
+kunci-kuncinya.
 
 **Berkas yang ditulis:** `~/.openclaw/openclaw.json`, dokumen profil
-`~/.openclaw/apothem/rules/00-apothem-profile.md`, dan berkas dukungan di bawah
+`~/.openclaw/apothem/rules/00-apothem-profile.md`, dan berkas pendukung di bawah
 `~/.openclaw/.apothem/support/`
 
-Dokumen profil diakhiri dengan bagian berkas dukungan Apothem yang menyebutkan
-direktori absolut di bawah `~/.openclaw/.apothem/support/` yang menjadi acuan
-resolusi setiap sitasi bergaya repositori (`rules/<name>.md`, `templates/...`,
-`hooks/...`).
+Dokumen profil diakhiri dengan bagian berkas pendukung Apothem yang menyebutkan
+direktori absolut di bawah `~/.openclaw/.apothem/support/` tempat setiap kutipan
+bergaya repositori (`rules/<name>.md`, `templates/...`, `hooks/...`)
+di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem tetapi tidak menulis kunci konfigurasi
-apa pun: `openclaw.json` ditulis sebagai objek kosong. Identitas, preferensi,
-dan aturan profil masuk ke dokumen profil. Command, skill, aturan, templat, dan
-prompt hook bersama dipasang sebagai materi dukungan di bawah
+Adapter membaca profil bersama Apothem tetapi tidak menulis kunci konfigurasi
+apa pun: `openclaw.json` yang baru atau kosong ditulis sebagai objek kosong, dan
+berkas yang sudah ada tetap mempertahankan kunci-kuncinya. Identitas,
+preferensi, dan aturan profil masuk ke dokumen profil. Command, skill, aturan,
+templat, dan prompt hook bersama dipasang sebagai materi pendukung di bawah
 `~/.openclaw/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
-Adaptor pratinjau. OpenClaw tidak memuat pohon dukungan maupun dokumen profil
+Adapter pratinjau. OpenClaw tidak memuat pohon pendukung maupun dokumen profil
 dengan sendirinya: tidak satu pun lokasi skill-nya, berkas instruksi
 workspace-nya, atau konfigurasinya menunjuk ke sana, sehingga setelah instalasi
 OpenClaw berjalan tanpa aturan, skill, atau server MCP Apothem. OpenClaw membaca
 skill dari folder `skills/` dan `.agents/skills/` di workspace-nya,
 `~/.agents/skills`, direktori state-nya, dan folder apa pun yang tercantum di
-`skills.load.extraDirs`; untuk menggunakan skill Apothem, tambahkan
-`~/.openclaw/.apothem/support/skills` ke daftar tersebut sendiri;
-`apothem update` mempertahankan kunci yang Anda tambahkan ke `openclaw.json`.
-Server MCP berada di blok `mcp.servers` dalam konfigurasi OpenClaw, yang Anda
-kelola dengan `openclaw mcp add` dan subperintah terkait; adaptor tidak menulis
-entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasi
+`skills.load.extraDirs`; untuk menggunakan skill Apothem, tambahkan sendiri
+`~/.openclaw/.apothem/support/skills` ke daftar tersebut; `apothem update`
+mempertahankan kunci yang Anda tambahkan ke `openclaw.json`. Server MCP berada
+di blok `mcp.servers` dalam konfigurasi OpenClaw, yang Anda kelola dengan
+`openclaw mcp add` dan subperintah terkait; adapter tidak menulis entri apa pun
+di sana. (Perilaku OpenClaw menurut dokumentasinya tentang
 [skill](https://docs.openclaw.ai/tools/skills) dan
-[CLI MCP](https://docs.openclaw.ai/cli/mcp)-nya, dibaca 2026-10-02.)
+[CLI MCP](https://docs.openclaw.ai/cli/mcp), dibaca 2026-10-02.)
 
 ## Verifikasi
 
@@ -61,11 +64,13 @@ entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasi
 apothem verify --harness open-claw
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -73,7 +78,9 @@ Perintah verify mengonfirmasi bahwa:
 apothem update --harness open-claw
 ```
 
-Menurunkan ulang konfigurasi native dari keadaan profil bersama saat ini.
+Menurunkan ulang dokumen profil dari status profil bersama saat ini dan
+menyegarkan berkas pendukung; `openclaw.json` tetap mempertahankan kunci yang
+sudah dimilikinya.
 Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
 paket Apothem yang terpasang.
 
@@ -83,7 +90,7 @@ paket Apothem yang terpasang.
 apothem uninstall --harness open-claw
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+Menghapus berkas konfigurasi native yang ditulis oleh adapter.
 YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
@@ -110,4 +117,4 @@ python -m apothem.conformity.gate --all .
 
 - [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
 - [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
-- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "适用于 Codex（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ apothem install --harness codex
 
 适配器读取 Apothem 的共享集合，并将每个集合安装到正确的 Codex 表面：指令安装到 `AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体转换为 TOML，技能安装到 `~/.agents/skills/`，非原生的 Markdown 规则/模板则作为支持材料安装到 `~/.config/apothem/`。
 
-每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权无法写入文件，它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
+每个转换后的辅助程序都会设置 `name`、`description` 和 `developer_instructions`。如果某个辅助程序的工具授权在扣除其拒绝列表之后不包含任何文件编辑工具（`Write`、`Edit`、`MultiEdit` 或 `NotebookEdit`），它还会设置 `sandbox_mode = "read-only"`，即 Codex 自身的写入限制。`Bash` 不算作文件编辑工具，因此被授予 `Bash` 而不含上述任何工具的辅助程序仍然是只读的。不设置任何模型或推理强度，因此每个辅助程序都继承会话的选择。Codex 没有按辅助程序划分的工具列表或轮次限制，因此辅助程序的 `tools` 和 `maxTurns` 不会被沿用。
 
 ## 兼容性说明
 
@@ -47,7 +47,7 @@ apothem verify --harness codex
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 来自共享配置档案的所有必填字段都存在。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
 3. 适配器专属的验证例程报告成功。
 
 ## 更新

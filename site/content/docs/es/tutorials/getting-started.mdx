@@ -2,7 +2,7 @@
 title: "Primeros pasos: de cero a un entorno funcional"
 description: "Un recorrido completo desde una máquina vacía hasta una configuración de entorno materializada y verificada."
 machineTranslated: true
-sourceHash: "0ca03fcd4603a084"
+sourceHash: "35d8b7420a9a02a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,14 +32,9 @@ cualquier entorno admitido: cambia el nombre cuando llegues a la
 
 ## Lo que necesitas primero
 
-- Una shell tipo Unix (macOS, Linux o WSL). El instalador de PowerShell cubre
-  Windows; este tutorial muestra la vía de `bash`.
+- Una shell tipo Unix (macOS, Linux o WSL). El instalador de PowerShell cubre Windows; este tutorial muestra la ruta de `bash`.
 - Python 3.10 o posterior en tu `PATH`. Compruébalo con `python3 --version`.
-- Las dos bibliotecas de runtime que el motor importa de tu intérprete: `click`
-  y `rich`. El resto de la pila (`pyyaml`, `jsonschema`) está incorporado en el
-  árbol, así que solo estas dos tienen que poder importarse. El instalador las
-  comprueba, nombra lo que falte y ofrece instalar por ti las piezas que falten,
-  para que puedas confirmar y continuar.
+- Las dos bibliotecas de tiempo de ejecución que el motor importa de tu intérprete: `click` y `rich`. El resto de la pila (`pyyaml`, `jsonschema`) va incluido en el árbol, así que solo estas dos deben poder importarse. Si falta `click` o `rich`, el instalador se detiene e imprime el comando de instalación. El comando de una sola línea envía el script por una tubería a bash, así que no puede preguntar; define `APOTHEM_AUTO_INSTALL_DEPS=1` (por ejemplo, `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`) o instala primero los dos paquetes.
 
 Apothem se distribuye como un árbol de código fuente empaquetado en lugar de
 como un paquete publicado: no hay ningún paso `pip install`. El instalador clona
@@ -55,21 +50,9 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 
 El instalador realiza estos pasos:
 
-1. **Comprobación de requisitos previos.** El instalador localiza un intérprete
-   Python 3.10+ real y confirma que las dos bibliotecas de runtime (`click` y
-   `rich`) se pueden importar. Si falta una, la nombra y ofrece instalarla por
-   ti; o bien establece `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sin
-   preguntar.
-2. **Colocación del código fuente.** El árbol empaquetado se clona en
-   `~/.apothem` (anúlalo con la variable de entorno `APOTHEM_HOME`). Una nueva
-   ejecución hace avance rápido (fast-forward) del clon existente en lugar de
-   duplicarlo.
-3. **Inicialización del perfil.** Si todavía no tienes un perfil, el instalador
-   copia el perfil de ejemplo en `~/.config/apothem/profile.yaml` y después
-   **se detiene y te pide que lo edites** antes de continuar. Esto es
-   intencionado: el ejemplo usa datos de identidad de marcador de posición, y
-   deberías hacerlo tuyo antes de que se escriba cualquier configuración de
-   entorno. Lo hacemos en el Paso 2.
+1. **Comprobación de requisitos previos.** El instalador localiza un intérprete real de Python 3.10+ y confirma que las dos bibliotecas de tiempo de ejecución (`click` y `rich`) se pueden importar. Si falta una, la nombra, se detiene e imprime el comando de instalación. Define `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sin preguntar, ya que una ejecución por tubería no puede preguntar.
+2. **Colocación del código fuente.** El árbol empaquetado se clona en `~/.apothem` (puedes cambiarlo con la variable de entorno `APOTHEM_HOME`). Una nueva ejecución hace avance rápido (fast-forward) del clon existente en lugar de duplicarlo.
+3. **Inicialización del perfil.** Si todavía no tienes un perfil, el instalador copia el perfil de ejemplo en `~/.config/apothem/profile.yaml`, instala y verifica Claude Code a partir de él en la misma ejecución, y advierte de que los campos de identidad son marcadores de posición.
 
 Puedes dirigir la instalación con variables de entorno. Las que es más probable
 que uses:
@@ -81,14 +64,7 @@ APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
   curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-Otras variables reconocidas son `APOTHEM_REPO` y `APOTHEM_REF` (qué remoto
-clonar y qué ref de git extraer; sin definir, resuelve y verifica la etiqueta de
-lanzamiento firmada más reciente; define una etiqueta para fijarla o `main` para
-la rama móvil), `APOTHEM_ALLOW_UNVERIFIED=1` (degrada a advertencia un fallo de
-verificación de la firma de la etiqueta), `APOTHEM_SOURCE` (usa un checkout
-local existente en lugar de clonar) y `APOTHEM_SKIP_VERIFY=1` (omite la
-verificación posterior a la instalación, que queremos ejecutar, así que déjala
-sin definir).
+Otras variables reconocidas son `APOTHEM_REPO` y `APOTHEM_REF` (qué remoto clonar y qué ref de git extraer: sin definir, resuelve y verifica la etiqueta de lanzamiento firmada más reciente; define una etiqueta para fijarla, o `main` para la rama móvil, que no es una etiqueta firmada y por eso también necesita `APOTHEM_ALLOW_UNVERIFIED=1`), `APOTHEM_ALLOW_UNVERIFIED=1` (degrada un fallo de verificación de la firma de la etiqueta a una advertencia y permite una ref que no es etiqueta, como `main`), `APOTHEM_SOURCE` (usa un checkout local existente en lugar de clonar) y `APOTHEM_SKIP_VERIFY=1` (omite la verificación posterior a la instalación, que queremos ejecutar, así que déjala sin definir).
 
 Cuando el instalador termina una ejecución completa, imprime un banner que
 muestra cómo invocar el motor. Coloca un shim `apothem` en tu `PATH` (POSIX:
@@ -149,12 +125,11 @@ ejecutar antes de continuar.
 
 ## Paso 3 — Materializar una configuración de entorno
 
-Si tu ejecución del Paso 1 hizo una pasada completa —es decir, ya tenías un
-perfil, así que el instalador no se detuvo en la inicialización—, materializó
-por ti el entorno predeterminado. En una primera ejecución, en cambio, se detuvo
-en la inicialización del perfil, así que ejecuta ahora `install` para
-materializar el entorno a partir del perfil que acabas de editar (esto también
-añade un segundo entorno):
+Si tu ejecución del Paso 1 creó el perfil, ya instaló Claude Code con la identidad de marcador de posición. Edita el perfil en el Paso 2 y aplica después tu identidad con:
+
+```bash
+apothem update --harness claude-code
+```
 
 ```bash
 apothem install --harness claude-code

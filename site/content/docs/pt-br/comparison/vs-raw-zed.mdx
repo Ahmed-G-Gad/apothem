@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Zed"
 description: "Manter à mão o arquivo de instruções plano .rules do Zed versus renderizá-lo a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "4314b16c52ba6c2e"
+sourceHash: "2c5b5e0dd0dfe386"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ contrasta manter essa configuração à mão com gerenciá-la com o Apothem.
 
 | Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Escrever instruções | Escrever à mão o arquivo `.rules` | Renderizado a partir do corpus compartilhado |
-| Preservar um `.rules` anterior | Lembrar de copiá-lo de lado você mesmo | O adaptador faz backup do arquivo existente antes de substituir |
-| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
-| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness zed` |
+| Escrever instruções | Escrever à mão o arquivo `.rules` | Renderizadas a partir do corpus compartilhado |
+| Preservar um `.rules` anterior | Lembrar de copiá-lo para outro lugar você mesmo | O adaptador faz backup do arquivo existente antes de substituí-lo |
+| Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness zed --project <path>` |
 
 ## O que o Apothem gerencia
 
@@ -32,16 +32,11 @@ próximo `apothem update`.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se você ainda
-   não tiver.
-2. Mova as instruções do seu `.rules` existente (e qualquer conteúdo de
-   `AGENTS.md` específico do projeto que você queira compartilhar) para o corpus
-   compartilhado.
-3. Execute `apothem install --harness zed` para renderizar o arquivo `.rules`.
-   Seu `.rules` anterior recebe backup primeiro.
-4. Execute `apothem verify --harness zed` para confirmar que a configuração foi
-   instalada.
-5. Use `apothem update --harness zed` para cada mudança posterior.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
+2. Mova as instruções do seu `.rules` existente (e qualquer conteúdo de `AGENTS.md` específico do projeto que você queira compartilhar) para o corpus compartilhado.
+3. Execute `apothem install --harness zed --project <path>` para renderizar o arquivo `.rules`. O seu `.rules` anterior recebe backup primeiro.
+4. Execute `apothem verify --harness zed --project <path>` para confirmar que a configuração foi gravada.
+5. Use `apothem update --harness zed --project <path>` para cada mudança posterior.
 
 ## Leia a seguir
 

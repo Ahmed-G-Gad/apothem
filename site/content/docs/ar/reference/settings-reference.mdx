@@ -2,7 +2,7 @@
 title: "توثيق settings.json"
 description: "اضبط تنفيذ خطّافات Claude Code والأذونات والأحداث والمُهَل وزمن تشغيل Python والتحقّق وأسبقية الإعدادات الطبقيّة لمنظومة Apothem."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ sourceHash: "09e70625ff5e0caf"
 
 ## زمن تشغيل بـ Python فقط
 
-يستخدم كل خطّاف مُعَدّ شكل أمر <bdi>exec</bdi> الخاصّ بـ <bdi>Claude Code</bdi>.
-يحمل القالب المشحون رمز <bdi>`${HARNESS_ROOT}`</bdi>:
+يستخدم كل خطّاف مُعَدّ شكل أمر <bdi>exec</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويحمل القالب المشحون الرمزين <bdi>`${PYTHON_BIN}`</bdi> و<bdi>`${HARNESS_ROOT}`</bdi>؛ و<bdi>`apothem install`</bdi> يستبدل <bdi>`${PYTHON_BIN}`</bdi> بالمفسِّر المُحلَّل المطلق:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -149,9 +148,9 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 | الطبقة | الموقع | مُودَع؟ | المسوّغ |
 |------|----------|------------|-----------|
-| 1. **النظام** | افتراضيّات الـ harness المُترجَمة داخل <bdi>Claude Code</bdi> ذاته | لا ينطبق (يتحكّم فيه المُورِّد) | الأرضيّة؛ يرث كل مُشغِّل الخطّ الأساسيّ نفسه. |
-| 2. **المشروع** | <bdi>`<harness-root>/settings.json`</bdi> | ✅ مُودَع | أعراف المشروع المشتركة: الخطّافات، الأذونات، خوادم <bdi>MCP</bdi>، توصيل شريط الحالة. يقع قالب مصدر Apothem داخل دليل <bdi>templates</bdi> الخاصّ بمُحوِّل <bdi>Claude Code</bdi>. |
-| 3. **محلّيّ للمستخدِم** | <bdi>`<harness-root>/settings.local.json`</bdi> (gitignored) — مُقَولَب كـ <bdi>`settings.local.example.json`</bdi> في جذر المستودع | ❌ Gitignored | تجاوزات خاصّة بالمُشغِّل: رموز <bdi>API</bdi>، مسارات محلّيّة للجهاز، ميزات اختياريّة. |
+| 1. **النظام** | افتراضيات إطار العمل المُترجَمة داخل <bdi>Claude Code</bdi> نفسه | لا ينطبق (يتحكّم فيه المُورِّد) | الأرضية؛ يرث كل مُشغِّل الخطَّ الأساسي نفسه. |
+| 2. **المشروع** | <bdi>`<harness-root>/settings.json`</bdi> | ✅ مُودَع | أعراف المشروع المشتركة: الخطّافات، والأذونات، وخوادم <bdi>MCP</bdi>، وتوصيل شريط الحالة. ويقع قالب مصدر <bdi>Apothem</bdi> داخل دليل القوالب الخاص بمحوّل <bdi>Claude Code</bdi>. |
+| 3. **محلّيّ للمستخدِم** | <bdi>`<harness-root>/settings.local.json`</bdi> (gitignored) — مُقَولَب بوصفه <bdi>`settings.local.example.json`</bdi> ضمن <bdi>`examples/harnesses/claude-code/`</bdi> | ❌ Gitignored | تجاوزات خاصّة بالمُشغِّل: رموز <bdi>API</bdi>، ومسارات محلّيّة للجهاز، وميزات اختيارية. |
 
 تتجاوز قيم الطبقة الأعلى قيم الطبقة الأدنى **على مستوى المفتاح-الورقة** — حين
 تُصرِّح طبقتا المشروع والمحلّيّة للمستخدِم كلتاهما بإدخال <bdi>`permissions.allow`</bdi>، يُؤخَذ
@@ -160,10 +159,6 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### إنشاء تجاوُز محلّيّ للمستخدِم
 
-1. انسخ <bdi>`settings.local.example.json`</bdi> (جذر المستودع) إلى <bdi>`<harness-root>/settings.local.json`</bdi>.
-   اسم الملف <bdi>`settings.local.json`</bdi> يطابق نمط <bdi>`.gitignore`</bdi>، فلا يهبط الملف
-   أبدًا في التحكّم بالإصدارات.
-2. حرِّر النسخة المحلّيّة — أبقِ فقط المفاتيح المراد تجاوزها؛ يركّب الـ harness الطبقات،
-   لذا ترث المفاتيح الغائبة من طبقة المشروع.
-3. تحقّق من أنّ الملف يُحلَّل كـ <bdi>JSON</bdi> صالح قبل الحفظ — يرفض الـ harness
-   <bdi>JSON</bdi> المُشوَّه عند بدء الجلسة.
+1. انسخ <bdi>`examples/harnesses/claude-code/settings.local.example.json`</bdi> إلى <bdi>`<harness-root>/settings.local.json`</bdi>. يطابق اسم الملف <bdi>`settings.local.json`</bdi> نمط <bdi>`.gitignore`</bdi>، فلا يهبط الملف أبدًا في التحكّم بالإصدارات.
+2. حرِّر النسخة المحلّية، وأبقِ فقط المفاتيح المراد تجاوزها؛ إذ يُركّب إطار العمل الطبقات، فترث المفاتيح الغائبة من طبقة المشروع.
+3. تحقّق من أن الملف يُحلَّل بوصفه <bdi>JSON</bdi> صالحًا قبل الحفظ؛ فإطار العمل يرفض <bdi>JSON</bdi> المُشوَّه عند بدء الجلسة.

@@ -2,7 +2,7 @@
 title: "Dokumentasi settings.json"
 description: "Konfigurasikan eksekusi hook Claude Code, izin, event, timeout, runtime Python, validasi, dan presedensi pengaturan berlapis untuk ekosistem Apothem."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ memuat `~/.claude/settings.json` di semua platform yang didukung.
 
 ## Runtime Khusus Python
 
-Setiap hook yang dikonfigurasi menggunakan bentuk perintah exec Claude Code.
-Template yang dikirimkan membawa token `${HARNESS_ROOT}`:
+Setiap hook yang dikonfigurasi menggunakan bentuk perintah exec Claude Code. Templat yang dikirim membawa token `${PYTHON_BIN}` dan `${HARNESS_ROOT}`; `apothem install` mengganti `${PYTHON_BIN}` dengan interpreter absolut yang telah di-resolve:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -150,8 +149,8 @@ urutan presedensi yang meningkat:
 | Tingkat | Lokasi | Di-commit? | Alasan |
 |------|----------|------------|-----------|
 | 1. **Sistem** | Default harness yang dikompilasi ke dalam Claude Code itu sendiri | t/a (dikendalikan vendor) | Lantai dasar; setiap operator mewarisi baseline yang sama. |
-| 2. **Proyek** | `<harness-root>/settings.json` | ✅ Di-commit | Konvensi bersama proyek: hook, izin, server MCP, pengabelan statusline. Template sumber Apothem berada di dalam direktori templates adapter Claude Code. |
-| 3. **Lokal-pengguna** | `<harness-root>/settings.local.json` (gitignored) — di-template sebagai `settings.local.example.json` di akar repositori | ❌ Gitignored | Override khusus operator: token API, jalur lokal mesin, fitur opt-in. |
+| 2. **Proyek** | `<harness-root>/settings.json` | ✅ Di-commit | Konvensi bersama proyek: hook, izin, server MCP, pengabelan statusline. Templat sumber Apothem berada di dalam direktori templates adapter Claude Code. |
+| 3. **Lokal-pengguna** | `<harness-root>/settings.local.json` (gitignored) — berbentuk templat `settings.local.example.json` di bawah `examples/harnesses/claude-code/` | ❌ Gitignored | Override khusus operator: token API, jalur lokal mesin, fitur opt-in. |
 
 Nilai tingkat lebih tinggi mengesampingkan nilai tingkat lebih rendah **pada tingkat kunci-daun** — ketika
 baik lapisan proyek maupun lokal-pengguna mendeklarasikan entri `permissions.allow`, gabungan
@@ -160,10 +159,7 @@ penggabungan per-kunci yang tepat dimiliki oleh harness Claude Code.
 
 ### Membuat override lokal-pengguna
 
-1. Salin `settings.local.example.json` (akar repositori) ke `<harness-root>/settings.local.json`.
-   Nama file `settings.local.json` cocok dengan pola `.gitignore`, sehingga file tidak pernah
-   masuk ke kontrol versi.
-2. Edit salinan lokal — simpan hanya kunci yang akan di-override; harness menyusun lapisan-lapisan,
-   sehingga kunci yang tidak ada diwarisi dari lapisan proyek.
-3. Verifikasi file terurai sebagai JSON yang valid sebelum menyimpan — harness menolak
-   JSON yang malformed saat sesi dimulai.
+1. Salin `examples/harnesses/claude-code/settings.local.example.json` ke `<harness-root>/settings.local.json`.
+   Nama berkas `settings.local.json` cocok dengan pola `.gitignore`, sehingga berkas tidak pernah masuk ke kontrol versi.
+2. Sunting salinan lokal — simpan hanya kunci yang akan di-override; harness menyusun lapisan-lapisan, sehingga kunci yang tidak ada diwarisi dari lapisan proyek.
+3. Verifikasi bahwa berkas dapat diurai sebagai JSON yang valid sebelum menyimpan — harness menolak JSON yang rusak saat sesi dimulai.

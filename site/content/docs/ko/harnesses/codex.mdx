@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex(베타)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,7 @@ sourceHash: "1fc0b9dae2c44d90"
 **설치 이름:** `codex`
 **상태:** 베타
 **네이티브 구성:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
-`~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/`
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`, 그리고 `~/.agents/skills/`
 
 ## 설치
 
@@ -49,10 +49,13 @@ TOML로, 스킬은 `~/.agents/skills/`로, 네이티브가 아닌 Markdown 규�
 지원 자료로 `~/.config/apothem/`에 설치됩니다.
 
 변환된 각 도우미는 `name`, `description`, `developer_instructions`를
-설정합니다. 도구 권한으로 파일을 쓸 수 없는 도우미는 Codex 자체의 쓰기 제한인
-`sandbox_mode = "read-only"`도 설정합니다. 모델이나 추론 노력은 설정하지
-않으므로 각 도우미는 세션의 선택을 상속합니다. Codex에는 도우미별 도구 목록이나
-턴 제한이 없으므로, 도우미의 `tools`와 `maxTurns`는 이어지지 않습니다.
+설정합니다. 도구 권한에서 거부 목록을 적용한 뒤에 파일 편집 도구(`Write`,
+`Edit`, `MultiEdit`, `NotebookEdit`)가 하나도 남지 않는 도우미는 Codex 자체의
+쓰기 제한인 `sandbox_mode = "read-only"`도 설정합니다. `Bash`는 파일 편집
+도구로 간주되지 않으므로, `Bash`만 부여받고 위 도구는 하나도 부여받지 못한
+도우미도 여전히 읽기 전용입니다. 모델이나 추론 노력은 설정하지 않으므로 각
+도우미는 세션의 선택을 상속합니다. Codex에는 도우미별 도구 목록이나 턴 제한이
+없으므로, 도우미의 `tools`와 `maxTurns`는 이어지지 않습니다.
 
 ## 호환성 참고 사항
 
@@ -75,7 +78,9 @@ apothem verify --harness codex
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트

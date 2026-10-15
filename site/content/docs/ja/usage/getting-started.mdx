@@ -2,7 +2,7 @@
 title: "コアワークフロー"
 description: "Apothem の 4 つのコアワークフロー——プロファイル、ルール、計画、そして適合性ゲート。"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,10 +65,16 @@ apothem verify --harness claude-code
 
 ## 適合性ゲート
 
-リポジトリのルートから実行します。
+Apothem のチェックアウトから、次のコマンドを実行します。
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+スクリプトでインストールした後は、次のコマンドを実行します。
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 すべての機械的な適合性チェックを実行し、バーごとに合否を報告します。

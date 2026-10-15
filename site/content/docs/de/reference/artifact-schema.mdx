@@ -2,7 +2,7 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -116,7 +116,7 @@ allowed-tools: "Read, Glob, Grep"
 | `argument-hint` | string | Verwendungsmuster oder `"[args...]"`, falls es keines gibt | `"[path/to/plan] [phase-id]"` |
 | `disable-model-invocation` | boolean | Falls true, startet nur der Operator den Command; das Modell ruft ihn niemals von sich aus auf | `true` |
 | `portability` | string | Portabilitätsklassifizierung über die Harness-Adapter hinweg | `"universal"` |
-| `allowed-tools` | string | Tools, die während der Ausführung des Commands vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Commands vorab genehmigt sind: lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
@@ -240,7 +240,7 @@ allowed-tools: "Read, Glob, Grep"
 | `archetype` | string | Formklasse, ein Kebab-Case-Bezeichner der Form `<class>-template` | `"workflow-template"` |
 | `userInvocable` | boolean | Falls true, kann der Benutzer diesen Skill ausdrücklich anfordern | `false` |
 | `disable-model-invocation` | boolean | Falls true, wird der Skill nur durch ausdrücklichen Aufruf erreicht | `true` |
-| `allowed-tools` | string | Tools, die während der Ausführung des Skills vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Skills vorab genehmigt sind: lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
@@ -291,8 +291,8 @@ Matcher-Blöcken zu:
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -302,19 +302,20 @@ Matcher-Blöcken zu:
 }
 ```
 
+Die Form `-m apothem.hooks.dispatch` ist für die Entwicklung aus einem Quell-Checkout mit `PYTHONPATH=src` gedacht.
+
 | Feld | Typ | Zweck | Beispiel |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | Tool-Namensmuster (oder `"*"` für tool-agnostische Ereignisse) | `"Write"` |
+| `matcher` | string | Werkzeugnamensmuster (oder `"*"` für werkzeugunabhängige Ereignisse) | `"Write"` |
 | `hooks[].type` | Literal `"command"` | Der derzeit einzige unterstützte Hook-Handler-Typ | `"command"` |
-| `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet `python` | `"python"` |
-| `hooks[].args` | Array von Strings | Argumente in Exec-Form, die `-m apothem.hooks.dispatch` oder `-m apothem.conformity.gate` aufrufen | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer (Sekunden) | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
+| `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet den Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird | `"${PYTHON_BIN}"` |
+| `hooks[].args` | Array von Strings | Argumente in Exec-Form: ein Skriptpfad unter `${HARNESS_ROOT}/.apothem/support/`, danach seine Argumente | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | Ganzzahl in Sekunden | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
 | `hooks[].statusMessage` | string | Kurzes Label, das in der Host-Oberfläche angezeigt wird | `"Session start"` |
 
 ### Erforderliche Ereignisse
 
-Die ausgelieferten Vorlagen registrieren die folgenden Ereignisse. Alle fünf
-sind erforderlich, damit die Validatoren PASS melden:
+Die Claude-Code-Vorlage registriert SessionStart, PreToolUse, PostToolUse und Stop. PreCompact und PostCompact sind für Claude Code nicht registriert ([Hook-Referenz](/docs/reference/hooks)), und `scripts/dev/validate_hooks.py` meldet jedes von ihnen als fehlend, jeweils als Warnung. Die Tabelle listet die fünf Ereignisse auf, die `validate_hooks.py` prüft:
 
 > **Die Timeout-Werte spiegeln die kanonischen Budgets der Hook-Ereignisse
 > wider** — die Tabelle unten gibt sie zur Bequemlichkeit der Lesenden wieder;
@@ -360,7 +361,7 @@ Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 
 **Pfad:** `CLAUDE.md` (Wurzel)
 
-**Zweck:** Globaler Konfigurationsindex des Ökosystems.
+**Zweck:** Projektbezogene Anweisungen für Claude Code.
 
 ### Verpflichtendes YAML-Frontmatter
 
@@ -369,27 +370,15 @@ Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Erforderliche Abschnitte (in dieser Reihenfolge)
+### Abschnitte
 
-1. **§1 Plan-Suite** — Verweis auf den Ablageort der Vorlage
-2. **§2 Kognitive Identität** — Mandat zur kreativen Architektur
-3. **§3 Artefaktverzeichnisse** — Tabelle der Pfade und Zwecke
-4. **§4 Nach Ernsthaftigkeit skalierte Governance** — Definition der vier Stufen
-5. **§5 Operative Direktiven** — Problemlösung, Kommunikationsprinzipien
-6. **§6 Übergreifende Mandate** — Überblick über CM-1–28
-7. **§7 Registries** — Tabellen der Artefakte:
-   - 7.1 Commands
-   - 7.2 Regeln
-   - 7.3 Helfer
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Artefaktevolution
+`CLAUDE.md` ist in Prosa-Abschnitten verfasst und unter [`CLAUDE.md`](/docs/reference/claude-md) beschrieben. Kein Validator verlangt eine feste Abschnittsliste: `scripts/dev/validate_ecosystem.py` prüft die oben genannten Frontmatter-Schlüssel.
 
 ---
 
@@ -411,7 +400,7 @@ Jedes Artefakt muss diese Prüfungen bestehen:
 
 ### Inhaltsvalidierung
 
-- [ ] Der Inhalt beginnt unmittelbar nach dem schließenden `---` in einer neuen Zeile
+- [ ] Der Inhalt beginnt in einer neuen Zeile nach dem schließenden `---`; bei Dateien der Markdown-Familie ist das Banner des Autorschafts-Headers der erste Inhalt danach
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
 - [ ] Querverweise lassen sich auflösen (falls andere Artefakte aufgeführt werden)
 - [ ] Links verwenden relative Pfade mit Schrägstrichen

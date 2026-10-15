@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptateur d'environnement Apothem pour Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "4bcd687aeabc46b7"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,7 +83,10 @@ apothem verify --harness kimi-code --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -101,8 +104,13 @@ support à partir de l'état actuel du profil partagé.
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur.
-Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+Retire le bloc Apothem du `AGENTS.md` à la racine du projet et conserve tout
+texte situé hors des sentinelles. Le fichier n'est supprimé que si plus rien
+d'autre n'y subsiste. Retire aussi les fichiers de support qu'Apothem a placés
+sous `<project>/.kimi-code/.apothem/support/`. Avant la modification, une copie
+horodatée de chaque fichier est enregistrée sous `~/.apothem/backups/` ; aucun
+fichier de sauvegarde n'est laissé dans le projet. Le YAML du profil partagé et
+le moteur Apothem ne sont pas affectés.
 
 ## Portail de conformité
 

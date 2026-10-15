@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referência da CLI para o comando apothem uninstall."
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,13 +24,13 @@ prompt corromperia o documento JSON único) ou um shell não interativo (sem
 TTY) — o comando recusa de antemão com um erro estruturado
 `uninstall.confirmation_required` (saída 1), a menos que `--yes` seja
 fornecido. Se um harness selecionado não estiver instalado, o comando é
-concluído com sucesso (saída 0) com um aviso "nothing to remove".
+concluído com sucesso (saída 0) com um aviso "nada a remover".
 
 Uma remoção com `--harness all` é deliberadamente exaustiva: ela abrange todos
 os harnesses registrados, incluindo os que o `exclude_harnesses` do perfil pula
 durante a instalação — a limpeza alcança o estado que uma instalação anterior
 mais ampla possa ter deixado para trás. Os harnesses que nunca foram instalados
-relatam "nothing to remove".
+relatam "nada a remover".
 
 O alias na forma contínua `apothem uninstalling` resolve para o mesmo manipulador.
 
@@ -53,14 +53,34 @@ O alias na forma contínua `apothem uninstalling` resolve para o mesmo manipulad
 Quando o adaptador está instalado e é removido com sucesso:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Quando o adaptador não estava instalado:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+Quando o adaptador não estava instalado, o comando sai com `0`. Na saída JSON,
+o envelope tem `"status": "success"` e `"action": "uninstalled"`, e a linha de
+resultados tem `"outcome": "skipped"` com a mensagem `"not installed; no files
+removed"`. O campo `status` nunca é `"not_installed"`.
 
 ## Exemplos
 

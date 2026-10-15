@@ -2,7 +2,7 @@
 title: "Apothem frente à configuração manual do Gemini CLI"
 description: "Manter à mão o arquivo de regras GEMINI.md do Gemini CLI frente a renderizá-lo a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "c50d2b16083b08a0"
+sourceHash: "1571985a6318fd28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,26 +14,22 @@ manter essa configuração à mão com gerenciá-la com o Apothem.
 
 | Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Escrever regras | Editar à mão um único `GEMINI.md` | Renderizadas: regras compartilhadas embutidas em `GEMINI.md` |
-| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Escrever regras | Editar à mão um único `GEMINI.md` | Renderizadas: orientação para todo o projeto em `GEMINI.md`; regras em `.gemini/.apothem/support/` |
+| Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
 | Instalar / remover a configuração | Escrever e excluir `GEMINI.md` à mão | `apothem install` / `apothem uninstall` |
-| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness gemini-cli` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness gemini-cli --project <path>` |
 
 ## O que o Apothem gerencia
 
-O adaptador de gemini-cli embute as regras compartilhadas em um único `GEMINI.md`.
-O Gemini CLI não tem um hook PreToolUse, então a intenção das barreiras de
-proteção é expressa na prosa das regras em vez de em um ponto de interceptação de
-chamada de ferramenta. Cada mudança nas regras compartilhadas re-renderiza
-`GEMINI.md` no próximo `apothem update`.
+O adaptador gemini-cli grava um bloco do Apothem, delimitado por sentinelas, em `<project>/GEMINI.md`. Esse bloco traz a orientação para todo o projeto e aponta para o material do Apothem. Regras, templates e hooks são gravados como arquivos de suporte em `<project>/.gemini/.apothem/support/`, e comandos, skills e agentes são gravados em `<project>/.gemini/`. O Gemini CLI não tem um hook PreToolUse, então a intenção das barreiras de proteção é expressa na prosa das regras, e não em um ponto de interceptação de chamada de ferramenta. Cada mudança nas regras compartilhadas re-renderiza `GEMINI.md` no próximo `apothem update`.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se ainda não tiver.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
 2. Mova as regras do seu `GEMINI.md` existente para o corpus compartilhado.
-3. Execute `apothem install --harness gemini-cli` para renderizar e gravar `GEMINI.md`.
-4. Execute `apothem verify --harness gemini-cli` para confirmar que a configuração aterrissou.
-5. Use `apothem update --harness gemini-cli` para cada mudança posterior.
+3. Execute `apothem install --harness gemini-cli --project <path>` para renderizar e gravar o `GEMINI.md`.
+4. Execute `apothem verify --harness gemini-cli --project <path>` para confirmar que a configuração foi gravada.
+5. Use `apothem update --harness gemini-cli --project <path>` para cada mudança posterior.
 
 ## Leia a seguir
 

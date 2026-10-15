@@ -1,8 +1,8 @@
 ---
 title: "Gerbang konformitas"
-description: "Gerbang konformitas Apothem — bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) yang wajib dilalui setiap artefak yang dipancarkan."
+description: "Gerbang konformitas Apothem — bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) yang harus dilalui setiap artefak yang dipancarkan."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,63 +11,39 @@ sourceHash: "c3c719c0c1a0e92e"
 | Bar | ID | Mandat | Kelas pemeriksaan | Kegagalan → tindakan |
 |---|---|---|---|---|
 | 1 | M1 | Keagnostikan Proyek-Inang | Bernalar | Revisi agar sesuai dengan konvensi inang |
-| 2 | M2 | Disiplin Editorial (buku besar pengungkapan) | Mekanis | Tambahkan penanda pengungkapan |
-| 3 | M3 | Sepuluh Dimensi Kualitas | Bernalar | Revisi pada dimensi yang gagal |
+| 2 | M2 | Disiplin Editorial (buku besar pengungkapan) | Bernalar | Tambahkan penanda pengungkapan |
+| 3 | M3 | Sepuluh Dimensi Kualitas | Mekanis + bernalar | Revisi pada dimensi yang gagal |
 | 4 | M4 | Penerapan-Diri (catatan bertanda tangan gerbang ada) | Mekanis | Catat blok catatan bertanda tangan |
 | 5 | M5 | Prinsip Otoritas (tanpa identitas / endpoint / rahasia yang dikarang) | Mekanis | Arahkan ke inkuiri |
 | 6 | M6 | Penggabungan Keahlian (celah yang dimunculkan) | Bernalar | Munculkan celah; kutip penyempurnaan |
 | 7 | M7 | Anotasi Opsi (penanda Recommended + alasan pendorong) | Mekanis | Anotasikan himpunan opsi |
-| 8 | M8 | Ketegasan (tanpa pengelakan dalam prosa preskriptif) | Mekanis | Naikkan pengelakan menjadi kondisional |
+| 8 | M8 | Ketegasan (tanpa pengelakan dalam prosa preskriptif) | Mekanis | Ubah pengelakan menjadi kondisional |
 | 9 | M9 | Daya Ungkit Visual (subjek struktural membawa diagram) | Bernalar | Buat / segarkan diagram |
 | 10 | M10 | Pengikatan Dua Arah (penunjuk balik timbal balik tertutup) | Mekanis | Tutup separuh-tepi |
 | 11 | M11 | Sprint Agile (Tujuan / Backlog / DoR / DoD / Review / Retrospektif) | Bernalar | Strukturkan ulang sebagai sprint |
-| 12 | M12 | Pelaporan Fase & Tata Letak Kanonik | Mekanis | Buat ringkasan; pindahkan ke tata letak kanonik |
+| 12 | M12 | Pelaporan Fase & Tata Letak Kanonik | Mekanis + bernalar | Buat rekapitulasi; pindahkan ke tata letak kanonik |
 | 13 | M13 | Kriya Kode (lint / format / pemeriksaan tipe; angka ajaib; bare-except) | Mekanis | Terapkan aturan kriya kode per bahasa |
 | 14 | M14 | Sistemisitas (mendeklarasikan hulu / hilir / sejawat / penegak) | Bernalar | Deklarasikan; indeks di registri |
-| 15 | M15 | Siap Produksi (pengujian + dokumentasi + CHANGELOG + commit yang patuh + CI hijau + stabilitas semver) | Mekanis | Tambahkan permukaan yang hilang |
+| 15 | M15 | Siap Produksi (pengujian + dokumentasi + CHANGELOG + commit yang patuh + CI hijau + stabilitas semver) | Mekanis + bernalar | Tambahkan permukaan yang hilang |
 
 ## Tangga tingkat keparahan
 
-| Tingkat keparahan | Efek pada gerbang |
-|---|---|
-| **Kritis** | Gerbang FAIL — emisi diblokir tanpa syarat |
-| **Penting** | Gerbang FAIL ketika 2+ bar Penting gagal secara bersamaan |
-| **Anjuran** | Gerbang WARN — dicatat dalam catatan bertanda tangan; tidak memblokir emisi |
-
-Sebagian besar pencocok bagian mekanis secara default bertingkat **Penting**. M5 (otoritas — rahasia, endpoint yang dikarang) dan M12 (keluaran yatim) bertingkat **Kritis**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+Gerbang ini tidak memiliki tangga Kritis, Penting, atau Advisori dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all-perwrite`) keluar dengan `2` ketika matcher pemblokir gagal; matcher advisori hanya dilaporkan. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
 
 ## Validator
 
 Bagian mekanis berada di [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), diorkestrasi oleh [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-Gerbang menjalankan setiap validator dengan salah satu dari tiga cara:
+Setiap validator berjalan dengan salah satu dari tiga cara:
 
 - **per-write**: pada setiap penulisan yang tertunda (`--hook`), atau pada setiap berkas yang dilacak dengan `--all-perwrite`.
 - **standalone**: di seluruh repositori dengan `--all`, atau satu per satu dengan `--check <name>`.
-- **change-set**: terhadap diff yang di-stage, di luar sapuan gerbang.
+- **change-set**: terhadap diff yang di-stage, dijalankan langsung sebagai `python -m apothem.conformity.semver_stability_grep --staged`, bukan melalui gerbang.
 
-Tabel di bawah ini dihasilkan dari modul-modul validator.
+Tabel di bawah ini dihasilkan dari modul validator.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -133,7 +109,7 @@ Pada harness yang terpasang, gerbang berjalan secara otomatis: `settings.json`
 milik Claude Code merangkainya sebagai hook `PreToolUse` yang memanggil salinan
 termaterialisasi di `~/.claude/.apothem/support/conformity/gate.py` sebelum
 setiap Write/Edit. Dari checkout sumber, bentuk modul menjalankan kode yang
-sama. Gerbang bersifat anjuran secara default: gerbang melaporkan temuan dan
+sama. Gerbang bersifat advisori secara default: gerbang melaporkan temuan dan
 keluar dengan `0`. Tambahkan `--strict` untuk keluar dengan `2` pada temuan yang
 memblokir. Nama validator yang tidak dikenal keluar dengan `3`.
 

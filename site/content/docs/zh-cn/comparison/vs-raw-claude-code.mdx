@@ -2,7 +2,7 @@
 title: "Apothem 对比手工 Claude Code 配置"
 description: "手工维护 Claude Code 的整棵原生配置树，对比通过 Apothem 的共享配置档案来管理它。"
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,14 +26,13 @@ claude-code 适配器是全表面适配器：它把共享语料库直接传播�
 `~/.claude/`。原生的 PreToolUse、PostToolUse、Stop 和 SessionStart 钩子从共享
 语料库配置而来。
 
-Apothem **不**管理 `CLAUDE.md`——那是运维者自有的领地。你在 `CLAUDE.md` 中的项目
-和个人指令仍归你所有；Apothem 治理的是围绕它的那些被传播的表面。
+Apothem 会在你的用户作用域 `~/.claude/CLAUDE.md` 中写入一个由哨兵标记界定的受管块。`apothem update` 只重写该块，并保留块外的你的文本。项目中的 `CLAUDE.md` 文件不会被触及。Apothem 治理的是它周围被传播的表面。
 
 ## 迁移路径
 
-1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
-2. 把你现有 `~/.claude/` 中的规则、代理、命令和技能迁入共享语料库。
-3. 把 `CLAUDE.md` 留在原处——Apothem 不会动它。
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init` 来创建它。
+2. 把现有 `~/.claude/` 中的规则、代理、命令和技能迁入共享语料库。
+3. 保留 `CLAUDE.md` 原处。Apothem 会保留块外的你的文本，并且只重写该受管块。
 4. 运行 `apothem install --harness claude-code` 来传播语料库。
 5. 运行 `apothem verify --harness claude-code` 来确认配置已落地。
 6. 之后的每次更改都使用 `apothem update --harness claude-code`。

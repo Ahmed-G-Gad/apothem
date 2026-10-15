@@ -2,15 +2,16 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "6cbb079a39c14ed9"
+sourceHash: "377ff92b24e0f52c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Die Harness-Registry ist das maßgebliche Adapter-Inventar, das die CLI, die
-Dokumentation, die Fixture-Tests und die Validierung der Konventions-Pins
-verwenden. Die Laufzeitquelle ist `src/apothem/lib/harness_registry.py`; jede
-Zeile unten ist auf diese Registry, die adapterspezifische `capabilities.yml`
-und die `STANDARD-CONVENTION-PIN.md` jedes Adapters rückführbar.
+Die Harness-Registry ist das Adapter-Inventar, das als Quelle der Wahrheit dient
+und von der CLI, der Dokumentation, den Fixture-Tests und der Validierung der
+Konventions-Pins verwendet wird. Die Laufzeitquelle ist
+`src/apothem/lib/harness_registry.py`; jede Zeile unten ist auf diese Registry,
+die adapterspezifische `capabilities.yml` und die `STANDARD-CONVENTION-PIN.md`
+jedes Adapters rückführbar.
 
 ## Registry-Matrix
 
@@ -75,7 +76,7 @@ Ein Test rendert jede konvertierte Datei und prüft die Maps gegen die Ausgabe.
 | Qwen Code | konvertierte Commands und Agents; native Skills, Hooks, MCP, Sub-Agent-Dispatch, System-Prompt-Templates, Memory; aus dem Profil projizierte Tool-Einschränkungen | Regeln, Templates | Statuslines, Output-Styles |
 | Trae | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
 | Windsurf | native Regeln und System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
-| Zed | native Regeln, MCP, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory |
+| Zed | native Regeln, System-Prompt-Templates; aus dem Profil projizierte Tool-Einschränkungen | keine | Commands, Skills, Hooks, Agents, Statuslines, Output-Styles, Sub-Agent-Dispatch, Memory; MCP-Discovery ausstehend |
 
 ## Gemeinsame Wurzelverzeichnisse
 

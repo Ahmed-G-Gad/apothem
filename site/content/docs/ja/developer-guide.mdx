@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 | **コマンド** | `src/apothem/commands/*.md` | 複雑なワークフロー向けのスラッシュコマンド（`/command-name`） | 新しい複数ステップのユーザーワークフロー |
 | **ヘルパー** | `src/apothem/agents/*.md` | 並行タスク向けの永続的な委任ワーカー定義 | 新しく繰り返し発生する専門タスク（監査、探索、品質チェック） |
 | **スキル** | `src/apothem/skills/{name}/SKILL.md` | 検出シグナルを伴う再利用可能な手法 | 新しい、検出可能で再利用可能な手法パターン |
-| **フック** | `src/apothem/hooks/` + `settings.json` | イベントをトリガーとする検証または状態管理 | 新しいライフサイクルイベント、または検証のニーズ |
+| **フック** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | イベントをトリガーとする検証または状態管理 | 新しいライフサイクルイベント、または検証のニーズ |
 
 ## ハーネスアダプターの契約
 
@@ -66,7 +66,8 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 
 ## フロントマターのクイックチェック
 
-すべてのアーティファクトのフロントマターは、次のチェックに合格しなければなりません:
+すべてのアーティファクトのフロントマターは、次のチェックに合格しなければなりません。
+`version`、`updated`、`portability` のチェックは、そのキーを持つクラスにのみ適用してください。ルールはそのいずれも持たず、スキルは `portability` を持ちません。
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -98,10 +99,7 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 - **コマンド:** `{name}.md`
 - **ヘルパー:** `{name}.md`
 - **スキル:** フォルダ `src/apothem/skills/{name}/SKILL.md` の中（大文字小文字は厳密に `SKILL.md`）
-- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。
-  すべての `settings.json` のフックコマンドは、exec 形式（`python` と `args`）を使って `-m apothem.hooks.dispatch <event> [<message-name>]` または `-m apothem.conformity.gate --hook` を呼び出します。
-  `dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそれ以外のすべてのイベントを `emit_hook_context.main()` へルーティングします。
-  `src/apothem/hooks/` または `scripts/` 配下で許可されるシェルスタブは、4 つのロケーター + ブートストラップファイル（`find-python.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
+- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。Claude Code の `settings.json` テンプレートにあるすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` にはスクリプトのパスとその引数が入ります。このテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。Claude Code プラグインは、代わりに `src/apothem/hooks/hooks.json` にフックを登録します。これらは `bash` を介して `hooks/lib/bootstrap.sh` を実行するシェルコマンドです。新しいフックは、`hooks.json` と Claude Code の `settings.json` テンプレートの両方に登録します。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
 
 ### 相互参照
 
@@ -116,7 +114,8 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 
 ## ポータビリティ: Windows と Unix
 
-すべてのアーティファクトは、ポータビリティのステータスを明示的に宣言しなければなりません。
+すべてのコマンドは、`portability` フィールドでポータビリティのステータスを明示的に宣言しなければなりません（MUST）。ヘルパーは宣言してもかまいません（MAY）。
+スキル、ルール、出力スタイルは `portability` フィールドを持ちません。
 
 ### ユニバーサル（デフォルト）
 
@@ -152,7 +151,7 @@ portability: "universal-with-windows-caveats"
 portability: "unix-only"
 ```
 
-理由は、ルールの最初のセクションに文書化します。
+理由は、アーティファクトの最初のセクションに文書化します。
 
 ## スコープ: 常時オンとパスフィルター
 
@@ -161,7 +160,8 @@ portability: "unix-only"
 ルールはあらゆる場所に適用されます。
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### パスフィルター
@@ -169,8 +169,8 @@ scope: "always-on"
 ルールはファイルパスに基づいて、条件付きで適用されます。
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter` は glob パターン（`.gitignore` と同じ形式）を使用します。
@@ -178,28 +178,29 @@ pathFilter: "**/*.py, **/*.toml"
 
 ## バージョンのセマンティクス
 
-すべてのアーティファクトは、独自のセマンティックバージョン（`MAJOR.MINOR.PATCH`）を持ちます:
+バージョンを持つ各アーティファクトは、独自のセマンティックバージョン（`MAJOR.MINOR.PATCH`）を持ちます。
+コマンドとスキルはこれを必須とし、ヘルパーと出力スタイルはこれを持ってもかまわず（MAY）、ルールはこれを持ちません:
 
 - **PATCH** — 誤字の修正、整形、リンクの更新、コメントのみの編集。挙動は変わらない。
-- **MINOR** — 追加的で互換性を壊さない変更: 新しい任意セクション、追加のアンチパターン、新しい任意のフロントマターフィールド、新しい例。既存の利用者は変更なしで動作し続ける。
+- **MINOR** — 追加的で互換性を壊さない変更: 新しい任意セクション、新しい任意のフロントマターフィールド、新しい例。既存の利用者は変更なしで動作し続ける。
 - **MAJOR** — 互換性を壊すスキーマまたは契約の変更: セクションの削除、フィールドの名前変更、既存の指令の挙動の変更、下流のアーティファクトに適応を求める変更。
 
 例:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)`（PATCH: 誤字の修正）
-- `vX.Y.Z` → `vX.(Y+1).0`（MINOR: 新しい Anti-Patterns の項目を追加）
+- `vX.Y.Z` → `vX.(Y+1).0`（MINOR: 新しい任意セクションを追加）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR: 契約を安定版と宣言）
 - `vX.Y.Z` → `v(X+1).0.0`（MAJOR: 必須のフロントマターフィールドを削除）
 
-挙動を変えるすべての編集で、`version` と `updated` をそろえて更新します。
+それらを持つアーティファクトに対する、挙動を変えるすべての編集で、`version` と `updated` をそろえて更新します。
 アーティファクトの変更を含むリリースについては、エコシステムレベルの `CHANGELOG.md` に対応する行を追記します。
 
 ## アーティファクトを編集する時機
 
 ### ルール
 
-- Mandatory/Optional の構造は全体を支える要素として扱う — これを再構成すると、依存するすべてのアーティファクトに波及する（MAJOR の引き上げが必要）。
-- 理解が深まるにつれて、Anti-Patterns、Seriousness Scaling の例、引用を洗練する（MINOR の引き上げ）。
+- Mandatory/Optional の構造は全体を支える要素として扱う — これを再構成すると、依存するすべてのアーティファクトに波及する。
+- 理解が深まるにつれて、Anti-Patterns、Seriousness Scaling の例、引用を洗練する。
 - どの構造上の変更についても、その根拠を該当するメモリトピックファイルに記録する。
 
 ### コマンド
@@ -262,15 +263,15 @@ alwaysApply: true
 ---
 ```
 
-### 4. CLAUDE.md を更新する
+### 4. ルールの README を更新する
 
-`§7.2 Rules` のレジストリ表にエントリを追加します:
+`src/apothem/rules/README.md` の Rule families セクションにある、そのルールのファミリーの表に行を追加します:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-表の中では、アルファベット順を維持します。
+関心事がそのルールに合致するファミリーの表を選びます。
 
 ### 5. CHANGELOG.md に追記する
 
@@ -320,7 +321,7 @@ allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-`disable-model-invocation: true` にすると、コマンドはオペレーターだけが呼び出せるものになります。`false` の場合、リクエストがコマンドの説明に一致するとき、モデルがそれを実行してもかまいません。
+`disable-model-invocation: true` にすると、コマンドはオペレーターだけが呼び出せるものになります。`false` の場合、リクエストがコマンドの説明に一致するとき、モデルがそれを実行できます。
 ほとんどのコマンドは `true` を使いますが、計画パイプラインとリサーチパイプラインのステージの大半は `false` を使います。
 `src/apothem/commands/README.md` の呼び出し表には、すべてのコマンドの設定が列挙されています。新しいコマンドには行を追加してください。
 `allowed-tools` は読み取り専用に保ってください: それを尊重するハーネスは、確認を求めずにそれらのツールを実行します。
@@ -336,9 +337,9 @@ allowed-tools: "Read, Glob, Grep"
 - 手順を含む Workflow セクション
 - 返却契約 / 出力形式
 
-### 4. CLAUDE.md と CHANGELOG.md を更新する
+### 4. README と CHANGELOG.md を更新する
 
-`§7.1 Commands` にレジストリの行。次のリリースの `### Added` セクションの下に CHANGELOG の行。
+`src/apothem/commands/README.md` の該当するコマンドの表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
 
 ### 5. 検証する
 
@@ -397,9 +398,9 @@ portability: "universal"
 - Workflow（番号付きの手順）
 - Return Contract（最大トークン数、構造、必須フィールド）
 
-### 4. CLAUDE.md と CHANGELOG.md を更新する
+### 4. README と CHANGELOG.md を更新する
 
-`§7.3 Helpers` にレジストリの行。次のリリースの `### Added` セクションの下に CHANGELOG の行。
+`src/apothem/agents/README.md` の Index 表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
 
 ### 5. テストする
 
@@ -427,8 +428,8 @@ portability: "universal"
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -463,9 +464,9 @@ argument-hint: "[args]"               # optional; if userInvocable
 - Common Mistakes
 - Examples
 
-### 4. CLAUDE.md と CHANGELOG.md を更新する
+### 4. README と CHANGELOG.md を更新する
 
-`§7.5 Skills` にレジストリの行。次のリリースの `### Added` セクションの下に CHANGELOG の行。
+`src/apothem/skills/README.md` の Index 表と Folder contents 表に行を追加します。次のリリースの `### Added` セクションの下に CHANGELOG の行を追加します。
 
 ### 5. 検証する
 
@@ -480,13 +481,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] フロントマターが YAML 構文チェックに合格する
 - [ ] スキーマに従って、必須フィールドがすべて存在する
 - [ ] `name` フィールドが kebab-case を使っている
-- [ ] `version` がセマンティック（`MAJOR.MINOR.PATCH`）であり、挙動が変わった場合は引き上げられている
-- [ ] 触れたすべてのアーティファクトについて、`updated` が今日の日付と一致している
-- [ ] `portability` フィールドが設定され、有効である
+- [ ] `version`（バージョンを持つクラスのみ。ルールは持たない）がセマンティック（`MAJOR.MINOR.PATCH`）であり、挙動が変わった場合は引き上げられている
+- [ ] そのフィールドを持つ、触れたすべてのアーティファクトについて、`updated` が今日の日付と一致している
+- [ ] `portability` フィールドが設定され、有効である（コマンドとヘルパーのみ）
 - [ ] CHANGELOG.md が、次のリリースのセクションの下の適切なカテゴリに変更を記載している
 - [ ] プラン内部への参照がない（CM-7 への準拠）
 - [ ] 相互参照が他のアーティファクトと一貫している
-- [ ] 新しいアーティファクトが CLAUDE.md のレジストリに登録されている
+- [ ] 新しいアーティファクトが、そのフォルダの README の索引に登録されている
 - [ ] アーティファクトがテストされている（該当する場合）
 - [ ] `ecosystem-audit` スキルがエラーなしで実行される
 - [ ] 内容が構造上の規約（タイトルの形式、セクションなど）に従っている
@@ -526,8 +527,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### CLAUDE.md のセクションを参照する
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## リントとフォーマット

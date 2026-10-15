@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall कमांड के लिए CLI संदर्भ।"
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,22 +17,22 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 ```
 
 अडैप्टर-प्रबंधित हार्नेस टारगेट हटाता है, फिर वे डायरेक्टरियाँ जिन्हें इंस्टॉल ने
-बनाया था, जब वे ख़ाली हो जाएँ (जिस डायरेक्टरी में आपका कुछ भी है, वह बनी रहती
+बनाया था, जब वे खाली हो जाएँ (जिस डायरेक्टरी में आपका कुछ भी है, वह बनी रहती
 है)। जब तक `--yes` नहीं दिया जाता, पुष्टि के लिए प्रॉम्प्ट करता है। जब कोई
-प्रॉम्प्ट संभव नहीं होता — `--format json` (प्रॉम्प्ट का पाठ एकल JSON दस्तावेज़
+प्रॉम्प्ट संभव नहीं होता — `--format json` (प्रॉम्प्ट टेक्स्ट एकल JSON दस्तावेज़
 को दूषित कर देगा) या एक गैर-इंटरैक्टिव शेल (कोई TTY नहीं) — तो कमांड, जब तक
-`--yes` नहीं दिया जाता, शुरू में ही एक संरचित
-`uninstall.confirmation_required` त्रुटि (निकास 1) के साथ इनकार कर देता है।
+`--yes` नहीं दिया जाता, शुरुआत में ही एक संरचित
+`uninstall.confirmation_required` त्रुटि (निकास 1) के साथ अस्वीकार कर देता है।
 यदि कोई चयनित हार्नेस इंस्टॉल नहीं है, तो कमांड "हटाने के लिए कुछ नहीं" सूचना
 के साथ सफल होता है (निकास 0)।
 
-`--harness all` द्वारा हटाना जान-बूझकर संपूर्ण है: यह हर पंजीकृत हार्नेस को
-कवर करता है, जिनमें वे भी शामिल हैं जिन्हें प्रोफ़ाइल का `exclude_harnesses`
-इंस्टॉल के दौरान छोड़ देता है — सफ़ाई उस स्थिति तक पहुँचती है जो पहले के किसी
-अधिक व्यापक इंस्टॉल ने पीछे छोड़ी हो सकती है। जो हार्नेस कभी इंस्टॉल नहीं हुए,
-वे "हटाने के लिए कुछ नहीं" की रिपोर्ट करते हैं।
+`--harness all` द्वारा हटाना जानबूझकर संपूर्ण है: यह हर पंजीकृत हार्नेस को कवर
+करता है, उन हार्नेसों सहित जिन्हें प्रोफ़ाइल का `exclude_harnesses` इंस्टॉल के
+दौरान छोड़ देता है — सफ़ाई उस स्थिति तक पहुँचती है जो पहले के किसी अधिक व्यापक
+इंस्टॉल ने पीछे छोड़ी हो सकती है। जो हार्नेस कभी इंस्टॉल नहीं हुए, वे "हटाने के
+लिए कुछ नहीं" की रिपोर्ट करते हैं।
 
-सतत-रूप उपनाम `apothem uninstalling` उसी हैंडलर पर रिज़ॉल्व होता है।
+सतत-रूप उपनाम `apothem uninstalling` उसी हैंडलर पर हल होता है।
 
 ## विकल्प
 
@@ -42,7 +42,7 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 | `--yes` | पुष्टि प्रॉम्प्ट छोड़ें। |
 | `--project PATH` | प्रोजेक्ट-स्कोप हार्नेसों के लिए प्रोजेक्ट रूट। |
 | `--quiet`, `-q` | सूचनात्मक आउटपुट दबाएँ; केवल त्रुटियाँ उत्सर्जित होती हैं। |
-| `--verbose`, `-v` | अतिरिक्त नैदानिक आउटपुट उत्सर्जित करें। |
+| `--verbose`, `-v` | अतिरिक्त निदान आउटपुट उत्सर्जित करें। |
 | `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
 | `--json` | `--format json` का संक्षिप्त रूप। |
 | `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करें। |
@@ -53,14 +53,34 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 जब अडैप्टर इंस्टॉल है और सफलतापूर्वक हटा दिया जाता है:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-जब अडैप्टर इंस्टॉल नहीं था:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+जब अडैप्टर इंस्टॉल नहीं था, तो कमांड `0` के साथ बाहर निकलता है। JSON आउटपुट में
+एनवेलप में `"status": "success"` और `"action": "uninstalled"` होते हैं, और परिणाम
+पंक्ति में `"outcome": "skipped"` होता है, जिसका संदेश `"not installed; no files
+removed"` है। `status` फ़ील्ड कभी `"not_installed"` नहीं होता।
 
 ## उदाहरण
 

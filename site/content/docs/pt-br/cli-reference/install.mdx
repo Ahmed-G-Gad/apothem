@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "aaa373f458e002f9"
+sourceHash: "4297dc7c69065630"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,8 +53,9 @@ Quando a seleção grava fora da raiz do projeto, uma confirmação interativa
 protege as gravações com raiz no diretório pessoal. `--yes`, um shell não
 interativo (sem TTY), `--dry-run` e `--format json` prosseguem, cada um, sem
 perguntar. Somente `--dry-run` não grava nada; `--format json` pula a prévia e o
-prompt de confirmação, mas ainda realiza as gravações. Recusar o prompt aborta a
-operação antes que qualquer arquivo seja gravado.
+prompt de confirmação, mas ainda realiza as gravações. Recusar o prompt do diretório pessoal aborta a operação antes que a instalação grave qualquer arquivo. Com
+`--clean`, a etapa de limpeza completa é executada primeiro, sob uma confirmação própria para cada destino: ela grava um backup em `~/.apothem/backups` e remove os destinos que confirma.
+Essas remoções e o backup permanecem no lugar quando o prompt de instalação é recusado.
 
 ## Notas sobre capacidades
 

@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,13 +16,13 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-アダプターが管理するハーネスのターゲットを削除し、続いて、インストールが作成したディレクトリを、それが空になった時点で削除します（あなたのものが何か入っているディレクトリは残ります）。
+アダプターが管理するハーネスのターゲットを削除し、続いて、インストールが作成したディレクトリを、空になった時点で削除します（あなたのものが何か入っているディレクトリは残ります）。
 `--yes` が指定されない限り、確認を求めます。
-プロンプトを表示できない場合 —— `--format json`（プロンプトのテキストが単一の JSON ドキュメントを壊してしまうため）または非対話シェル（TTY なし）—— には、`--yes` が指定されない限り、コマンドは構造化された `uninstall.confirmation_required` エラー（終了コード 1）で最初の段階で拒否します。
-選択したハーネスがインストールされていない場合、コマンドは「nothing to remove」の通知とともに成功します（終了コード 0）。
+プロンプトを表示できない場合 — `--format json`（プロンプトのテキストが単一の JSON ドキュメントを壊してしまうため）または非対話型のシェル（TTY なし）— は、`--yes` が指定されない限り、コマンドは処理を始める前に、構造化された `uninstall.confirmation_required` エラー（終了コード 1）で拒否します。
+選択したハーネスがインストールされていない場合、コマンドは「削除するものがありません」という通知とともに成功します（終了コード 0）。
 
-`--harness all` による削除は、意図的に網羅的です。プロファイルの `exclude_harnesses` がインストール時にスキップするものも含め、登録されているすべてのハーネスを対象とします —— クリーンアップは、以前のより広範なインストールが残した可能性のある状態にまで及びます。
-一度もインストールされていないハーネスは「nothing to remove」と報告します。
+`--harness all` による削除は、意図的に網羅的です。登録済みのすべてのハーネスを対象とし、プロファイルの `exclude_harnesses` がインストール時にスキップするハーネスも含みます — クリーンアップは、以前のより広範なインストールが残した可能性のある状態にまで及びます。
+一度もインストールされていないハーネスは「削除するものがありません」と報告します。
 
 進行形のエイリアス `apothem uninstalling` は、同じハンドラーに解決されます。
 
@@ -30,13 +30,13 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 | オプション | 説明 |
 |---|---|
-| `--harness NAME` | 削除するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。 |
+| `--harness NAME` | 削除するハーネスアダプター、またはレジストリ全体の集合を表す `all`（必須）。 |
 | `--yes` | 確認プロンプトをスキップします。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
-| `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
 | `--verbose`, `-v` | 追加の診断出力を出力します。 |
 | `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
-| `--json` | `--format json` の短縮形。 |
+| `--json` | `--format json` の短縮形です。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
@@ -45,14 +45,32 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 アダプターがインストールされていて、正常に削除された場合:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-アダプターがインストールされていなかった場合:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+アダプターがインストールされていなかった場合、コマンドは `0` で終了します。JSON 出力では、エンベロープに `"status": "success"` と `"action": "uninstalled"` が含まれ、結果の行には `"outcome": "skipped"` と、メッセージ `"not installed; no files
+removed"` が含まれます。`status` フィールドが `"not_installed"` になることはありません。
 
 ## 例
 
@@ -69,9 +87,9 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 | コード | 意味 |
 |---|---|
 | 0 | アダプターがアンインストールされた、またはインストールされていなかった |
-| 1 | ハーネスが見つからない、確認が拒否されたか利用できない（`--yes` なしでの非対話モードまたは JSON モード）、またはすべての削除が失敗した |
+| 1 | ハーネスが見つからない、確認が拒否されたか利用できない（`--yes` なしの非対話モードまたは JSON モード）、またはすべての削除が失敗した |
 | 2 | 部分的な削除 — 失敗の前に少なくとも 1 つのハーネスが削除された |
-| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` のもとでは、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` の下では、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 

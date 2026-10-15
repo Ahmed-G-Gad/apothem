@@ -2,7 +2,7 @@
 title: "Criando um adaptador de ferramenta"
 description: "Guia passo a passo para criar um novo adaptador de ferramenta do Apothem."
 machineTranslated: true
-sourceHash: "c24c9b0721f6cd1d"
+sourceHash: "6a5252c560462438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,10 +28,6 @@ cd apothem-myadapter
 name = "apothem-myadapter"
 version = "X.Y.Z"
 requires-python = ">=3.10"
-dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
-
-[project.entry-points."apothem.harnesses"]
-my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
 ```
 
 ## Passo 2: Implementar o adaptador
@@ -87,10 +83,11 @@ class MyHarnessAdapter(HarnessAdapter):
         return "\n\n".join(str(rule) for rule in rules)
 ```
 
+O Apothem não descobre adaptadores de terceiros. Antes, adicione o adaptador ao registro estático em `src/apothem/lib/harness_registry.py`, em um checkout do Apothem. Até fazer isso, `apothem install --harness my-harness` rejeita o identificador.
+
 ## Passo 3: Instalar e testar
 
 ```bash
-pip install -e .
 apothem install --harness my-harness
 apothem verify --harness my-harness
 ```

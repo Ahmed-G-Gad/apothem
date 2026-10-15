@@ -40,11 +40,13 @@ GitHub Copilot does not expose a file-based user-global instructions path for
 this adapter to manage. Apothem targets the documented project-scope
 instructions file and leaves IDE-level user settings operator-owned.
 
-Apothem treats `copilot-instructions.md` as one voice among the project's
-assistant instruction surfaces: the conformity gate's multi-surface
-coherence check verifies its shared claims stay semantically aligned with
-the project's other instruction files, so Copilot never receives guidance
-that contradicts what the rest of the toolchain reads.
+Within the Apothem repository, `.github/copilot-instructions.md` is one voice
+among the project's assistant instruction surfaces. In an Apothem checkout, the
+conformity gate's multi-surface coherence check compares the shared claims in
+`AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`, and reports a
+claim that one of them omits or contradicts. The check does not read the
+instructions file Apothem writes into your project. The gate is advisory by
+default: it reports findings and exits `0`.
 
 ## Verification
 

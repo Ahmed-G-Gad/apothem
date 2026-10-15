@@ -2,7 +2,7 @@
 title: "Apothem против сырой конфигурации GitHub Copilot"
 description: "Ручное сопровождение copilot-instructions.md GitHub Copilot против его рендеринга из общего профиля Apothem."
 machineTranslated: true
-sourceHash: "52a8af5e9d74e6da"
+sourceHash: "8619aad7bba087e4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,12 +13,12 @@ GitHub Copilot читает свои инструкции из `.github/copilot-
 
 ## Сравнение усилий
 
-| Задача | Сырая ручная конфигурация | Под управлением Apothem |
+| Задача | Ручная конфигурация | Под управлением Apothem |
 | ---- | --------------- | --------------- |
-| Написать инструкции | Редактировать `.github/copilot-instructions.md` вручную | Отрендерено: общие правила встроены в файл |
-| Согласовывать инструкции с другими средами | Вручную, для каждого инструмента | Автоматически при `apothem update` |
-| Установить / удалить конфигурацию | Создавать и удалять файл вручную | `apothem install` / `apothem uninstall` |
-| Проверять, что конфигурация верна | Ручная проверка | `apothem verify --harness github-copilot` |
+| Писать инструкции | Вручную редактировать `.github/copilot-instructions.md` | Отрендерено: общие правила встроены в файл |
+| Согласовывать инструкции с другими окружениями | Вручную, для каждого инструмента | Автоматически при `apothem update` |
+| Установка / удаление конфигурации | Создавать и удалять файл вручную | `apothem install` / `apothem uninstall` |
+| Проверка корректности конфигурации | Ручная инспекция | `apothem verify --harness github-copilot --project <path>` |
 
 ## Чем управляет Apothem
 
@@ -30,16 +30,11 @@ GitHub Copilot читает свои инструкции из `.github/copilot-
 
 ## Путь миграции
 
-1. Запустите `apothem profile init`, чтобы создать общий профиль, если вы ещё
-   этого не сделали.
-2. Перенесите содержимое существующего `.github/copilot-instructions.md` в общий
-   корпус.
-3. Запустите `apothem install --harness github-copilot`, чтобы отрендерить файл
-   инструкций.
-4. Запустите `apothem verify --harness github-copilot`, чтобы подтвердить, что
-   конфигурация установлена.
-5. Используйте `apothem update --harness github-copilot` для каждого
-   последующего изменения.
+1. Выполните `apothem profile init`, чтобы создать общий профиль, если вы этого ещё не сделали.
+2. Перенесите содержимое существующего `.github/copilot-instructions.md` в общий корпус.
+3. Выполните `apothem install --harness github-copilot --project <path>`, чтобы отрендерить файл инструкций.
+4. Выполните `apothem verify --harness github-copilot --project <path>`, чтобы подтвердить, что конфигурация установлена.
+5. Для каждого последующего изменения используйте `apothem update --harness github-copilot --project <path>`.
 
 ## Читать дальше
 

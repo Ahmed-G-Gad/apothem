@@ -1,8 +1,8 @@
 ---
 title: "Kimi Code"
-description: "Adaptor harness Apothem untuk Kimi Code (GA)."
+description: "Adapter harness Apothem untuk Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "4bcd687aeabc46b7"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,10 @@ sourceHash: "4bcd687aeabc46b7"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-Adaptor menulis permukaan tata kelola Apothem bersama ke dalam `AGENTS.md` di
+Adapter menulis permukaan tata kelola Apothem bersama ke dalam `AGENTS.md` di
 akar proyek sebagai blok terkelola yang dibatasi sentinel (prosa operator di luar
 sentinel dipertahankan) dan menyimpan kohor Markdown non-native di bawah pohon
-dukungan milik Apothem di `<project>/.kimi-code/.apothem/support/`.
+pendukung milik Apothem di `<project>/.kimi-code/.apothem/support/`.
 `AGENTS.md` proyek dibaca oleh banyak alat pengodean selain Kimi Code, sehingga
 blok tersebut ditulis sebagai panduan seluruh proyek yang tidak menyebut satu
 alat tunggal pun sebagai pembacanya.
@@ -36,20 +36,20 @@ command, skill, hook, agen, aturan, dan templat di bawah
 
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender permukaan instruksi
+Adapter membaca profil bersama Apothem dan merender permukaan instruksi
 `AGENTS.md` di akar proyek pada setiap kali `apothem install` atau
 `apothem update` dijalankan. Aturan perilaku dan korpus tata kelola mendarat di
 blok terkelola `AGENTS.md`; kohor command, skill, hook, agen, aturan, dan templat
 ditempatkan di bawah `.kimi-code/.apothem/support/` dan dirujuk dari permukaan
-instruksi. Ini adalah tata letak yang dipilih adaptor, bukan celah pada Kimi Code:
+instruksi. Ini adalah tata letak yang dipilih adapter, bukan celah pada Kimi Code:
 Kimi Code memuat skill dari `.kimi-code/skills/` dan `.agents/skills/`, agen
 kustom dari `.kimi-code/agents/` dan `.agents/agents/`, serta hook dari array
 `[[hooks]]` di `~/.kimi-code/config.toml`, tetapi tidak memuatnya dari pohon
-dukungan, sehingga salinan Apothem di sana adalah materi rujukan yang ditunjuk
-oleh blok `AGENTS.md`. Blok tersebut diakhiri dengan bagian berkas dukungan
+pendukung, sehingga salinan Apothem di sana adalah materi rujukan yang ditunjuk
+oleh blok `AGENTS.md`. Blok tersebut diakhiri dengan bagian berkas pendukung
 Apothem yang menyebutkan, relatif terhadap akar proyek, direktori di bawah
-`.kimi-code/.apothem/support/` yang menjadi acuan resolusi setiap sitasi bergaya
-repositori (`rules/<name>.md`, `templates/...`, `hooks/...`), sehingga
+`.kimi-code/.apothem/support/` tempat setiap kutipan bergaya repositori
+(`rules/<name>.md`, `templates/...`, `hooks/...`) di-resolve, sehingga
 `AGENTS.md` yang di-commit tidak membawa jalur khusus mesin apa pun. (Perilaku
 Kimi Code menurut halaman kustomisasinya untuk
 [skill](https://moonshotai.github.io/kimi-code/en/customization/skills),
@@ -76,11 +76,13 @@ untuk model dan permukaan konfigurasi terkini.
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -88,8 +90,8 @@ Perintah verify mengonfirmasi bahwa:
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Menurunkan ulang blok terkelola `AGENTS.md` di akar proyek dan kohor dukungan
-dari keadaan profil bersama saat ini.
+Menurunkan ulang blok terkelola `AGENTS.md` di akar proyek dan kohor pendukung
+dari status profil bersama saat ini.
 
 ## Pencopotan
 
@@ -97,8 +99,13 @@ dari keadaan profil bersama saat ini.
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
-YAML profil bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `AGENTS.md` di akar proyek dan mempertahankan teks
+apa pun di luar sentinel. Berkas dihapus hanya ketika tidak ada lagi yang
+tersisa di dalamnya. Juga menghapus berkas pendukung yang ditempatkan Apothem di
+bawah `<project>/.kimi-code/.apothem/support/`. Sebelum perubahan, salinan
+bertanda waktu dari setiap berkas disimpan di bawah `~/.apothem/backups/`;
+tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan
+mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
@@ -124,4 +131,4 @@ python -m apothem.conformity.gate --all .
 
 - [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
 - [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
-- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — mencantumkan dan memeriksa adaptor dari CLI
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

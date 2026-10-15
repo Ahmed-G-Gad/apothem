@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "कॉन्फ़िगर करने योग्य मॉडल बैकएंड के रूप में GLM (Z.ai) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,8 @@ apothem install --harness glm --project /path/to/project
 जिसे आप अपनी स्वयं की Z.ai कुंजी से बदलते हैं — Apothem कभी कोई वास्तविक सीक्रेट
 नहीं लिखता। मॉडल ID संस्करण के साथ बदलते रहते हैं, इसलिए Apothem किसी को भी पिन
 नहीं करता; फ़ाइल में `<GLM_MODEL_ID>` प्लेसहोल्डर होते हैं जिन्हें आप वर्तमान
-[Z.ai दस्तावेज़](https://docs.z.ai/devpack/tool/claude) से भरते हैं।
+[Z.ai दस्तावेज़](https://docs.z.ai/devpack/tool/claude) से भरते हैं। साझा प्रोफ़ाइल
+से कुछ भी इस फ़ाइल में नहीं जाता; यह एक निश्चित टेम्पलेट है।
 
 ## संगतता टिप्पणियाँ
 
@@ -102,8 +103,8 @@ python -m apothem.conformity.gate --all .
 | लक्षण | समाधान |
 |---------|-----|
 | कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness glm --project /path/to/project` फिर से चलाएँ |
-| सत्यापन विफल रहा | `apothem update --harness glm --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness glm --project /path/to/project` फिर से चलाएँ |
+| सत्यापन विफल रहा | प्रदाता फ़ाइल या तो अनुपस्थित है या खाली है। यदि वह अनुपस्थित है, तो `apothem update --harness glm --project /path/to/project` चलाएँ। यदि वह खाली है, तो पहले `.apothem/providers/glm.toml` को एक ओर हटा दें, फिर `update` चलाएँ और दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `.apothem/providers/glm.toml` को सीधे संपादित करें; Apothem किसी मौजूदा फ़ाइल को कभी दोबारा नहीं लिखता, और साझा प्रोफ़ाइल इसमें कुछ नहीं जोड़ती। नया टेम्पलेट पाने के लिए, फ़ाइल को एक ओर हटा दें और `apothem update --harness glm --project /path/to/project` चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 

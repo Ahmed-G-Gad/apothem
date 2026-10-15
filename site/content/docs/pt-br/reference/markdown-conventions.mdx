@@ -1,12 +1,12 @@
 ---
 title: "Convenções de Markdown"
-description: "Padroniza o sabor de Markdown, a estrutura de títulos, as declarações de blocos de código, os formatos de links internos, os banners de autoria e a imposição por validadores."
+description: "Padronize o sabor de Markdown, a estrutura de títulos, as declarações de blocos de código cercados, os formatos de links internos, os banners de autoria e a imposição por validadores."
 machineTranslated: true
-sourceHash: "f23d6b35db5b9a17"
+sourceHash: "940c41973c1d1e98"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referência canônica para a forma e a formatação de Markdown em todo artefato `.md` redigido.** O resumo na seção Conventions do [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) é a declaração em linha; esta página é a referência independente que os colaboradores downstream citam.
+> **Referência canônica para a forma e a formatação de Markdown em todo artefato `.md` redigido.** O resumo da seção Conventions do [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) é a declaração em linha; esta página é a referência independente que os contribuidores a jusante citam.
 
 ---
 
@@ -16,23 +16,23 @@ O GitHub-Flavored Markdown (GFM) é o sabor do host. Todo artefato é renderizad
 
 ## 2. Hierarquia de títulos
 
-Um H1 por arquivo. Os títulos seguintes descem de forma monótona (H2 → H3 → H4) sem pular níveis. Títulos com maiúscula apenas no início da frase; nada de TUDO EM MAIÚSCULAS, nada de Maiúscula Em Todas As Palavras. O H1 carrega o título principal do documento e É a âncora do documento na navegação do site de documentação.
+Um H1 por arquivo. Os títulos seguintes descem de forma monotônica (H2 → H3 → H4), sem pular níveis. Títulos com maiúscula apenas no início da frase; nada de TUDO EM MAIÚSCULAS, nada de Maiúscula Em Todas As Palavras. O H1 carrega o título principal do documento e É a âncora do documento na navegação do site de documentação.
 
 ## 3. Blocos de código
 
-Os blocos de código cercados declaram a sua linguagem (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blocos sem tag suprimem o realce de sintaxe e sinalizam desvio de autoria; a regra MD040 do markdownlint, configurada em [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), impõe a tag de linguagem.
+Os blocos de código cercados declaram a sua linguagem (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blocos sem tag suprimem o realce de sintaxe e sinalizam desvio na redação; a regra MD040 do markdownlint, configurada em [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), impõe a tag de linguagem.
 
 ## 4. Links internos
 
-As referências cruzadas internas usam **caminhos a partir da raiz do site** (por exemplo, `[Authorship header](/docs/reference/authorship-header)`). Caminhos simples relativos ao repositório com extensão `.md`/`.mdx` (`/docs/foo.md`) e URLs completas para o mesmo repositório (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) são evitados em links dentro do site, porque dificultam renomeações de páginas e reorganizações de seções.
+As referências cruzadas internas usam **caminhos a partir da raiz do site** (por exemplo, `[Authorship header](/docs/reference/authorship-header)`). Caminhos simples relativos ao repositório, com extensão `.md`/`.mdx` (`/docs/foo.md`), e URLs completas para o mesmo repositório (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) são evitados em links dentro do site, porque dificultam renomeações de páginas e reorganizações de seções.
 
-Esses caminhos `/docs/...` a partir da raiz do site — e a forma `/<locale>/docs/...` para os locales não padrão do cohort — são resolvidos pelo validador `link-check` contra o conjunto de páginas em disco sob `site/content/docs/`: `/docs/a/b` corresponde a `site/content/docs/a/b.mdx` ou ao índice de pasta `site/content/docs/a/b/index.mdx`, e a forma com locale corresponde à subárvore `site/content/docs/<locale>/`. Um link para uma rota removida ou renomeada não resolve para nenhum dos dois arquivos e é detectado como rota morta (um 404 visível ao usuário) no conformity gate, e não apenas pelo build do site.
+Esses caminhos `/docs/...` a partir da raiz do site — e a forma `/<locale>/docs/...` para os locales não padrão do cohort — são resolvidos pelo validador `link-check` contra o conjunto de páginas em disco sob `site/content/docs/`: `/docs/a/b` corresponde a `site/content/docs/a/b.mdx` ou ao índice de pasta `site/content/docs/a/b/index.mdx`, e a forma com locale corresponde à subárvore `site/content/docs/<locale>/`. Um link para uma rota removida ou renomeada não resolve para nenhum dos dois arquivos e é reportado como rota morta (um 404 visível ao usuário) pelo `link-check`, um matcher consultivo que não faz a execução falhar (veja a §6).
 
-Links externos para referências mutáveis (`main`, `master`, `latest`, `HEAD`) são fixados em SHAs de commit ou em tags de lançamento sempre que a estabilidade do conteúdo vinculado importa; referências voláteis são documentadas como tal com um comentário `{/* volatile */}` adjacente.
+Links externos para refs mutáveis (`main`, `master`, `latest`, `HEAD`) são fixados em SHAs de commit ou em tags de lançamento sempre que a estabilidade do conteúdo vinculado importa; as referências voláteis são documentadas como tais com um comentário `{/* volatile */}` adjacente.
 
 ## 5. Banner de autoria
 
-Todo artefato Markdown (com as exceções enumeradas em [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) carrega o banner canônico do cabeçalho de autoria no byte 0, na variante de comentário HTML conforme [Cabeçalho de autoria](/docs/reference/authorship-header). O banner fica acima do frontmatter YAML quando ambos estão presentes.
+Todo artefato Markdown (com as exceções enumeradas em [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) carrega o banner canônico do cabeçalho de autoria na variante de comentário HTML, conforme [Cabeçalho de autoria](/docs/reference/authorship-header). Sem frontmatter, o banner é a linha 1. Com frontmatter YAML, o frontmatter permanece no byte 0 e o banner vem depois do `---` de fechamento.
 
 ## 6. Validadores
 

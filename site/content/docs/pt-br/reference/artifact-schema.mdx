@@ -2,7 +2,7 @@
 title: "Especificação do schema de artefatos"
 description: "Schema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de código-fonte do Apothem, com templates por classe e regras de validação."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "0a94086b9eaf12b9"
 > declarando `additionalProperties` para que o conformity gate rejeite chaves desconhecidas.
 > Esta página e [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
 > são as duas projeções legíveis por humanos desses schemas — esta página traz
-> os **templates e exemplos completos** por classe, e frontmatter-schema, o
+> os **templates e exemplos práticos** por classe, e frontmatter-schema, o
 > **índice conciso de chaves obrigatórias**. Onde uma página divergir dos JSON
 > Schemas, os schemas prevalecem.
 
@@ -289,8 +289,8 @@ A chave de nível superior `hooks` mapeia nomes de eventos para arrays de blocos
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -300,19 +300,20 @@ A chave de nível superior `hooks` mapeia nomes de eventos para arrays de blocos
 }
 ```
 
+A forma `-m apothem.hooks.dispatch` serve ao desenvolvimento a partir de um checkout do código-fonte com `PYTHONPATH=src`.
+
 | Campo | Tipo | Propósito | Exemplo |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | Padrão de nome de ferramenta (ou `"*"` para eventos independentes de ferramenta) | `"Write"` |
 | `hooks[].type` | literal `"command"` | O único tipo de manipulador de hook suportado atualmente | `"command"` |
-| `hooks[].command` | string | Comando executável; o Apothem usa `python` | `"python"` |
-| `hooks[].args` | array de strings | Argumentos em forma exec que invocam `-m apothem.hooks.dispatch` ou `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer em segundos | Tempo máximo de execução antes que o host encerre o hook | `30` |
+| `hooks[].command` | string | Comando executável; o Apothem usa o marcador de posição `${PYTHON_BIN}`, resolvido na instalação | `"${PYTHON_BIN}"` |
+| `hooks[].args` | array de strings | Argumentos em forma exec: um caminho de script em `${HARNESS_ROOT}/.apothem/support/`, seguido dos seus argumentos | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | inteiro em segundos | Tempo máximo de execução antes de o host encerrar o hook | `30` |
 | `hooks[].statusMessage` | string | Rótulo curto exibido na interface do host | `"Session start"` |
 
 ### Eventos obrigatórios
 
-Os templates distribuídos registram os eventos a seguir. Todos os cinco são
-obrigatórios para que os validadores reportem PASS:
+O template do Claude Code registra SessionStart, PreToolUse, PostToolUse e Stop. PreCompact e PostCompact não são registrados no Claude Code ([referência de hooks](/docs/reference/hooks)), e `scripts/dev/validate_hooks.py` relata cada um como ausente, em forma de aviso. A tabela lista os cinco eventos que `validate_hooks.py` verifica:
 
 > **Os valores de timeout espelham os orçamentos canônicos dos eventos de hook** — a
 > tabela abaixo os reproduz para conveniência do leitor; a fonte canônica prevalece.
@@ -357,7 +358,7 @@ Todo comando de hook passa pelo mesmo despachante Python:
 
 **Caminho:** `CLAUDE.md` (raiz)
 
-**Propósito:** Índice global de configuração do ecossistema.
+**Propósito:** Instruções do Claude Code com escopo de projeto.
 
 ### Frontmatter YAML obrigatório
 
@@ -366,27 +367,15 @@ Todo comando de hook passa pelo mesmo despachante Python:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Seções obrigatórias (em ordem)
+### Seções
 
-1. **§1 Suíte de planejamento** — Referência à localização do template
-2. **§2 Identidade cognitiva** — Mandato de arquitetura criativa
-3. **§3 Diretórios de artefatos** — Tabela de caminhos e propósitos
-4. **§4 Governança escalonada por seriedade** — Definição dos quatro níveis
-5. **§5 Diretivas operacionais** — Resolução de problemas, princípios de comunicação
-6. **§6 Mandatos transversais** — Visão geral de CM-1–28
-7. **§7 Registros** — Tabelas de artefatos:
-   - 7.1 Comandos
-   - 7.2 Regras
-   - 7.3 Auxiliares
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Evolução de artefatos
+O `CLAUDE.md` é redigido em seções de prosa, descritas em [`CLAUDE.md`](/docs/reference/claude-md). Nenhum validador exige uma lista fixa de seções: `scripts/dev/validate_ecosystem.py` verifica as chaves de frontmatter acima.
 
 ---
 
@@ -408,7 +397,7 @@ Todo artefato deve satisfazer estas verificações:
 
 ### Validação do conteúdo
 
-- [ ] O conteúdo começa imediatamente após o `---` de fechamento, em uma nova linha
+- [ ] O conteúdo começa em uma nova linha após o `---` de fechamento; nos arquivos da família Markdown, o banner do cabeçalho de autoria é o primeiro conteúdo depois dele
 - [ ] Nenhuma referência interna de planos (conformidade com CM-7)
 - [ ] As referências cruzadas se resolvem (se listarem outros artefatos)
 - [ ] Os links usam caminhos relativos com barras normais

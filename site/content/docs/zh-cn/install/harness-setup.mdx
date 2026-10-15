@@ -2,7 +2,7 @@
 title: "工具设置"
 description: "为平台添加和配置工具适配器。"
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-要一次性检查每个已注册的适配器，运行 `apothem doctor`。它会打印一张按工具划分的安装状态表，如果有任何适配器报告未安装，则以非零状态退出。
+要一次性检查每个已注册的适配器，请运行 `apothem doctor`。它会打印一张按工具划分的安装状态表，并且只有在某项检查失败时才以非零状态退出，例如已安装的工具无法通过验证、钩子命令无法启动，或已存在的配置档案无法通过校验。未安装的工具会被列出，但不会导致 `doctor` 失败。
 
 ## 查看已安装的工具
 

@@ -2,7 +2,7 @@
 title: "Conventions Markdown"
 description: "Normaliser la variante Markdown, la structure des titres, la déclaration des blocs de code, le format des liens internes, les bannières de paternité et leur application par les validateurs."
 machineTranslated: true
-sourceHash: "f23d6b35db5b9a17"
+sourceHash: "940c41973c1d1e98"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,13 +26,13 @@ Les blocs de code délimités déclarent leur langage (` ```python `, ` ```bash 
 
 Les références croisées internes utilisent des **chemins depuis la racine du site** (par exemple `[Authorship header](/docs/reference/authorship-header)`). Les chemins bruts relatifs au dépôt avec une extension `.md`/`.mdx` (`/docs/foo.md`) et les URL complètes vers le même dépôt (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) sont évités pour les liens internes au site, car ils entravent les renommages de pages et les réorganisations de sections.
 
-Ces chemins `/docs/...` depuis la racine du site, ainsi que la forme `/<locale>/docs/...` pour les locales de cohorte autres que la locale par défaut, sont résolus par le validateur `link-check` par rapport à l'ensemble des pages présentes sur disque sous `site/content/docs/` : `/docs/a/b` correspond à `site/content/docs/a/b.mdx` ou à l'index de dossier `site/content/docs/a/b/index.mdx`, et la forme localisée correspond à un chemin sous la sous-arborescence `site/content/docs/<locale>/`. Un lien vers une route supprimée ou renommée ne se résout vers aucun de ces fichiers et est détecté comme route morte (un 404 visible par l'utilisateur) au portail de conformité, plutôt que seulement par la compilation du site.
+Ces chemins `/docs/...` depuis la racine du site, ainsi que la forme `/<locale>/docs/...` pour les locales de cohorte autres que la locale par défaut, sont résolus par rapport à l'ensemble des pages présentes sur disque sous `site/content/docs/` par le validateur `link-check` : `/docs/a/b` correspond à `site/content/docs/a/b.mdx` ou à l'index de dossier `site/content/docs/a/b/index.mdx`, et la forme localisée correspond à un chemin sous la sous-arborescence `site/content/docs/<locale>/`. Un lien vers une route supprimée ou renommée ne se résout vers aucun de ces deux fichiers et est signalé comme route morte (un 404 visible par l'utilisateur) par `link-check`, un matcher consultatif qui ne fait pas échouer l'exécution (voir le §6).
 
 Les liens externes vers des références mutables (`main`, `master`, `latest`, `HEAD`) sont épinglés à des SHA de commit ou à des étiquettes de publication chaque fois que la stabilité du contenu lié importe ; les références volatiles sont documentées comme telles par un commentaire adjacent `{/* volatile */}`.
 
 ## 5. Bannière de paternité
 
-Chaque artefact Markdown (hors exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) porte la bannière canonique d'en-tête de paternité à l'octet 0, dans la variante en commentaire HTML définie dans [En-tête de paternité](/docs/reference/authorship-header). La bannière se place au-dessus du frontmatter YAML lorsque les deux sont présents.
+Chaque artefact Markdown (hors exceptions énumérées dans [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) porte la bannière canonique d'en-tête de paternité, dans la variante en commentaire HTML définie dans [En-tête de paternité](/docs/reference/authorship-header). Sans frontmatter, la bannière occupe la ligne 1. Avec un frontmatter YAML, le frontmatter reste à l'octet 0 et la bannière suit le `---` de fermeture.
 
 ## 6. Validateurs
 

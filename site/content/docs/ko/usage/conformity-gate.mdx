@@ -2,27 +2,31 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트를 실행하여 생태계 상태를 검증합니다."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `src/apothem/conformity/gate.py`에 있는 적합성 게이트는 운영자가 작성하는 모든
 아티팩트에 대해 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분을 실행합니다.
 
+이 페이지의 명령은 Apothem 체크아웃을 전제로 하므로, 각 명령 앞에
+`PYTHONPATH=src`를 붙이세요. 스크립트로 설치한 뒤에는 `src` 대신
+`PYTHONPATH="$HOME/.apothem/src"`를 사용하세요.
+
 ## 게이트 실행
 
 게이트는 **기본적으로 권고 모드**입니다. 발견 사항을 보고하고 `0`으로
-종료하므로, 로컬 실행이 여러분을 막는 일은 절대 없습니다. 차단 발견 사항이 있을
-때 0이 아닌 코드로 종료하려면 `--strict`를 추가하세요(또는
+종료하므로, 로컬 실행이 여러분을 막는 일은 절대 없습니다. 차단 수준의 발견
+사항이 있을 때 0이 아닌 코드로 종료하려면 `--strict`를 추가하세요(또는
 `APOTHEM_CONFORMITY_STRICT=1`을 설정하세요). 이는 CI와 pre-commit이 위반 변경을
 실패시키는 데 사용하는 모드입니다.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 종료 코드: `0`은 깨끗함(또는 권고 모드), `2`는 strict 모드의 발견 사항 차단,
@@ -46,33 +50,33 @@ python -m apothem.conformity.gate --all --strict .
 
 | 막대 | 검사 | 종류 |
 |-----|-------|------|
-| M1 | 호스트 프로젝트 무관성 | 추론 |
-| M2 | 편집적 공개 | 기계적 |
-| M3 | 열 가지 품질 차원 | 추론 |
-| M4 | 자기 적용 | 기계적 |
-| M5 | 권위(날조된 신원 / 엔드포인트 / 시크릿 없음) | 기계적 |
-| M6 | 전문성 통합 | 추론 |
-| M7 | 선택지 주석 | 기계적 |
-| M8 | 확정성 | 기계적 |
-| M9 | 시각적 지렛대 | 추론 |
-| M10 | 양방향 바인딩 | 기계적 |
-| M11 | 애자일 스프린트 | 추론 |
-| M12 | 단계 보고 및 정규 레이아웃 | 기계적 |
-| M13 | 코드 장인정신 | 기계적 |
-| M14 | 체계성 | 추론 |
-| M15 | 프로덕션 준비 | 기계적 |
+| M1 | 호스트 프로젝트 불가지론 | 추론형 |
+| M2 | 편집 공개 | 추론형 |
+| M3 | 열 가지 품질 차원 | 기계형 + 추론형 |
+| M4 | 자기 적용 | 기계형 |
+| M5 | 권한(날조된 신원 / 엔드포인트 / 시크릿 없음) | 기계형 |
+| M6 | 전문성 반영 | 추론형 |
+| M7 | 옵션 주석 | 기계형 |
+| M8 | 확정성 | 기계형 |
+| M9 | 시각적 활용 | 추론형 |
+| M10 | 양방향 바인딩 | 기계형 |
+| M11 | 애자일 스프린트 | 추론형 |
+| M12 | 단계 보고 및 표준 레이아웃 | 기계형 + 추론형 |
+| M13 | 코드 작성 기술 | 기계형 |
+| M14 | 체계성 | 추론형 |
+| M15 | 프로덕션 준비 | 기계형 + 추론형 |
 
 ## 표적 검사
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` 모드(`python -m apothem.conformity.gate --hook`)는 하니스가 디스패치하는
@@ -96,5 +100,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## CI 통합
 
-게이트는 모든 푸시마다 `.github/workflows/conformity.yml`을 통해 CI에서
-실행됩니다.
+`.github/workflows/ci.yml`의 quality 작업은 `main`에 푸시할 때와, 이 작업이 감시하는 경로를 건드리는 `main` 대상 풀 리퀘스트에서 게이트를 strict 모드로 실행합니다(`python -m apothem.conformity.gate --all . --strict`). 별도의 `.github/workflows/conformity.yml` 워크플로는 픽스처 스위프(`tests/conformity-scenarios/verify.py --strict`)를 실행합니다.

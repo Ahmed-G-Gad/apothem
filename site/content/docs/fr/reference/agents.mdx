@@ -2,7 +2,7 @@
 title: "Auxiliaires"
 description: "Agents auxiliaires persistants pour la recherche, l'audit, la qualité et l'orchestration, avec contrats de frontmatter et protocoles d'isolation de déploiement."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,9 +51,10 @@ maxTurns: <integer>
 ## Conversion par environnement
 
 Un auxiliaire dont l'octroi `tools`, après application de `disallowedTools`,
-n'inclut ni `Write` ni `Edit` est en lecture seule. Chaque environnement qui
-convertit les auxiliaires applique cette limite nativement ou retire la mention
-de lecture seule :
+n'inclut aucun outil de modification de fichiers (`Write`, `Edit`, `MultiEdit`
+ou `NotebookEdit`) est en lecture seule. Chaque environnement qui convertit les
+auxiliaires applique cette limite nativement ou retire la mention de lecture
+seule :
 
 | Environnement | Limite d'outils | Limite de tours | Modèle et effort |
 | --- | --- | --- | --- |

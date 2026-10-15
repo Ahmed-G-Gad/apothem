@@ -2,7 +2,7 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "d17a5f2f79af7cc9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,7 @@ Les deux surfaces (ou plus) sont des *canaux* différents qui expriment une seul
 | `AGENTS.md` | racine du dépôt (et/ou `.codex/AGENTS.md`) | **DOIT** | environnements compatibles AGENTS |
 | `CLAUDE.md` | racine du dépôt (et/ou `.claude/CLAUDE.md`) | **DOIT** | Claude Code |
 | fichier d'instructions situé sous `.github/` | fichier d'instructions situé sous `.github/` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
-| manifeste des assistants situé sous `site/content/docs/architecture/` | racine du dépôt | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
+| manifeste des assistants situé sous `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
 | `.cursorrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution d'éditeur dans l'IDE |
 | `.windsurfrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution compagnon dans l'IDE |
 
@@ -80,7 +80,7 @@ La fixture [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -114,16 +114,16 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- Le premier vérifie que le fichier d'instructions dans l'IDE existe, s'analyse, contient chaque section canonique énumérée au §4 et commence par la bannière canonique de paternité.
+- Le premier vérifie que le fichier d'instructions dans l'IDE existe, s'analyse, contient chaque section canonique énumérée au §4 et commence par la ligne canonique `SPDX-License-Identifier: MIT` (variante Markdown).
 - Le deuxième analyse les sections canoniques de chaque surface ; il vérifie que les sections partagées sont mutuellement cohérentes selon un comparateur normalisé (insensible à la casse, tolérant aux espaces, admettant la paraphrase lexicale mais exigeant l'équivalence sémantique sur la liste d'affirmations définie par la fixture).
-- Le troisième vérifie que la ligne de copyright du LICENSE et la ligne « Copyright (c) » de la bannière canonique nomment le même auteur.
+- Le troisième vérifie que le LICENSE racine porte une ligne `Copyright (c) <name>` analysable ; les en-têtes par fichier ne portent aucun nom d'auteur.
 
 ---
 
 ## 8. Cycle de vie des surfaces
 
-- **Ajouter une surface.** L'opérateur l'active via le canal d'enquête structurée ou via un `make surfaces-add <name>` ultérieur. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
-- **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, la liste required-in du validateur est modifiée.
+- **Ajouter une surface.** L'opérateur l'active via le canal d'enquête structurée. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
+- **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, et la liste required-in du validateur est modifiée.
 - **Détection de dérive.** Tout commit qui s'écarte de la liste d'affirmations est rejeté par le pre-commit / la CI ; l'auteur du commit réécrit la surface pour rétablir la cohérence.
 
 ---

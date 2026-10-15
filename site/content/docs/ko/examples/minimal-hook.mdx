@@ -2,7 +2,7 @@
 title: "최소 훅"
 description: "최소 Apothem 훅 예제 — 파일 쓰기마다 검사를 발화시킵니다."
 machineTranslated: true
-sourceHash: "d1337398a00a9c83"
+sourceHash: "714a1269e07cc416"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## settings.json 에서 등록
@@ -48,9 +48,9 @@ Claude Code 에서 임의의 파일 쓰기를 수행하고 훅 추적 패널에�
 
 ## 쓰기 차단하기
 
-`sys.exit(0)` 을 `sys.exit(1)` 로 변경하고 stdout 에 JSON 차단 블록을 출력하세요:
+쓰기를 차단하려면 Apothem 자체 훅이 하는 방식대로 deny 엔벨로프를 stdout에 출력하고, 여전히 0으로 종료합니다:
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

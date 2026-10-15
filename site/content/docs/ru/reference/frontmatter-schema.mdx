@@ -2,30 +2,30 @@
 title: "Схема фронтматтера"
 description: "Справочное руководство по структуре блока YAML-фронтматтера, обязательным ключам по классам и правилам их применения валидаторами для всех классов артефактов."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "482f970f0b254769"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Каноническая справка по YAML-фронтматтеру для каждого класса артефактов.** Сводка в разделе «Conventions» файла [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — это встроенное объявление; JSON Schema по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` отклоняет неизвестные ключи) — машиночитаемый контракт, который имеет приоритет при любом расхождении. Эта страница — указатель обязательных ключей, а [`artifact-schema.mdx`](/docs/reference/artifact-schema) содержит шаблоны и разобранные примеры по классам; обе страницы — человекочитаемые проекции этих схем.
+> **Каноническая справка по YAML-фронтматтеру для каждого класса артефактов.** Сводка в разделе «Conventions» файла [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — это встроенное объявление; JSON Schema по классам в [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) (`additionalProperties` отклоняет неизвестные ключи) — машиночитаемый контракт, который имеет приоритет при любом расхождении. Эта страница — указатель обязательных ключей, а [`artifact-schema.mdx`](/docs/reference/artifact-schema) содержит шаблоны и разобранные примеры по классам; обе страницы — человекочитаемые проекции этих схем.
 
 ---
 
 ## 1. Форма блока фронтматтера
 
-Каждый артефакт несёт YAML-фронтматтер в начале, ограниченный строками `---`. Канонический баннер заголовка авторства согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) располагается над фронтматтером в файлах семейства Markdown; фронтматтер следует сразу за ним.
+Каждый артефакт несёт YAML-фронтматтер в начале, ограниченный строками `---`. В файлах семейства Markdown фронтматтер — это первое содержимое файла, а канонический баннер заголовка авторства согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) следует за закрывающим `---`.
 
-Ключи записываются в `kebab-case`. Скалярные значения указываются либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие значимые для YAML символы, заключаются в кавычки.
+Ключи команд записываются в `kebab-case`. Ключи навыков записываются в `kebab-case`, за исключением `userInvocable` — написания в camelCase, которое использует исходный корпус (установка Claude Code переименовывает его в `user-invocable`). Ключи правил и делегированных исполнителей записываются в camelCase, как показано в таблице обязательных ключей в разделе 2. Скалярные значения указываются либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие символы, значимые для YAML, заключаются в кавычки.
 
 ## 2. Обязательные поля по классам
 
-Набор обязательных ключей зависит от класса артефакта. Авторитетную форму обеспечивают `scripts/dev/validate_ecosystem.py` и JSON Schema по классам в каталоге `schemas/` (по одному файлу схемы на класс артефакта).
+Набор обязательных ключей зависит от класса артефакта. Авторитетную форму обеспечивают `scripts/dev/validate_ecosystem.py` и JSON Schema по классам в каталоге `src/apothem/schemas/` (по одному файлу схемы на класс артефакта).
 
 ```text
-schemas/agent.schema.json
-schemas/skill.schema.json
-schemas/command.schema.json
-schemas/output-style.schema.json
-schemas/plan.schema.json
+src/apothem/schemas/agent.schema.json
+src/apothem/schemas/skill.schema.json
+src/apothem/schemas/command.schema.json
+src/apothem/schemas/output-style.schema.json
+src/apothem/schemas/plan.schema.json
 ```
 
 | Класс | Обязательные ключи |
@@ -35,9 +35,9 @@ schemas/plan.schema.json
 | Команды (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | Делегированные исполнители (канонический каталог показан ниже) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
 | Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; установка для Claude Code и плагин переименовывают `userInvocable` в `user-invocable`, а схема принимает ровно одно из двух написаний |
-| Стили вывода (`src/apothem/output-styles/*.md`) | `name`, `description`; каждый поставляемый стиль также задаёт `keep-coding-instructions: true`, чтобы Claude Code сохранял свои инструкции по программной инженерии |
+| Output-стили (`src/apothem/output-styles/*.md`) | `name`, `description`; каждый поставляемый стиль также задаёт `keep-coding-instructions: true`, чтобы Claude Code сохранял свои инструкции по программной инженерии |
 
-Схемы по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) содержат полный набор ограничений, включая ограничения типа, формата, enum и шаблона, а также ограничения длины: `description` навыка или команды — не более 1024 символов, это предел [Agent Skills](https://agentskills.io/specification).
+Схемы по классам в [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) содержат полный набор ограничений, включая ограничения типа, формата, enum и шаблона, а также ограничения длины: `description` навыка или команды — не более 1024 символов, это предел [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Валидаторы
 

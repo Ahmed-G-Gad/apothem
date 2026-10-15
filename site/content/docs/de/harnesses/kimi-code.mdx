@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Apothem-Harness-Adapter für Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "4bcd687aeabc46b7"
+sourceHash: "2a345b2d45ab630e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,7 +50,7 @@ keine Lücke in Kimi Code: Kimi Code lädt Skills aus `.kimi-code/skills/` und
 dortigen Apothem-Kopien sind daher Referenzmaterial, auf das der
 `AGENTS.md`-Block verweist. Der Block endet mit einem Abschnitt zu den
 Apothem-Unterstützungsdateien, der relativ zum Projektstammverzeichnis das
-Verzeichnis unter `.kimi-code/.apothem/support/` nennt, gegen das jedes Zitat im
+Verzeichnis unter `.kimi-code/.apothem/support/` nennt, gegen das jeder Verweis im
 Repository-Stil (`rules/<name>.md`, `templates/...`, `hooks/...`) aufgelöst wird,
 sodass eine committete `AGENTS.md` keinen maschinenspezifischen Pfad enthält.
 (Verhalten von Kimi Code gemäß seinen Anpassungsseiten zu
@@ -78,11 +78,11 @@ die aktuelle Konfigurationsoberfläche finden Sie in der
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 
@@ -91,7 +91,7 @@ apothem update --harness kimi-code --project /path/to/project
 ```
 
 Leitet den verwalteten Block der `AGENTS.md` im Projektstammverzeichnis und die
-Unterstützungs-Kohorten aus dem aktuellen Zustand des gemeinsamen Profils neu ab.
+Unterstützungskohorten aus dem aktuellen Zustand des gemeinsamen Profils neu ab.
 
 ## Deinstallation
 
@@ -99,8 +99,14 @@ Unterstützungs-Kohorten aus dem aktuellen Zustand des gemeinsamen Profils neu a
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Entfernt den Apothem-Block aus der `AGENTS.md` im Projektstammverzeichnis und
+behält jeden Text außerhalb der Sentinels. Die Datei wird nur gelöscht, wenn
+darin nichts anderes übrig bleibt. Entfernt außerdem die Unterstützungsdateien,
+die Apothem unter `<project>/.kimi-code/.apothem/support/` abgelegt hat. Vor der
+Änderung wird von jeder Datei eine mit Zeitstempel versehene Kopie unter
+`~/.apothem/backups/` gespeichert; im Projekt bleibt keine Sicherungsdatei
+zurück. Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben
+unberührt.
 
 ## Konformitäts-Gate
 
@@ -120,7 +126,7 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
 
 ## Siehe auch
 

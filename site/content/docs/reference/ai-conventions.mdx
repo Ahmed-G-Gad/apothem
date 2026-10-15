@@ -38,7 +38,7 @@ The two (or more) surfaces are different *channels* expressing one *specificatio
 | `AGENTS.md` | repo root (and/or `.codex/AGENTS.md`) | **MUST** | AGENTS-aware harnesses |
 | `CLAUDE.md` | repo root (and/or `.claude/CLAUDE.md`) | **MUST** | Claude Code |
 | `.github/`-rooted instructions file | `.github/`-rooted instructions file | **MUST** | in-IDE completion runtime |
-| `site/content/docs/architecture/`-rooted helpers manifest | repo root | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
+| `site/content/docs/architecture/`-rooted helpers manifest | `site/content/docs/architecture/agents.mdx` | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
 | `.cursorrules` | repo root | **MAY** (opt-in) | in-IDE editor runtime |
 | `.windsurfrules` | repo root | **MAY** (opt-in) | in-IDE companion runtime |
 
@@ -78,7 +78,7 @@ The fixture at [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/a
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -112,9 +112,9 @@ Three validators co-implement the coherence contract:
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- The first asserts the in-IDE instructions file exists, parses, contains every canonical section enumerated in §4, and begins with the canonical authorship banner.
+- The first asserts the in-IDE instructions file exists, parses, contains every canonical section enumerated in §4, and begins with the canonical `SPDX-License-Identifier: MIT` line (Markdown variant).
 - The second parses each surface's canonical sections; asserts shared sections are mutually consistent under a normalized comparator (case-insensitive, whitespace-tolerant, allow lexical paraphrase but require semantic equivalence on the fixture-defined claim list).
-- The third asserts the LICENSE's copyright line and the canonical banner's "Copyright (c)" line name the same author.
+- The third asserts the root LICENSE carries a parseable `Copyright (c) <name>` line; per-file headers carry no author name.
 
 ---
 

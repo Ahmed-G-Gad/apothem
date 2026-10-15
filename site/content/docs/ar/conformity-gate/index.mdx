@@ -2,7 +2,7 @@
 title: "بوابة المطابقة"
 description: "بوابة المطابقة في Apothem — الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (M1-M15) التي يجب أن يجتازها كل مُخرَج يُصدَر."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,63 +11,39 @@ sourceHash: "c3c719c0c1a0e92e"
 | الشريط | المُعرِّف | التفويض | فئة الفحص | الإخفاق ← الإجراء |
 |---|---|---|---|---|
 | 1 | <bdi>M1</bdi> | حياد المشروع المضيف | استدلالي | راجِع لمطابقة اصطلاحات المضيف |
-| 2 | <bdi>M2</bdi> | الانضباط التحريري (سجلّ الإفصاح) | ميكانيكي | أضِف علامات الإفصاح |
-| 3 | <bdi>M3</bdi> | أبعاد الجودة العشرة | استدلالي | راجِع الأبعاد المُخفِقة |
+| 2 | <bdi>M2</bdi> | الانضباط التحريري (سجلّ الإفصاح) | استدلالي | أضِف علامات الإفصاح |
+| 3 | <bdi>M3</bdi> | أبعاد الجودة العشرة | ميكانيكي + استدلالي | راجِع الأبعاد المُخفِقة |
 | 4 | <bdi>M4</bdi> | التطبيق الذاتي (السجلّ الموقَّع للبوابة موجود) | ميكانيكي | سجِّل كتلة السجلّ الموقَّع |
-| 5 | <bdi>M5</bdi> | مبدأ المرجعية (لا هوية / نقطة نهاية / سرّ مُختلَق) | ميكانيكي | حوِّل إلى الاستفسار |
+| 5 | <bdi>M5</bdi> | مبدأ السلطة (لا هوية / نقطة نهاية / سرّ مُختلَق) | ميكانيكي | حوِّل إلى الاستفسار |
 | 6 | <bdi>M6</bdi> | دمج الخبرة (إبراز الثغرات) | استدلالي | أبرِز الثغرات؛ واستشهد بالتحسينات |
-| 7 | <bdi>M7</bdi> | توصيف الخيارات (علامة <bdi>Recommended</bdi> + مبرّر العامل الحاسم) | ميكانيكي | وصِّف مجموعات الخيارات |
+| 7 | <bdi>M7</bdi> | التعليق التوضيحي للخيارات (علامة <bdi>Recommended</bdi> + مبرّر العامل الحاسم) | ميكانيكي | علِّق توضيحيًا على مجموعات الخيارات |
 | 8 | <bdi>M8</bdi> | الحسم (لا تحوّط في النثر التوجيهي) | ميكانيكي | حوِّل التحوّطات إلى شروط |
 | 9 | <bdi>M9</bdi> | الرافعة البصرية (الموضوعات البنيوية تحمل مخططات) | استدلالي | ألِّف المخطط / حدِّثه |
 | 10 | <bdi>M10</bdi> | الربط ثنائي الاتجاه (المؤشرات العكسية المتبادلة مُغلَقة) | ميكانيكي | أغلِق أنصاف الحواف |
-| 11 | <bdi>M11</bdi> | السباقات الرشيقة (الهدف / قائمة الأعمال / <bdi>DoR</bdi> / <bdi>DoD</bdi> / المراجعة / الاستعادة) | استدلالي | أعِد الهيكلة في صورة سباقات |
-| 12 | <bdi>M12</bdi> | تقارير المراحل والتخطيط المرجعي | ميكانيكي | ألِّف التقرير التجميعي؛ وانقل إلى التخطيط المرجعي |
-| 13 | <bdi>M13</bdi> | إتقان الشيفرة (<bdi>lint / format / type-check</bdi>؛ الأرقام السحرية؛ <bdi>bare-except</bdi>) | ميكانيكي | طبِّق قواعد إتقان الشيفرة الخاصة بكل لغة |
+| 11 | <bdi>M11</bdi> | السباقات الرشيقة (الهدف / قائمة الأعمال / <bdi>DoR</bdi> / <bdi>DoD</bdi> / المراجعة / الاستعراض الاسترجاعي) | استدلالي | أعِد الهيكلة في صورة سباقات |
+| 12 | <bdi>M12</bdi> | تقارير المراحل والتخطيط المرجعي | ميكانيكي + استدلالي | ألِّف التقرير التجميعي؛ وانقل إلى التخطيط المرجعي |
+| 13 | <bdi>M13</bdi> | حِرفة الشيفرة (<bdi>lint / format / type-check</bdi>؛ الأرقام السحرية؛ <bdi>bare-except</bdi>) | ميكانيكي | طبِّق قواعد حِرفة الشيفرة الخاصة بكل لغة |
 | 14 | <bdi>M14</bdi> | المنظومية (يُعلِن المنبع / المصبّ / الأقران / الفارضين) | استدلالي | أعلِن؛ وفهرِس في السجلّات |
-| 15 | <bdi>M15</bdi> | الجاهزية للإنتاج (اختبارات + وثائق + <bdi>CHANGELOG</bdi> + كوميت مطابق + <bdi>CI</bdi> خضراء + استقرار <bdi>semver</bdi>) | ميكانيكي | أضِف الأسطح الناقصة |
+| 15 | <bdi>M15</bdi> | الجاهزية للإنتاج (اختبارات + وثائق + <bdi>CHANGELOG</bdi> + كوميت مطابق + <bdi>CI</bdi> أخضر + استقرار <bdi>semver</bdi>) | ميكانيكي + استدلالي | أضِف الأسطح الناقصة |
 
 ## سُلّم الخطورة
 
-| الخطورة | الأثر على البوابة |
-|---|---|
-| **حرجة** | البوابة <bdi>FAIL</bdi> — الإصدار محجوب دون أي شرط |
-| **مهمّة** | البوابة <bdi>FAIL</bdi> عندما يُخفِق شريطان مهمّان أو أكثر في آن واحد |
-| **استشارية** | البوابة <bdi>WARN</bdi> — تُسجَّل في السجلّ الموقَّع؛ ولا تحجب الإصدار |
-
-معظم مُطابِقات الجزء الميكانيكي تكون **مهمّة** افتراضيًا. أمّا <bdi>M5</bdi> (المرجعية — الأسرار، ونقاط النهاية المُختلَقة) و<bdi>M12</bdi> (المُخرَجات اليتيمة) فهما **حرجان**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+لا تملك البوابة سلّمًا من المستويات حرج ومهمّ واستشاري، ولا عتبة من نتيجتين. ومن دون <bdi>`--strict`</bdi> (أو <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) تُبلغ البوابة عن النتائج وتخرج برمز <bdi>`0`</bdi>. ومع <bdi>`--strict`</bdi> يخرج فحص الملف الواحد أو الخطّاف برمز <bdi>`2`</bdi> عند فشل أي مُطابِق، ويخرج تشغيل المدوّنة (<bdi>`--all-perwrite`</bdi>) برمز <bdi>`2`</bdi> عند فشل مُطابِق مانع؛ أما المُطابِقات الاستشارية فيُبلَّغ عنها فقط. ولا يمرّر خطّاف <bdi>Write/Edit</bdi> المثبَّت <bdi>`--strict`</bdi>، فيُبلغ عن النتائج وتمضي الكتابة ما لم يُضبط <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi> في بيئته.
 
 ## أدوات التحقّق
 
 يقع الجزء الميكانيكي في [<bdi>`src/apothem/conformity/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)، ويُنسِّقه [<bdi>`src/apothem/conformity/gate.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-تُشغِّل البوابة كل أداة تحقّق بإحدى ثلاث طرق:
+تعمل كل أداة تحقّق بإحدى ثلاث طرق:
 
 - **<bdi>per-write</bdi>**: على كل كتابة معلّقة (<bdi>`--hook`</bdi>)، أو على كل ملف متتبَّع مع <bdi>`--all-perwrite`</bdi>.
 - **<bdi>standalone</bdi>**: عبر المستودع كله مع <bdi>`--all`</bdi>، أو واحدة تلو الأخرى مع <bdi>`--check <name>`</bdi>.
-- **<bdi>change-set</bdi>**: على فرق مُجهَّز للإيداع، خارج مسوحات البوابة.
+- **<bdi>change-set</bdi>**: على فرق مُجهَّز للإيداع، تُشغَّل مباشرةً بالصيغة <bdi>`python -m apothem.conformity.semver_stability_grep --staged`</bdi>، لا عبر البوابة.
 
 الجدول أدناه مُولَّد من وحدات أدوات التحقّق.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -134,8 +110,8 @@ The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
 <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> قبل كل عملية
 <bdi>Write/Edit</bdi>. ومن نسخة مسحوبة من المصدر، تُشغِّل صيغة الوحدة الشيفرةَ نفسها.
 والبوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>. أضِف
-<bdi>`--strict`</bdi> لتخرج بالرمز <bdi>`2`</bdi> عند نتيجة حاجبة. واسم أداة تحقّق غير
-معروف يخرج بالرمز <bdi>`3`</bdi>.
+<bdi>`--strict`</bdi> لتخرج بالرمز <bdi>`2`</bdi> عند نتيجة حاجبة. ويخرج الأمر بالرمز
+<bdi>`3`</bdi> عند اسم أداة تحقّق غير معروف.
 
 ```shell
 # Every standalone validator across the repository:

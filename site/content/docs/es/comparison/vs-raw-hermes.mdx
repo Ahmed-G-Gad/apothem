@@ -1,8 +1,8 @@
 ---
-title: "Apothem frente a la configuración de Hermes en bruto"
+title: "Apothem frente a la configuración manual de Hermes"
 description: "Mantener a mano la configuración de Hermes frente a gestionarla mediante el perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ que no son de skills siguen siendo material de soporte de Apothem.
 
 ## Comparación de esfuerzo
 
-| Tarea | Configuración a mano en bruto | Gestionado por Apothem |
+| Tarea | Configuración manual | Gestionada por Apothem |
 | ---- | --------------- | --------------- |
 | Redactar skills reutilizables | Editar a mano la configuración y los directorios de skills | Escribir una vez en el corpus compartido |
 | Mantener las cohortes alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
@@ -30,9 +30,11 @@ que no son de skills siguen siendo material de soporte de Apothem.
 ## Qué gestiona Apothem
 
 El adaptador de Hermes escribe `config.yaml`, envuelve los comandos de barra de
-Apothem como skills, copia las skills de Apothem en el directorio de soporte
-referenciado y mantiene las reglas, las plantillas, los agentes y el material
-de hooks bajo el subárbol de soporte de Apothem.
+Apothem como skills, copia las skills de Apothem en el directorio de soporte y
+mantiene las reglas, las plantillas, los agentes y el material de hooks bajo el
+subárbol de soporte de Apothem. Hermes carga esas skills solo después de que
+añadas `~/.hermes/.apothem/support/skills` a `skills.external_dirs` en
+`config.yaml`.
 
 ## Ruta de migración
 
@@ -45,7 +47,7 @@ de hooks bajo el subárbol de soporte de Apothem.
 4. Ejecuta `apothem verify --harness hermes` para confirmar que la
    configuración quedó escrita.
 
-## Leer a continuación
+## Lee a continuación
 
 - [Referencia del adaptador de Hermes](/docs/harnesses/hermes)
-- [Visión general de la comparación](/docs/comparison)
+- [Resumen de comparación](/docs/comparison)

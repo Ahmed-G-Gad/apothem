@@ -2,7 +2,7 @@
 title: "install"
 description: "Référence de la CLI pour la commande apothem install."
 machineTranslated: true
-sourceHash: "aaa373f458e002f9"
+sourceHash: "4297dc7c69065630"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,13 +53,7 @@ affiche les cibles concrètes regroupées sous deux en-têtes : celles situées 
 l'intérieur de la racine du projet et celles situées sous votre répertoire
 personnel.
 
-Lorsque la sélection écrit en dehors de la racine du projet, une confirmation
-interactive protège les écritures enracinées dans le répertoire personnel.
-`--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json`
-poursuivent chacun sans demander de confirmation. Seul `--dry-run` n'écrit
-rien ; `--format json` ignore l'aperçu et l'invite de confirmation, mais
-effectue tout de même les écritures. Refuser l'invite interrompt la commande
-avant l'écriture de tout fichier.
+Lorsque la sélection écrit en dehors de la racine du projet, une confirmation interactive protège les écritures enracinées dans le répertoire personnel. `--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json` poursuivent chacun sans demander de confirmation. Seul `--dry-run` n'écrit rien ; `--format json` ignore l'aperçu et l'invite de confirmation, mais effectue tout de même les écritures. Refuser l'invite du répertoire personnel interrompt l'installation avant toute écriture. Avec `--clean`, l'étape de remise à zéro s'exécute d'abord, sous sa propre confirmation par cible : elle écrit une sauvegarde sous `~/.apothem/backups` et supprime les cibles qu'elle confirme. Ces suppressions et la sauvegarde restent en place lorsque l'invite d'installation est refusée.
 
 ## Notes sur les capacités
 

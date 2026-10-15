@@ -1,8 +1,8 @@
 ---
 title: "Multi-Surface-Harness-Konventionen"
-description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeitumgebungen für Chat, IDE-Vervollständigung und PR-Review hinweg."
+description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeitumgebungen für Chat, IDE-Vervollständigung und Pull-Request-Review hinweg."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "d17a5f2f79af7cc9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,9 +12,9 @@ sourceHash: "027929e7268f780c"
 
 ## 1. Warum Plural
 
-Eine moderne Engineering-Oberfläche wird von mehreren Harnesses berührt — Chat-Konsolen, Vervollständigungs-Engines in der IDE, Pair-Programming-Begleitern und Pull-Request-Reviewern. Jeder liest seine eigene kanonische Konfigurationsdatei. Liefert das Projekt nur eine solche Datei aus, improvisieren die übrigen Laufzeitumgebungen stillschweigend gegen unausgesprochene Konventionen; das fehlende Gedächtnis im Repository schlägt sofort leck.
+Eine moderne Engineering-Oberfläche wird von mehreren Harnesses berührt — Chat-Konsolen, Vervollständigungs-Engines in der IDE, Pair-Programming-Begleitern und Pull-Request-Reviewern. Jeder liest seine eigene kanonische Konfigurationsdatei. Liefert das Projekt nur eine solche Datei aus, improvisieren die übrigen Laufzeitumgebungen stillschweigend gegen unausgesprochene Konventionen; das fehlende Gedächtnis im Repository sickert sofort durch.
 
-Der Preis einer fehlenden Oberfläche ist **stille Drift in maschinell generiertem Code** — die schlimmste Klasse von Defekten, weil sie sich unsichtbar anhäuft. Jedes maschinell generierte Artefakt verstärkt die Divergenz; bis ein menschlicher Reviewer den Widerspruch bemerkt, trägt die Codebasis bereits Wochen inkonsistenter Konventionen in sich.
+Die Kosten einer fehlenden Oberfläche sind **stille Drift in maschinell generiertem Code** — die schlimmste Klasse von Defekten, weil sie sich unsichtbar anhäuft. Jedes maschinell generierte Artefakt verstärkt die Divergenz; bis ein menschlicher Reviewer den Widerspruch bemerkt, trägt die Codebasis bereits Wochen inkonsistenter Konventionen in sich.
 
 Die Konfiguration der Harness-Laufzeitumgebungen ist durch die Realität der Bereitstellung plural. Das veröffentlichte Ökosystem MUSS eine Verhaltensgedächtnis-Datei für die Chat-Konsolen-Laufzeitumgebung UND eine repo-bezogene Anweisungsdatei für die Vervollständigungs-Laufzeitumgebung in der IDE ausliefern. Die beiden Oberflächen MÜSSEN wechselseitig kohärent sein — kein Widerspruch, keine Drift — und MÜSSEN gemeinsam dieselben Disziplinen kodieren.
 
@@ -40,7 +40,7 @@ Die zwei (oder mehr) Oberflächen sind verschiedene *Kanäle*, die eine *Spezifi
 | `AGENTS.md` | Repository-Wurzel (und/oder `.codex/AGENTS.md`) | **MUSS** | AGENTS-fähige Harnesses |
 | `CLAUDE.md` | Repository-Wurzel (und/oder `.claude/CLAUDE.md`) | **MUSS** | Claude Code |
 | Anweisungsdatei mit Wurzel in `.github/` | Anweisungsdatei mit Wurzel in `.github/` | **MUSS** | Vervollständigungs-Laufzeitumgebung in der IDE |
-| Helfer-Manifest mit Wurzel in `site/content/docs/architecture/` | Repository-Wurzel | **KANN** (Opt-in über den Kanal der strukturierten Rückfrage) | Orchestrierungsplattformen für mehrere Helfer |
+| Helfer-Manifest mit Wurzel in `site/content/docs/architecture/` | `site/content/docs/architecture/agents.mdx` | **KANN** (Opt-in über den Kanal der strukturierten Rückfrage) | Orchestrierungsplattformen für mehrere Helfer |
 | `.cursorrules` | Repository-Wurzel | **KANN** (Opt-in) | Editor-Laufzeitumgebung in der IDE |
 | `.windsurfrules` | Repository-Wurzel | **KANN** (Opt-in) | Begleiter-Laufzeitumgebung in der IDE |
 
@@ -53,7 +53,7 @@ Für diesen Einsatz hat sich der Operator für die optionalen Assistenten-Oberfl
 Die repo-bezogene Anweisungsdatei unter `.github/` MUSS in dieser Reihenfolge die folgenden Abschnitte enthalten (jeweils mit dem exakten Überschriftentext unten; die Abschnittsinhalte werden verfasst, nicht aus einer Vorlage gestempelt, aber jeder MUSS die aufgeführten Aussagen abdecken):
 
 1. **Project Context** — ein Absatz: was dieses Repository ist, wer es nutzt, seine Gestalt auf oberster Ebene. Konkret; kein Marketing.
-2. **Coding Conventions** — Benennung, modale Hierarchie, Frontmatter, Markdown-Stil, sprachspezifische Stilpunkte, wo sie von den Standards abweichen.
+2. **Coding Conventions** — Benennung, modale Hierarchie, Frontmatter, Markdown-Stil, sprachspezifische Stilpunkte, wo sie von den Standardvorgaben abweichen.
 {/* REUSE-IgnoreStart */}
 3. **File Headers** — jede Datei, die die Laufzeitumgebung generiert, MUSS mit der kanonischen einzelnen Zeile `SPDX-License-Identifier: MIT` gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) beginnen, in der Kommentarvariante, die zum Dateityp passt. Verweis auf `scripts/inject-header.*` und `site/content/docs/reference/authorship-header.mdx`.
 {/* REUSE-IgnoreEnd */}
@@ -61,7 +61,7 @@ Die repo-bezogene Anweisungsdatei unter `.github/` MUSS in dieser Reihenfolge di
 5. **Structured Inquiry Behavior** — wenn die Laufzeitumgebung unsicher ist, DARF sie NICHT stillschweigend etwas erfinden. Stattdessen fügt sie einen klar gekennzeichneten Klärungsblock ein (z. B. einen Kommentar `# TODO(clarify): <question>`) und bringt die Frage im Chat vor, wo die Oberfläche dies zulässt. Keine erfundenen APIs, keine erfundenen Modellnamen, keine erfundenen Dateipfade.
 6. **Forbidden Patterns** — ausdrückliche Verbote: keine Marketing-Adjektive, keine ausweichenden Füllwörter, keine console.log-Debug-Überreste, keine fest codierten absoluten Pfade zum Home-Verzeichnis des Benutzers, kein Committen von Geheimnissen, kein Committen von Dateien unter `.apothem/plans/` (oder dem veralteten `.plans/`), kein Widerspruch zur kanonischen Projektanweisungsdatei.
 7. **Output Format** — generierter Code und generierte Prosa entsprechen den vereinheitlichten Konventionen für Gesprächsausgaben: Bestimmtheit, einheitliche Gliederung, Dichte, Zusammenfassungsdisziplin, Quellenangaben. Für Code: dokumentierte öffentliche Oberfläche, typisiert, wo die Sprache Typen unterstützt, getestet, wo ein Testgerüst existiert.
-8. **Review Checklist** — was ein Reviewer (Mensch oder Laufzeitumgebung im PR-Review-Modus) vor der Freigabe verifizieren MUSS: Header vorhanden, Benennung konform, keine Schreibvorgänge in `.apothem/plans/`, keine Widersprüche zur kanonischen Projektanweisungsdatei, Validatoren lokal grün.
+8. **Review Checklist** — was ein Reviewer (Mensch oder Laufzeitumgebung im Pull-Request-Review-Modus) vor der Freigabe verifizieren MUSS: Header vorhanden, Benennung konform, keine Schreibvorgänge in `.apothem/plans/`, keine Widersprüche zur kanonischen Projektanweisungsdatei, Validatoren lokal grün.
 9. **Pointers** — Links zu `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, diesem Konventionsdokument, `schemas/` und `CONTRIBUTING.md`.
 
 Die Datei beginnt mit der SPDX-Zeile des kanonischen Autorschafts-Headers (Markdown-Variante) gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — sichtbar oder unsichtbar gemäß der vom Projekt gewählten Richtlinie zur Header-Sichtbarkeit.
@@ -80,7 +80,7 @@ Die Fixture unter [`tests/fixtures/multi-surface-claims.yaml`](https://github.co
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
   optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
 - id: header.canonical
-  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
   required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
 - id: ambiguity.resolution
   claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
@@ -98,7 +98,7 @@ Wird erkannt, dass sich zwei Oberflächen bei einer gemeinsamen Aussage widerspr
 
 > `AGENTS.md` ist die kanonische Stimme des Projekts. Jede widersprechende Oberfläche wird so umgeschrieben, dass sie die Semantik von `AGENTS.md` in einer der Oberfläche angemessenen Rahmung spiegelt.
 
-Eine oberflächenspezifische Überschreibung ist nur mit einer expliziten Markierung `<!-- coherence-override: <claim-id> -->` in der Datei zulässig, die auf einen ADR verweist, der die bewusste Abweichung erklärt. Die Überschreibungsmarkierung ist selbst in der Allow-List des Validators aufgeführt und erscheint im CI-Bericht.
+Eine oberflächenspezifische Überschreibung ist nur mit einer expliziten Markierung `<!-- coherence-override: <claim-id> -->` in der Datei zulässig, die auf einen ADR verweist, der die bewusste Abweichung erklärt. Die Überschreibungsmarkierung ist selbst in der Erlaubnisliste des Validators aufgeführt und erscheint im CI-Bericht.
 
 Für dieses Repository ist die ratifizierte Abgleichsstrategie **`agents-md-wins`**: `AGENTS.md` ist kanonisch, und jeder aktive Harness-Spiegel bleibt semantisch äquivalent.
 
@@ -114,16 +114,16 @@ Drei Validatoren implementieren den Kohärenzvertrag gemeinsam:
 - license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
 ```
 
-- Der erste prüft, dass die Anweisungsdatei in der IDE existiert, sich parsen lässt, jeden in §4 aufgezählten kanonischen Abschnitt enthält und mit dem kanonischen Autorschafts-Banner beginnt.
+- Der erste prüft, dass die Anweisungsdatei in der IDE existiert, sich parsen lässt, jeden in §4 aufgezählten kanonischen Abschnitt enthält und mit der kanonischen Zeile `SPDX-License-Identifier: MIT` (Markdown-Variante) beginnt.
 - Der zweite parst die kanonischen Abschnitte jeder Oberfläche und prüft, dass die gemeinsamen Abschnitte unter einem normalisierenden Vergleich wechselseitig konsistent sind (ohne Beachtung der Groß-/Kleinschreibung, tolerant gegenüber Leerraum, lexikalische Paraphrasen erlaubt, aber semantische Äquivalenz für die in der Fixture definierte Aussagenliste verlangt).
-- Der dritte prüft, dass die Copyright-Zeile der LICENSE und die Zeile „Copyright (c)“ des kanonischen Banners denselben Autor nennen.
+- Der dritte prüft, dass die LICENSE in der Wurzel eine parsbare Zeile `Copyright (c) <name>` trägt; Header pro Datei tragen keinen Autorennamen.
 
 ---
 
 ## 8. Lebenszyklus einer Oberfläche
 
-- **Eine Oberfläche hinzufügen.** Der Operator entscheidet sich über den Kanal der strukturierten Rückfrage oder über ein nachfolgendes `make surfaces-add <name>` dafür. Der Generator verfasst die Oberfläche anhand der Aussagenliste, führt den Validator aus und legt einen ADR an, falls eine oberflächenspezifische Überschreibung nötig ist.
-- **Eine Oberfläche entfernen.** Die strukturierte Rückfrage bestätigt die Entfernung, ein ADR hält die Begründung fest, die required-in-Liste des Validators wird angepasst.
+- **Eine Oberfläche hinzufügen.** Der Operator entscheidet sich über den Kanal der strukturierten Rückfrage dafür. Der Generator verfasst die Oberfläche anhand der Aussagenliste, führt den Validator aus und legt einen ADR an, falls eine oberflächenspezifische Überschreibung nötig ist.
+- **Eine Oberfläche entfernen.** Eine strukturierte Rückfrage bestätigt die Entfernung, ein ADR hält die Begründung fest, und die required-in-Liste des Validators wird angepasst.
 - **Drift-Erkennung.** Jeder Commit, der von der Aussagenliste abweicht, wird von Pre-Commit / CI abgelehnt; der Autor des Commits schreibt die Oberfläche um, um die Kohärenz wiederherzustellen.
 
 ---

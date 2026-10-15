@@ -2,7 +2,7 @@
 title: "Alur kerja inti"
 description: "Empat alur kerja inti Apothem — profil, aturan, rencana, dan gerbang kesesuaian."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -66,10 +66,16 @@ mewujudkan suite rencana di bawah `<project-root>/.apothem/plans/{suite}/`. Liha
 
 ## Gerbang kesesuaian
 
-Jalankan dari akar repositori:
+Dari checkout Apothem, jalankan:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+Setelah pemasangan skrip, jalankan:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Menjalankan semua pemeriksaan kesesuaian mekanis dan melaporkan lulus/gagal per

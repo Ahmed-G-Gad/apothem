@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "f077a9851e126be5"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,9 +51,10 @@ Adapter menulis inventaris MCP milik profil di bawah kunci tingkat atas
 `mcp_servers`, tempat Hermes membaca server MCP. Rilis Apothem sebelumnya
 menulisnya di bawah `auxiliary.mcp`, yang dibaca Hermes sebagai model auxiliary
 untuk dispatch alat MCP; baik `apothem update` maupun `apothem uninstall`
-menghapus blok tersebut selama blok itu masih memuat persis apa yang ditulis
-oleh rilis semacam itu (lihat [Pencopotan](#pencopotan)). (Perilaku Hermes
-menurut halaman panduan penggunanya tentang
+menghapus blok tersebut selama blok itu masih cocok dengan apa yang akan
+ditulis oleh rilis semacam itu dari profil bersama Anda (lihat
+[Pencopotan](#pencopotan)). (Perilaku Hermes menurut halaman panduan
+penggunanya tentang
 [skill](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 dan [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 dibaca 2026-10-02.)
@@ -67,7 +68,9 @@ apothem verify --harness hermes
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama ada.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
@@ -94,13 +97,14 @@ profil bersama dan mesin Apothem tidak terpengaruh.
 
 Pada instalasi yang dibuat oleh rilis sebelumnya, yang menulis server milik
 profil di bawah `auxiliary.mcp`, blok tersebut juga dihapus ketika blok itu
-masih memuat persis apa yang ditulis rilis tersebut, sebagaimana dirender dari
-profil bersama di `~/.config/apothem/profile.yaml`. Ini adalah aturan yang sama
+masih cocok dengan apa yang akan ditulis rilis tersebut dari profil bersama
+Anda saat ini di `~/.config/apothem/profile.yaml`. Ini adalah aturan yang sama
 dengan yang diterapkan `apothem update`, sehingga mencopot tanpa memperbarui
-terlebih dahulu tidak meninggalkan blok usang. Blok yang telah Anda sunting,
-atau blok yang tidak memiliki profil bersama yang dapat dibaca sebagai
-pembanding, tetap di tempatnya, dan pengaturan `auxiliary` Anda yang lain
-selalu tetap ada.
+terlebih dahulu tidak meninggalkan blok usang selama server MCP milik profil
+tidak berubah. Blok yang telah Anda sunting, blok yang tidak lagi cocok dengan
+server MCP milik profil Anda saat ini, atau blok yang tidak memiliki profil
+bersama yang dapat dibaca sebagai pembanding, tetap di tempatnya, dan pengaturan
+`auxiliary` Anda yang lain selalu tetap ada.
 
 ## Gerbang konformitas
 

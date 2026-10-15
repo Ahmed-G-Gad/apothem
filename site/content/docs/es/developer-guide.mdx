@@ -2,7 +2,7 @@
 title: "Contribuir a Apothem — Guía del desarrollador"
 description: "Mantén y extiende el ecosistema de Apothem creando reglas, comandos, ayudantes, skills y hooks con esquemas canónicos, requisitos de frontmatter y procedimientos de validación."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ propósitos y requisitos de frontmatter específicos.
 | **Comando** | `src/apothem/commands/*.md` | Comando de barra (`/command-name`) para flujos de trabajo complejos | Nuevo flujo de trabajo de usuario de varios pasos |
 | **Ayudante** | `src/apothem/agents/*.md` | Definición persistente de trabajador delegado para tareas en paralelo | Nueva tarea especializada recurrente (auditoría, exploración, control de calidad) |
 | **Skill** | `src/apothem/skills/{name}/SKILL.md` | Técnica reutilizable con señal de detección | Nuevo patrón de técnica detectable y reutilizable |
-| **Hook** | `src/apothem/hooks/` + `settings.json` | Validación o gestión de estado disparada por eventos | Nuevo evento de ciclo de vida o nueva necesidad de validación |
+| **Hook** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | Validación o gestión de estado disparada por eventos | Nuevo evento de ciclo de vida o nueva necesidad de validación |
 
 ## Contrato del adaptador de entorno
 
@@ -88,7 +88,10 @@ JSON, prevalecen los esquemas.
 
 ## Comprobación rápida del frontmatter
 
-El frontmatter de cada artefacto debe superar estas comprobaciones:
+El frontmatter de cada artefacto debe superar estas comprobaciones. Aplica las
+comprobaciones de `version`, `updated` y `portability` solo a una clase que lleve
+la clave: las reglas no llevan ninguna de ellas, y las skills no llevan
+`portability`.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -121,16 +124,24 @@ Patrón: minúsculas, guiones entre palabras, sin espacios ni guiones bajos.
 - **Ayudantes:** `{name}.md`
 - **Skills:** Dentro de la carpeta `src/apothem/skills/{name}/SKILL.md` (mayúsculas exactas: `SKILL.md`)
 - **Hooks:** Dentro de la carpeta `src/apothem/hooks/`. Todos los manejadores de
-  eventos están escritos en Python. Cada comando de hook de `settings.json` usa
-  la forma exec (`python` más `args`) para invocar
-  `-m apothem.hooks.dispatch <event> [<message-name>]` o
-  `-m apothem.conformity.gate --hook`. `dispatch.py` enruta `SessionStart` a
-  `session_start_bootstrap.main()` y todos los demás eventos de la lista blanca a
-  `emit_hook_context.main()`. Los únicos stubs de shell permitidos bajo
-  `src/apothem/hooks/` o `scripts/` son los cuatro archivos de localizador +
-  bootstrap (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); cualquier otro
-  archivo `.ps1` / `.sh` no supera la comprobación de higiene de
-  `scripts/dev/validate_hooks.py`.
+  eventos están escritos en Python. Cada comando de hook de la plantilla
+  `settings.json` de Claude Code usa la forma exec: `command` es el marcador de
+  posición del intérprete `${PYTHON_BIN}`, que se resuelve en el momento de la
+  instalación, y `args` contiene la ruta del script y sus argumentos. Esa
+  plantilla ejecuta
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` y
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` por ruta absoluta,
+  así que la copia instalada no necesita un paquete `apothem` importable. El
+  plugin de Claude Code registra en cambio los hooks en
+  `src/apothem/hooks/hooks.json`, como comandos de shell que ejecutan
+  `hooks/lib/bootstrap.sh` mediante `bash`. Registra un hook nuevo en
+  `hooks.json` y en la plantilla `settings.json` de Claude Code. `dispatch.py`
+  enruta `SessionStart` a `session_start_bootstrap.main()` y todos los demás
+  eventos de la lista de permitidos a `emit_hook_context.main()`. Los únicos
+  stubs de shell permitidos bajo `src/apothem/hooks/` o `scripts/` son los seis
+  archivos de localizador y arranque (`find-python.{ps1,sh}`,
+  `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); cualquier otro archivo `.ps1` /
+  `.sh` no supera la comprobación de higiene de `scripts/dev/validate_hooks.py`.
 
 ### Referencias cruzadas
 
@@ -145,7 +156,9 @@ Nunca uses rutas de archivo ni nombres truncados en la prosa.
 
 ## Portabilidad: Windows frente a Unix
 
-Cada artefacto debe declarar explícitamente su estado de portabilidad.
+Cada comando DEBE declarar explícitamente su estado de portabilidad en el campo
+`portability`, y un ayudante PUEDE hacerlo. Las skills, las reglas y los
+output-styles no llevan ningún campo `portability`.
 
 ### Universal (predeterminado)
 
@@ -181,7 +194,7 @@ Documenta la salvedad en una nota inmediatamente después del título.
 portability: "unix-only"
 ```
 
-Documenta el motivo en la primera sección de la regla.
+Documenta el motivo en la primera sección del artefacto.
 
 ## Ámbito: siempre activo frente a filtrado por ruta
 
@@ -190,7 +203,8 @@ Documenta el motivo en la primera sección de la regla.
 La regla se aplica en todas partes.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### Filtrado por ruta
@@ -198,8 +212,8 @@ scope: "always-on"
 La regla se aplica de forma condicional según la ruta del archivo.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter` usa patrones glob (el mismo formato que `.gitignore`). Cuando un
@@ -207,31 +221,34 @@ archivo coincide con el filtro, la regla se activa.
 
 ## Semántica de versiones
 
-Cada artefacto lleva su propia versión semántica (`MAJOR.MINOR.PATCH`):
+Cada artefacto versionado lleva su propia versión semántica (`MAJOR.MINOR.PATCH`).
+Los comandos y las skills la requieren, los ayudantes y los output-styles PUEDEN
+llevarla, y las reglas no llevan ninguna:
 
 - **PATCH** — corrección de erratas, formato, actualización de enlaces, ediciones solo de comentarios. El comportamiento no cambia.
-- **MINOR** — cambios aditivos que no rompen la compatibilidad: nuevas secciones opcionales, antipatrones adicionales, nuevos campos opcionales de frontmatter, nuevos ejemplos. Los consumidores existentes siguen funcionando sin cambios.
+- **MINOR** — cambios aditivos que no rompen la compatibilidad: nuevas secciones opcionales, nuevos campos opcionales de frontmatter, nuevos ejemplos. Los consumidores existentes siguen funcionando sin cambios.
 - **MAJOR** — cambios incompatibles de esquema o de contrato: secciones eliminadas, campos renombrados, comportamiento alterado de una directiva existente, cambios que obligan a los artefactos dependientes a adaptarse.
 
 Ejemplos:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: corrección de una errata)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: se añadió una nueva entrada de Antipatrones)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: se añadió una nueva sección opcional)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: se declaró estable el contrato)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: se eliminó un campo obligatorio de frontmatter)
 
 Incrementa `version` y `updated` a la vez en cada edición que cambie el
-comportamiento. Añade una fila correspondiente al `CHANGELOG.md` del nivel del
-ecosistema para los lanzamientos que agrupen cambios de artefactos.
+comportamiento de un artefacto que los lleve. Añade una fila correspondiente al
+`CHANGELOG.md` del nivel del ecosistema para los lanzamientos que agrupen
+cambios de artefactos.
 
 ## Cuándo editar un artefacto
 
 ### Reglas
 
 - Trata la estructura Obligatorio/Opcional como portante — reestructurarla
-  repercute en cada artefacto dependiente (se requiere un incremento MAJOR).
+  repercute en cada artefacto dependiente.
 - Refina los Antipatrones, los ejemplos de Escalado por Seriedad y las citas a
-  medida que se profundiza la comprensión (incremento MINOR).
+  medida que se profundiza la comprensión.
 - Registra la justificación de cualquier cambio estructural en el archivo de
   tema de memoria correspondiente.
 
@@ -302,15 +319,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. Actualiza CLAUDE.md
+### 4. Actualiza el README de las reglas
 
-Añade una entrada a la tabla de registro `§7.2 Rules`:
+Añade una fila a la tabla de la familia de la regla en la sección Rule families
+de `src/apothem/rules/README.md`:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Mantén el orden alfabético dentro de la tabla.
+Elige la tabla de la familia cuya temática coincida con la de la regla.
 
 ### 5. Añade una entrada a CHANGELOG.md
 
@@ -367,7 +385,7 @@ comando; con `false`, el modelo puede ejecutarlo cuando una solicitud coincide
 con su descripción. La mayoría de los comandos usan `true`, pero la mayoría de
 las etapas de las canalizaciones de planificación y de investigación usan
 `false`. La tabla de invocación de `src/apothem/commands/README.md` lista el
-valor de cada comando; añade una fila para cada comando nuevo. Mantén
+valor de cada comando; añade una fila para un comando nuevo. Mantén
 `allowed-tools` en solo lectura: un entorno que lo respeta ejecuta esas
 herramientas sin preguntar. Concede una herramienta con efectos secundarios solo
 como regla acotada, como `Bash(git log *)`; el esquema rechaza `"*"` y los
@@ -384,9 +402,9 @@ Estructura:
 - Sección de Flujo de trabajo con pasos
 - Contrato de retorno / formato de salida
 
-### 4. Actualiza CLAUDE.md y CHANGELOG.md
+### 4. Actualiza el README y CHANGELOG.md
 
-Fila de registro en `§7.1 Commands`; fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
+Añade una fila a la tabla de comandos correspondiente de `src/apothem/commands/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
 
 ### 5. Valida
 
@@ -447,9 +465,9 @@ Secciones:
 - Flujo de trabajo (pasos numerados)
 - Contrato de Retorno (máximo de tokens, estructura, campos requeridos)
 
-### 4. Actualiza CLAUDE.md y CHANGELOG.md
+### 4. Actualiza el README y CHANGELOG.md
 
-Fila de registro en `§7.3 Helpers`; fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
+Añade una fila a la tabla Index de `src/apothem/agents/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
 
 ### 5. Prueba
 
@@ -477,8 +495,8 @@ Si las tres respuestas son sí, escribe una skill.
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -513,9 +531,9 @@ Estructura del contenido:
 - Errores comunes
 - Ejemplos
 
-### 4. Actualiza CLAUDE.md y CHANGELOG.md
+### 4. Actualiza el README y CHANGELOG.md
 
-Fila de registro en `§7.5 Skills`; fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
+Añade una fila a las tablas Index y Folder contents de `src/apothem/skills/README.md`; añade una fila de CHANGELOG bajo la sección `### Added` del próximo lanzamiento.
 
 ### 5. Valida
 
@@ -530,13 +548,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] El frontmatter supera la comprobación de sintaxis YAML
 - [ ] Todos los campos obligatorios están presentes según el esquema
 - [ ] El campo `name` usa kebab-case
-- [ ] `version` es semántica (`MAJOR.MINOR.PATCH`) y se incrementó si cambió el comportamiento
-- [ ] `updated` coincide con la fecha de hoy en cualquier artefacto que hayas tocado
-- [ ] El campo `portability` está establecido y es válido
+- [ ] `version` (solo las clases versionadas; las reglas no llevan ninguna) es semántica (`MAJOR.MINOR.PATCH`) y se incrementó si cambió el comportamiento
+- [ ] `updated` coincide con la fecha de hoy en cualquier artefacto que hayas tocado y que lleve el campo
+- [ ] El campo `portability` está establecido y es válido (solo comandos y ayudantes)
 - [ ] CHANGELOG.md recoge el cambio en la categoría adecuada bajo la sección del próximo lanzamiento
 - [ ] Sin referencias internas de planes (cumplimiento de CM-7)
 - [ ] Las referencias cruzadas son coherentes con los demás artefactos
-- [ ] El nuevo artefacto está registrado en el registro de CLAUDE.md
+- [ ] El nuevo artefacto está registrado en el índice del README de su carpeta
 - [ ] El artefacto se ha probado (si corresponde)
 - [ ] La skill `ecosystem-audit` se ejecuta sin errores
 - [ ] El contenido sigue las convenciones estructurales (formato del título, secciones, etc.)
@@ -576,8 +594,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### Referenciar secciones de CLAUDE.md
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## Linting y formato

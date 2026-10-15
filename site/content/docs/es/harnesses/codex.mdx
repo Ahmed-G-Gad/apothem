@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de entorno de Apothem para Codex (Beta)."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,12 +52,16 @@ y las reglas/plantillas Markdown no nativas en `~/.config/apothem/` como
 material de soporte.
 
 Cada ayudante convertido establece `name`, `description` y
-`developer_instructions`. Un ayudante cuya concesión de herramientas no puede
-escribir archivos también establece `sandbox_mode = "read-only"`, la
-restricción de escritura propia de Codex. No se establece ningún modelo ni
-esfuerzo de razonamiento, así que cada ayudante hereda las elecciones de la
-sesión. Codex no tiene lista de herramientas ni límite de turnos por ayudante,
-así que los `tools` y `maxTurns` de un ayudante no se trasladan.
+`developer_instructions`. Un ayudante cuya concesión de herramientas, después de
+aplicar su lista de denegación, no incluye ninguna herramienta de edición de
+archivos (`Write`, `Edit`, `MultiEdit` o `NotebookEdit`) también establece
+`sandbox_mode = "read-only"`, la restricción de escritura propia de Codex.
+`Bash` no cuenta como herramienta de edición de archivos, así que un ayudante al
+que se concede `Bash` y ninguna de esas herramientas sigue siendo de solo
+lectura. No se establece ningún modelo ni esfuerzo de razonamiento, así que cada
+ayudante hereda las elecciones de la sesión. Codex no tiene lista de
+herramientas ni límite de turnos por ayudante, así que los `tools` y `maxTurns`
+de un ayudante no se trasladan.
 
 ## Notas de compatibilidad
 
@@ -82,8 +86,11 @@ apothem verify --harness codex
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Todos los campos obligatorios del perfil compartido están presentes.
-3. La rutina de verificación específica del adaptador informa éxito.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y
+   las configuraciones JSON o YAML se analizan correctamente. Añade
+   `--profile PATH` para confirmar también que los archivos instalados coinciden
+   con ese perfil.
+3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
 

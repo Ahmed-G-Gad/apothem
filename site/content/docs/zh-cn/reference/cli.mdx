@@ -2,7 +2,7 @@
 title: "CLI 参考"
 description: "Apothem CLI 参考——全部子命令与标志。"
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -145,8 +145,8 @@ apothem profile edit [--profile PATH]
 | 子命令 | 说明 |
 |------------|-------------|
 | `profile init` | 创建一个符合 schema 的最小配置档案脚手架。 |
-| `profile show` | 将解析后的配置档案（YAML）打印到 stdout。 |
-| `profile set <key> <value>` | 设置某个配置档案字段。该值以字面字符串存储——裸词不会被强制转换，因此 `no` 仍为 `"no"`，`1.0` 仍为字符串——但 `true`/`false` 以及显式的 `[...]` / `{...}` 列表和映射输入除外。组装后的配置档案在写入之前会经过 schema 校验。 |
+| `profile show` | 将解析后的配置档案以 JSON 打印到 stdout。使用 `--json` 时，文档以 `schema_version` 开头。 |
+| `profile set <key> <value>` | 设置一个配置档案字段。该值以字面字符串存储——裸词不会被强制转换，因此 `no` 仍为 `"no"`，`1.0` 仍为字符串——但 `true`/`false` 以及显式的 `[...]` / `{...}` 列表与映射输入除外。组装后的配置档案在写入之前会经过 schema 校验。 |
 | `profile edit` | 在 `$EDITOR` 中打开配置档案（回退到平台默认编辑器）。 |
 
 `--profile PATH` 选项可让每个子命令指向另一个配置档案文件。默认为 `~/.config/apothem/profile.yaml`。
@@ -173,7 +173,7 @@ apothem harnesses show <name>
 apothem doctor
 ```
 
-打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及一张按工具列出的安装状态表。只有当每项检查都通过时，退出码才为 `0`；无效的配置档案、未安装的工具或无法探测的适配器，每一项都会导致非零退出。
+打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及按工具划分的安装状态表。当任一检查失败时，退出码为 `1`：包括配置档案无效、已安装的工具无法通过验证、已注册的钩子命令无法启动、适配器无法加载或无法探测，或账本不可读。未安装的工具会被报告，但不算失败；提示性说明不会改变退出码。
 
 ## 生成的命令与标志参考
 

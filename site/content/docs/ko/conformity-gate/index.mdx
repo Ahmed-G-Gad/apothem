@@ -2,7 +2,7 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트는 방출되는 모든 아티팩트가 통과해야 하는 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분입니다."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,63 +11,39 @@ sourceHash: "c3c719c0c1a0e92e"
 | 막대 | ID | 맨데이트 | 검사 분류 | 실패 → 조치 |
 |---|---|---|---|---|
 | 1 | M1 | 호스트 프로젝트 불가지론 | 추론형 | 호스트 규약에 맞게 수정 |
-| 2 | M2 | 편집 규율(공개 원장) | 기계형 | 공개 표시 추가 |
-| 3 | M3 | 열 가지 품질 차원 | 추론형 | 실패한 차원을 수정 |
+| 2 | M2 | 편집 규율(공개 원장) | 추론형 | 공개 표시 추가 |
+| 3 | M3 | 열 가지 품질 차원 | 기계형 + 추론형 | 실패한 차원을 수정 |
 | 4 | M4 | 자기 적용(게이트 서명 기록 존재) | 기계형 | 서명 기록 블록 기록 |
-| 5 | M5 | 권한 원칙(조작된 신원 / 엔드포인트 / 시크릿 없음) | 기계형 | 질의로 전달 |
+| 5 | M5 | 권한 원칙(날조된 신원 / 엔드포인트 / 시크릿 없음) | 기계형 | 질의로 전달 |
 | 6 | M6 | 전문성 반영(드러난 공백) | 추론형 | 공백을 드러내고 개선 사항 인용 |
 | 7 | M7 | 옵션 주석(Recommended 표시 + 결정 요인 근거) | 기계형 | 옵션 집합에 주석 달기 |
 | 8 | M8 | 확정성(규범적 산문에 얼버무림 없음) | 기계형 | 얼버무림을 조건문으로 격상 |
 | 9 | M9 | 시각적 활용(구조적 주제에는 다이어그램 포함) | 추론형 | 다이어그램 작성 / 갱신 |
 | 10 | M10 | 양방향 바인딩(상호 역방향 포인터가 닫혀 있음) | 기계형 | 반쪽 간선 닫기 |
 | 11 | M11 | 애자일 스프린트(목표 / 백로그 / DoR / DoD / 검토 / 회고) | 추론형 | 스프린트로 재구성 |
-| 12 | M12 | 단계 보고 및 표준 레이아웃 | 기계형 | 롤업 작성, 표준 레이아웃으로 재배치 |
+| 12 | M12 | 단계 보고 및 표준 레이아웃 | 기계형 + 추론형 | 롤업 작성, 표준 레이아웃으로 재배치 |
 | 13 | M13 | 코드 작성 기술(린트 / 포맷 / 타입 검사, 매직 넘버, bare-except) | 기계형 | 언어별 코드 작성 규칙 적용 |
 | 14 | M14 | 체계성(업스트림 / 다운스트림 / 동료 / 시행 주체 선언) | 추론형 | 선언하고 레지스트리에 색인 |
-| 15 | M15 | 프로덕션 준비(테스트 + 문서 + CHANGELOG + 규약 준수 커밋 + CI 녹색 + semver 안정성) | 기계형 | 누락된 표면 추가 |
+| 15 | M15 | 프로덕션 준비(테스트 + 문서 + CHANGELOG + 규약 준수 커밋 + CI 녹색 + semver 안정성) | 기계형 + 추론형 | 누락된 표면 추가 |
 
 ## 심각도 단계
 
-| 심각도 | 게이트에 미치는 영향 |
-|---|---|
-| **치명** | 게이트 FAIL — 방출이 무조건 차단됨 |
-| **중요** | 중요 막대 2개 이상이 동시에 실패하면 게이트 FAIL |
-| **권고** | 게이트 WARN — 서명 기록에 기록되며, 방출을 차단하지 않음 |
-
-기계적 부분의 매처는 대부분 기본값이 **중요**입니다. M5(권한 — 시크릿, 조작된 엔드포인트)와 M12(고아 출력)는 **치명**입니다.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+게이트에는 치명, 중요, 권고로 나뉘는 등급 체계나 두 건의 발견 사항이라는 임계값이 없습니다. `--strict`(또는 `APOTHEM_CONFORMITY_STRICT=1`)가 없으면 게이트는 발견 사항을 보고하고 `0`으로 종료합니다. `--strict`를 지정하면 단일 파일 또는 훅 검사는 어떤 매처든 실패할 때 `2`로 종료하고, 코퍼스 실행(`--all-perwrite`)은 차단 매처가 실패할 때 `2`로 종료합니다. 권고 매처는 보고만 합니다. 설치된 Write/Edit 훅은 `--strict`를 전달하지 않으므로, 그 환경에 `APOTHEM_CONFORMITY_STRICT=1`이 설정되어 있지 않은 한 발견 사항을 보고하고 쓰기는 그대로 진행됩니다.
 
 ## 검증기
 
 기계적 부분은 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)에 있으며, [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py)가 이를 조율합니다.
-게이트는 각 검증기를 다음 세 가지 방식 중 하나로 실행합니다.
+각 검증기는 다음 세 가지 방식 중 하나로 실행됩니다.
 
 - **per-write**: 보류 중인 모든 쓰기마다(`--hook`), 또는 `--all-perwrite`로 추적되는 모든 파일에 대해 실행합니다.
 - **standalone**: `--all`로 저장소 전체에 걸쳐 실행하거나, `--check <name>`으로 하나씩 실행합니다.
-- **change-set**: 게이트의 스윕과 별도로, 스테이징된 diff를 대상으로 실행합니다.
+- **change-set**: 스테이징된 diff를 대상으로 하며, 게이트를 거치지 않고 `python -m apothem.conformity.semver_stability_grep --staged`로 직접 실행합니다.
 
 아래 표는 검증기 모듈에서 생성됩니다.
 
 {/* apothem:generated-reference:start */}
 
-The gate registers 53 validators: 22 per-write, 30 standalone and 1 change-set.
+The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -165,5 +141,5 @@ echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
 
 - [사전 방출 게이트 레지스트리](/docs/governance/pre-emission-gate-registry) — 표준 막대 정의
 - [대외 적합성 레지스트리](/docs/governance/outward-conformity-registry) — M1-M15의 상세 의미
-- [횡단 맨데이트](/docs/governance/cross-cutting-mandates) — 맨데이트의 기준 출처
+- [횡단 맨데이트](/docs/governance/cross-cutting-mandates) — 맨데이트의 진실의 원천
 - [성능 규율](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/rules/performance-discipline.md) — 분류별 런타임 예산

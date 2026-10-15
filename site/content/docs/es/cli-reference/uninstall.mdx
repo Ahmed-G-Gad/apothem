@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referencia de la CLI para el comando apothem uninstall."
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,18 +19,18 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 Elimina los destinos del entorno gestionados por el adaptador y luego los
 directorios que creó la instalación, una vez que están vacíos (un directorio que
 contiene algo tuyo se queda). Pide confirmación a menos que se proporcione
-`--yes`. Cuando no es posible preguntar — `--format json` (el texto de la
-solicitud corrompería el único documento JSON) o una shell no interactiva (sin
-TTY) — el comando se niega de entrada con un error estructurado
-`uninstall.confirmation_required` (salida 1) a menos que se proporcione `--yes`.
-Si un entorno seleccionado no está instalado, el comando tiene éxito (salida 0)
-con un aviso «nothing to remove».
+`--yes`. Cuando no es posible mostrar una solicitud — `--format json` (el texto
+de la solicitud corrompería el único documento JSON) o una shell no interactiva
+(sin TTY) — el comando se niega de antemano con un error estructurado
+`uninstall.confirmation_required` (código de salida 1) a menos que se
+proporcione `--yes`. Si un entorno seleccionado no está instalado, el comando
+tiene éxito (código de salida 0) con un aviso «nada que eliminar».
 
-Una eliminación con `--harness all` es exhaustiva a propósito: abarca todos los
-entornos registrados, incluidos los que el `exclude_harnesses` del perfil omite
-durante la instalación — la limpieza alcanza el estado que pudo haber dejado una
-instalación anterior más amplia. Los entornos que nunca se instalaron informan
-«nothing to remove».
+Una eliminación con `--harness all` es exhaustiva de forma deliberada: abarca
+cada entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
+durante la instalación — la limpieza alcanza el estado que una instalación
+anterior de mayor alcance pueda haber dejado atrás. Los entornos que nunca se
+instalaron informan «nada que eliminar».
 
 El alias en forma continua `apothem uninstalling` se resuelve en el mismo
 manejador.
@@ -41,10 +41,10 @@ manejador.
 |---|---|
 | `--harness NAME` | Adaptador de entorno que se elimina, o `all` para el conjunto de todo el registro (obligatorio). |
 | `--yes` | Omite la solicitud de confirmación. |
-| `--project PATH` | Raíz del proyecto para los entornos de alcance de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
-| `--format plain\|json` | Formato de salida (predeterminado: `plain`). |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
 | `--json` | Abreviatura de `--format json`. |
 | `--no-color` | Desactiva los códigos de color ANSI en la salida. |
 | `-h`, `--help` | Muestra la ayuda y sale. |
@@ -54,14 +54,35 @@ manejador.
 Cuando el adaptador está instalado y se elimina correctamente:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Cuando el adaptador no estaba instalado:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+Cuando el adaptador no estaba instalado, el comando termina con código `0`. En
+la salida JSON, el sobre tiene `"status": "success"` y
+`"action": "uninstalled"`, y la fila de resultados tiene `"outcome": "skipped"`
+con el mensaje `"not installed; no files
+removed"`. El campo `status` nunca es `"not_installed"`.
 
 ## Ejemplos
 

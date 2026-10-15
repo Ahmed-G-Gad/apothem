@@ -2,7 +2,7 @@
 title: "rollback"
 description: "apothem rollback 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "96531a4a5fa4a15e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 - 移除该次安装创建的共享数据存储（`memory`、`contexts`、`learning`），除非另一个已安装的工具仍在使用它们；
 - 在该次安装创建的目录变空之后将其移除。
 
-rollback 移除或替换的所有内容都会先被复制到 Apothem 备份根目录（`~/.apothem/backups/`）中，因此回滚本身也可以手动撤销。随后它会向该工具的账本追加一条 `rollback` 记录。回滚一次较早的安装也会撤销同一根目录下在它之后的每一次安装。
+回滚操作移除或替换的所有内容，都会先复制到 Apothem 备份根目录（`~/.apothem/backups/`）中，因此回滚本身也可以手动撤销。随后它会向工具账本追加一条 `rollback` 记录。回滚较早的安装时，只会恢复或移除该较早安装所记录的目标，并会将同一根目录下此后的每次安装从活动记录中剔除。之后的安装在这些目标之外添加的文件会保留在原位。
 
 账本为每个安装根目录保留最新的 10 条安装记录（以及它们所引用的备份）；更早的安装将无法再按 id 回滚，并会报告 `rollback.no_record`。[`apothem backups prune`](/docs/cli-reference/backups) 可按需降低这一上限，并且绝不会移除最近一次安装恢复时所依据的备份。
 
@@ -32,7 +32,7 @@ rollback 移除或替换的所有内容都会先被复制到 Apothem 备份根�
 
 除非提供了 `--yes`，否则会按工具逐一提示确认。当无法进行提示时——`--format json`（提示文本会破坏单一的 JSON 文档）或非交互式 shell（无 TTY）——除非提供了 `--yes`，否则该命令会预先以一个结构化的 `rollback.confirmation_required` 错误（退出码 1）拒绝执行。`--install-id` 和 `--last` 用于选择安装过程，二者互斥。
 
-`--harness all` 回滚有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装时跳过的工具——恢复安装前的状态是一项清理操作，因此它会触及先前一次范围更广的安装可能留下的记录。没有已记录安装的工具会逐个报告“没有可回滚的内容”。
+`--harness all` 回滚有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装时跳过的工具——恢复安装前的状态是一项清理操作，因此它会触及先前一次范围更广的安装可能留下的记录。没有已记录安装的工具会以 `rollback.no_record` 失败（`results` 中的一行 `"outcome": "error"`），而本次运行会继续处理其余工具。随后该命令退出码为 1；如果另有工具已被回滚，则为 2。
 
 ## 选项
 

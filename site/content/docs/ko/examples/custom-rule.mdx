@@ -2,12 +2,11 @@
 title: "커스텀 규칙"
 description: "프로젝트를 위한 커스텀 상시-적용 규칙을 작성합니다."
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-이 예제는 모든 파일에 걸쳐 명명 규약을 강제하는, 프로젝트별 상시-적용 규칙을
-추가합니다.
+이 예제는 모든 파일에 걸쳐 명명 규칙을 강제하는, 프로젝트 전용의 항상 적용되는 규칙을 추가합니다.
 
 ## 규칙 파일
 
@@ -31,17 +30,29 @@ no camelCase, no PascalCase).
 When in doubt, err on the side of more hyphens.
 ```
 
-이것을 harness 설치 루트 안의 `rules/kebab-filenames.md` 에 저장하세요(Claude Code 어댑터의 경우 `~/.claude/`; 그 외에는 harness 네이티브 경로로 대체하세요).
+이 파일을 하니스 설치 루트 안의 `rules/kebab-filenames.md`로 저장하세요(Claude Code 어댑터는 `~/.claude/`이며, 그 밖의 경우에는 하니스 고유 경로로 바꾸세요).
 
-## 규칙이 로드되었는지 검증하기
+## 규칙이 올바르게 작성되었는지 검증하기
+
+방금 작성한 규칙 파일에 frontmatter 검증기를 실행하세요. Apothem 체크아웃에서는 명령 앞에 `PYTHONPATH=src`를 붙이고, 스크립트로 설치한 뒤에는 `PYTHONPATH="$HOME/.apothem/src"`를 붙이세요:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
-## 각 harness 로 전파하기
+올바르게 작성된 규칙은 깔끔하게 통과 판정을 받습니다:
 
-설치된 harness마다 업데이트 명령을 한 번씩 실행하세요:
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
+```
+
+## 하니스로 전파하기
+
+설치된 하니스마다 업데이트 명령을 한 번씩 실행하세요:
 
 ```bash
 apothem update --harness claude-code

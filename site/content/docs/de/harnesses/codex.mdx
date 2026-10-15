@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Apothem-Harness-Adapter für Codex (Beta)."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,12 +54,16 @@ nicht native Markdown-Regeln/-Templates als Unterstützungsmaterial nach
 `~/.config/apothem/`.
 
 Jeder konvertierte Helfer setzt `name`, `description` und
-`developer_instructions`. Ein Helfer, dessen Werkzeugfreigabe keine Dateien
-schreiben kann, setzt zusätzlich `sandbox_mode = "read-only"`, die
-Codex-eigene Schreibbeschränkung. Weder Modell noch Reasoning-Aufwand werden
-gesetzt, sodass jeder Helfer die Einstellungen der Sitzung erbt. Codex kennt
-keine Werkzeugliste und kein Turn-Limit pro Helfer, daher werden `tools` und
-`maxTurns` eines Helfers nicht übernommen.
+`developer_instructions`. Ein Helfer, dessen Werkzeugfreigabe nach Abzug ihrer
+Sperrliste kein Werkzeug zum Bearbeiten von Dateien (`Write`, `Edit`,
+`MultiEdit` oder `NotebookEdit`) enthält, setzt zusätzlich
+`sandbox_mode = "read-only"`, die Codex-eigene Schreibbeschränkung. `Bash`
+zählt nicht als Werkzeug zum Bearbeiten von Dateien, sodass ein Helfer, dem
+`Bash` und keines dieser Werkzeuge freigegeben ist, weiterhin schreibgeschützt
+ist. Weder Modell noch Reasoning-Aufwand werden gesetzt, sodass jeder Helfer
+die Einstellungen der Sitzung erbt. Codex kennt keine Werkzeugliste und kein
+Turn-Limit pro Helfer, daher werden `tools` und `maxTurns` eines Helfers nicht
+übernommen.
 
 ## Kompatibilitätshinweise
 
@@ -81,11 +85,11 @@ Skills auf sie.
 apothem verify --harness codex
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. die native Konfiguration am erwarteten Pfad existiert.
-2. alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration existiert am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

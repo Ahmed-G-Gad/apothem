@@ -2,13 +2,17 @@
 title: "Konformitäts-Gate"
 description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Das Konformitäts-Gate unter `src/apothem/conformity/gate.py` führt den
 mechanischen Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) gegen jedes
 Artefakt aus, das der Operator verfasst.
+
+Die Befehle auf dieser Seite setzen einen Apothem-Checkout voraus; stellen Sie
+daher jedem Befehl `PYTHONPATH=src` voran. Nach einer Skript-Installation
+verwenden Sie `PYTHONPATH="$HOME/.apothem/src"` anstelle von `src`.
 
 ## Das Gate ausführen
 
@@ -20,10 +24,10 @@ verwenden, um eine Änderung mit Verstößen scheitern zu lassen.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Exit-Codes: `0` sauber (oder beratend), `2` eine Blockierung durch Befunde im
@@ -50,8 +54,8 @@ Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
 | Stufe | Prüfung | Art |
 |-----|-------|------|
 | M1 | Host-Projekt-Agnostizismus | Abwägungsbasiert |
-| M2 | Redaktionelle Offenlegung | Mechanisch |
-| M3 | Zehn Qualitätsdimensionen | Abwägungsbasiert |
+| M2 | Redaktionelle Offenlegung | Abwägungsbasiert |
+| M3 | Zehn Qualitätsdimensionen | Mechanisch + abwägungsbasiert |
 | M4 | Selbstanwendung | Mechanisch |
 | M5 | Autorität (keine erfundene Identität / kein erfundener Endpunkt / kein erfundenes Geheimnis) | Mechanisch |
 | M6 | Einbindung von Expertise | Abwägungsbasiert |
@@ -60,22 +64,22 @@ Commit-Subject-Validator, wenn das Verzeichnis keine Commit-Historie hat.
 | M9 | Visuelle Hebelwirkung | Abwägungsbasiert |
 | M10 | Bidirektionale Bindung | Mechanisch |
 | M11 | Agile Sprints | Abwägungsbasiert |
-| M12 | Phasenberichte und kanonisches Layout | Mechanisch |
+| M12 | Phasenberichte und kanonisches Layout | Mechanisch + abwägungsbasiert |
 | M13 | Code-Handwerk | Mechanisch |
 | M14 | Systemizität | Abwägungsbasiert |
-| M15 | Produktionsreife | Mechanisch |
+| M15 | Produktionsreife | Mechanisch + abwägungsbasiert |
 
 ## Gezielte Prüfungen
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 Der `--hook`-Modus (`python -m apothem.conformity.gate --hook`) ist der vom
@@ -104,4 +108,8 @@ Schreibvorgangs gegen die oben genannten Geltungsbereiche.
 
 ## CI-Integration
 
-Das Gate läuft in der CI über `.github/workflows/conformity.yml` bei jedem Push.
+Der Qualitätsjob in `.github/workflows/ci.yml` führt das Gate im Strict-Modus
+(`python -m apothem.conformity.gate --all . --strict`) bei Pushes auf `main` und
+bei Pull Requests auf `main` aus, die die Pfade berühren, die dieser Job
+überwacht. Der separate Workflow `.github/workflows/conformity.yml` führt den
+Fixture-Durchlauf aus (`tests/conformity-scenarios/verify.py --strict`).
