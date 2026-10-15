@@ -2,7 +2,7 @@
 title: "Contribuindo com o Apothem — Guia do Desenvolvedor"
 description: "Mantenha e estenda o ecossistema do Apothem criando regras, comandos, auxiliares, skills e hooks com schemas canônicos, requisitos de frontmatter e procedimentos de validação."
 machineTranslated: true
-sourceHash: "04ae410c0eeaf642"
+sourceHash: "8bc55176ce744fca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,12 @@ com padrões de qualidade SOTA.
 
 ## Referência rápida: tipos de artefato
 
-O ecossistema do Apothem contém cinco tipos de artefato, cada um com propósitos
-e requisitos de frontmatter específicos.
+Este guia cobre cinco tipos de artefato, cada um com um propósito específico. As
+regras, os comandos, os auxiliares e as skills carregam frontmatter YAML; os
+hooks são registrados em `hooks.json` e `settings.json` e não carregam nenhum.
+Os output-styles são uma classe de artefato adicional, com duas chaves
+obrigatórias de frontmatter, `name` e `description`; consulte o
+[Schema de frontmatter](/docs/reference/frontmatter-schema).
 
 | Artefato | Caminho | Propósito | Quando criar |
 | -------- | ---- | ------- | -------------- |
@@ -34,7 +38,7 @@ quando estas superfícies concordam:
 | Pacote do adaptador | `__init__.py`, `install.py`, `update.py`, `uninstall.py`, `verify.py`; adicione `materializer.py` somente quando o harness renderiza um arquivo de configuração nativo. |
 | Manifesto de propagação | Caminhos de template e de cohort para os adaptadores baseados em manifesto. |
 | Capacidades | `src/apothem/harnesses/<package>/capabilities.yml` com cada capacidade obrigatória e a justificativa para os estados não suportados ou pendentes de descoberta, além de um mapa `conversion_losses` para cada cohort convertido de comandos, agentes ou regras (consulte o [registro de harnesses](/docs/reference/harness-registry)). |
-| Pin de convenção | `STANDARD-CONVENTION-PIN.md` com a URL do fornecedor, a data do snapshot, o nome de arquivo/schema canônico, a referência de evidência e a justificativa para cada capacidade não suportada. |
+| Pin de convenção | `STANDARD-CONVENTION-PIN.md` com a URL do fornecedor, a data do snapshot, o nome de arquivo/schema canônico, a referência de evidência e a justificativa para as capacidades não suportadas. |
 | Testes | Paridade do registro, teste de fixture do adaptador, linha golden do plano de instalação, comportamento de dry-run/sem gravação, idempotência e cobertura de package-data. |
 | Documentação | Página de referência do harness, página de comparação, notas de capacidade/MCP e exemplos que usam placeholders fictícios. |
 
@@ -55,7 +59,7 @@ mudança no código-fonte, para que o diff mostre o delta de comportamento.
 
 ## Validação antes da gravação
 
-O driver de instalação compartilhado valida cada origem e cada alvo antes da
+O driver de instalação compartilhado valida cada fonte e cada alvo antes da
 primeira gravação. Ele rejeita fontes de manifesto ausentes, travessia de alvo,
 caminhos-alvo fora da raiz selecionada e cruzamentos de links simbólicos. Os
 dry-runs executam a mesma validação e retornam resultados estruturados `skipped`
@@ -71,10 +75,10 @@ contas pessoais com aparência real.
 
 ## Antes de escrever: o schema canônico
 
-**O contrato legível por máquina e imposto pelo portão são os JSON Schemas por
-classe em `src/apothem/schemas/*.schema.json` — `additionalProperties` rejeita
-chaves desconhecidas, então o conformity gate tem a palavra final.** Duas
-projeções legíveis por humanos os acompanham:
+**Os JSON Schemas por classe em `src/apothem/schemas/*.schema.json` são o
+contrato legível por máquina e imposto pelo conformity gate —
+`additionalProperties` rejeita chaves desconhecidas, então o conformity gate tem
+a palavra final.** Duas projeções legíveis por humanos os acompanham:
 `site/content/docs/reference/frontmatter-schema.mdx` (o índice de chaves
 obrigatórias) e `site/content/docs/reference/artifact-schema.mdx` (templates por
 classe e exemplos completos). Quando uma página diverge dos JSON Schemas, os
@@ -130,8 +134,9 @@ Padrão: letras minúsculas, hífens entre as palavras, sem espaços nem sublinh
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` pelo caminho absoluto, de modo que
   a cópia instalada não precisa de um pacote `apothem` importável. O plugin do Claude Code
   registra os hooks, em vez disso, em `src/apothem/hooks/hooks.json`, como comandos de shell que
-  executam `hooks/lib/bootstrap.sh` por meio do `bash`. Registre um novo hook em `hooks.json`
-  e no template `settings.json` do Claude Code. `dispatch.py` encaminha
+  executam `hooks/lib/bootstrap.sh` por meio do `bash`; esse stub localiza o Python e executa
+  `dispatch.py`, de modo que os manipuladores continuam em Python. Registre um novo hook em
+  `hooks.json` e no template `settings.json` do Claude Code. `dispatch.py` encaminha
   `SessionStart` para
   `session_start_bootstrap.main()` e
   todos os demais eventos da lista de permissões para `emit_hook_context.main()`. Os únicos stubs
@@ -153,10 +158,10 @@ Nunca use caminhos de arquivo nem nomes truncados na prosa.
 ## Portabilidade: Windows vs. Unix
 
 Todo comando DEVE declarar explicitamente seu status de portabilidade no campo
-`portability`, e um auxiliar PODE fazê-lo. Skills, regras e output-styles não
+`portability`. Um auxiliar PODE declará-lo. Skills, regras e output-styles não
 carregam o campo `portability`.
 
-### Universal (padrão)
+### Universal
 
 - Funciona de forma idêntica no Windows, no macOS e no Linux
 - Nenhuma suposição sobre o shell
@@ -229,7 +234,7 @@ Exemplos:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: correção de erro de digitação)
 - `vX.Y.Z` → `vX.(Y+1).0` (MINOR: adicionada uma nova seção opcional)
-- `vX.Y.Z` → `v(X+1).0.0` (MAJOR: contrato declarado estável)
+- `v0.Y.Z` → `v(0+1).0.0` (MAJOR: contrato declarado estável; os novos artefatos partem de `v0.Y.Z`)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: removido um campo de frontmatter obrigatório)
 
 Incremente `version` e `updated` juntos a cada edição que altere o comportamento
@@ -241,8 +246,8 @@ de artefatos.
 
 ### Regras
 
-- Trate a estrutura Obrigatório/Opcional como estrutural — reestruturá-la
-  repercute em todos os artefatos dependentes.
+- Trate a estrutura Obrigatório/Opcional como elemento de sustentação —
+  reestruturá-la repercute em todos os artefatos dependentes.
 - Refine os antipadrões, os exemplos de Escalonamento de Seriedade e as citações
   à medida que o entendimento se aprofunda.
 - Registre a justificativa de qualquer mudança estrutural no arquivo de tópico
@@ -343,8 +348,9 @@ Comandos são comandos de barra como `/plan-spec`, `/plan-execute`, `/security-a
 
 ### 1. Determine o papel
 
-Os comandos **nunca** se destinam a ser chamados pelo harness isoladamente. Eles
-são fluxos de trabalho acionados pelo usuário. Pergunte:
+Os comandos são fluxos de trabalho acionados pelo usuário. O modelo executa um
+por conta própria somente quando a sua configuração `disable-model-invocation` é
+`false` (passo 2). Pergunte:
 
 - Este é um fluxo de trabalho em que o usuário digita `/command-name`?
 - Ele orquestra vários passos?
@@ -380,8 +386,9 @@ invocação em `src/apothem/commands/README.md` lista a configuração de cada
 comando; adicione uma linha para um novo comando. Mantenha `allowed-tools`
 somente leitura: um harness que o respeita executa essas ferramentas sem
 perguntar. Conceda uma ferramenta com efeitos colaterais somente como uma regra
-com escopo, como `Bash(git log *)`; o schema rejeita `"*"` e os nomes isolados
-`Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit` e `WebFetch`.
+com escopo, como `Bash(git log *)`; o schema rejeita `"*"` e qualquer um dentre
+`Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit` ou `WebFetch` escrito sem
+escopo.
 
 ### 3. Escreva o conteúdo
 
@@ -395,7 +402,7 @@ Estrutura:
 
 ### 4. Atualize o README e o CHANGELOG.md
 
-Adicione uma linha à tabela de comandos correspondente em `src/apothem/commands/README.md`; adicione uma linha do CHANGELOG sob a seção `### Added` do próximo lançamento.
+Adicione uma linha à tabela da seção do comando em `src/apothem/commands/README.md`, além da linha da tabela de invocação do passo 2; adicione uma linha do CHANGELOG sob a seção `### Added` do próximo lançamento.
 
 ### 5. Valide
 
@@ -523,7 +530,7 @@ Estrutura do conteúdo:
 
 ### 4. Atualize o README e o CHANGELOG.md
 
-Adicione uma linha às tabelas Index e Folder contents em `src/apothem/skills/README.md`; adicione uma linha do CHANGELOG sob a seção `### Added` do próximo lançamento.
+Adicione uma linha à tabela Index e uma linha para cada arquivo da skill à tabela Folder contents em `src/apothem/skills/README.md`; adicione uma linha do CHANGELOG sob a seção `### Added` do próximo lançamento.
 
 ### 5. Valide
 
@@ -540,7 +547,7 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] O campo `name` usa kebab-case
 - [ ] `version` (somente classes versionadas; as regras não carregam nenhuma) é semântica (`MAJOR.MINOR.PATCH`) e foi incrementada se o comportamento mudou
 - [ ] `updated` corresponde à data de hoje em todo artefato que você alterou e que carrega o campo
-- [ ] Campo `portability` definido e válido (somente comandos e auxiliares)
+- [ ] O campo `portability` está definido e é válido (obrigatório nos comandos, opcional nos auxiliares)
 - [ ] O CHANGELOG.md registra a mudança na categoria apropriada sob a seção do próximo lançamento
 - [ ] Nenhuma referência interna de plano (conformidade com CM-7)
 - [ ] As referências cruzadas são consistentes com os outros artefatos
@@ -708,23 +715,23 @@ uma regra sempre ativa que tem um par, execute
 
 ### Benchmarks
 
-`make benchmarks` executa os drivers por classe em `src/apothem/benchmarks/`.
-Cada um sai com `0` aprovado, `1` acima do orçamento, `2` erro (a execução medida
-não foi executada) ou `3` não medido.
+`make benchmarks` executa os drivers por classe em `src/apothem/benchmarks/`,
+exceto `bench_agents.py`. Cada driver sai com `0` aprovado, `1` acima do
+orçamento, `2` erro (a execução medida não foi executada) ou `3` não medido.
 
 - `bench_hooks.py` executa cada comando `shell: bash` que `hooks/hooks.json`
   registra, tal como escrito, em um payload real por evento e matcher, e reporta
   o tempo total mediano, o comando mais lento (verificado contra o orçamento do
   evento) e os caracteres injetados. Um comando que não pode ser executado como
-  registrado (saída 126 quando um script não tem seu bit de execução) é um erro,
-  não uma aprovação.
-- `bench_agents.py` reporta `NOT MEASURED` (saída 3): o disparo de um subagente
-  precisa de um harness hospedeiro e de uma chamada ao modelo. `make benchmarks`
+  registrado (código de saída 126 quando um script não tem seu bit de execução) é
+  um erro, não uma aprovação.
+- `bench_agents.py` reporta `NOT MEASURED` (código de saída 3): iniciar um
+  subagente exige um harness hospedeiro e uma chamada ao modelo. `make benchmarks`
   não o executa.
 
 A verificação do orçamento das regras sempre ativas (`always-on-budget-grep`)
 conta palavras separadas por espaços em branco, excluindo a seção Bindings e as
-linhas de ponteiro para os companheiros. Seu relatório JSON também traz
+linhas de ponteiro companheiras. Seu relatório JSON também traz
 `always-on-loaded`: os bytes, os caracteres e as palavras dos corpos sem
 frontmatter que um harness carrega, somados sobre as regras sempre ativas.
 
@@ -751,7 +758,7 @@ Isto executa em paralelo:
 
 - **Auditoria de estrutura:** precisão do registro, existência dos arquivos, validade do frontmatter
 - **Auditoria de artefatos:** referências cruzadas, cobertura dos mandatos, ordenação do pipeline
-- **Auditoria de memória:** alegações dos arquivos de memória vs. estado do sistema de arquivos
+- **Auditoria de memória:** afirmações dos arquivos de memória vs. estado do sistema de arquivos
 
 Saída esperada: `PASS` com zero achados em ambas as superfícies.
 

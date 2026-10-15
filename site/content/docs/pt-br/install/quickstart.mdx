@@ -2,7 +2,7 @@
 title: "Início rápido"
 description: "Instale o Apothem, escreva um perfil, materialize seu primeiro harness e verifique-o — um roteiro de copiar e colar com a saída esperada."
 machineTranslated: true
-sourceHash: "56906098563144c2"
+sourceHash: "85c4fb40991ae94c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,8 @@ limpa imprime. A instalação em si termina em menos de dois minutos; editar o
 perfil é a única parte que leva o tempo que você quiser.
 
 Ao final, você terá uma configuração de harness funcional gerada a partir de um
-perfil que você escreveu — e conhecerá o único comando que propaga de volta uma
-alteração do perfil para todas as ferramentas.
+perfil que você escreveu — e conhecerá o único comando que propaga uma alteração
+do perfil de volta para uma ferramenta ou para todas elas.
 
 <Callout title="Quer a versão mais lenta e narrada?">
   O [tutorial de primeiros passos](/docs/tutorials/getting-started) percorre o
@@ -43,10 +43,14 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-O instalador requer um Python 3.10+ do sistema com `click` e `rich`
-importáveis, além de `git` para a forma via rede. Ele verifica os
-pré-requisitos, posiciona o motor em `~/.apothem` e, ao concluir, imprime a
-invocação exata do motor para o seu shell:
+O instalador requer um Python 3.10+ do sistema, além de `git` para a forma via
+rede. Ele verifica os pré-requisitos e posiciona o motor em `~/.apothem`. Quando
+`click` ou `rich` está ausente, ele instala o pacote com a sua confirmação, ou
+com `--yes` (`-Yes` no PowerShell), ou com `APOTHEM_AUTO_INSTALL_DEPS=1` e, caso
+contrário, para e informa o comando pip a executar (consulte
+[Pré-requisitos de relance](/docs/install#pré-requisitos-de-relance)). Ao
+concluir, ele imprime um banner de próximos passos; em POSIX, quando o diretório
+do shim já está no `PATH`, o banner tem esta aparência:
 
 ```text
 Installation complete.
@@ -68,9 +72,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 </Callout>
 
 <Callout title="O comando `apothem`">
-  O instalador coloca um shim `apothem` no seu `PATH`, então você executa o
-  motor diretamente como `apothem <command>`. Se o diretório do shim ainda não
-  estiver no `PATH`, o banner imprime uma alternativa autocontida —
+  O instalador grava um shim `apothem` em `$HOME/.local/bin` (POSIX) ou em
+  `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) e nunca altera o seu `PATH`.
+  Assim que esse diretório estiver no `PATH`, você executa o motor diretamente
+  como `apothem <command>`. Se ele ainda não estiver no `PATH`,
+  o banner imprime uma alternativa autocontida —
   `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — que não
   precisa de shim; anteponha a cada comando o prefixo exato que o seu banner
   imprimiu.
@@ -86,7 +92,10 @@ ambiente.
 ## 2. Criar o perfil compartilhado
 
 `apothem profile init` grava o menor perfil válido segundo o schema em
-`~/.config/apothem/profile.yaml`. Passe `--profile PATH` quando você mantiver em
+`~/.config/apothem/profile.yaml`. Se já houver um perfil ali, como quando o
+instalador da Etapa 1 copiou o exemplo, `init` para com um erro e deixa o
+arquivo inalterado; passe `--force` para sobrescrevê-lo, ou mantenha o arquivo e
+edite-o como mostrado abaixo. Passe `--profile PATH` quando você mantiver em
 outro lugar um perfil específico de um projeto ou de CI.
 
 ```bash
@@ -111,7 +120,7 @@ pode ser editado com segurança antes de você instalar qualquer saída de harne
 É também aqui que uma edição malformada aparece — se o YAML for inválido, `show`
 o relata neste ponto, antes que qualquer configuração de harness seja gravada.
 Torne o perfil seu com `apothem profile edit` (que o abre no seu editor) ou
-defina uma única chave no lugar:
+defina diretamente uma única chave:
 
 ```bash
 apothem profile set identity.name "Your Name"
@@ -170,12 +179,12 @@ apothem verify --harness claude-code
 
 `verify` sai com código diferente de zero se um destino gerenciado estiver
 ausente, se um arquivo gerenciado estiver vazio ou se uma configuração JSON ou
-YAML não for analisada sem erros. Adicione `--profile PATH` para também falhar
+YAML não puder ser analisada. Adicione `--profile PATH` para também falhar
 quando um arquivo instalado diferir desse perfil, o que faz do `verify` uma
 verificação de desvio; sem ele, uma configuração desatualizada ainda passa na
-verificação. Isso permite usá-lo como portão em um script de configuração. Para
-uma verificação de saúde da máquina inteira, abrangendo todos os adaptadores
-registrados, execute:
+verificação. A saída diferente de zero permite usar `verify` como portão em um
+script de configuração. Para uma verificação de saúde da máquina inteira,
+abrangendo todos os adaptadores registrados, execute:
 
 ```bash
 apothem doctor
@@ -183,22 +192,25 @@ apothem doctor
 
 `doctor` verifica cada harness instalado: ele deve passar na verificação, e cada
 comando de hook que a sua instalação registrou deve iniciar. Um harness que você
-não instalou é listado, mas não conta como falha, então, com um único harness
-saudável, `doctor` sai com 0.
+não instalou é listado, mas não conta como falha, de modo que `doctor` sai com 0
+quando nenhuma verificação falha, mesmo que apenas um harness esteja instalado.
 
 ## 5. Sua primeira execução
 
 Abra o harness que você acabou de configurar — o Claude Code, neste exemplo — e
-inicie uma sessão em qualquer projeto. As regras e preferências que você
-escreveu no perfil na Etapa 2 agora fazem parte do comportamento dessa
-ferramenta. Essa é a primeira execução funcional: um perfil moldando uma sessão
-real.
+inicie uma sessão em qualquer projeto. O perfil que você configurou na Etapa 2
+agora faz parte do comportamento dessa ferramenta. Essa é a primeira execução
+funcional: um perfil moldando uma sessão real.
 
 Quando você alterar o perfil mais tarde, reaplique-o sem reinstalar:
 
 ```bash
 apothem update --harness claude-code
 ```
+
+Informe outro adaptador para reaplicar o perfil a essa ferramenta (adicione
+`--project PATH` para um adaptador de escopo de projeto) ou passe
+`--harness all --project .` para reaplicá-lo a todos os harnesses suportados.
 
 ## Próximos passos
 

@@ -2,25 +2,25 @@
 title: "Cabeçalho de autoria — Linha de licença SPDX por arquivo"
 description: "Define e aplica marcadores de identificador de licença SPDX por arquivo usando cabeçalhos canônicos de uma única linha na sintaxe de comentário adequada para cada tipo de arquivo."
 machineTranslated: true
-sourceHash: "85913a76c08d9a66"
+sourceHash: "be2cac4bcbaa4744"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Referência normativa canônica para colaboradores downstream.** Este documento espelha as seções de Autoria e Cabeçalho de arquivo da especificação do projeto (Especificação §0.5 + §4.6); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada em [ADR-0002](/docs/reference/authorship-header).
+> **Referência normativa canônica para colaboradores posteriores.** Este documento espelha as seções de Autoria e Cabeçalho de arquivo da especificação do projeto (Especificação §0.5 + §4.6); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada em [ADR-0002](/docs/reference/authorship-header).
 
 ---
 
 ## 1. A linha de cabeçalho canônica
 
-Todo arquivo aplicável do ecossistema DEVE começar com uma única linha canônica de identificador de licença SPDX, na sintaxe de comentário de sua família de tipo de arquivo. A linha é o marcador de licença legível por máquina do arquivo; sua presença é inegociável para arquivos não isentos, e seu conteúdo é regido por uma única fonte de verdade, não improvisado arquivo a arquivo. O instrumento de copyright completo vive uma única vez no arquivo [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) da raiz do repositório — não é duplicado em cada arquivo-fonte.
+Todo arquivo aplicável do ecossistema DEVE começar com uma única linha canônica de identificador de licença SPDX, na sintaxe de comentário de sua família de tipo de arquivo; somente um shebang ou, em arquivos Markdown, o frontmatter YAML pode precedê-la (§5). A linha é o marcador de licença legível por máquina do arquivo; sua presença é inegociável para arquivos não isentos, e seu conteúdo é regido por uma única fonte de verdade, não improvisado arquivo a arquivo. O instrumento de copyright completo vive uma única vez no arquivo [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) da raiz do repositório — não é duplicado em cada arquivo-fonte.
 
 ### 1.1 Conteúdo de informação (invariante)
 
 O conteúdo canônico é exatamente uma linha:
 
-1. `SPDX-License-Identifier: MIT` — o marcador de licença legível por máquina conforme a [especificação REUSE](https://reuse.software/spec/) mantida pela FSFE; analisado sem ambiguidade pela cadeia de ferramentas SPDX (`reuse lint`, `scancode`), pelo tooling do kernel do Linux e pelos scanners de licença downstream. Ele não carrega borda visual nem linhas de copyright, site, e-mail ou GitHub por arquivo — a procedência por arquivo é a única linha SPDX por design (ver §4).
+1. `SPDX-License-Identifier: MIT` — o marcador de licença legível por máquina conforme a [especificação REUSE](https://reuse.software/spec/) mantida pela FSFE; analisado sem ambiguidade pela cadeia de ferramentas SPDX (`reuse lint`, `scancode`), pelas ferramentas do kernel do Linux e pelos scanners de licença a jusante. Ele não carrega borda visual nem linhas de copyright, site, e-mail ou GitHub por arquivo — a procedência por arquivo é a única linha SPDX por design (ver §4).
 
 ### 1.2 A forma de referência (família de comentário `#`)
 
@@ -30,22 +30,22 @@ O texto canônico — escrito aqui em sua forma de sintaxe de comentário `#` �
 # SPDX-License-Identifier: MIT
 ```
 
-Este texto é a **única** fonte autoritativa. O validador `file-header` (§7) é executado contra esta fixture exata em nível de bytes. Qualquer deriva entre a linha de cabeçalho de um arquivo e esta fixture (sob a substituição de sintaxe conforme §2) é uma falha de CI.
+Este texto é a **única** fonte autoritativa. O validador `file-header` (§8) é executado contra esta fixture exata byte a byte. Qualquer deriva entre a linha de cabeçalho de um arquivo e esta fixture (sob a substituição de sintaxe conforme §2) é uma falha de CI.
 
 ---
 
-## 2. Variantes por tipo de arquivo (exatas em nível de bytes)
+## 2. Variantes por tipo de arquivo (exatas byte a byte)
 
 O *conteúdo de informação* da linha é invariante; apenas sua *sintaxe de comentário* varia por tipo de arquivo. A tabela completa de variantes por tipo de arquivo:
 
 | Família de tipo de arquivo | Sintaxe de comentário | Renderização da variante |
 |---|---|---|
-| Família `#` — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, pontos de entrada de shell sem extensão, como `scripts/apothem` | comentário de linha `#` | `# SPDX-License-Identifier: MIT` |
-| Família `//` — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.cs`, `.scala`, `.dart`, `.jsonc` | comentário de linha `//` | `// SPDX-License-Identifier: MIT` |
+| Família `#` — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.cfg`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, pontos de entrada de shell sem extensão, como `scripts/apothem` | comentário de linha `#` | `# SPDX-License-Identifier: MIT` |
+| Família `//` — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.cs`, `.scala`, `.dart`, `.jsonc` | comentário de linha `//` | `// SPDX-License-Identifier: MIT` |
 | Família de comentário de bloco — `.html`, `.htm`, `.md`, `.markdown`, `.xml`, `.vue` (região de template), `.php` (região de template) | `<!-- ... -->` | `<!-- SPDX-License-Identifier: MIT -->` |
 | MDX (`.mdx`) | `{/* ... */}` (comentário de expressão JSX) | `{/* SPDX-License-Identifier: MIT */}` |
-| Família de bloco C — `.css`, `.scss`, `.less`, `.sql` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
-| Família `;` — `.ini`, `.cfg`, alguns `.lisp`/`.scm` | comentário de linha `;` | `; SPDX-License-Identifier: MIT` |
+| Família de bloco C — `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.css`, `.scss`, `.less` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
+| Família `;` — `.ini`, alguns `.lisp`/`.scm` | comentário de linha `;` | `; SPDX-License-Identifier: MIT` |
 | Família `--` — `.sql`, `.lua`, `.hs`, `.elm`, `.ada` | comentário de linha `--` | `-- SPDX-License-Identifier: MIT` |
 | Lockfile / gerado / JSON | nenhum / não aplicável | **Isento.** Ver §3 Lista de exceções. |
 
@@ -65,7 +65,6 @@ As classes a seguir estão **isentas** da linha de cabeçalho SPDX. A verificaç
 
 - **`LICENSE`** — é em si o instrumento legal; carrega a linha de copyright autoritativa cuja presença o validador `license-author-consistency` confirma.
 - **Ativos `*.svg`** — comentários XML são frágeis para marcadores de comentário de linha, então a procedência de SVG é carregada pelo README de ativos e pelas saídas raster geradas.
-- **`CHANGELOG.md`** — documento de notas de versão ligado a um formato; a linha SPDX aparece como um único comentário HTML acima do cabeçalho do changelog, não entrelaçada no formato.
 - **Arquivos JSON (`.json`)** — JSON não tem sintaxe de comentário. Onde for necessária atribuição para uma configuração JSON, coloque um `<file>.NOTICE.md` irmão.
 - **Lockfiles** — `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `Pipfile.lock`, `poetry.lock`, `go.sum`, etc. (gerenciados por máquina).
 - **Arquivos gerados** — qualquer coisa com um marcador `# Generated by ...` ou `// Generated by ...`, ou qualquer coisa que corresponda a `linguist-generated=true` em `.gitattributes`.
@@ -83,12 +82,12 @@ A lista de exceções é, ela própria, codificada como uma lista de regex/glob 
 
 A linha SPDX declara a licença do projeto de forma legível por máquina; o arquivo LICENSE a declara de forma autoritativa:
 
-- **`SPDX-License-Identifier: MIT`** — o marcador de licença legível por máquina conforme a [especificação REUSE](https://reuse.software/spec/) e o padrão SPDX. Scanners de licença automatizados analisam esta linha diretamente; a sintaxe de expressão SPDX é compatível de forma cruzada com `reuse lint`, scancode-toolkit, FOSSology e o tooling de licença do kernel do Linux.
+- **`SPDX-License-Identifier: MIT`** — o marcador de licença legível por máquina conforme a [especificação REUSE](https://reuse.software/spec/) e o padrão SPDX. Scanners de licença automatizados analisam esta linha diretamente; a sintaxe de expressão SPDX é compatível de forma cruzada com `reuse lint`, scancode-toolkit, FOSSology e as ferramentas de licença do kernel do Linux.
 
 {/* REUSE-IgnoreEnd */}
 - **[`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) na raiz do repositório** — o instrumento legal autoritativo que carrega os termos completos do MIT e o detentor do copyright. É o único lar da declaração de copyright; os cabeçalhos por arquivo o referenciam implicitamente por meio do identificador SPDX compartilhado, em vez de reafirmar o copyright em cada arquivo.
 
-**Forma de linha única.** A procedência por arquivo é a única linha SPDX; o instrumento de copyright vive uma única vez no LICENSE da raiz. Caixas de banner multilinha com borda (copyright, site, e-mail, linhas de contato envolvidas em um quadro riscado) são rejeitadas pelo validador: elas duplicam os metadados de contato e copyright em cada arquivo sem acrescentar nada que o marcador de licença legível por máquina já não forneça ao tooling REUSE/SPDX/SBOM. A fixture exata em nível de bytes em `src/apothem/schemas/authorship-header.txt` carrega a forma de linha única; o validador é executado contra esta fixture.
+**Forma de linha única.** A procedência por arquivo é a única linha SPDX; o instrumento de copyright vive uma única vez no LICENSE da raiz. Caixas de banner multilinha com borda (copyright, site, e-mail, linhas de contato envolvidas em um quadro riscado) são rejeitadas pelo validador: elas duplicam os metadados de contato e copyright em cada arquivo sem acrescentar nada que o marcador de licença legível por máquina já não forneça às ferramentas REUSE/SPDX/SBOM. A fixture exata byte a byte em `src/apothem/schemas/authorship-header.txt` carrega a forma de linha única; o validador é executado contra esta fixture.
 
 **Referências cruzadas.** Arquivo LICENSE (MIT) — o instrumento legal prevalece em caso de conflito. ADR-0006 documenta a justificativa da ratificação do estreitamento do banner.
 
@@ -96,8 +95,8 @@ A linha SPDX declara a licença do projeto de forma legível por máquina; o arq
 
 ## 5. Posição de inserção
 
-- A linha SPDX é o **primeiro conteúdo** do arquivo, com uma e apenas uma exceção: uma linha shebang (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, etc.), que permanece sempre na linha 1; a linha SPDX começa na linha 2.
-- Para arquivos Markdown / MDX com frontmatter YAML, o frontmatter permanece no byte 0 para que as ferramentas possam analisá-lo, e o comentário SPDX vem depois do `---` de fechamento, seguido do H1 e do corpo. `scripts/inject-header.py` posiciona o comentário dessa maneira.
+- A linha SPDX é o **primeiro conteúdo** do arquivo, com duas exceções. Uma linha shebang (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, etc.) permanece sempre na linha 1, e a linha SPDX começa na linha 2. Em arquivos Markdown / MDX com frontmatter YAML, o frontmatter vem primeiro (próximo item).
+- Para arquivos Markdown / MDX com frontmatter YAML, o frontmatter permanece no byte 0 para que as ferramentas possam analisá-lo, e o comentário SPDX vem depois do `---` de fechamento, seguido do corpo, que abre com o H1 nos arquivos que têm um. `scripts/inject-header.py` posiciona o comentário dessa maneira.
 - Uma única linha em branco separa a linha SPDX do conteúdo seguinte (o H1, o corpo, etc.).
 
 ---
@@ -126,9 +125,9 @@ O injetor é invocado pelo alvo `make headers-fix`, que executa `scripts/inject-
 
 ## 8. O validador — `file-header` (CI)
 
-Vive em [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Para cada arquivo da árvore de trabalho, o validador procura sua aplicabilidade (conforme §3) e, se aplicável, afirma que a linha SPDX canônica está presente no topo do arquivo — à frente de todo o demais conteúdo, sendo o único conteúdo prévio permitido um shebang (§5).
+Vive em [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Para cada arquivo da árvore de trabalho, o validador procura sua aplicabilidade (conforme §3) e, se aplicável, afirma que a linha SPDX canônica está presente no topo do arquivo — à frente de todo o resto do conteúdo, sendo um shebang o único conteúdo prévio que ele permite (§5). Ele não lê além do frontmatter do Markdown.
 
-Respaldado pela fixture exata em nível de bytes em [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Reporta o diff por arquivo e a % de cobertura agregada no resumo de CI. Faz a compilação falhar em qualquer divergência.
+Respaldado pela fixture exata byte a byte em [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Reporta o diff por arquivo e a % de cobertura agregada no resumo de CI. Faz a compilação falhar em qualquer divergência.
 
 ---
 
@@ -136,12 +135,12 @@ Respaldado pela fixture exata em nível de bytes em [`src/apothem/schemas/author
 
 A disciplina precisa sobreviver a toda sessão futura e a todo colaborador futuro. Superfícies de aplicação obrigatórias:
 
-1. **`src/apothem/schemas/authorship-header.txt`** — a fixture canônica exata em nível de bytes; uma única fonte de verdade.
+1. **`src/apothem/schemas/authorship-header.txt`** — a fixture canônica exata byte a byte; uma única fonte de verdade.
 2. **`scripts/inject-header.{sh,py}`** — o injetor mecânico (§7).
 3. **Validador `file-header` de CI** (§8) — faz a compilação falhar em qualquer divergência.
-4. **Hook de pre-commit** — executa o validador com `--fix` nos arquivos preparados, conectado ao injetor.
+4. **Hook de pre-commit** — o hook `conformity-corpus-perwrite` executa o validador `file-header` (§8) sobre a árvore rastreada. Ele apenas verifica; o injetor (§7) reescreve os arquivos, por meio de `make headers-fix`.
 5. **Bloco de comportamento obrigatório do `CLAUDE.md`** — instrui o assistente a injetar a linha SPDX canônica sempre que criar um arquivo aplicável.
-6. **O arquivo de instruções dos harnesses suportados** no caminho canônico `.github/` — instrui o harness a fazer o mesmo na geração de arquivos.
+6. **O arquivo de instruções do GitHub Copilot** em `.github/copilot-instructions.md` — instrui o Copilot a fazer o mesmo na geração de arquivos.
 7. **Hooks PreToolUse** em `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptam as chamadas das ferramentas Write/Edit em caminhos aplicáveis para que a linha SPDX seja injetada na criação do arquivo em vez de ser descoberta como uma falha de CI mais tarde.
 8. **Caixa de seleção do template de PR** — afirmação voltada ao colaborador de que cada arquivo novo carrega a linha SPDX canônica.
 9. **Este documento** (`site/content/docs/reference/authorship-header.mdx`) — o texto explicativo canônico e normativo.
@@ -152,7 +151,7 @@ A disciplina precisa sobreviver a toda sessão futura e a todo colaborador futur
 
 - [ADR-0002](/docs/reference/authorship-header) — justificativa arquitetural, alternativas consideradas.
 - [ADR-0006](/docs/reference/authorship-header) — ratificação do estreitamento do banner.
-- [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — a fixture canônica exata em nível de bytes.
+- [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — a fixture canônica exata byte a byte.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — a lista de exceções (forma regex/glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) e [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — o injetor.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — o validador.

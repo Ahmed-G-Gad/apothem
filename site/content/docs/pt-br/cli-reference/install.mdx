@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "4297dc7c69065630"
+sourceHash: "febcffe685c0b841"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,8 @@ conjunto `all` de todo o registro, valida o plano de materialização e grava a
 configuração nativa do harness mais os cohorts de suporte. Os adaptadores com
 escopo de projeto exigem `--project PATH`.
 
-O alias na forma contínua `apothem installing` resolve para o mesmo manipulador.
+O alias na forma contínua `apothem installing` (também aceito como
+`apothem Installing`) resolve para o mesmo manipulador.
 
 ## Primeira execução sem um perfil
 
@@ -53,9 +54,12 @@ Quando a seleção grava fora da raiz do projeto, uma confirmação interativa
 protege as gravações com raiz no diretório pessoal. `--yes`, um shell não
 interativo (sem TTY), `--dry-run` e `--format json` prosseguem, cada um, sem
 perguntar. Somente `--dry-run` não grava nada; `--format json` pula a prévia e o
-prompt de confirmação, mas ainda realiza as gravações. Recusar o prompt do diretório pessoal aborta a operação antes que a instalação grave qualquer arquivo. Com
-`--clean`, a etapa de limpeza completa é executada primeiro, sob uma confirmação própria para cada destino: ela grava um backup em `~/.apothem/backups` e remove os destinos que confirma.
-Essas remoções e o backup permanecem no lugar quando o prompt de instalação é recusado.
+prompt de confirmação, mas ainda realiza as gravações. Recusar o prompt do
+diretório pessoal aborta a operação antes que a instalação grave. Com
+`--clean`, a etapa de recomeço limpo é executada primeiro, sob uma confirmação
+própria para cada destino: ela grava um backup em `~/.apothem/backups` e remove
+os destinos que confirma. Essas remoções e o backup permanecem no lugar quando o
+prompt de instalação é recusado.
 
 ## Notas sobre capacidades
 
@@ -96,8 +100,8 @@ que contém uma referência `${...}` nunca é sinalizado.
 
 Algumas configurações de harness são arquivos que você também edita, como
 `settings.json`, `opencode.json` (que pode ser JSONC), `openclaw.json` (JSON5) e
-`config.yaml`. A instalação mescla as próprias chaves nesses arquivos e mantém todas as
-chaves que você adicionou.
+`config.yaml`. A instalação mescla as próprias chaves nesses arquivos e mantém
+todas as chaves que você adicionou.
 
 Uma mesclagem reescreve o arquivo como JSON ou YAML simples, o que descartaria
 comentários, vírgulas finais e a sintaxe JSON5. Por isso:

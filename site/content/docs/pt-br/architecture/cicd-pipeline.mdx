@@ -1,16 +1,16 @@
 ---
 title: "Diagrama do pipeline de CI/CD"
-description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada release."
+description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada lançamento."
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **O mapa estrutural do fluxo de trabalho de build · validação · publicação que
 controla cada alteração no ecossistema do Apothem.** Este documento instala a
 superfície de visualização; os arquivos concretos de fluxo de trabalho do GitHub
-Actions e o ferramental de release chegam depois, sob a instalação de prontidão
-para produção.
+Actions e o ferramental de lançamento chegam depois, sob a instalação de
+prontidão para produção.
 
 ## Forma do pipeline
 
@@ -30,7 +30,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -71,24 +70,27 @@ flowchart LR
 ## Papéis das faixas
 
 - **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo Python e
-  um conjunto curado de regras; o mypy impõe disciplina de tipos em strict; o
-  markdownlint regula a superfície de documentação; o validador de frontmatter
-  controla a conformidade do esquema de artefatos para regras, skills,
-  trabalhadores delegados e comandos.
+  um conjunto curado de regras; o mypy impõe disciplina de tipos no modo strict;
+  o validador de frontmatter controla a conformidade com o schema dos artefatos
+  para regras, skills, trabalhadores delegados e comandos. O markdownlint não
+  faz parte desta faixa: ele roda apenas como hook de pre-commit, e o CI não o
+  executa (consulte
+  [Convenções de Markdown](/docs/reference/markdown-conventions)).
 - **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra a
-  matriz completa de eventos; `validate_ecosystem.py` é a principal comporta
+  matriz completa de eventos; `validate_ecosystem.py` é o principal portão
   estrutural para a consistência entre artefatos; `chaos_pass.py` e a suíte de
-  benchmarks por classe sob `src/apothem/benchmarks/` ativam na faixa de release
-  para capturar degradação sob entradas degradadas e regressões do orçamento de
-  runtime.
-- **Faixa de segurança** — a varredura de segredos captura credenciais
-  comitadas por acidente; a geração de SBOM e as auditorias de licença controlam
-  a superfície da cadeia de suprimentos para qualquer instalação de prontidão
-  para produção.
-- **Faixa de publicação** — roda apenas em releases com tag. A verificação de tag
-  assinada confirma a procedência da branch de release; o site do projeto é
-  publicado a partir de `site/dist/` para o destino do GitHub Pages; as notas de
-  release derivam do formato Keep-A-Changelog do `CHANGELOG.md`.
+  benchmarks por classe sob `src/apothem/benchmarks/` ativam-se na faixa de
+  lançamento para detectar degradação sob entradas degradadas e regressões do
+  orçamento de runtime.
+- **Faixa de segurança** — a varredura de segredos detecta credenciais incluídas
+  em commits por acidente; a geração de SBOM e as auditorias de licença
+  controlam a superfície da cadeia de suprimentos em qualquer instalação de
+  prontidão para produção.
+- **Faixa de publicação** — roda apenas em lançamentos marcados com tag. A
+  verificação de tag assinada confirma a procedência da branch de lançamento; o
+  site do projeto é publicado a partir de `site/dist/` no destino do GitHub
+  Pages; as notas de lançamento derivam do formato Keep-A-Changelog do
+  `CHANGELOG.md`.
 
 ## Configuração concreta
 
@@ -99,10 +101,10 @@ toda configuração futura espelha.
 
 ## Referências cruzadas autoritativas
 
-- `pyproject.toml` — fonte de verdade da configuração de Ruff / mypy / pytest.
-- `scripts/dev/validate_ecosystem.py` — a principal comporta entre artefatos.
+- `pyproject.toml` — fonte da verdade da configuração do Ruff / mypy / pytest.
+- `scripts/dev/validate_ecosystem.py` — o principal portão entre artefatos.
 - `scripts/dev/validate_hooks.py` — validação estrutural específica de hooks.
 - `scripts/dev/chaos_pass.py` — varredura adversarial de cada hook configurado.
 - `src/apothem/benchmarks/` — verificadores do orçamento de runtime por classe.
 - `site/content/docs/developer-guide.mdx` — o fluxo de trabalho do contribuidor voltado ao operador.
-- `CHANGELOG.md` — fonte das notas de release.
+- `CHANGELOG.md` — fonte das notas de lançamento.

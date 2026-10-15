@@ -2,7 +2,7 @@
 title: "Portão de conformidade"
 description: "Portão de conformidade do Apothem — a fração mecânica do portão de pré-emissão de quinze barras (M1-M15) pelo qual todo artefato emitido precisa passar."
 machineTranslated: true
-sourceHash: "56cca9f8f53e7f52"
+sourceHash: "266b1d01f3f0e82f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,9 +26,11 @@ sourceHash: "56cca9f8f53e7f52"
 | 14 | M14 | Sistemicidade (declara upstream / downstream / pares / aplicadores) | Raciocinada | Declarar; indexar nos registros |
 | 15 | M15 | Pronto para produção (testes + documentação + CHANGELOG + commit conforme + CI em verde + estabilidade semver) | Mecânica + raciocinada | Adicionar as superfícies ausentes |
 
+O portão executa apenas validadores verificáveis por máquina. O julgamento raciocinado que as barras Raciocinadas exigem, e a metade raciocinada de cada barra Mecânica + raciocinada, é avaliado na revisão.
+
 ## Escala de severidade
 
-O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer matcher falha, e uma execução sobre o corpus (`--all-perwrite`) sai com `2` quando um matcher bloqueante falha; os matchers consultivos são apenas relatados. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
+O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer matcher falha, e uma execução sobre o corpus (`--all` ou `--all-perwrite`) sai com `2` quando um validador ou matcher bloqueante falha; os achados consultivos são apenas relatados. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
 
 ## Validadores
 
@@ -108,10 +110,13 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 Em um harness instalado, o portão é executado automaticamente: o
 `settings.json` do Claude Code o conecta como um hook `PreToolUse` que invoca a
 cópia materializada em `~/.claude/.apothem/support/conformity/gate.py` antes de
-cada Write/Edit. A partir de um checkout do código-fonte, a forma de módulo
-executa o mesmo código. O portão é consultivo por padrão: ele relata os achados
-e sai com `0`. Adicione `--strict` para sair com `2` diante de um achado
-bloqueante. Um nome de validador desconhecido sai com `3`.
+cada Write/Edit. O portão então verifica apenas as gravações dentro do escopo do
+seu hook, e uma gravação fora do escopo passa em silêncio; [Executar o portão de conformidade](/docs/usage/conformity-gate)
+lista o escopo. A partir de um checkout do código-fonte, a forma de módulo
+executa o mesmo código; prefixe cada comando `python` abaixo com
+`PYTHONPATH=src`. O portão é consultivo por padrão: ele relata os achados e sai
+com `0`. Adicione `--strict` para sair com `2` diante de um achado bloqueante. Um
+nome de validador desconhecido sai com `3`.
 
 ```shell
 # Every standalone validator across the repository:

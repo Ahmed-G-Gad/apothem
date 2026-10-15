@@ -2,7 +2,7 @@
 title: "Cores de marca dos harnesses"
 description: "Paleta de cores por harness usada em todo o site do projeto Apothem e em cada diagrama de arquitetura. Uma única fonte da verdade: uma cor por harness, um hub apothem."
 machineTranslated: true
-sourceHash: "8bd8ae0d07b55675"
+sourceHash: "1bade22f201192d7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,8 +19,8 @@ As enumerações canônicas de nome de marca × código de cor abaixo estão env
 
 Quinze dos dezessete harnesses são coloridos para combinar com sua identidade de
 marca principal, de modo que o leitor consiga distinguir as ferramentas em um
-diagrama. O próprio símbolo do Apothem usa apenas as cores ardósia e esmeralda
-da página de [paleta](/docs/brand/palette); ele não carrega nenhuma cor de
+diagrama. A própria marca Apothem usa apenas as cores ardósia e esmeralda
+da página de [paleta](/docs/brand/palette); ela não carrega nenhuma cor de
 harness. Os dois restantes — `glm` e `kimi-code` — ainda não têm uma cor de
 marca definida; suas linhas são adicionadas assim que a cor de marca a montante
 for definida, conforme a etapa de propagação em
@@ -104,7 +104,7 @@ graph LR
 
 ## Acessibilidade
 
-Cada token de modo claro mantém sua cor de marca sem distorção, de modo que oito deles ficam abaixo do contraste WCAG 2.2 AA contra texto branco (≥4.5 : 1). Os demais tokens de modo claro o atendem. Os oito, com o contraste de cada um contra o branco:
+Cada token de modo claro desta página, tanto os centrais quanto os de harness, mantém sua cor de marca sem distorção, de modo que oito deles ficam abaixo do contraste WCAG 2.2 AA contra texto branco (≥4.5 : 1). Os demais tokens de modo claro o atendem. Os oito, com o contraste de cada um contra o branco:
 
 ```text
 shared-profile   2.54 : 1
@@ -117,7 +117,7 @@ trae             3.86 : 1
 windsurf         2.77 : 1
 ```
 
-A coluna de modo escuro é para fundos escuros, e nenhum dos seus tokens atinge 4.5 : 1 contra texto branco. Um diagrama que precisa de contraste WCAG AA de texto sobre cor em um desses oito preenchimentos DEVE usar texto escuro (`#0F172A`, que mede de 4.63 : 1 a 8.31 : 1 sobre eles) em vez de branco.
+A coluna de modo escuro é para uso em fundos escuros, e nenhum dos seus tokens atinge 4.5 : 1 contra texto branco. O exemplo de Mermaid acima define texto branco em todos os preenchimentos, de modo que seus rótulos nesses oito preenchimentos não atingem 4.5 : 1. Um diagrama que precisa de contraste WCAG AA de texto sobre cor em um desses oito preenchimentos DEVE usar texto escuro (`#0F172A`, que mede de 4.63 : 1 a 8.31 : 1 sobre eles) em vez de branco.
 
 ## Atualizações
 

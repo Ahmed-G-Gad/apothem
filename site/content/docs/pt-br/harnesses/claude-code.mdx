@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de harness do Apothem para o Claude Code (GA)."
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,7 +110,10 @@ apothem verify --harness claude-code
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML são analisadas sem erros. Adicione
+   `--profile PATH` para também confirmar que os arquivos instalados
+   correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -131,8 +134,15 @@ o bloco do Apothem entre suas sentinelas.
 apothem uninstall --harness claude-code
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador e retira o
-bloco do Apothem do `CLAUDE.md`, deixando o seu próprio texto no lugar.
+Remove o bloco do Apothem de `~/.claude/CLAUDE.md` e mantém qualquer outro texto
+nele. O arquivo é excluído somente quando nada mais resta nele. Remove as
+entradas que o adaptador adicionou a `~/.claude/settings.json` (as suas próprias
+regras de permissão, chaves e manipuladores de hook permanecem, e o arquivo é
+excluído somente quando o Apothem o criou e nada seu restou). Também remove os
+arquivos do Apothem em `~/.claude/agents/`, `~/.claude/rules/`,
+`~/.claude/skills/`, `~/.claude/statuslines/`, `~/.claude/output-styles/` e
+`~/.claude/.apothem/support/`; os demais arquivos dessas pastas permanecem. Cada
+arquivo recebe backup em `~/.apothem/backups/` antes de ser alterado ou removido.
 O pacote `apothem` instalado e o repositório de código-fonte não são afetados.
 
 ## Conformity gate

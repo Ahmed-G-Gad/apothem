@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptador de harness do Apothem para o Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,8 @@ apothem install --harness gemini-cli --project /path/to/project
 
 O adaptador tem escopo de projeto. Ele instala o `GEMINI.md` do projeto,
 converte os comandos do Apothem em comandos de barra TOML do Gemini, normaliza
-as definições de auxiliares locais e coloca os cohorts de suporte não nativos sob `.gemini/.apothem/support/`.
+as definições de auxiliares locais e coloca os cohorts de suporte não nativos
+sob `.gemini/.apothem/support/`.
 Outras ferramentas de programação também leem um `GEMINI.md` de projeto, então
 o bloco do Apothem nele é escrito como orientação para todo o projeto que não
 nomeia nenhuma ferramenta específica como sua leitora.
@@ -38,8 +39,8 @@ GEMINI.md
 
 O adaptador lê os cohorts compartilhados do Apothem e encaminha cada um por uma
 superfície compatível com o Gemini. As regras em Markdown, os templates e o
-material de hooks permanecem sob `.gemini/.apothem/support/` porque são material de suporte, e não um
-diretório de regras nativo do Gemini.
+material de hooks permanecem sob `.gemini/.apothem/support/` porque são material
+de suporte, e não um diretório de regras nativo do Gemini.
 O bloco do Apothem em `GEMINI.md` termina com uma seção de arquivos de suporte
 do Apothem que nomeia, em relação à raiz do projeto, o diretório sob
 `.gemini/.apothem/support/` em relação ao qual cada citação no estilo do
@@ -75,7 +76,10 @@ apothem verify --harness gemini-cli --project /path/to/project
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e
+   as configurações JSON ou YAML são analisadas sem erros. Adicione
+   `--profile PATH` para também confirmar que os arquivos instalados
+   correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
@@ -93,8 +97,14 @@ locais, as skills instaladas e a árvore de suporte `.gemini/.apothem/support/`.
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador.
-O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `<project>/GEMINI.md` e mantém qualquer outro texto
+nele. O arquivo é excluído somente quando nada mais resta nele. Também remove os
+arquivos do Apothem em `<project>/.gemini/commands/`,
+`<project>/.gemini/skills/`, `<project>/.gemini/agents/` e
+`<project>/.gemini/.apothem/support/`; os demais arquivos dessas pastas
+permanecem. Antes da alteração, uma cópia com carimbo de data e hora de cada
+arquivo é salva em `~/.apothem/backups/`; nenhum arquivo de backup é deixado no
+projeto. O YAML do perfil compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 
