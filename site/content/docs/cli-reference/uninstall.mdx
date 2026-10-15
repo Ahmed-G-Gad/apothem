@@ -16,6 +16,13 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 Removes adapter-managed harness targets, then the directories the install
 created once they are empty (a directory holding anything of yours stays).
+
+The shared working directory's memory, contexts, and learning stores are
+backed up and removed only when this is the last harness installed at that
+directory. Uninstall removes them at the location the install recorded, so it
+finds them wherever the install wrote them (see the `workspace` profile
+fields). The `plans/` directory is never removed.
+
 Prompts for confirmation unless
 `--yes` is supplied. When no prompt is possible — `--format json` (prompt
 text would corrupt the single JSON document) or a non-interactive shell (no

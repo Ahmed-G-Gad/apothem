@@ -271,6 +271,11 @@ class LedgerRecord:
             exist before it), so rollback and uninstall can remove them once
             empty. Empty for other kinds and for records written before the
             field existed.
+        data_home: The shared Apothem working directory (memory, contexts,
+            learning, plans) the install pass resolved and wrote its data
+            stores under, as an absolute path string. Set on install records
+            only; ``None`` for other kinds and for records written before the
+            field existed, which reverse against the default location.
     """
 
     install_id: str
@@ -280,6 +285,7 @@ class LedgerRecord:
     kind: str
     targets: tuple[LedgerTarget, ...] = ()
     created_dirs: tuple[str, ...] = ()
+    data_home: str | None = None
 
     @classmethod
     def create(
@@ -291,6 +297,7 @@ class LedgerRecord:
         targets: tuple[LedgerTarget, ...] = (),
         install_id: str | None = None,
         created_dirs: tuple[str, ...] = (),
+        data_home: str | None = None,
     ) -> LedgerRecord:
         """Build a record, stamping a fresh ULID and UTC timestamp.
 
@@ -310,6 +317,7 @@ class LedgerRecord:
             kind=kind,
             targets=tuple(targets),
             created_dirs=tuple(created_dirs),
+            data_home=data_home or None,
         )
 
     def to_json_line(self) -> str:
@@ -328,6 +336,8 @@ class LedgerRecord:
         }
         if self.created_dirs:
             payload["created_dirs"] = list(self.created_dirs)
+        if self.data_home is not None:
+            payload["data_home"] = self.data_home
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
@@ -350,6 +360,8 @@ class LedgerRecord:
             if isinstance(raw_dirs, list)
             else ()
         )
+        raw_home = data.get("data_home")
+        data_home = str(raw_home) if isinstance(raw_home, str) and raw_home else None
         return cls(
             install_id=str(data["install_id"]),
             timestamp=str(data["timestamp"]),
@@ -358,6 +370,7 @@ class LedgerRecord:
             kind=str(data["kind"]),
             targets=targets,
             created_dirs=created_dirs,
+            data_home=data_home,
         )
 
 
