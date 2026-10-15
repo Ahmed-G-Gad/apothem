@@ -58,7 +58,8 @@ DEFAULT_INSTALL_DIR = Path(
 # mirror scripts/installer/install.{sh,ps1}.
 DEFAULT_REF = os.environ.get("APOTHEM_REF", "")
 # When "1", a tag-verification failure downgrades from a hard refusal to a loud
-# warning (air-gapped / pre-signed-release interim use). Mirrors the installers.
+# warning (air-gapped use, or a release that predates tag signing). Mirrors the
+# installers.
 ALLOW_UNVERIFIED = os.environ.get("APOTHEM_ALLOW_UNVERIFIED", "0") == "1"
 
 # Final-release tag shape: pure-numeric semver with a leading "v". Pre-release

@@ -513,7 +513,7 @@ def test_verification_bypass_env_var_name_agrees() -> None:
     """Both installers gate the verification opt-out on the same env var name.
 
     A rename in only one script would leave one platform unable to honour the
-    documented air-gapped / pre-signed-release escape hatch.
+    documented escape hatch for air-gapped use and releases that predate signing.
     """
     var = "APOTHEM_ALLOW_UNVERIFIED"
     assert var in SH, f"install.sh does not reference {var}"

@@ -18,8 +18,8 @@
 #   Two explicit opt-outs exist:
 #     - APOTHEM_REF=main           checks out the moving branch on request.
 #     - APOTHEM_ALLOW_UNVERIFIED=1 downgrades a verification abort to a loud
-#                                  warning and proceeds (air-gapped, local, or
-#                                  pre-signed-release interim use).
+#                                  warning and proceeds (air-gapped or local
+#                                  use, or a release that predates tag signing).
 #   The APOTHEM_SOURCE local-checkout path fetches nothing, so it skips tag
 #   resolution and verification — it prints the source it is running and
 #   proceeds.
@@ -144,9 +144,11 @@ recommended path is the tag-pinned VERIFIED install.
   APOTHEM_REF=vMAJOR.MINOR.PATCH sh install.sh
 
 Overrides:
-  APOTHEM_REF=main             check out the moving branch (unverified).
+  APOTHEM_REF=main             check out the moving branch (needs
+                               APOTHEM_ALLOW_UNVERIFIED=1; aborts otherwise).
   APOTHEM_ALLOW_UNVERIFIED=1   downgrade a verification abort to a warning
-                               (air-gapped / local / pre-signed-release use).
+                               (air-gapped or local use, or a release that
+                               predates tag signing).
   APOTHEM_SOURCE=<path>        run a local checkout (fetches nothing; no
                                verification).
   APOTHEM_VERIFY=checksum      without the maintainer's public key: install
