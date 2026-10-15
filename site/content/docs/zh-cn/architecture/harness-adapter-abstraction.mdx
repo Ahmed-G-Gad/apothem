@@ -1,22 +1,22 @@
 ---
-title: "harness适配器抽象"
-description: "HarnessAdapter 协议——Apothem 适配器如何转译共享配置文件。"
+title: "工具适配器抽象"
+description: "HarnessAdapter 协议——Apothem 适配器如何转译共享配置档案。"
 machineTranslated: true
 sourceHash: "3e2bf8f9744fc759"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem 使用一份经模式校验的 YAML 配置文件作为语义层面的权威来源，
-并通过实现 `HarnessAdapter` 协议的适配器类，派生出每个harness专属的安装面。
-每个适配器写入该harness所记录的用户位置或项目位置，
-仅当该harness没有匹配的原生原语时，才使用 Apothem 自有的支持路径。
+并通过实现 `HarnessAdapter` 协议的适配器类，派生出每个工具专属的安装面。
+每个适配器写入该工具所记录的用户位置或项目位置，
+仅当该工具没有匹配的原生原语时，才使用 Apothem 自有的支持路径。
 
 ## 为何需要适配器抽象
 
-每个harness都说着不同的配置方言：一个想要 JSON 设置文件，
+每个工具都说着不同的配置方言：一个想要 JSON 设置文件，
 另一个想要一目录的 `.mdc` 规则文件，第三个想要一份单一的 Markdown 指令
-文件。如果 Apothem 把这些知识硬编码进 CLI，每个harness都会把它的假设
-泄漏进核心，而新增一个harness就意味着要同步改动安装、更新、卸载和校验
+文件。如果 Apothem 把这些知识硬编码进 CLI，每个工具都会把它的假设
+泄漏进核心，而新增一个工具就意味着要同步改动安装、更新、卸载和校验
 逻辑。
 
 适配器模式颠转了这一点。核心只认识 `HarnessAdapter` 协议——一份由生命周期方法组成的小型契约。每个工具的方言都封装在一个自包含的子包中，由该子包实现这份契约。核心请求适配器执行*安装*，而不必知道这意味着渲染一个 JSON 文件、写入规则目录，还是铺设支持子树。新的工具只需满足该协议，在 `src/apothem/lib/harness_registry_data.py` 中添加一条 `HARNESS_REGISTRY` 条目（并在那里更新 `SUPPORTED_HARNESS_COUNT`），在 `pyproject.toml` 的 `apothem.harnesses` 入口点中予以镜像，并把该 ID 加入 `src/apothem/schemas/profile.schema.json` 的 `harnessId` 枚举。这正是 Apothem 保持宿主无关的结构性原因——该抽象即是那道边界，阻止工具专属的知识扩散开来。
@@ -60,7 +60,7 @@ flowchart TD
 ```
 
 由中心向边缘的扇出，正是项目名称所编码的架构：一份
-配置文件居于核心，每个harness都沿着各自的适配器处于等距之外。
+配置文件居于核心，每个工具都沿着各自的适配器处于等距之外。
 
 ## 协议定义
 
@@ -108,7 +108,7 @@ cursor = "apothem.harnesses.cursor:CursorAdapter"
 
 ## 配置文件到原生的映射
 
-每个适配器实现与其harness相适配的转译逻辑：
+每个适配器实现与其工具相适配的转译逻辑：
 
 ```
 YAML profile + payload cohort    Harness-native surface
@@ -126,5 +126,5 @@ skills/*/SKILL.md            --> native skill folders where supported
 
 ## 添加新适配器
 
-参见[编写harness适配器](/docs/examples/authoring-a-harness-adapter)
+参见[编写工具适配器](/docs/examples/authoring-a-harness-adapter)
 获取分步指南。

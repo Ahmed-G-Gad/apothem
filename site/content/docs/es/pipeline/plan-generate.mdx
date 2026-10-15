@@ -7,7 +7,7 @@ sourceHash: "0c5811434c38dedc"
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Generador
-**Posición en el pipeline:** intermedia
+**Posición en la canalización:** intermedia
 
 Genera una Suite de Plan Maestra completa a partir del `_spec/spec.md` redactado.
 
@@ -43,7 +43,7 @@ El comando genera una Suite de Plan Maestra completa a partir de la spec redacta
 2. **Descubrir** — Ejecuta el descubrimiento escalado por seriedad con los Cinco Filtros Cognitivos; resuelve cada brecha de datos autoritativos a través del canal de consulta estructurada.
 3. **Descomponer** — Divide el trabajo en un grafo de fases acíclico con un orden de dependencia explícito.
 4. **Emitir la suite** — Redacta `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md` y cada `phases/NN-topic/PHASE.md`.
-5. **Ejecutar la compuerta de pre-emisión** — Ejecuta el barrido de quince barras frente a cada artefacto emitido; el fallo bloquea la aprobación del usuario hasta resolverse.
+5. **Ejecutar la puerta de pre-emisión** — Ejecuta el barrido de quince barras frente a cada artefacto emitido; el fallo bloquea la aprobación del usuario hasta resolverse.
 
 ## Modos de fallo
 
@@ -51,7 +51,7 @@ El comando genera una Suite de Plan Maestra completa a partir de la spec redacta
 |---------|-------|----------|
 | Blocked: run /plan-spec first | Sin `_spec/spec.md` redactado | Ejecuta `/plan-spec` para redactar la spec y emitir el Manifiesto |
 | Generación frente a un archivo `_inputs/` | La spec sigue en plena elicitación | Promueve `_inputs/forge.md` a `_spec/spec.md` mediante `/plan-spec` primero |
-| Una barra de pre-emisión falla | Un artefacto emitido falla la compuerta | Corrige la barra que falla antes de la aprobación del usuario |
+| Una barra de pre-emisión falla | Un artefacto emitido falla la puerta | Corrige la barra que falla antes de la aprobación del usuario |
 
 ## Ejemplos
 
@@ -65,5 +65,5 @@ El comando genera una Suite de Plan Maestra completa a partir de la spec redacta
 
 ## Referencias cruzadas
 
-- [Visión general del pipeline](/docs/pipeline)
+- [Visión general de la canalización](/docs/pipeline)
 - [Referencia de comandos](/docs/reference/commands)

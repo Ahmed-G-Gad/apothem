@@ -336,7 +336,7 @@ Chaque commande de hook passe par le même répartiteur Python :
 | Fichier | Rôle |
 | ---- | ---- |
 | `src/apothem/hooks/dispatch.py` | Achemine `SessionStart` vers `session_start_bootstrap.main()` et chaque autre événement de la liste d'autorisation vers `emit_hook_context.main()`. Se termine toujours avec le code 0. |
-| `src/apothem/hooks/session_start_bootstrap.py` | Script de hook de démarrage de session : émet un contexte de synthèse de la mémoire et de la suite de plan. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Script de hook de démarrage de session : émet un contexte de synthèse de la mémoire et de la suite de planification. |
 | `src/apothem/hooks/emit_hook_context.py` | Émetteur de hook par défaut : écrit une enveloppe valide portant la charge utile `--context-file` enregistrée. |
 | `src/apothem/hooks/messages/*.md` | Charge utile de contexte statique référencée par `--context-file`. |
 

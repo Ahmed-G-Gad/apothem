@@ -1,6 +1,6 @@
 ---
 title: "/plan-status"
-description: "/plan-status — Pelapor progres suite plan hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun."
+description: "/plan-status — Pelapor progres suite rencana hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun."
 machineTranslated: true
 sourceHash: "5a446b7afd70b8a1"
 ---
@@ -9,7 +9,7 @@ sourceHash: "5a446b7afd70b8a1"
 **Peran:** Pelapor
 **Posisi pipeline:** hanya-baca
 
-Pelapor progres suite plan hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun.
+Pelapor progres suite rencana hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun.
 
 ## Pemanggilan kanonik
 
@@ -25,7 +25,7 @@ Dengan argumen:
 
 ## Masukan
 
-Suite plan apa pun dalam keadaan siklus hidup apa pun — membaca `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, dan laporan `phases/`.
+Suite rencana apa pun dalam keadaan siklus hidup apa pun — membaca `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, dan laporan `phases/`.
 
 ## Keluaran
 
@@ -48,7 +48,7 @@ Perintah ini hanya-baca — membaca berkas pelacakan suite dan melapor; tidak me
 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
-| Berkas pelacakan wajib hilang | Suite plan tidak lengkap | Munculkan kesenjangan sebagai temuan; jalankan `/plan-generate` untuk membuat suite |
+| Berkas pelacakan wajib hilang | Suite rencana tidak lengkap | Munculkan kesenjangan sebagai temuan; jalankan `/plan-generate` untuk membuat suite |
 | Berkas pelacakan rusak | Bagian terpotong atau tak dapat diurai | Sebutkan ketiadaan / kontradiksi dalam laporan; perbaikan dirutekan ke perintah penulis |
 | Field absen atau kontradiktif antar berkas | Penyimpangan pelacakan | Laporkan kontradiksi secara eksplisit; jangan menyintesis nilai yang hilang |
 

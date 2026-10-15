@@ -32,7 +32,7 @@ Apothem의 [자기완결적 런타임](/docs/architecture/self-contained-runtime
 | 패키지 | 비고 |
 |---|---|
 | `yaml` | 순수 Python 파서/이미터. 선택적 libyaml C 확장은 속도 향상일 뿐 결코 요건이 아니며, 포함되지 않습니다. 임포트는 그대로 `import yaml`입니다. |
-| `jsonschema` | profile, 설정, golden 픽스처 검증에 사용되는 스키마 검증기. |
+| `jsonschema` | 프로필, 설정, 골든 픽스처 검증에 사용되는 스키마 검증기. |
 | `attrs`(그리고 그 `attr` 별칭) | `jsonschema`에 필요. |
 | `referencing` | `jsonschema`에 필요. |
 | `jsonschema_specifications` | `jsonschema`에 필요. |
@@ -83,7 +83,7 @@ Apothem의 [자기완결적 런타임](/docs/architecture/self-contained-runtime
    있는 의존성 강제). 공급망 감사자와 `reuse lint` 게이트가 이를 읽습니다.
 4. 임포트 경로는 건드리지 마십시오 — 소비자는 정규 이름을 임포트하고, 부트스트랩의
    `sys.path` 우선순위가 나머지를 처리합니다.
-5. 테스트 스위트와 적합성 게이트를 실행합니다. 검증 스택의 동작은 profile 및 스키마
+5. 테스트 스위트와 적합성 게이트를 실행합니다. 검증 스택의 동작은 프로필 및 스키마
    검증 테스트로 커버됩니다.
 
 `rpds` 심은 다르게 갱신됩니다. 그것은 소비자가 사용하는 API 부분집합을 추적하므로,

@@ -76,8 +76,8 @@ sourceHash: "f80ed311f9b18d0b"
 وبالحدّ الأدنى لدعم <bdi>OIDC</bdi> في <bdi>npm CLI</bdi>، المُثبَّتين داخل
 <bdi>`.github/workflows/publish-npm.yml`</bdi>. ويُشغِّل
 <bdi>`npm publish --provenance --access public`</bdi> مقابل <bdi>npmjs.com</bdi>،
-فيكون بيان إثبات المنشأ الخاص بـ <bdi>Sigstore</bdi> صريحًا؛ كما يُصدِر <bdi>npm</bdi>
-إثبات المنشأ افتراضيًا للحزم العامة المنشورة من سير عمل عام في
+فيكون بيان المنشأ الخاص بـ <bdi>Sigstore</bdi> صريحًا؛ كما يُصدِر <bdi>npm</bdi>
+المنشأ افتراضيًا للحزم العامة المنشورة من سير عمل عام في
 <bdi>GitHub Actions</bdi>. يعني الخطأ <bdi>`404`</bdi> من السجلّ أثناء
 <bdi>`PUT`</bdi> أن الناشر الموثوق على جانب <bdi>npm</bdi>، أو نطاق الحزمة، أو
 تفويض الحساب لم يُضبَط بعد؛ أصلِح إعدادات الحزمة على <bdi>npm</bdi> قبل إعادة
@@ -88,7 +88,7 @@ sourceHash: "f80ed311f9b18d0b"
 اختر **<bdi>Require two-factor authentication and disallow tokens</bdi>**، واحذف أي
 سرّ لرمز <bdi>npm</bdi> مميّز متبقٍّ في المستودع. لم يعد سير العمل يقرأ أي رمز.
 
-المراجع: [الناشرون الموثوقون في <bdi>npm</bdi>](https://docs.npmjs.com/trusted-publishers/)، و[إثبات المنشأ في <bdi>npm</bdi>](https://docs.npmjs.com/generating-provenance-statements/)، و[النطاقات في <bdi>npm</bdi>](https://docs.npmjs.com/about-scopes/).
+المراجع: [الناشرون الموثوقون في <bdi>npm</bdi>](https://docs.npmjs.com/trusted-publishers/)، و[المنشأ في <bdi>npm</bdi>](https://docs.npmjs.com/generating-provenance-statements/)، و[النطاقات في <bdi>npm</bdi>](https://docs.npmjs.com/about-scopes/).
 
 ## المتطلّبات المسبقة للإصدار على جانب <bdi>GitHub</bdi>
 
@@ -121,5 +121,5 @@ sourceHash: "f80ed311f9b18d0b"
 | السطح | الفحص |
 |---|---|
 | <bdi>npmjs.com</bdi> | يُرجِع <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> النسخة الصادرة |
-| إصدار <bdi>GitHub</bdi> | يسرد <bdi>`gh release view <release-tag> --json assets --jq '.assets[].name'`</bdi> الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وحِزم <bdi>cosign</bdi> وإثبات المنشأ وأرشيفات المنصّات |
+| إصدار <bdi>GitHub</bdi> | يسرد <bdi>`gh release view <release-tag> --json assets --jq '.assets[].name'`</bdi> الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وحِزم <bdi>cosign</bdi> والمنشأ وأرشيفات المنصّات |
 | <bdi>Pages</bdi> | يُرجِع <bdi>`curl -sSI https://apothem.ahmedgad.com/`</bdi> الرمز <bdi>`200`</bdi> على النطاق المخصّص |

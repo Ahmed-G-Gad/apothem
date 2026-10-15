@@ -23,7 +23,7 @@ semanticamente equivalentes e o `AGENTS.md` é a voz canônica do projeto.
 
 Este repositório é um ecossistema de ferramentas de desenvolvimento que hospeda
 a configuração de um runtime de assistente: trabalhadores
-delegados, comandos de barra, habilidades, hooks, estilos de saída, uma linha de
+delegados, comandos de barra, habilidades, hooks, output-styles, uma linha de
 status, integração com MCP, configurações, esquemas JSON, validadores, testes e
 documentação. É mantido por um único autor. O layout em disco espelha
 exatamente o layout do runtime. Os trabalhadores delegados neste repositório não
@@ -83,7 +83,7 @@ LICENSE, arquivos JSON, arquivos de lock, arquivos gerados, conteúdo vendido
 ## Disciplina de planos
 
 O assistente **NÃO DEVE** gerar código, scripts ou prosa que escrevam em um
-diretório de configuração de ferramenta ou em qualquer outra localização global
+diretório de configuração de harness ou em qualquer outra localização global
 de planos. Os artefatos de planejamento — planos de coordenação entre múltiplos
 trabalhadores, estratégias de refatoração, diários de depuração, notas de
 exploração — vivem exclusivamente em `<project-root>/.apothem/plans/`
@@ -226,7 +226,7 @@ verifique cada item:
 - Todos os nomes de arquivo são kebab-case (com as exceções canônicas em
   maiúsculas).
 - Nenhum arquivo sob `<project-root>/.apothem/plans/` está em stage para confirmação;
-  nenhum caminho referencia um diretório de configuração de ferramenta como
+  nenhum caminho referencia um diretório de configuração de harness como
   destino de escrita.
 - Nenhuma afirmação no diff contradiz o `AGENTS.md`.
 - Os validadores locais rodam em verde.

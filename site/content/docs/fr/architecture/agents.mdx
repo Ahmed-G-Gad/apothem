@@ -23,7 +23,7 @@ anti-patterns, hiérarchie modale), elles sont sémantiquement équivalentes et
 
 Ce dépôt est un écosystème d'outillage de développement hébergeant la
 configuration d'un environnement d'exécution d'assistant : travailleurs
-délégués, commandes slash, compétences, hooks, styles de sortie, une ligne
+délégués, commandes slash, compétences, hooks, output-styles, une ligne
 d'état, intégration MCP, paramètres, schémas JSON, validateurs, tests et
 documentation. Il est maintenu par un auteur unique. La disposition sur disque
 reflète exactement la disposition de l'environnement d'exécution. Les
@@ -135,8 +135,7 @@ Lorsque l'assistant n'est pas sûr d'une valeur qu'il devrait sinon inventer, il
 soit une répartition structurée de question à l'opérateur renvoyée à l'humain
 (lorsque l'environnement d'exécution le prend en charge), soit un commentaire
 clairement marqué `# TODO(clarify): ...` dans l'artefact généré. Les deux sont
-l'équivalent, sur la surface multi-travailleurs, du canal de question
-structurée : un enregistrement révisable et jamais silencieux indiquant qu'une
+l'équivalent, sur la surface multi-travailleurs, du canal d'interrogation structurée : un enregistrement révisable et jamais silencieux indiquant qu'une
 hypothèse a été différée à l'humain.
 
 En cas d'incertitude, l'assistant **NE DOIT JAMAIS** fabriquer les classes de

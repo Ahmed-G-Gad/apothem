@@ -12,11 +12,11 @@ Preguntas habituales, en orden de frecuencia.
 
 Una configuración portátil y agnóstica respecto al host que convierte tu directorio
 personal en un marco de gobernanza, ideación y automatización
-para el desarrollo guiado por harness. Combina reglas de comportamiento, estándares
-creativos, comandos de barra, trabajadores delegados persistentes, hooks y habilidades
+para el desarrollo guiado por entorno. Combina reglas de comportamiento, estándares
+creativos, comandos de barra, trabajadores delegados persistentes, hooks y skills
 en una única superficie coherente.
 
-## ¿Con qué CLI de harness funciona?
+## ¿Con qué CLI de entorno funciona?
 
 Apothem es agnóstico respecto al entorno. Los adaptadores por entorno bajo
 `src/apothem/harnesses/<harness>/` proyectan el perfil compartido en
@@ -46,11 +46,11 @@ Cambia el nombre del archivo para que quede fuera del patrón
 `src/apothem/rules/*.md` o muévelo a un directorio hermano que el cargador no
 explore.
 
-## ¿Cuál es la diferencia entre reglas, habilidades y trabajadores delegados?
+## ¿Cuál es la diferencia entre reglas, skills y trabajadores delegados?
 
 - **Reglas** gobiernan el comportamiento: obligaciones siempre activas o
   filtradas por ruta que el asistente sigue.
-- **Habilidades** son técnicas reutilizables y detectables: una señal de
+- **Skills** son técnicas reutilizables y detectables: una señal de
   detección, un procedimiento y un hook de aplicación.
 - **Trabajadores delegados** son roles persistentes con sus propias restricciones
   de herramientas y prompts de sistema, despachados mediante el

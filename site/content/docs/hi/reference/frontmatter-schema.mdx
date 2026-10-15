@@ -35,7 +35,7 @@ src/apothem/schemas/plan.schema.json
 | कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | सहायक, जिन्हें प्रत्यायोजित वर्कर भी कहा जाता है (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
 | स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा हर स्किल से दोनों वर्तनियों में से ठीक एक रखने की माँग करता है, दोनों कभी नहीं |
-| आउटपुट स्टाइल (`src/apothem/output-styles/*.md`) | `name`, `description`; हर शिप की गई स्टाइल `keep-coding-instructions: true` भी सेट करती है ताकि Claude Code अपने सॉफ़्टवेयर इंजीनियरिंग निर्देश बनाए रखे |
+| आउटपुट-स्टाइल (`src/apothem/output-styles/*.md`) | `name`, `description`; हर शिप की गई स्टाइल `keep-coding-instructions: true` भी सेट करती है ताकि Claude Code अपने सॉफ़्टवेयर इंजीनियरिंग निर्देश बनाए रखे |
 
 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) पर प्रति-वर्ग स्कीमा पूरा बाधा समुच्चय वहन करते हैं, जिसमें प्रकार, प्रारूप, enum, और पैटर्न प्रतिबंध, तथा लंबाई सीमाएँ शामिल हैं: किसी स्किल या कमांड का `description` अधिकतम 1,024 वर्णों का होता है, जो [Agent Skills](https://agentskills.io/specification) की सीमा है।
 

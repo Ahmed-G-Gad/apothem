@@ -27,8 +27,8 @@ flowchart TD
 `apothem update --harness X` の実行時：
 
 1. `~/.config/apothem/profile.yaml` または `--profile PATH` を読み込んで検証します。
-2. 選択した harness または `all` を中央レジストリを通じて解決します。
-3. 最初の書き込みの前に、完全な物化計画を検証します。
+2. 選択したハーネスまたは `all` を中央レジストリを通じて解決します。
+3. 最初の書き込みの前に、完全なマテリアライズ計画を検証します。
 4. `Adapter.update(profile, project=...)` を呼び出します。
 5. 作成済み、更新済み、変更なし、スキップ、警告、エラーの結果を報告します。
 

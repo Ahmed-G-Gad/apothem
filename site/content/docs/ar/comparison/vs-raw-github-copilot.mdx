@@ -7,8 +7,7 @@ sourceHash: "8619aad7bba087e4"
 {/* SPDX-License-Identifier: MIT */}
 
 يقرأ <bdi>GitHub Copilot</bdi> تعليماته من `.github/copilot-instructions.md`.
-يرسم محوِّل <bdi>github-copilot</bdi> في <bdi>Apothem</bdi> ذلك الملف من ملف
-التعريف المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
+يرسم محوِّل <bdi>github-copilot</bdi> في <bdi>Apothem</bdi> ذلك الملف من الملف التعريفي المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
 <bdi>Apothem</bdi>.
 
 ## مقارنة الجهد
@@ -16,7 +15,7 @@ sourceHash: "8619aad7bba087e4"
 | المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
 | ---- | --------------- | --------------- |
 | تأليف التعليمات | تحرير `.github/copilot-instructions.md` يدويًا | مُصيَّرة: القواعد المشتركة مضمَّنة في الملف |
-| إبقاء التعليمات متوائمة مع بيئات أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| إبقاء التعليمات متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
 | تثبيت / إزالة التهيئة | كتابة الملف وحذفه يدويًا | `apothem install` / `apothem uninstall` |
 | التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness github-copilot --project <path>` |
 
@@ -31,7 +30,7 @@ sourceHash: "8619aad7bba087e4"
 ## مسار الترحيل
 
 1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
-2. انقل محتوى `.github/copilot-instructions.md` الموجود لديك إلى المجموعة المشتركة.
+2. انقل محتوى `.github/copilot-instructions.md` الموجود لديك إلى الحزمة المشتركة.
 3. شغّل `apothem install --harness github-copilot --project <path>` لتصيير ملف التعليمات.
 4. شغّل `apothem verify --harness github-copilot --project <path>` للتأكّد من وصول التهيئة.
 5. استخدم `apothem update --harness github-copilot --project <path>` مع كل تغيير لاحق.

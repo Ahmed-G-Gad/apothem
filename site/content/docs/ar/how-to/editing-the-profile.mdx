@@ -1,12 +1,12 @@
 ---
 title: "تحرير الملف التعريفي"
-description: "غيّر الملف التعريفي المشترك وأعد تجسيد كل بيئة مثبَّتة."
+description: "غيّر الملف التعريفي المشترك وأعد تجسيد كل إطار عمل مثبَّت."
 machineTranslated: true
 sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-الهدف: غيّر قيمة في الملف التعريفي المشترك وادفعها إلى كل بيئة ثبّتّها.
+الهدف: غيّر قيمة في الملف التعريفي المشترك وادفعها إلى كل إطار عمل ثبّتّه.
 
 ## المتطلّبات المسبقة
 
@@ -24,13 +24,13 @@ sourceHash: "7359e9f71919f942"
   `github`.
 - `preferences` — `language`، `style` (`concise` / `verbose` / `balanced`),
   `formatter`، `test_framework`.
-- `rules` — قائمة بسلاسل قواعد إضافية تُشارَك مع البيئات القادرة.
+- `rules` — قائمة بسلاسل قواعد إضافية تُشارَك مع أُطُر العمل القادرة.
 - `seriousness` — واحد من `EXPLORING`، `PERSONAL_USE`، `SHARED`,
   `PUBLIC_LAUNCH`.
 - `enforcement` — مفاتيح تشغيل اختيارية (`sprints`، `agent_teams`، `multitasking`,
   `continuous_execution`، `learning_loop`)، وكل راية معطّلة افتراضيًا.
-- `harnesses` — تجاوزات لكل بيئة مفهرسة بمُعرّف البيئة.
-- `exclude_harnesses` — مُعرّفات بيئات تتخطّاها الأوامر الدفعية
+- `harnesses` — تجاوزات لكل إطار عمل مفهرسة بمُعرّف إطار العمل.
+- `exclude_harnesses` — مُعرّفات أُطُر عمل تتخطّاها الأوامر الدفعية
   (`--harness all`).
 
 ## الخطوات
@@ -57,15 +57,14 @@ sourceHash: "7359e9f71919f942"
    apothem profile set identity.name "Ada Lovelace"
    ```
 
-3. أعد تجسيد البيئات لكي يصل التغيير إلى تهيئتها الأصلية.
-   لبيئة بنطاق المستخدم:
+3. أعد تجسيد أُطُر العمل لكي يصل التغيير إلى تهيئتها الأصلية.
+   لإطار عمل بنطاق المستخدم:
 
    ```bash
    apothem update --harness claude-code
    ```
 
-   لبيئة بنطاق المشروع، مرّر جذر المشروع؛ استخدم `all` لتحديث
-   كل بيئة مثبَّتة:
+   لإطار عمل بنطاق المشروع، مرّر جذر المشروع؛ استخدم `all` لتحديث كل إطار عمل مثبَّت:
 
    ```bash
    apothem update --harness cursor --project /path/to/project
@@ -91,7 +90,7 @@ apothem verify --harness <name>
 
 ## ذات صلة
 
-- [أضف بيئة](/docs/how-to/adding-a-harness) لإخضاع بيئة جديدة لتحكّم
+- [أضف إطار عمل](/docs/how-to/adding-a-harness) لإخضاع إطار عمل جديد لتحكّم
   الملف التعريفي قبل إعادة التجسيد.
 - يغطّي [التحديث](/docs/install/updating) ترقية المحرّك جنبًا إلى جنب مع
   خطوة إعادة التجسيد.

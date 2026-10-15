@@ -1,12 +1,12 @@
 ---
-title: "Стили вывода"
+title: "Output-стили"
 description: "Профили тона оператора (Senior Architect, Concise Engineer, Forensic Auditor), которые активируются для отдельной сессии командой /output-style."
 machineTranslated: true
 sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Профили стилей вывода находятся в `src/apothem/output-styles/` и содержат
+Профили output-стилей находятся в `src/apothem/output-styles/` и содержат
 рекомендации по тону оператора для каждого стиля. Хост-окружение активирует
 стиль для отдельной сессии командой `/output-style <name>`.
 
@@ -23,10 +23,9 @@ sourceHash: "10398ef985dd81e8"
 
 `apothem install --harness claude-code` копирует стили в
 `~/.claude/output-styles/`. Плагин Claude Code поставляет те же файлы в своей
-папке `output-styles/`, которую Claude Code просматривает в поисках стилей
-вывода плагинов ([справочник по плагинам](https://code.claude.com/docs/en/plugins-reference)),
+папке `output-styles/`, которую Claude Code просматривает в поисках output-стилей плагинов ([справочник по плагинам](https://code.claude.com/docs/en/plugins-reference)),
 поэтому стили можно выбрать, даже если установлен только плагин. Ни у одного
-другого окружения нет поверхности стилей вывода, поэтому никакая другая
+другого окружения нет поверхности output-стилей, поэтому никакая другая
 установка их не поставляет.
 
 ## Контракт фронтматтера
@@ -42,11 +41,11 @@ keep-coding-instructions: true
 `name` и `description` обязательны. Каждый поставляемый стиль также задаёт
 `keep-coding-instructions: true`. Claude Code исключает свои встроенные
 инструкции по программной инженерии (как ограничивать объём изменений, писать
-комментарии и проверять работу) из любого пользовательского стиля вывода, если
+комментарии и проверять работу) из любого пользовательского output-стиля, если
 этот ключ не равен `true`; по умолчанию он равен `false`. Стили Apothem меняют
 то, как работа представлена, а не то, как она выполняется, поэтому они
 сохраняют эти инструкции. См.
-[справочник по стилям вывода Claude Code](https://code.claude.com/docs/en/output-styles).
+[справочник по output-стилям Claude Code](https://code.claude.com/docs/en/output-styles).
 
 ## Создание нового профиля
 

@@ -35,7 +35,7 @@ src/apothem/schemas/plan.schema.json
 | Command (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | Pembantu, disebut juga pekerja terdelegasi (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
 | Skill (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; instalasi Claude Code dan plugin mengganti nama `userInvocable` menjadi `user-invocable`, dan skema mewajibkan setiap skill membawa tepat salah satu dari kedua ejaan tersebut, tidak pernah keduanya |
-| Gaya keluaran (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
+| Output-style (`src/apothem/output-styles/*.md`) | `name`, `description`; setiap gaya yang dikirimkan juga menetapkan `keep-coding-instructions: true` agar Claude Code mempertahankan instruksi rekayasa perangkat lunaknya |
 
 Skema per kelas di [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) memuat himpunan batasan lengkap, termasuk batasan tipe, format, enum, dan pola, serta batas panjang: `description` sebuah skill atau command paling banyak 1.024 karakter, yaitu batas [Agent Skills](https://agentskills.io/specification).
 

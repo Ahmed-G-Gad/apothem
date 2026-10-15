@@ -8,7 +8,7 @@ sourceHash: "6ea6b8e59fdc012a"
 
 Qwen Code 读取设置、钩子、`QWEN.md`、原生 Markdown 命令、SKILL.md
 目录以及 Markdown 子代理。Apothem 从共享配置档案渲染有文档记录的设置键，
-并在 Qwen Code 支持的情况下，把共享群组转换为 Qwen 原生的文件系统形态。
+并在 Qwen Code 支持的情况下，把共享集合转换为 Qwen 原生的文件系统形态。
 
 ## 工夫对比
 
@@ -16,8 +16,8 @@ Qwen Code 读取设置、钩子、`QWEN.md`、原生 Markdown 命令、SKILL.md
 | ---- | --------------- | --------------- |
 | 编写规则 | 手工维护 QWEN.md 及其支撑文件 | 从共享配置档案渲染或引用 |
 | 配置钩子 | 手工编辑 `settings.json` 钩子条目 | 通过 Qwen Code 的原生钩子映射安装 |
-| 编写命令、技能、代理 | 逐个手工维护每个 Qwen 目录 | 从共享的 Apothem 群组转换 |
-| 让群组与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 编写命令、技能、代理 | 逐个手工维护每个 Qwen 目录 | 从共享的 Apothem 集合转换 |
+| 让集合与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
 | 安装 / 移除该配置面 | 手工 | `apothem install` / `apothem uninstall` |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness qwen-code` |
 
@@ -26,7 +26,7 @@ Qwen Code 读取设置、钩子、`QWEN.md`、原生 Markdown 命令、SKILL.md
 qwen-code 适配器写入 `settings.json`，安装 `QWEN.md`，把 Apothem 斜杠命令
 转换为 Qwen 的 Markdown 命令文件，把技能复制到原生技能面，将辅助定义适配为
 Qwen 子代理，并注册 Apothem 钩子分发器。规则、模板和钩子源材料仍保留在
-Apothem 的支撑子树下，并从原生上下文中加以引用。
+Apothem 的支持子树下，并从原生上下文中加以引用。
 
 ## 迁移路径
 

@@ -25,7 +25,7 @@ Avec des arguments :
 
 ## Entrées
 
-Suite de plan générée + relue ; `_inputs/handoff-manifest.yml` relu
+Suite de planification générée + relue ; `_inputs/handoff-manifest.yml` relu
 
 ## Sorties
 
@@ -39,10 +39,10 @@ Fichiers REPORT.md par phase, artefacts de la base de code, COMPLETION.md
 
 La commande suit le flux de travail standard du pipeline `/plan` :
 
-1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
+1. **Charger le contexte** — Lit la suite de planification, les règles et le Contrat de Reprise.
 2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
 3. **Exécuter les tâches** — Accomplit la mission de la commande.
-4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
+4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portails de qualité.
 5. **Émettre REPORT.md** — Le résultat du portail de pré-émission est consigné.
 6. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
 
@@ -51,8 +51,8 @@ La commande suit le flux de travail standard du pipeline `/plan` :
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
-| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+| Portail de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Fichier de suite de planification absent | Exécutez `/plan-generate` pour le créer |
 
 ## Exemples
 

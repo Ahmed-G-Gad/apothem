@@ -1,6 +1,6 @@
 ---
 title: "/plan-status"
-description: "/plan-status — Rapporteur de progression de suite de plan en lecture seule — émet l'état sans modifier aucun fichier."
+description: "/plan-status — Rapporteur de progression de suite de planification en lecture seule — émet l'état sans modifier aucun fichier."
 machineTranslated: true
 sourceHash: "5a446b7afd70b8a1"
 ---
@@ -9,7 +9,7 @@ sourceHash: "5a446b7afd70b8a1"
 **Rôle :** Rapporteur
 **Position dans le pipeline :** lecture seule
 
-Rapporteur de progression de suite de plan en lecture seule — émet l'état sans modifier aucun fichier.
+Rapporteur de progression de suite de planification en lecture seule — émet l'état sans modifier aucun fichier.
 
 ## Invocation canonique
 
@@ -25,7 +25,7 @@ Avec des arguments :
 
 ## Entrées
 
-Toute suite de plan dans n'importe quel état de son cycle de vie — lit `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` et les rapports de `phases/`.
+Toute suite de planification dans n'importe quel état de son cycle de vie — lit `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` et les rapports de `phases/`.
 
 ## Sorties
 
@@ -48,7 +48,7 @@ La commande est en lecture seule — elle lit les fichiers de suivi de la suite 
 
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
-| Fichier de suivi requis manquant | Suite de plan incomplète | Signalez la lacune comme un constat ; exécutez `/plan-generate` pour créer la suite |
+| Fichier de suivi requis manquant | Suite de planification incomplète | Signalez la lacune comme un constat ; exécutez `/plan-generate` pour créer la suite |
 | Fichier de suivi malformé | Section tronquée ou non analysable | Nommez l'absence / la contradiction dans le rapport ; la réparation passe par les commandes en écriture |
 | Champ absent ou contradictoire entre les fichiers | Dérive du suivi | Signalez explicitement la contradiction ; ne synthétisez pas la valeur manquante |
 

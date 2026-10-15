@@ -1,12 +1,12 @@
 ---
-title: "Styles de sortie"
+title: "Output-styles"
 description: "Profils de ton de l'opérateur (Architecte senior, Ingénieur concis, Auditeur forensique) activés session par session via la commande /output-style."
 machineTranslated: true
 sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les profils de style de sortie se trouvent sous `src/apothem/output-styles/` et
+Les profils d'output-style se trouvent sous `src/apothem/output-styles/` et
 portent, pour chaque style, des consignes sur le ton de l'opérateur.
 L'environnement hôte active un style session par session via
 `/output-style <name>`.
@@ -24,10 +24,9 @@ L'environnement hôte active un style session par session via
 
 `apothem install --harness claude-code` copie les styles dans
 `~/.claude/output-styles/`. Le plugin Claude Code livre les mêmes fichiers dans
-son dossier `output-styles/`, que Claude Code parcourt à la recherche des styles
-de sortie des plugins ([référence des plugins](https://code.claude.com/docs/en/plugins-reference)) ;
+son dossier `output-styles/`, que Claude Code parcourt à la recherche des output-styles des plugins ([référence des plugins](https://code.claude.com/docs/en/plugins-reference)) ;
 les styles sont donc sélectionnables lorsque seul le plugin est installé. Aucun
-autre environnement ne dispose d'une surface de style de sortie, si bien
+autre environnement ne dispose d'une surface d'output-style, si bien
 qu'aucune autre installation ne les livre.
 
 ## Contrat de frontmatter
@@ -43,11 +42,11 @@ keep-coding-instructions: true
 `name` et `description` sont requis. Chaque style livré définit aussi
 `keep-coding-instructions: true`. Claude Code exclut ses instructions intégrées
 d'ingénierie logicielle (comment délimiter les modifications, rédiger les
-commentaires et vérifier le travail) de tout style de sortie personnalisé, sauf
+commentaires et vérifier le travail) de tout output-style personnalisé, sauf
 si cette clé vaut `true` ; sa valeur par défaut est `false`. Les styles Apothem
 changent la façon dont le travail est présenté, et non la façon dont il est
 effectué : ils conservent donc ces instructions. Voir la
-[référence des styles de sortie de Claude Code](https://code.claude.com/docs/en/output-styles).
+[référence des output-styles de Claude Code](https://code.claude.com/docs/en/output-styles).
 
 ## Rédiger un nouveau profil
 

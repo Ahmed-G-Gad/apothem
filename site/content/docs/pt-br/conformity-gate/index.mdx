@@ -1,6 +1,6 @@
 ---
-title: "Portão de conformidade"
-description: "Portão de conformidade do Apothem — a fração mecânica do portão de pré-emissão de quinze barras (M1-M15) pelo qual todo artefato emitido precisa passar."
+title: "Conformity gate"
+description: "Conformity gate do Apothem — a fração mecânica do portão de pré-emissão de quinze barras (M1-M15) pelo qual todo artefato emitido precisa passar."
 machineTranslated: true
 sourceHash: "3327d1105c04f8e3"
 ---
@@ -111,7 +111,7 @@ Em um harness instalado, o portão é executado automaticamente: o
 `settings.json` do Claude Code o conecta como um hook `PreToolUse` que invoca a
 cópia materializada em `~/.claude/.apothem/support/conformity/gate.py` antes de
 cada Write/Edit. O portão então verifica apenas as gravações dentro do escopo do
-seu hook, e uma gravação fora do escopo passa em silêncio; [Executar o portão de conformidade](/docs/usage/conformity-gate)
+seu hook, e uma gravação fora do escopo passa em silêncio; [Executar o conformity gate](/docs/usage/conformity-gate)
 lista o escopo. A partir de um checkout do código-fonte, a forma de módulo
 executa o mesmo código; prefixe cada comando `python` abaixo com
 `PYTHONPATH=src`. O portão é consultivo por padrão: ele relata os achados e sai
@@ -140,7 +140,7 @@ echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
 ```
 
 `python -m apothem.conformity.gate --help` imprime o resumo de uso.
-Consulte [Executar o portão de conformidade](/docs/usage/conformity-gate) para o procedimento completo.
+Consulte [Executar o conformity gate](/docs/usage/conformity-gate) para o procedimento completo.
 
 ## Referência
 

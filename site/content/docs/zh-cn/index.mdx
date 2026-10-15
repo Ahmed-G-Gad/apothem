@@ -1,14 +1,14 @@
 ---
 title: "Apothem 文档"
-description: "一份共享配置档案，物化到十七个harness环境中。从这里开始：安装、使用、环境覆盖、命令流水线，以及完整的参考手册。"
+description: "一份共享配置档案，物化到十七个工具中。从这里开始：安装、使用、工具覆盖、命令流水线，以及完整的参考手册。"
 machineTranslated: true
 sourceHash: "0441a6b1ecc8cd6c"
 ---
 
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem 是一个与宿主无关的环境配置管理器。你在 `~/.config/apothem/profile.yaml`
-中编写一份共享配置档案，Apothem 会将其物化为十七个harness的原生配置面——
+Apothem 是一个与宿主无关的工具配置管理器。你在 `~/.config/apothem/profile.yaml`
+中编写一份共享配置档案，Apothem 会将其物化为十七个工具的原生配置面——
 Claude Code、Cursor、Gemini CLI、GitHub Copilot、Codex、Windsurf、Zed，
 以及已注册目录中的其余工具。
 
@@ -20,7 +20,7 @@ Apothem 同步的单元不止于规则：规则、技能、子代理、斜杠命
    `npx`，或一键脚本），运行有引导的第一步。唯一的前置条件是
    [Node.js](https://nodejs.org/) 和系统中的 Python 3.10 或更新版本。
 2. **[完成你的首次可用运行](/docs/tutorials/getting-started)** —— 编写一份共享
-   配置档案，从中物化某个环境的原生配置，并验证结果。从头到尾约十五分钟。
+   配置档案，从中物化某个工具的原生配置，并验证结果。从头到尾约十五分钟。
 
 ## Apothem 的工作原理
 
@@ -38,16 +38,16 @@ Apothem 同步的单元不止于规则：规则、技能、子代理、斜杠命
 
 - **[安装](/docs/install/quickstart)** —— 各条安装路径（工具原生插件与扩展、
   `npx`、一键脚本）以及一次有引导的首次运行。
-- **[使用](/docs/usage/getting-started)** —— 编写你的配置档案、安装到各个环境、
+- **[使用](/docs/usage/getting-started)** —— 编写你的配置档案、安装到各个工具、
   验证并更新。
-- **[环境](/docs/harnesses)** —— 十七个环境的目录，附每个工具的原生配置面及其
+- **[工具](/docs/harnesses)** —— 十七个工具的目录，附每个工具的原生配置面及其
   转换行为。
 - **[命令流水线](/docs/pipeline)** —— `/plan` 与 `/research` 流水线的各个阶段、
   审计-复审序列、workflow 与 projectify 技能，以及外科级操作护栏。
 
 ## 深入了解
 
-- **[概念](/docs/concepts/ai-platform-agnosticism)** —— 共享配置档案、环境适配器
+- **[概念](/docs/concepts/ai-platform-agnosticism)** —— 共享配置档案、工具适配器
   以及物化模型。
 - **[架构](/docs/architecture)** —— 源码布局、适配器抽象、自包含运行时，以及
   CI/CD 流水线。

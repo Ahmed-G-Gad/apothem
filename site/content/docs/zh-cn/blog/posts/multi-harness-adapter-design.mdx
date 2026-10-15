@@ -1,18 +1,18 @@
 ---
-title: "深入多编码助手适配器设计"
-description: "对 Apothem 的 HarnessAdapter 协议以及把一份配置文件物化为十七个编码助手的三种适配器类的技术深度解析。"
+title: "深入多工具适配器设计"
+description: "对 Apothem 的 HarnessAdapter 协议以及把一份配置文件物化为十七个工具的三种适配器类的技术深度解析。"
 machineTranslated: true
 sourceHash: "66f90956d4db4557"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem 将一份共享配置文件物化为十七种编码助手原生配置。十七个目标、
+Apothem 将一份共享配置档案物化为十七种工具原生配置。十七个目标、
 十七种厂商格式、十七个安装位置——而操作者与 CLI 共同依赖的，是一个
 统一的接口。本文阐释适配器层如何把这份契约维系在一起。
 
 ## HarnessAdapter 协议
 
-每个编码助手适配器都实现一个结构化的 `HarnessAdapter` 协议。该协议是
+每个工具适配器都实现一个结构化的 `HarnessAdapter` 协议。该协议是
 CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以及 CLI 读取的
 元数据：
 
@@ -27,7 +27,7 @@ CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以�
 由于该契约是一个 `typing.Protocol`，适配器靠形态而非继承去满足它。CLI
 通过 `importlib.metadata` 从 `pyproject.toml` 中的
 `[project.entry-points."apothem.harnesses"]` 表动态加载适配器。新增一个
-编码助手意味着发布一个暴露该协议的子包——无需改动核心调度器。
+工具意味着发布一个暴露该协议的子包——无需改动核心调度器。
 
 ## 每个适配器一个子包
 
@@ -37,7 +37,7 @@ CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以�
 - `install.py` / `uninstall.py` / `update.py` / `verify.py` — 适配器类
   导入并调用的逐动作实现。
 - `materializer.py` — 一个可选的 `materialize_native_config(profile) -> str`，
-  它把共享配置文件渲染为编码助手的原生配置文本。
+  它把共享配置档案渲染为工具的原生配置文本。
 
 把每个动作拆进它自己的模块，使适配器类保持轻薄：它是一个调度器，把
 协议方法接到动作函数上。打开 `verify.py` 的读者所见，正是那一个编码
@@ -45,26 +45,26 @@ CLI 与厂商专属细节之间的接缝。它声明了 CLI 调用的操作以�
 
 ## 三种适配器类
 
-这十七个编码助手并非都以相同方式消费配置。Apothem 按配置文件在抵达
-编码助手之前需要多少转换，把它们分入三个类别。
+这十七个工具并非都以相同方式消费配置。Apothem 按配置文件在抵达
+工具之前需要多少转换，把它们分入三个类别。
 
 ### 第一类——原始传播
 
-编码助手消费的正是 Apothem 已经撰写的同一批工件——扁平的 `.md` 规则、
-agents、hooks——无需渲染步骤。适配器把原始模板复制进编码助手的配置树。
+工具消费的正是 Apothem 已经撰写的同一批工件——扁平的 `.md` 规则、
+agents、钩子——无需渲染步骤。适配器把原始模板复制进工具的配置树。
 这里没有 `materializer.py`，因为没有任何东西被渲染；配置文件的工件即是
 输出。
 
 ### 第 II-A 类——原始外加厂商模板
 
-编码助手消费 Apothem 的原始工件，并且还需要一组厂商专属的模板文件
-（编码助手所需的设置、清单或脚手架文件）。适配器把原始工件与厂商模板
+工具消费 Apothem 的原始工件，并且还需要一组厂商专属的模板文件
+（工具所需的设置、清单或脚手架文件）。适配器把原始工件与厂商模板
 一起复制。厂商模板与适配器并列，存放在一个 `templates/` 目录下。
 
 ### 第 II-B 类——配置文件渲染
 
-编码助手想要一份从共享配置文件的结构化字段渲染出来的单一原生配置文件。
-适配器的 `materializer.py` 读取配置文件并发出编码助手原生的文本——一份
+工具想要一份从共享配置档案的结构化字段渲染出来的单一原生配置文件。
+适配器的 `materializer.py` 读取配置文件并发出工具原生的文本——一份
 Hermes 的 `config.yaml`、一份 Open-Claw 的 `openclaw.json`、一份 OpenCode
 的 `opencode.json`，或一份 Qwen Code 的 `settings.json`。第 II-B 类是格式
 调和工作集中之处；[约定收敛深度解析](/docs/blog/posts/cross-harness-convention-convergence)
@@ -72,8 +72,8 @@ Hermes 的 `config.yaml`、一份 Open-Claw 的 `openclaw.json`、一份 OpenCod
 
 ## claude-code：全配置面参考适配器
 
-claude-code 适配器是覆盖最广配置面的参考实现——规则、agents、hooks、
-output-styles、设置以及约定目录。它属于第 II-A 类：它传播 Apothem 的原始
+claude-code 适配器是覆盖最广配置面的参考实现——规则、agents、钩子、
+输出样式、设置以及约定目录。它属于第 II-A 类：它传播 Apothem 的原始
 模板并摊平约定目录，且在 `src/apothem/harnesses/claude_code/templates/`
 下随附厂商设置模板。它不带 `materializer.py`——它并不从配置文件渲染原生
 配置文件；它直接传播工件与约定目录。
@@ -87,5 +87,5 @@ output-styles、设置以及约定目录。它属于第 II-A 类：它传播 Apo
 `apothem uninstall` 的行为始终如一。厂商差异活在适配器子包内部、协议
 背后——那正是它们的归属之地。
 
-请阅读面向操作者的参考 [编码助手](/docs/harnesses) 以及
+请阅读面向操作者的参考 [工具](/docs/harnesses) 以及
 [概念](/docs/concepts) 中的配置文件模型。

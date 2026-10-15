@@ -40,7 +40,7 @@ Les surfaces sont des *canaux* différents qui expriment une seule *spécificati
 | `AGENTS.md` | racine du dépôt (et/ou `.codex/AGENTS.md`) | **DOIT** | environnements compatibles AGENTS |
 | `CLAUDE.md` | racine du dépôt (et/ou `.claude/CLAUDE.md`) | **DOIT** | Claude Code |
 | Fichier d'instructions de l'IDE | `.github/copilot-instructions.md` | **DOIT** | environnement d'exécution de complétion dans l'IDE |
-| Manifeste des assistants | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'enquête structurée) | plateformes d'orchestration multi-assistants |
+| Manifeste des assistants | `site/content/docs/architecture/agents.mdx` | **PEUT** (activation via le canal d'interrogation structurée) | plateformes d'orchestration multi-assistants |
 | `.cursorrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution de l'éditeur dans l'IDE |
 | `.windsurfrules` | racine du dépôt | **PEUT** (sur activation) | environnement d'exécution compagnon dans l'IDE |
 
@@ -122,7 +122,7 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 
 ## 8. Cycle de vie des surfaces
 
-- **Ajouter une surface.** L'opérateur l'active via le canal d'enquête structurée. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
+- **Ajouter une surface.** L'opérateur l'active via le canal d'interrogation structurée. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
 - **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, et la liste required-in du validateur est modifiée.
 - **Détection de dérive.** Tout commit qui s'écarte de la liste d'affirmations est rejeté par le pre-commit / la CI ; l'auteur du commit réécrit la surface pour rétablir la cohérence.
 

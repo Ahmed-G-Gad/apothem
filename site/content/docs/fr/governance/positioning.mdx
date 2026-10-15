@@ -46,7 +46,7 @@ Chaque émission passe par les deux axes. Le portail situé à `src/apothem/rule
 
 ### Pilier B — La discipline du canal canonique
 
-La discipline du canal canonique régit **la façon dont l'assistant sollicite l'entrée de l'opérateur**. Les prompts en format libre sont retirés dans tout l'écosystème ; chaque choix passe par le canal de demande structurée, avec un schéma structuré d'annotation des options (justification + recommandation + pointeur par défaut pour chaque option), une taxonomie fermée des recommandations, un plancher de confirmation par fichier pour les opérations destructrices, et un balayage heuristique qui détecte la dérive vers les prompts conversationnels sur chaque surface gouvernée. La spécification complète se trouve à `src/apothem/rules/interactive-questions.md`, la profondeur étant portée par les compagnons filtrés par chemin `src/apothem/rules/interactive-questions-canonical-shapes.md` et `src/apothem/rules/interactive-questions-sweep-matchers.md`.
+La discipline du canal canonique régit **la façon dont l'assistant sollicite l'entrée de l'opérateur**. Les prompts en format libre sont retirés dans tout l'écosystème ; chaque choix passe par le canal d'interrogation structurée, avec un schéma structuré d'annotation des options (justification + recommandation + pointeur par défaut pour chaque option), une taxonomie fermée des recommandations, un plancher de confirmation par fichier pour les opérations destructrices, et un balayage heuristique qui détecte la dérive vers les prompts conversationnels sur chaque surface gouvernée. La spécification complète se trouve à `src/apothem/rules/interactive-questions.md`, la profondeur étant portée par les compagnons filtrés par chemin `src/apothem/rules/interactive-questions-canonical-shapes.md` et `src/apothem/rules/interactive-questions-sweep-matchers.md`.
 
 Le levier de cette discipline est l'**auditabilité de la décision**. Chaque choix volontaire de l'opérateur porte les éléments que l'assistant a examinés, la recommandation que l'assistant a émise et la justification fondée sur des facteurs concrets. Six mois après le choix, un auditeur qui lit le grand livre de divulgation peut reconstituer la frontière de la décision sans faire appel à la mémoire de l'opérateur.
 
@@ -120,7 +120,7 @@ Le registre de quinze mandats est la surface canonique de gouvernance de l'axe e
 
 **Spécification canonique.** `src/apothem/rules/option-annotation.md` (avec la forme pour la prose et les documents à `src/apothem/rules/option-annotation-form.md`).
 
-**Pourquoi c'est important.** Chaque ensemble d'options rédigé est une surface d'audit. Le lecteur voit non seulement le choix, mais aussi l'espace des alternatives, la recommandation et le facteur concret qui la fonde. La même discipline régit les invocations du canal de demande structurée par l'assistant et la prose rédigée dans les artefacts permanents.
+**Pourquoi c'est important.** Chaque ensemble d'options rédigé est une surface d'audit. Le lecteur voit non seulement le choix, mais aussi l'espace des alternatives, la recommandation et le facteur concret qui la fonde. La même discipline régit les invocations du canal d'interrogation structurée par l'assistant et la prose rédigée dans les artefacts permanents.
 
 ### M8 — Caractère définitif, étanchéité et famille des vertus des systèmes rigoureux
 
@@ -190,7 +190,7 @@ Le registre de quinze mandats est la surface canonique de gouvernance de l'axe e
 
 ## §4. Discipline du canal canonique
 
-La discipline du canal canonique est la **contrepartie côté entrée** de l'application côté émission du registre des mandats. Chaque choix que l'assistant soumet à l'opérateur passe par le canal de demande structurée. Les prompts conversationnels en format libre comme entrée principale sont interdits ; la discipline est appliquée au portail par sept matchers heuristiques (H1–H7) qui balaient chaque surface gouvernée et signalent les écarts comme constats du portail.
+La discipline du canal canonique est la **contrepartie côté entrée** de l'application côté émission du registre des mandats. Chaque choix que l'assistant soumet à l'opérateur passe par le canal d'interrogation structurée. Les prompts conversationnels en format libre comme entrée principale sont interdits ; la discipline est appliquée au portail par sept matchers heuristiques (H1–H7) qui balaient chaque surface gouvernée et signalent les écarts comme constats du portail.
 
 La spécification canonique se trouve à `src/apothem/rules/interactive-questions.md`. Les règles compagnons portent la profondeur : `src/apothem/rules/interactive-questions-canonical-shapes.md` porte les exemples travaillés, les corps de schéma, la taxonomie des recommandations, le repli d'environnement, les ensembles canoniques d'options pour les opérations destructrices et les exemples travaillés de pointeur par défaut ; `src/apothem/rules/interactive-questions-sweep-matchers.md` porte le catalogue des matchers H1–H7 avec des invocations ripgrep reproductibles.
 
@@ -206,7 +206,7 @@ Une invocation à sélection unique (`multiSelect: false`) porte au plus une opt
 
 ### Confirmation par fichier des opérations destructrices
 
-Chaque opération destructrice — supprimer, renommer, déplacer, écraser sans conservation, annuler des modifications non commitées — passe par le canal de demande structurée, fichier par fichier. Une invocation par fichier, à chaque fois. `multiSelect: true` est non conforme sur les invocations d'opérations destructrices ; les ensembles canoniques d'options des sous-sections sur les opérations destructrices constituent le plancher. La fatigue de confirmation est un coût accepté ; la destruction silencieuse ne l'est pas.
+Chaque opération destructrice — supprimer, renommer, déplacer, écraser sans conservation, annuler des modifications non commitées — passe par le canal d'interrogation structurée, fichier par fichier. Une invocation par fichier, à chaque fois. `multiSelect: true` est non conforme sur les invocations d'opérations destructrices ; les ensembles canoniques d'options des sous-sections sur les opérations destructrices constituent le plancher. La fatigue de confirmation est un coût accepté ; la destruction silencieuse ne l'est pas.
 
 ### Balayage heuristique — H1 à H7
 

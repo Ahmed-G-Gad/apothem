@@ -15,14 +15,14 @@ claude-code 适配器是全表面适配器：它把共享语料库直接传播�
 | 任务 | 手工配置 | Apothem 托管 |
 | ---- | --------------- | --------------- |
 | 编写规则、代理、命令、技能 | 在 `~/.claude/` 中手工编辑每个表面 | 在共享语料库中写一次 |
-| 维护输出风格和状态栏 | 逐表面手工编辑 | 从共享语料库传播 |
+| 维护输出样式和状态栏 | 逐表面手工编辑 | 从共享语料库传播 |
 | 配置钩子 | 手工编辑 `settings.json` 钩子条目 | 传播（PreToolUse/PostToolUse/Stop/SessionStart） |
-| 让配置与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 让配置与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness claude-code` |
 
 ## Apothem 管理什么
 
-适配器会把规则、代理、命令、技能、输出风格、状态栏以及 `settings.json` 传播到
+适配器会把规则、代理、命令、技能、输出样式、状态栏以及 `settings.json` 传播到
 `~/.claude/`。原生的 PreToolUse、PostToolUse、Stop 和 SessionStart 钩子从共享
 语料库配置而来。
 

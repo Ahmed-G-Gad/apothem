@@ -17,7 +17,7 @@ sourceHash: "f60950ab3aa08ee9"
 apothem install --harness claude-code
 ```
 
-El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las skills, los estilos de salida y los ajustes se instalan en sus ubicaciones nativas; los prompts de comando se convierten en skills para que los flujos de trabajo reutilizables sigan visibles a través de la superficie de skills actual de Claude Code. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`, pero no está conectado: Claude Code lee su línea de estado del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla, añade a `settings.json` una entrada `statusLine` de `"type": "command"` que ejecute `~/.claude/statuslines/render.py`. El valor `commandWindows` del fragmento se ejecuta en Windows y nombra el intérprete sin comillas. Cuando la ruta del intérprete contiene un espacio, la instalación escribe en ese valor su forma corta de 8.3 de Windows, si el volumen la tiene. Las entradas de hook de `settings.json` conservan la ruta completa.
+El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las skills, los output-styles y los ajustes se instalan en sus ubicaciones nativas; los prompts de comando se convierten en skills para que los flujos de trabajo reutilizables sigan visibles a través de la superficie de skills actual de Claude Code. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`, pero no está conectado: Claude Code lee su línea de estado del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla, añade a `settings.json` una entrada `statusLine` de `"type": "command"` que ejecute `~/.claude/statuslines/render.py`. El valor `commandWindows` del fragmento se ejecuta en Windows y nombra el intérprete sin comillas. Cuando la ruta del intérprete contiene un espacio, la instalación escribe en ese valor su forma corta de 8.3 de Windows, si el volumen la tiene. Las entradas de hook de `settings.json` conservan la ruta completa.
 
 **Archivos escritos:** `settings.json`, el bloque de Apothem en `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` y el subárbol de soporte `.apothem/support/`
@@ -60,14 +60,14 @@ Las skills instaladas, y las skills incluidas en el plugin de Claude Code,
 llevan `user-invocable` en lugar del `userInvocable` del corpus de origen,
 porque Claude Code solo lee la clave con guion. Los dos contenedores de
 plantillas (`plan-suite`, `research-suite`) lo establecen en `false`, de modo
-que quedan fuera del menú `/`. Cada estilo de salida establece
+que quedan fuera del menú `/`. Cada output-style establece
 `keep-coding-instructions: true`, de modo que seleccionar uno conserva las
 instrucciones de ingeniería de software integradas de Claude Code.
 
 ## Notas de compatibilidad
 
 Los prompts de comando se convierten en directorios de skill; los agentes, las
-reglas, las skills y los estilos de salida se copian tal cual. La instalación
+reglas, las skills y los output-styles se copian tal cual. La instalación
 valida que el perfil esté bien formado y que todos los enlaces de hook de
 settings.json se puedan resolver. El adaptador no crea ninguna entrada de
 servidor MCP: registra los servidores con `claude mcp add` (consulta
@@ -118,7 +118,7 @@ apothem update --harness claude-code
 Vuelve a derivar la configuración nativa a partir del perfil compartido actual.
 Ejecútalo después de actualizar el paquete `apothem` instalado, para que la
 superficie de convenciones propagada (agentes, reglas, skills, líneas de estado,
-estilos de salida) refleje la nueva versión. En `CLAUDE.md`, update reescribe
+output-styles) refleje la nueva versión. En `CLAUDE.md`, update reescribe
 solo el bloque de Apothem entre sus centinelas.
 
 ## Desinstalación

@@ -1,15 +1,15 @@
 ---
-title: "共享配置文件模式"
-description: "Apothem 共享配置文件 YAML 的模式。"
+title: "共享配置档案模式"
+description: "Apothem 共享配置档案 YAML 的模式。"
 machineTranslated: true
 sourceHash: "574a594762c4f468"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem 的共享配置文件是一个位于
+Apothem 的共享配置档案是一个位于
 `~/.config/apothem/profile.yaml` 的 YAML 文件，或位于以
-`--profile PATH` 提供的路径。它是身份、偏好、共享规则、每个harness的覆盖项以及harness排除项在语义层面的权威来源。
-适配器从该配置文件以及打包的 Apothem 载荷 cohort 派生出每个harness专属的文件。
+`--profile PATH` 提供的路径。它是身份、偏好、共享规则、每个工具的覆盖项以及工具排除项在语义层面的权威来源。
+适配器从该配置文件以及打包的 Apothem 载荷集合派生出每个工具专属的文件。
 
 运行时模型是 `src/apothem/lib/profile.py`；JSON 模式是
 `src/apothem/schemas/profile.schema.json`。
@@ -51,12 +51,12 @@ identity:
 | `preferences.test_framework` | 否 | 省略 | 存在时为非空字符串。 |
 | `rules` | 否 | `[]` | 唯一的非空字符串；换行符归一化为 LF。 |
 | `seriousness` | 否 | `PERSONAL_USE` | `EXPLORING`、`PERSONAL_USE`、`SHARED`、`PUBLIC_LAUNCH` 之一。 |
-| `harnesses` | 否 | `{}` | 以受支持的harness ID 为键的每个harness覆盖项。 |
-| `exclude_harnesses` | 否 | `[]` | 从 `--harness all` 中排除的受支持的harness ID。 |
+| `harnesses` | 否 | `{}` | 以受支持的工具 ID 为键的每个工具覆盖项。 |
+| `exclude_harnesses` | 否 | `[]` | 从 `--harness all` 中排除的受支持的工具 ID。 |
 
-## harness键
+## 工具键
 
-模式恰好接受以下十七个harness ID：
+模式恰好接受以下十七个工具 ID：
 
 ```text
 antigravity
@@ -78,23 +78,23 @@ windsurf
 zed
 ```
 
-未知的顶层字段、未知的harness键、错误的值类型、重复的排除项以及格式不当的身份字段，都会在 install 或 update 写入之前失败。预期错误包括字段、原因、修复方法、有用时经过编辑的安全值，以及校验失败时的 `files_written: []`。
+未知的顶层字段、未知的工具键、错误的值类型、重复的排除项以及格式不当的身份字段，都会在 install 或 update 写入之前失败。预期错误包括字段、原因、修复方法、有用时经过编辑的安全值，以及校验失败时的 `files_written: []`。
 
 ## 从配置文件字段到原生文件
 
-配置文件是*要做什么*；适配器是*怎么做*。理解这条端到端的流程，便能解释为何对单个 YAML 文件的一次编辑，就能重塑每一个已安装的harness。
+配置文件是*要做什么*；适配器是*怎么做*。理解这条端到端的流程，便能解释为何对单个 YAML 文件的一次编辑，就能重塑每一个已安装的工具。
 
 配置文件字段承载的是语义意图，而非字面的配置片段。
-`identity.name` 是“操作者是谁”，而不是一行 JSON。打包的载荷 cohort（`commands`、`rules`、`skills`、`hooks`、`templates`、`statuslines`、`output-styles`、`agents`）以 Apothem 自有的中立格式承载行为内容。无论是字段还是 cohort，都不知道任何harness的配置长什么样——这份知识只属于适配器。
+`identity.name` 是“操作者是谁”，而不是一行 JSON。打包的载荷集合（`commands`、`rules`、`skills`、`hooks`、`templates`、`statuslines`、`output-styles`、`agents`）以 Apothem 自有的中立格式承载行为内容。无论是字段还是集合，都不知道任何工具的配置长什么样——这份知识只属于适配器。
 
 当你运行 `apothem update` 时，流程是：
 
 1. **加载并校验**配置文件，对照 JSON 模式。在整个配置文件有效之前，不会写入任何内容，因此一个笔误绝不会半途安装。
-2. 通过中央注册表为所选harness（或 `all`，减去任何
+2. 通过中央注册表为所选工具（或 `all`，减去任何
    `exclude_harnesses`）**解析适配器**。
-3. **物化**——每个适配器读取相同的配置文件和相同的 cohort，然后将它们转译为各自harness的方言。像
-   `preferences.style` 这样的字段，在一个harness中成为原生配置值，在另一个中成为渲染出来的指令上下文；`rules[]` 中的一条规则，对 Cursor 而言成为一个
-   `.mdc` 文件，对 Copilot 而言成为仓库范围指令的一节，或者在harness没有原生规则面时成为支持树中的一个条目。
-4. **写入**原生文件——一份渲染出的单一配置、一个转换后的 cohort，或一棵从harness原生锚点引用的支持子树。
+3. **物化**——每个适配器读取相同的配置文件和相同的集合，然后将它们转译为各自工具的方言。像
+   `preferences.style` 这样的字段，在一个工具中成为原生配置值，在另一个中成为渲染出来的指令上下文；`rules[]` 中的一条规则，对 Cursor 而言成为一个
+   `.mdc` 文件，对 Copilot 而言成为仓库范围指令的一节，或者在工具没有原生规则面时成为支持树中的一个条目。
+4. **写入**原生文件——一份渲染出的单一配置、一个转换后的集合，或一棵从工具原生锚点引用的支持子树。
 
-同一份配置文件驱动每个harness，因此各物化结果在意图上不会彼此矛盾。harness不支持（或仍处于待发现状态）的能力单元，会在任何写入之前以结构化警告的形式浮现，而不是被臆造进一个并不存在的供应商面。这正是“一次编辑、惠及多个harness”这一保证得以成真的原因：配置文件只被编辑一次，而每个适配器都从这唯一的来源重新派生其原生文件。
+同一份配置文件驱动每个工具，因此各物化结果在意图上不会彼此矛盾。工具不支持（或仍处于待发现状态）的能力单元，会在任何写入之前以结构化警告的形式浮现，而不是被臆造进一个并不存在的供应商面。这正是“一次编辑、惠及多个工具”这一保证得以成真的原因：配置文件只被编辑一次，而每个适配器都从这唯一的来源重新派生其原生文件。

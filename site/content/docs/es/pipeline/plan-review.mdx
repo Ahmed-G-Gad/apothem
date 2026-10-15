@@ -7,7 +7,7 @@ sourceHash: "99e28c1ca30d0b73"
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Auditor
-**Posición en el pipeline:** intermedia
+**Posición en la canalización:** intermedia
 
 Auditoría forense de una suite de plan existente — fidelidad de la prosa, consistencia, calidad.
 
@@ -42,7 +42,7 @@ El comando ejecuta una auditoría forense, a ciegas y línea por línea, y luego
 1. **Cargar contexto** — Lee cada archivo de la suite de plan (`phases/**/PHASE.md`, archivos de infraestructura, informes) y el Manifiesto de Traspaso aguas arriba; rechaza con `Blocked: run /plan-generate first` cuando la suite está ausente.
 2. **Auditar** — Recorre las dimensiones (fidelidad de la prosa, consistencia interna, completitud, calidad, riesgo, estándares, dominio, arquitectura, calidad creativa) bajo el Mandato de Revisión a Ciegas.
 3. **Clasificar hallazgos** — Dispone de cada hallazgo (aceptar · revisar · rechazar · diferir) a través del canal de consulta estructurada con recuentos de gravedad por hallazgo.
-4. **Ejecutar la compuerta de pre-emisión** — Ejecuta la compuerta de quince barras frente al informe de revisión y las tarjetas de puntuación actualizadas; el fallo bloquea la promoción.
+4. **Ejecutar la puerta de pre-emisión** — Ejecuta la puerta de quince barras frente al informe de revisión y las tarjetas de puntuación actualizadas; el fallo bloquea la promoción.
 5. **Emitir la revisión** — Escribe las Tarjetas de puntuación de revisión en `PLAN-NOTES.md`, el Resumen de revisión en `PROGRESS.md` y el Manifiesto de Traspaso aumentado.
 
 ## Modos de fallo
@@ -65,5 +65,5 @@ El comando ejecuta una auditoría forense, a ciegas y línea por línea, y luego
 
 ## Referencias cruzadas
 
-- [Visión general del pipeline](/docs/pipeline)
+- [Visión general de la canalización](/docs/pipeline)
 - [Referencia de comandos](/docs/reference/commands)

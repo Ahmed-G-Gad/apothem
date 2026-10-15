@@ -6,7 +6,7 @@ sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonisches Register der Artefakt-Kohorten.** Dieses Dokument trägt die vollständigen Aufzählungen von Commands, Regeln, delegierten Workern, Hooks, Skills, Output-Styles, der Disziplin der Artefaktevolution und den Deklarationen leerer Artefaktklassen; die substanziellen Tabellen leben hier. Das Quell-Layout des Projekts liefert die verdichtete, stets geladene Ansicht.
+> **Kanonische Registry der Artefakt-Kohorten.** Dieses Dokument trägt die vollständigen Aufzählungen von Commands, Regeln, delegierten Workern, Hooks, Skills, Output-Styles, der Disziplin der Artefaktevolution und den Deklarationen leerer Artefaktklassen; die substanziellen Tabellen leben hier. Das Quell-Layout des Projekts liefert die verdichtete, stets geladene Ansicht.
 
 ## 1. Commands
 
@@ -20,7 +20,7 @@ Dreißig Commands werden aus `src/apothem/commands/*.md` registriert (nicht reku
 | `/code-review` | `src/apothem/commands/code-review.md` | Code-Qualitäts-Review pro Datei über `src/`, `scripts/` und `tools/` mit Befunden pro Datei |
 | `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | Audit pro Abhängigkeit (direkt + transitiv) über die Manifest-Dateien des Repositorys |
 | `/docs-review` | `src/apothem/commands/docs-review.md` | Dokumentations-Review jeder Markdown-Seite unter der Host-Docs-Oberfläche |
-| `/elevate` | `src/apothem/commands/elevate.md` | Hebt jede Projekt-Oberfläche über unabhängige Kritik-Worker auf den aktuellen SOTA-Stand und übergibt dann an `/freshify` |
+| `/elevate` | `src/apothem/commands/elevate.md` | Hebt jede Projekt-Oberfläche über unabhängige Kritik-Agenten auf den aktuellen SOTA-Stand und übergibt dann an `/freshify` |
 | `/eval` | `src/apothem/commands/eval.md` | Modellagnostische Evaluationskampagne für Sprachmodelle, aufgebaut auf dem Eval-Harness-Skill |
 | `/freshify` | `src/apothem/commands/freshify.md` | Macht ein Projekt frisch, spurenfrei und produktionsreif; jeder destruktive Schritt ist bestätigungsgesteuert |
 | `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | GitHub-Spezialisierung von `/freshify`, die einen einzigen frischen Erstversions-Release auf `origin/main` erzeugt |
@@ -45,7 +45,7 @@ Die Plan-Pipeline wird als acht erstklassige Commands ausgeliefert — einer pro
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Forensisches Audit einer bestehenden Suite — Prosatreue, interne Konsistenz, Lückenanalyse — verfeinert über interaktive Q&A |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Erzeugt ein Architektur-Design-Artefakt unter `_inputs/design.md` der Suite, validiert durch das fünfzehnbalkige Pre-Emission-Gate vor der Promotion |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | Audit und Remediation im geschlossenen Kreislauf über den vollständigen Zyklus Spec → Generate → Review, in Schleife bis null Befunde verbleiben oder eine Iterationsobergrenze mit definiertem Rückzug erreicht ist |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Führt eine Phase mit Konformitätsprüfung und Qualitäts-Gates aus — Standard-Aufwand `medium`, pro Phase überschreibbar über ein `effort:`-Feld in der `PHASE.md`-Frontmatter; hält standardmäßig an jeder Phasengrenze an, wobei `--no-pause` (oder das Profil-Flag `enforcement.continuous_execution`) das kontinuierliche Vorrücken von Phase zu Phase aktiviert |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Führt eine Phase mit Konformitätsprüfung und Qualitätstoren aus — Standard-Aufwand `medium`, pro Phase überschreibbar über ein `effort:`-Feld in der `PHASE.md`-Frontmatter; hält standardmäßig an jeder Phasengrenze an, wobei `--no-pause` (oder das Profil-Flag `enforcement.continuous_execution`) das kontinuierliche Vorrücken von Phase zu Phase aktiviert |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Schreibgeschützter Fortschrittsbericht gegen die Dimensionen Aufgabe, Phase und Artefakt |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | Ergänzt, erweitert, verfeinert oder revidiert eine bestehende Suite, ohne zuvor getroffene Entscheidungen zu zerstören; leitet nur die betroffenen nachgelagerten Artefakte neu ab |
 
@@ -55,9 +55,9 @@ Drei Commands treten in eine tiefe Prozedur ein, statt eigene Stage-Logik zu tra
 
 | Command | Datei | Beschreibung |
 | ------- | ---- | ----------- |
-| `/workflow` | `src/apothem/commands/workflow.md` | Allzweck-Einstiegspunkt zur Workflow-Steuerung (`/goal <<mission>>`): treibt genuin unabhängige, dynamische Multi-Worker-Workflows unter benannten Return-Verträgen, Verifikation per Widerlegung-by-Default vor dem Überleben eines Befunds, über die Mission hinausgehende Remediation, offengelegt im Änderungs-Ledger, und deterministische Ausgabe; Multi-Worker-Dispatch und Auto-Ausführung sind opt-in / bestätigungsgesteuert. Gestützt durch den `workflow`-Skill |
+| `/workflow` | `src/apothem/commands/workflow.md` | Allzweck-Einstiegspunkt zur Workflow-Steuerung (`/goal <<mission>>`): treibt genuin unabhängige, dynamische Multi-Agenten-Workflows unter benannten Return-Verträgen, Verifikation per Widerlegung-by-Default vor dem Überleben eines Befunds, über die Mission hinausgehende Remediation, offengelegt im Änderungs-Ledger, und deterministische Ausgabe; Multi-Worker-Dispatch und Auto-Ausführung sind opt-in / bestätigungsgesteuert. Gestützt durch den `workflow`-Skill |
 | `/projectify` | `src/apothem/commands/projectify.md` | Elevation eines Chat-App-Projekts: verfasst die Deliverables Description / Instruction / knowledge-Files für ein Claude Project, Custom GPT oder Gem zu aktuellen SOTA-Konventionen, innerhalb eines messbaren Kontextbudgets pro Plattform; deterministische Ausgabe, opt-in Autonomie. Gestützt durch den `projectify`-Skill |
-| `/plan` | `src/apothem/commands/plan.md` | Schlanker Orchestrator, der die erstklassigen Plan-Stages verkettet (`plan-spec → plan-generate → plan-review → plan-design (bedingt) → plan-execute`) und jede aus dem Handoff-Manifest der vorherigen Stage fortsetzt; trägt keine Stage-Logik — die Verkettung ist opt-in / bestätigungsgesteuert (`--auto` verkettet kontinuierlich) |
+| `/plan` | `src/apothem/commands/plan.md` | Schlanker Orchestrator, der die erstklassigen Plan-Stages verkettet (`plan-spec → plan-generate → plan-review → plan-design (bedingt) → plan-execute`) und jede aus dem Übergabe-Manifest der vorherigen Stage fortsetzt; trägt keine Stage-Logik — die Verkettung ist opt-in / bestätigungsgesteuert (`--auto` verkettet kontinuierlich) |
 
 ## 2. Regeln
 
@@ -139,7 +139,7 @@ Wiederverwendbare Skills leben unter `src/apothem/skills/`, einen Ordner pro Ski
 | Surgical Guard | `src/apothem/skills/surgical-guard/` | Ja | Minimal-Diff-, ankergebundenes Editieren, gepaart mit einem reaktiven, diff-basierten Post-Edit-Qualitäts-Guard |
 | Test Authoring | `src/apothem/skills/test-authoring/` | Ja | Verhaltensorientierte Testerstellung mit Arrange-Act-Assert-Disziplin |
 | Vuln Triage | `src/apothem/skills/vuln-triage/` | Ja | Schweregrad-klassifiziert Sicherheitshinweise und leitet die Remediation weiter |
-| Workflow | `src/apothem/skills/workflow/` | Ja | Allzweck-Multi-Worker-Workflow-Steuerung mit adversarischer Widerlegung-by-Default-Verifikation und offengelegter, über die Mission hinausgehender Remediation |
+| Workflow | `src/apothem/skills/workflow/` | Ja | Allzweck-Multi-Agenten-Workflow-Steuerung mit adversarischer Widerlegung-by-Default-Verifikation und offengelegter, über die Mission hinausgehender Remediation |
 
 > **Konvention.** Der **Pfad** jeder Zeile ist ein Ordner; der Einstiegspunkt ist die Datei `SKILL.md` darin — z. B. `src/apothem/skills/plan-suite/SKILL.md` — gemäß der Ordner-mit-`SKILL.md`-Skill-Konvention, deklariert im Quell-Layout des Projekts.
 

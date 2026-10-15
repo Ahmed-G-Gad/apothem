@@ -1,6 +1,6 @@
 ---
 title: "Redigir planos"
-description: "Redija suítes de plano com o pipeline /plan."
+description: "Redija suítes de planejamento com o pipeline /plan."
 machineTranslated: true
 sourceHash: "b426b7f278207ec2"
 ---
@@ -13,7 +13,7 @@ O pipeline `/plan` transforma requisitos em prosa bruta em planos de implementa�
 O pipeline é entregue como oito comandos `/plan-<stage>` de primeira classe. O fluxo cotidiano executa cinco deles:
 
 1. `/plan-spec` — Refina a prosa em um `_spec/spec.md` com qualidade de especificação
-2. `/plan-generate` — Gera o esqueleto completo da suíte de plano
+2. `/plan-generate` — Gera o esqueleto completo da suíte de planejamento
 3. `/plan-review` — Auditoria forense do plano gerado
 4. `/plan-execute` — Executa as fases uma de cada vez
 5. `/plan-status` — Inspeciona o progresso a qualquer momento
@@ -27,7 +27,7 @@ Três etapas completam o conjunto: `/plan-design` emite um artefato de design ar
 /plan-spec --quick my-feature
 ```
 
-## Suíte de plano completa
+## Suíte de planejamento completa
 
 ```bash
 # Step 1 — write your requirements to prose.md, then:

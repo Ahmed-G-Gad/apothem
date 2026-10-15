@@ -1,23 +1,23 @@
 ---
 title: "アーキテクチャ"
-description: "Apothem のアーキテクチャ概要——共有プロファイル、環境アダプター抽象、そしてソースツリーの構成方法。"
+description: "Apothem のアーキテクチャ概要——共有プロファイル、ハーネスアダプター抽象、そしてソースツリーの構成方法。"
 machineTranslated: true
 sourceHash: "66ba79aa992abb62"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem は 1 つの考え方を中心に構築されています。すなわち、単一の共有ガバナンス
-プロファイルを、環境ごとのアダプターによって各環境ランタイムの
-ネイティブな設定形式へ物化する、という考え方です。本セクションでは
+プロファイルを、ハーネスごとのアダプターによって各ハーネスランタイムの
+ネイティブな設定形式へマテリアライズする、という考え方です。本セクションでは
 構造的な構成要素——アダプタープロトコル、プロファイルスキーマ、ソースツリー
 レイアウト、そしてそれらを結びつけるインストールワークフロー——を解説します。
 
 ## システム概要
 
 ひと目で言えば、Apothem は 1 つのパイプラインです。単一の共有プロファイルが
-環境レジストリに渡され、レジストリが環境ごとのアダプターをすべて解決します。
-各アダプターはその環境のネイティブな設定面を物化し、常時稼働する適合性ゲートが
-物化されたすべての面を検査します。
+ハーネスレジストリに渡され、レジストリがハーネスごとのアダプターをすべて解決します。
+各アダプターはそのハーネスのネイティブな設定面をマテリアライズし、常時稼働するコンフォーミティゲートが
+マテリアライズされたすべての面を検査します。
 
 ```mermaid
 %% provenance: hand-authored %%
@@ -42,7 +42,7 @@ flowchart TD
 
 | ページ | 説明 |
 |------|-------------|
-| [環境アダプター抽象](/docs/architecture/harness-adapter-abstraction) | `HarnessAdapter` プロトコル——アダプターが共有プロファイルをプラットフォーム固有の設定へどのように変換するか。 |
+| [ハーネスアダプター抽象](/docs/architecture/harness-adapter-abstraction) | `HarnessAdapter` プロトコル——アダプターが共有プロファイルをプラットフォーム固有の設定へどのように変換するか。 |
 | [共有プロファイルスキーマ](/docs/architecture/shared-profile-schema) | `~/.config/apothem/profile.yaml` または `--profile PATH` にあるスキーマで裏付けられた YAML プロファイル。 |
 | [ソースレイアウト](/docs/architecture/source-layout) | Apothem が `src/` レイアウトを使う理由と、ツリーの構成方法。 |
 | [インストールワークフロー](/docs/architecture/installation-workflow) | `apothem install`、`update`、`uninstall` がエンドツーエンドでどのように動作するか。 |

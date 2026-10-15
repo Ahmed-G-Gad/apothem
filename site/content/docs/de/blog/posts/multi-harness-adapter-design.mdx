@@ -63,7 +63,7 @@ Profil benötigt, bevor es den Harness erreicht.
 ### Klasse I — Rohpropagierung
 
 Der Harness konsumiert dieselben Artefakte, die Apothem bereits schreibt —
-flache `.md`-Regeln, Agents, Hooks — ohne Rendering-Schritt. Der Adapter kopiert
+flache `.md`-Regeln, Agenten, Hooks — ohne Rendering-Schritt. Der Adapter kopiert
 die Roh-Templates in den Konfigurationsbaum des Harness. Es gibt kein
 `materializer.py`, weil nichts gerendert wird; die Artefakte des Profils sind
 die Ausgabe.
@@ -90,7 +90,7 @@ behandelt sie im Detail.
 ## claude-code: der Referenzadapter für die volle Oberfläche
 
 Der claude-code-Adapter ist die Referenzimplementierung für die breiteste
-Konfigurationsoberfläche — Regeln, Agents, Hooks, Output-Styles, Einstellungen
+Konfigurationsoberfläche — Regeln, Agenten, Hooks, Output-Styles, Einstellungen
 und Konventionsverzeichnisse. Er gehört zur Klasse II-A: Er propagiert Apothems
 Roh-Templates und flacht die Konventionsverzeichnisse ab und liefert
 Anbieter-Einstellungs-Templates unter

@@ -12,7 +12,7 @@ Apothem 把这一点反转过来。对于长时间运行的多步骤工作，它
 
 ## 核心理念
 
-位于 `<project-root>/.apothem/plans/{suite}/` 的规划套件承载着两样东西，使一次会话变得可替换：
+位于 `<project-root>/.apothem/plans/{suite}/` 的计划套件承载着两样东西，使一次会话变得可替换：
 
 - **恢复契约。** `PROGRESS.md` 记录当前阶段与任务状态、精确的下一步动作、生效的约定、已经解决的决策，以及下一次会话必须读取的确切文件。
 - **冷启动协议。** 新会话以固定顺序读取这些文件，并在做任何工作之前重新建立起完整的全貌——无需对话历史。
@@ -51,7 +51,7 @@ flowchart TD
 
 | 产物 | 位置 | 承载内容 |
 |----------|----------|-------|
-| 规划套件 | `<project-root>/.apothem/plans/{suite}/` | 进行中工作的一个自洽单元 |
+| 计划套件 | `<project-root>/.apothem/plans/{suite}/` | 进行中工作的一个自洽单元 |
 | 恢复契约 | `<suite>/PROGRESS.md` | 阶段/任务状态、下一步动作、约定、关键文件清单 |
 | 决策台账 | `<suite>/PLAN-NOTES.md` | 已解决的决策，永不重复询问 |
 | 各阶段工作 | `<suite>/phases/NN-topic/` | 该阶段的任务及其报告 |
@@ -61,7 +61,7 @@ flowchart TD
 ## 相关
 
 - **[严肃度层级](/docs/concepts/seriousness-tiers)**——治理与状态外化的纪律如何随参与程度伸缩。
-- **[命令流水线](/docs/pipeline)**——创建并推进规划套件的 `/plan` 各个阶段。
+- **[命令流水线](/docs/pipeline)**——创建并推进计划套件的 `/plan` 各个阶段。
 
 ## Recommended Next Step
 

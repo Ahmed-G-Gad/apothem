@@ -43,20 +43,20 @@ sourceHash: "742e318ae876739a"
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | 自由形式の散文を仕様グレードの `_spec/spec.md` に洗練する。すべての未解決の問いは、暗黙のデフォルト化ではなく構造化インクワイアリチャネルを経由する。`--quick` は `<project-root>/.apothem/plans/` 配下に単一の軽量プランファイルを書き出す（`.plans/` は引き続きサポートされる後方互換フォールバックです） |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | 作成済みの散文／要件から完全なマスタープランスイートを生成 |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | 既存スイートのフォレンジック監査——散文への忠実度、内部整合性、ギャップ分析——を対話型 Q&A で洗練 |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | スイートの `_inputs/design.md` にアーキテクチャ設計アーティファクトを生成し、プロモーション前に 15 バーのプリエミッションゲートで検証 |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | スイートの `_inputs/design.md` にアーキテクチャ設計アーティファクトを生成し、プロモーション前に 15 バーの事前出力ゲートで検証 |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | spec → generate → review の完全なサイクルにわたる閉ループの監査と是正を行い、所見がゼロになるか、定義された撤退を伴う反復上限に達するまでループする |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | 適合性チェックと品質ゲート付きでフェーズを実行する——既定の労力は `medium`、`PHASE.md` フロントマターの `effort:` フィールドでフェーズごとに上書き可能。既定では各フェーズ境界で停止し、`--no-pause`（またはプロファイルの `enforcement.continuous_execution` フラグ）で連続的なフェーズ間の前進を有効にする |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | コンフォーミティチェックと品質ゲート付きでフェーズを実行する——既定の労力は `medium`、`PHASE.md` フロントマターの `effort:` フィールドでフェーズごとに上書き可能。既定では各フェーズ境界で停止し、`--no-pause`（またはプロファイルの `enforcement.continuous_execution` フラグ）で連続的なフェーズ間の前進を有効にする |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | タスク、フェーズ、アーティファクトの各次元に対する読み取り専用の進捗レポート |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | 既存スイートを、過去に解決された決定を破壊することなく補正・拡張・洗練・撤回する。影響を受ける下流のアーティファクトのみを再導出する |
 
 ### オペレーターワークフロー＆オーケストレーターのコマンド
 
-3 つのコマンドは、それ自体のステージロジックを持つのではなく深いプロシージャに入ります：2 つのオペレーターワークフローのエントリポイント（それぞれ同名の兄弟スキルに支えられる）に加えて、薄いプランパイプラインオーケストレーター。
+3 つのコマンドは、それ自体のステージロジックを持つのではなく深いプロシージャに入ります：2 つのオペレーターワークフローのエントリーポイント（それぞれ同名の兄弟スキルに支えられる）に加えて、薄いプランパイプラインオーケストレーター。
 
 | コマンド | ファイル | 説明 |
 | ------- | ---- | ----------- |
-| `/workflow` | `src/apothem/commands/workflow.md` | 汎用のワークフローハーネシングのエントリポイント（`/goal <<mission>>`）：真に独立したマルチワーカーの動的ワークフローを、名前付きリターン契約、所見が生き残る前の既定で反証する検証、変更台帳に開示されたミッションを超えた是正、決定論的な出力のもとで駆動する。マルチワーカーのディスパッチと自動実行はオプトイン／確認ゲート付き。`workflow` スキルに支えられる |
-| `/projectify` | `src/apothem/commands/projectify.md` | チャットアプリのプロジェクト引き上げ：Claude Project、Custom GPT、または Gem のために、Description／Instruction／knowledge-Files のデリバラブルを現行の SOTA 規約へ、プラットフォームごとの測定可能なコンテキスト予算内で作成する。決定論的な出力、オプトインの自律性。`projectify` スキルに支えられる |
+| `/workflow` | `src/apothem/commands/workflow.md` | 汎用のワークフローハーネシングのエントリーポイント（`/goal <<mission>>`）：真に独立したマルチワーカーの動的ワークフローを、名前付きリターン契約、所見が生き残る前の既定で反証する検証、変更台帳に開示されたミッションを超えた是正、決定的な出力のもとで駆動する。マルチワーカーのディスパッチと自動実行はオプトイン／確認ゲート付き。`workflow` スキルに支えられる |
+| `/projectify` | `src/apothem/commands/projectify.md` | チャットアプリのプロジェクト引き上げ：Claude Project、Custom GPT、または Gem のために、Description／Instruction／knowledge-Files のデリバラブルを現行の SOTA 規約へ、プラットフォームごとの測定可能なコンテキスト予算内で作成する。決定的な出力、オプトインの自律性。`projectify` スキルに支えられる |
 | `/plan` | `src/apothem/commands/plan.md` | 第一級のプランステージを連鎖させる薄いオーケストレーター（`plan-spec → plan-generate → plan-review → plan-design（条件付き）→ plan-execute`）で、各ステージを前ステージの Handoff Manifest から再開する。ステージロジックは持たない——連鎖はオプトイン／確認ゲート付き（`--auto` は連続的に連鎖する） |
 
 ## 2. ルール
@@ -125,7 +125,7 @@ Notification      —                        10s      Accepted by src/apothem/ho
 | Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | はい | Changelog をレビュー済みで、ピン留めされ、ゲートで検証された依存関係のアップグレード |
 | Dev Toolkit | `src/apothem/skills/dev-toolkit/` | はい | 規律ある工学ループ——構造化デバッグ、test-first の Red-Green-Refactor、垂直スライス分解、要件からイシューへの分解 |
 | Diagram Authoring | `src/apothem/skills/diagram-authoring/` | はい | 宣言的な図とデータ可視化のための Author → Validate → Render → Export パイプライン（SVG／PNG／PDF） |
-| Document Authoring | `src/apothem/skills/document-authoring/` | はい | 承認ゲート付きの長文ドキュメント作成（Outline → Draft → Review）、検証済み引用と決定論的な組版コンパイルつき |
+| Document Authoring | `src/apothem/skills/document-authoring/` | はい | 承認ゲート付きの長文ドキュメント作成（Outline → Draft → Review）、検証済み引用と決定的な組版コンパイルつき |
 | Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | はい | Apothem 構成ツリーのブラインド監査 |
 | Eval Harness | `src/apothem/skills/eval-harness/` | はい | 明示的な合格基準を伴う再現可能な言語モデル評価ハーネス |
 | Incident Runbook | `src/apothem/skills/incident-runbook/` | はい | Trigger → Diagnosis → Action → Verification → Rollback としてのランブック作成 |
@@ -141,7 +141,7 @@ Notification      —                        10s      Accepted by src/apothem/ho
 | Vuln Triage | `src/apothem/skills/vuln-triage/` | はい | セキュリティアドバイザリを深刻度で分類し、是正をルーティング |
 | Workflow | `src/apothem/skills/workflow/` | はい | 敵対的な既定で反証する検証と、開示されたミッションを超えた是正を伴う、汎用のマルチワーカーワークフローハーネシング |
 
-> **規約。** 各行の **パス** はフォルダです。エントリポイントはその中の `SKILL.md` ファイル——例：`src/apothem/skills/plan-suite/SKILL.md`——で、プロジェクトのソースレイアウトで宣言されたフォルダ-with-`SKILL.md` スキル規約に従います。
+> **規約。** 各行の **パス** はフォルダです。エントリーポイントはその中の `SKILL.md` ファイル——例：`src/apothem/skills/plan-suite/SKILL.md`——で、プロジェクトのソースレイアウトで宣言されたフォルダ-with-`SKILL.md` スキル規約に従います。
 
 ## 6. 出力スタイル
 

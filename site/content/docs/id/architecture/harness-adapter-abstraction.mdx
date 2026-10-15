@@ -26,7 +26,7 @@ Pola adapter membalikkan hal itu. Inti hanya mengetahui protokol `HarnessAdapter
 — sebuah kontrak kecil berisi metode siklus-hidup. Dialek setiap harness hidup di
 dalam satu subpaket mandiri yang mengimplementasikan kontrak tersebut. Inti
 meminta sebuah adapter untuk *memasang* tanpa mengetahui apakah itu berarti
-merender berkas JSON, menulis direktori aturan, atau meletakkan pohon dukungan.
+merender berkas JSON, menulis direktori aturan, atau meletakkan pohon pendukung.
 Harness baru bergabung dengan memenuhi protokol dan menambahkan entri
 `HARNESS_REGISTRY` di `src/apothem/lib/harness_registry_data.py` (dengan menaikkan
 `SUPPORTED_HARNESS_COUNT` di sana), mencerminkannya pada entry point
@@ -42,10 +42,10 @@ Adapter terbagi menjadi dua bentuk materialisasi, keduanya terlihat di registri:
 - **Perender berkas-tunggal** menerjemahkan bidang profil menjadi satu berkas
   konfigurasi native-harness. Adapter OpenCode, misalnya, merender berkas
   konfigurasi native-nya dari profil bersama melalui sebuah materializer.
-- **Adapter permukaan-aturan dan pohon-dukungan** menyebarkan kohor muatan Apothem
+- **Adapter permukaan-aturan dan pohon-pendukung** menyebarkan kohor muatan Apothem
   ke lokasi aturan yang didokumentasikan oleh harness, mengonversi kohor ke
-  format native di tempat format itu ada dan memarkir sisanya di bawah subpohon
-  dukungan milik Apothem yang dirujuk dari jangkar native. Adapter Cursor menulis
+  format native di tempat format itu ada dan memarkir sisanya di bawah pohon
+  pendukung milik Apothem yang dirujuk dari jangkar native. Adapter Cursor menulis
   satu `.cursor/rules/apothem-rules.mdc` ke akar proyek yang disuplai dan hanya
   mengirimkan permukaan aturan. Adapter Claude Code tidak merender
   `settings.json` dari profil. Ia menyalin templat pengaturan yang dibundel ke
@@ -118,9 +118,9 @@ Adapter lingkup-proyek dapat secara tambahan menerima `project: Path | None` pad
 metode siklus-hidup dan mengekspos `resolve_output_path(project)`. CLI hanya
 meneruskan `--project PATH` ke adapter yang tanda tangan metodenya menerimanya.
 
-## Pendaftaran titik masuk
+## Pendaftaran entry point
 
-Adapter mendaftar melalui grup titik-masuk setuptools `apothem.harnesses`:
+Adapter mendaftar melalui grup entry-point setuptools `apothem.harnesses`:
 
 ```toml
 [project.entry-points."apothem.harnesses"]
@@ -128,7 +128,7 @@ cursor = "apothem.harnesses.cursor:CursorAdapter"
 ```
 
 Registri pusat di `src/apothem/lib/harness_registry.py` mencatat tujuh belas ID
-publik yang persis, titik masuk, jalur dokumentasi, jalur target, persyaratan
+publik yang persis, entry point, jalur dokumentasi, jalur target, persyaratan
 data-paket, status kapabilitas, dan jalur pin konvensi standar. CLI memuat adapter
 melalui registri itu alih-alih menemukan kembali fakta produk di setiap perintah.
 

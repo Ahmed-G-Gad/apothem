@@ -38,11 +38,11 @@ fiches de score de revue PASS issues de `/plan-review`.
 ## Sorties
 
 `_inputs/design.md` ainsi qu'un `_inputs/handoff-manifest.yml` augmenté portant le
-chemin de l'artefact de conception, le résultat de la porte de conception, le
+chemin de l'artefact de conception, le résultat du portail de conception, le
 résultat de couverture sur sept axes et le résumé de la Matrice de Liaison
 Bidirectionnelle.
 
-## Porte d'applicabilité
+## Portail d'applicabilité
 
 Exécutez `/plan-design` lorsqu'au moins une phase aval déclare ou implique :
 
@@ -78,7 +78,7 @@ par `/plan-design`.
 La commande suit six phases de transformation spécifiques à l'architecture :
 
 1. **Ingestion des entrées** — Lit la suite revue, les fiches de score, les
-   sorties de phase et le manifeste de passation ; bloque sur une preuve de revue
+   sorties de phase et le manifeste de transfert ; bloque sur une preuve de revue
    absente ou en échec à SHARED+.
 2. **Décomposition architecturale** — Parcourt Architecture, Concurrence,
    Performance, Sécurité, Tests, Tooling et Observabilité ; identifie les
@@ -93,7 +93,7 @@ La commande suit six phases de transformation spécifiques à l'architecture :
 5. **Émission de l'artefact de conception** — Écrit `_inputs/design.md` avec des
    sections de composants, des diagrammes, des registres de décisions, le
    résultat de validation et les liaisons.
-6. **Porte de validation de la conception** — Exécute la porte de pré-émission à
+6. **Portail de validation de la conception** — Exécute le portail de pré-émission à
    quinze barreaux ; met à jour `_inputs/handoff-manifest.yml` seulement après que
    la conception réussit.
 
@@ -108,7 +108,7 @@ Le `_inputs/design.md` émis contient :
   où la structure serait autrement ambiguë.
 - Des registres de décisions architecturales arrêtées avec alternatives,
   compromis et notes de réversibilité.
-- Le résultat de la porte de validation et la Matrice de Liaison Bidirectionnelle
+- Le résultat du portail de validation et la Matrice de Liaison Bidirectionnelle
   le cas échéant.
 - Les propres liaisons à cinq directions de l'artefact vers les surfaces de
   planification amont et aval.
@@ -118,8 +118,8 @@ Le `_inputs/design.md` émis contient :
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase amont |
-| Porte qualité FAIL | La sortie ne respecte pas les standards | Corrigez la sortie et relancez |
-| Suite revue manquante | Suite de planification ou fiches de revue absentes | Exécutez `/plan-generate`, puis `/plan-review` |
+| Portail de qualité FAIL | La sortie ne respecte pas les standards | Corrigez la sortie et relancez |
+| Suite revue manquante | Suite de planification ou fiches de score absentes | Exécutez `/plan-generate`, puis `/plan-review` |
 | Suite non-architecturale | Aucune phase n'a besoin d'une surface de traçage architectural | Enregistrez l'évitement et continuez vers `/plan-execute` |
 | La revue d'architecture bloque | `_inputs/design.md` absent pour une implémentation porteuse d'architecture | Exécutez `/plan-design`, puis relancez `/architecture-review` |
 

@@ -1,12 +1,12 @@
 ---
-title: "Registry des Vor-Emissions-Gates — Verpflichtende Fünfzehn-Balken-Prüfung"
+title: "Registry des Pre-Emission-Gates — Verpflichtende fünfzehnstufige Prüfung"
 description: "Verpflichtende fünfzehnstufige Konformitätsprüfung vor der Emission von bedeutsamem Umfang, mit Zuordnungen von Fehlschlag zu Maßnahme und dem Schema des Gate-Ergebnisses."
 machineTranslated: true
 sourceHash: "69b0b6994504621b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonisches Register des fünfzehnstufigen Pre-Emission-Gates.** Dieses Dokument enthält die vollständige Tabelle der fünfzehn Stufen und den YAML-Block des Gate-Ergebnis-Schemas; die substanzielle Tabelle und das Schema werden hier geführt und durch `src/apothem/rules/pre-emission-gate.md` operationalisiert.
+> **Kanonische Registry des fünfzehnstufigen Pre-Emission-Gates.** Dieses Dokument enthält die vollständige Tabelle der fünfzehn Stufen und den YAML-Block des Gate-Ergebnis-Schemas; die substanzielle Tabelle und das Schema werden hier geführt und durch `src/apothem/rules/pre-emission-gate.md` operationalisiert.
 
 Vor jeder Artefaktemission von bedeutsamem Umfang (gemäß der Schwelle zwischen trivial und nicht trivial in `site/content/docs/governance/outward-conformity-registry.mdx` §1) führe das fünfzehnstufige Pre-Emission-Gate aus. Mechanisiere es über PreToolUse-Hooks, wo möglich (die mechanischen Greps in `src/apothem/conformity/*-grep.py`, orchestriert von `src/apothem/conformity/gate.py`); urteile dort, wo sich das nicht mechanisieren lässt. **Das Scheitern einer einzelnen Stufe blockiert die Emission; überarbeite, bis jede Stufe besteht; emittiere mit festgehaltenem Gate-Ergebnis.**
 
