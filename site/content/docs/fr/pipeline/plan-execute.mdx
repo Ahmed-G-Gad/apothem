@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — Exécute une phase précise d'une Suite de Plan Maître avec vérification de conformité."
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ Fichiers REPORT.md par phase, artefacts de la base de code, COMPLETION.md
 
 ## En aval
 
-`/code-review` — le point d'entrée canonique de la séquence de forteresse d'audit à onze commandes. `/plan-execute` est l'étape terminale du pipeline de *plan* ; lorsque la phase finale s'achève, le code construit passe à la forteresse d'audit pour relecture.
+`/fortress` durcit le travail exécuté jusqu'à un état validé par les portails d'aptitude à la publication, en un seul appel (détection, vérification, remédiation, nouvel audit, portail). Par défaut, il marque une pause pour confirmation à la fin de chaque tour ; `--autonomous` exécute les tours sans pause. `/code-review` — le point d'entrée canonique de la séquence de revue d'audit à onze commandes, qui parcourt la chaîne une étape à la fois. `/plan-execute` est l'étape terminale du pipeline de *plan* ; lorsque la phase finale s'achève, le code construit passe à la forteresse d'audit pour relecture.
 
 ## Phases du flux de travail
 

@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Penjaga lingkar-tertutup pipeline /plan — membungkus spec → generate → review dan secara aktif memperbaiki temuan sampai suite menjadi keseluruhan yang ditinjau tanpa temuan."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Penjaga lingkar-tertutup pipeline `/plan`. Sementara `/plan-review` melaporkan d
 Dengan argumen:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## Masukan
@@ -33,7 +33,7 @@ Laporan persisten dan berbatas di `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md
 
 ## Posisi pipeline
 
-`/plan-audit` bersifat **ortogonal** terhadap pipeline linier, bukan sebuah tahap di dalamnya. Urutan linier kanonis adalah `/plan-spec → /plan-generate → /plan-review → /plan-design` (kondisional, hanya suite ber-arsitektur) `→ /plan-execute`. `/plan-audit` mencakup `/plan-spec → /plan-generate → /plan-review` sebagai satu pembungkus lingkar-tertutup yang dapat dipanggil di titik mana pun: ia memeriksa keadaan dan hanya menjalankan tahap yang hilang ketika suite yang dihasilkan sudah ada; tanpa suite yang dihasilkan, ia menolak dengan `Blocked: run /plan-generate first`. Ia berbeda dari rantai audit benteng (masuk di `/code-review`, terminal di `/threat-model-audit`), yang mengaudit basis kode yang dieksekusi alih-alih suite rencana.
+`/plan-audit` bersifat **ortogonal** terhadap pipeline linier, bukan sebuah tahap di dalamnya. Urutan linier kanonik adalah `/plan-spec → /plan-generate → /plan-review → /plan-design` (kondisional, hanya suite ber-arsitektur) `→ /plan-execute`. `/plan-audit` mencakup `/plan-spec → /plan-generate → /plan-review` sebagai satu pembungkus lingkar-tertutup yang dapat dipanggil di titik mana pun: ia memeriksa keadaan dan hanya menjalankan tahap yang hilang. Tanpa spesifikasi yang ditulis maupun suite yang dihasilkan, ia menolak dengan `Blocked: run /plan-spec first` (`--override` melewati gerbang dan mencatat pelewatan sebagai temuan di PLAN-NOTES.md, dengan alasan serta prasyarat yang hilang disebutkan). Ia berbeda dari urutan tinjauan audit (masuk di `/code-review`, terminal di `/threat-model-audit`), yang mengaudit basis kode yang sudah dieksekusi alih-alih suite rencana.
 
 ## Fase alur kerja
 
@@ -60,7 +60,7 @@ Laporan persisten dan berbatas di `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## Referensi silang

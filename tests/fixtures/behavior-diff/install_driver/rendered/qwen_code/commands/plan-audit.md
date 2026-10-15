@@ -18,11 +18,11 @@ You are the closed-loop guardian of the `/plan` pipeline. Where `/plan-review` r
 
 ## Sequence Gate
 
-`/plan-audit` wraps the upstream cycle and drives a suite to a zero-finding whole; it MUST NOT run without a suite to audit. Before Step 1, verify the predecessor precondition on disk:
+`/plan-audit` wraps the upstream cycle and drives a suite to a zero-finding whole; it MUST NOT run without a suite to audit. Before Step 1, verify the entry precondition on disk:
 
-- At least a generated suite is present — PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, and the per-phase folders under `phases/`.
+- An authored `_spec/spec.md` is present, or a generated suite is present (PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, and the per-phase folders under `phases/`).
 
-When no generated suite exists, the stage REFUSES to run and emits the single definitive line `Blocked: run /plan-generate first` — `/plan-generate` is the predecessor that produces the suite this command audits and remediates. The audit's own Step 3 runs missing upstream stages on a suite that *exists*; it does not bootstrap a suite from nothing.
+When neither is present, the stage REFUSES to run and emits the single definitive line `Blocked: run /plan-spec first` — `/plan-spec` is the entry stage that authors the `_spec/spec.md` this command audits and remediates. The audit's own Step 3 runs the missing upstream stages on a suite that *exists*, including a spec-only suite; it does not bootstrap a suite from nothing.
 
 An explicit `--override` flag bypasses this gate. When `--override` is used, the bypass MUST be recorded as a finding in the suite's PLAN-NOTES.md (and the suite's findings surface) with the rationale and the missing precondition named, so the out-of-order run is auditable.
 

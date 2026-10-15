@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — /plan 파이프라인의 폐루프 수호자 — spec → generate → review를 감싸며, 스위트가 검토된 무발견 전체가 될 때까지 발견을 능동적으로 교정합니다."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "6f82709e6c4d40fc"
 인자와 함께:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## 입력
@@ -33,7 +33,7 @@ sourceHash: "6f82709e6c4d40fc"
 
 ## 파이프라인 위치
 
-`/plan-audit`는 선형 파이프라인과 **직교**하며, 그 안의 한 단계가 아닙니다. 정규 선형 순서는 `/plan-spec → /plan-generate → /plan-review → /plan-design`(조건부, 아키텍처를 담은 스위트에만 해당) `→ /plan-execute`입니다. `/plan-audit`는 `/plan-spec → /plan-generate → /plan-review`를 하나의 폐루프 래퍼로 포괄하며, 어느 시점에서든 호출할 수 있습니다. 상태를 점검하고, 생성된 스위트가 있으면 누락된 단계만 실행합니다. 생성된 스위트가 없으면 `Blocked: run /plan-generate first`와 함께 실행을 거부합니다. 이 명령은 요새 감사 체인(`/code-review`에서 시작하여 `/threat-model-audit`에서 끝남)과 구별되며, 후자는 플랜 스위트가 아니라 실행된 코드베이스를 감사합니다.
+`/plan-audit`는 선형 파이프라인의 한 단계가 아니라 그와 **직교**합니다. 정규 선형 순서는 `/plan-spec → /plan-generate → /plan-review → /plan-design`(조건부이며 아키텍처를 담은 플랜 스위트에만 해당) `→ /plan-execute`입니다. `/plan-audit`는 `/plan-spec → /plan-generate → /plan-review`를 하나의 폐루프 래퍼로 포괄하며, 어느 시점에서든 호출할 수 있습니다. 상태를 점검하고 누락된 단계만 실행합니다. 작성된 스펙도 생성된 플랜 스위트도 없으면 `Blocked: run /plan-spec first`와 함께 실행을 거부합니다. `--override`는 이 게이트를 우회하며, 우회 사실을 근거와 누락된 전제 조건과 함께 PLAN-NOTES.md에 발견 사항으로 기록합니다. 이 명령은 감사 검토 시퀀스와 구별됩니다. 감사 검토 시퀀스는 `/code-review`에서 시작하여 `/threat-model-audit`에서 끝나며, 플랜 스위트가 아니라 실행된 코드베이스를 감사합니다.
 
 ## 워크플로 페이즈
 
@@ -60,7 +60,7 @@ sourceHash: "6f82709e6c4d40fc"
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## 상호 참조

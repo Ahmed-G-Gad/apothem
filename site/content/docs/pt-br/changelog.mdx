@@ -21,6 +21,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **`/plan-audit` runs on a suite that has only a spec.** Its Sequence Gate
+  required a generated suite, while its own steps delegate a missing suite to
+  `/plan-generate`. It now refuses only when neither an authored spec nor a
+  generated suite exists, and then points at `/plan-spec`. Its argument hint
+  and page no longer offer `--from`, `--remediate` and `--maintenance`, which
+  the command never defined; `--cap N` and `--dry-run` remain.
+- **The file-header check blocks.** It reported advisory findings until the
+  tracked tree had none. The last two files now carry the header, and the
+  injector smoke-test inputs, which stay header-less on purpose, are on the
+  exception list. Under `--strict`, as CI and the pre-commit hook run it, a
+  file without the SPDX header line now fails the run.
+
+### Fixed
+
+- **More documentation and metadata match the code.** The pipeline pages for
+  `/plan-audit`, `/plan-execute`, `/research-analysis`, `/research-paper`,
+  `/research-publish` and `/security-audit` now state the gates, outputs and
+  options their commands have. The CLI reference covers how `--harness all`
+  treats `exclude_harnesses`, every token prefix the MCP warning flags, what a
+  dry run reports, and that `--verbose` adds nothing to `doctor` and
+  `uninstall`. The Claude Code page warns which `~/.claude/` folders every
+  install removes and how to restore them. Pages on CI, the self-contained
+  runtime, the release cycle, uninstalling, troubleshooting and the deployment
+  checklist are corrected. In the code, the Claude Code and Kimi Code
+  capability notes, the compatibility matrix and the adapter-shape rule now
+  match what the adapters do.
+- **The header injector keeps line endings.** `scripts/inject-header.py
+  --mode fix-in-place` rewrote an LF file with CRLF line endings on Windows.
+  It now writes each file back with the line ending it had.
+
 ## [1.2.0] - 2026-10-15
 
 ### Added

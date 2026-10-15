@@ -2,7 +2,7 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,7 +86,7 @@ menyebutkan bidang profil yang bersangkutan:
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (spesifikasi MCP menyatakan HTTP+SSE usang) | Gunakan `streamable-http` ketika server mendukungnya. |
 | `mcp_plain_http` | URL `http://` ke host yang bukan loopback | Gunakan URL `https://`. |
-| `mcp_literal_credential` | nilai `headers` atau `env` yang berbentuk seperti token (`ghp_`, `github_pat_`, `sk-`, `xox*-`, atau `Bearer` dengan token panjang) | Simpan rahasia dalam variabel lingkungan dan tulis referensi bergaya `${GITHUB_TOKEN}`. |
+| `mcp_literal_credential` | nilai `headers` atau `env` yang berbentuk seperti token (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, atau `Bearer` dengan token panjang) | Simpan rahasia dalam variabel lingkungan dan tulis referensi bergaya `${GITHUB_TOKEN}`. |
 
 Pemberitahuan kredensial tidak pernah mencetak nilai yang ditemukannya. Nilai
 yang berisi referensi `${...}` tidak pernah ditandai.
@@ -116,14 +116,14 @@ membuang komentar, koma di akhir, dan sintaks JSON5. Oleh karena itu:
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter harness yang akan dipasang, atau `all` untuk himpunan selingkup registri (wajib). Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
+| `--harness NAME` | Adapter harness yang akan dipasang, atau `all` untuk himpunan selingkup registri (wajib). Dengan `all`, harness yang tercantum dalam `exclude_harnesses` pada profil dilewati, tetapi harness yang disebut secara eksplisit tetap dipasang meskipun tercantum. Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
 | `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mempratinjau pemasangan tanpa menulis berkas. |
 | `--clean`, `--fresh` | Awal bersih opt-in: mencadangkan dan menghapus keadaan pemasangan per-harness sebelumnya sebelum memasang. |
 | `--yes` | Melewati konfirmasi per target selama penghapusan awal bersih (wajib untuk eksekusi `--clean` non-interaktif). |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
-| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan alih-alih catatan terkelompok per harness. |
+| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan, alih-alih catatan per harness yang dikelompokkan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
 | `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
@@ -165,7 +165,15 @@ ditampilkan [`apothem diff`](/docs/cli-reference/diff):
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

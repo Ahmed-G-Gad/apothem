@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,6 +49,8 @@ Code에 도달합니다. OpenCode도 `~/.config/opencode/AGENTS.md`가 없으면
 변환합니다. 일치하는 기존 Apothem 관리 하위 항목은 교체 전에 백업되며, 관련 없는
 운영자 작성 항목은 보존됩니다. `settings.json`은 병합되므로 운영자가 작성한 키를
 계속 복구할 수 있습니다.
+
+운영자가 작성한 파일은 아래 폴더 바깥에만 보존됩니다. 설치와 업데이트를 실행할 때마다, Apothem이 기록했는지와 관계없이 `~/.claude/` 아래에 존재하는 다음 폴더 각각을 제거합니다: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/`, `commands/`. 또한 `statuslines/__init__.py`와, `agents/`, `rules/`, `skills/`, `statuslines/`, `output-styles/` 안의 `AGENTS.md` 파일을 제거합니다. 제거되는 폴더는 그 안에 넣어 둔 파일까지 포함해 통째로 사라집니다. `commands/`에 보관한 슬래시 명령도 제거되며, Apothem은 자체 명령 프롬프트를 `skills/` 아래에 스킬로 설치합니다. `hooks/`에 보관한 훅 스크립트는 제거되므로, 이를 호출하는 `settings.json` 항목은 아무것도 가리키지 않게 됩니다. 이 정리(스위프)는 설치가 자체 파일을 쓰기 전에 실행됩니다. 제거되는 각 경로는 먼저 `~/.apothem/backups/`로 복사되며, 설치 기록에 그 복사본이 명시됩니다. 제거(uninstall)는 이를 복원하지 않습니다. 제거된 경로를 복원하려면, 그 경로를 제거한 설치에 대해 [롤백 참조](/docs/cli-reference/rollback)에 설명된 대로 `apothem rollback --harness claude-code --install-id ID`를 실행하세요. 옵션 없이 실행하는 `apothem rollback`은 가장 최근 설치만 되돌립니다. 설치 기록과 그 복사본은 가장 최근 10회 설치분까지만 보관되므로, 제거된 경로는 해당 설치가 그중에 있을 때에만 복원할 수 있습니다. 설치하기 전에 `apothem diff --harness claude-code`를 실행하면 이 제거 항목이 `Prune stale files`로 나열됩니다.
 
 설치된 스킬과 Claude Code 플러그인에 번들된 스킬은 소스 코퍼스의
 `userInvocable` 대신 `user-invocable`을 지닙니다. Claude Code가 하이픈이 들어간

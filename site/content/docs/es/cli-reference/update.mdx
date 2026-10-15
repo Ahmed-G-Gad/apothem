@@ -2,7 +2,7 @@
 title: "update"
 description: "Referencia de la CLI para el comando apothem update."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,10 +30,10 @@ El alias en forma continua `apothem updating` (también aceptado como
 
 | Opción | Descripción |
 |---|---|
-| `--harness NAME` | Adaptador de entorno que se actualiza, o `all` para el conjunto de todo el registro (obligatorio). |
+| `--harness NAME` | Adaptador de entorno que se actualiza, o `all` para el conjunto de todo el registro (obligatorio). Con `all`, se omiten los entornos listados en `exclude_harnesses` del perfil, pero un entorno indicado explícitamente se actualiza aunque figure en la lista. |
 | `--profile PATH` | Ruta al YAML del perfil compartido. Valor predeterminado: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Previsualiza la actualización sin escribir archivos. |
-| `--project PATH` | Raíz del proyecto para los entornos de alcance de proyecto. Obligatorio cuando el conjunto de entornos seleccionado incluye adaptadores de alcance de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Es obligatoria cuando el conjunto de entornos seleccionado incluye adaptadores de alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
 | `--format plain\|json` | Formato de salida (predeterminado: `plain`). |

@@ -2,7 +2,7 @@
 title: "ترويسة التأليف — سطر رخصة SPDX لكل ملف"
 description: "تعريف علامات مُعرِّف رخصة SPDX لكل ملف وفرضها باستخدام ترويسات مرجعية أحادية السطر بصيغة التعليق المناسبة لكل نوع ملف."
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ sourceHash: "5fb79aeb88568559"
 # SPDX-License-Identifier: MIT
 ```
 
-هذا النص هو المصدر المعتمد **الوحيد**. يتحقّق المدقّق <bdi>`file-header`</bdi> (§8) من الملفات مقابل هذه التجهيزة المطابقة بالبايت. وأي انحراف بين سطر ترويسة ملف وهذه التجهيزة (مع استبدال صيغة التعليق وفق §2) يُبلَّغ عنه بوصفه ملاحظة. والمدقّق استشاري، لذا لا تُفشِل الملاحظةُ البناءَ (§8).
+هذا النص هو المصدر المعتمد **الوحيد**. ويتحقّق المدقّق <bdi>`file-header`</bdi> (§8) من الملفات مقابل هذه التجهيزة المطابقة بالبايت. وأي انحراف بين سطر ترويسة الملف وهذه التجهيزة (مع استبدال صيغة التعليق وفق §2) يُبلَّغ عنه بوصفه ملاحظة. والمدقّق حاجِب: ففي وضع <bdi>`--strict`</bdi>، كما يشغّله <bdi>CI</bdi> وخطّاف <bdi>pre-commit</bdi>، تُفشل الملاحظة التشغيل (§8).
 
 ---
 
@@ -65,15 +65,16 @@ sourceHash: "5fb79aeb88568559"
 
 - **ملفات الرخصة والإصدار** — <bdi>`LICENSE`</bdi>، و<bdi>`LICENSE.md`</bdi>، و<bdi>`LICENSE.txt`</bdi>، و<bdi>`NOTICE`</bdi>، و<bdi>`VERSION`</bdi>. يحمل <bdi>`LICENSE`</bdi> سطر حقوق النشر المعتمَد، ويؤكّد المدقّق <bdi>`license-author-consistency`</bdi> وجوده.
 - **التثبيتة الكانونية** — <bdi>`schemas/authorship-header.txt`</bdi>. فحقن الترويسة في التثبيتة سيُنتج ترويسةً لترويسة.
-- **أصول <bdi>`*.svg`</bdi>** — تعليقات <bdi>XML</bdi> هشّة بالنسبة إلى علامات التعليق السطري، لذا يُحمَل منشأ <bdi>SVG</bdi> في <bdi>README</bdi> الخاص بالأصل وفي المخرجات النقطية المُولَّدة.
+- **أصول <bdi>`*.svg`</bdi>** — تعليقات <bdi>XML</bdi> هشّة بالنسبة إلى علامات التعليق السطري، لذا يُحمَل منشأ <bdi>SVG</bdi> في <bdi>README</bdi> الأصل وفي المخرجات النقطية المُولَّدة.
 - **ملفات <bdi>JSON</bdi> (<bdi>`.json`</bdi>)** — لا صيغة تعليق في <bdi>JSON</bdi>. وحيث يُشترط الإسناد لإعداد <bdi>JSON</bdi>، ضع ملفًا شقيقًا <bdi>`<file>.NOTICE.md`</bdi>.
 - **ملفات القفل** — كل ملف <bdi>`*.lock`</bdi>، و<bdi>`package-lock.json`</bdi>، و<bdi>`yarn.lock`</bdi>، و<bdi>`pnpm-lock.yaml`</bdi>، و<bdi>`go.sum`</bdi>. هذه الملفات تُدار آليًّا.
 - **الملفات المُولَّدة والمُصغَّرة** — أي ملف تحت دليل <bdi>`generated/`</bdi>، والحزم المُصغَّرة (<bdi>`*.min.js`</bdi>، <bdi>`*.min.css`</bdi>).
 - **محتوى الطرف الثالث المُضمَّن** — ملفات تحت <bdi>`_vendor/`</bdi>، و<bdi>`vendor/`</bdi>، و<bdi>`third_party/`</bdi>، و<bdi>`node_modules/`</bdi>. تحمل هذه الملفات رخصة المنبع وإشعاره الخاصّين. وحقن علامتنا فوق إسناد المنبع يُعدّ انتهاكًا للرخصة.
-- **حالة التدقيق والتخطيط وإطار العمل** — كل ما تحت <bdi>`.audit/`</bdi> و<bdi>`.apothem/`</bdi>، وهو يحوي الخطط والذاكرة وبيانات التعلّم والسياقات. وكذلك <bdi>`projects/`</bdi> و<bdi>`memory/`</bdi> في جذر شجرة العمل، والتي يملكها إطار العمل. هذه الشجرات مُتجاهَلة بواسطة gitignore أو يملكها المُشغِّل، وهي خارج نطاق الشجرة المنشورة. ويُتتبَّع منشأ ملفات الخطط عبر بياناتها الأمامية (راجع [<bdi>`plans-discipline.md`</bdi>](/docs/reference/plans-discipline) §3).
+- **حالة التدقيق والتخطيط وإطار العمل** — كل ما تحت <bdi>`.audit/`</bdi> و<bdi>`.apothem/`</bdi>، وهو يحوي الخطط والذاكرة وبيانات التعلّم والسياقات. وكذلك <bdi>`projects/`</bdi> و<bdi>`memory/`</bdi> في جذر شجرة العمل، والتي يملكها إطار العمل. هذه الشجرات مُتجاهَلة بواسطة gitignore أو يملكها المُشغِّل، وهي خارج نطاق الشجرة المنشورة. وتُتتبَّع أصول ملفات الخطط عبر بياناتها الأمامية (راجع [<bdi>`plans-discipline.md`</bdi>](/docs/reference/plans-discipline) §3).
 - **تثبيتات بيانات الاختبار** — ملفات <bdi>`.yaml`</bdi> و<bdi>`.yml`</bdi> و<bdi>`.txt`</bdi> و<bdi>`.json`</bdi> تحت <bdi>`tests/fixtures/`</bdi>. وملفات شيفرة الاختبار في تلك الشجرة ما زالت تحمل الترويسة.
+- **مُدخلات اختبار الدخان للحاقن** — الملفات تحت <bdi>`tests/conformity-scenarios/fixtures/F-13-injector-smoke/`</bdi>. وتبقى بلا ترويسة لأن اختبار الحاقن يتحقّق من أن الحاقن يضيف الترويسة إليها.
 - **ملفات التغليف والعلامات الفارغة** — <bdi>`.SRCINFO`</bdi>، الذي يقرؤه مُحلِّل التغليف بصرامة، والعلامات صفرية البايت <bdi>`.keep`</bdi> و<bdi>`.gitkeep`</bdi> و<bdi>`py.typed`</bdi>.
-- **الملفات الثنائية** — لواحق الصور والخطوط والأرشيفات والوسائط والكائنات المُترجَمة المدرجة في التثبيتة. واللاحقة التي لا يُدرجها جدول المتغيّرات لدى المدقّق تُعفى افتراضيًّا.
+- **الملفات الثنائية** — لواحق الصور والخطوط والأرشيفات والوسائط والكائنات المُترجَمة المدرجة في التثبيتة. واللاحقة التي لا يطابقها جدول المتغيّرات لدى المدقّق تُعفى افتراضيًّا.
 
 قائمة الاستثناءات نفسها مُرمَّزة بوصفها قائمة <bdi>regex/glob</bdi> في [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) وهي مُدخَل فحص الانطباق في المدقّق. وتتطلّب التعديلات استيضاحًا مُهيكَلًا و<bdi>ADR</bdi> جديدًا.
 
@@ -129,7 +130,7 @@ sourceHash: "5fb79aeb88568559"
 
 يوجد في [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). وبالنسبة إلى كل ملف في شجرة العمل، يستعلم المدقّق عن انطباقه (وفق §3)، فإن كان منطبقًا تحقّق من وجود سطر <bdi>SPDX</bdi> المرجعي في موضع الإدراج. وبالنسبة إلى معظم الفئات يكون هذا الموضع أعلى الملف، بعد سطر <bdi>shebang</bdi> اختياري. أما ملفات <bdi>Markdown</bdi> و<bdi>MDX</bdi> فتُتخطّى فيها كتلة البيانات الأمامية <bdi>YAML</bdi> أولًا، فقد يأتي السطر المرجعي بعد السياج الختامي، كما يشترط §5. وتُحَلّ ملفات <bdi>MDX</bdi> إلى الصيغة <bdi>`{/* */}`</bdi> (§2) وتُفحَص وفقها. ويضع المدقّق والحاقن الكتلة المرجعية في الفهرس نفسه.
 
-يستند هذا إلى التجهيزة المطابقة بالبايت في [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). يُبلِّغ تشغيلُ مجموعة الملفات عن عدد الملاحظات وعن عيّنة من الملفات المُعلَّمة لهذا المطابِق. ولا يطبع فرقًا لكل ملف ولا نسبة تغطية مئوية. والمطابِق استشاري: تُبلَّغ ملاحظاته ولا تُفشِل البناء، سواء مع <bdi>`--strict`</bdi> أو بدونه.
+يستند هذا إلى التجهيزة المطابقة بالبايت في [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). يُبلِّغ تشغيل مجموعة الملفات عن عدد الملاحظات وعن عيّنة من الملفات المُعلَّمة لهذا المطابِق. ولا يطبع فرقًا لكل ملف ولا نسبة تغطية مئوية. والمطابِق حاجِب: ففي وضع <bdi>`--strict`</bdi>، الذي يستخدمه <bdi>CI</bdi> وخطّاف <bdi>pre-commit</bdi>، تُفشل الملاحظة التشغيل. ومن دون <bdi>`--strict`</bdi>، تُبلِّغ البوابة عن الملاحظة وتخرج بالرمز <bdi>`0`</bdi>.
 
 ---
 
@@ -139,11 +140,11 @@ sourceHash: "5fb79aeb88568559"
 
 1. **<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>** — التجهيزة المرجعية المطابقة بالبايت؛ مصدر حقيقة واحد.
 2. **<bdi>`scripts/inject-header.{sh,py}`</bdi>** — الحاقن الميكانيكي (§7).
-3. **مدقّق <bdi>`file-header`</bdi>** (§8) — يُبلِّغ عن الانحراف بوصفه ملاحظات استشارية، ولا يُفشِل البناء.
-4. **خطّاف <bdi>pre-commit</bdi>** — يُشغِّل الخطّاف <bdi>`conformity-corpus-perwrite`</bdi> كل مطابِق يعمل مع كل عملية كتابة، ومنه مدقّق <bdi>`file-header`</bdi> (§8)، على الشجرة المتتبَّعة مع <bdi>`--strict`</bdi>. ومطابِق <bdi>`file-header`</bdi> استشاري، فتُبلَّغ ملاحظاته ولا تمنع الإيداع. والخطّاف يفحص فقط؛ فليس له وضع إصلاح، ولا يُشغِّل الحاقن أبدًا (§7)، إذ يعمل الحاقن عبر <bdi>`make headers-fix`</bdi>.
+3. **مدقّق <bdi>`file-header`</bdi>** (§8) — يُبلِّغ عن الانحراف بوصفه ملاحظة حاجبة تُفشل تشغيل <bdi>`--strict`</bdi>.
+4. **خطّاف <bdi>pre-commit</bdi>** — يُشغِّل الخطّاف <bdi>`conformity-corpus-perwrite`</bdi> كل مطابِق يعمل عند كل كتابة، بما فيه مدقّق <bdi>`file-header`</bdi> (§8)، على الشجرة المتتبَّعة مع <bdi>`--strict`</bdi>. ومطابِق <bdi>`file-header`</bdi> حاجِب، فتمنع ملاحظته الإيداع. والخطّاف يفحص فقط؛ فليس له وضع إصلاح، ولا يُشغِّل الحاقن أبدًا (§7)، إذ يعمل الحاقن عبر <bdi>`make headers-fix`</bdi>.
 5. **كتلة السلوك الإلزامي في <bdi>`CLAUDE.md`</bdi>** — توجّه المساعِد إلى حقن سطر <bdi>SPDX</bdi> المرجعي كلما أنشأ ملفًا منطبقًا.
 6. **ملف تعليمات <bdi>GitHub Copilot</bdi>** في <bdi>`.github/copilot-instructions.md`</bdi> — يوجّه <bdi>Copilot</bdi> إلى فعل الأمر نفسه عند توليد الملفات.
-7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداتَي <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة، فيُحقن سطر <bdi>SPDX</bdi> عند إنشاء الملف بدلًا من اكتشاف غيابه لاحقًا بوصفه ملاحظة من المدقّق.
+7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداتَي <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة، فيُحقَن سطر <bdi>SPDX</bdi> عند إنشاء الملف، بدلًا من أن يُكتشَف غيابه لاحقًا بوصفه ملاحظة من المدقّق.
 8. **خانة اختيار في قالب <bdi>PR</bdi>** — إقرار موجَّه إلى المساهِم بأن كل ملف جديد يحمل سطر <bdi>SPDX</bdi> المرجعي.
 9. **هذا المستند** (<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>) — الشرح المعياري المرجعي.
 

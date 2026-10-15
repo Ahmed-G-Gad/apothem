@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — Führt eine bestimmte Phase aus einer Master-Plan-Suite mit Konformitätsprüfung aus."
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ REPORT.md-Dateien pro Phase, Codebasis-Artefakte, COMPLETION.md
 
 ## Nachgelagert
 
-`/code-review` — der kanonische Einstiegspunkt der elf Befehle umfassenden Audit-Festungssequenz. `/plan-execute` ist die terminale Stufe der *Plan*-Pipeline; wenn die finale Phase abgeschlossen ist, wird der gebaute Code zur Prüfung an die Audit-Festung übergeben.
+`/fortress` härtet die ausgeführte Arbeit in einem Aufruf bis zu einem durch Release-Bereitschafts-Gates abgesicherten Zustand (erkennen, prüfen, beheben, erneut auditieren, Gate). Standardmäßig pausiert der Befehl an jeder Rundengrenze zur Bestätigung; `--autonomous` führt die Runden ohne Pause aus. `/code-review` — der kanonische Einstiegspunkt der elf Befehle umfassenden Audit-Review-Sequenz, die die Kette jeweils Stufe für Stufe durchläuft. `/plan-execute` ist die terminale Stufe der *Plan*-Pipeline; wenn die finale Phase abgeschlossen ist, wird der gebaute Code zur Prüfung an die Audit-Review-Sequenz übergeben.
 
 ## Workflow-Phasen
 

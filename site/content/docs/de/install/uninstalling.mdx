@@ -2,7 +2,7 @@
 title: "Deinstallieren"
 description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
 machineTranslated: true
-sourceHash: "5480c1153c062495"
+sourceHash: "a94130c42f86f341"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,26 +30,35 @@ Die Entfernung richtet sich nach dem Installationskanal, den Sie verwendet
 haben. Die Kanalnummern sind die der
 [Tabelle der Installationskanäle](/docs/install#einen-kanal-wählen):
 
-- **Claude Code-Plugin (Kanal 1)** — entfernen Sie das Plugin innerhalb von
-  Claude Code: `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag
-  lässt sich mit `/plugin marketplace remove ahmed-g-gad/apothem` entfernen).
-- **npx (Kanal 2)** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren
-  Sie ihn mit `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie
+- **Plugin für Claude Code (Kanal 1)** — entfernen Sie das Plugin innerhalb von Claude Code:
+  `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag lässt sich mit
+  `/plugin marketplace remove ahmed-g-gad/apothem` entfernen).
+- **npx (Kanal 2)** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren Sie
+  ihn mit `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie
   entfernen möchten.
-- **Ein-Schritt-Installer (Kanal 3)** — führen Sie das passende
-  Deinstallationsskript aus dem Checkout aus: `scripts/installer/uninstall.sh`
-  (POSIX) oder `scripts/installer/uninstall.ps1` (PowerShell). Beide fragen vor
-  dem Entfernen nach einer Bestätigung und verweigern unsichere Ziele.
+- **Ein-Schritt-Installer (Kanal 3)** — führen Sie das passende Deinstallationsskript
+  aus dem Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
+  `scripts/installer/uninstall.ps1` (PowerShell). Jedes Skript entfernt den Harness,
+  der mit `--harness` benannt ist (unter PowerShell mit `-Harness`), sonst den
+  Harness aus `APOTHEM_HARNESS`, sonst Claude Code. Außerdem entfernt es den
+  Befehls-Shim `apothem`. Die Quelle stammt aus `APOTHEM_SOURCE`, sofern gesetzt,
+  sonst aus `APOTHEM_HOME` (Standard: `$HOME/.apothem`). Die Quelle bleibt erhalten,
+  es sei denn, Sie übergeben `--remove-source` (`-RemoveSource` unter PowerShell).
+  Dieses Flag löscht nur den verwalteten Klon unter `APOTHEM_HOME`, und zwar nur,
+  wenn dieser ein `.git`-Verzeichnis enthält. Mit dem Standardspeicherort löscht es
+  außerdem die Installationssicherungen und das Ledger unter `~/.apothem/`. Beide
+  Skripte fragen vor dem Entfernen der Harness-Konfigurationen und der Quelle nach.
+  `--yes` (`-Yes` unter PowerShell) überspringt die Abfragen. Beide verweigern
+  unsichere Ziele.
 - **Erweiterung für die VS Code-Familie (Kanal 4)** — führen Sie zuerst
-  **Apothem: Uninstall** über die Befehlspalette aus, um die
-  Harness-Konfigurationen zu entfernen, und entfernen Sie dann die Erweiterung
-  in der Erweiterungsansicht oder mit
-  `code --uninstall-extension ahmed-g-gad.apothem`. Standardmäßig führt die
-  Erweiterung die Engine über `npx` aus, sodass der Eintrag **npx** oben den
-  Cache abdeckt.
-- **Kommandozeilen-Bootstraps (Kanäle 5–7)** — entfernen Sie die Erweiterung
-  oder das Plugin mit dem zugehörigen Host-Tool, nachdem die
-  Harness-Konfigurationen entfernt sind. Die Hosts:
+  **Apothem: Uninstall** über die Befehlspalette aus, um die Harness-Konfigurationen
+  zu entfernen, und entfernen Sie danach die Erweiterung in der Erweiterungsansicht
+  oder mit `code --uninstall-extension ahmed-g-gad.apothem`. Standardmäßig führt die
+  Erweiterung die Engine über `npx` aus, sodass der Eintrag **npx** oben den Cache
+  abdeckt.
+- **Kommandozeilen-Bootstraps (Kanäle 5–7)** — entfernen Sie die Erweiterung oder
+  das Plugin mit dem zugehörigen Host-Tool, nachdem die Harness-Konfigurationen
+  entfernt sind. Die Hosts:
 
   ```text
   channel 5   Gemini CLI extension

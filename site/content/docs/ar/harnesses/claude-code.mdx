@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,6 +53,8 @@ apothem install --harness claude-code
 تُنسَخ العناصر الفرعية المطابقة الموجودة التي يديرها <bdi>Apothem</bdi> احتياطيًا قبل
 استبدالها؛ وتُحفَظ المدخلات غير ذات الصلة التي ألّفها المُشغِّل. يُدمَج
 <bdi>`settings.json`</bdi> بحيث تبقى المفاتيح التي ألّفها المُشغِّل قابلة للاستعادة.
+
+لا تبقى الملفات التي كتبها المشغّل إلا خارج المجلّدات أدناه. يُزيل كل تثبيت وتحديث كل مجلّد من هذه المجلّدات تحت <bdi>`~/.claude/`</bdi> إن كان موجودًا، سواء كتبه <bdi>Apothem</bdi> أم لا: <bdi>`src/`</bdi>، و<bdi>`conformity/`</bdi>، و<bdi>`schemas/`</bdi>، و<bdi>`hooks/`</bdi>، و<bdi>`config/`</bdi>، و<bdi>`scripts/`</bdi>، و<bdi>`tools/`</bdi>، و<bdi>`lib/`</bdi>، و<bdi>`templates/`</bdi>، و<bdi>`docs/`</bdi>، و<bdi>`tests/`</bdi>، و<bdi>`packaging/`</bdi>، و<bdi>`mcp/`</bdi>، و<bdi>`examples/`</bdi>، و<bdi>`assets/`</bdi>، و<bdi>`site/`</bdi>، و<bdi>`public/`</bdi>، و<bdi>`commands/`</bdi>. ويزيل أيضًا <bdi>`statuslines/__init__.py`</bdi> وملفات <bdi>`AGENTS.md`</bdi> في <bdi>`agents/`</bdi> و<bdi>`rules/`</bdi> و<bdi>`skills/`</bdi> و<bdi>`statuslines/`</bdi> و<bdi>`output-styles/`</bdi>. يُزال المجلّد المحذوف كاملًا، بما في ذلك الملفات التي وضعتها فيه. وتُزال أوامر الشرطة المائلة التي تحتفظ بها في <bdi>`commands/`</bdi> أيضًا، ويثبّت <bdi>Apothem</bdi> أوامره الخاصة بوصفها مهارات تحت <bdi>`skills/`</bdi>. ويُزال سكربت الخطّاف الذي تحتفظ به في <bdi>`hooks/`</bdi>، فيبقى أي مُدخَل في <bdi>`settings.json`</bdi> يستدعيه يشير إلى لا شيء. ويجري المسح قبل أن يكتب التثبيت ملفاته الخاصة. يُنسَخ كل مسار مُزال إلى <bdi>`~/.apothem/backups/`</bdi> أولًا، ويسمّي سجلّ التثبيت تلك النسخة. ولا يستعيد إلغاء التثبيت المسار. ولاستعادة مسار مُزال، شغّل <bdi>`apothem rollback --harness claude-code --install-id ID`</bdi> للتثبيت الذي أزاله، كما هو موضح في [مرجع الاسترجاع](/docs/cli-reference/rollback). ويعكس <bdi>`apothem rollback`</bdi> المجرّد آخر تثبيت فقط. وتُحفَظ سجلّات التثبيت ونسخها لأحدث 10 تثبيتات، ولذلك لا يمكن استعادة المسار المُزال إلا ما دام تثبيته من بينها. ويسرد <bdi>`apothem diff --harness claude-code`</bdi> هذه الإزالات بوصفها <bdi>`Prune stale files`</bdi> قبل أن تثبّت.
 
 تحمل المهارات المُثبَّتة، والمهارات المُحزَّمة في إضافة <bdi>Claude Code</bdi>،
 المفتاح <bdi>`user-invocable`</bdi> بدلًا من <bdi>`userInvocable`</bdi> الوارد في متن

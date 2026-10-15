@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper — 統合・設計・分析から、すべての引用が解決可能であることを検証したうえで、トップレベルの論文ドラフト（要旨から結論まで、および参考文献）を組み立てます。"
 machineTranslated: true
-sourceHash: "748c384ba8f36be4"
+sourceHash: "e7be8ccd7da4e80f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,12 @@ sourceHash: "748c384ba8f36be4"
 ## 出力
 
 ホストにとって自然な場所（`paper/`）に置かれる論文成果物 — 要旨、序論、関連研究、手法、結果、考察、限界、結論、参考文献。
+
+このステージは、検証ゲートの記録も書き出します。記録には、参照ごとの結果と、申告された引用数に対して解決された引用数が含まれます：
+
+```text
+_outputs/paper-attestation.md
+```
 
 ## 下流
 

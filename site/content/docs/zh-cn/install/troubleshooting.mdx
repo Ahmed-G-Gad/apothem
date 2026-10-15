@@ -2,7 +2,7 @@
 title: "故障排查"
 description: "针对插件、npx 和安装器各路径下常见的 Apothem 安装失败和运行时问题的解决方案。"
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,7 +61,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install 未找到任何工具
 
-运行 apothem doctor 列出检测到的工具目录。如果一个也没有找到，请确保你的工具已安装且至少启动过一次。
+运行 apothem doctor 查看其 Harness Status 表，表中每个工具各占一行。标记为 `not installed` 的行表示 Apothem 没有找到该工具的安装。标记为 `needs --project` 的行是项目作用域的工具，只有在传入 `--project <path>` 时 doctor 才会检查它。如果 doctor 报告 `No harness is installed yet`，请先确认你的工具已安装，然后运行 `apothem install --harness <name>`。
 
 ### apothem verify 报告某个适配器失败
 

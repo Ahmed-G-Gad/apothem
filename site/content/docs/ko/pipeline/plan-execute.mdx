@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — 적합성 점검과 함께 마스터 플랜 스위트에서 특정 페이즈를 실행합니다."
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ sourceHash: "83dae82d475df6e2"
 
 ## 하류
 
-`/code-review` — 열한 개 명령으로 이루어진 감사 포트리스 시퀀스의 표준 진입점. `/plan-execute`는 *플랜* 파이프라인의 터미널 단계입니다. 최종 페이즈가 완료되면 빌드된 코드는 검토를 위해 감사 포트리스로 인계됩니다.
+`/fortress`는 한 번의 호출로 실행된 작업을 릴리스 게이트 기준 상태까지 강화합니다(탐지, 검증, 수정, 재감사, 게이트). 기본적으로는 각 라운드 경계에서 확인을 위해 일시 정지하며, `--autonomous`를 지정하면 일시 정지 없이 라운드를 실행합니다. `/code-review` — 열한 개 명령으로 이루어진 감사 검토 시퀀스의 표준 진입점으로, 체인을 한 번에 한 단계씩 따라갑니다. `/plan-execute`는 *플랜* 파이프라인의 터미널 단계입니다. 최종 페이즈가 완료되면 빌드된 코드는 검토를 위해 감사 검토 시퀀스로 인계됩니다.
 
 ## 워크플로 페이즈
 

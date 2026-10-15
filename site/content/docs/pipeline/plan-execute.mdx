@@ -31,7 +31,7 @@ Per-phase REPORT.md files, codebase artifacts, COMPLETION.md
 
 ## Downstream
 
-`/code-review` — the canonical entry point of the eleven-command audit-fortress sequence. `/plan-execute` is the terminal stage of the *plan* pipeline; when the final phase completes, the built code hands off to the audit-fortress for review.
+`/fortress` hardens the executed work to a release-gated state in one call (detect, verify, remediate, re-audit, gate). By default it pauses for confirmation at each round boundary; `--autonomous` runs the rounds without pausing. `/code-review` — the canonical entry point of the eleven-command audit-fortress sequence, which walks the chain one stage at a time. `/plan-execute` is the terminal stage of the *plan* pipeline; when the final phase completes, the built code hands off to the audit-fortress for review.
 
 ## Workflow phases
 

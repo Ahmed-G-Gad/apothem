@@ -2,7 +2,7 @@
 title: "Installations-Workflow"
 description: "Wie apothem install, update und uninstall durchgängig funktionieren."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,10 +56,11 @@ unter `site/content/docs/harnesses/<harness>.mdx` dokumentiert.
 ## Fehlerbehandlung
 
 Installations-/Aktualisierungsvorgänge validieren vor dem Schreiben, sichern
-vorhandene übereinstimmende Ziele vor dem Ersetzen und führen in gemeinsamen
+vorhandene passende Ziele vor dem Ersetzen und führen in gemeinsamen
 Discovery-Verzeichnissen nur von Apothem verwaltete Untereinträge zusammen.
-`--dry-run` führt dieselbe Validierung aus und gibt übersprungene oder unveränderte
-Ergebnisse zurück, ohne Verzeichnisse oder Dateien zu erstellen.
+`--dry-run` führt dieselbe Validierung aus und gibt das Ergebnis zurück, das
+jeder Schreibvorgang gehabt hätte, etwa `created` oder `updated`, ohne
+Verzeichnisse oder Dateien anzulegen.
 
 ## Reversibility (backup and rollback)
 

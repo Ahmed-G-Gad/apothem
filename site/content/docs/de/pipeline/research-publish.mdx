@@ -2,7 +2,7 @@
 title: "/research-publish"
 description: "/research-publish — Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einreichungspaket zusammen (Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik/Interessenkonflikt), mit einem Preprint-/DOI-Plan."
 machineTranslated: true
-sourceHash: "34e0993ca051136c"
+sourceHash: "775d7080efc5b935"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,8 @@ Das nach dem Publikationsort formatierte Einreichungspaket an einem host-natürl
 Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
 
 1. **Kontext laden** — Das Paper und den Review-Bericht lesen.
-2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass `_outputs/review-report.md` existiert; andernfalls mit `Blocked: run /research-review first` anhalten.
-3. **Formatieren & packen** — Die Vorlage des Publikationsorts anwenden; Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik-/Interessenkonflikterklärungen zusammenstellen.
+2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass `_outputs/review-report.md` existiert und seine HIGH-Überarbeitungen behoben sind (oder der Operator das Restrisiko ausdrücklich akzeptiert hat); andernfalls mit `Blocked: run /research-review first` anhalten.
+3. **Formatieren & packen** — Die Vorlage des Publikationsorts anwenden; Supplement, Daten-/Code-Verfügbarkeit, Anschreiben sowie Ethik- und COI-Erklärungen zusammenstellen.
 4. **Preprint / Archivierung planen** — Den Preprint- und DOI-Plan festhalten; die Einreichungs-Checkliste erstellen.
 5. **Das Übergabe-Manifest aktualisieren** — Das Einreichungspaket und den Publikationsdatensatz festhalten.
 6. **Das Paket ausgeben** — Das nach dem Publikationsort formatierte Einreichungspaket + `_outputs/publication-record.md`.
@@ -54,7 +54,7 @@ Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publika
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Blocked: run /research-review first | Kein Review-Bericht | Führen Sie `/research-review` aus, um `_outputs/review-report.md` zu erzeugen |
+| Blocked: run /research-review first | Kein Review-Bericht oder offene HIGH-Überarbeitungen | Führen Sie `/research-review` aus, um `_outputs/review-report.md` zu erzeugen, oder beheben Sie die offenen HIGH-Überarbeitungen und führen Sie `/research-review` erneut aus, oder akzeptieren Sie das Restrisiko ausdrücklich |
 | Unbearbeitete HIGH-Überarbeitung | Review-Befund übersprungen | Bearbeiten Sie die Überarbeitung und führen Sie `/research-review` erneut aus |
 | Fehlende Daten-/Code-Verfügbarkeit | Reproduzierbarkeitsoberfläche fehlt | Fügen Sie vor der Einreichung die Erklärung zur Daten-/Code-Verfügbarkeit hinzu |
 

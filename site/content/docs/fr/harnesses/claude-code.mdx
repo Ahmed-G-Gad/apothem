@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptateur d'environnement Apothem pour Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,6 +55,8 @@ et convertit les prompts de commande en dossiers de skills. Les enfants
 correspondants déjà gérés par Apothem sont sauvegardés avant remplacement ; les
 entrées sans rapport rédigées par l'opérateur sont préservées. `settings.json`
 est fusionné afin que les clés rédigées par l'opérateur restent récupérables.
+
+Les fichiers rédigés par l'opérateur ne sont conservés qu'en dehors des dossiers ci-dessous. Chaque installation et chaque mise à jour supprime chacun de ces dossiers situés sous `~/.claude/` qui existe, qu'Apothem l'ait écrit ou non : `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` et `commands/`. Elles suppriment aussi `statuslines/__init__.py` ainsi que les fichiers `AGENTS.md` présents dans `agents/`, `rules/`, `skills/`, `statuslines/` et `output-styles/`. Un dossier supprimé l'est entièrement, y compris les fichiers que vous y avez placés. Les commandes slash que vous conservez dans `commands/` sont aussi supprimées, et Apothem installe ses propres invites de commande comme skills sous `skills/`. Un script de hook que vous conservez dans `hooks/` est supprimé, ce qui laisse toute entrée de `settings.json` qui l'appelle pointer vers rien. Le balayage s'exécute avant que l'installation n'écrive ses propres fichiers. Chaque chemin supprimé est d'abord copié dans `~/.apothem/backups/`, et l'enregistrement d'installation nomme cette copie. La désinstallation ne la restaure pas. Pour restaurer un chemin supprimé, exécutez `apothem rollback --harness claude-code --install-id ID` pour l'installation qui l'a supprimé, comme décrit dans la [référence rollback](/docs/cli-reference/rollback). Un simple `apothem rollback` n'annule que la dernière installation. Les enregistrements d'installation et leurs copies sont conservés pour les 10 installations les plus récentes ; un chemin supprimé ne peut donc être restauré que tant que son installation figure parmi elles. `apothem diff --harness claude-code` liste ces suppressions sous `Prune stale files` avant que vous n'installiez.
 
 Les skills installés, ainsi que les skills fournis dans le plugin Claude Code,
 portent `user-invocable` au lieu du `userInvocable` du corpus source, car Claude

@@ -2,7 +2,7 @@
 title: "install"
 description: "مرجع واجهة سطر الأوامر لأمر apothem install."
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,9 +81,9 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 | العملية | الشرط | الإصلاح |
 | --- | --- | --- |
-| <bdi>`mcp_deprecated_transport`</bdi> | <bdi>`transport: sse`</bdi> (تُهمِل مواصفة <bdi>MCP</bdi> النقل <bdi>HTTP+SSE</bdi>) | استخدم <bdi>`streamable-http`</bdi> حين يدعمه الخادم. |
-| <bdi>`mcp_plain_http`</bdi> | عنوان <bdi>URL</bdi> بصيغة <bdi>`http://`</bdi> إلى مضيف ليس مضيف الاسترجاع المحلي | استخدم عنوان <bdi>URL</bdi> بصيغة <bdi>`https://`</bdi>. |
-| <bdi>`mcp_literal_credential`</bdi> | قيمة في <bdi>`headers`</bdi> أو <bdi>`env`</bdi> تشبه رمزًا مميّزًا (<bdi>`ghp_`</bdi>، أو <bdi>`github_pat_`</bdi>، أو <bdi>`sk-`</bdi>، أو <bdi>`xox*-`</bdi>، أو <bdi>`Bearer`</bdi> متبوعًا برمز مميّز طويل) | احتفظ بالسرّ في متغيّر بيئة واكتب مراجع على نمط <bdi>`${GITHUB_TOKEN}`</bdi>. |
+| <bdi>`mcp_deprecated_transport`</bdi> | <bdi>`transport: sse`</bdi> (تُهمِل مواصفة <bdi>MCP</bdi> نقل <bdi>HTTP+SSE</bdi>) | استخدم <bdi>`streamable-http`</bdi> حين يدعمه الخادم. |
+| <bdi>`mcp_plain_http`</bdi> | عنوان <bdi>URL</bdi> بصيغة <bdi>`http://`</bdi> يشير إلى مضيف ليس مضيف الاسترجاع المحلي | استخدم عنوان <bdi>URL</bdi> بصيغة <bdi>`https://`</bdi>. |
+| <bdi>`mcp_literal_credential`</bdi> | قيمة في <bdi>`headers`</bdi> أو <bdi>`env`</bdi> تشبه رمزًا مميّزًا (<bdi>`ghp_`</bdi>، أو <bdi>`gho_`</bdi>، أو <bdi>`ghu_`</bdi>، أو <bdi>`ghs_`</bdi>، أو <bdi>`ghr_`</bdi>، أو <bdi>`github_pat_`</bdi>، أو <bdi>`sk-`</bdi>، أو <bdi>`xoxa-`</bdi>، أو <bdi>`xoxb-`</bdi>، أو <bdi>`xoxo-`</bdi>، أو <bdi>`xoxp-`</bdi>، أو <bdi>`xoxr-`</bdi>، أو <bdi>`xoxs-`</bdi>، أو <bdi>`Bearer`</bdi> متبوعًا برمز مميّز طويل) | احتفظ بالسرّ في متغيّر بيئة واكتب مراجع بنمط <bdi>`${GITHUB_TOKEN}`</bdi>. |
 
 لا يطبع تنبيه بيانات الاعتماد أبدًا القيمة التي عثر عليها. ولا تُعلَّم أبدًا قيمةٌ
 تحتوي مرجعًا من نوع <bdi>`${...}`</bdi>.
@@ -111,10 +111,10 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 | الخيار | الوصف |
 |---|---|
-| <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد تثبيته، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). شغّل <bdi>`apothem harnesses list`</bdi> لمعرفة الأسماء المُسجَّلة. |
+| <bdi>`--harness NAME`</bdi> | محوّل إطار العمل المراد تثبيته، أو <bdi>`all`</bdi> للمجموعة الشاملة للسجلّ كله (مطلوب). مع <bdi>`all`</bdi>، تُتخطّى أُطُر العمل المُدرَجة في <bdi>`exclude_harnesses`</bdi> الخاصة بالملف التعريفي، لكن إطار العمل المُسمّى صراحةً يُثبَّت حتى لو كان مُدرَجًا فيها. شغّل <bdi>`apothem harnesses list`</bdi> لمعرفة الأسماء المُسجَّلة. |
 | <bdi>`--profile PATH`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
 | <bdi>`--dry-run`</bdi> | يعاين التثبيت دون كتابة ملفات. |
-| <bdi>`--clean`</bdi>، <bdi>`--fresh`</bdi> | بداية نظيفة اختيارية: ينسخ احتياطيًا حالة التثبيت السابقة الخاصة بإطار العمل ويزيلها قبل التثبيت. |
+| <bdi>`--clean`</bdi>، <bdi>`--fresh`</bdi> | بداية نظيفة اختيارية: ينسخ احتياطيًا حالة التثبيت السابقة الخاصة بكل إطار عمل ويزيلها قبل التثبيت. |
 | <bdi>`--yes`</bdi> | يتخطّى التأكيد لكل هدف أثناء إزالة البداية النظيفة (مطلوب لتشغيلات <bdi>`--clean`</bdi> غير التفاعلية). |
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. |
 | <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يُخمِد المخرجات المعلوماتية؛ لا تُصدَر إلا الأخطاء. |
@@ -160,7 +160,15 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

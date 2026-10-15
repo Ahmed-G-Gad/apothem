@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,6 +53,8 @@ prompt command menjadi folder skill. Anak terkelola-Apothem yang sudah ada dan
 cocok dicadangkan sebelum penggantian; entri tak terkait yang ditulis operator
 dipertahankan. `settings.json` digabungkan sehingga kunci yang ditulis operator
 tetap dapat dipulihkan.
+
+Berkas yang ditulis operator hanya dipertahankan di luar folder di bawah ini. Setiap pemasangan dan pembaruan menghapus setiap folder ini di bawah `~/.claude/` yang ada, apakah Apothem yang menulisnya atau bukan: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/`, dan `commands/`. Ia juga menghapus `statuslines/__init__.py` serta berkas `AGENTS.md` di `agents/`, `rules/`, `skills/`, `statuslines/`, dan `output-styles/`. Folder yang dihapus ikut terhapus seluruhnya, termasuk berkas yang Anda taruh di dalamnya. Perintah slash yang Anda simpan di `commands/` juga dihapus, dan Apothem memasang prompt perintahnya sendiri sebagai skill di bawah `skills/`. Skrip hook yang Anda simpan di `hooks/` dihapus, sehingga entri `settings.json` yang memanggilnya menunjuk ke berkas yang sudah tidak ada. Penyapuan berjalan sebelum pemasangan menulis berkasnya sendiri. Setiap jalur yang dihapus disalin ke `~/.apothem/backups/` terlebih dahulu, dan catatan pemasangan menyebutkan salinan itu. Pencopotan tidak memulihkannya. Untuk memulihkan jalur yang dihapus, jalankan `apothem rollback --harness claude-code --install-id ID` untuk pemasangan yang menghapusnya, seperti dijelaskan dalam [referensi rollback](/docs/cli-reference/rollback). `apothem rollback` biasa hanya membalikkan pemasangan terbaru. Catatan pemasangan dan salinannya disimpan untuk 10 pemasangan terbaru, sehingga jalur yang dihapus hanya dapat dipulihkan selama pemasangannya masih termasuk di antara 10 tersebut. `apothem diff --harness claude-code` mencantumkan penghapusan ini sebagai `Prune stale files` sebelum Anda memasang.
 
 Skill yang terpasang, dan skill yang dibundel dalam plugin Claude Code, membawa
 `user-invocable` alih-alih `userInvocable` milik korpus sumber, karena Claude

@@ -2,7 +2,7 @@
 title: "Lista de verificação de sincronização entre máquinas"
 description: "Procedimento de verificação para confirmar que o adaptador do Claude Code instala, valida e desinstala corretamente em um host novo, com verificações completas de portabilidade."
 machineTranslated: true
-sourceHash: "fe0bc745cce7932a"
+sourceHash: "b6f6f7d6a489e8c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,11 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**Esperado:** o fluxo interativo solicita confirmação; `--yes` dispensa a solicitação em execuções em lote; os dois fluxos deixam a raiz de configuração do Claude Code livre de arquivos materializados pelo Apothem; o shim `apothem` é removido (`~/.local/bin/apothem` em POSIX, `apothem.cmd` em `%LOCALAPPDATA%\Microsoft\WindowsApps` no Windows).
+**Esperado:** o fluxo interativo solicita confirmação; `--yes` dispensa a
+solicitação em execuções em lote; os dois fluxos deixam a raiz de configuração
+do Claude Code livre de arquivos materializados pelo Apothem; o shim `apothem` é
+removido (`~/.local/bin/apothem`; o shim `apothem.cmd` em
+`%LOCALAPPDATA%\Microsoft\WindowsApps` é removido somente por `uninstall.ps1`).
 
 ## 6. Verificação das salvaguardas de segurança
 

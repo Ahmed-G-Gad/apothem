@@ -2,7 +2,7 @@
 title: "Устранение неполадок"
 description: "Решения для распространённых сбоев установки Apothem и проблем времени выполнения в путях через плагин, npx и установщик."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,9 +91,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install не находит окружений
 
-Запустите apothem doctor, чтобы вывести список обнаруженных каталогов окружений.
-Если ни одного не найдено, убедитесь, что ваше окружение установлено и было
-запущено хотя бы один раз.
+Запустите apothem doctor, чтобы прочитать его таблицу Harness Status, в которой одна строка на каждое окружение. Строка с пометкой `not installed` означает, что Apothem не нашёл установки для этого окружения. Строка с пометкой `needs --project` относится к окружению с областью проекта, которое doctor проверяет только при передаче `--project <path>`. Если doctor сообщает `No harness is installed yet`, убедитесь, что нужное окружение установлено, затем выполните `apothem install --harness <name>`.
 
 ### apothem verify сообщает о неисправном адаптере
 

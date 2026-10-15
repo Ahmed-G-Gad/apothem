@@ -2,7 +2,7 @@
 title: "Diagramme du pipeline CI/CD"
 description: "Carte visuelle et décomposition par couloirs des étapes du flux de travail de build, de test, de lint, de sécurité et de publication qui contrôlent chaque changement de code et chaque publication."
 machineTranslated: true
-sourceHash: "42620c7c2fb8ec8b"
+sourceHash: "d9a69ec274df9173"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,11 +36,11 @@ flowchart LR
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
         CHAOS["chaos_pass.py (CI quality job)"]
-        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
+        BENCH["src/apothem/benchmarks/ (unit tests in CI, bench_hooks in metrics job)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
-        SBOM["SBOM generation"]
+        SBOM["SBOM generation (tags only)"]
         LICENSE["License audit"]
     end
     subgraph Publish["Publish lane (tags only)"]
@@ -72,29 +72,37 @@ flowchart LR
 
 - **Couloir d'analyse statique** — retour rapide. Ruff couvre le style Python et
   un ensemble de règles sélectionnées ; mypy impose la discipline de typage en
-  mode strict ; le validateur de frontmatter contrôle la conformité au schéma
-  d'artefacts pour les règles, les skills, les travailleurs délégués et les
+  mode strict ; le validateur de frontmatter contrôle la conformité des artefacts
+  au schéma pour les règles, les skills, les travailleurs délégués et les
   commandes. markdownlint ne fait pas partie de ce couloir : il ne s'exécute que
-  comme hook pre-commit, et la CI ne l'exécute pas (voir
+  comme hook de pre-commit, et la CI ne l'exécute pas (voir
   [Conventions Markdown](/docs/reference/markdown-conventions)).
 - **Couloir de tests** — `pytest tests/hooks` exerce le runtime des hooks contre
-  la matrice complète d'événements ; `validate_ecosystem.py` est le principal portail structurel pour la cohérence inter-artefacts ; `chaos_pass.py` s'exécute
+  la matrice complète des événements ; `validate_ecosystem.py` est le principal
+  portail structurel de la cohérence inter-artefacts ; `chaos_pass.py` s'exécute
   dans le job qualité de la CI, sur les push et pull requests vers `main`
   (filtrés par chemin), pour détecter la dégradation sous des entrées dégradées.
-  La suite de benchmarks par classe sous `src/apothem/benchmarks/` ne s'exécute
-  dans aucun flux de travail CI.
-- **Couloir de sécurité** — l'analyse de secrets repère les identifiants commités
-  par accident ; la génération de SBOM et les audits de licence contrôlent la
-  surface de la chaîne d'approvisionnement pour toute installation de
-  préparation à la production.
+  Les pilotes de benchmark par classe sous `src/apothem/benchmarks/` s'exécutent
+  en CI via la suite pytest et via le job `metrics`. Chaque exécution complète de
+  pytest en CI collecte `tests/unit/test_benchmarks.py`, qui appelle chaque
+  pilote sauf `bench_install.py`. Le job `metrics` exécute
+  `scripts/dev/collect_metrics.py`, qui lance `bench_hooks.py --json` et consigne
+  le résultat sous le nom `hook_e2e_ms`. `bench_tests.py` et `bench_install.py`
+  ne chronométrent de véritables exécutions que sous `make benchmarks`. Aucun
+  flux de travail n'exécute `make benchmarks`.
+- **Couloir de sécurité** — gitleaks dans `ci.yml` repère les identifiants commités
+  par accident. L'audit de licences (`license-audit.yml`) échoue lorsqu'une
+  licence de dépendance ne figure pas dans sa liste d'autorisation. Il s'exécute
+  chaque semaine et lorsque les fichiers de dépendances ou de licences changent.
+  `release.yml` génère le SBOM de chaque version étiquetée.
 - **Couloir de publication** — les flux de travail de publication sont déclenchés
   par les push de tags ; les publieurs npm et VS Code peuvent aussi être relancés
   manuellement pour une étiquette existante. La vérification de l'étiquette
   signée confirme la provenance de la branche de publication ; les notes de
   publication dérivent du format Keep-A-Changelog de `CHANGELOG.md`. Le site web
   du projet se publie depuis `site/dist/` vers la cible GitHub Pages lors des
-  push sur `main` qui touchent à ses entrées de compilation, ou sur
-  déclenchement manuel.
+  push sur `main` qui touchent à ses entrées de compilation, ou sur déclenchement
+  manuel.
 
 ## Configuration concrète
 

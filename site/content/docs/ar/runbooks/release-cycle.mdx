@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -226,14 +226,14 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 مُثبِّت السكربت بخطوة واحدة (<bdi>POSIX</bdi>)
 
+يكتب المُثبِّت المُشغِّل <bdi>`apothem`</bdi> في <bdi>`~/.local/bin`</bdi>، أو في الدليل المسمّى في <bdi>`APOTHEM_BIN_DIR`</bdi> حين يكون هذا المتغيّر مضبوطًا. ويحتاج الفحص أدناه إلى أن يكون ذلك الدليل على <bdi>`PATH`</bdi>. وحين لا يكون كذلك، يطبع المُثبِّت سطر <bdi>`export PATH`</bdi> الذي يجب إضافته. وما لم يكن ذلك الدليل على <bdi>`PATH`</bdi>، فلن تجد الصدفة <bdi>`apothem`</bdi>، ويفشل الفحص. وإذا تعذّر على المُثبِّت وضع المُشغِّل، طبع تحذيرًا دون سطر <bdi>`export PATH`</bdi>.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 المخرجات المتوقّعة: <bdi>`Apothem, version X.Y.Z`</bdi>.
-
-يُكتَب المُشغِّل في <bdi>`~/.local/bin`</bdi>، ويجب أن يكون هذا الدليل على <bdi>`PATH`</bdi> حتى يعمل الفحص أعلاه. وحين لا يكون ذلك الدليل على <bdi>`PATH`</bdi>، يطبع المُثبِّت سطر <bdi>`export PATH`</bdi> الذي يجب إضافته.
 
 ### 5.4 مُثبِّت السكربت بخطوة واحدة (<bdi>Windows</bdi>)
 

@@ -203,7 +203,6 @@ def test_advisory_violations_reported_not_gating(
             "src/planted.py": _BARE_EXCEPT_PY,
             "src/magic.py": _MAGIC_NUMBER_PY,
             "docs/notes.md": _HEDGING_MD,
-            "src/headerless.py": _HEADERLESS_PY,
         },
     )
     payload = _run(repo)
@@ -215,8 +214,30 @@ def test_advisory_violations_reported_not_gating(
     assert "bare_except_grep" in advisory
     assert "magic_number_grep" in advisory
     assert "hedging_grep" in advisory
-    assert "file_header_grep" in advisory
     assert payload["advisory_findings_present"] is True
+
+
+def test_headerless_file_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file without the SPDX header line is a BLOCKING finding.
+
+    ``file_header_grep`` joined the blocking set once it was green over the
+    tracked corpus, so a header-less file fails the strict verdict.
+    """
+    monkeypatch.setenv("APOTHEM_CONFORMITY_SCOPE", str(tmp_path))
+    repo = _seed_repo(
+        tmp_path,
+        {
+            "workflow.yml": _CLEAN_WORKFLOW,
+            "src/headerless.py": _HEADERLESS_PY,
+        },
+    )
+    payload = _run(repo)
+    assert payload["passed"] is False
+    blocking = payload["blocking"]
+    assert isinstance(blocking, list)
+    assert "file_header_grep" in {entry["matcher"] for entry in blocking}
 
 
 # --- Per-suffix scoping invariant -------------------------------------------

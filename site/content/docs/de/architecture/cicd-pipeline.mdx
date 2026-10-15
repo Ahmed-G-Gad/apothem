@@ -2,7 +2,7 @@
 title: "CI/CD-Pipeline-Diagramm"
 description: "Visuelle Karte und Spuraufschlüsselung der Workflow-Phasen für Build, Test, Lint, Sicherheit und Veröffentlichung, die jede Codeänderung und jedes Release kontrollieren."
 machineTranslated: true
-sourceHash: "42620c7c2fb8ec8b"
+sourceHash: "d9a69ec274df9173"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,11 +32,11 @@ flowchart LR
         PYTEST["pytest tests/hooks"]
         ECO["validate_ecosystem.py"]
         CHAOS["chaos_pass.py (CI quality job)"]
-        BENCH["src/apothem/benchmarks/ (no CI workflow)"]
+        BENCH["src/apothem/benchmarks/ (unit tests in CI, bench_hooks in metrics job)"]
     end
     subgraph Security["Security lane"]
         SECRETS["Secret scan"]
-        SBOM["SBOM generation"]
+        SBOM["SBOM generation (tags only)"]
         LICENSE["License audit"]
     end
     subgraph Publish["Publish lane (tags only)"]
@@ -76,14 +76,22 @@ flowchart LR
   Ereignismatrix aus; `validate_ecosystem.py` ist das primäre strukturelle Gate
   für artefaktübergreifende Konsistenz; `chaos_pass.py` läuft im CI-Qualitätsjob
   bei Pushes und Pull Requests auf `main` (pfadgefiltert), um Verschlechterungen
-  bei beeinträchtigten Eingaben zu erkennen. Die klassenbezogene Benchmark-Suite
-  unter `src/apothem/benchmarks/` läuft in keinem CI-Workflow.
-- **Sicherheits-Spur** — das Secret-Scanning erkennt versehentlich committete
-  Anmeldedaten; SBOM-Generierung und Lizenzaudits kontrollieren die
-  Lieferketten-Oberfläche jeder Installation mit Produktionsreife.
+  bei beeinträchtigten Eingaben zu erkennen. Die klassenbezogenen Benchmark-Treiber
+  unter `src/apothem/benchmarks/` laufen in CI über die pytest-Suite und über den
+  Job `metrics`. Jeder vollständige pytest-Lauf in CI sammelt
+  `tests/unit/test_benchmarks.py`, das jeden Treiber außer `bench_install.py`
+  aufruft. Der Job `metrics` führt `scripts/dev/collect_metrics.py` aus, das
+  `bench_hooks.py --json` ausführt und das Ergebnis als `hook_e2e_ms` erfasst.
+  `bench_tests.py` und `bench_install.py` messen echte Läufe nur unter
+  `make benchmarks`. Kein Workflow führt `make benchmarks` aus.
+- **Sicherheits-Spur** — gitleaks in `ci.yml` erkennt versehentlich committete
+  Anmeldedaten. Das Lizenz-Audit (`license-audit.yml`) schlägt bei einer
+  Abhängigkeitslizenz fehl, die nicht auf seiner Allowlist steht. Es läuft
+  wöchentlich sowie dann, wenn sich Abhängigkeits- oder Lizenzdateien ändern.
+  `release.yml` erzeugt die SBOM für jedes getaggte Release.
 - **Veröffentlichungs-Spur** — die Release-Workflows werden durch Tag-Pushes
-  ausgelöst; die npm- und VS-Code-Publisher lassen sich für einen bestehenden Tag
-  auch per manuellem Dispatch erneut ausführen. Die Signed-Tag-Verifikation
+  ausgelöst; der npm- und der VS-Code-Publisher lassen sich für einen bestehenden
+  Tag auch per manuellem Dispatch erneut ausführen. Die Signed-Tag-Verifikation
   bestätigt die Herkunft des Release-Branches; die Release-Notes leiten sich aus
   `CHANGELOG.md` im Keep-A-Changelog-Format ab. Die Projekt-Website wird von
   `site/dist/` auf das GitHub-Pages-Ziel veröffentlicht, bei Pushes auf `main`,

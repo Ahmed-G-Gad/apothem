@@ -2,7 +2,7 @@
 title: "Resolução de problemas"
 description: "Soluções para falhas comuns de instalação do Apothem e problemas em tempo de execução nos caminhos do plugin, npx e instalador."
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,9 +91,11 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install não encontra harnesses
 
-Execute apothem doctor para listar os diretórios de harness detectados. Se nenhum
-for encontrado, garanta que o seu harness esteja instalado e tenha sido iniciado
-pelo menos uma vez.
+Execute apothem doctor para ler a tabela Harness Status, que tem uma linha por
+harness. Uma linha marcada como `not installed` significa que o Apothem não
+encontrou nenhuma instalação para aquele harness. Uma linha marcada como `needs --project` é um harness de escopo de projeto, que o doctor verifica somente
+quando você passa `--project <path>`. Se o doctor relatar `No harness is installed yet`, garanta que o seu harness esteja instalado e então execute
+`apothem install --harness <name>`.
 
 ### apothem verify reporta um adaptador com falha
 

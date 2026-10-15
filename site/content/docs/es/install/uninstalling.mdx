@@ -2,7 +2,7 @@
 title: "Desinstalación"
 description: "Elimina Apothem y limpia las configuraciones de entorno."
 machineTranslated: true
-sourceHash: "5480c1153c062495"
+sourceHash: "a94130c42f86f341"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,23 +29,11 @@ La eliminación depende del canal de instalación que usaste. Los números de ca
 son los de la [tabla de canales de instalación](/docs/install#elige-un-canal):
 
 - **Plugin de Claude Code (canal 1)** — elimina el plugin desde dentro de Claude Code:
-  `/plugin uninstall apothem@apothem` (la entrada del marketplace se puede
-  eliminar con `/plugin marketplace remove ahmed-g-gad/apothem`).
-- **npx (canal 2)** — no hay nada que eliminar; `npx` se ejecuta desde su caché. Vacíala
-  con `npm cache clean --force` si quieres que desaparezca la copia en caché.
-- **Instalador de un solo paso (canal 3)** — ejecuta el script de desinstalación
-  correspondiente desde el checkout: `scripts/installer/uninstall.sh` (POSIX) o
-  `scripts/installer/uninstall.ps1` (PowerShell). Ambos piden confirmación antes
-  de eliminar y rechazan destinos inseguros.
-- **Extensión de la familia VS Code (canal 4)** — ejecuta primero **Apothem: Uninstall**
-  desde la paleta de comandos para eliminar las configuraciones de entorno y,
-  después, elimina la extensión desde la vista de Extensiones o con
-  `code --uninstall-extension ahmed-g-gad.apothem`. De forma predeterminada, la
-  extensión ejecuta el motor mediante `npx`, así que la entrada **npx** de arriba
-  cubre la caché.
-- **Arranques de línea de comandos (canales 5–7)** — elimina la extensión o el
-  plugin con la herramienta anfitriona correspondiente una vez que las
-  configuraciones de entorno ya no estén. Los hosts:
+  `/plugin uninstall apothem@apothem` (la entrada del marketplace se puede eliminar con `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx (canal 2)** — no hay nada que eliminar; `npx` se ejecuta desde su caché. Vacíala con `npm cache clean --force` si quieres que desaparezca la copia en caché.
+- **Instalador de un solo paso (canal 3)** — ejecuta el script de desinstalación correspondiente desde el checkout: `scripts/installer/uninstall.sh` (POSIX) o `scripts/installer/uninstall.ps1` (PowerShell). Cada script elimina el entorno indicado con `--harness` (`-Harness` en PowerShell); si no se indica, usa `APOTHEM_HARNESS`; si tampoco está definido, usa Claude Code. También elimina el shim del comando `apothem`. El código fuente se toma de `APOTHEM_SOURCE` cuando está definido, o de `APOTHEM_HOME` (valor predeterminado `$HOME/.apothem`). El código fuente se conserva salvo que pases `--remove-source` (`-RemoveSource` en PowerShell). Esa marca elimina solo el clon gestionado en `APOTHEM_HOME`, y únicamente cuando tiene un directorio `.git`. Con la ubicación predeterminada, también elimina las copias de seguridad de la instalación y el registro bajo `~/.apothem/`. Ambos piden confirmación antes de eliminar las configuraciones de entorno y el código fuente. `--yes` (`-Yes` en PowerShell) omite las confirmaciones. Ambos rechazan destinos inseguros.
+- **Extensión de la familia VS Code (canal 4)** — ejecuta primero **Apothem: Uninstall** desde la paleta de comandos para eliminar las configuraciones de entorno y, después, elimina la extensión desde la vista de Extensiones o con `code --uninstall-extension ahmed-g-gad.apothem`. De forma predeterminada, la extensión ejecuta el motor mediante `npx`, así que la entrada **npx** de arriba cubre la caché.
+- **Arranques de línea de comandos (canales 5–7)** — elimina la extensión o el plugin con su herramienta anfitriona una vez que las configuraciones de entorno ya no existan. Los hosts:
 
   ```text
   channel 5   Gemini CLI extension

@@ -2,7 +2,7 @@
 title: "安装工作流"
 description: "apothem install、update 和 uninstall 的端到端工作原理。"
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,9 +50,7 @@ flowchart TD
 
 ## 错误处理
 
-安装/更新操作会在写入前进行验证，在替换前备份现有的匹配
-目标，并且只在共享发现目录中合并由 Apothem 管理的子条目。`--dry-run` 执行相同的验证，
-返回已跳过或未更改的结果，而不创建任何目录或文件。
+安装/更新操作会在写入前进行验证，在替换前备份已有的匹配目标，并且只在共享发现目录中合并由 Apothem 管理的子条目。`--dry-run` 会执行相同的验证，并返回每次写入会得到的结果（例如 `created` 或 `updated`），但不创建任何目录或文件。
 
 ## Reversibility (backup and rollback)
 

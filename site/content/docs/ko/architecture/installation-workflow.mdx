@@ -2,7 +2,7 @@
 title: "설치 워크플로"
 description: "apothem install, update, uninstall이 처음부터 끝까지 어떻게 동작하는지."
 machineTranslated: true
-sourceHash: "41b3200ed90016e2"
+sourceHash: "31ff2cefbdd10a97"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,8 +52,8 @@ flowchart TD
 
 설치/업데이트 작업은 쓰기 전에 검증하고, 교체 전에 기존의 일치하는 대상을
 백업하며, 공유 디스커버리 디렉터리에서는 Apothem이 관리하는 하위 항목만
-병합합니다. `--dry-run`은 동일한 검증을 수행하고, 디렉터리나 파일을 생성하지 않은
-채 건너뜀 또는 변경 없음 결과를 반환합니다.
+병합합니다. `--dry-run`은 동일한 검증을 실행하고, 각 쓰기가 수행되었다면 얻었을
+결과(예: `created` 또는 `updated`)를 반환하되, 디렉터리나 파일은 만들지 않습니다.
 
 ## Reversibility (backup and rollback)
 

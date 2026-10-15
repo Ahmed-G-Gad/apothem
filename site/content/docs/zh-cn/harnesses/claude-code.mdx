@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,6 +26,8 @@ apothem install --harness claude-code
 ## 配置档案到原生配置的映射
 
 在每次 `apothem install` 或 `apothem update` 时，适配器按照传播清单将共享的 `apothem` 语料传播到 `~/.claude/` 中。适配器在可能的情况下直接使用原生目录，并将命令提示词转换为技能文件夹。现有的、相匹配的 Apothem 托管子项会在替换之前被备份；无关的、由操作者编写的条目会被保留。`settings.json` 会被合并，因此由操作者编写的键仍可恢复。
+
+由操作者编写的文件只保留在下列文件夹之外。每次安装与更新都会删除 `~/.claude/` 下存在的以下每个文件夹，无论它是否由 Apothem 写入：`src/`、`conformity/`、`schemas/`、`hooks/`、`config/`、`scripts/`、`tools/`、`lib/`、`templates/`、`docs/`、`tests/`、`packaging/`、`mcp/`、`examples/`、`assets/`、`site/`、`public/` 和 `commands/`。它还会删除 `statuslines/__init__.py`，以及 `agents/`、`rules/`、`skills/`、`statuslines/` 和 `output-styles/` 中的 `AGENTS.md` 文件。被删除的文件夹会整体移除，包括你放入其中的文件。你保留在 `commands/` 中的斜杠命令同样会被删除，而 Apothem 会把自己的命令提示作为技能安装在 `skills/` 下。你保留在 `hooks/` 中的钩子脚本会被删除，这会让任何调用它的 `settings.json` 条目指向一个不存在的目标。清理在安装写入其自身文件之前运行。每个被删除的路径都会先复制到 `~/.apothem/backups/`，安装记录会指出该副本。卸载不会还原它。要还原被删除的路径，请针对删除它的那次安装运行 `apothem rollback --harness claude-code --install-id ID`，具体见[回滚参考](/docs/cli-reference/rollback)。单独运行 `apothem rollback` 只会撤销最近一次安装。安装记录及其副本只保留最新的 10 次安装，因此被删除的路径只有在其所属安装仍在保留范围内时才能还原。在你安装之前，`apothem diff --harness claude-code` 会把这些删除列为 `Prune stale files`。
 
 已安装的技能以及 Claude Code 插件中捆绑的技能都携带 `user-invocable`，而不是源语料中的 `userInvocable`，因为 Claude Code 只读取带连字符的键。两个模板容器（`plan-suite`、`research-suite`）将其设为 `false`，因此它们不会出现在 `/` 菜单中。每种输出样式都设置了 `keep-coding-instructions: true`，因此选择其中任意一种都会保留 Claude Code 内置的软件工程指令。
 

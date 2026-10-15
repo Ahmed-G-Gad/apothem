@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install कमांड के लिए CLI संदर्भ।"
 machineTranslated: true
-sourceHash: "d9add891b66c5fd9"
+sourceHash: "838431066489b516"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -86,8 +86,8 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 | संचालन | शर्त | सुधार |
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse` (MCP विनिर्देश HTTP+SSE को अप्रचलित घोषित करता है) | जब सर्वर `streamable-http` का समर्थन करता हो, तो उसका उपयोग करें। |
-| `mcp_plain_http` | किसी ऐसे होस्ट का `http://` URL जो लूपबैक नहीं है | एक `https://` URL का उपयोग करें। |
-| `mcp_literal_credential` | टोकन जैसे आकार का एक `headers` या `env` मान (`ghp_`, `github_pat_`, `sk-`, `xox*-`, या लंबे टोकन के साथ `Bearer`) | सीक्रेट को एक पर्यावरण चर में रखें और `${GITHUB_TOKEN}`-शैली के संदर्भ लिखें। |
+| `mcp_plain_http` | ऐसे होस्ट का `http://` URL जो लूपबैक नहीं है | `https://` URL का उपयोग करें। |
+| `mcp_literal_credential` | टोकन जैसे आकार का एक `headers` या `env` मान (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`, `sk-`, `xoxa-`, `xoxb-`, `xoxo-`, `xoxp-`, `xoxr-`, `xoxs-`, या लंबे टोकन के साथ `Bearer`) | सीक्रेट को एक पर्यावरण चर में रखें और `${GITHUB_TOKEN}`-शैली के संदर्भ लिखें। |
 
 क्रेडेंशियल परामर्श उस मान को कभी प्रिंट नहीं करता जो उसे मिला। जिस मान में
 `${...}` संदर्भ होता है, उसे कभी फ़्लैग नहीं किया जाता।
@@ -115,11 +115,11 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 | विकल्प | विवरण |
 |---|---|
-| `--harness NAME` | इंस्टॉल करने के लिए हार्नेस अडैप्टर, या रजिस्ट्री-व्यापी सेट के लिए `all` (आवश्यक)। पंजीकृत नामों के लिए `apothem harnesses list` चलाएँ। |
+| `--harness NAME` | इंस्टॉल करने के लिए हार्नेस अडैप्टर, या रजिस्ट्री-व्यापी सेट के लिए `all` (आवश्यक)। `all` के साथ प्रोफ़ाइल के `exclude_harnesses` में सूचीबद्ध हार्नेस छोड़ दिए जाते हैं, परंतु जिस हार्नेस का नाम स्पष्ट रूप से लिया गया हो, वह सूचीबद्ध होने पर भी इंस्टॉल होता है। पंजीकृत नामों के लिए `apothem harnesses list` चलाएँ। |
 | `--profile PATH` | साझा प्रोफ़ाइल YAML का पथ। डिफ़ॉल्ट `~/.config/apothem/profile.yaml` है। |
 | `--dry-run` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
-| `--clean`, `--fresh` | ऑप्ट-इन क्लीन स्लेट: इंस्टॉल करने से पहले पिछली प्रति-हार्नेस इंस्टॉल स्थिति का बैकअप लें और उसे हटाएँ। |
-| `--yes` | क्लीन-स्लेट हटाने के दौरान प्रति-टारगेट पुष्टि छोड़ें (गैर-इंटरैक्टिव `--clean` रन के लिए आवश्यक)। |
+| `--clean`, `--fresh` | ऑप्ट-इन क्लीन स्लेट: इंस्टॉल से पहले पिछली प्रति-हार्नेस इंस्टॉल स्थिति का बैकअप लें और उसे हटाएँ। |
+| `--yes` | क्लीन-स्लेट हटाने के दौरान प्रति-टारगेट पुष्टि छोड़ें (गैर-इंटरैक्टिव `--clean` रनों के लिए आवश्यक)। |
 | `--project PATH` | प्रोजेक्ट-स्कोप हार्नेसों के लिए प्रोजेक्ट रूट। |
 | `--quiet`, `-q` | सूचनात्मक आउटपुट दबाएँ; केवल त्रुटियाँ उत्सर्जित होती हैं। |
 | `--verbose`, `-v` | समूहबद्ध प्रति-हार्नेस नोट के बजाय प्रत्येक गैर-प्रक्षेपित क्षमता का औचित्य प्रिंट करें। |
@@ -164,7 +164,15 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
   "action": "dry_run",
   "harness": "claude-code",
   "files_written": [],
-  "results": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "created",
+      "operation": "write_text",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "dry run: no filesystem changes made"
+    }
+  ],
   "warnings": [],
   "error": null
 }

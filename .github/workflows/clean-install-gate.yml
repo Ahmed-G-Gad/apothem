@@ -183,8 +183,9 @@ jobs:
 
       - name: PowerShell entry-point shim smoke (Windows)
         # PowerShell parity to the POSIX shim smoke: a real install writes an
-        # apothem.cmd shim into $HOME\.apothem\bin and adds it to PATH; assert it
-        # resolves as a bare `apothem` and runs the engine.
+        # apothem.cmd shim into APOTHEM_BIN_DIR (pinned below). The installer
+        # never edits PATH, so this step adds that directory itself; assert
+        # the shim resolves as a bare `apothem` and runs the engine.
         if: runner.os == 'Windows'
         shell: powershell
         env:

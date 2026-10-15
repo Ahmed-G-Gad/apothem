@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "7bdb8c8995e9fbe3"
+sourceHash: "d0b48a3651623073"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -237,14 +237,14 @@ Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
 ### 5.3 Ein-Schritt-Skript-Installer (POSIX)
 
+Der Installer schreibt den Starter `apothem` nach `~/.local/bin` oder in das Verzeichnis, das `APOTHEM_BIN_DIR` nennt, sofern diese Variable gesetzt ist. Die Prüfung unten braucht dieses Verzeichnis in `PATH`. Ist es nicht enthalten, gibt der Installer die Zeile `export PATH` aus, die hinzugefügt werden muss. Solange dieses Verzeichnis nicht in `PATH` liegt, findet die Shell `apothem` nicht, und die Prüfung schlägt fehl. Kann der Installer den Starter nicht ablegen, gibt er eine Warnung aus und keine Zeile `export PATH`.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 Erwartete Ausgabe: `Apothem, version X.Y.Z`.
-
-Der Launcher wird nach `~/.local/bin` geschrieben, das für die obige Prüfung in `PATH` liegen muss. Liegt dieses Verzeichnis nicht in `PATH`, gibt der Installer die Zeile `export PATH` aus, die hinzugefügt werden muss.
 
 ### 5.4 Ein-Schritt-Skript-Installer (Windows)
 

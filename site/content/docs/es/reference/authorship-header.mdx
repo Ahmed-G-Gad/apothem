@@ -2,7 +2,7 @@
 title: "Encabezado de autoría — Línea de licencia SPDX por archivo"
 description: "Define y aplica marcadores de identificador de licencia SPDX por archivo usando encabezados canónicos de una sola línea en la sintaxis de comentario adecuada para cada tipo de archivo."
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ El texto canónico — escrito aquí en su forma de sintaxis de comentario `#` �
 # SPDX-License-Identifier: MIT
 ```
 
-Este texto es la **única** fuente autoritativa. El validador `file-header` (§8) comprueba los archivos contra este fixture exacto byte a byte. Cualquier desviación entre la línea de encabezado de un archivo y este fixture (una vez aplicada la sustitución de sintaxis según §2) se informa como hallazgo. El validador es consultivo, así que un hallazgo no hace fallar la compilación (§8).
+Este texto es la **única** fuente autoritativa. El validador `file-header` (§8) comprueba los archivos contra este fixture exacto, byte a byte. Cualquier desviación entre la línea de encabezado de un archivo y este fixture (aplicando la sustitución de sintaxis según §2) se informa como hallazgo. El validador es bloqueante: con `--strict`, tal como lo ejecutan CI y el hook de pre-commit, un hallazgo hace fallar la ejecución (§8).
 
 ---
 
@@ -65,14 +65,15 @@ Las siguientes clases están **exentas** de la línea de encabezado SPDX. El val
 
 - **Archivos legales y de versión** — `LICENSE`, `LICENSE.md`, `LICENSE.txt`, `NOTICE` y `VERSION`. `LICENSE` lleva la línea de copyright autoritativa, cuya presencia confirma el validador `license-author-consistency`.
 - **El fixture canónico** — `schemas/authorship-header.txt`. Inyectar el encabezado en el fixture produciría un encabezado del encabezado.
-- **Activos `*.svg`** — los comentarios XML son frágiles como marcadores de comentario de línea, así que la procedencia de los SVG la llevan el README de los activos y las salidas ráster generadas.
-- **Archivos JSON (`.json`)** — JSON no tiene sintaxis de comentario. Cuando se requiera atribución para una configuración JSON, coloca un `<file>.NOTICE.md` hermano.
-- **Lockfiles** — cada archivo `*.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` y `go.sum`. Estos archivos los gestiona la máquina.
+- **Recursos `*.svg`** — los comentarios XML son frágiles como marcadores de comentario de línea, así que la procedencia de los SVG la llevan el README de los recursos y las salidas ráster generadas.
+- **Archivos JSON (`.json`)** — JSON no tiene sintaxis de comentarios. Cuando se requiera atribución para una configuración JSON, coloca un archivo `<file>.NOTICE.md` hermano.
+- **Lockfiles** — todo archivo `*.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` y `go.sum`. Estos archivos los gestiona la máquina.
 - **Archivos generados y minificados** — cualquier archivo bajo un directorio `generated/`, y los paquetes minificados (`*.min.js`, `*.min.css`).
-- **Contenido de terceros incorporado (vendored)** — archivos bajo `_vendor/`, `vendor/`, `third_party/` y `node_modules/`. Llevan la propia licencia o aviso del upstream. Inyectar nuestro marcador sobre la atribución del upstream es una violación de licencia.
-- **Estado de auditoría, planificación y del entorno** — todo lo que hay bajo `.audit/` y `.apothem/`, que contiene planes, memoria, datos de aprendizaje y contextos. También `projects/` y `memory/` en la raíz del árbol de trabajo, que son propiedad del entorno. Estos árboles están ignorados por git o son propiedad del operador, y quedan fuera del alcance del árbol publicado. Los archivos de plan tienen su procedencia registrada en su frontmatter (consulta [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
+- **Contenido de terceros incluido (vendored)** — archivos bajo `_vendor/`, `vendor/`, `third_party/` y `node_modules/`. Llevan la licencia o el aviso propios del upstream. Inyectar nuestro marcador sobre la atribución del upstream constituye una violación de licencia.
+- **Estado de auditoría, planificación y del entorno** — todo lo que hay bajo `.audit/` y `.apothem/`, que contiene planes, memoria, datos de aprendizaje y contextos. También `projects/` y `memory/` en la raíz del árbol de trabajo, que son propiedad del entorno. Estos árboles están ignorados por git o son propiedad del operador, y quedan fuera del alcance del árbol publicado. Los archivos de plan registran su procedencia en su frontmatter (consulta [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
 - **Fixtures de datos de prueba** — archivos `.yaml`, `.yml`, `.txt` y `.json` bajo `tests/fixtures/`. Los archivos fuente de prueba de ese árbol siguen llevando el encabezado.
-- **Marcadores de empaquetado y vacíos** — `.SRCINFO`, que un analizador de empaquetado lee de forma estricta, y los marcadores de cero bytes `.keep`, `.gitkeep` y `py.typed`.
+- **Entradas de humo del inyector** — los archivos bajo `tests/conformity-scenarios/fixtures/F-13-injector-smoke/`. Permanecen sin encabezado porque la prueba del inyector comprueba que el inyector lo añade a ellos.
+- **Marcadores de empaquetado y vacíos** — `.SRCINFO`, que un analizador de empaquetado lee de forma estricta, y los marcadores de tamaño cero `.keep`, `.gitkeep` y `py.typed`.
 - **Archivos binarios** — los sufijos de imagen, fuente, archivo comprimido, multimedia y objeto compilado listados en el fixture. Un sufijo que la tabla de variantes del validador no asigna queda exento por defecto.
 
 La propia lista de excepciones está codificada como una lista de regex/glob en [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) y es la entrada de la comprobación de aplicabilidad del validador. Las enmiendas requieren una indagación estructurada y un nuevo ADR.
@@ -129,7 +130,7 @@ El inyector se invoca mediante el objetivo `make headers-fix`, que ejecuta `scri
 
 Reside en [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). Para cada archivo del árbol de trabajo, el validador consulta su aplicabilidad (según §3) y, si es aplicable, comprueba que la línea SPDX canónica esté presente en el punto de inserción. En la mayoría de las familias ese punto es el inicio del archivo, tras un shebang opcional. En los archivos Markdown y MDX se omite primero el bloque de frontmatter YAML, de modo que la línea canónica puede seguir a la valla de cierre, como exige §5. Los archivos MDX se resuelven a la forma `{/* */}` (§2) y se comprueban contra ella. El validador y el inyector colocan el bloque canónico en el mismo índice.
 
-Se apoya en el fixture exacto byte a byte en [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). La ejecución sobre el corpus informa un número de hallazgos y una muestra de los archivos marcados para este comprobador. No imprime el diff por archivo ni el porcentaje de cobertura. El comprobador es consultivo: sus hallazgos se informan y no hacen fallar la compilación, ni con `--strict` ni sin él.
+Se apoya en el fixture exacto, byte a byte, en [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). La ejecución sobre el corpus informa un número de hallazgos y una muestra de los archivos marcados para este comprobador. No imprime el diff por archivo ni el porcentaje de cobertura. El comprobador es bloqueante: con `--strict`, que usan CI y el hook de pre-commit, un hallazgo hace fallar la ejecución. Sin `--strict`, la puerta de conformidad informa el hallazgo y termina con `0`.
 
 ---
 
@@ -137,10 +138,10 @@ Se apoya en el fixture exacto byte a byte en [`src/apothem/schemas/authorship-he
 
 La disciplina debe sobrevivir a toda sesión futura y a todo colaborador futuro. Superficies de aplicación obligatorias:
 
-1. **`src/apothem/schemas/authorship-header.txt`** — el fixture canónico exacto byte a byte; una única fuente de verdad.
+1. **`src/apothem/schemas/authorship-header.txt`** — el fixture canónico exacto, byte a byte; una única fuente de verdad.
 2. **`scripts/inject-header.{sh,py}`** — el inyector mecánico (§7).
-3. **Validador `file-header`** (§8) — informa de las divergencias como hallazgos consultivos; no hace fallar la compilación.
-4. **Hook de pre-commit** — el hook `conformity-corpus-perwrite` ejecuta cada comprobador por escritura, incluido el validador `file-header` (§8), sobre el árbol rastreado con `--strict`. El comprobador `file-header` es consultivo, así que sus hallazgos se informan y no bloquean una confirmación. El hook solo comprueba. No tiene modo de corrección y nunca ejecuta el inyector (§7), que se ejecuta mediante `make headers-fix`.
+3. **Validador `file-header`** (§8) — informa de la divergencia como hallazgo bloqueante, que hace fallar una ejecución con `--strict`.
+4. **Hook de pre-commit** — el hook `conformity-corpus-perwrite` ejecuta cada comprobador por escritura, incluido el validador `file-header` (§8), sobre el árbol rastreado con `--strict`. El comprobador `file-header` es bloqueante, así que un hallazgo bloquea la confirmación. El hook solo comprueba. No tiene modo de corrección y nunca ejecuta el inyector (§7), que se ejecuta mediante `make headers-fix`.
 5. **Bloque de comportamiento obligatorio de `CLAUDE.md`** — instruye al asistente para que inyecte la línea SPDX canónica siempre que cree un archivo aplicable.
 6. **El archivo de instrucciones de GitHub Copilot** en `.github/copilot-instructions.md` — instruye a Copilot para que haga lo mismo al generar archivos.
 7. **Hooks PreToolUse** en `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — interceptan las llamadas a las herramientas Write y Edit en las rutas aplicables, de modo que la línea SPDX se inyecte al crear el archivo, en lugar de descubrirse después como un hallazgo del validador.

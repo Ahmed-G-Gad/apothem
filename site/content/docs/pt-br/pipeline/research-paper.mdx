@@ -2,7 +2,7 @@
 title: "/research-paper"
 description: "/research-paper — Monta um rascunho de artigo de primeira linha (do resumo à conclusão, mais as referências) a partir da síntese, do projeto e da análise, com cada citação verificada para resolver."
 machineTranslated: true
-sourceHash: "748c384ba8f36be4"
+sourceHash: "e7be8ccd7da4e80f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,14 @@ Com argumentos:
 ## Saídas
 
 O entregável do artigo em um local natural do host (`paper/`) — resumo, introdução, trabalhos relacionados, método, resultados, discussão, limitações, conclusão, referências.
+
+A etapa também grava o registro do portão de validação. Ele registra o resultado
+de cada referência e a contagem de citações resolvidas em comparação com a
+contagem declarada:
+
+```text
+_outputs/paper-attestation.md
+```
 
 ## A jusante
 

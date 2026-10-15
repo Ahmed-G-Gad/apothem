@@ -79,7 +79,11 @@ The package directory becomes importable by prepending the checkout's
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-When the `apothem` launcher is not on PATH, the one-shot installer prints this form at completion, with the vendored directory ahead of `src/` and the CPython it resolved in place of `python`.
+When the `apothem` launcher is not on PATH, `install.sh` prints this form at
+completion, with the vendored directory ahead of `src/` and the CPython it
+resolved in place of `python`. `install.ps1` prints the same two settings in
+PowerShell form: a `$env:PYTHONPATH` assignment that joins the vendored and
+`src/` directories with `;`, then `& '<CPython>' -m apothem <command>`.
 
 ## Plugin-tree bootstrap
 

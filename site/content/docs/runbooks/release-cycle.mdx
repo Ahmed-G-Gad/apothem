@@ -241,14 +241,19 @@ Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.3 One-shot script installer (POSIX)
 
+The installer writes the `apothem` launcher to `~/.local/bin`, or to the
+directory named by `APOTHEM_BIN_DIR` when that variable is set. The check
+below needs that directory on `PATH`. When it is not, the installer prints the
+`export PATH` line to add. Until that directory is on `PATH`, the shell
+cannot find `apothem`, and the check fails. If the installer cannot place the
+launcher, it prints a warning and no `export PATH` line.
+
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
 Expected output: `Apothem, version X.Y.Z`.
-
-The launcher is written to `~/.local/bin`, which must be on `PATH` for the check above to run. When that directory is not on `PATH`, the installer prints the `export PATH` line to add.
 
 ### 5.4 One-shot script installer (Windows)
 

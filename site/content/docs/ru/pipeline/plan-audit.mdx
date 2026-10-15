@@ -2,7 +2,7 @@
 title: "/plan-audit"
 description: "/plan-audit — Замкнутый страж конвейера /plan — оборачивает spec → generate → review и активно устраняет находки, пока набор планов не станет проверенным целым без находок."
 machineTranslated: true
-sourceHash: "6f82709e6c4d40fc"
+sourceHash: "ad784374d4fb602c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "6f82709e6c4d40fc"
 С аргументами:
 
 ```bash
-/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+/plan-audit [suite-path] [--cap N] [--dry-run]
 ```
 
 ## Входы
@@ -33,7 +33,7 @@ sourceHash: "6f82709e6c4d40fc"
 
 ## Позиция в конвейере
 
-`/plan-audit` **ортогонален** линейному конвейеру, а не является его этапом. Каноническая линейная последовательность — `/plan-spec → /plan-generate → /plan-review → /plan-design` (условный этап, только для наборов планов, несущих архитектуру) `→ /plan-execute`. `/plan-audit` охватывает `/plan-spec → /plan-generate → /plan-review` как единую замкнутую обёртку, которую можно вызвать в любой точке: она проверяет состояние и запускает только недостающие этапы, как только существует сгенерированный набор планов; при отсутствии сгенерированного набора планов она отказывает с сообщением `Blocked: run /plan-generate first`. Она отличается от последовательности аудиторских проверок (вход в `/code-review`, завершение в `/threat-model-audit`), которая проводит аудит выполненной кодовой базы, а не набора планов.
+`/plan-audit` **ортогонален** линейному конвейеру, а не является его этапом. Каноническая линейная последовательность — `/plan-spec → /plan-generate → /plan-review → /plan-design` (условный этап, только для наборов планов, несущих архитектуру) `→ /plan-execute`. `/plan-audit` охватывает `/plan-spec → /plan-generate → /plan-review` как единую замкнутую обёртку, которую можно вызвать в любой точке: она проверяет состояние и запускает только недостающие этапы. При отсутствии как написанной спецификации, так и сгенерированного набора планов она отказывает с сообщением `Blocked: run /plan-spec first` (`--override` обходит шлюз и записывает обход как замечание в PLAN-NOTES.md, с обоснованием и названным недостающим условием). Она отличается от последовательности аудиторских проверок (вход в `/code-review`, завершение в `/threat-model-audit`), которая проводит аудит выполненной кодовой базы, а не набора планов.
 
 ## Фазы рабочего процесса
 
@@ -60,7 +60,7 @@ sourceHash: "6f82709e6c4d40fc"
 /plan-audit --dry-run
 
 # Audit and actively remediate a named suite, capping the loop at 2 iterations
-/plan-audit path/to/plan-suite/ --remediate --cap 2
+/plan-audit path/to/plan-suite/ --cap 2
 ```
 
 ## Перекрёстные ссылки

@@ -194,8 +194,10 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       Project-root AGENTS.md managed block plus an Apothem support tree under
-      <project>/.kimi-code/.apothem/support/ carrying rules, commands, skills, agents,
-      and templates. The <project>/.kimi-code/mcp.json MCP surface is
+      <project>/.kimi-code/.apothem/support/ carrying hooks, rules, commands,
+      skills, agents, and templates. Apothem does not register the hook scripts
+      with Kimi Code; they are reference material. The
+      <project>/.kimi-code/mcp.json MCP surface is
       operator-owned.
 
   - name: codebuddy
@@ -291,7 +293,7 @@ asset_classes:
     compatible_harnesses:
       - claude-code        # full: rules injected into ~/.claude/ tree
       - cursor             # partial: distilled into project .cursor/rules/
-      - gemini-cli         # partial: distilled into ~/.gemini/GEMINI.md
+      - gemini-cli         # partial: support cohort referenced by <project>/GEMINI.md
       - github-copilot     # partial: distilled into copilot-instructions.md
       - codex              # partial: distilled into ~/.codex/AGENTS.md
       - windsurf           # partial: distilled into project .devin/rules/ (preferred; .windsurf/rules/ fallback)

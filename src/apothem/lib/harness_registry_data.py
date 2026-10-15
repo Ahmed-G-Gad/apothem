@@ -214,7 +214,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             system_prompt_templates=(
-                "CLAUDE.md is operator-owned and intentionally not adapter-written."
+                "The adapter ships no system-prompt template. "
+                "CLAUDE.md stays operator-owned: the adapter writes only its "
+                "sentinel-delimited Apothem block into it and keeps the prose "
+                "outside the sentinels."
             ),
         ),
     ),

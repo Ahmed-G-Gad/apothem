@@ -26,7 +26,7 @@ The continuous-form alias `apothem updating` (also accepted as
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Harness adapter to update, or `all` for the registry-wide set (required). |
+| `--harness NAME` | Harness adapter to update, or `all` for the registry-wide set (required). With `all`, harnesses listed in the profile's `exclude_harnesses` are skipped, but a harness named explicitly is updated even when listed. |
 | `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Preview update without writing files. |
 | `--project PATH` | Project root for project-scope harnesses. Required when the selected harness set includes project-scope adapters. |

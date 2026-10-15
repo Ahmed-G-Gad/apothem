@@ -2,7 +2,7 @@
 title: "समस्या निवारण"
 description: "प्लगइन, npx और इंस्टॉलर पथों में आम Apothem इंस्टॉलेशन विफलताओं और रनटाइम समस्याओं के समाधान।"
 machineTranslated: true
-sourceHash: "bc3e1102685c3e6e"
+sourceHash: "69d0d84cf9e84361"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,9 +91,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem install को कोई हार्नेस नहीं मिलता
 
-पता लगाई गई हार्नेस डायरेक्टरियों की सूची देखने के लिए apothem doctor चलाएँ। यदि कोई
-नहीं मिलती, तो सुनिश्चित करें कि आपका हार्नेस इंस्टॉल है और कम से कम एक बार लॉन्च
-किया गया है।
+Harness Status तालिका पढ़ने के लिए apothem doctor चलाएँ, जिसमें हर हार्नेस के लिए एक पंक्ति होती है। `not installed` चिह्नित पंक्ति का अर्थ है कि Apothem को उस हार्नेस का कोई इंस्टॉल नहीं मिला। `needs --project` चिह्नित पंक्ति एक प्रोजेक्ट-स्कोप हार्नेस की है, जिसे doctor केवल तभी जाँचता है जब आप `--project <path>` पास करें। यदि doctor `No harness is installed yet` रिपोर्ट करता है, तो सुनिश्चित करें कि आपका हार्नेस इंस्टॉल है, फिर `apothem install --harness <name>` चलाएँ।
 
 ### apothem verify एक विफल अडैप्टर की रिपोर्ट करता है
 

@@ -2,7 +2,7 @@
 title: "/plan-execute"
 description: "/plan-execute — Executa uma fase específica de uma Suíte de Planejamento Mestra com verificação de conformidade."
 machineTranslated: true
-sourceHash: "83dae82d475df6e2"
+sourceHash: "f45e23f0fd1b8dd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,14 @@ Arquivos REPORT.md por fase, artefatos da base de código, COMPLETION.md
 
 ## Downstream
 
-`/code-review` — o ponto de entrada canônico da sequência de fortaleza de auditoria de onze comandos. `/plan-execute` é a etapa terminal do pipeline de *plano*; quando a fase final é concluída, o código construído é passado para a fortaleza de auditoria para revisão.
+`/fortress` leva o trabalho executado a um estado de prontidão para release em
+uma única chamada (detectar, verificar, remediar, reauditar, aplicar o portão).
+Por padrão, ele pausa para confirmação ao fim de cada rodada; `--autonomous`
+executa as rodadas sem pausar. `/code-review` é o ponto de entrada canônico da
+sequência de revisão de auditoria de onze comandos, que percorre a cadeia uma
+etapa por vez. `/plan-execute` é a etapa terminal do pipeline de *plano*; quando
+a fase final é concluída, o código construído é encaminhado à sequência de
+revisão de auditoria para revisão.
 
 ## Fases do fluxo de trabalho
 

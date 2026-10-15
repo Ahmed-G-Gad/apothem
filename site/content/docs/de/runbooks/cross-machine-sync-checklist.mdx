@@ -2,7 +2,7 @@
 title: "Prüfliste zur maschinenübergreifenden Synchronisation"
 description: "Prüfverfahren, um zu bestätigen, dass der Adapter für Claude Code auf einem frischen Host korrekt installiert, validiert und deinstalliert wird, mit vollständigen Portabilitätsprüfungen."
 machineTranslated: true
-sourceHash: "fe0bc745cce7932a"
+sourceHash: "b6f6f7d6a489e8c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ bash scripts/installer/uninstall.sh --yes
 PYTHONPATH="$HOME/.apothem/src/apothem/_vendor:$HOME/.apothem/src" python3 -m apothem verify --harness claude-code    # reports the harness as not installed
 ```
 
-**Erwartet:** Der interaktive Ablauf fragt nach; `--yes` überspringt die Abfrage bei Batch-Läufen; beide Abläufe lassen die Konfigurationswurzel von Claude Code frei von durch Apothem materialisierten Dateien; der `apothem`-Shim wird entfernt (`~/.local/bin/apothem` unter POSIX, `apothem.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps` unter Windows).
+**Erwartet:** Der interaktive Ablauf fragt nach; `--yes` überspringt die Abfrage bei Batch-Läufen; beide Abläufe lassen die Konfigurationswurzel von Claude Code frei von durch Apothem materialisierten Dateien; der `apothem`-Shim wird entfernt (`~/.local/bin/apothem`; der Shim `apothem.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps` wird nur von `uninstall.ps1` entfernt).
 
 ## 6. Verifizierung der Sicherheitsschutzvorrichtungen
 

@@ -2,7 +2,7 @@
 title: "تحرير الملف التعريفي"
 description: "غيّر الملف التعريفي المشترك وأعد تجسيد كل إطار عمل مثبَّت."
 machineTranslated: true
-sourceHash: "24dfc028806d15cb"
+sourceHash: "7359e9f71919f942"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -80,7 +80,7 @@ apothem verify --harness all
 
 يعكس <bdi>`profile show`</bdi> تحريرك.
 
-يتحقّق <bdi>`apothem verify --harness all`</bdi> من كل إطار عمل مُسجَّل، فيخرج برمز غير صفري ما لم تكن جميعها مثبّتة. وأُطُر العمل ذات نطاق المشروع تحتاج أيضًا إلى <bdi>`--project PATH`</bdi>؛ ومن دونه تتوقّف الدُفعة بخطأ <bdi>`project.required`</bdi>. وللتحقّق من إطار العمل الذي حدّثته وحده، شغّل الأمر نفسه مع اسم ذلك الإطار:
+يتحقّق <bdi>`apothem verify --harness all`</bdi> من كل إطار عمل مُسجَّل، عدا ما يُدرجه <bdi>`exclude_harnesses`</bdi> من الملف التعريفي، فيخرج برمز غير صفري ما لم تكن كل الأُطُر الأخرى مثبّتة. وأُطُر العمل ذات نطاق المشروع تحتاج أيضًا إلى <bdi>`--project PATH`</bdi>؛ ومن دونه تتوقّف الدُفعة بخطأ <bdi>`project.required`</bdi>. وللتحقّق من إطار العمل الذي حدّثته وحده، شغّل الأمر نفسه مع اسم ذلك الإطار:
 
 ```bash
 apothem verify --harness <name>

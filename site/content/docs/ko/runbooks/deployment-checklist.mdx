@@ -2,7 +2,7 @@
 title: "배포 체크리스트"
 description: "Apothem 에코시스템을 배포하거나 공유하기 전의 사전 검증 체크리스트"
 machineTranslated: true
-sourceHash: "09dbc1fde38d4135"
+sourceHash: "23417f8798d91fef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,19 +31,18 @@ frontmatter를 파싱하고 YAML 오류 + 누락된 필수 필드를 표시합�
 ### 규칙 (`src/apothem/rules/*.md`)
 
 - [ ] `name` — 파일 이름과 일치하는 kebab-case 식별자
-- [ ] `version` — semver `MAJOR.MINOR.PATCH` (예: `"X.Y.Z"`)
-- [ ] `updated` — ISO 8601 날짜 (예: `"2026-04-20"`)
 - [ ] `description` — 한 문장 요약
-- [ ] `scope` — `"always-on"` 또는 `"path-filtered"`
-- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"`, 또는 `"windows-only"`
-- [ ] `pathFilter` — 경로 필터링 규칙의 경우 존재하며 유효한 glob 문자열; 항상 켜진 규칙의 경우 부재
+- [ ] `alwaysApply` — 항상 적용되는 규칙은 `true`, 경로 필터링 규칙은 `false`
+- [ ] `pathFilter` — 모든 규칙에 있어야 합니다. 항상 적용되는 규칙(`alwaysApply: true`)에서는 `""`, 경로 필터링 규칙(`alwaysApply: false`)에서는 쉼표로 구분된 glob 목록입니다.
+
+규칙은 `version`, `updated`, `scope`, `portability` 키를 포함하지 않습니다.
 
 ### 명령 (`src/apothem/commands/*.md`)
 
 - [ ] `name` — kebab-case 명령 이름
-- [ ] `version`, `updated`, `description`, `argument-hint` 존재
+- [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` 존재
 - [ ] `disable-model-invocation` 존재하며 의도적임 (지침 전용 명령의 경우 `true`)
-- [ ] `effort`, `portability` 존재하는 경우 검토됨 (schema상 선택 사항)
+- [ ] `effort` 키는 없어야 합니다: `command.schema.json`은 `additionalProperties: false`를 설정하며 이를 허용하지 않습니다.
 
 ### 위임 작업자
 
@@ -56,14 +55,14 @@ src/apothem/agents/*.md
 - [ ] `name`, `version`, `updated`, `description` 존재
 - [ ] `tools` — 허용된 도구의 쉼표로 구분된 목록
 - [ ] `disallowedTools` — 허용되지 않은 도구를 명시적으로 나열
-- [ ] `maxTurns` — 설정됨 (> 10인 경우 근거 주석 포함)
-- [ ] `permissionMode` — **`"bypassPermissions"`이면 안 됨** — `"default"` 사용
-- [ ] `memory: false`, 단 영속 메모리가 의도적인 경우는 예외
+- [ ] `maxTurns` — 설정됨(10을 넘으면 근거 주석 포함)
+- [ ] `permissionMode` — **`"bypassPermissions"`이면 안 됨**. 이 키는 설정하지 않은 상태로 둡니다. 중립 태세가 권한 모드를 미리 지정하지 않기 때문입니다.
+- [ ] `memory` — 영속 메모리를 의도한 경우가 아니라면 생략합니다. 설정하는 경우에는 `user`, `project`, `local` 중 하나여야 합니다(불리언 형식은 없음).
 
 ### 스킬 (`src/apothem/skills/*/SKILL.md`)
 
-- [ ] `name`, `version`, `updated`, `description` 존재
-- [ ] `user-invocable` — 선언됨 (true/false)
+- [ ] `name`, `version`, `updated`, `description`, `archetype`, `disable-model-invocation`, `allowed-tools` 존재
+- [ ] `userInvocable` 선언됨(true/false). 소스 표기는 `userInvocable`이며, 스킬은 `userInvocable` 또는 `user-invocable`(Claude Code 표기) 중 정확히 하나만 가집니다.
 
 ---
 

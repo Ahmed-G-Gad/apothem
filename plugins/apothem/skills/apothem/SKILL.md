@@ -3,6 +3,8 @@ name: apothem
 description: Install and manage the Apothem shared profile across AI assistant harnesses from Codex. Use when the operator asks to install, verify, update, or uninstall Apothem, or to sync their shared rules / skills / hooks / slash-commands / MCP-server profile into Codex or another supported tool.
 ---
 
+<!-- SPDX-License-Identifier: MIT -->
+
 # Apothem
 
 Apothem is a host-agnostic AI-harness configuration manager: one

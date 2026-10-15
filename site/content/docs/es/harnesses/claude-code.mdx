@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8fc429cc0aa4c5e8"
+sourceHash: "f60950ab3aa08ee9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,6 +53,8 @@ prompts de comando en carpetas de skill. Los hijos coincidentes gestionados por
 Apothem que ya existen se respaldan antes de su reemplazo; las entradas no
 relacionadas creadas por el operador se conservan. `settings.json` se fusiona
 para que las claves creadas por el operador sigan siendo recuperables.
+
+Los archivos escritos por el operador solo se conservan fuera de las carpetas siguientes. Cada instalación y cada actualización elimina cada una de estas carpetas bajo `~/.claude/` que exista, la haya escrito o no Apothem: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` y `commands/`. También elimina `statuslines/__init__.py` y los archivos `AGENTS.md` de `agents/`, `rules/`, `skills/`, `statuslines/` y `output-styles/`. Una carpeta eliminada se borra completa, incluidos los archivos que hayas colocado en ella. También se eliminan los comandos de barra que conservas en `commands/`, y Apothem instala sus propios prompts de comando como skills bajo `skills/`. Un script de hook que conservas en `hooks/` se elimina, lo que deja cualquier entrada de `settings.json` que lo invoque apuntando a nada. La limpieza se ejecuta antes de que la instalación escriba sus propios archivos. Cada ruta eliminada se copia primero a `~/.apothem/backups/`, y el registro de instalación indica esa copia. Desinstalar no la restaura. Para restaurar una ruta eliminada, ejecuta `apothem rollback --harness claude-code --install-id ID` para la instalación que la eliminó, tal como se describe en la [referencia de rollback](/docs/cli-reference/rollback). Un `apothem rollback` sin más opciones solo revierte la última instalación. Los registros de instalación y sus copias se conservan para las 10 instalaciones más recientes, así que una ruta eliminada solo puede restaurarse mientras su instalación esté entre ellas. `apothem diff --harness claude-code` muestra estas eliminaciones como `Prune stale files` antes de que instales.
 
 Las skills instaladas, y las skills incluidas en el plugin de Claude Code,
 llevan `user-invocable` en lugar del `userInvocable` del corpus de origen,

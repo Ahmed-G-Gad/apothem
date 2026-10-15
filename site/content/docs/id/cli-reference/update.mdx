@@ -2,7 +2,7 @@
 title: "update"
 description: "Referensi CLI untuk perintah apothem update."
 machineTranslated: true
-sourceHash: "e91dcc6ca6a07470"
+sourceHash: "9090fc8d8546d5b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,7 @@ Alias bentuk-kontinu `apothem updating` (juga diterima sebagai
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter harness yang akan diperbarui, atau `all` untuk himpunan selingkup registri (wajib). |
+| `--harness NAME` | Adapter harness yang akan diperbarui, atau `all` untuk himpunan selingkup registri (wajib). Dengan `all`, harness yang tercantum dalam `exclude_harnesses` pada profil dilewati, tetapi harness yang disebut secara eksplisit tetap diperbarui meskipun tercantum. |
 | `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mempratinjau pembaruan tanpa menulis berkas. |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. Wajib ketika himpunan harness yang dipilih mencakup adapter berlingkup-proyek. |

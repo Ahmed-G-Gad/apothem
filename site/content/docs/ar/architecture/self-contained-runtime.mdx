@@ -2,7 +2,7 @@
 title: "زمن التشغيل المكتفي ذاتيًا"
 description: "كيف يعمل محرّك Apothem من أي نسخة مسحوبة — الاعتماديات المُضمَّنة، ونموذج الاستدعاء PYTHONPATH=src، وتمهيد شجرة الإضافة."
 machineTranslated: true
-sourceHash: "d840e762d7860704"
+sourceHash: "7e97d59d22d34fda"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -78,7 +78,7 @@ sourceHash: "d840e762d7860704"
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```
 
-عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع المُثبِّت ذو الخطوة الواحدة هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حدّده المُثبِّت بدلًا من <bdi>`python`</bdi>.
+عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع <bdi>`install.sh`</bdi> هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حلّه المُثبِّت بدلًا من <bdi>`python`</bdi>. ويطبع <bdi>`install.ps1`</bdi> الإعدادين نفسيهما بصيغة <bdi>PowerShell</bdi>: إسنادٌ إلى <bdi>`$env:PYTHONPATH`</bdi> يصل الدليل المُضمَّن ودليل <bdi>`src/`</bdi> بالفاصلة المنقوطة <bdi>`;`</bdi>، ثم <bdi>`& '<CPython>' -m apothem <command>`</bdi>.
 
 ## تمهيد شجرة الإضافة
 
