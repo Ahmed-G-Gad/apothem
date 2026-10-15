@@ -2,7 +2,7 @@
 title: "著作者ヘッダー — ファイルごとの SPDX ライセンス行"
 description: "ファイルタイプごとに適切なコメント構文で、正規の単一行ヘッダーを用いて、ファイルごとの SPDX ライセンス識別子マーカーを定義し、強制します。"
 machineTranslated: true
-sourceHash: "5fb79aeb88568559"
+sourceHash: "9c0a567f38d65f5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ sourceHash: "5fb79aeb88568559"
 # SPDX-License-Identifier: MIT
 ```
 
-このテキストが**唯一の**権威ある情報源です。`file-header` バリデーター（§8）は、このバイト単位で正確なフィクスチャに対してファイルを検査します。ファイルのヘッダー行とこのフィクスチャとの間のずれ（§2 に従った構文置換を前提とする）は、指摘事項として報告されます。このバリデーターは助言的なものであるため、指摘事項があってもビルドは失敗しません（§8）。
+このテキストが**唯一の**権威ある情報源です。`file-header` バリデーター（§8）は、このバイト単位で正確なフィクスチャに対してファイルを検査します。ファイルのヘッダー行とこのフィクスチャとの間のずれ（§2 に従った構文置換を前提とする）は、指摘事項として報告されます。このバリデーターはブロッキングです。CI と pre-commit フックが実行する `--strict` 付きの実行では、指摘事項があると実行が失敗します（§8）。
 
 ---
 
@@ -66,12 +66,13 @@ HTML コメント（または MDX の `{/* */}`）のラッパーは目に見え
 - **法的文書とバージョンのファイル** — `LICENSE`、`LICENSE.md`、`LICENSE.txt`、`NOTICE`、`VERSION`。`LICENSE` は権威ある著作権行を含み、`license-author-consistency` バリデーターがその存在を確認します。
 - **正規のフィクスチャ** — `schemas/authorship-header.txt`。フィクスチャにヘッダーを注入すると、ヘッダーのためのヘッダーが生じてしまいます。
 - **`*.svg` アセット** — XML コメントは行コメントのマーカーとしては壊れやすいため、SVG の来歴はアセットの README と、生成されたラスター出力によって担われます。
-- **JSON ファイル（`.json`）** — JSON にはコメント構文がありません。JSON 設定に帰属表示が必要な場合は、兄弟ファイルの `<file>.NOTICE.md` を置きます。
+- **JSON ファイル（`.json`）** — JSON にはコメント構文がありません。JSON 設定に帰属表示が必要な場合は、兄弟ファイルとして `<file>.NOTICE.md` を置きます。
 - **ロックファイル** — すべての `*.lock` ファイル、`package-lock.json`、`yarn.lock`、`pnpm-lock.yaml`、`go.sum`。これらのファイルは機械が管理します。
 - **生成ファイルと圧縮ファイル** — `generated/` ディレクトリ配下のすべてのファイル、および圧縮されたバンドル（`*.min.js`、`*.min.css`）。
-- **ベンダリングされたサードパーティのコンテンツ** — `_vendor/`、`vendor/`、`third_party/`、`node_modules/` 配下のファイル。これらは上流自身のライセンスまたは通知を保持しています。上流の帰属表示の上に本プロジェクトのマーカーを注入することは、ライセンス違反です。
-- **監査、計画、ハーネスの状態** — `.audit/` と `.apothem/` 配下のすべて（プラン、メモリ、学習データ、コンテキストを保持）。作業ツリーのルートにある `projects/` と `memory/` も、ハーネスが所有しています。これらのツリーは git で無視されるか、オペレーターが所有し、公開ツリーの対象外です。プランファイルは、フロントマターによって来歴を追跡されます（[`plans-discipline.md`](/docs/reference/plans-discipline) §3 を参照）。
+- **ベンダリングされたサードパーティのコンテンツ** — `_vendor/`、`vendor/`、`third_party/`、`node_modules/` 配下のファイル。これらは上流自身のライセンスまたは通知を保持しています。上流の帰属表示の上から自前のマーカーを注入することは、ライセンス違反です。
+- **監査、計画、ハーネスの状態** — `.audit/` および `.apothem/` 配下のすべて（プラン、メモリ、学習データ、コンテキストを保持）。作業ツリーのルートにある `projects/` と `memory/` も、ハーネスが所有しています。これらのツリーは git で無視されるか、オペレーターが所有しており、公開ツリーの対象外です。プランファイルは、フロントマターによって来歴を追跡されます（[`plans-discipline.md`](/docs/reference/plans-discipline) §3 を参照）。
 - **テストデータのフィクスチャ** — `tests/fixtures/` 配下の `.yaml`、`.yml`、`.txt`、`.json` ファイル。そのツリー内のテストのソースファイルには、引き続きヘッダーが付きます。
+- **インジェクターのスモークテスト入力** — `tests/conformity-scenarios/fixtures/F-13-injector-smoke/` 配下のファイル。インジェクターのテストは、インジェクターがこれらのファイルにヘッダーを追加することを確認するため、これらはヘッダーなしのまま保たれます。
 - **パッケージングと空のマーカー** — パッケージングのパーサーが厳密に読み取る `.SRCINFO`、およびゼロバイトのマーカーである `.keep`、`.gitkeep`、`py.typed`。
 - **バイナリファイル** — フィクスチャに列挙された画像、フォント、アーカイブ、メディア、コンパイル済みオブジェクトの接尾辞。バリデーターのバリアント表に対応付けられていない接尾辞は、既定で免除されます。
 
@@ -129,7 +130,7 @@ Markdown と MDX のファイルでは、SPDX 行は常にそのコメントラ�
 
 このバリデーターは [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) にあります。作業ツリー内のすべてのファイルについて、バリデーターは（§3 に従って）適用可否を調べ、適用対象であれば、正規の SPDX 行が挿入位置に存在することを確認します。ほとんどのファミリーでは、挿入位置は、任意の shebang の後にあるファイルの先頭です。Markdown と MDX のファイルでは、YAML フロントマターのブロックを先に読み飛ばすため、§5 が求めるとおり、正規の行は閉じフェンスの後に置かれることがあります。MDX ファイルは `{/* */}` の形式（§2）に解決され、その形式に対して検査されます。バリデーターとインジェクターは、同じインデックスに正規のブロックを置きます。
 
-[`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) にあるバイト単位で正確なフィクスチャに裏付けられています。コーパスの実行は、このマッチャーに関する指摘件数と、フラグされたファイルのサンプルを報告します。ファイルごとの差分もカバレッジの割合も出力しません。このマッチャーは助言的です。その指摘事項は報告されますが、`--strict` の有無にかかわらず、ビルドは失敗しません。
+[`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) にあるバイト単位で正確なフィクスチャに裏付けられています。コーパスの実行は、このマッチャーについて、指摘事項の件数とフラグされたファイルのサンプルを報告します。ファイルごとの差分もカバレッジの割合も出力しません。このマッチャーはブロッキングです。CI と pre-commit フックが使用する `--strict` 付きの実行では、指摘事項があると実行が失敗します。`--strict` を付けない場合、ゲートは指摘事項を報告し、`0` で終了します。
 
 ---
 
@@ -137,15 +138,15 @@ Markdown と MDX のファイルでは、SPDX 行は常にそのコメントラ�
 
 この規律は、今後のあらゆるセッションと、今後のあらゆるコントリビューターを超えて存続しなければなりません。必須の強制面は次のとおりです:
 
-1. **`src/apothem/schemas/authorship-header.txt`** — バイト単位で正確な正規のフィクスチャ。信頼できる情報源は 1 つだけです。
-2. **`scripts/inject-header.{sh,py}`** — 機械的なインジェクター（§7）。
-3. **`file-header` バリデーター**（§8）— ずれを助言的な指摘事項として報告します。ビルドは失敗させません。
-4. **pre-commit フック** — `conformity-corpus-perwrite` フックが、`--strict` を付けて追跡対象のツリー全体に対して、Write ごとのマッチャーすべてを実行します。その中には `file-header` バリデーター（§8）も含まれます。`file-header` マッチャーは助言的なので、その指摘事項は報告されますが、コミットを妨げません。このフックはチェックのみを行います。修正モードはなく、インジェクター（§7）を実行することもありません。インジェクターは `make headers-fix` を通じて実行されます。
+1. **`src/apothem/schemas/authorship-header.txt`** — バイト単位で正確な正規のフィクスチャです。信頼できる情報源は 1 つだけです。
+2. **`scripts/inject-header.{sh,py}`** — 機械的なインジェクター（§7）です。
+3. **`file-header` バリデーター**（§8）— ずれを、ブロッキングの指摘事項として報告します。`--strict` 付きの実行を失敗させます。
+4. **pre-commit フック** — `conformity-corpus-perwrite` フックが、`--strict` を付けて追跡対象のツリー全体に対して、Write ごとのマッチャーすべてを実行します。その中には `file-header` バリデーター（§8）も含まれます。`file-header` マッチャーはブロッキングなので、指摘事項があるとコミットはブロックされます。このフックはチェックのみを行います。修正モードはなく、インジェクター（§7）を実行することもありません。インジェクターは `make headers-fix` を通じて実行されます。
 5. **`CLAUDE.md` の必須動作ブロック** — 適用対象のファイルを作成するときは常に、正規の SPDX 行を注入するようアシスタントに指示します。
 6. **GitHub Copilot の指示ファイル**（`.github/copilot-instructions.md`）— ファイル生成時に同じことを行うよう Copilot に指示します。
-7. **PreToolUse フック**（`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`）— 適用対象のパスに対する Write/Edit のツール呼び出しを横取りし、SPDX 行が後からバリデーターの指摘事項として見つかるのではなく、ファイルの作成時に注入されるようにします。
+7. **PreToolUse フック**（`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`）— 適用対象のパスに対する Write/Edit ツールの呼び出しを横取りし、SPDX 行が後からバリデーターの指摘事項として見つかるのではなく、ファイルの作成時に注入されるようにします。
 8. **プルリクエストテンプレートのチェックボックス** — すべての新しいファイルが正規の SPDX 行を持つことを、コントリビューターが表明するためのものです。
-9. **本ドキュメント**（`site/content/docs/reference/authorship-header.mdx`）— 正規かつ規範的な解説。
+9. **本ドキュメント**（`site/content/docs/reference/authorship-header.mdx`）— 正規かつ規範的な解説です。
 
 ---
 
