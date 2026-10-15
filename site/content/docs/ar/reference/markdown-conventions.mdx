@@ -1,22 +1,22 @@
 ---
 title: "اصطلاحات Markdown"
-description: "توحيد نكهة Markdown، وبنية العناوين، وإعلانات لغة كتل الشيفرة المُسوَّرة، وصيغ الروابط الداخلية، وشعارات التأليف، والإنفاذ عبر المدقّقات."
+description: "توحيد نكهة Markdown، وبنية العناوين، وإعلانات لغة كتل الشيفرة المُسوَّرة، وصيغ الروابط الداخلية، وترويسات التأليف، والإنفاذ عبر المدقّقات."
 machineTranslated: true
-sourceHash: "940c41973c1d1e98"
+sourceHash: "ff7f4b87c251190c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **مرجع معتمد لشكل <bdi>Markdown</bdi> وتنسيقه في كل مُنتَج <bdi>`.md`</bdi> مُؤلَّف.** الملخّص في قسم الاصطلاحات من [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) هو الإعلان المُضمَّن؛ وهذه الصفحة هي المرجع المستقلّ الذي يستشهد به المساهمون في المراحل اللاحقة.
+> **مرجع معتمد لشكل <bdi>Markdown</bdi> وتنسيقه في كل مُنتَج <bdi>`.md`</bdi> و<bdi>`.mdx`</bdi> مُؤلَّف.** الملخّص في قسم الاصطلاحات من [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) هو الإعلان المُضمَّن؛ وهذه الصفحة هي المرجع المستقلّ الذي يستشهد به المساهمون اللاحقون.
 
 ---
 
 ## 1. النكهة
 
-<bdi>GitHub-Flavored Markdown (GFM)</bdi> هي نكهة المضيف. يُعرَض كل مُنتَج عرضًا صحيحًا في واجهة الويب لـ <bdi>GitHub</bdi>، وفي موقع الوثائق المبني على <bdi>Fumadocs</bdi>، وفي المحرّرات القياسية المدركة لـ <bdi>Markdown</bdi>.
+<bdi>GitHub-Flavored Markdown (GFM)</bdi> هي نكهة المضيف. يُعرَض كل مُنتَج عرضًا صحيحًا في واجهة الويب في <bdi>GitHub</bdi>، وفي موقع وثائق <bdi>Fumadocs</bdi>، وفي المحرّرات القياسية التي تدعم <bdi>Markdown</bdi>.
 
 ## 2. تسلسل العناوين
 
-عنوان <bdi>H1</bdi> واحد لكل ملف. وتنزل العناوين اللاحقة تدريجيًا (<bdi>H2 → H3 → H4</bdi>) دون تخطّي أي مستوى. العناوين بحالة الجملة؛ لا أحرف كبيرة بالكامل (<bdi>ALL-CAPS</bdi>)، ولا حرف كبير في أول كل كلمة (<bdi>Title Case Across Every Word</bdi>). يحمل <bdi>H1</bdi> العنوان الرئيسي للمستند، وهو بعينه مرساة المستند في تنقّل موقع الوثائق.
+عنوان <bdi>H1</bdi> واحد لكل ملف. وتنزل العناوين اللاحقة تدريجيًا (<bdi>H2 → H3 → H4</bdi>) دون تخطّي أي مستوى. العناوين بحالة الجملة؛ لا أحرف كبيرة بالكامل (<bdi>ALL-CAPS</bdi>)، ولا حرف كبير في أول كل كلمة (<bdi>Title Case Across Every Word</bdi>). يحمل <bdi>H1</bdi> العنوان الرئيسي للمستند. وفي صفحة موقع الوثائق يُعرَض الحقل <bdi>`title`</bdi> في البيانات الأمامية بوصفه <bdi>H1</bdi> ويكون مرساة الصفحة في تنقّل موقع الوثائق، لذا يبدأ متن الصفحة من <bdi>H2</bdi>.
 
 ## 3. كتل الشيفرة
 
@@ -24,15 +24,15 @@ sourceHash: "940c41973c1d1e98"
 
 ## 4. الروابط الداخلية
 
-تستخدم الإحالات الداخلية **مسارات من جذر الموقع** (مثل <bdi>`[Authorship header](/docs/reference/authorship-header)`</bdi>). وتُتجنَّب في الروابط داخل الموقع المسارات المجرّدة النسبية إلى المستودع ذات اللاحقة <bdi>`.md`</bdi>/<bdi>`.mdx`</bdi> (<bdi>`/docs/foo.md`</bdi>) وعناوين <bdi>URL</bdi> الكاملة إلى المستودع نفسه (<bdi>`https://github.com/ahmed-g-gad/apothem/blob/main/...`</bdi>)، لأنها تستعصي على إعادة تسمية الصفحات وإعادة تنظيم الأقسام.
+تستخدم الإحالات الداخلية **مسارات من جذر الموقع** (مثل <bdi>`[Authorship header](/docs/reference/authorship-header)`</bdi>). وتُتجنَّب في الروابط داخل الموقع المسارات المجرّدة النسبية إلى المستودع ذات اللاحقة <bdi>`.md`</bdi>/<bdi>`.mdx`</bdi> (<bdi>`/docs/foo.md`</bdi>) وعناوين <bdi>URL</bdi> الكاملة إلى المستودع نفسه (<bdi>`https://github.com/ahmed-g-gad/apothem/blob/main/...`</bdi>)، لأنها تعوق إعادة تسمية الصفحات وإعادة تنظيم الأقسام.
 
 يَحُلّ المدقّق <bdi>`link-check`</bdi> مسارات جذر الموقع هذه <bdi>`/docs/...`</bdi> — والصيغة <bdi>`/<locale>/docs/...`</bdi> للغات غير الافتراضية في حزمة اللغات — مقابل مجموعة الصفحات الموجودة على القرص تحت <bdi>`site/content/docs/`</bdi>: يقابل <bdi>`/docs/a/b`</bdi> الملف <bdi>`site/content/docs/a/b.mdx`</bdi> أو فهرس المجلد <bdi>`site/content/docs/a/b/index.mdx`</bdi>، وتقابل صيغة اللغة ما تحت الشجرة الفرعية <bdi>`site/content/docs/<locale>/`</bdi>. والرابط إلى مسار محذوف أو مُعاد تسميته لا يُحَلّ إلى أيٍّ من الملفين، ويُبلَّغ عنه بوصفه مسارًا ميتًا (خطأ 404 يراه المستخدم) بواسطة <bdi>`link-check`</bdi>، وهو مُطابِق استشاري لا يُفشل التشغيل (انظر §6).
 
 تُثبَّت الروابط الخارجية إلى المراجع المتغيّرة (<bdi>`main`</bdi>، و<bdi>`master`</bdi>، و<bdi>`latest`</bdi>، و<bdi>`HEAD`</bdi>) على بصمات <bdi>SHA</bdi> للكوميتات أو على وسوم الإصدارات كلما كان استقرار المحتوى المربوط مهمًا؛ وتُوثَّق المراجع المتقلّبة بوصفها كذلك بتعليق <bdi>`{/* volatile */}`</bdi> مجاور.
 
-## 5. شعار التأليف
+## 5. ترويسة التأليف
 
-يحمل كل مُنتَج <bdi>Markdown</bdi> (باستثناء ما هو مُعدَّد في [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) شعار ترويسة التأليف المرجعي بصيغة تعليق <bdi>HTML</bdi> وفق [ترويسة التأليف](/docs/reference/authorship-header). وعند غياب البيانات الأمامية يكون الشعار هو السطر 1. وعند وجود بيانات أمامية بصيغة <bdi>YAML</bdi> تبقى البيانات الأمامية عند البايت 0 ويأتي الشعار بعد <bdi>`---`</bdi> الختامية.
+يحمل كل مُنتَج <bdi>Markdown</bdi> (باستثناء ما هو مُعدَّد في [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)) ترويسة التأليف المرجعية، وهي السطر الوحيد <bdi>`SPDX-License-Identifier: MIT`</bdi>، بصيغة التعليق الخاصة بنوع ملفه وفق [ترويسة التأليف](/docs/reference/authorship-header): تعليق <bdi>HTML</bdi> في ملفات <bdi>`.md`</bdi> وتعليق <bdi>`{/* ... */}`</bdi> في ملفات <bdi>`.mdx`</bdi>. وعند غياب البيانات الأمامية يكون سطر الترويسة هو السطر 1. وعند وجود بيانات أمامية بصيغة <bdi>YAML</bdi> تبقى البيانات الأمامية عند البايت 0 ويأتي سطر الترويسة بعد <bdi>`---`</bdi> الختامية.
 
 ## 6. المدقّقات
 

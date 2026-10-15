@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "محوّل إطار عمل Apothem لـ GitHub Copilot (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "7759dbb2505688c7"
+sourceHash: "99dc7def3f713da4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ sourceHash: "7759dbb2505688c7"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-يشتقّ المحوّل ملف تعليمات المشروع من سطح القواعد والحوكمة المشترك في
-<bdi>Apothem</bdi>.
+يشتقّ المحوّل ملف تعليمات المشروع من ملفك التعريفي المشترك ومن سطح القواعد
+والحوكمة المشترك في <bdi>Apothem</bdi>.
 
 **الملفات المكتوبة:** <bdi>`<project>/.github/copilot-instructions.md`</bdi>
 
@@ -44,12 +44,12 @@ apothem install --harness github-copilot --project /path/to/project
 المشروع، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة ملكًا للمُشغِّل.
 
 داخل مستودع <bdi>Apothem</bdi>، يُعَدّ <bdi>`.github/copilot-instructions.md`</bdi>
-صوتًا واحدًا بين أسطح تعليمات المساعد في المشروع. وفي نسخة <bdi>Apothem</bdi>
-المسحوبة، يقارن فحص التماسك متعدّد الأسطح في بوابة المطابقة الادّعاءات المشتركة في
-<bdi>`AGENTS.md`</bdi> و<bdi>`CLAUDE.md`</bdi> و<bdi>`.github/copilot-instructions.md`</bdi>،
-ويُبلِغ عن أي ادّعاء يُغفله أحدها أو يناقضه. لا يقرأ الفحص ملف التعليمات الذي يكتبه
-<bdi>Apothem</bdi> في مشروعك. البوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج
-بالرمز <bdi>`0`</bdi>.
+صوتًا واحدًا بين أسطح تعليمات المساعد في ذلك المستودع. وفي نسخة مسحوبة من ذلك
+المستودع، يقارن فحص التماسك متعدّد الأسطح في بوابة المطابقة الادّعاءات المشتركة في
+<bdi>`AGENTS.md`</bdi> و<bdi>`CLAUDE.md`</bdi> و<bdi>`.github/copilot-instructions.md`</bdi>.
+ويُبلِغ عن ادّعاء مشترك يُغفله أحد الملفات الثلاثة، وعن ملف يناقض ادّعاءً يقوم به
+<bdi>`AGENTS.md`</bdi>. لا يقرأ الفحص ملف التعليمات الذي يكتبه <bdi>Apothem</bdi> في
+مشروعك. البوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>.
 
 ## التحقّق
 
@@ -77,8 +77,10 @@ apothem update --harness github-copilot --project /path/to/project
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-يُزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
-لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`<project>/.github/copilot-instructions.md`</bdi>
+ويُبقي أي نص خارجها. لا يُحذَف الملف إلا حين لا يتبقّى فيه شيء آخر. قبل التغيير،
+تُحفَظ نسخة بطابع زمني من الملف تحت <bdi>`~/.apothem/backups/`</bdi>. لا يتأثّر
+ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

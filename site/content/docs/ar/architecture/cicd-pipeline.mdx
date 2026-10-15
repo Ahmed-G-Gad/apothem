@@ -1,15 +1,15 @@
 ---
 title: "مخطّط خط أنابيب CI/CD"
-description: "خريطة بصرية وتفصيل بالمسارات لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي تُبوِّب كلّ تغيير في الشيفرة وكلّ إصدار."
+description: "خريطة بصرية وتفصيل بالمسارات لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي يُشترَط اجتيازها لكلّ تغيير في الشيفرة وكلّ إصدار."
 machineTranslated: true
-sourceHash: "bb4d542999588765"
+sourceHash: "d7317161cadb20c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**الخريطة البنيوية لسير عمل البناء · التحقّق · النشر الذي يُبوِّب كلّ تغيير في
-منظومة <bdi>Apothem</bdi>.** يُثبِّت هذا المستند سطح التصوير؛ أمّا ملفّات سير
-العمل الفعلية لـ<bdi>GitHub Actions</bdi> وأدوات الإصدار فتُوضَع لاحقًا ضمن تثبيت
-الجاهزية للإنتاج.
+**الخريطة البنيوية لسير عمل البناء · التحقّق · النشر الذي يُشترَط اجتيازه لكلّ
+تغيير في منظومة <bdi>Apothem</bdi>.** يُثبِّت هذا المستند سطح التصوير البصري؛
+أمّا ملفّات سير عمل <bdi>GitHub Actions</bdi> الفعلية وأدوات الإصدار فتُوضَع
+لاحقًا ضمن تثبيت الجاهزية للإنتاج.
 
 ## شكل خط الأنابيب
 
@@ -29,7 +29,6 @@ flowchart LR
     subgraph Static["Static analysis lane"]
         LINT["Ruff lint + format check"]
         TYPE["Mypy strict"]
-        MD["markdownlint"]
         FRONT["Frontmatter validator"]
     end
     subgraph Test["Test lane"]
@@ -71,22 +70,24 @@ flowchart LR
 
 - **مسار التحليل الساكن** — تغذية راجعة سريعة. يغطّي <bdi>Ruff</bdi> أسلوب
   <bdi>Python</bdi> ومجموعة قواعد منتقاة؛ ويفرض <bdi>mypy</bdi> انضباط الأنواع
-  عند <bdi>strict</bdi>؛ ويضبط <bdi>markdownlint</bdi> سطح التوثيق؛ ويُبوِّب
-  مُتحقِّق الـ<bdi>frontmatter</bdi> امتثال مخطّط القِطَع للقواعد والمهارات
-  والعاملين المُفوَّضين والأوامر.
-- **مسار الاختبار** — يُشغِّل <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الـ
-  <bdi>hook</bdi> ضدّ مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi>
-  هو البوّابة البنيوية الرئيسية للاتّساق عبر القِطَع؛ ويُفعَّل
-  <bdi>`chaos_pass.py`</bdi> ومجموعة المقاييس المرجعية حسب الصنف تحت
-  <bdi>`src/apothem/benchmarks/`</bdi> على مسار الإصدار لالتقاط التدهور تحت
-  المدخلات المتدهورة وانحدارات ميزانية وقت التشغيل.
-- **مسار الأمن** — يلتقط فحص الأسرار الاعتمادات المُودَعة بالخطأ؛ ويُبوِّب توليد
-  <bdi>SBOM</bdi> وعمليات تدقيق الترخيص سطح سلسلة التوريد لأيّ تثبيت جاهزية
-  للإنتاج.
+  عند <bdi>strict</bdi>؛ ويعمل مُتحقِّق <bdi>frontmatter</bdi> بوصفه بوّابة
+  لامتثال مخطّط القِطَع للقواعد والمهارات والعمّال المُفوَّضين والأوامر. لا يقع
+  <bdi>markdownlint</bdi> في هذا المسار: فهو يعمل فقط بوصفه خطّاف
+  <bdi>pre-commit</bdi>، ولا يُشغِّله <bdi>CI</bdi> (راجع
+  [اصطلاحات <bdi>Markdown</bdi>](/docs/reference/markdown-conventions)).
+- **مسار الاختبار** — يختبر <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الخطّافات
+  على مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi> هو البوّابة
+  البنيوية الرئيسية لاتّساق ما بين القِطَع؛ ويُفعَّل <bdi>`chaos_pass.py`</bdi>
+  ومجموعة المقاييس المرجعية حسب الصنف تحت <bdi>`src/apothem/benchmarks/`</bdi>
+  على مسار الإصدار لالتقاط التدهور عند المدخلات المتدهورة وتراجعات ميزانية وقت
+  التشغيل.
+- **مسار الأمن** — يلتقط فحص الأسرار بيانات الاعتماد المُودَعة بالخطأ؛ ويشكّل
+  توليد <bdi>SBOM</bdi> وعمليات تدقيق التراخيص بوّابةً لسطح سلسلة التوريد في أي
+  تثبيت للجاهزية للإنتاج.
 - **مسار النشر** — لا يعمل إلّا على الإصدارات الموسومة. يؤكّد التحقّق من الوسم
-  المُوقَّع منشأ فرع الإصدار؛ ويُنشَر موقع المشروع من
-  <bdi>`site/dist/`</bdi> إلى هدف <bdi>GitHub Pages</bdi>؛ وتُشتَقّ ملاحظات
-  الإصدار من تنسيق <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>.
+  الموقَّع منشأ فرع الإصدار؛ ويُنشَر موقع المشروع من <bdi>`site/dist/`</bdi> إلى
+  هدف <bdi>GitHub Pages</bdi>؛ وتُشتَقّ ملاحظات الإصدار من تنسيق
+  <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>.
 
 ## التهيئة الملموسة
 
@@ -96,10 +97,10 @@ flowchart LR
 
 ## مراجع متقاطعة موثوقة
 
-- <bdi>`pyproject.toml`</bdi> — مصدر الحقيقة لتهيئة <bdi>Ruff</bdi> / <bdi>mypy</bdi> / <bdi>pytest</bdi>.
-- <bdi>`scripts/dev/validate_ecosystem.py`</bdi> — البوّابة الرئيسية عبر القِطَع.
-- <bdi>`scripts/dev/validate_hooks.py`</bdi> — التحقّق البنيوي الخاصّ بالـ<bdi>hook</bdi>.
-- <bdi>`scripts/dev/chaos_pass.py`</bdi> — مسح خصومي لكلّ <bdi>hook</bdi> مُهيَّأ.
+- <bdi>`pyproject.toml`</bdi> — مصدر الحقيقة لتهيئة <bdi>Ruff / mypy / pytest</bdi>.
+- <bdi>`scripts/dev/validate_ecosystem.py`</bdi> — البوّابة الرئيسية لما بين القِطَع.
+- <bdi>`scripts/dev/validate_hooks.py`</bdi> — التحقّق البنيوي الخاصّ بالخطّافات.
+- <bdi>`scripts/dev/chaos_pass.py`</bdi> — مسح خصومي لكلّ خطّاف مُهيَّأ.
 - <bdi>`src/apothem/benchmarks/`</bdi> — مُتحقِّقو ميزانية وقت التشغيل حسب الصنف.
 - <bdi>`site/content/docs/developer-guide.mdx`</bdi> — سير عمل المُساهِم الموجَّه للمُشغِّل.
 - <bdi>`CHANGELOG.md`</bdi> — مصدر ملاحظات الإصدار.

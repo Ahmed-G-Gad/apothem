@@ -2,7 +2,7 @@
 title: "Apothem مقابل إعداد Hermes الخام"
 description: "صيانة إعداد Hermes يدويًا مقابل إدارته عبر الملف التعريفي المشترك في Apothem."
 machineTranslated: true
-sourceHash: "d6119faf3efef70e"
+sourceHash: "97e1ef224eb577e6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,11 @@ sourceHash: "d6119faf3efef70e"
    المتن المشترك.
 3. شغّل <bdi>`apothem install --harness hermes`</bdi> لتصيير الإعداد الأصلي ودليل
    مهارات الدعم.
-4. شغّل <bdi>`apothem verify --harness hermes`</bdi> للتأكّد من وصول الإعداد.
+4. أضف <bdi>`~/.hermes/.apothem/support/skills`</bdi> إلى
+   <bdi>`skills.external_dirs`</bdi> في <bdi>`config.yaml`</bdi> كي يحمّل
+   <bdi>Hermes</bdi> المهارات المثبّتة. يُبقي <bdi>`apothem update`</bdi> المفاتيح التي
+   تضيفها إلى <bdi>`config.yaml`</bdi>.
+5. شغّل <bdi>`apothem verify --harness hermes`</bdi> للتأكّد من وصول الإعداد.
 
 ## اقرأ تاليًا
 

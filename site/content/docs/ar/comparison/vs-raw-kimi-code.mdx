@@ -1,48 +1,51 @@
 ---
-title: "Apothem vs raw Kimi Code config"
-description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
+title: "Apothem مقابل إعداد Kimi Code اليدوي"
+description: "صيانة ملف AGENTS.md في جذر مشروع Kimi Code وملفات الدعم في .kimi-code/ يدويًّا، مقابل تصييرها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "3973fe015cf877a5"
+sourceHash: "95d0fa19ca3ddd46"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Kimi Code reads project-root `AGENTS.md` as its instruction file and keeps
-project configuration under `<project>/.kimi-code/`, including the
-operator-owned `.kimi-code/mcp.json` MCP surface. You can author that
-instruction file and its supporting cohorts by hand, per project, forever.
-Apothem's kimi-code adapter renders the governance surface into `AGENTS.md` as a
-managed block from the shared profile and keeps it consistent across every
-harness and every project. This page contrasts hand-maintaining that config
-against managing it with Apothem.
+يقرأ <bdi>Kimi Code</bdi> ملف <bdi>`AGENTS.md`</bdi> في جذر المشروع بوصفه ملف التعليمات الخاص به،
+ويحتفظ بإعداد المشروع تحت <bdi>`<project>/.kimi-code/`</bdi>، بما في ذلك سطح <bdi>MCP</bdi>
+الذي يملكه المُشغِّل في <bdi>`.kimi-code/mcp.json`</bdi>. يمكنك تأليف ملف التعليمات هذا
+والحزم الداعمة له يدويًّا، لكل مشروع، إلى الأبد. ويصيّر محوِّل <bdi>kimi-code</bdi> في
+<bdi>Apothem</bdi> سطح الحوكمة في <bdi>`AGENTS.md`</bdi> بوصفه كتلة مُدارة من الملف التعريفي
+المشترك، ويُبقيه متّسقًا عبر كل إطار عمل وكل مشروع. تقارن هذه الصفحة بين صيانة هذا الإعداد
+يدويًّا وإدارته عبر <bdi>Apothem</bdi>.
 
-## Effort comparison
+## مقارنة الجهد
 
-| المهمة | تهيئة يدوية | يديرها Apothem |
+| المهمة | إعداد يدوي | يديره <bdi>Apothem</bdi> |
 | ---- | --------------- | --------------- |
-| تأليف سطح التعليمات `AGENTS.md` | كتابته ومزامنته من جديد لكل مشروع يدويًّا | كتلة مُدارة واحدة مُصيَّرة من الملف التعريفي المشترك |
-| إبقاء القواعد والأوامر والمهارات والوكلاء متزامنة | نسخ يدوي لكل مشروع | تُجسَّد تحت `<project>/.kimi-code/.apothem/support/` في كل تثبيت |
-| الحفاظ على نص المشغّل عند التحديث | دمج يدوي | كتلة محدَّدة بعلامات حراسة؛ ويُحفَظ نص المشغّل خارجها |
-| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند `apothem update` |
-| التحقّق من صحّة التهيئة | فحص يدوي | `apothem verify --harness kimi-code --project <path>` |
+| تأليف سطح التعليمات <bdi>`AGENTS.md`</bdi> | كتابته يدويًّا وإعادة مزامنته لكل مشروع | كتلة مُدارة واحدة تُصيَّر من الملف التعريفي المشترك |
+| إبقاء القواعد والأوامر والمهارات والوكلاء متزامنة | نسخ يدوي لكل مشروع | تُجسَّد تحت <bdi>`<project>/.kimi-code/.apothem/support/`</bdi> عند كل تثبيت |
+| الحفاظ على نثر المُشغِّل عند التحديث | دمج يدوي | كتلة محدَّدة بعلامات حارسة؛ ويُحفَظ نثر المُشغِّل الواقع خارجها |
+| إبقاء القواعد متوائمة مع أُطُر العمل الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحّة الإعداد | فحص يدوي | <bdi>`apothem verify --harness kimi-code --project <path>`</bdi> |
 
-## What Apothem manages
+## ما الذي يديره <bdi>Apothem</bdi>
 
-The kimi-code adapter renders the shared rules and governance surface into the
-project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
-agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
-instruction surface drives the project directly. Every change to the shared
-rules re-renders the files on the next `apothem update`.
+يصيّر محوِّل <bdi>kimi-code</bdi> القواعد المشتركة وسطح الحوكمة في الكتلة المُدارة داخل ملف
+<bdi>`AGENTS.md`</bdi> في جذر المشروع، ويثبّت حزم الأوامر والمهارات والخطّافات والوكلاء
+والقواعد والقوالب تحت <bdi>`.kimi-code/.apothem/support/`</bdi>. ولا يؤلّف الملف
+<bdi>`.kimi-code/mcp.json`</bdi>؛ فيبقى سطح <bdi>MCP</bdi> مملوكًا للمُشغِّل. يقرأ
+<bdi>Kimi Code</bdi> تعليمات المشروع من <bdi>`AGENTS.md`</bdi> أو
+<bdi>`.kimi-code/AGENTS.md`</bdi>؛ ولا يكتب المحوِّل إلا ملف <bdi>`AGENTS.md`</bdi> في جذر
+المشروع، ولا تذكر وثائق <bdi>Kimi Code</bdi> أيّ الملفين تكون له الأسبقية عند وجودهما معًا.
+ويُعاد تصيير الملفات عند <bdi>`apothem update`</bdi> التالي بعد كل تغيير في القواعد المشتركة.
 
-## Migration path
+## مسار الترحيل
 
-1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
-2. انقل القواعد من `AGENTS.md` الموجود لديك إلى الذخيرة المشتركة.
-3. شغّل `apothem install --harness kimi-code --project <path>` لتصيير سطح التعليمات `AGENTS.md` وشجرة الدعم `.kimi-code/.apothem/support/`.
-4. شغّل `apothem verify --harness kimi-code --project <path>` للتأكّد من وصول التهيئة.
-5. استخدم `apothem update --harness kimi-code --project <path>` مع كل تغيير لاحق.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من <bdi>`AGENTS.md`</bdi> الموجود لديك إلى المدوّنة المشتركة.
+3. شغّل <bdi>`apothem install --harness kimi-code --project <path>`</bdi> لتصيير سطح التعليمات
+   <bdi>`AGENTS.md`</bdi> وشجرة الدعم <bdi>`.kimi-code/.apothem/support/`</bdi>.
+4. شغّل <bdi>`apothem verify --harness kimi-code --project <path>`</bdi> للتأكّد من وصول الإعداد.
+5. استخدم <bdi>`apothem update --harness kimi-code --project <path>`</bdi> مع كل تغيير
+   لاحق.
 
-## Read next
+## اقرأ تاليًا
 
-- [Kimi Code adapter reference](/docs/harnesses/kimi-code)
-- [Comparison overview](/docs/comparison)
+- [مرجع محوِّل <bdi>Kimi Code</bdi>](/docs/harnesses/kimi-code)
+- [نظرة عامة على المقارنة](/docs/comparison)
