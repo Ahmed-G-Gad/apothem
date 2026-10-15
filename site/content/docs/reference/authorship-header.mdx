@@ -115,7 +115,7 @@ A deterministic CLI that:
 - Renders the correct SPDX variant per filetype (§2).
 - Inserts at the correct position (§5), respecting shebangs and frontmatter.
 - Adds the missing blank line to an SPDX line that sits at the insertion site without one, instead of inserting a second copy above it.
-- Operates in three modes: `fix-in-place` (writes), `emit-patch` (prints unified diff), `check` (exit-non-zero on any divergence; no CI job runs it).
+- Operates in three modes: `fix-in-place` (writes), `emit-patch` (prints unified diff), `check` (exit-non-zero on any divergence; no CI job runs it over the tracked tree).
 - Idempotent: running twice is a no-op.
 
 The injector is invoked by the `make headers-fix` target, which runs `scripts/inject-header.py --mode fix-in-place`.
