@@ -331,10 +331,13 @@ $env:APOTHEM_REF = 'vMAJOR.MINOR.PATCH'; irm https://apothem.ahmedgad.com/instal
 Replace `vMAJOR.MINOR.PATCH` with the release tag you want from the
 [releases page](https://github.com/ahmed-g-gad/apothem/releases).
 
-Two explicit overrides relax the default: `APOTHEM_REF=main` checks out the
-moving branch (unverified), and `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
-verification failure from a fatal abort to a warning and proceeds — intended
-for air-gapped, local, or pre-signed-release use. The `APOTHEM_SOURCE`
+Explicit overrides relax the default. `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
+verification failure from a fatal abort to a warning and proceeds, for
+air-gapped or local use, or to install a release that predates tag signing.
+`APOTHEM_REF=main` checks out the moving branch without verification only
+together with `APOTHEM_ALLOW_UNVERIFIED=1`; with `APOTHEM_REF=main` alone the
+installer aborts before materializing, because a branch is not a signed release
+tag. The `APOTHEM_SOURCE`
 local-checkout path fetches nothing, so it skips tag resolution and
 verification and runs the checkout you point it at.
 
