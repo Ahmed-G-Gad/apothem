@@ -50,12 +50,26 @@ from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.install_driver_layout import with_support_announcement
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project
-from apothem.lib.python_resolver import resolve_python_bin
+from apothem.lib.python_resolver import resolve_python_bin, windows_short_path
 
 # Manifest harness key for this adapter.
 _HARNESS_NAME: str = "claude_code"
 # Public adapter id used to resolve per-harness profile overrides.
 _HARNESS_ID: str = "claude-code"
+
+
+def _statusline_interpreter(python: Path) -> Path:
+    """Return the interpreter spelling the statusline's Windows command runs.
+
+    That command writes its interpreter unquoted, so a path containing a space
+    would split into two words. Such a path is replaced by its 8.3 short form,
+    which has no space and runs under Git Bash, cmd and PowerShell alike. A path
+    without a space is returned unchanged, and so is a spaced path that has no
+    short form. The hook entries never use this value; they keep the full path.
+    """
+    if " " not in str(python):
+        return python
+    return windows_short_path(python)
 
 
 @install_driver.backup_session()
@@ -86,7 +100,11 @@ def install(
     harness_root = output_path.parent
     # Resolve the hook interpreter before writing anything: a resolution failure
     # must abort with no half-written tree carrying literal ``${PYTHON_BIN}``.
-    python_bin = resolve_python_bin().as_posix()
+    python_path = resolve_python_bin()
+    python_bin = python_path.as_posix()
+    # The statusline command gets its own token: the 8.3 short form when the
+    # interpreter path has a space, so the unquoted command word still runs.
+    statusline_python_bin = _statusline_interpreter(python_path).as_posix()
     for_harness = coerce_profile(profile).for_harness(_HARNESS_ID)
     # CLAUDE.md is the instruction file this install writes, so it also names
     # where the install placed the support files the corpus cites.
@@ -101,7 +119,9 @@ def install(
         profile=profile,
         extra=(harness_root / "CLAUDE.md",),
     )
-    with install_driver.content_tokens(PYTHON_BIN=python_bin):
+    with install_driver.content_tokens(
+        PYTHON_BIN=python_bin, STATUSLINE_PYTHON_BIN=statusline_python_bin
+    ):
         run = install_driver.run_install(
             _HARNESS_NAME, harness_root=harness_root, dry_run=dry_run
         )

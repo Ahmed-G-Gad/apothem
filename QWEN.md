@@ -3,8 +3,10 @@
 # Apothem
 
 Apothem is a host-agnostic AI-harness configuration manager. It
-authors one shared profile — rules, slash-commands, skills, hooks,
-output-styles, settings (MCP servers included), schemas, and docs — and
+authors one shared profile — rules, skills, subagents, slash-commands,
+hooks, output-styles, statuslines, templates, conformity validators,
+schemas, per-harness instruction templates, and the Claude Code
+settings template — and
 materializes that whole synced unit into each tool's
 native configuration directory through per-harness adapters. One source of
 truth, seventeen destinations, no hand-maintained drift.
