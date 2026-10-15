@@ -22,7 +22,7 @@ import pytest
 
 from apothem.harnesses import HarnessAdapter
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_lifecycle import _data_home_for
+from apothem.harnesses._shared.install_driver_datahome import _data_home_for
 from apothem.harnesses.antigravity import AntigravityAdapter
 from apothem.harnesses.codex import CodexAdapter
 from apothem.harnesses.cursor import CursorAdapter

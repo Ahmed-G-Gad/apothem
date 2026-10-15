@@ -36,7 +36,8 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target
 
 from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_lifecycle import _data_home_for, _remove_data_home
+from .install_driver_datahome import _data_home_for
+from .install_driver_lifecycle import _remove_data_home
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _normalized,
