@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code (बीटा) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "4052897d8ab07b22"
+sourceHash: "fa2139684f0e0f58"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,11 +27,15 @@ Apothem हुक डिस्पैचर पंजीकृत करता �
 ```text
 ~/.qwen/settings.json
 ~/.qwen/QWEN.md
+~/.qwen/apothem/rules/00-apothem-profile.md
 ~/.qwen/commands/
 ~/.qwen/skills/
 ~/.qwen/agents/
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
+
+फ़ाइल `~/.qwen/apothem/rules/00-apothem-profile.md` प्रोफ़ाइल दस्तावेज़ है। यह
+साझा प्रोफ़ाइल से आपकी पहचान और प्राथमिकताएँ रखती है।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
@@ -78,8 +82,17 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+अडैप्टर ने `~/.qwen/settings.json` में जो प्रविष्टियाँ जोड़ी थीं, उन्हें हटाता है
+(आपकी अपनी कुंजियाँ, MCP सर्वर, और हुक हैंडलर बने रहते हैं, और फ़ाइल केवल तभी
+हटाई जाती है जब उसे Apothem ने बनाया हो और आपका कुछ भी शेष न बचा हो)।
+`~/.qwen/QWEN.md` से और प्रोफ़ाइल दस्तावेज़
+`~/.qwen/apothem/rules/00-apothem-profile.md` से Apothem ब्लॉक हटाता है और उन दोनों
+में मौजूद अन्य सारा पाठ रखता है; प्रत्येक फ़ाइल केवल तभी हटाई जाती है जब उसमें और
+कुछ शेष न रहे। साथ ही `~/.qwen/commands/`, `~/.qwen/skills/`, `~/.qwen/agents/`,
+और `~/.qwen/.apothem/support/` में स्थित Apothem फ़ाइलें भी हटाता है; उन फ़ोल्डरों
+की अन्य फ़ाइलें बनी रहती हैं। प्रत्येक फ़ाइल को बदलने या हटाने से पहले
+`~/.apothem/backups/` के अंतर्गत उसका बैकअप लिया जाता है। साझा प्रोफ़ाइल YAML और
+Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

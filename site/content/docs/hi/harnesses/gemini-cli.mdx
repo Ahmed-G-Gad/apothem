@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Gemini CLI (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "05c030cc3a187fcb"
+sourceHash: "98f3f393b45bba9f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -94,8 +94,14 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+`<project>/GEMINI.md` से Apothem ब्लॉक हटाता है और उसमें मौजूद बाकी सारा पाठ रहने
+देता है। फ़ाइल तभी हटाई जाती है जब उसमें और कुछ शेष न बचे। साथ ही
+`<project>/.gemini/commands/`, `<project>/.gemini/skills/`,
+`<project>/.gemini/agents/`, और `<project>/.gemini/.apothem/support/` में मौजूद
+Apothem फ़ाइलें हटाता है; उन फ़ोल्डरों की अन्य फ़ाइलें बनी रहती हैं। बदलाव से पहले
+प्रत्येक फ़ाइल की एक टाइमस्टैम्प-युक्त प्रति `~/.apothem/backups/` के अंतर्गत सहेजी
+जाती है; प्रोजेक्ट में कोई बैकअप फ़ाइल नहीं छोड़ी जाती। साझा प्रोफ़ाइल YAML और
+Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

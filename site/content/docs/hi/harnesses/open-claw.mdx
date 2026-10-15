@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "3325613cf689ffc6"
+sourceHash: "2dca789e924d7381"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,8 +88,10 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
-साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+अडैप्टर ने जो जोड़ा था उसे हटाता है: प्रोफ़ाइल दस्तावेज़ और समर्थन वृक्ष।
+`openclaw.json` में आपकी अपनी कुंजियाँ बनी रहती हैं, और फ़ाइल केवल तभी हटाई जाती
+है जब उसे Apothem ने बनाया हो और आपका कुछ भी शेष न बचा हो। साझा प्रोफ़ाइल YAML
+और Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

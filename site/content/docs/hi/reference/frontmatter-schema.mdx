@@ -2,7 +2,7 @@
 title: "Frontmatter स्कीमा"
 description: "YAML frontmatter ब्लॉक संरचना, प्रति-वर्ग आवश्यक कुंजियों, और सभी आर्टिफ़ैक्ट वर्गों में वैलिडेटर प्रवर्तन नियमों के लिए संदर्भ मार्गदर्शिका।"
 machineTranslated: true
-sourceHash: "482f970f0b254769"
+sourceHash: "d6c49336e4d3abf9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,13 +12,13 @@ sourceHash: "482f970f0b254769"
 
 ## 1. frontmatter ब्लॉक का आकार
 
-हर आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। Markdown-परिवार की फ़ाइलों पर frontmatter फ़ाइल की पहली सामग्री होती है, और [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैनोनिकल लेखकत्व-हेडर बैनर समापन `---` के बाद आता है।
+हर आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। Markdown-परिवार की फ़ाइलों पर frontmatter फ़ाइल की पहली सामग्री होती है, और [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैनोनिकल SPDX हेडर लाइन समापन `---` के बाद आती है।
 
 कमांड की कुंजियाँ `kebab-case` का उपयोग करती हैं। स्किल की कुंजियाँ भी `kebab-case` का उपयोग करती हैं, सिवाय `userInvocable` के, जो स्रोत कॉर्पस द्वारा उपयोग की गई camelCase वर्तनी है (Claude Code इंस्टॉल उसका नाम `user-invocable` कर देता है)। नियम और प्रत्यायोजित-वर्कर की कुंजियाँ camelCase हैं, जैसा खंड 2 की आवश्यक-कुंजी तालिका सूचीबद्ध करती है। अदिश मान या तो बिना उद्धरण चिह्नों के होते हैं या दोहरे उद्धरण चिह्नों में; कोलन, हैश चिह्न, या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण चिह्नों में रखे जाते हैं।
 
 ## 2. प्रति-वर्ग आवश्यक फ़ील्ड
 
-आवश्यक-कुंजी समुच्चय आर्टिफ़ैक्ट वर्ग के अनुसार बदलता है। आधिकारिक आकार `scripts/dev/validate_ecosystem.py` और `src/apothem/schemas/` डायरेक्टरी के अंतर्गत प्रति-वर्ग JSON स्कीमा (प्रति आर्टिफ़ैक्ट वर्ग एक स्कीमा फ़ाइल) द्वारा लागू किया जाता है।
+आवश्यक-कुंजी समुच्चय आर्टिफ़ैक्ट वर्ग के अनुसार बदलता है। आधिकारिक आकार `scripts/dev/validate_ecosystem.py` और `src/apothem/schemas/` डायरेक्टरी के अंतर्गत प्रति-वर्ग JSON स्कीमा द्वारा लागू किया जाता है। सहायक, स्किल, कमांड, आउटपुट-स्टाइल, और प्लान वर्गों में से प्रत्येक की एक स्कीमा फ़ाइल है, जो नीचे सूचीबद्ध है; `CLAUDE.md` और नियम वर्गों की कोई स्कीमा फ़ाइल नहीं है, और `validate_ecosystem.py` उनकी कुंजियों की जाँच करता है। प्लान फ़ाइलें नीचे की तालिका में नहीं हैं; उनकी कुंजियाँ [प्लान अनुशासन](/docs/reference/plans-discipline) में सूचीबद्ध हैं।
 
 ```text
 src/apothem/schemas/agent.schema.json
@@ -33,8 +33,8 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (रूट कॉन्फ़िग) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | नियम (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| प्रत्यायोजित वर्कर (कैनोनिकल डायरेक्टरी नीचे दिखाई गई है) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा दोनों वर्तनियों में से ठीक एक को स्वीकार करता है |
+| सहायक, जिन्हें प्रत्यायोजित वर्कर भी कहा जाता है (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; Claude Code इंस्टॉल और प्लगइन `userInvocable` का नाम बदलकर `user-invocable` कर देते हैं, और स्कीमा हर स्किल से दोनों वर्तनियों में से ठीक एक रखने की माँग करता है, दोनों कभी नहीं |
 | आउटपुट स्टाइल (`src/apothem/output-styles/*.md`) | `name`, `description`; हर शिप की गई स्टाइल `keep-coding-instructions: true` भी सेट करती है ताकि Claude Code अपने सॉफ़्टवेयर इंजीनियरिंग निर्देश बनाए रखे |
 
 [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) पर प्रति-वर्ग स्कीमा पूरा बाधा समुच्चय वहन करते हैं, जिसमें प्रकार, प्रारूप, enum, और पैटर्न प्रतिबंध, तथा लंबाई सीमाएँ शामिल हैं: किसी स्किल या कमांड का `description` अधिकतम 1,024 वर्णों का होता है, जो [Agent Skills](https://agentskills.io/specification) की सीमा है।

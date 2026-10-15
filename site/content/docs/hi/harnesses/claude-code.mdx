@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "2d1e8e48ff1f54c6"
+sourceHash: "99cda84bf3fff83e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,8 +90,8 @@ Bash में अपने द्वारा पहचाने जाने �
 ([अनुमति संदर्भ](https://code.claude.com/docs/en/permissions))। macOS, Linux, और
 WSL पर, Claude Code `Glob` और `Grep` टूल्स को डिफ़ॉल्ट टूल सेट से बाहर रखता है और
 इसके बजाय Bash के माध्यम से खोजता है, इसलिए टेम्पलेट की `Glob` और `Grep` अनुमति
-प्रविष्टियाँ केवल वहीं प्रभावी होती हैं जहाँ वे टूल्स मौजूद हों। हर प्रक्रिया को
-किसी पथ को पढ़ने से रोकने के लिए, Claude Code सैंडबॉक्स सक्षम करें।
+प्रविष्टियाँ केवल वहीं प्रभावी होती हैं जहाँ वे टूल्स मौजूद हों। किसी पथ को पढ़ने से
+हर प्रक्रिया को रोकने के लिए, Claude Code सैंडबॉक्स सक्षम करें।
 
 जो स्किल और सहायक परिभाषाएँ `TodoWrite` का नाम लेती हैं, वे `TaskCreate`,
 `TaskGet`, `TaskList`, और `TaskUpdate` का भी नाम लेती हैं, क्योंकि Claude Code उन
@@ -129,8 +129,15 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है और `CLAUDE.md` से
-Apothem ब्लॉक निकाल देता है, जबकि आपका अपना गद्य अपनी जगह बना रहता है।
+`~/.claude/CLAUDE.md` से Apothem ब्लॉक हटाता है और उसमें मौजूद बाकी सारा पाठ रहने
+देता है। फ़ाइल तभी हटाई जाती है जब उसमें और कुछ शेष न बचे। अडैप्टर द्वारा
+`~/.claude/settings.json` में जोड़ी गई प्रविष्टियाँ हटाता है (आपके अपने अनुमति
+नियम, कुंजियाँ और हुक हैंडलर बने रहते हैं, और फ़ाइल तभी हटाई जाती है जब उसे
+Apothem ने बनाया हो और उसमें आपका कुछ भी न बचा हो)। साथ ही `~/.claude/agents/`,
+`~/.claude/rules/`, `~/.claude/skills/`, `~/.claude/statuslines/`,
+`~/.claude/output-styles/`, और `~/.claude/.apothem/support/` में मौजूद Apothem
+फ़ाइलें हटाता है; उन फ़ोल्डरों की अन्य फ़ाइलें बनी रहती हैं। प्रत्येक फ़ाइल को बदले
+या हटाए जाने से पहले `~/.apothem/backups/` के अंतर्गत उसका बैकअप लिया जाता है।
 इंस्टॉल किया गया `apothem` पैकेज और स्रोत रिपॉज़िटरी अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
