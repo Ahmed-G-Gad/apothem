@@ -119,7 +119,7 @@ Definitively resolve every ambiguity — every undefined domain boundary, every 
 | **R1 — Authoritative sources** | Every opportunity, every gap, and every candidate's grounding cites a primary source; the invalidated-prior-hypothesis scan traces each refutation to the work that performed it. Folklore is excluded. |
 | **R4 — Citation Integrity** | Any source the notes or scans cite resolves to a real reference (permalink / DOI / commit-pin) per `rules/ten-dimension-check.md` dimension 9; phantom citations are findings. |
 | **M5 — Authority** | Every domain boundary, theoretical-anchor choice, and ranking criterion the source leaves implicit routes through `rules/authority-inquiry.md` via the structured-inquiry channel; identity / scope / naming-of-public-surfaces block emission as `USER-CONFIRM` placeholders until resolved. |
-| **M4 — Self-Application** | The candidate ideation artifact passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before emission; the Handoff Manifest carries the attestation. |
+| **M4 — Self-application** | The candidate ideation artifact passes the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before emission; the Handoff Manifest carries the attestation. |
 
 R5 (preregistration), R6 (ethics), R7 (statistical rigor), R8 (FAIR), and R9 (EQUATOR) are forward-declared here and operationalized downstream.
 

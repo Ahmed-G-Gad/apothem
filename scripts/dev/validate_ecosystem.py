@@ -423,9 +423,9 @@ _SEVEN_AXES: Final[tuple[str, ...]] = (
 
 
 def validate_expertise_coverage(root: Path, reporter: Reporter) -> None:
-    """Verify the seven-axs-of-breadth taxonomy is declared and tracked.
+    """Verify the seven-axes-of-breadth taxonomy is declared and tracked.
 
-    The cognitive-identity rule MUST declare the seven canonical axs in §1; the
+    The cognitive-identity rule MUST declare the seven canonical axes in §1; the
     `memory/expertise-gap-log.md` tracker is optional (the memory tier is
     user-specific and may be absent in fresh checkouts), but when present it
     MUST also enumerate every axis.
@@ -438,10 +438,10 @@ def validate_expertise_coverage(root: Path, reporter: Reporter) -> None:
     missing_in_rule = [axis for axis in _SEVEN_AXES if axis not in rule_text]
     if missing_in_rule:
         reporter.fail(
-            "cognitive-identity §1 missing axs: " + ", ".join(missing_in_rule)
+            "cognitive-identity §1 missing axes: " + ", ".join(missing_in_rule)
         )
     else:
-        reporter.ok("cognitive-identity declares all seven expertise axs")
+        reporter.ok("cognitive-identity declares all seven expertise axes")
 
     log = root / "memory" / "expertise-gap-log.md"
     if not log.is_file():
@@ -450,9 +450,9 @@ def validate_expertise_coverage(root: Path, reporter: Reporter) -> None:
     log_text = log.read_text(encoding="utf-8")
     missing_in_log = [axis for axis in _SEVEN_AXES if axis not in log_text]
     if missing_in_log:
-        reporter.fail("expertise-gap-log missing axs: " + ", ".join(missing_in_log))
+        reporter.fail("expertise-gap-log missing axes: " + ", ".join(missing_in_log))
     else:
-        reporter.ok("expertise-gap-log enumerates all seven expertise axs")
+        reporter.ok("expertise-gap-log enumerates all seven expertise axes")
 
 
 _BENCH_ENTRY_POINTS: Final[tuple[str, ...]] = (

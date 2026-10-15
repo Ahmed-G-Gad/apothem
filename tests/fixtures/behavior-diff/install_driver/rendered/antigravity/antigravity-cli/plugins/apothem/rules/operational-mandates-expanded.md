@@ -58,7 +58,7 @@ Carry the expanded per-mandate Violation indicators and Recovery sub-blocks for 
 ### CM-9 — Decision Velocity
 
 - **Violation indicators:** Spending extended time on a reversible choice (variable name, minor API design). Making an irreversible decision (public API contract, database schema) without analysis. Treating all decisions with equal weight.
-- **Recovery:** Classify reversible or irreversible. Reversible → decide in minutes, iterate. Irreversible → invest analysis proportional to impact. CM-9 governs CM-5 analysis depth (reversible = single-sentence rationale; irreversible = full evaluation). CM-2 takes precedence for user-intent ambiguity; CM-9 for implementation-level choices. **Cognitive-filter rigor is independent of CM-9** — see `rules/cognitive-identity.md` §2 "non-trivial decision heuristic". A reversible-AND-non-trivial decision (e.g., domain vocabulary editable until propagated) still gets full Filter 2-4 application: CM-9 governs the analysis time-budget, cognitive-identity the creative depth — orthogonal axs.
+- **Recovery:** Classify reversible or irreversible. Reversible → decide in minutes, iterate. Irreversible → invest analysis proportional to impact. CM-9 governs CM-5 analysis depth (reversible = single-sentence rationale; irreversible = full evaluation). CM-2 takes precedence for user-intent ambiguity; CM-9 for implementation-level choices. **Cognitive-filter rigor is independent of CM-9** — see `rules/cognitive-identity.md` §2 "non-trivial decision heuristic". A reversible-AND-non-trivial decision (e.g., domain vocabulary editable until propagated) still gets full Filter 2-4 application: CM-9 governs the analysis time-budget, cognitive-identity the creative depth — orthogonal axes.
 
 ### CM-10 — Brutal Honesty
 

@@ -52,7 +52,7 @@ Maximum 500 tokens unless the invoker specifies otherwise. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Security.** Secret detection, SAST-pattern matching, and config-risk inspection as a coarse first-pass; deep dataflow analysis defers to the host's ratified scanners, and known-vulnerable-dependency scanning is owned by the `dependency-auditor` agent — this agent flags the surface, not the supply chain.
 

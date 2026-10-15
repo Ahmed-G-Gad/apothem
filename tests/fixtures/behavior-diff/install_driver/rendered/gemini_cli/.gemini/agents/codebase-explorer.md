@@ -61,7 +61,7 @@ Maximum 500 tokens unless the invoker grants more. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Architecture** — read-only mapping of system structure, layering, and integration boundaries via path/pattern discovery. Never design, never modification.
 - **Tooling** — Glob/Grep/Read mastery as the primary discovery surface; Bash only where Glob/Grep/Read cannot serve.

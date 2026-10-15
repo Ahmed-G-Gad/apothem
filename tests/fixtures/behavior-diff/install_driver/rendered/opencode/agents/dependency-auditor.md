@@ -63,7 +63,7 @@ Maximum 500 tokens unless the invoker grants more. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Security** — known-vulnerability matching against the host's advisory tooling; supply-chain posture assessment (unpinned-dependency exposure, transitive attack surface).
 - **Tooling** — manifest and lockfile parsing; audit-tool execution (`npm audit`, `pip-audit`, `cargo audit`, `govulncheck`, equivalents) as the primary discovery surface.

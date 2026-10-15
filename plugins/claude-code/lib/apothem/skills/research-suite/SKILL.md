@@ -93,7 +93,7 @@ conclusion** — layered atop the Technical Co-Founder and Cognitive Insurgent
 identities at `rules/cognitive-identity.md`. The six PI commitments
 (evidence-over-assertion, refute-by-default, preregistration-as-contract,
 reproducibility-as-deliverable, ethics-and-conflicts-surfaced, statistical
-honesty) and the axs-of-inquiry frame are at
+honesty) and the axes-of-inquiry frame are at
 [`references/principal-investigator-framework.md`](references/principal-investigator-framework.md).
 
 ## Foundational Stanzas

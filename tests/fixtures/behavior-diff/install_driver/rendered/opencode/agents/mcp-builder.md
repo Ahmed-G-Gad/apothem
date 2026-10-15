@@ -51,7 +51,7 @@ Maximum 500 tokens unless the invoker grants more. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Architecture** — MCP server structure (tool registration, resource exposure, transport boundary) scaffolded from the contract.
 - **Tooling** — SDK selection and project scaffolding (FastMCP, TypeScript MCP SDK) via host-discovery; smoke-test wiring.

@@ -9,7 +9,7 @@ prompt = """
 
 You are the user's **Technical Co-Founder** and **Cognitive Insurgent** (see `rules/cognitive-identity.md`), operating as the **orchestrator-as-instrument, not-autopilot**. The mission is a contract to accomplish through disciplined, genuinely-independent multi-agent work plus adversarial verification — never through a single unverified pass.
 
-Apply the Five Cognitive Filters: Filter 1 (Obvious Purge) discards the first decomposition so the workflow does not inherit the obvious shape uncritically; Filter 3 (Inversion Press) drives the refute-by-default verification; Filter 5 (Aesthetic Demand) governs the result's form. The seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1 is the axs-of-attention frame.
+Apply the Five Cognitive Filters: Filter 1 (Obvious Purge) discards the first decomposition so the workflow does not inherit the obvious shape uncritically; Filter 3 (Inversion Press) drives the refute-by-default verification; Filter 5 (Aesthetic Demand) governs the result's form. The seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1 is the axes-of-attention frame.
 
 ---
 
@@ -147,7 +147,7 @@ flowchart TD
 - **Drives →** `skills/workflow/SKILL.md` (the deep orchestration procedure this command enters). The specialized pipelines (`/plan-<stage>`, audit-fortress commands, `/research`) where the mission routes to them. The fifteen-bar pre-emission gate at Phase 6. The disclosure ledger for every beyond-mission amendment.
 - **Driven by ←** The operator's mission and the `--autonomous` / `--verify-panel` flags. The structured-inquiry scope resolutions from the Frame phase.
 - **Satisfies →** `_spec/spec.md` §WS-A R-A1 / R-A2 / R-A3 / R-A8 / R-A9. The `commands/README.md` command catalog's Operator-workflow row for `/workflow` (the registry entry that ratifies this command's place in the slash-command catalog). The deterministic-output contract at `rules/determinism.md`.
-- **Established by ↑** `rules/agent-orchestration.md` (the team patterns). `rules/agnostic-posture.md` (the opt-in default-off frame). `rules/cognitive-identity.md` §1 (the filters + seven-axs taxonomy).
+- **Established by ↑** `rules/agent-orchestration.md` (the team patterns). `rules/agnostic-posture.md` (the opt-in default-off frame). `rules/cognitive-identity.md` §1 (the filters + seven-axes taxonomy).
 - **Gated by ←** A statable mission. The operator's opt-in for autonomous dispatch. The harness's Agent + structured-inquiry + Edit + Write + WebSearch + WebFetch tool surface. The destructive-op floor for irreversible / outward-facing steps.
 - **Cross-bound with ↔** `skills/workflow/SKILL.md` (the procedure). `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (orchestration + adversarial-verify). `rules/agnostic-posture.md` (opt-in autonomy). `rules/disclosure-ledger.md` (amendment disclosure). `rules/authority-inquiry.md` + `rules/option-annotation.md` (SOTA-source mandate + recommendation taxonomy). `rules/determinism.md` (deterministic output). `commands/projectify.md` (sibling WS-A deterministic-SOTA command).
 """

@@ -83,11 +83,17 @@ def test_install_renders_dispatch_path_into_hooks_json(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A full install renders ``${HARNESS_ROOT}`` into hooks.json commands.
+    """A full install renders ``${HARNESS_ROOT}`` and ``${PYTHON_BIN}`` into hooks.json.
 
-    Both the POSIX (``python3``) and Windows (``py -3``) command strings
-    must point at the installed dispatcher by forward-slash absolute path.
+    The POSIX ``command`` names ``python3`` and points at the installed
+    dispatcher by forward-slash absolute path. The Windows ``commandWindows``
+    runs the interpreter resolved at install time, quoted, then the same
+    dispatcher call.
     """
+    from apothem.harnesses.codex import install as install_mod
+
+    python_bin = "/opt/cpython-3.12/bin/python3.12"
+    monkeypatch.setattr(install_mod, "resolve_python_bin", lambda: Path(python_bin))
     target = tmp_path / "AGENTS.md"
     monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
 
@@ -95,6 +101,7 @@ def test_install_renders_dispatch_path_into_hooks_json(
 
     text = (tmp_path / "hooks.json").read_text(encoding="utf-8")
     assert "${HARNESS_ROOT}" not in text
+    assert "${PYTHON_BIN}" not in text
     parsed = json.loads(text)
     root_posix = tmp_path.resolve().as_posix()
     session_hook = parsed["hooks"]["SessionStart"][0]["hooks"][0]
@@ -102,10 +109,43 @@ def test_install_renders_dispatch_path_into_hooks_json(
         f'python3 "{root_posix}/hooks/dispatch.py" SessionStart'
     )
     assert session_hook["commandWindows"] == (
-        f'py -3 "{root_posix}/hooks/dispatch.py" SessionStart'
+        f'"{python_bin}" "{root_posix}/hooks/dispatch.py" SessionStart'
     )
     # The rendered command path resolves to the dispatcher of this install.
     assert (tmp_path / "hooks" / "dispatch.py").is_file()
+
+
+def test_install_interpreter_failure_leaves_no_hooks_json(
+    adapter: CodexAdapter,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A hook-interpreter resolution failure aborts install and preview alike.
+
+    ``resolve_python_bin`` runs before any tree is written, so a host without a
+    real CPython >= 3.10 leaves the codex harness root empty rather than with a
+    ``hooks.json`` whose ``commandWindows`` carries the literal ``${PYTHON_BIN}``.
+    """
+    from apothem.harnesses.codex import install as install_mod
+
+    target = tmp_path / "AGENTS.md"
+    monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+
+    def _boom() -> Path:
+        raise RuntimeError("no real CPython >= 3.10 interpreter found for hook wiring")
+
+    monkeypatch.setattr(install_mod, "resolve_python_bin", _boom)
+
+    with pytest.raises(RuntimeError):
+        adapter.install({})
+    with pytest.raises(RuntimeError):
+        adapter.preview({})
+
+    assert not (tmp_path / "hooks.json").exists()
+    assert not target.exists()
+    for path in tmp_path.rglob("*"):
+        if path.is_file():
+            assert "${PYTHON_BIN}" not in path.read_text(encoding="utf-8")
 
 
 def test_uninstall_noop_when_not_installed(

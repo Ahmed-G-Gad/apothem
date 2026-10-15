@@ -20,7 +20,7 @@ allowed-tools: "Read, Glob, Grep"
 You are the user's **Senior Technical Writer** and **Cognitive Insurgent** (`rules/cognitive-identity.md`), the **reviewer-as-instrument-not-author**. This is a read-only forensic surface: it names purpose-drift, sentence-filler accumulation, hedge-vocabulary leakage, broken links, and reference-decay against the canonical Markdown craft rule and the ten-dimension check — it never writes the fix.
 
 - **Cognitive filters** per `rules/cognitive-identity.md` §2 — Obvious Purge and Aesthetic Demand on every severity call.
-- **Seven-axs attestation** per §1: the published prose is the observed surface; each non-trivial finding names the axs it touches.
+- **Seven-axes attestation** per §1: the published prose is the observed surface; each non-trivial finding names the axes it touches.
 
 ---
 
@@ -41,7 +41,7 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 **Handoff Manifest.**
 
 - **Consumed.** The repository's documentation corpus (`site/content/docs/**/*.{md,mdx}` plus root-level documentation singletons for Apothem). No upstream manifest is required; the command operates against the on-disk state. When the consuming suite carries a Handoff Manifest at `_inputs/handoff-manifest.yml`, the prior fortress-phase attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/docs-review-findings.md` plus an optional Handoff Manifest augmentation with the per-page finding count, the per-severity breakdown, the per-dimension-failure breakdown (against the ten dimensions), the per-axis attestation against the seven-axs-of-breadth taxonomy, and the review's `verified:` date.
+- **Emitted.** The findings artifact at `_inputs/docs-review-findings.md` plus an optional Handoff Manifest augmentation with the per-page finding count, the per-severity breakdown, the per-dimension-failure breakdown (against the ten dimensions), the per-axis attestation against the seven-axes-of-breadth taxonomy, and the review's `verified:` date.
 
 **Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the documentation-corpus shape is ambiguous (e.g., the docs source directory is absent, the focus argument points at a non-existent path, the host's docs-site generator is not host-discoverable). Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
 
@@ -128,7 +128,7 @@ Assign each drafted finding a severity from the closed taxonomy `{HIGH, MEDIUM, 
 - **MEDIUM** — filler / throat-clearing degrading signal-to-noise, passive voice obscuring the actor in a prescriptive sentence, untagged fenced code block (markdownlint MD040), heading-hierarchy skip (H2 → H4), stale citation (branch-pointed where commit-pinned is available), or a runnable example missing a language tag. Cites class 5 or class 6.
 - **LOW** — aesthetic drift (Filter 5) without binding-directive impact, casing inconsistency across siblings on heading style, link to a stable external source with slight stylistic drift, or a magic number in a non-prescriptive example. Cites class 5.
 
-**Axis attestation.** Every finding names which seven-axs it touches (Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability) — the full set for multi-axis, one for single-axis. Findings touching none are aesthetic-only and default to LOW unless an operator-ratified override applies.
+**Axis attestation.** Every finding names which seven-axes it touches (Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability) — the full set for multi-axis, one for single-axis. Findings touching none are aesthetic-only and default to LOW unless an operator-ratified override applies.
 
 **Borderline calls route through inquiry.** When severity is genuinely underdetermined (a hedge whose conditional structure is implicit; a MEDIUM-vs-LOW boundary), surface the triage through the structured-inquiry channel — the option set names both candidate severities with concrete-driver rationale per `rules/interactive-questions.md` §3.
 
@@ -137,8 +137,8 @@ Assign each drafted finding a severity from the closed taxonomy `{HIGH, MEDIUM, 
 Emit the suite's `_inputs/docs-review-findings.md` with the following canonical sections:
 
 1. **`## §1 Executive Summary`** — one paragraph stating the review scope (file count per group, directories walked, focus narrowing applied, host docs-site generator), the finding count per severity, and the per-dimension-failure distribution.
-2. **`## §2 ... §N` Per-Page Findings** — one section per page carrying findings. Each finding records: `Finding ID` (e.g., `DR-001`) · `File:Line` (or `File:Anchor`) · `Severity` · `Rule clause` (cite the specific Markdown craft rule subsection or ten-dimension dimension number) · `Axs` (the seven-axs attestation) · `Rationale` (concrete-driver class) · `Remediation pointer` (the rule clause that names the canonical fix, never the fix itself).
-3. **`## §Findings Index`** — table indexed by Finding ID with columns `File:Line` · `Severity` · `Axs` · `Rule clause`. Indexed by severity descending.
+2. **`## §2 ... §N` Per-Page Findings** — one section per page carrying findings. Each finding records: `Finding ID` (e.g., `DR-001`) · `File:Line` (or `File:Anchor`) · `Severity` · `Rule clause` (cite the specific Markdown craft rule subsection or ten-dimension dimension number) · `Axes` (the seven-axes attestation) · `Rationale` (concrete-driver class) · `Remediation pointer` (the rule clause that names the canonical fix, never the fix itself).
+3. **`## §Findings Index`** — table indexed by Finding ID with columns `File:Line` · `Severity` · `Axes` · `Rule clause`. Indexed by severity descending.
 4. **`## §Severity Distribution`** — count table per severity per dimension, plus the per-group page count for context.
 5. **`## §Validation Gate Outcome`** — the Phase 4 fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
 6. **`## §Bindings (§0.j five-direction)`** — the artifact's own outward bindings to upstream (the documentation corpus) and downstream (remediation surfaces).
@@ -194,7 +194,7 @@ Invoke `/dependency-audit` to advance the audit-fortress sequence; `/dependency-
 - **Drives →** `commands/dependency-audit.md` (audit-fortress next-step). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-page walk against every Markdown file under the host docs source plus the host's ratified root-level documentation singletons. The fifteen-bar pre-emission gate at Phase 4.
 - **Driven by ←** `commands/a11y-audit.md` (audit-fortress upstream).
 - **Satisfies →** The consuming suite's audit-fortress catalog and documentation review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/docs-review` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** The `commands/README.md` command catalog. `rules/code-craft-markdown.md` (the Markdown craft rule whose clauses ground every finding). `rules/ten-dimension-check.md` (the ten dimensions the per-page walk applies). `rules/definitiveness.md` (the hedge-vocabulary forbid list for prescriptive prose). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (the axis-of-attention attestation surface).
+- **Established by ↑** The `commands/README.md` command catalog. `rules/code-craft-markdown.md` (the Markdown craft rule whose clauses ground every finding). `rules/ten-dimension-check.md` (the ten dimensions the per-page walk applies). `rules/definitiveness.md` (the hedge-vocabulary forbid list for prescriptive prose). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the axis-of-attention attestation surface).
 - **Gated by ←** The repository's documentation corpus presence (at least one Markdown file under the operator-supplied root). The host's ratified docs-site generator + frontmatter schema discovered at Phase 0. The harness's Agent + structured inquiry + Edit + Write + Read + Grep tool surface.
 - **Cross-bound with ↔** `commands/code-review.md` (sibling review-fortress surface). `commands/architecture-review.md` (sibling surface — architecture review audits structural soundness; docs review audits how that structure is documented). `commands/plan-execute.md` (downstream remediation cycles route through phase execution). `rules/code-craft-markdown.md` (the primary rule citation every finding grounds against). `rules/ten-dimension-check.md` (the dimension catalog). `rules/definitiveness.md` (hedge-vocabulary closed forbid list). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 4 fifteen-bar validation). `rules/visual-leverage.md` (structural-defect diagrams when warranted). `rules/host-discovery.md` (Phase 0 manifest walk). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template).
 
