@@ -100,6 +100,7 @@ delegates to two helpers that sit alongside it under `src/apothem/hooks/` itself
 dispatcher hands off when it routes that event. The hook messages surfaced to the
 assistant when the supported events fire live as Markdown context files under
 `src/apothem/hooks/messages/` — one per event variant: `postcompact.md`, `precompact.md`,
+`posttooluse-proactive-compaction.md`, `pretooluse-askuserquestion-recommended.md`,
 `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
 `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
 `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
@@ -114,11 +115,11 @@ ships as an available variant without a current `settings.json` routing entry.
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
-PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher
 UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
 ```

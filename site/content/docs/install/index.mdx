@@ -185,8 +185,8 @@ is annotated and signed. The
 release-signing section lists each tag and how to verify it.
 
 Explicit overrides relax the default. `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
-verification failure to a warning and proceeds, for air-gapped, local, or
-pre-signed-release use. `APOTHEM_REF=main` checks out the moving branch without
+verification failure to a warning and proceeds, for air-gapped or local use, or
+to install a release that predates tag signing. `APOTHEM_REF=main` checks out the moving branch without
 verification only together with `APOTHEM_ALLOW_UNVERIFIED=1`. With
 `APOTHEM_REF=main` alone, the installer fetches `main` into `APOTHEM_HOME`, then
 aborts before any configuration is materialized, because a branch is not a

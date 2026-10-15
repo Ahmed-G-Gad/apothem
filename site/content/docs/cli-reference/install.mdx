@@ -42,9 +42,11 @@ is reported as a `warnings` entry with `"operation": "profile_created"`.
 
 `install --harness all` fans out into mixed scopes: project-scope adapters write
 under the supplied `--project` root, while user-scope adapters write under your
-home directory — outside that root. Before any file is written, the command
+home directory — outside that root. Before the install writes any file, the command
 prints the concrete targets grouped under two headings: those inside the project
-root and those under your home directory.
+root and those under your home directory. The one exception is `--clean`: its
+clean-slate step runs before this preview and writes a backup and removes prior
+targets, as described below.
 
 When the selection writes outside the project root, an interactive confirmation
 guards the home-rooted writes. `--yes`, a non-interactive shell (no TTY),
