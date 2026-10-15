@@ -2,7 +2,7 @@
 name: "plan-design"
 version: "0.1.0"
 updated: "2026-10-02"
-description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axs-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
+description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axes-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
 argument-hint: "[path/to/plan-suite/] [--refine-existing] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
@@ -17,7 +17,7 @@ allowed-tools: "Read, Glob, Grep"
 
 ## Role
 
-You are the operator's **Technical Co-Founder** and **Cognitive Insurgent** (see `rules/cognitive-identity.md`) operating as a **Senior Software Architect**. This command's output — the architectural-design artifact — carries seven-axs-of-breadth coverage as a binding output property: every emitted design surface attests against the canonical taxonomy at `rules/cognitive-identity.md` §1 (Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability). Apply the Five Cognitive Filters at full intensity during decomposition; Filter 1 (Obvious Purge) and Filter 5 (Aesthetic Demand) are non-negotiable; Filters 2–4 fire on every non-trivial decision per the rule's §2 non-trivial heuristic.
+You are the operator's **Technical Co-Founder** and **Cognitive Insurgent** (see `rules/cognitive-identity.md`) operating as a **Senior Software Architect**. This command's output — the architectural-design artifact — carries seven-axes-of-breadth coverage as a binding output property: every emitted design surface attests against the canonical taxonomy at `rules/cognitive-identity.md` §1 (Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability). Apply the Five Cognitive Filters at full intensity during decomposition; Filter 1 (Obvious Purge) and Filter 5 (Aesthetic Demand) are non-negotiable; Filters 2–4 fire on every non-trivial decision per the rule's §2 non-trivial heuristic.
 
 ---
 
@@ -36,7 +36,7 @@ Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation
 **Handoff Manifest.**
 
 - **Consumed.** The suite's `_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml`. The upstream manifest carries the Review Scorecards from `/plan-review`. The Phase 0 input-ingest step reads the scorecards as prerequisite evidence; FAIL scorecards block design authoring until resolved.
-- **Emitted.** The same manifest augmented with the design-artifact path (`_inputs/design.md`), the design-gate attestation block from Phase 5, the per-axis attestation against the seven-axs-of-breadth taxonomy, and the design's Bidirectional Binding Matrix summary. Downstream `/plan-execute` reads the design artifact at every architecture-bearing phase.
+- **Emitted.** The same manifest augmented with the design-artifact path (`_inputs/design.md`), the design-gate attestation block from Phase 5, the per-axis attestation against the seven-axes-of-breadth taxonomy, and the design's Bidirectional Binding Matrix summary. Downstream `/plan-execute` reads the design artifact at every architecture-bearing phase.
 
 **Pre-flight inquiry set.** Phase 1 (Architectural Decomposition Pass) emits the typed inquiry set per `rules/authority-inquiry.md`. Every architectural-decomposition gap — open interface decisions, ambiguous component boundaries, undeclared dependency edges, infrastructure ratifications absent from the spec — surfaces as a structured-inquiry invocation with the three-segment annotation per `rules/interactive-questions.md` §3.
 
@@ -91,7 +91,7 @@ An explicit `--override` flag bypasses the predecessor-precondition check. When 
 | -------- | ---- | -------- | ----------- |
 | `path/to/plan-suite/` | Path | Yes | Root directory of the plan suite. MUST contain PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, `_spec/spec.md`, `phases/`. Review Scorecards in PLAN-NOTES.md required at SHARED+. |
 | `--refine-existing` | Flag | No | When the suite's `_inputs/design.md` exists, treat the existing artifact as the starting point and apply iterative refinement; otherwise the run starts fresh and emits the artifact ex nihilo. Useful when an architectural amendment surfaces after initial design ratification. |
-| `--dry-run` | Flag | No | Analyze what would be emitted and report — no files modified. The dry-run output enumerates the seven-axs-of-breadth coverage, the inferred component count, the diagram count, and the open-question count without committing the artifact. |
+| `--dry-run` | Flag | No | Analyze what would be emitted and report — no files modified. The dry-run output enumerates the seven-axes-of-breadth coverage, the inferred component count, the diagram count, and the open-question count without committing the artifact. |
 
 ---
 
@@ -115,7 +115,7 @@ Read the plan suite in full. Deploy a Research Team (CM-25A) for parallel ingest
 
 ### Phase 1 — Architectural Decomposition Pass
 
-Walk the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1 against the spec's architectural surface. For each axis — Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability — enumerate:
+Walk the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1 against the spec's architectural surface. For each axis — Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability — enumerate:
 
 - **Components in scope.** The discrete units (modules, packages, services, schemas, agents, adapters, scripts) the axis admits. Each component carries a stable identifier.
 - **Inter-component edges.** Every component pair carrying a dependency, data-flow, control-flow, or binding relationship. Edges are typed (function call · message pass · file read · schema validation · entry-point discovery · symlink resolution).
@@ -148,7 +148,7 @@ Apply `rules/bidirectional-binding.md` five-direction notation to every componen
 
 Emit the suite's `_inputs/design.md` with the following canonical sections:
 
-1. **`## §1 Executive Summary`** — one paragraph stating the architectural mission + the seven-axs coverage + the component count.
+1. **`## §1 Executive Summary`** — one paragraph stating the architectural mission + the seven-axes coverage + the component count.
 2. **`## §2 ... §N` Per-Component Sections** — one section per principal component carrying Purpose · Interface · Contracts · Bindings (§0.j five-direction). Components ordered by dependency depth (innermost domain first; outermost adapters last) per Clean Architecture layer discipline.
 3. **`## §Diagrams` Mermaid Diagrams** — every structural relationship carries its diagram per `rules/visual-leverage.md` §1 trigger catalog. Required diagram classes: architecture sketch (`graph TD` / `flowchart`); component-interaction sequence (`sequenceDiagram`); state machine (`stateDiagram-v2`) where applicable; dependency graph (`graph LR`). Every diagram carries the metadata header (`%% verified: <ISO-8601> %%` + `%% provenance: <source> %%` + `%% cross-reference: <peer> %%`) per the rule §2.
 4. **`## §Decision Records`** — every ratified architectural decision recorded as `AD-<N>: <one-sentence summary>` followed by Rationale (concrete-driver classes per `rules/interactive-questions-canonical-shapes.md` §3.2.1) + Alternatives Considered + Trade-offs + Reversibility note.
@@ -238,7 +238,7 @@ The tree distinguishes deterministic forks (suite-file presence, scorecard state
 ## Output
 
 - The design artifact at the suite's `_inputs/design.md` (substantive prose + diagrams + decision records + Bidirectional Binding Matrix + validation-gate attestation) when the applicability gate classifies the suite as architecture-bearing.
-- The updated Manifest at the suite's `_inputs/handoff-manifest.yml` with the design-artifact path + design-gate attestation block + per-axis attestation against the seven-axs-of-breadth taxonomy; for non-architecture-bearing suites, the manifest records that design was not applicable and `/plan-execute` is the next consumer.
+- The updated Manifest at the suite's `_inputs/handoff-manifest.yml` with the design-artifact path + design-gate attestation block + per-axis attestation against the seven-axes-of-breadth taxonomy; for non-architecture-bearing suites, the manifest records that design was not applicable and `/plan-execute` is the next consumer.
 - An optional decomposition working file at the suite's `_inputs/design-decomposition.md` (per-axis enumeration produced at Phase 1).
 - An optional input-inventory working file at the suite's `_inputs/design-input-inventory.md` (Phase 0 read inventory).
 
@@ -252,6 +252,6 @@ Invoke `/plan-execute` on the designed suite. The design artifact at `_inputs/de
 
 - **Drives →** `commands/plan-execute.md` (every architecture-bearing phase consumes the design artifact at execution time). `commands/plan-review.md` (subsequent review cycles audit against the ratified design). The Phase 1 architectural-decomposition pass at every architecture-bearing plan suite. The fifteen-bar pre-emission gate at Phase 5.
 - **Satisfies →** the commands registry row "/plan-design". the `/plan` pipeline (the fifth `/plan` stage rounds out the prose-refinement → generation → review → design → execute pipeline for architecture-bearing suites). The consuming suite's spec D-decisions ratifying architectural surfaces when present.
-- **Established by ↑** the `/plan` pipeline. the commands registry. `skills/plan-suite/master-template.md` (the template every plan suite materializes). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (the canonical depth the design artifact attests against).
+- **Established by ↑** the `/plan` pipeline. the commands registry. `skills/plan-suite/master-template.md` (the template every plan suite materializes). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the canonical depth the design artifact attests against).
 - **Gated by ←** The plan suite's mandatory file presence (PREAMBLE.md + MASTER-PLAN.md + PROGRESS.md + PLAN-NOTES.md + `_spec/spec.md` + `phases/`). The Review Scorecards in PLAN-NOTES.md at SHARED+. The harness's Agent + structured inquiry + Edit + Write tool surface.
-- **Cross-bound with ↔** `commands/plan-spec.md` (prose refinement is the upstream antecedent of the suite this command designs against). `commands/plan-generate.md` (suite generation precedes design). `commands/plan-review.md` (forensic audit precedes design at SHARED+). `commands/plan-execute.md` (consumes the design artifact). `rules/cognitive-identity.md` (seven-axs taxonomy drives Phase 1). `rules/clean-architecture-layers.md` (Phase 2 SOLID interface design). `rules/bidirectional-binding.md` (Phase 3 reciprocal-closure invariant). `rules/visual-leverage.md` (Phase 4 diagram requirement). `rules/pre-emission-gate.md` (Phase 5 fifteen-bar validation). `rules/option-annotation.md` (every architectural decision record cites a concrete-driver class). `rules/authority-inquiry.md` (every open architectural question routes through the canonical channel).
+- **Cross-bound with ↔** `commands/plan-spec.md` (prose refinement is the upstream antecedent of the suite this command designs against). `commands/plan-generate.md` (suite generation precedes design). `commands/plan-review.md` (forensic audit precedes design at SHARED+). `commands/plan-execute.md` (consumes the design artifact). `rules/cognitive-identity.md` (seven-axes taxonomy drives Phase 1). `rules/clean-architecture-layers.md` (Phase 2 SOLID interface design). `rules/bidirectional-binding.md` (Phase 3 reciprocal-closure invariant). `rules/visual-leverage.md` (Phase 4 diagram requirement). `rules/pre-emission-gate.md` (Phase 5 fifteen-bar validation). `rules/option-annotation.md` (every architectural decision record cites a concrete-driver class). `rules/authority-inquiry.md` (every open architectural question routes through the canonical channel).

@@ -24,7 +24,7 @@ No active suite: skip Phase A entirely; execute Phase B against working notes ac
 
 1. Working-trace emission. Verify the active suite's PROGRESS.md Resumption Contract was updated this session — if any session decision, blocker, or watch item is still in conversation memory only, write it to durable file before the session ends.
 2. Unresolved-inquiry flush. Walk the active suite for concrete-id `<USER-CONFIRM:…>` placeholders and any `unresolved-inquiries:` arrays in this session's emitted phase reports' fifteen-bar gate attestation blocks. Surface every unresolved inquiry in the Resumption Contract Watch Items section so the next session inherits the inventory and does not silently re-invent.
-3. Mandate-axis findings. If this session emitted any findings against the M-N mandate axs (host-discovery gaps, code-craft drift, supply-chain regressions, production-readiness gaps), summarize them in the Resumption Contract so the next session inherits the audit signal alongside its task pointer.
+3. Mandate-axis findings. If this session emitted any findings against the M-N mandate axes (host-discovery gaps, code-craft drift, supply-chain regressions, production-readiness gaps), summarize them in the Resumption Contract so the next session inherits the audit signal alongside its task pointer.
 
 ## Bindings (§0.j five-direction)
 

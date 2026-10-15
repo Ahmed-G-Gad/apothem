@@ -25,7 +25,7 @@ Every rule closes with a `## Bindings (§0.j five-direction)` section declaring 
 
 | Rule | Concern |
 |------|---------|
-| `cognitive-identity.md` · `cognitive-identity-techniques.md` | The cognitive-insurgent identity — five creative filters, six ideation techniques, language standards, seven-axs-of-breadth taxonomy. |
+| `cognitive-identity.md` · `cognitive-identity-techniques.md` | The cognitive-insurgent identity — five creative filters, six ideation techniques, language standards, seven-axes-of-breadth taxonomy. |
 | `clean-room-generation.md` · `clean-room-generation-protocols.md` | Specification-derived original output — Writing / Re-Writing protocols, code-generation discipline. |
 | `planning-techniques.md` | Nine planning review techniques for plan generation, review, execution. |
 

@@ -2,13 +2,13 @@
 
 # Expertise-Gap Log Template
 
-The Expertise-Gap Log is the deliverable of Discipline D4 (Extensive Expertise) inside `src/apothem/commands/plan-spec.md`. Every transformation in the prose-to-spec run records which of the seven axs of breadth applied, which were not applicable (with rationale), and which surfaced an expertise-envelope limit needing routing.
+The Expertise-Gap Log is the deliverable of Discipline D4 (Extensive Expertise) inside `src/apothem/commands/plan-spec.md`. Every transformation in the prose-to-spec run records which of the seven axes of breadth applied, which were not applicable (with rationale), and which surfaced an expertise-envelope limit needing routing.
 
 ## Purpose
 
-Realize the operational form of D4: every transformation explicitly attests its expertise posture. Inline `**[Expertise amendment — axis: X — rationale: ...]**` markers in the emitted spec point back to rows in this log. Under-applied axs raise the D4 ◇ Gate at `**P1**` severity and block emission until either the axis applies (with a recorded amendment) or the row records `not-applicable-with-rationale` or `expertise-envelope-limited` with a downstream routing target.
+Realize the operational form of D4: every transformation explicitly attests its expertise posture. Inline `**[Expertise amendment — axis: X — rationale: ...]**` markers in the emitted spec point back to rows in this log. Under-applied axes raise the D4 ◇ Gate at `**P1**` severity and block emission until either the axis applies (with a recorded amendment) or the row records `not-applicable-with-rationale` or `expertise-envelope-limited` with a downstream routing target.
 
-## The seven axs (canonical)
+## The seven axes (canonical)
 
 | Axis | Scope |
 | ---- | ----- |
@@ -24,7 +24,7 @@ Realize the operational form of D4: every transformation explicitly attests its 
 
 | Column | Type | Required | Content |
 | ------ | ---- | -------- | ------- |
-| `axis` | enum | Yes | One of the seven canonical axs above. |
+| `axis` | enum | Yes | One of the seven canonical axes above. |
 | `disposition` | enum | Yes | `applied` (axis amended the spec; one or more inline amendment markers point here) · `not-applicable-with-rationale` (axis is genuinely orthogonal to the prose's domain; rationale captures why) · `expertise-envelope-limited` (axis would apply but the Forge's expertise envelope is insufficient; routing target captures where the gap closes). |
 | `attestation-locus` | string | Conditional | Section anchor in `_spec/spec.md` where the inline amendment marker lands; required when `disposition: applied`. Multiple loci are admissible — list them comma-separated when the axis amends more than one section. |
 | `rationale` | string | Conditional | One-sentence justification; required when `disposition: not-applicable-with-rationale` or `expertise-envelope-limited`. For `expertise-envelope-limited`, the rationale also names the expertise-gap closure target (operator clarification, downstream specialist consultation, or deferred routing). |
@@ -46,9 +46,9 @@ Realize the operational form of D4: every transformation explicitly attests its 
 
 ## Gate semantics
 
-The D4 ◇ Gate fires at G4 (Pre-emission). All seven axs appear in the log. Any axis with `disposition: applied` carries a non-empty `attestation-locus`; any with `not-applicable-with-rationale` or `expertise-envelope-limited` carries a non-empty `rationale`. A row with `applied` but missing `attestation-locus`, or with `not-applicable-with-rationale` but missing `rationale`, is a gate failure (`**P1**` block).
+The D4 ◇ Gate fires at G4 (Pre-emission). All seven axes appear in the log. Any axis with `disposition: applied` carries a non-empty `attestation-locus`; any with `not-applicable-with-rationale` or `expertise-envelope-limited` carries a non-empty `rationale`. A row with `applied` but missing `attestation-locus`, or with `not-applicable-with-rationale` but missing `rationale`, is a gate failure (`**P1**` block).
 
-When more than two axs carry `disposition: not-applicable-with-rationale`, the gate fires a soft warning: the prose may be narrowly scoped, OR the Forge may have under-applied breadth. The warning surfaces in the emitted spec's preamble and routes to the operator's review on next iteration.
+When more than two axes carry `disposition: not-applicable-with-rationale`, the gate fires a soft warning: the prose may be narrowly scoped, OR the Forge may have under-applied breadth. The warning surfaces in the emitted spec's preamble and routes to the operator's review on next iteration.
 
 ## Cross-references
 

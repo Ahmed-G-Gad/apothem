@@ -79,7 +79,7 @@ Where the artifact describes ordered execution — a pipeline, a migration, a re
 
 Where the artifact's structure permits — multi-section specs, multi-phase plans, multi-element architectural documents, multi-rule rule sets — a **Bidirectional Binding Matrix** is appended summarizing the graph. The matrix surfaces drift the inline bindings cannot reveal at a glance.
 
-**Matrix shape.** The matrix is a square table indexed by element identifier on both axs. Each cell records the binding direction from the row element to the column element, using the canonical symbols:
+**Matrix shape.** The matrix is a square table indexed by element identifier on both axes. Each cell records the binding direction from the row element to the column element, using the canonical symbols:
 
 | | A | B | C | D |
 |---|---|---|---|---|

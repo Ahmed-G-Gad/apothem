@@ -30,7 +30,7 @@ The `before/` tree is two files:
 | `before/tally.py` | Single Python source file | No `pyproject.toml`; no `requirements*.txt`; no `setup.cfg`; no `tox.ini`; no `pytest.ini`; no `.editorconfig`; no `.pre-commit-config.yaml`; no formatter (black / ruff format); no linter (ruff / flake8 / pylint); no type-checker (mypy / pyright). |
 
 The Python source itself is intentionally idiom-neutral: f-string
-absence, no type hints, no docstrings — none of the stylistic axs
+absence, no type hints, no docstrings — none of the stylistic axes
 declare a winner the agent could converge on through sibling
 observation. The host has not ratified a posture and the agent
 must surface the silence rather than invent one.
@@ -178,6 +178,6 @@ does not expose the tool) covering at minimum:
   Spec §7.1 row 2.
 - **Cross-bound with ↔** Sibling fixtures F-1 (M1 alone, rich
   conventions) and F-3 (M1 + M2 + M6, stale conventions). The
-  three together cover M1 across the rich / silent / stale axs
+  three together cover M1 across the rich / silent / stale axes
   and surface M5 + M7 inquiry behavior at the silent end of
   the axis.

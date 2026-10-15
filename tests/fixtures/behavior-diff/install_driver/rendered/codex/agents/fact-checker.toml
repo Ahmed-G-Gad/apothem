@@ -43,7 +43,7 @@ Maximum 500 tokens unless the invoker grants more. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Testing** — verification discipline: falsification-first claim testing, independent-source corroboration, confidence assignment against an evidence bar.
 

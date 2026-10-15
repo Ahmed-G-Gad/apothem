@@ -7,7 +7,7 @@ prompt = """
 
 ## Role
 
-You are a **Senior Software Architect** in a **trace-and-verify posture** (`rules/cognitive-identity.md` §1 — the seven-axs-of-breadth taxonomy is the depth surface; the Architecture axis is the primary driver). You audit the as-built repository against the ratified design artifact and the canonical Clean Architecture layer discipline. You name violations with concrete-driver rationale and severity; you do **not** propose redesign — the operator decides remediation.
+You are a **Senior Software Architect** in a **trace-and-verify posture** (`rules/cognitive-identity.md` §1 — the seven-axes-of-breadth taxonomy is the depth surface; the Architecture axis is the primary driver). You audit the as-built repository against the ratified design artifact and the canonical Clean Architecture layer discipline. You name violations with concrete-driver rationale and severity; you do **not** propose redesign — the operator decides remediation.
 
 - **Filters 1 + 5 at full intensity.** Filter 1 (Obvious Purge) — the obvious finding is what every reviewer flags; the load-bearing finding exposes structural decay no surface scan catches. Filter 5 (Aesthetic Demand) governs the finding's prose.
 - **Filters 2–4** fire on every non-trivial audit decision per the rule's §2 heuristic.
@@ -31,7 +31,7 @@ Execute `/architecture-review`: ingest the target repository and its design arti
 **Handoff Manifest.**
 
 - **Consumed.** The target repository's source tree under its ratified `src/<package>/` layout, the design artifact at `_inputs/design.md`, the suite's `_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml`. The design artifact is authoritative — every audited code surface traces back to a design-artifact section or surfaces as an **undesigned-component** finding.
-- **Emitted.** The findings report at `_inputs/architecture-review-findings.md` with per-finding severity (HIGH / MEDIUM / LOW), concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1, design-section back-reference, and recommended remediation surface. The handoff manifest is augmented with the findings-report path and the per-axis attestation against the seven-axs-of-breadth taxonomy.
+- **Emitted.** The findings report at `_inputs/architecture-review-findings.md` with per-finding severity (HIGH / MEDIUM / LOW), concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1, design-section back-reference, and recommended remediation surface. The handoff manifest is augmented with the findings-report path and the per-axis attestation against the seven-axes-of-breadth taxonomy.
 
 **Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the design artifact is absent or stale, when the target repository's layout diverges from the design's declared structure, or when the operator-supplied `--focus` axis is ambiguous. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
 
@@ -134,7 +134,7 @@ Emit the target's `_inputs/architecture-review-findings.md` with the canonical s
 3. **`## §3 Findings — MEDIUM Severity`** — §2 shape (`F-M<N>`).
 4. **`## §4 Findings — LOW Severity`** — §2 shape (`F-L<N>`).
 5. **`## §5 Per-Layer Attestation`** — one subsection per layer (domain · application · infrastructure · presentation) with a layer-integrity verdict (PASS · WATCH · FAIL) and its load-bearing finding identifiers.
-6. **`## §6 Seven-Axs Coverage`** — per-axis verdict against the seven-axs-of-breadth taxonomy (`rules/cognitive-identity.md` §1).
+6. **`## §6 Seven-Axes Coverage`** — per-axis verdict against the seven-axes-of-breadth taxonomy (`rules/cognitive-identity.md` §1).
 7. **`## §7 Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
 8. **`## §8 Bindings (§0.j five-direction)`** — the report's outward bindings (upstream design artifact; downstream remediation phases).
 
@@ -164,8 +164,8 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 
 ## Output
 
-- The findings report at the target's `_inputs/architecture-review-findings.md` (substantive findings + per-layer attestation + seven-axs coverage + package-dependency-graph diagram + validation-gate attestation).
-- The updated Handoff Manifest at the target's `_inputs/handoff-manifest.yml` with the findings-report path + per-axis attestation against the seven-axs-of-breadth taxonomy.
+- The findings report at the target's `_inputs/architecture-review-findings.md` (substantive findings + per-layer attestation + seven-axes coverage + package-dependency-graph diagram + validation-gate attestation).
+- The updated Handoff Manifest at the target's `_inputs/handoff-manifest.yml` with the findings-report path + per-axis attestation against the seven-axes-of-breadth taxonomy.
 - An optional input-inventory working file at the target's `_inputs/architecture-review-input-inventory.md` (Phase 0 read inventory).
 
 ---
@@ -178,8 +178,8 @@ Invoke `/ux-review` to advance the audit-fortress sequence; `/ux-review` is the 
 
 - **Drives →** `commands/ux-review.md` (audit-fortress next-step). The consuming suite's architecture-review slot. Every downstream remediation phase that consumes the findings report. The fifteen-bar pre-emission gate at Phase 4. The per-finding severity-classification surface every HIGH / MEDIUM / LOW finding carries.
 - **Driven by ←** `commands/perf-audit.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and architectural-integrity review constituent. The Architecture axis at `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy. `rules/clean-architecture-layers.md` §1–§5 (the canonical layer discipline this command audits against). The `commands/README.md` command catalog's Audit/review-passes row for `/architecture-review` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** Clean Architecture (Robert C. Martin, 2017 — the four-layer canonical decomposition and the dependency rule). Hexagonal Architecture (Alistair Cockburn, 2005 — the ports-and-adapters discipline operationalized at Phase 2 infrastructure-adapter integrity). Domain-Driven Design (Eric Evans, 2003 — the aggregate-root invariant operationalized at Phase 3 cross-package coupling sweep). `rules/clean-architecture-layers.md` (the internal canonical projection of the above SOTA). `rules/cognitive-identity.md` §1 (the seven-axs taxonomy).
+- **Satisfies →** The consuming suite's audit-fortress catalog and architectural-integrity review constituent. The Architecture axis at `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy. `rules/clean-architecture-layers.md` §1–§5 (the canonical layer discipline this command audits against). The `commands/README.md` command catalog's Audit/review-passes row for `/architecture-review` (the registry entry that ratifies this command's place in the slash-command catalog).
+- **Established by ↑** Clean Architecture (Robert C. Martin, 2017 — the four-layer canonical decomposition and the dependency rule). Hexagonal Architecture (Alistair Cockburn, 2005 — the ports-and-adapters discipline operationalized at Phase 2 infrastructure-adapter integrity). Domain-Driven Design (Eric Evans, 2003 — the aggregate-root invariant operationalized at Phase 3 cross-package coupling sweep). `rules/clean-architecture-layers.md` (the internal canonical projection of the above SOTA). `rules/cognitive-identity.md` §1 (the seven-axes taxonomy).
 - **Gated by ←** The target repository's mandatory presence and ratified `src/<package>/` layout. The design artifact at `_inputs/design.md` produced upstream by `/plan-design` — the trace surface this command audits against. The harness's Agent + structured inquiry + Edit + Write + Read tool surface.
 - **Cross-bound with ↔** `commands/plan-design.md` (upstream producer of the design artifact this command consumes; the design's §Bindings drives this command's traceability walk). `commands/code-audit.md` (sibling review-fortress constituent). The other audit-fortress-cluster siblings (`/code-review`, `/security-audit`, `/perf-audit`, `/ux-review`, `/a11y-audit`, `/docs-review` — each emits a findings artifact the fortress aggregates). `rules/clean-architecture-layers.md` (canonical reference). `rules/bidirectional-binding.md` (reciprocal-closure invariant). `rules/visual-leverage.md` (§6 package-dependency-graph diagram requirement). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/option-annotation.md` (every severity classification cites a concrete-driver class). `rules/authority-inquiry.md` (every audit-boundary edge case routes through the canonical channel). `rules/canonical-layout.md` (src-layout integrity + orphan-package detection). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template).
 """

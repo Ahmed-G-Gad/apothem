@@ -41,7 +41,7 @@ Maximum 500 tokens unless the invoker specifies otherwise. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Architecture.** Re-derivation that respects layer boundaries, dependency direction, and the host's structural idioms.
 - **Testing.** Regression verification through the host's existing test suite; behavior-preservation is proven, never assumed.

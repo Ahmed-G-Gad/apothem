@@ -72,7 +72,7 @@ Summary: 3/5 gates passed.
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Testing.** Test-suite execution and structured pass/fail reporting (pytest, jest, cargo test, go test, equivalents).
 - **Tooling.** Lint, format, type-check execution (ruff, eslint, markdownlint, mypy, tsc, equivalents).

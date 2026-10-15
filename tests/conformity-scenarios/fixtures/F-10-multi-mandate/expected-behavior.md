@@ -24,9 +24,9 @@ where the reason a non-conformant audit could overturn.
 |---|---|
 | `before/README.md` | Public landing page; declares semver + Keep-a-Changelog format; LICENSE present (MIT); CONTRIBUTING absent; no published owner directory; cross-language Python + Go. |
 | `before/src/helix/cli.py` | Existing CLI dispatcher with a five-arm `if/elif` chain — the structural target the prompt names for restructuring. |
-| `before/PROMPT.md` | Verbatim user request engaging multiple mandate axs simultaneously. |
+| `before/PROMPT.md` | Verbatim user request engaging multiple mandate axes simultaneously. |
 
-The prompt deliberately layers axs:
+The prompt deliberately layers axes:
 
 1. **New public subcommand** (`helix watch`) → M15 same-change-set.
 2. **Cross-language routing** (Python core + Go subcommand) → M1
@@ -123,7 +123,7 @@ The prompt deliberately layers axs:
   through F-9 (each prior fixture exercises a subset; F-10
   exercises the full union).
 - **Cross-bound with ↔** Every prior fixture F-1..F-9. F-10
-  is the integration test that re-exercises the same axs the
+  is the integration test that re-exercises the same axes the
   prior nine fixtures exercise individually; the verify driver
   cross-validates F-10's per-mandate verdict against the
   aggregated F-1..F-9 verdicts on the matching axis.

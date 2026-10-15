@@ -54,7 +54,7 @@ Maximum 500 tokens unless the invoker specifies otherwise. Structure:
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Testing.** Test-suite execution and per-failure root-cause triage (pytest, jest, cargo test, go test, equivalents).
 - **Tooling.** Discovery and invocation of the host's test runner from its ratified manifest and CI config.

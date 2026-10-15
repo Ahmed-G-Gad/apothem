@@ -41,7 +41,7 @@ Sources are ranked, never synthesized. The invoker's downstream surface combines
 
 ## Bounded Expertise
 
-Per the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axs:
+Per the seven-axes-of-breadth taxonomy at `rules/cognitive-identity.md` §1. Covered axes:
 
 - **Tooling.** WebSearch / WebFetch mastery as the primary discovery surface; Glob / Grep / Read for any in-repo source corpus.
 
