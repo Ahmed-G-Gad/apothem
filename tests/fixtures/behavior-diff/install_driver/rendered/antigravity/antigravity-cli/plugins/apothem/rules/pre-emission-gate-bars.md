@@ -16,25 +16,25 @@ Carry the executable detail of the fifteen-bar pre-emission gate the parent `rul
 
 ### 1. The Fifteen Bars — Full Detail
 
-Every emitted artifact passes each bar individually. Mechanical-fraction bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `conformity/*-grep.py`, run as `PreToolUse` hook checks orchestrated by `conformity/gate.py`. Reasoned bars (M1, M3, M4, M6, M9, M11, M12, M14) are agent-evaluated and recorded in the attestation block.
+Every emitted artifact passes each bar individually. Mechanical bars (M5, M7, M8, M10, M13) carry executable matchers at `conformity/*-grep.py`, run as `PreToolUse` hook checks orchestrated by `conformity/gate.py`. Mechanical-and-reasoned bars (M3, M9, M12, M14, M15) have matchers that cover one named part of the bar; the agent evaluates the rest. Reasoned bars (M1, M2, M4, M6, M11) have no matcher and are agent-evaluated and recorded in the attestation block. The class and the matcher files named in each row's Check cell are the evidence for that classification.
 
 | # | Bar | Check (mechanical or reasoned) | Failure → action |
 |---|---|---|---|
-| 1 | M1 — Host agnosticism | Artifact's idioms match sibling-file idioms (formatter / linter / naming / layout). | Revise to match host conventions per `rules/host-discovery.md`. |
-| 2 | M2 — Editorial disclosure | Every amendment / extension / refinement is disclosed with cited rationale. | Add disclosure ledger per `rules/disclosure-ledger.md`. |
-| 3 | M3 — Ten dimensions | Each of the ten dimensions individually passes. | Revise on the failing dimension(s) per `rules/ten-dimension-check.md`. |
-| 4 | M4 — Self-application | Gate attestation block is present in the artifact's working trace. | Record attestation. |
-| 5 | M5 — Authority | No `<USER-CONFIRM:…>` placeholders remain unfilled. No invented personal / authoritative data. | Re-route to inquiry surface per `rules/authority-inquiry.md`. |
-| 6 | M6 — Expertise | Surfaced-gaps section is present where adjacent gaps exist; refinements cite rationale. | Surface gaps; cite per `rules/expertise-posture.md`. |
-| 7 | M7 — Option annotation | Every multi-option choice carries `**Recommended**` + specific rationale. | Annotate per `rules/option-annotation.md`. |
-| 8 | M8 — Definitiveness | Hedging vocabulary absent in prescriptive contexts; pre / post / failure conditions stated. | Promote hedging to conditionals; state contracts per `rules/definitiveness.md`. |
-| 9 | M9 — Visual leverage | Structural subject matter has a current-reality diagram with provenance + verification date. | Author / refresh diagram per `rules/visual-leverage.md`. |
-| 10 | M10 — Bidirectional binding | Substantive elements declare bindings; reciprocity is closed. | Close half-edges per `rules/bidirectional-binding.md`. |
-| 11 | M11 — Agile sprints | For non-trivial work: Sprint Goal + Backlog + DoR + DoD + Review + Retrospective populated. | Restructure as sprints per `rules/agile-sprints.md`. |
-| 12 | M12 — Phase reporting & layout | For multi-phase work: per-sub-phase reports + phase-level rollup; outputs at canonical layout. | Author rollup; relocate per `rules/canonical-layout.md`. |
-| 13 | M13 — Code craft | Code passes host's lint / format / type-check; why-not-what comments; no magic numbers / bare-except / commented-out blocks. | Revise per `rules/code-craft-python.md` and sibling per-language code-craft rules. |
-| 14 | M14 — Systemicity | New components declare upstream / downstream / peers / enforcers; indexed in host registries. | Declare; index per `rules/systemic-participation.md`. |
-| 15 | M15 — Production-ready | Code change ships with tests + docs + CHANGELOG entry + conformant commit + CI green. | Add missing surfaces per `rules/production-ready-prs.md`. |
+| 1 | M1 — Host agnosticism | **Reasoned** (no matcher). Artifact's idioms match sibling-file idioms (formatter / linter / naming / layout). | Revise to match host conventions per `rules/host-discovery.md`. |
+| 2 | M2 — Editorial disclosure | **Reasoned** (no matcher). Every amendment / extension / refinement is disclosed with cited rationale. | Add disclosure ledger per `rules/disclosure-ledger.md`. |
+| 3 | M3 — Ten dimensions | **Mechanical + reasoned** (`brand_mark_grep.py`, `link_check.py` cover parts). Each of the ten dimensions individually passes. | Revise on the failing dimension(s) per `rules/ten-dimension-check.md`. |
+| 4 | M4 — Self-application | **Reasoned** (no matcher). Gate attestation block is present in the artifact's working trace. | Record attestation. |
+| 5 | M5 — Authority | **Mechanical** (`user_confirm_grep.py`). No `<USER-CONFIRM:…>` placeholders remain unfilled. No invented personal / authoritative data. | Re-route to inquiry surface per `rules/authority-inquiry.md`. |
+| 6 | M6 — Expertise | **Reasoned** (no matcher). Surfaced-gaps section is present where adjacent gaps exist; refinements cite rationale. | Surface gaps; cite per `rules/expertise-posture.md`. |
+| 7 | M7 — Option annotation | **Mechanical** (`option_annotation_grep.py`). Every multi-option choice carries `**Recommended**` + specific rationale. | Annotate per `rules/option-annotation.md`. |
+| 8 | M8 — Definitiveness | **Mechanical** (`hedging_grep.py`). Hedging vocabulary absent in prescriptive contexts; pre / post / failure conditions stated. | Promote hedging to conditionals; state contracts per `rules/definitiveness.md`. |
+| 9 | M9 — Visual leverage | **Mechanical + reasoned** (`diagram_staleness_grep.py` covers the verification date). Structural subject matter has a current-reality diagram with provenance + verification date. | Author / refresh diagram per `rules/visual-leverage.md`. |
+| 10 | M10 — Bidirectional binding | **Mechanical** (`binding_reciprocity_grep.py`, `binding_reciprocity_corpus_grep.py`, `binding_five_direction_grep.py`). Substantive elements declare bindings; reciprocity is closed. | Close half-edges per `rules/bidirectional-binding.md`. |
+| 11 | M11 — Agile sprints | **Reasoned** (no matcher). For non-trivial work: Sprint Goal + Backlog + DoR + DoD + Review + Retrospective populated. | Restructure as sprints per `rules/agile-sprints.md`. |
+| 12 | M12 — Phase reporting & layout | **Mechanical + reasoned** (`orphan_output_grep.py` covers location and provenance). For multi-phase work: per-sub-phase reports + phase-level rollup; outputs at canonical layout. | Author rollup; relocate per `rules/canonical-layout.md`. |
+| 13 | M13 — Code craft | **Mechanical** (`bare_except_grep.py`, `magic_number_grep.py`, `commented_out_code_grep.py`, `secret_leak_grep.py`; lint / format / type-check run in pre-commit). Code passes host's lint / format / type-check; why-not-what comments; no magic numbers / bare-except / commented-out blocks. | Revise per `rules/code-craft-python.md` and sibling per-language code-craft rules. |
+| 14 | M14 — Systemicity | **Mechanical + reasoned** (`orphan_output_grep.py` checks producer provenance; `brand_mark_grep.py` cites M14). New components declare upstream / downstream / peers / enforcers; indexed in host registries. | Declare; index per `rules/systemic-participation.md`. |
+| 15 | M15 — Production-ready | **Mechanical + reasoned** (`production_ready_pr_grep.py`, `semver_stability_grep.py`, `unpinned_action_grep.py`, `secret_leak_grep.py`). Code change ships with tests + docs + CHANGELOG entry + conformant commit + CI green. | Add missing surfaces per `rules/production-ready-prs.md`. |
 
 ### 2. Attestation Schema
 
