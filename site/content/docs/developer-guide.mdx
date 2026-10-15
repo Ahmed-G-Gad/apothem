@@ -239,6 +239,13 @@ artifact that carries them. Append a
 matching row to the ecosystem-level `CHANGELOG.md` for releases that bundle
 artifact changes.
 
+### Plan-suite revisions
+
+The artifact rule above does not apply to plan suites. A plan suite's version is the `vX.Y.Z` value recorded in its `MASTER-PLAN.md` header and Revision History table. A typo fix to a plan suite is a revision that bumps the PATCH number. Step 10.2 of `/plan-review` sets the classification and appends the Revision History row.
+
+- `vX.Y.Z` → `vX.Y.(Z+1)` (plan suite, typo fix: PATCH)
+- `vX.Y.Z` → `vX.Y.Z` (artifact, typo fix: no bump; the artifact rule above)
+
 ## When to Edit an Artifact
 
 ### Rules

@@ -94,8 +94,10 @@ harness-native config files for the seventeen registered adapters — Antigravit
 Claude Code, CodeBuddy, Codex, Cursor, Gemini CLI, GitHub Copilot, Hermes, Kimi
 Code, Kiro, Open-Claw, OpenCode, Qwen Code, Trae, Windsurf, Zed, and GLM (Z.ai).
 One profile carries
-the synced unit — rules, slash-commands, skills, hooks, output-styles,
-settings, schemas, and docs — converted to each harness's native surface,
+the synced unit — rules, skills, subagents, slash-commands, hooks,
+output-styles, statuslines, templates, conformity validators, schemas,
+per-harness instruction templates, and the Claude Code settings template —
+converted to each harness's native surface,
 gated by the conformity validators and shipped through signed releases. The
 engine is invoked as `python -m apothem`; the Claude Code plugin, the npm shim
 (`npx @ahmed-g-gad/apothem`), and the one-shot installers run the same
@@ -107,11 +109,11 @@ before materialization:
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-08-14 %%
+%% verified: 2026-10-15 %%
 %% provenance: CLAUDE.md Project Purpose — the shared-profile → adapter → native-surface flow %%
 %% cross-reference: src/apothem/lib/harness_registry_data.py (authoritative adapter registry); src/apothem/conformity/ (the gate) %%
 flowchart TD
-    Profile["Shared profile — ~/.config/apothem/profile.yaml<br/>the synced unit: rules · slash-commands · skills · hooks · output-styles · settings · schemas · docs"]
+    Profile["Shared profile — ~/.config/apothem/profile.yaml<br/>the synced unit: rules · skills · subagents · slash-commands · hooks<br/>output-styles · statuslines · templates · conformity validators · schemas<br/>per-harness instruction templates · Claude Code settings template"]
     Gate{{"Conformity gate<br/>pre-emission validators"}}
     Engine["Engine — python -m apothem<br/>also: Claude Code plugin · npx @ahmed-g-gad/apothem · one-shot installers"]
     Registry["Harness registry<br/>authoritative at runtime"]

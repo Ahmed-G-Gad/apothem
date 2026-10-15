@@ -66,11 +66,11 @@ _WRAPPER_VARIANTS: Final[tuple[str, ...]] = (
 )
 
 # Suffix → variant family. Mirrors the resolution table in
-# ``src/apothem/audit/scan_header_coverage.py`` so the injector and the
-# coverage scanner converge on identical applicability verdicts. No test
-# compares the two tables, so keep them in step by hand. ``.mdx`` is listed
-# here only: the coverage scanner and the file-header validator do not resolve
-# it yet, so both still treat MDX files as exempt.
+# ``src/apothem/audit/header_vocabulary.py`` (the coverage scanner's table) and
+# the table in ``src/apothem/conformity/file_header_grep.py`` (the validator), so
+# all three converge on identical applicability verdicts. No test compares the
+# tables, so keep them in step by hand. ``.mdx`` resolves to the MDX variant in
+# all three.
 SUFFIX_VARIANT: Final[dict[str, str]] = {
     ".sh": VARIANT_HASH,
     ".bash": VARIANT_HASH,

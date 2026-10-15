@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -519,3 +521,64 @@ class TestResolvePythonBin:
 
         with pytest.raises(RuntimeError, match="no real CPython"):
             pr.resolve_python_bin()
+
+
+class TestWindowsShortPath:
+    """The 8.3 short form of an interpreter path, from ``GetShortPathNameW``.
+
+    The Windows API is mocked through ctypes, so the suite runs on every host.
+    Map keys are built with ``str(Path(...))`` so they match the path the code
+    passes to the API on Windows and on POSIX alike. Covers a short form being
+    returned, a volume with no short name, a failed call, an API that cannot be
+    reached, and a host that is not Windows.
+    """
+
+    LONG = Path("C:/Program Files/Python314/python.exe")
+    SHORT = Path("C:/PROGRA~1/PYTHON~1/python.exe")
+
+    def test_returns_short_form_when_the_volume_has_one(
+        self, windows_short_names: Callable[[dict[str, str | None]], Any]
+    ) -> None:
+        fake = windows_short_names({str(self.LONG): str(self.SHORT)})
+
+        assert pr.windows_short_path(self.LONG) == self.SHORT
+        # Two calls per lookup: a length probe with no buffer, then the fetch.
+        assert fake.calls[0] == 0
+        assert fake.calls[1] > 0
+
+    def test_returns_long_path_when_the_volume_has_no_short_name(
+        self, windows_short_names: Callable[[dict[str, str | None]], Any]
+    ) -> None:
+        # Short-name generation disabled: the API echoes the long path back.
+        windows_short_names({})
+
+        assert pr.windows_short_path(self.LONG) == self.LONG
+
+    def test_returns_long_path_when_the_call_fails(
+        self, windows_short_names: Callable[[dict[str, str | None]], Any]
+    ) -> None:
+        windows_short_names({str(self.LONG): None})
+
+        assert pr.windows_short_path(self.LONG) == self.LONG
+
+    def test_returns_long_path_when_the_api_cannot_be_reached(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def _no_kernel32(_name: str, **_kwargs: object) -> object:
+            raise OSError("kernel32 could not be loaded")
+
+        monkeypatch.setattr(pr, "_is_windows", lambda: True)
+        monkeypatch.setattr(pr.ctypes, "WinDLL", _no_kernel32, raising=False)
+
+        assert pr.windows_short_path(self.LONG) == self.LONG
+
+    def test_off_windows_never_calls_the_api(
+        self,
+        windows_short_names: Callable[[dict[str, str | None]], Any],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        fake = windows_short_names({str(self.LONG): str(self.SHORT)})
+        monkeypatch.setattr(pr, "_is_windows", lambda: False)
+
+        assert pr.windows_short_path(self.LONG) == self.LONG
+        assert fake.calls == []

@@ -112,6 +112,7 @@ from apothem.audit.header_vocabulary import (
     VARIANT_EXEMPT,
     VARIANT_HASH,
     VARIANT_HTML,
+    VARIANT_MDX,
     VARIANT_SEMICOLON,
 )
 
@@ -567,6 +568,7 @@ __all__ = [
     "VARIANT_EXEMPT",
     "VARIANT_HASH",
     "VARIANT_HTML",
+    "VARIANT_MDX",
     "VARIANT_SEMICOLON",
     "CoverageSummary",
     "FileCoverage",

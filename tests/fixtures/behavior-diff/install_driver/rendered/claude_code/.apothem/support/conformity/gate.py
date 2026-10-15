@@ -478,11 +478,15 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "n/a (change-set granularity, not per-file)",
     ),
     "file_header_grep": (
-        "the per-Write insertion-at-index-0 logic does not model the "
-        "frontmatter-first Markdown class (rules / agents / commands / docs / "
-        "AGENTS.md) that is the dominant ratified head convention across the "
-        "shipped tree; the genuine code-surface gaps are fixed in source",
-        "model the frontmatter-first Markdown head convention in the matcher",
+        "the matcher models YAML frontmatter and MDX; the remaining corpus "
+        "findings are real but non-gating: five deliberately header-less "
+        "injector smoke-test inputs under tests/conformity-scenarios/fixtures/, "
+        "one hand-maintained plugin skill copy with no header, and one "
+        "file whose SPDX line lacks the mandatory trailing blank line",
+        "exempt the injector smoke-test inputs through the ratified exception "
+        "list; add the header to the plugin skill copy and the trailing blank "
+        "line to SECURITY-INSIGHTS.yml; the matcher joins the blocking set at "
+        "zero findings",
     ),
     "copilot_instructions_presence_grep": (
         "single-target surface matcher (.github/copilot-instructions.md); in "
