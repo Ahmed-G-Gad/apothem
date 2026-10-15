@@ -48,6 +48,15 @@
 #                      for stripping renderer internals from a directory
 #                      whose other contents are convention-surface.
 #
+# Rendered native config is not an install entry. A harness whose native
+# config is one structured file (for example a YAML or JSON settings file) is
+# rendered by its adapter's `materializer.py` from the shared profile, and the
+# manifest does not list that file. The profile's MCP servers are one such
+# rendered surface: the adapters whose materializer renders them write them
+# under the harness's native MCP key, and the registry capability gate accepts
+# that materializer as the evidence for the MCP cell. The hermes and open_claw
+# blocks name the file their materializer renders.
+#
 # Status: ACTIVE CONTRACT. The `claude_code` adapter consumes this
 # manifest directly through `apothem.lib.propagation.load_manifest` —
 # the manifest IS the install contract, not a specification awaiting
@@ -578,9 +587,11 @@ harnesses:
     per-directory-filters: {}
 
   hermes:
-    # Hermes receives ~/.hermes/config.yaml from materializer.py (native MCP
-    # under mcp_servers). Commands and skills land under the Apothem support
-    # subtree; skills.config is a vendor registry-package list Apothem does not author.
+    # ~/.hermes/config.yaml is rendered by materializer.py, not copied from the
+    # tree, so it has no install entry below. The profile's MCP servers are
+    # written there under the top-level mcp_servers key. Commands and skills
+    # land under the Apothem support subtree; skills.config is a vendor
+    # registry-package list Apothem does not author.
     install:
       - source: "commands/"
         target: "${HARNESS_ROOT}/.apothem/support/skills/"

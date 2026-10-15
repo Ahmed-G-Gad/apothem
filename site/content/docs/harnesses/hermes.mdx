@@ -30,8 +30,10 @@ resolves against.
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the native YAML config,
-including the profile's MCP inventory. The profile's identity, preferences, and
-rules go into the profile document. Shared commands, skills, helper definitions,
+including the profile's MCP inventory. The MCP servers come from the profile's
+`mcp_servers` section. They are rendered into `config.yaml` on each install and
+update, not copied as files. The profile's identity, preferences, and rules go
+into the profile document. Shared commands, skills, helper definitions,
 rules, templates, and hook prompts land as support material under
 `~/.hermes/.apothem/support/`.
 

@@ -21,12 +21,13 @@ translate one source into each harness's *native* configuration schema.
 Cross-tool sync CLIs generate per-tool files from one source: **rulesync**
 generates native configuration for 60 coding tools and two open standards,
 across a synced unit that adds MCP, ignore files, permissions and review checks,
-none of which the Apothem manifest syncs; **ruler** distributes one `.ruler/`
-directory to 33 targets, concatenating rules into each tool's instruction file
-and translating MCP servers, skills and subagents into native config. Apothem's
-distinction is the **governance and lifecycle discipline shipped around the
-sync**: a mechanized conformity gate, deterministic pipelines, an audit
-fortress, and a reversible verified lifecycle.
+none of which the Apothem manifest syncs; Apothem renders its MCP servers from
+the profile through the materializers of the adapters that author them.
+**ruler** distributes one `.ruler/` directory to 33 targets, concatenating rules
+into each tool's instruction file and translating MCP servers, skills and
+subagents into native config. Apothem's distinction is the **governance and
+lifecycle discipline shipped around the sync**: a mechanized conformity gate,
+deterministic pipelines, an audit fortress, and a reversible verified lifecycle.
 
 | Capability | Apothem | File config managers (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
