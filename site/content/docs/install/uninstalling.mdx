@@ -78,6 +78,10 @@ Removal matches the install channel you used. Channel numbers are those of the
   permission rules, MCP servers and hook handlers stay. Uninstall removes only
   the keys and list entries the install ledger records as Apothem's (see
   [Settings](/docs/reference/settings#merging-into-your-own-settings-file)).
+- The shared data stores under `.apothem/` at the install root (`memory/`,
+  `contexts/`, `learning/`) stay while another installed harness at the same
+  root still uses them. Uninstalling the last harness at that root copies each
+  store into `~/.apothem/backups/` first, then removes it with everything in it.
 - Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
 
 ## Directories
