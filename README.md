@@ -165,8 +165,11 @@ and Codex extensions) under [Install](#install):
 # 2 — npx (any machine with Node and Python 3.10+)
 npx @ahmed-g-gad/apothem install --harness claude-code
 
-# 3 — one-shot installer (resolves and verifies the latest signed release tag)
+# 3 — one-shot installer (resolves and verifies the latest signed release tag;
+#     import the maintainer signing key once first, as SECURITY.md shows)
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import    # POSIX, once
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'    # Windows, once
 irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
 
 # 3b — prefer to inspect the bootstrap script first? download, review, run —
@@ -290,13 +293,35 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ### 3 — One-shot installers
 
 **Prerequisites:** system Python 3.10+ on `PATH` (the installer offers to add
-the `click` / `rich` prerequisites for you); `git` is needed only for a network
-install that clones the source.
+the `click` / `rich` prerequisites for you); `git` and `gpg` for a network
+install, which clones the source and verifies its signed release tag (Git for
+Windows ships both).
 
 The one-shot installer resolves the latest signed release tag, verifies its
 signature, fetches the Apothem source tree at that tag, runs the engine
 directly from it, and materializes your harness configuration. The
 tag-pinned verified install is the default and recommended path.
+
+**Import the maintainer signing key once.** The installer verifies the
+release tag's signature and stops if the signing key is not in your keyring.
+Import it, then check that the fingerprint reads
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, as
+[SECURITY.md](SECURITY.md#maintainer-signing-key) publishes it:
+
+```shell
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+On Windows, `git verify-tag` reads the keyring of the `gpg` that ships with
+Git for Windows, so run the same commands through Git's own `bash`:
+
+```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+A host without `gpg` can use `APOTHEM_VERIFY=checksum` instead, described
+below.
 
 | One-shot installer | Command (latest signed tag, verified) |
 |---|---|

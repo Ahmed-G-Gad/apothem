@@ -7,8 +7,8 @@ Exercises the fail-closed signature gate in ``scripts/installer/install.sh``,
 repository — no network. The gate distinguishes two abort classes:
 
 - **missing key** — the tag is signed but the maintainer public key is absent
-  from the local keyring; the abort prints key-import guidance (fingerprint
-  lookup in SECURITY.md plus ``gpg --recv-keys``).
+  from the local keyring; the abort prints key-import guidance (import
+  from the published key URL plus a fingerprint check against SECURITY.md).
 - **bad / absent signature** — an unsigned or tampered tag; the abort is hard
   and deliberately does not advertise the ``APOTHEM_ALLOW_UNVERIFIED``
   override on a possible-tampering signal.
@@ -71,7 +71,7 @@ GateRunner = Callable[[dict[str, str]], subprocess.CompletedProcess[str]]
 # Message markers mirrored from the scripts' verification gates.
 BAD_SIGNATURE_MARKER = "did not verify (possible tampering)"
 MISSING_KEY_MARKER = "public key is not in the local keyring"
-KEY_IMPORT_MARKER = "gpg --recv-keys"
+KEY_IMPORT_MARKER = "gpg --import"
 OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
 
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.

@@ -232,7 +232,7 @@ elif [ -d "$APOTHEM_HOME/.git" ]; then
         elif [ "$APOTHEM_ALLOW_UNVERIFIED" = "1" ]; then
             warn "Tag ${APOTHEM_REF} is unsigned or its signature did not verify — proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
         elif verify_tag_missing_key; then
-            die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: look up the maintainer signing-key fingerprint in SECURITY.md at the repository root, run 'gpg --recv-keys <fingerprint>', confirm the imported key's fingerprint matches the published value, then re-run this updater."
+            die "Tag ${APOTHEM_REF} is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: run 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import', check that 'gpg --fingerprint 70396FED9C634163' shows the fingerprint published in SECURITY.md, then re-run this updater."
         else
             die "Tag ${APOTHEM_REF} is unsigned or its signature did not verify (possible tampering). Aborting before re-materialization."
         fi

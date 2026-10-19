@@ -36,6 +36,7 @@ usage error.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -49,6 +50,14 @@ from pathlib import Path
 REPO = "ahmed-g-gad/apothem"
 REPO_URL = f"https://github.com/{REPO}"
 SITE = "https://apothem.ahmedgad.com"
+#: Where GitHub serves the maintainer's public signing key.
+KEY_URL = "https://github.com/ahmed-g-gad.gpg"
+#: The documented one-time key import before a verified one-shot install.
+POSIX_KEY_IMPORT = f"curl -fsSL {KEY_URL} | gpg --import"
+WINDOWS_KEY_IMPORT = (
+    '& "$env:ProgramFiles\\Git\\bin\\bash.exe" -c '
+    f"'curl -fsSL {KEY_URL} | gpg --import'"
+)
 STEP_TIMEOUT_SECONDS = 900
 EXIT_OK = 0
 EXIT_FAIL = 1
@@ -146,16 +155,22 @@ CHANNELS: tuple[Channel, ...] = (
     Channel(
         id="installer-posix",
         title="3 — one-shot installer (POSIX)",
-        documented=(f"curl -fsSL {SITE}/install.sh | sh",),
-        requires=("curl", "sh", "git", "python3"),
-        steps=(Step((f"curl -fsSL {SITE}/install.sh | sh",), interpreter="sh"),),
+        documented=(POSIX_KEY_IMPORT, f"curl -fsSL {SITE}/install.sh | sh"),
+        requires=("curl", "sh", "git", "gpg", "python3"),
+        steps=(
+            Step((POSIX_KEY_IMPORT,), interpreter="sh"),
+            Step((f"curl -fsSL {SITE}/install.sh | sh",), interpreter="sh"),
+        ),
     ),
     Channel(
         id="installer-windows",
         title="3 — one-shot installer (Windows)",
-        documented=(f"irm {SITE}/install.ps1 | iex",),
+        documented=(WINDOWS_KEY_IMPORT, f"irm {SITE}/install.ps1 | iex"),
         requires=("pwsh", "git"),
-        steps=(Step((f"irm {SITE}/install.ps1 | iex",), interpreter="pwsh"),),
+        steps=(
+            Step((WINDOWS_KEY_IMPORT,), interpreter="pwsh"),
+            Step((f"irm {SITE}/install.ps1 | iex",), interpreter="pwsh"),
+        ),
         runner="windows-latest",
     ),
     Channel(
@@ -319,6 +334,31 @@ def _display(step: Step) -> str:
     return step.argv[0] if step.interpreter else " ".join(step.argv)
 
 
+def _stop_gpg_agents(env: dict[str, str]) -> None:
+    """Stop the gpg daemons a step started in the temporary home.
+
+    ``git verify-tag`` and a key import start gpg-agent (and keyboxd), which
+    keep files under the temporary home open. On Windows an open file cannot
+    be deleted, so the temporary directory could not be removed.
+    """
+    candidates = [shutil.which("gpgconf")]
+    if os.name == "nt":
+        program_files = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+        git_usr_bin = Path(program_files) / "Git" / "usr" / "bin"
+        candidates.append(str(git_usr_bin / "gpgconf.exe"))
+    for gpgconf in candidates:
+        if gpgconf and Path(gpgconf).exists():
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                subprocess.run(  # noqa: S603 - fixed argv
+                    [gpgconf, "--kill", "all"],
+                    env=env,
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    timeout=60,
+                    check=False,
+                )
+
+
 def run_channel(
     channel: Channel, *, allow_missing_tools: bool = False
 ) -> dict[str, object]:
@@ -331,7 +371,9 @@ def run_channel(
         record["steps"] = []
         return record
     steps: list[dict[str, object]] = []
-    with tempfile.TemporaryDirectory(prefix=f"channel-{channel.id}-") as tmp:
+    with tempfile.TemporaryDirectory(
+        prefix=f"channel-{channel.id}-", ignore_cleanup_errors=True
+    ) as tmp:
         root = Path(tmp)
         home = root / "home"
         work = root / "work"
@@ -357,6 +399,7 @@ def run_channel(
             steps.append({"command": _display(step), "exit": code, "output_tail": tail})
             if code != 0:
                 break
+        _stop_gpg_agents(env)
     record["steps"] = steps
     completed = len(steps) == len(channel.steps) and all(s["exit"] == 0 for s in steps)
     record["status"] = "passed" if completed else "failed"

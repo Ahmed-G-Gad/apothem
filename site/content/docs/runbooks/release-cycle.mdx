@@ -246,9 +246,12 @@ directory named by `APOTHEM_BIN_DIR` when that variable is set. The check
 below needs that directory on `PATH`. When it is not, the installer prints the
 `export PATH` line to add. Until that directory is on `PATH`, the shell
 cannot find `apothem`, and the check fails. If the installer cannot place the
-launcher, it prints a warning and no `export PATH` line.
+launcher, it prints a warning and no `export PATH` line. On a host that does
+not hold the maintainer signing key yet, the first line imports it; the
+installer stops without it.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -257,7 +260,11 @@ Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.4 One-shot script installer (Windows)
 
+The first line imports the maintainer signing key through Git's own `bash`,
+whose `gpg` keyring is the one `git verify-tag` reads.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

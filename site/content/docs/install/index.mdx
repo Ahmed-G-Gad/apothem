@@ -129,8 +129,9 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ## 3. One-shot installers
 
 **Prerequisites:** system Python 3.10+ on `PATH` (the installer offers to add
-the `click` / `rich` prerequisites for you); `git` is needed only for a network
-install that clones the source.
+the `click` / `rich` prerequisites for you); `git` and `gpg` for a network
+install, which clones the source and verifies its signed release tag (Git for
+Windows ships both).
 
 The installer scripts resolve the latest signed release tag, verify its
 signature, place the Apothem source tree at `~/.apothem` at that tag, create a
@@ -140,6 +141,22 @@ fields: edit it, then run `apothem update --harness <name>` to apply yours.
 Re-running is idempotent: an existing tree is re-checked-out to the resolved
 tag and the harness is re-materialized. The tag-pinned verified install is the
 default and recommended path.
+
+Import the maintainer signing key once first. The installer stops when the key
+is not in your keyring. Check that the fingerprint reads
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, the value
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
+publishes. On Windows, `git verify-tag` reads the keyring of the `gpg` that
+ships with Git for Windows, so the import runs through Git's own `bash`:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -166,8 +183,8 @@ With no `APOTHEM_REF` set, the installer resolves the highest
 signature is verified with `git verify-tag`; an unsigned, tampered, or
 unverifiable tag aborts the install before anything is written. A signed tag
 whose maintainer public key is not yet in the local keyring aborts with
-key-import guidance instead: import the key, check its fingerprint against
-the value published in
+key-import guidance instead: import the key as shown above, check its
+fingerprint against the value published in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
 and re-run. Pin a specific
 release with `APOTHEM_REF`:

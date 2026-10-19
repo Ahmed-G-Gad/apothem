@@ -25,6 +25,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **A new user can complete the verified one-shot install.** The installers
+  stop until the maintainer's public key is in the keyring, and told users to
+  check a fingerprint that `SECURITY.md` did not publish. `SECURITY.md` now
+  publishes the signing key, its fingerprint and where to get it. The README
+  and install pages show the one-time import before the installer (on Windows
+  through Git's own `bash`, whose keyring `git verify-tag` reads), and the
+  installers' stop message gives the exact commands. The channel smoke runs
+  the documented import first, and on Windows it stops the gpg daemons so its
+  temporary home can be removed and the run reports its result.
 - **More documentation and metadata match the code.** The pipeline pages for
   `/plan-audit`, `/plan-execute`, `/research-analysis`, `/research-paper`,
   `/research-publish` and `/security-audit` now state the gates, outputs and
