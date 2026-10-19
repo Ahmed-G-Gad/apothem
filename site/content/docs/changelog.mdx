@@ -19,6 +19,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-19
+
 ### Changed
 
 - **`/plan-audit` runs on a suite that has only a spec.** Its Sequence Gate
@@ -32,6 +34,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   injector smoke-test inputs, which stay header-less on purpose, are on the
   exception list. Under `--strict`, as CI and the pre-commit hook run it, a
   file without the SPDX header line now fails the run.
+- **The security policy states how long older minors get fixes.**
+  `SECURITY.md` lists 1.1.x as receiving critical security fixes only, until
+  2027-04-15, and 1.0.x as unsupported. 1.2.x receives every fix.
+- **The translated documentation names each concept the same way
+  throughout.** Each of the eleven translations rendered some English terms
+  two or three ways. Every translation now follows its language's glossary,
+  or the most common rendering where the glossary has no entry.
 
 ### Fixed
 
@@ -59,6 +68,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The header injector keeps line endings.** `scripts/inject-header.py
   --mode fix-in-place` rewrote an LF file with CRLF line endings on Windows.
   It now writes each file back with the line ending it had.
+- **The GitHub Copilot convention pin cites the current page.** Its evidence
+  for the Copilot CLI's `web_fetch` tool cited a page that had moved and no
+  longer described the tool. It now cites the page that does, and drops a
+  detail that page does not state. The recorded capability is unchanged.
 
 ## [1.2.0] - 2026-10-15
 
@@ -785,7 +798,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.1
 [1.2.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0
 [1.0.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.2

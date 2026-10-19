@@ -45,6 +45,7 @@ To verify a release tag locally: import the maintainer signing key, confirm the 
 
 | Tag | Tag object | How to verify it |
 | --- | --- | --- |
+| `v1.2.1` | annotated, GPG-signed | `git verify-tag v1.2.1` |
 | `v1.2.0` | annotated, GPG-signed | `git verify-tag v1.2.0` |
 | `v1.1.0` | annotated, GPG-signed | `git verify-tag v1.1.0` |
 | `v1.0.2` | annotated, GPG-signed | `git verify-tag v1.0.2` |
