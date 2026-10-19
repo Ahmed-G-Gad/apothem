@@ -1,12 +1,12 @@
 ---
 title: "制品注册表"
-description: "Apothem 生态系统制品的完整枚举：命令、规则、委托工作者、钩子、技能、输出风格、制品演进纪律，以及空制品类声明。"
+description: "Apothem 生态系统制品的完整枚举：命令、规则、委派工作者、钩子、技能、输出样式、制品演进纪律，以及空制品类声明。"
 machineTranslated: true
 sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **制品集的规范登记册。** 本文档承载命令、规则、委托工作者、钩子、技能、输出风格、制品演进纪律以及空制品类声明的完整枚举；实质性表格存放于此。项目源代码布局提供了精简的常驻视图。
+> **制品集的规范登记册。** 本文档承载命令、规则、委派工作者、钩子、技能、输出样式、制品演进纪律以及空制品类声明的完整枚举；实质性表格存放于此。项目源代码布局提供了精简的常驻视图。
 
 ## 1. 命令
 
@@ -43,7 +43,7 @@ plan 流水线作为八个一等命令交付——每个阶段一个，可从其
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | 将自由形式的散文细化为规范级的 `_spec/spec.md`；每个开放问题都通过结构化询问通道路由，而非静默默认；`--quick` 在 `<project-root>/.apothem/plans/` 下写入单个轻量级 plan 文件（`.plans/` 仍是受支持的向后兼容回退） |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | 从已撰写的散文/需求生成一个完整的主计划套件 |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | 对现有套件的取证式审计——散文保真度、内部一致性、缺口分析——通过交互式问答细化 |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | 在套件的 `_inputs/design.md` 处产出架构设计制品，在提升前由十五栏预发射门验证 |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | 在套件的 `_inputs/design.md` 处产出架构设计制品，在提升前由十五栏预发布闸门验证 |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | 跨完整的 spec → generate → review 周期进行闭环审计与修复，循环直到零发现，或达到带有既定退避的迭代上限 |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | 在一致性检查与质量门下执行某阶段——默认 `medium` 强度，可通过 `PHASE.md` frontmatter 中的 `effort:` 字段按阶段覆盖；默认在每个阶段边界处停止，使用 `--no-pause`（或配置文件的 `enforcement.continuous_execution` 标志）可选择阶段到阶段的连续推进 |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | 针对任务、阶段与制品维度的只读进度报告 |
@@ -67,7 +67,7 @@ plan 流水线作为八个一等命令交付——每个阶段一个，可从其
 
 > **交互式询问 schema 指针。** 规范的结构化询问调用 schema——必填字段、字段摘要表、两个可执行的示例（§2.1 单选与 §2.2 多选）——存放于 `src/apothem/rules/interactive-questions.md` §2 "Structured-Inquiry Shape"。下游制品可复制 §2.1 或 §2.2 作为调用模板；每个选项的 `description` 主体所承载的三段式选项注释 schema 在同一文件的 §3 中规定。
 
-## 3. 委托工作者
+## 3. 委派工作者
 
 生态系统随附十二个持久化工作者定义；编排规则的团队模式向它们派遣。每个定义存放于下方列出的文件路径。
 
@@ -130,7 +130,7 @@ exec 形式而非特定于 shell 的包装器，因此跨 OS 行为
 | Eval Harness | `src/apothem/skills/eval-harness/` | 是 | 带有明确通过标准的可复现语言模型评估框架 |
 | Incident Runbook | `src/apothem/skills/incident-runbook/` | 是 | 以触发 → 诊断 → 行动 → 验证 → 回滚形式撰写的运行手册 |
 | Multi-Source Research | `src/apothem/skills/multi-source-research/` | 是 | 扇出、交叉验证、带引用的研究报告 |
-| Plan Suite | `src/apothem/skills/plan-suite/` | 否 | 由 `/plan` 流水线各阶段消费的主模板 |
+| 计划套件 | `src/apothem/skills/plan-suite/` | 否 | 由 `/plan` 流水线各阶段消费的主模板 |
 | Projectify | `src/apothem/skills/projectify/` | 是 | 聊天应用项目提升——在可测量的逐平台上下文预算内，将 Description / Instruction / 知识 Files 交付物提升至 SOTA 约定 |
 | Prompt Engineering | `src/apothem/skills/prompt-engineering/` | 是 | 经评估验证的结构化提示词设计 |
 | Refactor Extract | `src/apothem/skills/refactor-extract/` | 是 | 保持行为的提取重构 |
@@ -143,9 +143,9 @@ exec 形式而非特定于 shell 的包装器，因此跨 OS 行为
 
 > **约定。** 每行的 **Path** 是一个文件夹；入口点是其内部的 `SKILL.md` 文件——例如 `src/apothem/skills/plan-suite/SKILL.md`——遵循项目源代码布局中声明的文件夹带 `SKILL.md` 的技能约定。
 
-## 6. 输出风格
+## 6. 输出样式
 
-四个输出风格存放于 `src/apothem/output-styles/` 之下。
+四个输出样式存放于 `src/apothem/output-styles/` 之下。
 
 | 风格 | 文件 | 用途 |
 | ----- | ---- | ------- |

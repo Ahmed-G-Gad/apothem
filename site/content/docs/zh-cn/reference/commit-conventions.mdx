@@ -18,7 +18,7 @@ sourceHash: "b14f720edd93a318"
 
 ## 2. 作者身份纪律（仅限人类）
 
-每个 git 制品中的每个作者身份表面（提交主题、提交正文、`Author:` 字段、`Co-Authored-By:` 尾注、`Signed-off-by:` 尾注、分支名、标签名、标签注释、暂存名、git-notes 正文、PR 标题、PR 描述）都仅命名**人类贡献者**。harness运行时绝不把自身、底层语言模型、运行时/工具/IDE/扩展/厂商或任何其他自动化工具归属到这些表面中的任何一个。被禁止的模式包括 `Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、形如 `generated with X` 或 `co-authored by an automated helper` 的正文叙述，以及任何标示非人类作者身份的主题行标记。完整规范见 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6；机制性执行见 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) 扫描 3。
+每个 git 制品中的每个作者身份表面（提交主题、提交正文、`Author:` 字段、`Co-Authored-By:` 尾注、`Signed-off-by:` 尾注、分支名、标签名、标签注释、暂存名、git-notes 正文、PR 标题、PR 描述）都仅命名**人类贡献者**。工具运行时绝不把自身、底层语言模型、运行时/工具/IDE/扩展/厂商或任何其他自动化工具归属到这些表面中的任何一个。被禁止的模式包括 `Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、形如 `generated with X` 或 `co-authored by an automated helper` 的正文叙述，以及任何标示非人类作者身份的主题行标记。完整规范见 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6；机制性执行见 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) 扫描 3。
 
 ## 3. 发布标签（语义化版本）
 

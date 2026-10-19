@@ -7,7 +7,7 @@ sourceHash: "f45e23f0fd1b8dd6"
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Ejecutor
-**Posición en el pipeline:** terminal
+**Posición en la canalización:** terminal
 
 Ejecuta una fase específica de una Suite de Plan Maestra con comprobación de conformidad.
 
@@ -33,11 +33,11 @@ Archivos REPORT.md por fase, artefactos de la base de código, COMPLETION.md
 
 ## Aguas abajo
 
-`/fortress` endurece el trabajo ejecutado hasta un estado que supera las puertas de preparación para el lanzamiento, en una sola llamada (detecta, verifica, corrige, vuelve a auditar y aplica la puerta). Por defecto, se detiene a pedir confirmación al final de cada ronda; `--autonomous` ejecuta las rondas sin detenerse. `/code-review` — el punto de entrada canónico de la secuencia de revisión de auditoría de once comandos, que recorre la secuencia una etapa a la vez. `/plan-execute` es la etapa terminal del pipeline de *plan*; cuando se completa la fase final, el código construido pasa a la secuencia de revisión de auditoría para su revisión.
+`/fortress` endurece el trabajo ejecutado hasta un estado que supera las puertas de preparación para el lanzamiento, en una sola llamada (detecta, verifica, corrige, vuelve a auditar y aplica la puerta). Por defecto, se detiene a pedir confirmación al final de cada ronda; `--autonomous` ejecuta las rondas sin detenerse. `/code-review` — el punto de entrada canónico de la secuencia de revisión de auditoría de once comandos, que recorre la secuencia una etapa a la vez. `/plan-execute` es la etapa terminal de la canalización de *plan*; cuando se completa la fase final, el código construido pasa a la secuencia de revisión de auditoría para su revisión.
 
 ## Fases del flujo de trabajo
 
-El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
+El comando sigue el flujo de trabajo estándar de la canalización `/plan`:
 
 1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
 2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
@@ -51,7 +51,7 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
 | Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
 
 ## Ejemplos
@@ -66,6 +66,6 @@ El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
 
 ## Referencias cruzadas
 
-- [Visión general del pipeline](/docs/pipeline)
+- [Visión general de la canalización](/docs/pipeline)
 - [Referencia de comandos](/docs/reference/commands)
-- [Entrada de la fortaleza de auditoría: `/code-review`](/docs/reference/commands) — la secuencia de revisión en la que entra el código construido una vez completado el pipeline de plan
+- [Entrada de la fortaleza de auditoría: `/code-review`](/docs/reference/commands) — la secuencia de revisión en la que entra el código construido una vez completada la canalización de plan

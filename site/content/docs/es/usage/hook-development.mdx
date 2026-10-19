@@ -6,7 +6,7 @@ sourceHash: "3f0b73e4a7f319cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Los hooks son comandos de shell que se disparan en eventos del harness. Ejecutan
+Los hooks son comandos de shell que se disparan en eventos del entorno. Ejecutan
 comprobaciones de conformidad, inyectan contexto y corren puertas de calidad sin
 intervención del operador.
 
@@ -53,4 +53,4 @@ Agrega el comando del hook a `settings.json`:
 
 Todos los hooks se enrutan a través de `src/apothem/hooks/dispatch.py`, que
 convierte cualquier error de hook en un sobre fail-open para que los hooks nunca
-bloqueen el harness.
+bloqueen el entorno.

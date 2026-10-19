@@ -53,15 +53,15 @@ sourceHash: "0b4ba23080c1c9b9"
 
 يُشحَن كل مُنتَج إصدار مع:
 
-- **إثبات منشأ البناء <bdi>SLSA-3</bdi>** عبر [<bdi>`slsa-framework/slsa-github-generator`</bdi>](https://github.com/slsa-framework/slsa-github-generator)
+- **منشأ البناء <bdi>SLSA-3</bdi>** عبر [<bdi>`slsa-framework/slsa-github-generator`</bdi>](https://github.com/slsa-framework/slsa-github-generator)
 - **تواقيع <bdi>Sigstore</bdi>** عبر [<bdi>`sigstore/cosign-installer`</bdi>](https://github.com/sigstore/cosign-installer)
-- **<bdi>CycloneDX SBOM</bdi>** للـ <bdi>wheel</bdi> والـ <bdi>sdist</bdi> المشحونين، يكتبه <bdi>`scripts/release/generate_sbom.py`</bdi>: حزمة <bdi>apothem</bdi>، وكل حزمة مُضمَّنة تحت <bdi>`apothem/_vendor`</bdi> مع رخصتها، ومتطلّبات بيئة التشغيل المُعلَنة، وقيمة <bdi>SHA-256</bdi> لكل توزيعة. الـ <bdi>SBOM</bdi> موقَّع ومشمول بإثبات منشأ البناء مثل التوزيعات
-- **بيانات إثبات المنشأ في <bdi>npm</bdi>** عبر <bdi>Trusted Publishing OIDC</bdi> على <bdi>`@ahmed-g-gad/apothem`</bdi>
+- **<bdi>CycloneDX SBOM</bdi>** للـ <bdi>wheel</bdi> والـ <bdi>sdist</bdi> المشحونين، يكتبه <bdi>`scripts/release/generate_sbom.py`</bdi>: حزمة <bdi>apothem</bdi>، وكل حزمة مُضمَّنة تحت <bdi>`apothem/_vendor`</bdi> مع رخصتها، ومتطلّبات بيئة التشغيل المُعلَنة، وقيمة <bdi>SHA-256</bdi> لكل توزيعة. الـ <bdi>SBOM</bdi> موقَّع ومشمول بمنشأ البناء مثل التوزيعات
+- **بيانات المنشأ في <bdi>npm</bdi>** عبر <bdi>Trusted Publishing OIDC</bdi> على <bdi>`@ahmed-g-gad/apothem`</bdi>
 - **وسوم <bdi>git</bdi> موقَّعة بـ <bdi>GPG</bdi>** (مفتاح <bdi>EDDSA</bdi> <bdi>`70396FED9C634163`</bdi>)
 
 ## التحقّق من إصدار
 
-نزِّل كل أصول إصدارٍ ما إلى دليل فارغ، ثم افحص التواقيع وإثبات منشأ البناء. استبدل
+نزِّل كل أصول إصدارٍ ما إلى دليل فارغ، ثم افحص التواقيع ومنشأ البناء. استبدل
 <bdi>`vX.Y.Z`</bdi> و<bdi>`X.Y.Z`</bdi> بالإصدار الذي نزّلته.
 
 ```bash

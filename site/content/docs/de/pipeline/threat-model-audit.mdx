@@ -33,13 +33,13 @@ Ein deduplizierter, nach Schweregrad triagierter Bedrohungsmodell-Befundbericht 
 
 ## Nachgelagert
 
-Die Bedrohungsmodell-Dimension der Audit-Prüfsequenz — parallel von `/audit` durchlaufen und von `/fortress` behoben.
+Die Bedrohungsmodell-Dimension der Audit-Review-Sequenz — parallel von `/audit` durchlaufen und von `/fortress` behoben.
 
 ## Workflow-Phasen
 
 Der Befehl führt einen Audit-Durchlauf zur Bedrohungsmodellierung über das Host-Repository aus:
 
-1. **Die Oberfläche kartieren** — Die Architektur, Eintrittspunkte, Vertrauensgrenzen und Datenflüsse aufzählen.
+1. **Die Oberfläche kartieren** — Die Architektur, Einstiegspunkte, Vertrauensgrenzen und Datenflüsse aufzählen.
 2. **Bedrohungen modellieren** — Die Methodiken STRIDE + PASTA auf jede Grenze und jedes Asset anwenden.
 3. **Befunde triagieren** — Jede Bedrohung nach Schweregrad mit einer Begründung mit konkretem Treiber einstufen.
 4. **Den Bericht ausgeben** — Die deduplizierten, nach Schweregrad triagierten Befunde synthetisieren (nur Bericht).
@@ -48,7 +48,7 @@ Der Befehl führt einen Audit-Durchlauf zur Bedrohungsmodellierung über das Hos
 
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
-| Keine Architekturoberfläche | Das Ziel hat keine auffindbaren Datenfluss-Grenzen | Das Audit auf ein Repository mit kartierbaren Eintrittspunkten und Vertrauensgrenzen richten |
+| Keine Architekturoberfläche | Das Ziel hat keine auffindbaren Datenfluss-Grenzen | Das Audit auf ein Repository mit kartierbaren Einstiegspunkten und Vertrauensgrenzen richten |
 | Nicht verorteter Befund | Bedrohung ohne Locus behauptet | Das betroffene Asset / die Grenze und die Methodik-Zelle anhängen, an der es scheitert |
 | Behebung erwartet | Das Audit ist nur Bericht | Die Befunde an `/fortress` (Behebung) oder `/elevate` leiten |
 

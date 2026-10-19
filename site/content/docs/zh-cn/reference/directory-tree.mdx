@@ -1,14 +1,14 @@
 ---
 title: "目录层级树"
-description: "Apothem 源代码树结构的可视化映射，展示生态系统配置制品、运行时层级，以及规则、命令、技能、委托工作者、钩子和支持文件的位置。"
+description: "Apothem 源代码树结构的可视化映射，展示生态系统配置制品、运行时层级，以及规则、命令、技能、委派工作者、钩子和支持文件的位置。"
 machineTranslated: true
 sourceHash: "431f3f29c7bbf614"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **以 Mermaid 图渲染的 Apothem 源代码树的规范结构映射。**
-`src/apothem/harnesses/<harness>/` 下的每个 per-harness 适配器都会将此树
-投射到该 harness 的原生配置目录中（例如 Claude Code 对应 `~/.claude/`）。
+`src/apothem/harnesses/<harness>/` 下的每个逐工具适配器都会将此树
+投射到该工具的原生配置目录中（例如 Claude Code 对应 `~/.claude/`）。
 `CLAUDE.md` 第 7 节中声明的每个制品类在此处都有其归属。
 运行时状态目录（机器本地、已 gitignore）出于定位目的而包含在内，
 但绝不容纳生态系统配置制品。
@@ -56,6 +56,6 @@ graph TD
 ## 权威交叉引用
 
 - `CLAUDE.md` 第 3 节——完整的制品目录表。
-- `CLAUDE.md` 第 7 节——注册表（命令、规则、委托工作者、技能、钩子）。
+- `CLAUDE.md` 第 7 节——注册表（命令、规则、委派工作者、技能、钩子）。
 - `site/content/docs/architecture/source-layout.mdx`——叙述式目录摘要。
 - `README.md` Quick Start——面向操作者的概览。

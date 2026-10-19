@@ -1,16 +1,16 @@
 ---
 title: "Registres d'artefacts"
-description: "Énumération complète des artefacts de l'écosystème Apothem : commandes, règles, travailleurs délégués, hooks, compétences, styles de sortie, discipline d'évolution des artefacts et déclarations de classes d'artefact vides."
+description: "Énumération complète des artefacts de l'écosystème Apothem : commandes, règles, travailleurs délégués, hooks, compétences, output-styles, discipline d'évolution des artefacts et déclarations de classes d'artefact vides."
 machineTranslated: true
 sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registre canonique des cohortes d'artefacts.** Ce document porte les énumérations complètes des commandes, règles, travailleurs délégués, hooks, compétences, styles de sortie, discipline d'évolution des artefacts et déclarations de classes d'artefact vides ; les tableaux substantiels vivent ici. L'agencement des sources du projet fournit la vue condensée et toujours active.
+> **Registre canonique des cohortes d'artefacts.** Ce document porte les énumérations complètes des commandes, règles, travailleurs délégués, hooks, compétences, output-styles, discipline d'évolution des artefacts et déclarations de classes d'artefact vides ; les tableaux substantiels vivent ici. L'agencement des sources du projet fournit la vue condensée et toujours active.
 
 ## 1. Commandes
 
-Trente commandes sont enregistrées depuis `src/apothem/commands/*.md` (non récursif). Chaque commande est un fichier enregistré de première classe ; l'orchestrateur `/plan` ne fait qu'enchaîner les étapes de plan déjà de première classe et ne porte aucune logique d'étape propre, de sorte qu'il n'y a toujours pas de répartiteur monolithique ni de regroupement de sous-commandes. Les commandes qui ne sont ni de plan ni de workflow :
+Trente commandes sont enregistrées depuis `src/apothem/commands/*.md` (non récursif). Chaque commande est un fichier enregistré de première classe ; l'orchestrateur `/plan` ne fait qu'enchaîner les étapes de plan déjà de première classe et ne porte aucune logique d'étape propre, de sorte qu'il n'y a toujours pas de répartiteur monolithique ni de regroupement de sous-commandes. Les commandes qui ne sont ni de plan ni de flux de travail :
 
 | Commande | Fichier | Description |
 | ------- | ---- | ----------- |
@@ -26,7 +26,7 @@ Trente commandes sont enregistrées depuis `src/apothem/commands/*.md` (non réc
 | `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Spécialisation GitHub de `/freshify` produisant une unique première version neuve sur `origin/main` |
 | `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Exécute un cycle complet de prochaine version de bout en bout sur la surface de publication GitHub |
 | `/perf-audit` | `src/apothem/commands/perf-audit.md` | Audit par rapport aux budgets de performance par classe dans `src/apothem/rules/performance-discipline.md` |
-| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Balayage de barrière avant publication : matrice de qualité, risque des dépendances et contrôles d'ingénierie de publication |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Balayage de portail avant publication : matrice de qualité, risque des dépendances et contrôles d'ingénierie de publication |
 | `/research` | `src/apothem/commands/research.md` | Travail de recherche multi-source avec découverte et extraction de sources en parallèle |
 | `/security-audit` | `src/apothem/commands/security-audit.md` | Audit de la posture de sécurité contre OWASP ASVS, OWASP Top 10 et CWE Top 25 |
 | `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | Audit de la chaîne d'approvisionnement contre les standards SLSA, Sigstore et SBOM |
@@ -43,9 +43,9 @@ La chaîne de plan est livrée sous forme de huit commandes de première classe 
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Affine de la prose libre en un `_spec/spec.md` de qualité spécification ; chaque question ouverte est acheminée par le canal d'interrogation structurée plutôt que par un défaut silencieux ; `--quick` écrit un unique fichier de plan léger sous `<project-root>/.apothem/plans/` (`.plans/` reste un repli de rétrocompatibilité pris en charge) |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Génère une Suite de Plan Maître complète à partir de prose/exigences rédigées |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensique d'une suite existante — fidélité de la prose, cohérence interne, analyse des lacunes — affiné par questions-réponses interactives |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | Produit un artefact de conception architecturale dans le `_inputs/design.md` de la suite, validé par la barrière de pré-émission à quinze barreaux avant la promotion |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Produit un artefact de conception architecturale dans le `_inputs/design.md` de la suite, validé par le portail de pré-émission à quinze barreaux avant la promotion |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | Audit et remédiation en boucle fermée à travers le cycle complet spec → generate → review, itérant jusqu'à ce qu'il ne reste aucun constat ou qu'un plafond d'itérations avec un repli défini soit atteint |
-| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Exécute une phase avec vérification de conformité et barrières de qualité — effort `medium` par défaut, surclassable par phase via un champ `effort:` dans le frontmatter de `PHASE.md` ; s'arrête à chaque limite de phase par défaut, avec `--no-pause` (ou le drapeau `enforcement.continuous_execution` du profil) optant pour l'avancement continu de phase en phase |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Exécute une phase avec vérification de conformité et portails de qualité — effort `medium` par défaut, surclassable par phase via un champ `effort:` dans le frontmatter de `PHASE.md` ; s'arrête à chaque limite de phase par défaut, avec `--no-pause` (ou le drapeau `enforcement.continuous_execution` du profil) optant pour l'avancement continu de phase en phase |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Rapport de progression en lecture seule sur les dimensions tâche, phase et artefact |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | Amende, étend, affine ou inverse une suite existante sans détruire les décisions précédemment résolues ; ne re-dérive que les artefacts en aval affectés |
 
@@ -57,7 +57,7 @@ Trois commandes entrent dans une procédure approfondie plutôt que de porter un
 | ------- | ---- | ----------- |
 | `/workflow` | `src/apothem/commands/workflow.md` | Point d'entrée de mise à profit de flux de travail à usage général (`/goal <<mission>>`) : pilote des flux de travail dynamiques multi-travailleurs véritablement indépendants sous des contrats de retour nommés, une vérification par réfutation-par-défaut avant qu'un constat ne survive, une remédiation au-delà de la mission divulguée selon le grand livre des changements, et une sortie déterministe ; la répartition multi-travailleurs et l'auto-exécution sont opt-in / à barrière de confirmation. Soutenu par la compétence `workflow` |
 | `/projectify` | `src/apothem/commands/projectify.md` | Élévation de Projets d'application de chat : rédige les livrables Description / Instruction / Files de connaissances d'un Claude Project, Custom GPT ou Gem aux conventions SOTA actuelles, dans un budget de contexte mesurable par plateforme ; sortie déterministe, autonomie opt-in. Soutenu par la compétence `projectify` |
-| `/plan` | `src/apothem/commands/plan.md` | Orchestrateur fin enchaînant les étapes de plan de première classe (`plan-spec → plan-generate → plan-review → plan-design (conditionnel) → plan-execute`), reprenant chacune depuis le Manifeste de Transfert de l'étape précédente ; ne porte aucune logique d'étape — l'enchaînement est opt-in / à barrière de confirmation (`--auto` enchaîne en continu) |
+| `/plan` | `src/apothem/commands/plan.md` | Orchestrateur fin enchaînant les étapes de plan de première classe (`plan-spec → plan-generate → plan-review → plan-design (conditionnel) → plan-execute`), reprenant chacune depuis le Manifeste de transfert de l'étape précédente ; ne porte aucune logique d'étape — l'enchaînement est opt-in / à barrière de confirmation (`--auto` enchaîne en continu) |
 
 ## 2. Règles
 
@@ -144,9 +144,9 @@ Les compétences réutilisables vivent sous `src/apothem/skills/`, un dossier pa
 
 > **Convention.** Le **Chemin** de chaque ligne est un dossier ; le point d'entrée est le fichier `SKILL.md` qu'il contient — p. ex. `src/apothem/skills/plan-suite/SKILL.md` — selon la convention de compétence dossier-avec-`SKILL.md` déclarée dans l'agencement des sources du projet.
 
-## 6. Styles de sortie
+## 6. Output-styles
 
-Quatre styles de sortie vivent sous `src/apothem/output-styles/`.
+Quatre output-styles vivent sous `src/apothem/output-styles/`.
 
 | Style | Fichier | Objectif |
 | ----- | ---- | ------- |

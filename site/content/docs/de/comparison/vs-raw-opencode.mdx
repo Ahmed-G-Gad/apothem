@@ -1,6 +1,6 @@
 ---
 title: "Apothem im Vergleich zur manuellen OpenCode-Konfiguration"
-description: "Die Konfiguration, Befehle, Skills und Agenten von OpenCode von Hand pflegen, verglichen mit dem Rendern aus dem geteilten Profil von Apothem."
+description: "Die Konfiguration, Befehle, Skills und Agenten von OpenCode von Hand pflegen, verglichen mit dem Rendern aus dem gemeinsamen Profil von Apothem."
 machineTranslated: true
 sourceHash: "c166739452bbe88a"
 ---
@@ -15,7 +15,7 @@ Verzeichnisse, wo OpenCode sie unterstützt.
 
 | Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
-| Regeln schreiben | Konfiguration und unterstützende Prompts von Hand bearbeiten | Aus dem geteilten Profil gerendert oder referenziert |
+| Regeln schreiben | Konfiguration und unterstützende Prompts von Hand bearbeiten | Aus dem gemeinsamen Profil gerendert oder referenziert |
 | Befehle, Skills, Agenten schreiben | Jedes OpenCode-Verzeichnis von Hand pflegen | Aus den geteilten Apothem-Korpora konvertiert |
 | Korpora mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
 | Die Oberfläche installieren / entfernen | Manuell | `apothem install` / `apothem uninstall` |
@@ -31,7 +31,7 @@ Hook-Prompts verbleiben unter dem Hilfsbaum von Apothem; Regeln werden aus der n
 
 ## Migrationspfad
 
-1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
+1. Führen Sie `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
 2. Verschieben Sie die vorhandenen OpenCode-Regeln, -Befehle, -Skills und -Agenten in das geteilte Korpus.
 3. Führen Sie `apothem install --harness opencode` aus, um die native Konfiguration und die Erkennungsverzeichnisse zu rendern.
 4. Führen Sie `apothem verify --harness opencode` aus, um zu bestätigen, dass die Konfiguration angekommen ist.

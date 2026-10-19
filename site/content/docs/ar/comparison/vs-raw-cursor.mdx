@@ -1,6 +1,6 @@
 ---
 title: "Apothem مقابل تهيئة Cursor اليدوية"
-description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من ملف التعريف المشترك لـ Apothem."
+description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من الملف التعريفي المشترك لـ Apothem."
 machineTranslated: true
 sourceHash: "c2a9e94f668e10b1"
 ---
@@ -9,7 +9,7 @@ sourceHash: "c2a9e94f668e10b1"
 يقرأ <bdi>Cursor</bdi> القواعد بصيغة <bdi>MDC</bdi> تحت <bdi>`.cursor/rules/`</bdi>.
 تتطلّب صيغة <bdi>MDC</bdi> حقول <bdi>frontmatter</bdi> — <bdi>`description`</bdi>
 و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>. يُحوِّل محوِّل <bdi>cursor</bdi> في
-<bdi>Apothem</bdi> ملفات <bdi>`.mdc`</bdi> تلك من ملف التعريف المشترك. تقابل هذه
+<bdi>Apothem</bdi> ملفات <bdi>`.mdc`</bdi> تلك من الملف التعريفي المشترك. تقابل هذه
 الصفحة بين صيانة تلك التهيئة يدويًّا وإدارتها بـ <bdi>Apothem</bdi>.
 
 ## مقارنة الجهد
@@ -19,7 +19,7 @@ sourceHash: "c2a9e94f668e10b1"
 | كتابة القواعد | كتابة كل ملف <bdi>`.mdc`</bdi> تحت <bdi>`.cursor/rules/`</bdi> يدويًّا | مُحوَّلة من الذخيرة المشتركة |
 | كتابة <bdi>frontmatter</bdi> لـ <bdi>MDC</bdi> | كتابة <bdi>`description`</bdi> / <bdi>`globs`</bdi> / <bdi>`alwaysApply`</bdi> يدويًّا لكل ملف | يولّدها المحوِّل |
 | الحفاظ على صيغة قواعد واحدة | الاختيار يدويًّا بين قواعد <bdi>MDC</bdi> وملف <bdi>`.cursorrules`</bdi> واحد | يكتب المحوِّل ملفات <bdi>MDC</bdi> في <bdi>`.cursor/rules/`</bdi> فقط |
-| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| إبقاء القواعد متوائمة مع أُطُر العمل الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
 | التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem

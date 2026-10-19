@@ -9,10 +9,10 @@ sourceHash: "d413d06e0e66742b"
 **Papel:** Arquiteto
 **Posição no pipeline:** condicional, pós-revisão, pré-execução
 
-Produz o artefato de projeto arquitetural em `_inputs/design.md` quando uma suite
-de plano tem trabalho com arquitetura. É intencionalmente condicional: uma suite
+Produz o artefato de projeto arquitetural em `_inputs/design.md` quando uma suíte
+de planejamento tem trabalho com arquitetura. É intencionalmente condicional: uma suíte
 de prosa, documentação, metadados ou fixtures restritas vai de `/plan-review`
-direto para `/plan-execute`; uma suite que altera componentes, interfaces,
+direto para `/plan-execute`; uma suíte que altera componentes, interfaces,
 esquemas, fluxo de dados, adaptadores, topologia de publicação, limites de
 segurança ou comportamento em tempo de execução passa primeiro por
 `/plan-design`.
@@ -31,7 +31,7 @@ Com argumentos:
 
 ## Entradas
 
-Suite de plano revisada + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
+Suíte de planejamento revisada + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
 cartões de pontuação de revisão PASS de `/plan-review`.
 
 ## Saídas
@@ -55,25 +55,25 @@ Execute `/plan-design` quando ao menos uma fase posterior declarar ou implicar:
 - Uma passagem posterior de `/architecture-review` que deve rastrear a
   implementação de volta a um artefato de projeto.
 
-Pule `/plan-design` quando a suite se limitar a edições de texto, atualizações de
+Pule `/plan-design` quando a suíte se limitar a edições de texto, atualizações de
 inventário gerado, atualizações restritas de fixtures, correções pontuais de
 documentação ou outro trabalho cuja implementação possa ser verificada sem uma
 superfície de rastreamento arquitetural. O caminho de pulo é explícito:
 `/plan-review` registra a classificação de não-arquitetura e, em seguida,
-`/plan-execute` continua a partir da suite de plano revisada.
+`/plan-execute` continua a partir da suíte de planejamento revisada.
 
 ## Jusante
 
 `/plan-execute` consome o artefato de projeto para fases com arquitetura.
 `/architecture-review` consome o mesmo artefato durante a Sequência de Revisão de
 Auditoria. Se `_inputs/design.md` estiver ausente para trabalho com arquitetura,
-a revisão de arquitetura para e reencaminha a suite de volta por `/plan-design`.
+a revisão de arquitetura para e reencaminha a suíte de volta por `/plan-design`.
 
 ## Fases do fluxo de trabalho
 
 O comando segue seis fases de transformação específicas de arquitetura:
 
-1. **Ingestão de entrada** — Lê a suite revisada, os cartões de pontuação, as
+1. **Ingestão de entrada** — Lê a suíte revisada, os cartões de pontuação, as
    saídas de fase e o manifesto de repasse; bloqueia diante de evidência de
    revisão ausente ou falha em SHARED+.
 2. **Decomposição arquitetural** — Percorre Arquitetura, Concorrência,
@@ -115,8 +115,8 @@ O `_inputs/design.md` emitido contém:
 |---------|-------|----------|
 | Pré-requisito incompleto | Fase dependente não concluída | Conclua primeiro a fase a montante |
 | Comporta de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
-| Falta a suite revisada | Suite de plano ou cartões de revisão ausentes | Execute `/plan-generate`, depois `/plan-review` |
-| Suite de não-arquitetura | Nenhuma fase precisa de uma superfície de rastreamento arquitetural | Registre o pulo e continue para `/plan-execute` |
+| Falta a suíte revisada | Suíte de planejamento ou cartões de revisão ausentes | Execute `/plan-generate`, depois `/plan-review` |
+| Suíte de não-arquitetura | Nenhuma fase precisa de uma superfície de rastreamento arquitetural | Registre o pulo e continue para `/plan-execute` |
 | Revisão de arquitetura bloqueia | `_inputs/design.md` ausente para implementação com arquitetura | Execute `/plan-design`, depois reexecute `/architecture-review` |
 
 ## Exemplos
@@ -134,4 +134,4 @@ O `_inputs/design.md` emitido contém:
 - [Visão geral do pipeline](/docs/pipeline)
 - [/plan-execute](/docs/pipeline/plan-execute)
 - [/architecture-review](/docs/pipeline/architecture-review)
-- [Modelo de Suite de Plano Mestra](/docs/reference/commands)
+- [Modelo de Suíte de Planejamento Mestra](/docs/reference/commands)

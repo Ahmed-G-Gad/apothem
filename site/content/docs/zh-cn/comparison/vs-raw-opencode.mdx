@@ -7,7 +7,7 @@ sourceHash: "c166739452bbe88a"
 {/* SPDX-License-Identifier: MIT */}
 
 OpenCode 读取 JSON 配置以及原生的命令、技能和代理发现目录。Apothem 渲染带有
-`instructions` 文件列表的 JSON 配置，并在 OpenCode 支持的地方把共享语料库转换为
+`instructions` 文件列表的 JSON 配置，并在 OpenCode 支持的地方把共享集合转换为
 原生目录。
 
 ## 工作量对比
@@ -15,8 +15,8 @@ OpenCode 读取 JSON 配置以及原生的命令、技能和代理发现目录�
 | 任务 | 手工配置 | Apothem 托管 |
 | ---- | --------------- | --------------- |
 | 编写规则 | 手工编辑配置和支持提示 | 从共享配置档案渲染或引用 |
-| 编写命令、技能、代理 | 手工维护每个 OpenCode 目录 | 从共享的 Apothem 语料库转换 |
-| 让语料库与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 编写命令、技能、代理 | 手工维护每个 OpenCode 目录 | 从共享的 Apothem 集合转换 |
+| 让集合与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
 | 安装／移除配置表面 | 手工 | `apothem install` / `apothem uninstall` |
 | 验证配置是否正确 | 手工检查 | `apothem verify --harness opencode` |
 

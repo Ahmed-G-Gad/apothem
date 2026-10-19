@@ -9,13 +9,13 @@ sourceHash: "a6ba7755dc99bd3f"
 O Open-Claw lê `~/.openclaw/openclaw.json`. Seu `agents.defaults.skills` é uma
 lista de nomes permitidos (não um carregador de diretórios) e o MCP é uma
 superfície de CLI, então o Apothem não escreve nenhuma chave de configuração; ele
-instala coortes compartilhadas de comandos e skills sob
+instala cohorts compartilhados de comandos e skills sob
 `~/.openclaw/.apothem/support/skills/` como material de apoio.
 
 ## Status
 
 **Prévia.** O adaptador do Open-Claw mira o arquivo de configuração atualmente
-documentado e a superfície adicional de diretório de skills. As coortes que não
+documentado e a superfície adicional de diretório de skills. Os cohorts que não
 são de skills permanecem material de apoio do Apothem.
 
 ## Comparação de esforço
@@ -23,7 +23,7 @@ são de skills permanecem material de apoio do Apothem.
 | Tarefa | Config à mão bruta | Gerenciado pelo Apothem |
 | ---- | --------------- | --------------- |
 | Escrever skills reutilizáveis | Editar à mão a config e os diretórios de skills | Escrever uma vez no corpus compartilhado |
-| Manter as coortes alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Manter os cohorts alinhados com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
 | Instalar / remover a config | Manual | `apothem install` / `apothem uninstall` |
 | Verificar se a config está correta | Inspeção manual | `apothem verify --harness open-claw` |
 
@@ -32,7 +32,7 @@ são de skills permanecem material de apoio do Apothem.
 O adaptador do Open-Claw escreve `openclaw.json`, envolve os comandos de barra do
 Apothem como skills, copia as skills do Apothem para o diretório de apoio
 referenciado e mantém as regras, modelos, agents e material de hooks sob a
-subárvore de apoio do Apothem.
+subárvore de suporte do Apothem.
 
 ## Caminho de migração
 

@@ -7,17 +7,16 @@ sourceHash: "e3bc9da3b1b1af38"
 {/* SPDX-License-Identifier: MIT */}
 
 يقرأ <bdi>Windsurf</bdi> القواعد من مجلد `.devin/rules/`. يرسم محوِّل
-<bdi>windsurf</bdi> في <bdi>Apothem</bdi> القواعد المعتمدة على المجلد من ملف
-التعريف المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
+<bdi>windsurf</bdi> في <bdi>Apothem</bdi> القواعد المعتمدة على المجلد من الملف التعريفي المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
 <bdi>apothem</bdi>.
 
 ## مقارنة الجهد
 
 | المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
 | ---- | --------------- | --------------- |
-| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مُصيَّرة من المجموعة المشتركة |
+| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مُصيَّرة من الحزمة المشتركة |
 | الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين `.windsurf/rules/` وملف `.windsurfrules` المفرد | يكتب المحوِّل `.devin/rules/` فقط |
-| إبقاء القواعد متوائمة مع بيئات أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| إبقاء القواعد متوائمة مع أُطُر عمل أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
 | التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf --project <path>` |
 
 ## ما الذي يديره apothem
@@ -31,7 +30,7 @@ sourceHash: "e3bc9da3b1b1af38"
 ## مسار الترحيل
 
 1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
-2. انقل القواعد من `.windsurf/rules/` الموجود لديك (وأي ملف `.windsurfrules` مفرد) إلى المجموعة المشتركة.
+2. انقل القواعد من `.windsurf/rules/` الموجود لديك (وأي ملف `.windsurfrules` مفرد) إلى الحزمة المشتركة.
 3. شغّل `apothem install --harness windsurf --project <path>` لتصيير مجلد `.devin/rules/`.
 4. شغّل `apothem verify --harness windsurf --project <path>` للتأكّد من وصول التهيئة.
 5. استخدم `apothem update --harness windsurf --project <path>` مع كل تغيير لاحق.

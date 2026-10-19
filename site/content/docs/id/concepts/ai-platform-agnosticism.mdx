@@ -10,7 +10,7 @@ Apothem dirancang di sekitar satu prinsip: konfigurasi tata kelola Anda
 harus bertahan lebih lama daripada harness tunggal mana pun. Profil Apothem
 bersama adalah berkas YAML tervalidasi-skema di `~/.config/apothem/profile.yaml` atau
 `--profile PATH`; kohor Apothem yang dipaket menyediakan perintah, aturan, skill,
-hook, templat, statusline, gaya keluaran, dan definisi delegasi.
+hook, templat, statusline, output-style, dan definisi delegasi.
 Adaptor per-harness di bawah `src/apothem/harnesses/<harness>/` menerjemahkan masukan-masukan itu menjadi format
 yang dibutuhkan setiap harness yang didukung:
 
@@ -83,4 +83,4 @@ inti. Penyimpangan secara struktural mustahil.
 
 ## Jaminan portabilitas
 
-Perintah dan pembantu yang ditandai `portability: universal` diterjemahkan ke setiap harness yang entri registrinya mendukung permukaan command (dikonversi atau pohon dukungan); harness tanpa permukaan itu tidak menerima command. Mesin tidak mengevaluasi penanda tersebut. Perintah dan pembantu yang ditandai `portability: project-specific` mungkin memerlukan dokumentasi override per-harness di badan berkas.
+Perintah dan pembantu yang ditandai `portability: universal` diterjemahkan ke setiap harness yang entri registrinya mendukung permukaan command (dikonversi atau pohon pendukung); harness tanpa permukaan itu tidak menerima command. Mesin tidak mengevaluasi penanda tersebut. Perintah dan pembantu yang ditandai `portability: project-specific` mungkin memerlukan dokumentasi override per-harness di badan berkas.

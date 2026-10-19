@@ -7,7 +7,7 @@ sourceHash: "d413d06e0e66742b"
 {/* SPDX-License-Identifier: MIT */}
 
 **Rol:** Arquitecto
-**Posición en el pipeline:** condicional, posterior a la revisión, previa a la ejecución
+**Posición en la canalización:** condicional, posterior a la revisión, previa a la ejecución
 
 Produce el artefacto de diseño arquitectónico en `_inputs/design.md` cuando una
 suite de plan tiene trabajo con arquitectura. Es intencionadamente condicional:
@@ -37,11 +37,11 @@ tarjetas de puntuación de revisión PASS de `/plan-review`.
 ## Salidas
 
 `_inputs/design.md` más un `_inputs/handoff-manifest.yml` aumentado que lleva la
-ruta del artefacto de diseño, el resultado de la compuerta de diseño, el
+ruta del artefacto de diseño, el resultado de la puerta de diseño, el
 resultado de cobertura de siete ejes y el resumen de la Matriz de Vinculación
 Bidireccional.
 
-## Compuerta de aplicabilidad
+## Puerta de aplicabilidad
 
 Ejecuta `/plan-design` cuando al menos una fase posterior declara o implica:
 
@@ -91,7 +91,7 @@ El comando sigue seis fases de transformación específicas de arquitectura:
 5. **Emisión del artefacto de diseño** — Escribe `_inputs/design.md` con
    secciones de componentes, diagramas, registros de decisiones, resultado de la
    validación y vinculaciones.
-6. **Compuerta de validación del diseño** — Ejecuta la compuerta de pre-emisión
+6. **Puerta de validación del diseño** — Ejecuta la puerta de pre-emisión
    de quince barras; actualiza `_inputs/handoff-manifest.yml` solo después de que
    el diseño pasa.
 
@@ -106,7 +106,7 @@ El `_inputs/design.md` emitido contiene:
   estructura sería ambigua de otro modo.
 - Registros de decisiones arquitectónicas resueltas con alternativas,
   compensaciones y notas de reversibilidad.
-- Resultado de la compuerta de validación y Matriz de Vinculación Bidireccional
+- Resultado de la puerta de validación y Matriz de Vinculación Bidireccional
   cuando corresponda.
 - Las propias vinculaciones de cinco direcciones del artefacto hacia las
   superficies de planificación aguas arriba y aguas abajo.
@@ -116,7 +116,7 @@ El `_inputs/design.md` emitido contiene:
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
-| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
+| Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
 | Falta la suite revisada | Suite de plan o tarjetas de revisión ausentes | Ejecuta `/plan-generate`, luego `/plan-review` |
 | Suite de no-arquitectura | Ninguna fase necesita una superficie de traza arquitectónica | Registra la omisión y continúa a `/plan-execute` |
 | La revisión de arquitectura bloquea | `_inputs/design.md` ausente para implementación con arquitectura | Ejecuta `/plan-design`, luego reejecuta `/architecture-review` |
@@ -133,7 +133,7 @@ El `_inputs/design.md` emitido contiene:
 
 ## Referencias cruzadas
 
-- [Visión general del pipeline](/docs/pipeline)
+- [Visión general de la canalización](/docs/pipeline)
 - [/plan-execute](/docs/pipeline/plan-execute)
 - [/architecture-review](/docs/pipeline/architecture-review)
 - [Plantilla de Suite de Plan Maestra](/docs/reference/commands)

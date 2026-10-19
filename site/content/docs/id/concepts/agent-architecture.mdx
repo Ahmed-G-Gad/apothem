@@ -40,8 +40,8 @@ apakah adapter merender konfigurasi native melalui materializer.
 | kimi-code | Hanya materi pendukung | `AGENTS.md` plus aturan pendukung di bawah `.kimi-code/.apothem/support/` | Class I | tidak ada |
 | kiro | Tidak ada (hook pekerja Kiro di luar cakupan adapter) | Berkas steering `.kiro/steering/apothem-rules.md` | Class I | tidak ada |
 | open-claw | Hanya materi pendukung | `openclaw.json` plus direktori skill tambahan | Class II-B | `openclaw.json` |
-| opencode | Hanya materi pendukung | JSON yang dirender profil plus command, skill, dan pekerja native | Class II-B | `opencode.json` |
-| qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus command, skill, dan pekerja native | Class II-B | `settings.json` / `QWEN.md` |
+| opencode | Hanya materi pendukung | JSON yang dirender profil plus command, skill, dan agen native | Class II-B | `opencode.json` |
+| qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus command, skill, dan agen native | Class II-B | `settings.json` / `QWEN.md` |
 | trae | Tidak ada | Berkas aturan proyek `.trae/rules/apothem-rules.md` | Class I | tidak ada |
 | windsurf | Tidak ada | Aturan dalam `.devin/rules/` | Class I | tidak ada |
 | zed | Tidak ada | Berkas datar `.rules` di akar proyek | Class I | tidak ada |
@@ -68,7 +68,7 @@ Catatan tentang matriks:
 - **hermes** dan **open-claw** merender berkas konfigurasi native dan
   menghubungkan direktori skill pendukung Apothem melalui pengaturan
   direktori-skill yang didokumentasikan oleh masing-masing harness. Kohor bersama
-  yang tidak didukung tetap berada di bawah subpohon dukungan milik Apothem.
+  yang tidak didukung tetap berada di bawah pohon pendukung milik Apothem.
 - **qwen-code** merender kunci `settings.json` yang didokumentasikan untuk konteks
   dan pengiriman hook, lalu menggunakan direktori command, skill, dan pekerja
   native Qwen.

@@ -7,7 +7,7 @@ sourceHash: "f83dad93ea1dbe9c"
 {/* SPDX-License-Identifier: MIT */}
 
 > **Portée.** Ce document décrit le fichier de câblage des hooks
-> (`settings.json`) de l'**adaptateur Claude Code**. Les autres harness
+> (`settings.json`) de l'**adaptateur Claude Code**. Les autres environnements
 > utilisent leurs propres surfaces de réglages natives — voir
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) pour le
 > point d'entrée de configuration équivalent de chaque adaptateur.
@@ -31,11 +31,10 @@ Chaque hook configuré utilise la forme de commande exec de Claude Code. Le mod�
 }
 ```
 
-`apothem install` rend le jeton sous la forme du chemin absolu de la racine du harness
+`apothem install` rend le jeton sous la forme du chemin absolu de la racine de l'environnement
 (forme avec barre oblique, valide sous Windows, macOS et Linux), de sorte que le
 `settings.json` installé invoque directement le répartiteur matérialisé à
-`~/.claude/.apothem/support/hooks/dispatch.py`. Le répartiteur et la
-porte de conformité (`~/.claude/.apothem/support/conformity/gate.py`, avec ses fixtures de schéma
+`~/.claude/.apothem/support/hooks/dispatch.py`. Le répartiteur et le portail de conformité (`~/.claude/.apothem/support/conformity/gate.py`, avec ses fixtures de schéma
 à ses côtés à `~/.claude/.apothem/support/schemas/`) sont des scripts autonomes de la bibliothèque
 standard — aucun paquet `apothem` importable n'est requis sur l'hôte, et un seul
 modèle sert chaque plateforme.
@@ -125,7 +124,7 @@ installez un CPython 3.10+ réel et assurez-vous qu'il est sur le PATH ou détec
 
 ### Chaque Write/Edit est bloqué
 
-`PreToolUse` signale des termes internes au plan dans du contenu écrit en dehors de la racine d'installation du harness (`~/.claude/` pour l'adaptateur Claude Code).
+`PreToolUse` signale des termes internes au plan dans du contenu écrit en dehors de la racine d'installation de l'environnement (`~/.claude/` pour l'adaptateur Claude Code).
 Examinez le contenu à la recherche de violations CM-7 (voir
 `src/apothem/rules/persistent-conventions-vigilance.md`). Langage de domaine uniquement pour
 les artefacts de la base de code.
@@ -133,7 +132,7 @@ les artefacts de la base de code.
 ### settings.json non chargé
 
 Claude Code lit `~/.claude/settings.json`. Vérifiez qu'Apothem est installé dans la
-racine du harness attendue et redémarrez la session après avoir modifié le fichier.
+racine de l'environnement attendue et redémarrez la session après avoir modifié le fichier.
 
 ### Les hooks ne font silencieusement rien
 
@@ -156,7 +155,7 @@ ordre croissant de précédence :
 Les valeurs de niveau supérieur surchargent les valeurs de niveau inférieur **au niveau de la clé-feuille** — lorsque
 les couches projet et local utilisateur déclarent toutes deux une entrée `permissions.allow`, l'union
 est prise ; lorsque toutes deux déclarent un scalaire comme `theme`, la valeur local utilisateur l'emporte. La sémantique
-exacte de fusion par clé appartient au harness Claude Code.
+exacte de fusion par clé appartient à l'environnement Claude Code.
 
 ### Créer une surcharge local utilisateur
 

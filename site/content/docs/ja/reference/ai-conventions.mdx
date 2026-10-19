@@ -60,7 +60,7 @@ sourceHash: "ab1c94a20aecac87"
 4. **Plans Discipline** — ランタイムは、ハーネスの設定ディレクトリ（たとえば `~/.claude/plans/` や `~/.codex/.plans/`）やその他のグローバルなプランの場所に書き込むコードやスクリプトを生成してはなりません（MUST NOT）。計画アーティファクトは、[`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) に従って `<project-root>/.apothem/plans/` に置かれます（レガシーの `<project-root>/.plans/` ツリーは `apothem migrate-workspace` でアップグレードします）。
 5. **Structured Inquiry Behavior** — ランタイムは、確信が持てないとき、黙って捏造してはなりません（MUST NOT）。代わりに、明確に示された確認ブロック（例: `# TODO(clarify): <question>` コメント）を挿入し、サーフェスが許す場合はチャットで質問を提示します。API をでっち上げない、モデル名をでっち上げない、ファイルパスをでっち上げない。
 6. **Forbidden Patterns** — 明示的な禁止事項: マーケティング的な形容詞を使わない、ぼかしの埋め草を使わない、console.log によるデバッグの残骸を残さない、ユーザーのホームへの絶対パスをハードコードしない、シークレットをコミットしない、`.apothem/plans/`（またはレガシーの `.plans/`）配下のファイルをコミットしない、正規のプロジェクト指示ファイルと矛盾しない。
-7. **Output Format** — 生成されるコードと文章は、統一された会話出力の規約に従います: 断定性、統一されたセクション構成、密度、要約の規律、引用。コードについては: 公開サーフェスが文書化されていること、言語が型をサポートする場合は型付けされていること、テストの足場がある場合はテストされていること。
+7. **Output Format** — 生成されるコードと文章は、統一された会話出力の規約に従います: 確定性、統一されたセクション構成、密度、要約の規律、引用。コードについては: 公開サーフェスが文書化されていること、言語が型をサポートする場合は型付けされていること、テストの足場がある場合はテストされていること。
 8. **Review Checklist** — レビュアー（人間、またはプルリクエストレビューモードのランタイム）が、承認する前に検証しなければならない（MUST）事項: ヘッダーがあること、命名が準拠していること、`.apothem/plans/` への書き込みがないこと、正規のプロジェクト指示ファイルとの矛盾がないこと、バリデーターがローカルでグリーンであること。
 9. **Pointers** — `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、この規約ドキュメント、`src/apothem/schemas/`、`CONTRIBUTING.md` へのリンク。
 

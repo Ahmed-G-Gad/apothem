@@ -1,5 +1,5 @@
 ---
-title: "Secuencia de revisión y auditoría"
+title: "Secuencia de revisión de auditoría"
 description: "La secuencia de auditoría de once comandos que revisa Apothem antes del lanzamiento."
 machineTranslated: true
 sourceHash: "2b1029dc646db101"
@@ -15,8 +15,8 @@ Dos orquestadores canónicos impulsan estas once dimensiones. `/audit` las ejecu
 en paralelo como una sola pasada de solo-informe — produce un informe de hallazgos
 deduplicado y clasificado por severidad, y nunca edita el código fuente.
 `/fortress` es el bucle cerrado de remediación (detectar → verificar → remediar →
-reauditar → compuerta) que endurece un proyecto hasta un estado regido por la
-compuerta de lanzamiento. Cada dimensión también sigue siendo invocable por
+reauditar → puerta) que endurece un proyecto hasta un estado regido por la
+puerta de lanzamiento. Cada dimensión también sigue siendo invocable por
 separado.
 
 ## Las once áreas de auditoría
@@ -35,14 +35,14 @@ separado.
 | /supply-chain-audit | Cadena de suministro | SLSA + Sigstore + SBOM |
 | /threat-model-audit | Modelo de amenazas | STRIDE + PASTA |
 
-## Compuertas de preparación para el lanzamiento
+## Puertas de preparación para el lanzamiento
 
-La secuencia contribuye a las compuertas de preparación para el lanzamiento:
+La secuencia contribuye a las puertas de preparación para el lanzamiento:
 
-- **Compuerta local:** las comprobaciones locales de conformidad pasan.
-- **Compuerta de GitHub** (previa al corte): verificación del lado de GitHub —
+- **Puerta local:** las comprobaciones locales de conformidad pasan.
+- **Puerta de GitHub** (previa al corte): verificación del lado de GitHub —
   flujos de trabajo de CI en verde en cada commit, en cada comprobación.
-- **Compuerta de auditoría:** secuencia de revisión completa — las once áreas
+- **Puerta de auditoría:** secuencia de revisión completa — las once áreas
   auditadas, hallazgos resueltos, elementos a vigilar documentados.
 
 ## Ciclo de remediación
@@ -52,7 +52,7 @@ correcciones. La remediación se ejecuta a través de `/fortress`, el bucle cerr
 que sigue el patrón de iterar-hasta-verde: los hallazgos se clasifican y verifican,
 las correcciones se aplican en la superficie propietaria de cada hallazgo, se vuelve
 a ejecutar la auditoría y el ciclo continúa hasta que los hallazgos se resuelven y
-la compuerta de lanzamiento pasa. La elevación de todo el repositorio al mejor
+la puerta de lanzamiento pasa. La elevación de todo el repositorio al mejor
 estándar actual se ejecuta a través de `/elevate`.
 
 ## Por qué existe la secuencia
@@ -61,5 +61,5 @@ La calidad del software se degrada a lo largo de varias dimensiones a la vez. Un
 sola revisión puede pasar por alto defectos que se sitúan entre la calidad del
 código, la seguridad, el rendimiento, la arquitectura, la accesibilidad, la
 documentación, la postura de dependencias y la postura de la cadena de suministro. La
-secuencia de auditoría aplica esas lentes por separado para que la compuerta de
+secuencia de auditoría aplica esas lentes por separado para que la puerta de
 lanzamiento vea el perfil de riesgo completo.

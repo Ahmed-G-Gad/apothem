@@ -19,7 +19,7 @@ descartable.
 
 ## La idea central
 
-Un conjunto de planes en `<project-root>/.apothem/plans/{suite}/` aporta dos cosas que
+Una suite de plan en `<project-root>/.apothem/plans/{suite}/` aporta dos cosas que
 hacen reemplazable una sesión:
 
 - **Un contrato de reanudación.** `PROGRESS.md` registra la fase y el estado de
@@ -81,7 +81,7 @@ hace que el trabajo sea resistente a los tres límites: sesión, cuenta y máqui
 
 | Artefacto | Ubicación | Contiene |
 |----------|----------|-------|
-| Conjunto de planes | `<project-root>/.apothem/plans/{suite}/` | Una unidad autónoma de trabajo en curso |
+| Suite de plan | `<project-root>/.apothem/plans/{suite}/` | Una unidad autónoma de trabajo en curso |
 | Contrato de reanudación | `<suite>/PROGRESS.md` | Estado de fase/tarea, acción siguiente, convenciones, manifiesto de archivos críticos |
 | Registro de decisiones | `<suite>/PLAN-NOTES.md` | Decisiones resueltas, nunca vueltas a preguntar |
 | Trabajo por fase | `<suite>/phases/NN-topic/` | Las tareas de la fase y su informe |
@@ -98,7 +98,7 @@ mueves cualquier otro archivo del proyecto.
   gobernanza y la disciplina de externalización de estado se ajustan al
   compromiso.
 - **[La canalización de comandos](/docs/pipeline)** — las etapas de `/plan` que
-  crean y hacen avanzar un conjunto de planes.
+  crean y hacen avanzar una suite de plan.
 
 ## Recommended Next Step
 

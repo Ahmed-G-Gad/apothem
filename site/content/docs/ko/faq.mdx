@@ -21,7 +21,7 @@ Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
 ```
 
-Claude Code 어댑터는 `~/.claude/`로 구체화됩니다. 그 훅 디스패처는 호스트 중립적입니다. 에코시스템 루트를 먼저 `$CLAUDE_PROJECT_DIR`에서, 그다음 `$LLM_PROJECT_DIR`에서 해석하고, 스크립트 기준과 작업 디렉터리 기준 탐색을 시도한 뒤, 마지막으로 `$HOME/.claude`로 폴백합니다.
+Claude Code 어댑터는 `~/.claude/`로 머티리얼라이즈됩니다. 그 훅 디스패처는 호스트 중립적입니다. 에코시스템 루트를 먼저 `$CLAUDE_PROJECT_DIR`에서, 그다음 `$LLM_PROJECT_DIR`에서 해석하고, 스크립트 기준과 작업 디렉터리 기준 탐색을 시도한 뒤, 마지막으로 `$HOME/.claude`로 폴백합니다.
 
 ## 플랜 스위트 파이프라인을 반드시 사용해야 하나요?
 
@@ -66,7 +66,7 @@ Claude Code 어댑터는 `~/.claude/`로 구체화됩니다. 그 훅 디스패�
 
 ## 설치된 패키지 없이 훅이 어떻게 실행되나요?
 
-`apothem install`은 하니스 루트 아래에 훅 디스패처와 적합성 게이트를 구체화하며(Claude Code의 경우: `~/.claude/.apothem/support/hooks/`와 `~/.claude/.apothem/support/conformity/`), 렌더링된 훅 항목은 절대 경로로 해당 스크립트를 호출합니다. 둘 다 독립형 표준 라이브러리 스크립트이므로, `pip install`을 한 번도 본 적 없는 머신에서도 훅이 작동합니다.
+`apothem install`은 하니스 루트 아래에 훅 디스패처와 적합성 게이트를 머티리얼라이즈하며(Claude Code의 경우: `~/.claude/.apothem/support/hooks/`와 `~/.claude/.apothem/support/conformity/`), 렌더링된 훅 항목은 절대 경로로 해당 스크립트를 호출합니다. 둘 다 독립형 표준 라이브러리 스크립트이므로, `pip install`을 한 번도 본 적 없는 머신에서도 훅이 작동합니다.
 
 ## 완전히 제거하려면 어떻게 하나요?
 

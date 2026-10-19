@@ -7,7 +7,7 @@ sourceHash: "f83dad93ea1dbe9c"
 {/* SPDX-License-Identifier: MIT */}
 
 > **范围。** 本文档描述 **Claude Code 适配器** 的钩子
-> 接线文件（`settings.json`）。其他 harness
+> 接线文件（`settings.json`）。其他工具
 > 使用各自的原生设置面板——参见
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 了解每个适配器的
 > 等价配置入口。
@@ -31,11 +31,11 @@ sourceHash: "f83dad93ea1dbe9c"
 }
 ```
 
-`apothem install` 会把该令牌渲染为 harness 根目录的绝对路径
+`apothem install` 会把该令牌渲染为工具根目录的绝对路径
 （正斜杠形式，在 Windows、macOS 和 Linux 上均有效），因此安装后的
 `settings.json` 会直接调用物化于
 `~/.claude/.apothem/support/hooks/dispatch.py` 的分发器。该分发器与
-一致性门禁（`~/.claude/.apothem/support/conformity/gate.py`，其 schema
+合规闸门（`~/.claude/.apothem/support/conformity/gate.py`，其 schema
 fixture 位于其旁的 `~/.claude/.apothem/support/schemas/`）都是独立的标准库
 脚本——主机上无需可导入的 `apothem` 包，且一份
 模板即可服务每个平台。
@@ -125,14 +125,14 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### 每个 Write/Edit 都被阻止
 
-`PreToolUse` 正在标记写入到 harness 安装根目录之外（Claude Code 适配器为 `~/.claude/`）内容中的计划内部术语。
+`PreToolUse` 正在标记写入到工具安装根目录之外（Claude Code 适配器为 `~/.claude/`）内容中的计划内部术语。
 检查内容是否存在 CM-7 违规（见
 `src/apothem/rules/persistent-conventions-vigilance.md`）。代码库制品只能用领域语言。
 
 ### settings.json 未加载
 
 Claude Code 读取 `~/.claude/settings.json`。请验证 Apothem 是否已安装到
-预期的 harness 根目录，并在更改该文件后重启会话。
+预期的工具根目录，并在更改该文件后重启会话。
 
 ### 钩子静默无操作
 
@@ -154,7 +154,7 @@ Claude Code 通过按递增的优先级顺序组合三层来解析有效设置�
 更高层级的值会**在叶键级别**覆盖更低层级的值——当
 项目层与用户本地层都声明了 `permissions.allow` 条目时，取并集；
 当两者都声明了像 `theme` 这样的标量时，用户本地的值胜出。确切的
-逐键合并语义由 Claude Code harness 拥有。
+逐键合并语义由 Claude Code 工具拥有。
 
 ### 创建用户本地覆盖
 

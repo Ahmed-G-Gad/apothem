@@ -16,7 +16,7 @@ máquina nueva, a su uso compartido con otras personas o a tratarlo como apto pa
 - [ ] Todos los archivos de reglas se analizan sin errores de YAML — el bloque de frontmatter abre con `---`, cierra con `---` y no contiene contenido huérfano fuera del bloque
 - [ ] Todos los archivos de trabajadores delegados se analizan sin errores de YAML
 - [ ] Todos los archivos de comandos se analizan sin errores de YAML
-- [ ] Todos los archivos `SKILL.md` de habilidades se analizan sin errores de YAML
+- [ ] Todos los archivos `SKILL.md` de skills se analizan sin errores de YAML
 
 **Verificación:** `python scripts/dev/validate_ecosystem.py` analiza el
 frontmatter de cada artefacto y marca los errores de YAML y los campos requeridos ausentes. Para detectar
@@ -59,7 +59,7 @@ src/apothem/agents/*.md
 - [ ] `permissionMode` — **NO debe ser `"bypassPermissions"`**; deja la clave sin definir, ya que la postura agnóstica no preestablece ningún modo de permisos
 - [ ] `memory` omitido salvo que la memoria persistente sea intencional; cuando se define, uno de `user`, `project`, `local` (no admite la forma booleana)
 
-### Habilidades (`src/apothem/skills/*/SKILL.md`)
+### Skills (`src/apothem/skills/*/SKILL.md`)
 
 - [ ] `name`, `version`, `updated`, `description`, `archetype`, `disable-model-invocation`, `allowed-tools` presentes
 - [ ] `userInvocable` declarado (true/false). La grafía en el origen es `userInvocable`; una skill incluye exactamente una de `userInvocable` o `user-invocable` (la forma que usa Claude Code).
@@ -81,7 +81,7 @@ src/apothem/agents/*.md
 - [ ] Cada regla listada en la tabla `src/apothem/rules/` existe en disco en la ruta indicada
 - [ ] Cada comando listado en la tabla `src/apothem/commands/` existe en disco
 - [ ] Cada trabajador delegado listado en la tabla del registro `src/apothem/agents/` existe en disco
-- [ ] Cada habilidad listada en la tabla `src/apothem/skills/` existe en disco
+- [ ] Cada skill listada en la tabla `src/apothem/skills/` existe en disco
 - [ ] Cada hook en la tabla `src/apothem/hooks/` tiene una entrada correspondiente en `settings.json`
 - [ ] Todos los archivos `src/apothem/rules/*.md` referenciados por la columna `Implements` de CLAUDE.md existen
 

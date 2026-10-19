@@ -1,6 +1,6 @@
 ---
 title: "/plan-audit"
-description: "/plan-audit — Guardião de laço fechado do pipeline /plan — envolve spec → generate → review e remedia ativamente os achados até a suite ser um todo revisado e com zero achados."
+description: "/plan-audit — Guardião de laço fechado do pipeline /plan — envolve spec → generate → review e remedia ativamente os achados até a suíte ser um todo revisado e com zero achados."
 machineTranslated: true
 sourceHash: "ad784374d4fb602c"
 ---
@@ -9,7 +9,7 @@ sourceHash: "ad784374d4fb602c"
 **Papel:** Guardião
 **Posição no pipeline:** envolvente / ortogonal (pré-execução)
 
-Guardião de laço fechado do pipeline `/plan`. Enquanto `/plan-review` reporta e refina uma suite gerada, `/plan-audit` envolve o ciclo a montante (`/plan-spec → /plan-generate → /plan-review`) e leva a suite a um todo revisado e com zero achados — executando apenas as etapas a montante que faltam, auditando o resultado, corrigindo no lugar os achados resolvíveis mecanicamente, expondo as bifurcações de julgamento através do canal de inquiry estruturada e repetindo o laço até a suite estar limpa ou um recuo limitado disparar. Nunca executa trabalho de implementação de fase; deixa a suite pronta para `/plan-execute`.
+Guardião de laço fechado do pipeline `/plan`. Enquanto `/plan-review` reporta e refina uma suíte gerada, `/plan-audit` envolve o ciclo a montante (`/plan-spec → /plan-generate → /plan-review`) e leva a suíte a um todo revisado e com zero achados — executando apenas as etapas a montante que faltam, auditando o resultado, corrigindo no lugar os achados resolvíveis mecanicamente, expondo as bifurcações de julgamento através do canal de inquiry estruturada e repetindo o laço até a suíte estar limpa ou um recuo limitado disparar. Nunca executa trabalho de implementação de fase; deixa a suíte pronta para `/plan-execute`.
 
 ## Invocação canônica
 
@@ -49,18 +49,18 @@ de planejamento.
 
 ## Fases do fluxo de trabalho
 
-1. **Resolver o alvo** — Resolve a suite a partir do argumento, ou escolhe a suite modificada mais recentemente sob `.apothem/plans/` (`.plans/` é um fallback retrocompatível suportado) e declara a resolução.
+1. **Resolver o alvo** — Resolve a suíte a partir do argumento, ou escolhe a suíte modificada mais recentemente sob `.apothem/plans/` (`.plans/` é um fallback retrocompatível suportado) e declara a resolução.
 2. **Avaliar a etapa** — Detecta quais artefatos existem (spec pronta / gerada / revisada / executada) e nomeia a menor lacuna até um todo revisado e executável.
 3. **Levar a um todo revisável** — Executa apenas as etapas a montante que faltam, delegando ao comando canônico de cada lacuna; nunca reexecute uma etapa satisfeita apenas para refrescar a prosa.
 4. **Auditoria forense** — Aplica as dimensões de auditoria de `/plan-review`, o catálogo de técnicas de planejamento e a comporta de pré-emissão de quinze barras.
-5. **Remediação ativa** — Corrige os achados mecânicos no lugar; expõe as bifurcações de julgamento através do canal de inquiry estruturada; reencaminha o trabalho legitimamente fora de escopo para uma suite irmã `*-maintenance`.
+5. **Remediação ativa** — Corrige os achados mecânicos no lugar; expõe as bifurcações de julgamento através do canal de inquiry estruturada; reencaminha o trabalho legitimamente fora de escopo para uma suíte irmã `*-maintenance`.
 6. **Laço com teto e recuo** — Repete auditar-e-remediar até não restarem achados abertos, limitado por um teto de iterações (padrão 3) com um recuo definido ao esgotar o teto.
 
 ## Modos de falha
 
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
-| Teto esgotado com achados residuais | Achados não resolvíveis dentro do teto de iterações | Revise o relatório de auditoria; reencaminhe os itens elegíveis para uma suite `*-maintenance`; eleve `--cap` apenas com justificativa |
+| Teto esgotado com achados residuais | Achados não resolvíveis dentro do teto de iterações | Revise o relatório de auditoria; reencaminhe os itens elegíveis para uma suíte `*-maintenance`; eleve `--cap` apenas com justificativa |
 | Bifurcação de julgamento não resolvida | Um achado requer uma decisão de política/escopo/autoridade | Responda ao prompt de inquiry estruturada; o laço nunca escolhe em silêncio |
 | Falta uma spec autoritativa | Não há `_spec/spec.md` | O invólucro reencaminha para `/plan-spec` para redigi-la |
 | Comporta de qualidade FAIL | A saída não atende aos padrões | A remediação corrige a causa-raiz e reaudita os loci tocados |
@@ -80,4 +80,4 @@ de planejamento.
 - [Visão geral do pipeline](/docs/pipeline)
 - [/plan-review](/docs/pipeline/plan-review)
 - [/plan-execute](/docs/pipeline/plan-execute)
-- [Modelo de Suite de Plano Mestra](/docs/reference/commands)
+- [Modelo de Suíte de Planejamento Mestra](/docs/reference/commands)

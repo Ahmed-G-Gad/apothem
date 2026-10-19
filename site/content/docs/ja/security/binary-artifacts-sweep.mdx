@@ -30,7 +30,7 @@ Apothem は**純粋な Python のソースツリー**であり、バージョン
 
 ソースには、ごく限られた 2 区分のバイナリ成果物が許可されています。
 
-1. **ブランドアセット** — `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。これらは `scripts/dev/rebuild-assets-resvg.py` を介して、`assets/src/` の SVG マスターから**決定論的に再生成可能**です。Scorecard は、その `image/png` の免除に基づき、これらを正当なものとみなします。
+1. **ブランドアセット** — `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。これらは `scripts/dev/rebuild-assets-resvg.py` を介して、`assets/src/` の SVG マスターから**決定的に再生成可能**です。Scorecard は、その `image/png` の免除に基づき、これらを正当なものとみなします。
 2. **フォントファイル** — `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。文書化されたライセンスを伴う同梱のフォントファイル。Scorecard の `font/*` の免除に基づきます。
 
 両区分は [`site/content/docs/brand/index.mdx`](/docs/brand) に記載され、その出所はアセット再構築レシピに記録されています。

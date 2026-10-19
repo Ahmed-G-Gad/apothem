@@ -1,6 +1,6 @@
 ---
 title: "Perguntas frequentes"
-description: "Perguntas comuns sobre o propósito do Apothem, ferramentas suportadas, opcionalidade da suíte de planejamento, customização de regras, tipos de artefato e localizações do estado do ecossistema."
+description: "Perguntas comuns sobre o propósito do Apothem, harnesses suportados, opcionalidade da suíte de planejamento, customização de regras, tipos de artefato e localizações do estado do ecossistema."
 machineTranslated: true
 sourceHash: "39f28c46787a7498"
 ---
@@ -18,10 +18,10 @@ em uma única superfície coerente.
 
 ## Com quais CLIs de harness ele funciona?
 
-O Apothem é agnóstico de ferramenta. Adaptadores por ferramenta sob
+O Apothem é agnóstico de harness. Adaptadores por harness sob
 `src/apothem/harnesses/<harness>/` projetam o perfil compartilhado para
 o diretório de configuração nativo de cada ferramenta; a lista canônica fica em
-[`site/content/docs/harnesses/`](/docs/harnesses) e atualmente abrange as seguintes ferramentas suportadas:
+[`site/content/docs/harnesses/`](/docs/harnesses) e atualmente abrange os seguintes harnesses suportados:
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
@@ -113,15 +113,15 @@ instalados em `site-packages`.
 
 ## Como os hooks executam sem um pacote instalado?
 
-`apothem install` materializa o despachante de hooks e o portão de conformidade
-sob a raiz da ferramenta (para o Claude Code: `~/.claude/.apothem/support/hooks/` e
+`apothem install` materializa o despachante de hooks e o conformity gate
+sob a raiz do harness (para o Claude Code: `~/.claude/.apothem/support/hooks/` e
 `~/.claude/.apothem/support/conformity/`), e as entradas de hook renderizadas invocam esses
 scripts por caminho absoluto. Ambos são scripts autônomos da biblioteca padrão, então os hooks
 funcionam em uma máquina que nunca viu um `pip install`.
 
 ## Como desinstalo completamente?
 
-Execute `apothem uninstall --harness <name>` para cada ferramenta instalada, remova
+Execute `apothem uninstall --harness <name>` para cada harness instalado, remova
 o engine conforme seu canal de instalação e exclua `~/.apothem/` (backups) mais
 `~/.config/apothem/` (seu perfil) se você quiser zero resíduo. O
 [guia de desinstalação](/docs/install/uninstalling) percorre cada canal.

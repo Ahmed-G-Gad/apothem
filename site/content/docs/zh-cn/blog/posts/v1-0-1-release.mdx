@@ -1,20 +1,20 @@
 ---
 title: "Apothem v1.0.1 —— 发布版本"
-description: "Apothem v1.0.1 现已发布 —— 一份共享配置档案物化为十七种编码助手、多条安装路径，以及一个已签名、带凭证的版本。"
+description: "Apothem v1.0.1 现已发布 —— 一份共享配置档案物化为十七种工具、多条安装路径，以及一个已签名、带凭证的版本。"
 machineTranslated: true
 sourceHash: "6bdae4701fb3ca72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem v1.0.1 是这款面向编码助手的与宿主无关配置管理器的发布版本：一份共享
-配置档案、十七种编码助手、单一已签名版本，以及随版本本身附带的供应链
+Apothem v1.0.1 是这款面向助手工具的与宿主无关配置管理器的发布版本：一份共享
+配置档案、十七种工具、单一已签名版本，以及随版本本身附带的供应链
 证据。
 
-## 论点：一份配置档案，十七种编码助手
+## 论点：一份配置档案，十七种工具
 
 Apothem 读取 `~/.config/apothem/profile.yaml` 处的单一共享配置档案，并把它
-物化为每种编码助手所期望的原生配置。你只需一次性编写自己的行为规则、技能、
-钩子与约定。Apothem 会把它们渲染为十七个编码助手原生目标，并保持同步。
+物化为每种工具所期望的原生配置。你只需一次性编写自己的行为规则、技能、
+钩子与约定。Apothem 会把它们渲染为十七个工具原生目标，并保持同步。
 
 本版本中的十七个适配器：
 
@@ -95,11 +95,11 @@ GitHub Actions 中生成的 Sigstore 构建溯源。
 
 `apothem` CLI 暴露出你在完整配置生命周期中所需的操作者命令：
 
-- `apothem install` —— 把配置档案物化到一种编码助手或全部编码助手。
-- `apothem uninstall` —— 移除某种编码助手的已物化配置，而不触动共享配置
+- `apothem install` —— 把配置档案物化到一种工具或全部工具。
+- `apothem uninstall` —— 移除某种工具的已物化配置，而不触动共享配置
   文件。
 - `apothem update` —— 在你编辑配置档案后重新物化。
-- `apothem verify` —— 检测配置档案与某种编码助手磁盘配置之间的漂移。
+- `apothem verify` —— 检测配置档案与某种工具磁盘配置之间的漂移。
 - `apothem harnesses` —— 列出每个已注册的适配器。
 - `apothem profile` —— 检视并管理共享配置档案。
 - `apothem doctor` —— 诊断环境与配置问题。
@@ -109,7 +109,7 @@ GitHub Actions 中生成的 Sigstore 构建溯源。
 ## 下一步去哪里
 
 - [快速上手](/docs/install/quickstart) —— 安装并物化你的第一份配置档案。
-- [编码助手](/docs/harnesses) —— 全部十七个目标的逐适配器参考。
+- [工具](/docs/harnesses) —— 全部十七个目标的逐适配器参考。
 - [概念](/docs/concepts) —— 配置档案模型与物化流水线。
 
 Apothem 采用 MIT 许可，并在

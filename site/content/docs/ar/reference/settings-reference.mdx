@@ -8,7 +8,7 @@ sourceHash: "f83dad93ea1dbe9c"
 
 > **النطاق.** يصف هذا المستند ملف توصيل الخطّافات
 > (<bdi>`settings.json`</bdi>) الخاصّ بـ **مُحوِّل <bdi>Claude Code</bdi>**.
-> تستخدم بقيّة الـ harness أسطح إعداداتها الأصليّة الخاصّة بها — انظر
+> تستخدم بقيّة أُطُر العمل أسطح إعداداتها الأصليّة الخاصّة بها — انظر
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) لمعرفة
 > نقطة دخول الإعداد المكافئة لكل مُحوِّل.
 
@@ -31,7 +31,7 @@ sourceHash: "f83dad93ea1dbe9c"
 }
 ```
 
-يُصيِّر <bdi>`apothem install`</bdi> الرمز إلى المسار المطلق لجذر الـ harness
+يُصيِّر <bdi>`apothem install`</bdi> الرمز إلى المسار المطلق لجذر إطار العمل
 (صيغة الشرطة المائلة الأماميّة، صالحة على <bdi>Windows</bdi> و<bdi>macOS</bdi> و<bdi>Linux</bdi>)، بحيث
 يستدعي <bdi>`settings.json`</bdi> المثبَّت المُوزِّع المُجَسَّد عند
 <bdi>`~/.claude/.apothem/support/hooks/dispatch.py`</bdi> مباشرةً. المُوزِّع
@@ -125,7 +125,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### كل <bdi>Write/Edit</bdi> مَحظور
 
-يُعلِّم <bdi>`PreToolUse`</bdi> المصطلحات الداخليّة للخطّة في محتوى يُكتَب خارج جذر تثبيت الـ harness (<bdi>`~/.claude/`</bdi> لمُحوِّل <bdi>Claude Code</bdi>).
+يُعلِّم <bdi>`PreToolUse`</bdi> المصطلحات الداخليّة للخطّة في محتوى يُكتَب خارج جذر تثبيت إطار العمل (<bdi>`~/.claude/`</bdi> لمُحوِّل <bdi>Claude Code</bdi>).
 راجِع المحتوى بحثًا عن انتهاكات <bdi>CM-7</bdi> (انظر
 <bdi>`src/apothem/rules/persistent-conventions-vigilance.md`</bdi>). لغة النطاق فقط
 لأدوات قاعدة الشِّفرة.
@@ -133,7 +133,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 ### عدم تحميل <bdi>settings.json</bdi>
 
 يقرأ <bdi>Claude Code</bdi> الملف <bdi>`~/.claude/settings.json`</bdi>. تحقّق من تثبيت Apothem في
-جذر الـ harness المتوقَّع وأعِد تشغيل الجلسة بعد تغيير الملف.
+جذر إطار العمل المتوقَّع وأعِد تشغيل الجلسة بعد تغيير الملف.
 
 ### الخطّافات لا تفعل شيئًا بصمت
 
@@ -156,7 +156,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 تتجاوز قيم الطبقة الأعلى قيم الطبقة الأدنى **على مستوى المفتاح-الورقة** — حين
 تُصرِّح طبقتا المشروع والمحلّيّة للمستخدِم كلتاهما بإدخال <bdi>`permissions.allow`</bdi>، يُؤخَذ
 الاتّحاد؛ وحين تُصرِّحان معًا بقيمة قياسيّة مثل <bdi>`theme`</bdi>، تفوز القيمة المحلّيّة للمستخدِم. أمّا
-دلالة الدمج الدقيقة لكل مفتاح فيملكها harness الخاصّ بـ <bdi>Claude Code</bdi>.
+دلالة الدمج الدقيقة لكل مفتاح فيملكها إطار العمل الخاصّ بـ <bdi>Claude Code</bdi>.
 
 ### إنشاء تجاوُز محلّيّ للمستخدِم
 

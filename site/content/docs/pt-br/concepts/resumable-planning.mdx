@@ -19,7 +19,7 @@ nenhum chat na nuvem. O estado é o artefato durável; a sessão é descartável
 
 ## A ideia central
 
-Um conjunto de planos em `<project-root>/.apothem/plans/{suite}/` carrega duas coisas que
+Uma suíte de planejamento em `<project-root>/.apothem/plans/{suite}/` carrega duas coisas que
 tornam uma sessão substituível:
 
 - **Um contrato de retomada.** O `PROGRESS.md` registra a fase e o estado das
@@ -80,7 +80,7 @@ resistente aos três limites: sessão, conta e máquina.
 
 | Artefato | Local | Contém |
 |----------|----------|-------|
-| Conjunto de planos | `<project-root>/.apothem/plans/{suite}/` | Uma unidade autônoma de trabalho em andamento |
+| Suíte de planejamento | `<project-root>/.apothem/plans/{suite}/` | Uma unidade autônoma de trabalho em andamento |
 | Contrato de retomada | `<suite>/PROGRESS.md` | Estado de fase/tarefa, ação seguinte, convenções, manifesto de arquivos críticos |
 | Registro de decisões | `<suite>/PLAN-NOTES.md` | Decisões resolvidas, nunca perguntadas de novo |
 | Trabalho por fase | `<suite>/phases/NN-topic/` | As tarefas da fase e seu relatório |
@@ -96,7 +96,7 @@ fallback) do mesmo jeito que move qualquer outro arquivo do projeto.
 - **[Níveis de seriedade](/docs/concepts/seriousness-tiers)** — como a governança
   e a disciplina de externalização de estado escalam conforme o engajamento.
 - **[A canalização de comandos](/docs/pipeline)** — as etapas de `/plan` que criam
-  e fazem avançar um conjunto de planos.
+  e fazem avançar uma suíte de planejamento.
 
 ## Recommended Next Step
 

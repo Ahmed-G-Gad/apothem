@@ -1,12 +1,12 @@
 ---
 title: "Registros de artefatos"
-description: "Enumeração completa dos artefatos do ecossistema Apothem: comandos, regras, trabalhadores delegados, hooks, habilidades, estilos de saída, disciplina de evolução de artefatos e declarações de classes de artefato vazias."
+description: "Enumeração completa dos artefatos do ecossistema Apothem: comandos, regras, trabalhadores delegados, hooks, habilidades, output-styles, disciplina de evolução de artefatos e declarações de classes de artefato vazias."
 machineTranslated: true
 sourceHash: "742e318ae876739a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Registro canônico dos conjuntos de artefatos.** Este documento contém as enumerações completas de comandos, regras, trabalhadores delegados, hooks, habilidades, estilos de saída, disciplina de evolução de artefatos e declarações de classes de artefato vazias; as tabelas substantivas vivem aqui. A disposição do código-fonte do projeto fornece a visão condensada e sempre ativa.
+> **Registro canônico dos conjuntos de artefatos.** Este documento contém as enumerações completas de comandos, regras, trabalhadores delegados, hooks, habilidades, output-styles, disciplina de evolução de artefatos e declarações de classes de artefato vazias; as tabelas substantivas vivem aqui. A disposição do código-fonte do projeto fornece a visão condensada e sempre ativa.
 
 ## 1. Comandos
 
@@ -41,7 +41,7 @@ A pipeline de plan é entregue como oito comandos de primeira classe — um por 
 | Comando | Arquivo | Comportamento |
 | ------- | ---- | -------- |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refina prosa de forma livre em um `_spec/spec.md` de grau de especificação; cada pergunta aberta é roteada pelo canal de consulta estruturada em vez de aplicar valores padrão em silêncio; `--quick` escreve um único arquivo de plan leve sob `<project-root>/.apothem/plans/` (`.plans/` continua sendo um fallback de retrocompatibilidade suportado) |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Gera uma Suíte de Plano Mestre completa a partir de prosa/requisitos redigidos |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Gera uma Suíte de Planejamento Mestra completa a partir de prosa/requisitos redigidos |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Auditoria forense de uma suíte existente — fidelidade da prosa, consistência interna, análise de lacunas — refinada por meio de perguntas e respostas interativas |
 | `/plan-design` | `src/apothem/commands/plan-design.md` | Produz um artefato de design arquitetônico no `_inputs/design.md` da suíte, validado pelo portão de pré-emissão de quinze barras antes da promoção |
 | `/plan-audit` | `src/apothem/commands/plan-audit.md` | Auditoria e remediação em malha fechada ao longo do ciclo completo spec → generate → review, iterando até que não restem achados ou um limite de iterações com um recuo definido seja atingido |
@@ -144,9 +144,9 @@ As habilidades reutilizáveis vivem sob `src/apothem/skills/`, uma pasta por hab
 
 > **Convenção.** O **Caminho** de cada linha é uma pasta; o ponto de entrada é o arquivo `SKILL.md` dentro dela — p. ex. `src/apothem/skills/plan-suite/SKILL.md` — conforme a convenção de habilidade de pasta-com-`SKILL.md` declarada na disposição do código-fonte do projeto.
 
-## 6. Estilos de saída
+## 6. Output-styles
 
-Quatro estilos de saída vivem sob `src/apothem/output-styles/`.
+Quatro output-styles vivem sob `src/apothem/output-styles/`.
 
 | Estilo | Arquivo | Propósito |
 | ----- | ---- | ------- |

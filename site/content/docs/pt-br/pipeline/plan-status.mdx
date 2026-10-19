@@ -1,6 +1,6 @@
 ---
 title: "/plan-status"
-description: "/plan-status — Reportador de progresso de suite de plano somente leitura — emite o status sem modificar nenhum arquivo."
+description: "/plan-status — Reportador de progresso de suíte de planejamento somente leitura — emite o status sem modificar nenhum arquivo."
 machineTranslated: true
 sourceHash: "5a446b7afd70b8a1"
 ---
@@ -9,7 +9,7 @@ sourceHash: "5a446b7afd70b8a1"
 **Papel:** Reportador
 **Posição no pipeline:** somente leitura
 
-Reportador de progresso de suite de plano somente leitura — emite o status sem modificar nenhum arquivo.
+Reportador de progresso de suíte de planejamento somente leitura — emite o status sem modificar nenhum arquivo.
 
 ## Invocação canônica
 
@@ -25,7 +25,7 @@ Com argumentos:
 
 ## Entradas
 
-Qualquer suite de plano em qualquer estado do ciclo de vida — lê `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` e os relatórios de `phases/`.
+Qualquer suíte de planejamento em qualquer estado do ciclo de vida — lê `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` e os relatórios de `phases/`.
 
 ## Saídas
 
@@ -37,18 +37,18 @@ Usado de forma autônoma para inspeção do progresso — ortogonal à sequênci
 
 ## Fases do fluxo de trabalho
 
-O comando é somente leitura — lê os arquivos de rastreamento da suite e reporta; não escreve nada:
+O comando é somente leitura — lê os arquivos de rastreamento da suíte e reporta; não escreve nada:
 
 1. **Carregar contexto** — Lê `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` e varre `phases/` em busca de relatórios existentes.
 2. **Avaliar o status** — Examina as dimensões de tarefa / fase / artefato e lê o Contrato de Retomada.
 3. **Emitir o relatório de status** — Apresenta o status de conclusão, o rastreador de fases e a análise estratégica diretamente ao operador.
-4. **Verificação por amostragem** — Com `--verbose`, atribui uma nota à saúde da suite e cita evidências de verificação por amostragem (links markdown, intervalos de linhas, SHAs de commit) contra os arquivos existentes sem modificar nenhum.
+4. **Verificação por amostragem** — Com `--verbose`, atribui uma nota à saúde da suíte e cita evidências de verificação por amostragem (links markdown, intervalos de linhas, SHAs de commit) contra os arquivos existentes sem modificar nenhum.
 
 ## Modos de falha
 
 | Sintoma | Causa | Recuperação |
 |---------|-------|----------|
-| Arquivo de rastreamento obrigatório ausente | Suite de plano incompleta | Trazer a lacuna à tona como um achado; execute `/plan-generate` para criar a suite |
+| Arquivo de rastreamento obrigatório ausente | Suíte de planejamento incompleta | Trazer a lacuna à tona como um achado; execute `/plan-generate` para criar a suíte |
 | Arquivo de rastreamento malformado | Seção truncada ou não analisável | Nomeie a ausência / contradição no relatório; o reparo é encaminhado aos comandos com gravação |
 | Campo ausente ou contraditório entre arquivos | Deriva de rastreamento | Reporte a contradição explicitamente; não sintetize o valor ausente |
 

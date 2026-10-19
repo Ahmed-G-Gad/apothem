@@ -41,7 +41,7 @@ Pfad des Design-Artefakts, das Ergebnis des Design-Tors, das Ergebnis der
 Sieben-Achsen-Abdeckung und die Zusammenfassung der bidirektionalen
 Bindungsmatrix trägt.
 
-## Anwendbarkeits-Tor
+## Anwendbarkeits-Gate
 
 Führe `/plan-design` aus, wenn mindestens eine nachgelagerte Phase deklariert
 oder impliziert:
@@ -68,7 +68,7 @@ Plan-Suite fort.
 
 `/plan-execute` verbraucht das Design-Artefakt für architekturtragende Phasen.
 `/architecture-review` verbraucht dasselbe Artefakt während der
-Audit-Prüfsequenz. Fehlt `_inputs/design.md` für architekturtragende Arbeit,
+Audit-Review-Sequenz. Fehlt `_inputs/design.md` für architekturtragende Arbeit,
 stoppt die Architekturprüfung und leitet die Suite zurück durch `/plan-design`.
 
 ## Workflow-Phasen
@@ -91,7 +91,7 @@ Der Befehl folgt sechs architekturspezifischen Transformationsphasen:
 5. **Ausgabe des Design-Artefakts** — Schreibt `_inputs/design.md` mit
    Komponentenabschnitten, Diagrammen, Entscheidungsaufzeichnungen,
    Validierungsergebnis und Bindungen.
-6. **Design-Validierungstor** — Führt das Fünfzehn-Stäbe-Pre-Emission-Tor aus;
+6. **Design-Validierungs-Gate** — Führt das fünfzehnstufige Pre-Emission-Gate aus;
    aktualisiert `_inputs/handoff-manifest.yml` erst, nachdem das Design bestanden
    hat.
 
@@ -106,7 +106,7 @@ Das ausgegebene `_inputs/design.md` enthält:
   die Struktur andernfalls mehrdeutig wäre.
 - Festgelegte architektonische Entscheidungsaufzeichnungen mit Alternativen,
   Kompromissen und Reversibilitätsnotizen.
-- Ergebnis des Validierungstors und bidirektionale Bindungsmatrix, sofern
+- Ergebnis des Validierungs-Gates und bidirektionale Bindungsmatrix, sofern
   zutreffend.
 - Die eigenen Fünf-Richtungs-Bindungen des Artefakts zu vorgelagerten und
   nachgelagerten Planungsoberflächen.

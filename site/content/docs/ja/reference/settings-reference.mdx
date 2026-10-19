@@ -6,9 +6,9 @@ sourceHash: "f83dad93ea1dbe9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **対象範囲。** 本ドキュメントは **Claude Code アダプタ** のフック
-> 配線ファイル（`settings.json`）について説明します。他の harness は
-> それぞれ独自のネイティブ設定面を使用します — 各アダプタの等価な
+> **対象範囲。** 本ドキュメントは **Claude Code アダプター** のフック
+> 配線ファイル（`settings.json`）について説明します。他のハーネスは
+> それぞれ独自のネイティブ設定面を使用します — 各アダプターの等価な
 > 構成エントリーポイントについては
 > [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) を参照してください。
 
@@ -31,7 +31,7 @@ sourceHash: "f83dad93ea1dbe9c"
 }
 ```
 
-`apothem install` はこのトークンを harness ルートの絶対パス
+`apothem install` はこのトークンをハーネスルートの絶対パス
 （フォワードスラッシュ形式。Windows・macOS・Linux で有効）にレンダリングするため、
 インストール済みの `settings.json` は `~/.claude/.apothem/support/hooks/dispatch.py` に
 マテリアライズされたディスパッチャを直接呼び出します。ディスパッチャと
@@ -125,7 +125,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 
 ### すべての Write/Edit がブロックされる
 
-`PreToolUse` が、harness のインストールルート（Claude Code アダプタでは `~/.claude/`）の外に書き込まれる内容の中のプラン内部用語をフラグしています。
+`PreToolUse` が、ハーネスのインストールルート（Claude Code アダプターでは `~/.claude/`）の外に書き込まれる内容の中のプラン内部用語をフラグしています。
 内容に CM-7 違反がないか確認してください（
 `src/apothem/rules/persistent-conventions-vigilance.md` を参照）。コードベース成果物には
 ドメイン言語のみを使用します。
@@ -133,7 +133,7 @@ python src/apothem/hooks/dispatch.py --event-name SessionStart
 ### settings.json が読み込まれない
 
 Claude Code は `~/.claude/settings.json` を読み込みます。Apothem が期待される
-harness ルートにインストールされていることを確認し、ファイル変更後にセッションを再起動してください。
+ハーネスルートにインストールされていることを確認し、ファイル変更後にセッションを再起動してください。
 
 ### フックが静かに何もしない
 
@@ -156,7 +156,7 @@ Claude Code は、優先順位の昇順で 3 つのレイヤーを合成する�
 上位段階の値は **リーフキーレベルで** 下位段階の値を上書きします — プロジェクト
 レイヤーとユーザーローカルレイヤーの両方が `permissions.allow` エントリを宣言する場合は和集合が
 取られます。両方が `theme` のようなスカラーを宣言する場合は、ユーザーローカルの値が勝ちます。正確な
-キーごとのマージセマンティクスは Claude Code harness が所有します。
+キーごとのマージセマンティクスは Claude Code ハーネスが所有します。
 
 ### ユーザーローカルオーバーライドの作成
 
