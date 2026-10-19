@@ -2,7 +2,7 @@
 title: "문제 해결"
 description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,6 +47,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### 설치 프로그램 중단: 메인테이너 공개 키가 로컬 키링에 없습니다
+
+설치 프로그램은 서명된 릴리스 태그를 검증하며, 서명 키가 키링에 없으면 중단합니다. 키를 한 번 가져오고, 지문이 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`인지 확인한 다음, 설치 프로그램을 다시 실행하세요:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Windows에서는 위와 같이 Git의 `bash`를 통해 가져오세요. `git verify-tag`는 Git for Windows에 포함된 `gpg`의 키링을 읽습니다. `gpg`가 없는 호스트는 `APOTHEM_VERIFY=checksum`을 설정하여 설치할 수 있으며, 이 설정은 태그 서명 대신 릴리스 아카이브의 다이제스트를 검사합니다.
 
 ### Windows에서 irm / iex가 차단됨
 

@@ -2,7 +2,7 @@
 title: "समस्या निवारण"
 description: "प्लगइन, npx और इंस्टॉलर पथों में आम Apothem इंस्टॉलेशन विफलताओं और रनटाइम समस्याओं के समाधान।"
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,27 @@ dist-tag पिन करें:
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### इंस्टॉलर रुक जाता है: मेंटेनर की सार्वजनिक कुंजी स्थानीय कीरिंग में नहीं है
+
+इंस्टॉलर हस्ताक्षरित रिलीज़ टैग को सत्यापित करता है, और जब हस्ताक्षर कुंजी आपकी
+कीरिंग में नहीं होती तो रुक जाता है। इसे एक बार आयात करें, जाँच करें कि
+फ़िंगरप्रिंट `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` पढ़ता है, और
+फिर इंस्टॉलर दोबारा चलाएँ:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Windows पर, दिखाए अनुसार Git के `bash` के माध्यम से आयात करें: `git verify-tag`
+उस `gpg` की कीरिंग पढ़ता है जो Git for Windows के साथ आता है। जिस होस्ट पर `gpg`
+नहीं है, वह `APOTHEM_VERIFY=checksum` के साथ इंस्टॉल कर सकता है, जो टैग
+हस्ताक्षर के बजाय रिलीज़ आर्काइव के डाइजेस्ट की जाँच करता है।
 
 ### Windows पर irm / iex अवरुद्ध
 

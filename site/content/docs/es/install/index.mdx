@@ -2,7 +2,7 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -136,9 +136,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. Instaladores de un solo paso
 
-**Requisitos previos:** el Python 3.10+ del sistema en el `PATH` (el instalador
-se ofrece a añadir por ti los requisitos previos `click` / `rich`); `git` solo se
-necesita para una instalación por red que clona el código fuente.
+**Requisitos previos:** el Python 3.10+ del sistema en el `PATH` (el instalador se ofrece a añadir por ti los requisitos previos `click` / `rich`); `git` y `gpg` para una instalación por red, que clona el código fuente y verifica su etiqueta de lanzamiento firmada (Git for Windows incluye ambos).
 
 Los scripts del instalador resuelven la etiqueta de lanzamiento firmada más
 reciente, verifican su firma, colocan el árbol de código fuente de Apothem en
@@ -150,6 +148,17 @@ los tuyos. Volver a ejecutarlos es idempotente: en un árbol existente se vuelve
 a hacer checkout de la etiqueta resuelta y el entorno se vuelve a materializar.
 La instalación verificada y fijada a una etiqueta es la vía predeterminada y
 recomendada.
+
+Importa primero la clave de firma del mantenedor, una sola vez. El instalador se detiene si la clave no está en tu llavero. Comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). En Windows, `git verify-tag` lee el llavero del `gpg` que incluye Git for Windows, así que la importación se ejecuta mediante el propio `bash` de Git:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -170,16 +179,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### Modelo de confianza
 
-Sin `APOTHEM_REF` definido, el instalador resuelve la etiqueta de lanzamiento
-`vMAJOR.MINOR.PATCH` más alta y hace checkout de *esa* — nunca de la rama `main`
-en movimiento. Antes de materializar cualquier configuración, la firma de la
-etiqueta obtenida se verifica con `git verify-tag`; una etiqueta sin firmar,
-manipulada o no verificable aborta la instalación antes de escribir nada. Una
-etiqueta firmada cuya clave pública del mantenedor aún no está en el llavero
-local aborta, en cambio, con indicaciones para importar la clave: importa la
-clave, comprueba su huella digital con el valor publicado en
-[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) y
-vuelve a ejecutar. Fija un lanzamiento concreto con `APOTHEM_REF`:
+Sin `APOTHEM_REF` definido, el instalador resuelve la etiqueta de lanzamiento `vMAJOR.MINOR.PATCH` más alta y hace checkout de *esa* — nunca de la rama `main` en movimiento. Antes de materializar cualquier configuración, la firma de la etiqueta obtenida se verifica con `git verify-tag`; una etiqueta sin firmar, manipulada o no verificable aborta la instalación antes de escribir nada. Una etiqueta firmada cuya clave pública del mantenedor todavía no está en el llavero local aborta, en cambio, con indicaciones para importar la clave: importa la clave tal como se muestra arriba, comprueba su huella digital con el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md), y vuelve a ejecutar. Fija un lanzamiento concreto con `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

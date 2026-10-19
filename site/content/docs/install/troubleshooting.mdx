@@ -73,6 +73,27 @@ npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
 
+### The installer stops: the maintainer public key is not in the local keyring
+
+The installer verifies the signed release tag and stops when the signing key
+is not in your keyring. Import it once, check that the fingerprint reads
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, then run the installer
+again:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+On Windows, import through Git's `bash` as shown: `git verify-tag` reads the
+keyring of the `gpg` that ships with Git for Windows. A host without `gpg` can
+install with `APOTHEM_VERIFY=checksum`, which checks the release archive's
+digest instead of the tag signature.
+
 ### irm / iex blocked on Windows
 
 If PowerShell execution policy blocks the installer:

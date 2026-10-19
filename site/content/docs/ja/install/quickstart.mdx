@@ -2,7 +2,7 @@
 title: "クイックスタート"
 description: "Apothem をインストールし、プロファイルを作成し、最初のハーネスをマテリアライズして検証する — 期待される出力付きの、コピー＆ペーストで進めるツアー。"
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,8 +22,18 @@ sourceHash: "85c4fb40991ae94c"
 
 ## 1. Apothem をインストールする
 
-Apothem は自己完結型ランタイムとして出荷されます — エンジンは、ベンダリングされた依存関係とともに、そのソースツリーから直接実行されます。
-1 つのコマンドがソースを取得し、エンジンを配置し、最初のハーネスをマテリアライズします。
+Apothem は自己完結型ランタイムとして出荷されます——エンジンは、ベンダリングされた依存関係とともに、そのソースツリーから直接実行されます。1 つのコマンドでソースを取得し、エンジンを配置して、最初のハーネスをマテリアライズします。インストーラーは署名済みリリースを最初に検証するため、最初のインストールの前に一度、メンテナーの署名鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してください:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+その後、インストーラーを実行します:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -33,10 +43,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-インストーラーには、システムの Python 3.10+ と、ネットワーク形式の場合はさらに `git` が必要です。
-インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。
-`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#前提条件の一覧)を参照）。
-完了時には次のステップのバナーを出力します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります。
+インストーラーには、システムの Python 3.10+ が必要で、ネットワーク形式の場合はさらに `git` と `gpg` が必要です。インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#前提条件の一覧)を参照）。完了時には次のステップのバナーを表示します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります:
 
 ```text
 Installation complete.

@@ -2,7 +2,7 @@
 title: "Pemecahan masalah"
 description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan pemasang."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,27 @@ rilis saat ini, bersihkan cache atau sematkan dist-tag:
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### Pemasang berhenti: kunci publik pemelihara tidak ada di keyring lokal
+
+Pemasang memverifikasi tag rilis yang ditandatangani dan berhenti ketika kunci
+penandatanganan tidak ada di keyring Anda. Impor sekali, periksa bahwa sidik jari
+menunjukkan `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, lalu jalankan
+pemasang lagi:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Di Windows, impor melalui `bash` Git seperti yang ditunjukkan: `git verify-tag` membaca
+keyring dari `gpg` yang disertakan dengan Git for Windows. Host tanpa `gpg` dapat
+melakukan instalasi dengan `APOTHEM_VERIFY=checksum`, yang memeriksa digest arsip
+rilis alih-alih tanda tangan tag.
 
 ### irm / iex diblokir di Windows
 

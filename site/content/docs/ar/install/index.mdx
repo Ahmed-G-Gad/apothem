@@ -2,7 +2,7 @@
 title: "التثبيت"
 description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -134,10 +134,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. المُثبِّتات بخطوة واحدة
 
-**المتطلّبات المُسبقة:** <bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على
-<bdi>`PATH`</bdi> (يعرض المُثبِّت إضافة المتطلّبين المُسبقين <bdi>`click`</bdi> /
-<bdi>`rich`</bdi> نيابةً عنك)؛ ولا يلزم <bdi>`git`</bdi> إلا لتثبيت شبكي يستنسخ
-المصدر.
+**المتطلّبات المُسبقة:** <bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi> (يعرض المُثبِّت إضافة المتطلّبين المُسبقين <bdi>`click`</bdi> / <bdi>`rich`</bdi> نيابةً عنك)؛ و<bdi>`git`</bdi> و<bdi>`gpg`</bdi> لتثبيت شبكي يستنسخ المصدر ويتحقّق من وسم الإصدار الموقَّع التابع له (يأتي كلاهما مع <bdi>Git for Windows</bdi>).
 
 تحدّد سكربتات المُثبِّت أحدث وسم إصدار موقَّع، وتتحقّق من توقيعه، وتضع شجرة
 مصدر <bdi>Apothem</bdi> في <bdi>`~/.apothem`</bdi> عند ذلك الوسم،
@@ -147,6 +144,17 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 إعادة التشغيل متساوية الأثر: تُسحَب الشجرة الموجودة من جديد عند الوسم المُحدَّد،
 ويُعاد تجسيد إطار العمل. التثبيت المُتحقَّق منه والمُثبَّت على وسم هو المسار
 الافتراضي والموصى به.
+
+استورِد مفتاح توقيع المشرف مرةً واحدة أولًا. يتوقّف المُثبِّت حين لا يكون المفتاح في حلقة المفاتيح لديك. تحقّق من أن البصمة هي <bdi>`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`</bdi>، وهي القيمة التي تنشرها [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). على <bdi>Windows</bdi>، يقرأ <bdi>`git verify-tag`</bdi> حلقة مفاتيح <bdi>`gpg`</bdi> الذي يأتي مع <bdi>Git for Windows</bdi>، لذا يُنفَّذ الاستيراد عبر <bdi>`bash`</bdi> الخاص بـ<bdi>Git</bdi> نفسه:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -168,15 +176,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### نموذج الثقة
 
-حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يحدّد المُثبِّت أعلى وسم إصدار
-<bdi>`vMAJOR.MINOR.PATCH`</bdi> ويسحب *ذلك الوسم* — ولا يسحب أبدًا فرع
-<bdi>`main`</bdi> المتحرّك. وقبل تجسيد أي تهيئة، يُتحقَّق من توقيع الوسم المجلوب عبر
-<bdi>`git verify-tag`</bdi>؛ والوسم غير الموقَّع، أو المُتلاعَب به، أو غير القابل
-للتحقّق يُجهِض التثبيت قبل كتابة أي شيء. أما الوسم الموقَّع الذي لم يدخل المفتاحُ
-العام لمشرفه حلقةَ المفاتيح المحلية بعد، فيُجهِض التثبيت مع إرشادات لاستيراد
-المفتاح بدلًا من ذلك: استورِد المفتاح، وطابِق بصمته مع القيمة المنشورة في
-[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)،
-ثم أعِد التشغيل. ثبِّت إصدارًا بعينه عبر <bdi>`APOTHEM_REF`</bdi>:
+حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يحدّد المُثبِّت أعلى وسم إصدار <bdi>`vMAJOR.MINOR.PATCH`</bdi> ويسحب *ذلك الوسم* — ولا يسحب أبدًا فرع <bdi>`main`</bdi> المتحرّك. وقبل تجسيد أي تهيئة، يُتحقَّق من توقيع الوسم المجلوب عبر <bdi>`git verify-tag`</bdi>؛ والوسم غير الموقَّع، أو المُتلاعَب به، أو غير القابل للتحقّق يُجهِض التثبيت قبل كتابة أي شيء. أما الوسم الموقَّع الذي لم يدخل المفتاحُ العام لمشرفه حلقةَ المفاتيح المحلية بعد، فيُجهِض التثبيت مع إرشادات لاستيراد المفتاح بدلًا من ذلك: استورِد المفتاح كما هو مُبيَّن أعلاه، وطابِق بصمته مع القيمة المنشورة في [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)، ثم أعِد التشغيل. ثبِّت إصدارًا بعينه عبر <bdi>`APOTHEM_REF`</bdi>:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

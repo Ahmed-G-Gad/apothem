@@ -2,7 +2,7 @@
 title: "Démarrage rapide"
 description: "Installez Apothem, rédigez un profil, matérialisez votre premier environnement et vérifiez-le — une visite à copier-coller avec la sortie attendue."
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,20 @@ contient tous les noms pris en charge.
 Apothem est distribué comme un runtime autonome — le moteur s'exécute
 directement depuis son arborescence source avec des dépendances vendorisées.
 Une seule commande récupère le code source, place le moteur et matérialise
-votre premier environnement :
+votre premier environnement. Elle vérifie d'abord la publication signée ;
+importez donc la clé de signature du mainteneur une seule fois avant la première
+installation, puis vérifiez que l'empreinte affiche `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` :
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Exécutez ensuite l'installateur :
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -45,14 +58,15 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-L'installateur requiert un Python 3.10+ système, ainsi que `git` pour la forme
-réseau. Il vérifie les prérequis et place le moteur sous `~/.apothem`. Lorsque
-`click` ou `rich` est absent, il installe le paquet avec votre confirmation, ou
-sur `--yes` (`-Yes` sous PowerShell) ou `APOTHEM_AUTO_INSTALL_DEPS=1`, et
-s'arrête sinon avec la commande pip à exécuter (voir
-[Prérequis en un coup d'œil](/docs/install#prérequis-en-un-coup-dœil)). Une fois
-terminé, il affiche une bannière d'étapes suivantes ; sous POSIX, lorsque le
-répertoire du shim figure déjà dans `PATH`, la bannière ressemble à ceci :
+L'installateur requiert un Python 3.10+ système, ainsi que `git` et `gpg` pour la
+forme réseau. Il vérifie les prérequis et place le moteur sous `~/.apothem`.
+Lorsque `click` ou `rich` est absent, il installe le paquet avec votre
+confirmation, ou avec `--yes` (`-Yes` sous PowerShell) ou
+`APOTHEM_AUTO_INSTALL_DEPS=1`, et s'arrête sinon avec la commande pip à exécuter
+(voir [Prérequis en un coup d'œil](/docs/install#prérequis-en-un-coup-dœil)).
+Une fois terminé, il affiche une bannière d'étapes suivantes ; sous POSIX,
+lorsque le répertoire du shim figure déjà dans `PATH`, la bannière ressemble à
+ceci :
 
 ```text
 Installation complete.

@@ -2,7 +2,7 @@
 title: "Устранение неполадок"
 description: "Решения для распространённых сбоев установки Apothem и проблем времени выполнения в путях через плагин, npx и установщик."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,21 @@ dist-тег:
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### Установщик останавливается: открытого ключа сопровождающего нет в локальной связке ключей
+
+Установщик проверяет подписанный тег релиза и останавливается, если ключа подписи нет в вашей связке ключей. Импортируйте его один раз, проверьте, что отпечаток равен `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, и затем снова запустите установщик:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+В Windows импортируйте ключ через `bash` Git, как показано выше: `git verify-tag` читает связку ключей `gpg`, которая поставляется с Git for Windows. Хост без `gpg` может выполнить установку с `APOTHEM_VERIFY=checksum`: тогда вместо подписи тега проверяется контрольная сумма архива релиза.
 
 ### irm / iex заблокированы в Windows
 

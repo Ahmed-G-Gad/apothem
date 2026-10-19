@@ -2,7 +2,7 @@
 title: "Instalação"
 description: "Visão geral da instalação do Apothem — oito canais de instalação, cada um com seus pré-requisitos, um comando pronto para copiar e uma etapa de verificação: o plugin do Claude Code, o shim do npm, os instaladores de uma única etapa, a extensão da família VS Code, as três extensões de bootstrap de linha de comando e o motor direto."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -139,9 +139,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. Instaladores de uma única etapa
 
-**Pré-requisitos:** o Python 3.10+ do sistema no `PATH` (o instalador se oferece
-para adicionar os pré-requisitos `click` / `rich` para você); o `git` é
-necessário apenas para uma instalação pela rede que clona o código-fonte.
+**Pré-requisitos:** o Python 3.10+ do sistema no `PATH` (o instalador se oferece para adicionar os pré-requisitos `click` / `rich` para você); `git` e `gpg` para a instalação pela rede, que clona o código-fonte e verifica a tag de lançamento assinada (o Git for Windows traz ambos).
 
 Os scripts de instalação resolvem a tag de lançamento assinada mais recente,
 verificam sua assinatura, colocam a árvore de código-fonte do Apothem em
@@ -152,6 +150,17 @@ edite-o e depois execute `apothem update --harness <name>` para aplicar os seus.
 Executar novamente é idempotente: uma árvore existente recebe um novo checkout
 na tag resolvida e o harness é materializado novamente. A instalação verificada
 e fixada por tag é a via padrão e recomendada.
+
+Importe primeiro, uma vez, a chave de assinatura do mantenedor. O instalador para quando a chave não está no seu chaveiro. Confira se a impressão digital é `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, valor publicado em [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). No Windows, o `git verify-tag` lê o chaveiro do `gpg` que vem com o Git for Windows, por isso a importação roda pelo `bash` do próprio Git:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -172,16 +181,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### Modelo de confiança
 
-Sem `APOTHEM_REF` definido, o instalador resolve a tag de lançamento
-`vMAJOR.MINOR.PATCH` mais alta e faz o checkout *dela* — nunca da branch
-`main` em movimento. Antes que qualquer configuração seja materializada, a
-assinatura da tag obtida é verificada com `git verify-tag`; uma tag não
-assinada, adulterada ou não verificável aborta a instalação antes que qualquer
-coisa seja gravada. Uma tag assinada cuja chave pública do mantenedor ainda não
-está no chaveiro local aborta, em vez disso, com orientações para importar a
-chave: importe a chave, confira sua impressão digital com o valor publicado no
-[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-e execute novamente. Fixe um lançamento específico com `APOTHEM_REF`:
+Sem `APOTHEM_REF` definido, o instalador resolve a tag de lançamento `vMAJOR.MINOR.PATCH` mais alta e faz o checkout *dela* — nunca da branch `main` em movimento. Antes que qualquer configuração seja materializada, a assinatura da tag obtida é verificada com `git verify-tag`; uma tag não assinada, adulterada ou não verificável aborta a instalação antes que qualquer coisa seja gravada. Uma tag assinada cuja chave pública do mantenedor ainda não está no chaveiro local aborta, em vez disso, com orientações para importar a chave: importe a chave como mostrado acima, confira a impressão digital com o valor publicado em [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) e execute novamente. Fixe um lançamento específico com `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

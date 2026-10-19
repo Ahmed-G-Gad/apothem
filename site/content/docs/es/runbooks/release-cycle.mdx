@@ -2,7 +2,7 @@
 title: "Runbook del ciclo de lanzamiento"
 description: "Flujo de lanzamiento completo, desde las puertas locales, pasando por el GitHub Release firmado, hasta la publicación en npm."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -235,9 +235,10 @@ Salida esperada: `Apothem, version X.Y.Z`.
 
 ### 5.3 Instalador de script de un solo paso (POSIX)
 
-El instalador escribe el lanzador `apothem` en `~/.local/bin`, o en el directorio que indica `APOTHEM_BIN_DIR` cuando esa variable está definida. La comprobación siguiente necesita que ese directorio esté en `PATH`. Cuando no lo está, el instalador imprime la línea `export PATH` que hay que añadir. Mientras ese directorio no esté en `PATH`, el shell no encuentra `apothem` y la comprobación falla. Si el instalador no puede colocar el lanzador, imprime una advertencia y no imprime ninguna línea `export PATH`.
+El instalador escribe el lanzador `apothem` en `~/.local/bin`, o en el directorio que indica `APOTHEM_BIN_DIR` cuando esa variable está definida. La comprobación siguiente necesita que ese directorio esté en `PATH`. Cuando no lo está, el instalador imprime la línea `export PATH` que hay que añadir. Mientras ese directorio no esté en `PATH`, el shell no encuentra `apothem` y la comprobación falla. Si el instalador no puede colocar el lanzador, imprime una advertencia y no imprime ninguna línea `export PATH`. En un equipo que todavía no tiene la clave de firma del mantenedor, la primera línea la importa; sin ella, el instalador se detiene.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -246,7 +247,10 @@ Salida esperada: `Apothem, version X.Y.Z`.
 
 ### 5.4 Instalador de script de un solo paso (Windows)
 
+La primera línea importa la clave de firma del mantenedor a través del propio `bash` de Git, cuyo llavero de `gpg` es el que lee `git verify-tag`.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

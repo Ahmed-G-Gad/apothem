@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -136,8 +136,9 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ## 3. Pemasang satu langkah
 
 **Prasyarat:** Python sistem 3.10+ pada `PATH` (pemasang menawarkan untuk
-menambahkan prasyarat `click` / `rich` untuk Anda); `git` hanya dibutuhkan untuk
-instalasi jaringan yang mengkloning sumber.
+menambahkan prasyarat `click` / `rich` untuk Anda); `git` dan `gpg` untuk
+instalasi jaringan, yang mengkloning sumber dan memverifikasi tag rilisnya yang
+ditandatangani (Git for Windows menyertakan keduanya).
 
 Skrip pemasang me-resolve tag rilis bertanda tangan terbaru, memverifikasi
 tanda tangannya, menempatkan pohon sumber Apothem di `~/.apothem` pada tag
@@ -148,6 +149,20 @@ jalankan `apothem update --harness <name>` untuk menerapkan nilai milik Anda.
 Menjalankan ulang bersifat idempoten: pohon yang sudah ada di-checkout ulang ke
 tag yang di-resolve dan harness dimaterialisasikan ulang. Instalasi
 terverifikasi yang dipatok ke tag adalah jalur default dan yang direkomendasikan.
+
+Impor kunci penandatanganan pemelihara sekali terlebih dahulu. Pemasang berhenti
+ketika kunci itu tidak ada di keyring Anda. Periksa bahwa sidik jari menunjukkan
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, nilai yang dipublikasikan di [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). Di Windows, `git verify-tag` membaca keyring dari `gpg` yang
+disertakan dengan Git for Windows, sehingga impor dijalankan melalui `bash` milik Git:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -170,14 +185,13 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 Bila `APOTHEM_REF` tidak disetel, pemasang me-resolve tag rilis
 `vMAJOR.MINOR.PATCH` tertinggi dan melakukan checkout *tag itu* — tidak pernah
-branch `main` yang terus bergerak. Sebelum konfigurasi apa pun
-dimaterialisasikan, tanda tangan tag yang diambil diverifikasi dengan
-`git verify-tag`; tag yang tidak bertanda tangan, telah dirusak, atau tidak
-dapat diverifikasi membatalkan instalasi sebelum apa pun ditulis. Tag
-bertanda tangan yang kunci publik pemeliharanya belum ada di keyring lokal
-justru membatalkan instalasi dengan panduan impor kunci: impor kunci tersebut,
-periksa sidik jarinya terhadap nilai yang dipublikasikan di
-[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
+branch `main` yang terus bergerak. Sebelum konfigurasi apa pun dimaterialisasikan,
+tanda tangan tag yang diambil diverifikasi dengan `git verify-tag`; tag yang tidak
+bertanda tangan, telah dirusak, atau tidak dapat diverifikasi membatalkan instalasi
+sebelum apa pun ditulis. Tag bertanda tangan yang kunci publik pemeliharanya belum
+ada di keyring lokal justru membatalkan instalasi dengan panduan impor kunci: impor
+kunci seperti yang ditunjukkan di atas, periksa sidik jarinya terhadap nilai yang
+dipublikasikan di [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
 lalu jalankan ulang. Patok rilis tertentu dengan `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"

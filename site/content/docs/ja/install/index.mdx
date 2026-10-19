@@ -2,7 +2,7 @@
 title: "インストール"
 description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップがあります: Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -96,12 +96,23 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. ワンショットインストーラー
 
-**前提条件:** `PATH` 上のシステム Python 3.10+（インストーラーは `click` / `rich` の前提条件を追加することを提案します）。`git` は、ソースをクローンするネットワークインストールの場合にのみ必要です。
+**前提条件:** `PATH` 上のシステム Python 3.10+（インストーラーは `click` / `rich` の前提条件を追加することを提案します）。`git` と `gpg` は、ソースをクローンして署名済みのリリースタグを検証するネットワークインストールの場合に必要です（Git for Windows には両方が含まれています）。
 
 インストーラースクリプトは、署名済みの最新リリースタグを解決し、その署名を検証し、そのタグの Apothem ソースツリーを `~/.apothem` に配置し、プロファイルが存在しない場合はスタータープロファイルを作成し、最初のハーネスをマテリアライズし、結果を検証します。これらすべてを 1 回の実行で行います。
 スタータープロファイルにはプレースホルダーのアイデンティティフィールドが含まれています。それを編集してから `apothem update --harness <name>` を実行し、あなたの値を適用してください。
 再実行は冪等です。既存のツリーは解決されたタグへ再チェックアウトされ、ハーネスは再マテリアライズされます。
 タグに固定された検証済みインストールが、デフォルトかつ推奨の経路です。
+
+まず一度、メンテナーの署名鍵をインポートしてください。お使いのキーリングに鍵がない場合、インストーラーは停止します。フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してください。この値は [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) で公開されています。Windows では、`git verify-tag` は Git for Windows に同梱されている `gpg` のキーリングを読み取るため、インポートは Git 自身の `bash` を通して実行します:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -120,10 +131,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### 信頼モデル
 
-`APOTHEM_REF` が設定されていない場合、インストーラーは最も高い `vMAJOR.MINOR.PATCH` リリースタグを解決し、*その*タグをチェックアウトします——動き続ける `main` ブランチをチェックアウトすることは決してありません。
-いずれかの設定がマテリアライズされる前に、フェッチしたタグの署名が `git verify-tag` で検証されます。署名のない、改ざんされた、または検証できないタグは、何かが書き込まれる前にインストールを中止させます。
-メンテナーの公開鍵がまだローカルのキーリングにない署名済みタグの場合は、代わりに鍵のインポートの案内を表示して中止します。鍵をインポートし、そのフィンガープリントを [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に公開されている値と照合してから、再実行してください。
-特定のリリースに固定するには `APOTHEM_REF` を使います。
+`APOTHEM_REF` が設定されていない場合、インストーラーは最も高い `vMAJOR.MINOR.PATCH` リリースタグを解決し、*そのタグ*をチェックアウトします——動き続ける `main` ブランチを決してチェックアウトしません。いずれかの設定がマテリアライズされる前に、取得したタグの署名が `git verify-tag` で検証されます。署名のない、改ざんされた、または検証できないタグは、何かが書き込まれる前にインストールを中止させます。メンテナーの公開鍵がまだローカルのキーリングにない署名済みタグの場合は、代わりに鍵のインポートの案内を表示して中止します。上に示したとおりに鍵をインポートし、そのフィンガープリントを [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に公開されている値と照合してから、再実行してください。特定のリリースに固定するには、`APOTHEM_REF` を使います:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

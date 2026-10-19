@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -226,9 +226,10 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 مُثبِّت السكربت بخطوة واحدة (<bdi>POSIX</bdi>)
 
-يكتب المُثبِّت المُشغِّل <bdi>`apothem`</bdi> في <bdi>`~/.local/bin`</bdi>، أو في الدليل المسمّى في <bdi>`APOTHEM_BIN_DIR`</bdi> حين يكون هذا المتغيّر مضبوطًا. ويحتاج الفحص أدناه إلى أن يكون ذلك الدليل على <bdi>`PATH`</bdi>. وحين لا يكون كذلك، يطبع المُثبِّت سطر <bdi>`export PATH`</bdi> الذي يجب إضافته. وما لم يكن ذلك الدليل على <bdi>`PATH`</bdi>، فلن تجد الصدفة <bdi>`apothem`</bdi>، ويفشل الفحص. وإذا تعذّر على المُثبِّت وضع المُشغِّل، طبع تحذيرًا دون سطر <bdi>`export PATH`</bdi>.
+يكتب المُثبِّت المُشغِّل <bdi>`apothem`</bdi> في <bdi>`~/.local/bin`</bdi>، أو في الدليل المسمّى في <bdi>`APOTHEM_BIN_DIR`</bdi> حين يكون هذا المتغيّر مضبوطًا. ويحتاج الفحص أدناه إلى أن يكون ذلك الدليل على <bdi>`PATH`</bdi>. وحين لا يكون كذلك، يطبع المُثبِّت سطر <bdi>`export PATH`</bdi> الذي يجب إضافته. وما لم يكن ذلك الدليل على <bdi>`PATH`</bdi>، فلن تجد الصدفة <bdi>`apothem`</bdi>، ويفشل الفحص. وإذا تعذّر على المُثبِّت وضع المُشغِّل، طبع تحذيرًا دون سطر <bdi>`export PATH`</bdi>. وفي مضيف لا يحمل مفتاح توقيع المشرف بعد، يستورده السطر الأول، ويتوقّف المُثبِّت من دونه.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -237,7 +238,10 @@ apothem --version
 
 ### 5.4 مُثبِّت السكربت بخطوة واحدة (<bdi>Windows</bdi>)
 
+يستورد السطر الأول مفتاح توقيع المشرف عبر <bdi>`bash`</bdi> الخاص بـ<bdi>Git</bdi> نفسه، إذ إن حلقة مفاتيح <bdi>`gpg`</bdi> التابعة له هي التي يقرأها <bdi>`git verify-tag`</bdi>.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

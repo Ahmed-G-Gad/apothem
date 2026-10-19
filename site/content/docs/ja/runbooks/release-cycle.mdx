@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -198,9 +198,10 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 ワンショットスクリプトインストーラー（POSIX）
 
-インストーラーは `apothem` ランチャーを `~/.local/bin` に、または `APOTHEM_BIN_DIR` が設定されている場合はその変数で指定されたディレクトリに書き込みます。以下の確認を実行するには、そのディレクトリが `PATH` に含まれている必要があります。含まれていない場合、インストーラーは追加すべき `export PATH` の行を表示します。そのディレクトリが `PATH` に含まれるまで、シェルは `apothem` を見つけられず、確認は失敗します。インストーラーがランチャーを配置できない場合は、警告を表示し、`export PATH` の行は表示しません。
+インストーラーは `apothem` ランチャーを `~/.local/bin` に、または `APOTHEM_BIN_DIR` が設定されている場合はその変数で指定されたディレクトリに書き込みます。以下の確認を実行するには、そのディレクトリが `PATH` に含まれている必要があります。含まれていない場合、インストーラーは追加すべき `export PATH` の行を表示します。そのディレクトリが `PATH` に含まれるまで、シェルは `apothem` を見つけられず、確認は失敗します。インストーラーがランチャーを配置できない場合は、警告を表示し、`export PATH` の行は表示しません。メンテナーの署名鍵をまだ持っていないホストでは、最初の行がその鍵をインポートします。鍵がなければ、インストーラーは停止します。
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -209,7 +210,10 @@ apothem --version
 
 ### 5.4 ワンショットスクリプトインストーラー（Windows）
 
+最初の行は、Git 自身の `bash` を通してメンテナーの署名鍵をインポートします。このとき使われる `gpg` のキーリングは、`git verify-tag` が読み取るものです。
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

@@ -2,7 +2,7 @@
 title: "Руководство по циклу релиза"
 description: "Полный рабочий процесс релиза от локальных шлюзов через подписанный GitHub Release до публикации в npm."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -234,9 +234,10 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 Одношаговый скриптовый установщик (POSIX)
 
-Установщик записывает лаунчер `apothem` в `~/.local/bin` или в каталог, указанный в `APOTHEM_BIN_DIR`, если эта переменная задана. Для проверки ниже этот каталог должен быть в `PATH`. Если его там нет, установщик выводит строку `export PATH`, которую нужно добавить. Пока этот каталог не в `PATH`, оболочка не находит `apothem`, и проверка завершается ошибкой. Если установщик не может разместить лаунчер, он выводит предупреждение и не выводит строку `export PATH`.
+Установщик записывает лаунчер `apothem` в `~/.local/bin` или в каталог, указанный в `APOTHEM_BIN_DIR`, если эта переменная задана. Для проверки ниже этот каталог должен быть в `PATH`. Если его там нет, установщик выводит строку `export PATH`, которую нужно добавить. Пока этот каталог не в `PATH`, оболочка не находит `apothem`, и проверка завершается ошибкой. Если установщик не может разместить лаунчер, он выводит предупреждение и не выводит строку `export PATH`. На хосте, где ещё нет ключа подписи сопровождающего, первая строка импортирует его; без этого ключа установщик останавливается.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -245,7 +246,10 @@ apothem --version
 
 ### 5.4 Одношаговый скриптовый установщик (Windows)
 
+Первая строка импортирует ключ подписи сопровождающего через собственный `bash` Git, связка ключей `gpg` которого — та же, что читает `git verify-tag`.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

@@ -37,24 +37,48 @@ PGP-encrypted reporting may be supported in the future. Reporters who require en
 
 ## Release signing
 
-Release tags (`vMAJOR.MINOR.PATCH`) are GPG-signed, and the artifacts attached to each GitHub Release (sdist, wheel, SBOM) carry Sigstore cosign signatures plus SLSA provenance. The one-shot installers verify the tag signature with `git verify-tag` before materializing any configuration and abort, fail-closed, when verification does not succeed. Third-party `git verify-tag` needs the maintainer public key in the local keyring; until its fingerprint is published (see below), set `APOTHEM_ALLOW_UNVERIFIED=1` to proceed without local tag verification.
+Release tags (`vMAJOR.MINOR.PATCH`) are GPG-signed, and the artifacts attached to each GitHub Release (sdist, wheel, SBOM) carry Sigstore cosign signatures plus SLSA provenance. The one-shot installers verify the tag signature with `git verify-tag` before materializing any configuration and abort, fail-closed, when verification does not succeed. Third-party `git verify-tag` needs the maintainer public key in the local keyring; import it once as shown under [Maintainer signing key](#maintainer-signing-key).
 
-To verify a release tag locally: import the maintainer signing key, confirm the imported key's fingerprint, then run `git verify-tag <tag>` inside the clone. The maintainer signing-key fingerprint will be published at this location once the maintainer records it; until then, cross-check the signing identity against the signature metadata on the GitHub Release page and against the key fingerprint that `git verify-tag <tag>` itself reports.
+To verify a release tag locally: import the maintainer signing key, confirm the imported key's fingerprint, then run `git verify-tag <tag>` inside the clone.
 
 ### Release tags are not all the same kind of object
 
 | Tag | Tag object | How to verify it |
 | --- | --- | --- |
+| `v1.2.0` | annotated, GPG-signed | `git verify-tag v1.2.0` |
 | `v1.1.0` | annotated, GPG-signed | `git verify-tag v1.1.0` |
 | `v1.0.2` | annotated, GPG-signed | `git verify-tag v1.0.2` |
 | `v1.0.1` | lightweight (no tag object) | `git verify-commit v1.0.1` — the commit it names is GPG-signed |
 
 `v1.0.1` was pushed as a lightweight tag. A lightweight tag has no object to sign, so `git verify-tag v1.0.1` fails ("cannot verify a non-tag object") and the one-shot installer, which checks the tag, aborts with its "unsigned or its signature did not verify" message when `APOTHEM_REF=v1.0.1`. The release commit itself is signed, so `git verify-commit v1.0.1` verifies it. Published tags are kept as they are rather than rewritten, so this limit is permanent for `v1.0.1`: pin `v1.0.2` or later for a verified install. Every release from `v1.0.2` on is an annotated, signed tag (`git tag -a -s`).
 
-<!-- TODO(clarify): publish the maintainer GPG signing-key fingerprint here.
-The fingerprint value is an operator input that cannot be derived from the
-repository; until the maintainer records it, verifiers should cross-check the
-signing identity against the signature metadata on the GitHub Release page. -->
+### Maintainer signing key
+
+Release tags are signed with this key:
+
+| Field | Value |
+| --- | --- |
+| Owner | Ahmed G. Gad `<me@ahmedgad.com>` |
+| Algorithm | ed25519 |
+| Fingerprint | `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` |
+| Published at | <https://github.com/ahmed-g-gad.gpg> |
+
+Import it once, then check that `gpg` prints the fingerprint above:
+
+```shell
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+On Windows, `git verify-tag` reads the keyring of the `gpg` that ships with
+Git for Windows, so run the same commands through Git's own `bash`:
+
+```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+If the fingerprint differs, do not install: report it through the channels
+above.
 
 ## Response timeline
 
