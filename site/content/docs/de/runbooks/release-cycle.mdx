@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -237,9 +237,10 @@ Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
 ### 5.3 Ein-Schritt-Skript-Installer (POSIX)
 
-Der Installer schreibt den Starter `apothem` nach `~/.local/bin` oder in das Verzeichnis, das `APOTHEM_BIN_DIR` nennt, sofern diese Variable gesetzt ist. Die Prüfung unten braucht dieses Verzeichnis in `PATH`. Ist es nicht enthalten, gibt der Installer die Zeile `export PATH` aus, die hinzugefügt werden muss. Solange dieses Verzeichnis nicht in `PATH` liegt, findet die Shell `apothem` nicht, und die Prüfung schlägt fehl. Kann der Installer den Starter nicht ablegen, gibt er eine Warnung aus und keine Zeile `export PATH`.
+Der Installer schreibt den Starter `apothem` nach `~/.local/bin` oder in das Verzeichnis, das `APOTHEM_BIN_DIR` nennt, sofern diese Variable gesetzt ist. Die Prüfung unten braucht dieses Verzeichnis in `PATH`. Ist das nicht der Fall, gibt der Installer die Zeile `export PATH` aus, die hinzugefügt werden muss. Solange dieses Verzeichnis nicht in `PATH` liegt, findet die Shell `apothem` nicht, und die Prüfung schlägt fehl. Kann der Installer den Starter nicht ablegen, gibt er eine Warnung aus und keine Zeile `export PATH`. Auf einem Host, der den Maintainer-Signaturschlüssel noch nicht hat, importiert die erste Zeile ihn; ohne diesen Schlüssel bricht der Installer ab.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -248,7 +249,10 @@ Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
 ### 5.4 Ein-Schritt-Skript-Installer (Windows)
 
+Die erste Zeile importiert den Maintainer-Signaturschlüssel über Gits eigene `bash`, deren `gpg`-Schlüsselbund derjenige ist, den `git verify-tag` liest.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

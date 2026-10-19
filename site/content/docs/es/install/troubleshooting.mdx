@@ -2,7 +2,7 @@
 title: "Resolución de problemas"
 description: "Soluciones para los fallos de instalación habituales de Apothem y los problemas en tiempo de ejecución en las rutas del plugin, npx y el instalador."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,21 @@ la dist-tag:
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### El instalador se detiene: la clave pública del mantenedor no está en el llavero local
+
+El instalador verifica la etiqueta de lanzamiento firmada y se detiene cuando la clave de firma no está en tu llavero. Impórtala una vez, comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` y luego vuelve a ejecutar el instalador:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+En Windows, importa a través del `bash` de Git, como se muestra: `git verify-tag` lee el llavero del `gpg` que incluye Git for Windows. Un equipo sin `gpg` puede instalar con `APOTHEM_VERIFY=checksum`, que comprueba el resumen (digest) del archivo de lanzamiento en lugar de la firma de la etiqueta.
 
 ### irm / iex bloqueado en Windows
 

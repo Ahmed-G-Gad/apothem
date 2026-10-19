@@ -2,7 +2,7 @@
 title: "빠른 시작"
 description: "Apothem을 설치하고, 프로필을 작성하고, 첫 하니스를 머티리얼라이즈한 다음 검증합니다 — 예상 출력이 함께 담긴 복사·붙여넣기 투어입니다."
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,18 @@ sourceHash: "85c4fb40991ae94c"
 
 ## 1. Apothem 설치
 
-Apothem은 자체 완결형 런타임으로 배포됩니다. 엔진은 벤더링된 종속성과 함께 소스
-트리에서 바로 실행됩니다. 명령 하나가 소스를 가져오고, 엔진을 배치하고, 첫
-하니스를 머티리얼라이즈합니다.
+Apothem은 자체 완결형 런타임으로 배포됩니다. 엔진은 벤더링된 종속성과 함께 소스 트리에서 바로 실행됩니다. 명령 하나로 소스를 가져오고, 엔진을 배치하고, 첫 하니스를 머티리얼라이즈합니다. 설치 프로그램은 먼저 서명된 릴리스를 검증하므로, 첫 설치 전에 메인테이너 서명 키를 한 번 가져오고 지문이 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`인지 확인하세요:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+그다음 설치 프로그램을 실행하세요:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -40,13 +49,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-설치 프로그램에는 시스템 Python 3.10+가 필요하며, 네트워크 형식에는 `git`도
-필요합니다. 설치 프로그램은 사전 요건을 확인하고 엔진을 `~/.apothem` 아래에
-배치합니다. `click` 또는 `rich`가 없으면, 사용자가 확인하거나 `--yes`(PowerShell에서는
-`-Yes`) 또는 `APOTHEM_AUTO_INSTALL_DEPS=1`이 주어질 때 해당 패키지를 설치하고, 그렇지
-않으면 실행할 pip 명령을 안내하며 중단합니다([사전 요건 한눈에](/docs/install#사전-요건-한눈에)
-참조). 완료되면 다음 단계 안내 배너를 출력합니다. POSIX에서 심(shim)의 디렉터리가
-이미 `PATH`에 있으면 배너는 다음과 같습니다.
+설치 프로그램에는 시스템 Python 3.10+가 필요하며, 네트워크 형식에는 `git`과 `gpg`도 필요합니다. 설치 프로그램은 사전 요건을 확인하고 엔진을 `~/.apothem` 아래에 배치합니다. `click` 또는 `rich`가 없으면 사용자가 확인하거나 `--yes`(PowerShell에서는 `-Yes`) 또는 `APOTHEM_AUTO_INSTALL_DEPS=1`을 주었을 때 해당 패키지를 설치하며, 그렇지 않으면 실행할 pip 명령을 안내하며 중단합니다([사전 요건 한눈에](/docs/install#사전-요건-한눈에) 참조). 설치가 끝나면 다음 단계 안내 배너를 출력합니다. POSIX에서 심(shim)의 디렉터리가 이미 `PATH`에 있으면 배너는 다음과 같습니다:
 
 ```text
 Installation complete.

@@ -2,7 +2,7 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,9 +77,20 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. 一键安装器
 
-**前置条件：** `PATH` 上的系统 Python 3.10+（安装器会提出为你添加 `click` / `rich` 前置依赖）；仅在克隆源码的网络安装中才需要 `git`。
+**前置条件：** `PATH` 上的系统 Python 3.10+（安装器会提出为你添加 `click` / `rich` 前置依赖）；网络安装需要 `git` 与 `gpg`，它会克隆源码并验证其已签名的发布标签（Git for Windows 同时提供这两者）。
 
 安装脚本会在一次运行中完成以下全部步骤：解析最新的已签名发布标签，验证其签名，将该标签处的 Apothem 源代码树放置到 `~/.apothem`，在不存在配置档案时创建起始配置档案，物化你的第一个工具，并验证结果。起始配置档案带有占位的身份字段：编辑它，然后运行 `apothem update --harness <name>` 以应用你自己的身份字段。重新运行是幂等的：已有的目录树会被重新检出到解析出的标签，工具也会被重新物化。锁定标签且经过验证的安装是默认且推荐的路径。
+
+请先导入一次维护者签名密钥。当该密钥不在你的密钥环中时，安装器会停止。请核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`，即 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) 中公布的值。在 Windows 上，`git verify-tag` 读取的是随 Git for Windows 一同提供的 `gpg` 的密钥环，因此导入需通过 Git 自带的 `bash` 执行：
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -98,7 +109,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### 信任模型
 
-未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签并检出*该标签*——绝不会检出会持续变动的 `main` 分支。在物化任何配置之前，会用 `git verify-tag` 验证所获取标签的签名；未签名、被篡改或无法验证的标签会在写入任何内容之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装则会中止并给出密钥导入指引：导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。用 `APOTHEM_REF` 锁定某个特定的发布：
+未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签并检出*该标签*——绝不会检出会持续变动的 `main` 分支。在物化任何配置之前，会用 `git verify-tag` 验证所获取标签的签名；未签名、被篡改或无法验证的标签会在写入任何内容之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装器会中止并改为给出密钥导入指引：按上文所示导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。用 `APOTHEM_REF` 锁定某个特定的发布：
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

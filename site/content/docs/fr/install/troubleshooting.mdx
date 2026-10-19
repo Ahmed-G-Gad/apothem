@@ -2,7 +2,7 @@
 title: "Dépannage"
 description: "Solutions aux échecs d'installation et aux problèmes d'exécution courants d'Apothem sur les voies plugin, npx et installateur."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,26 @@ version actuelle, videz le cache ou épinglez la dist-tag :
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### L'installateur s'arrête : la clé publique du mainteneur n'est pas dans le trousseau local
+
+L'installateur vérifie l'étiquette de publication signée et s'arrête lorsque la
+clé de signature n'est pas dans votre trousseau. Importez-la une seule fois,
+vérifiez que l'empreinte affiche `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, puis relancez l'installateur :
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Sous Windows, importez par le `bash` de Git comme indiqué : `git verify-tag`
+lit le trousseau du `gpg` fourni avec Git for Windows. Un hôte sans `gpg` peut
+installer avec `APOTHEM_VERIFY=checksum`, qui vérifie le condensat de l'archive
+de publication au lieu de la signature de l'étiquette.
 
 ### irm / iex bloqués sous Windows
 

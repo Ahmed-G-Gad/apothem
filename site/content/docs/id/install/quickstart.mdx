@@ -2,7 +2,7 @@
 title: "Mulai cepat"
 description: "Pasang Apothem, tulis profil, materialisasikan harness pertama Anda, dan verifikasi — tur salin-tempel dengan keluaran yang diharapkan."
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,21 @@ pemasang. Ganti nama adapter di langkah mana pun untuk menargetkan alat lain;
 
 Apothem dikirim sebagai runtime mandiri — mesin berjalan langsung dari pohon
 sumbernya dengan dependensi yang di-vendor. Satu perintah mengambil sumber,
-menempatkan mesin, dan mematerialisasikan harness pertama Anda:
+menempatkan mesin, dan mematerialisasikan harness pertama Anda. Pemasang
+memverifikasi rilis yang ditandatangani lebih dulu, jadi impor kunci penandatanganan
+pemelihara sekali sebelum instalasi pertama dan periksa bahwa sidik jari menunjukkan
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Lalu jalankan pemasang:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -42,12 +56,12 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Pemasang memerlukan Python 3.10+ sistem, ditambah `git` untuk bentuk jaringan.
+Pemasang memerlukan Python 3.10+ sistem, ditambah `git` dan `gpg` untuk bentuk jaringan.
 Pemasang memeriksa prasyarat dan menempatkan mesin di bawah `~/.apothem`. Ketika
-`click` atau `rich` tidak ada, pemasang memasang paketnya dengan konfirmasi Anda,
-atau saat `--yes` (`-Yes` pada PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1`
-diberikan, dan jika tidak, berhenti dengan perintah pip yang harus dijalankan
-(lihat [Prasyarat sekilas](/docs/install#prasyarat-sekilas)). Setelah selesai,
+`click` atau `rich` tidak ada, pemasang memasang paketnya dengan konfirmasi Anda, atau saat
+`--yes` (`-Yes` pada PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1` diberikan, dan jika
+tidak, berhenti dengan perintah pip yang harus dijalankan (lihat
+[Prasyarat sekilas](/docs/install#prasyarat-sekilas)). Setelah selesai,
 pemasang mencetak banner langkah berikutnya; pada POSIX, ketika direktori shim
 sudah ada di `PATH`, banner tampak seperti ini:
 

@@ -2,7 +2,7 @@
 title: "रिलीज़-चक्र रनबुक"
 description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -228,9 +228,16 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 एक-चरण स्क्रिप्ट इंस्टॉलर (POSIX)
 
-इंस्टॉलर `apothem` लॉन्चर को `~/.local/bin` में लिखता है, या जब वह चर सेट हो, तो `APOTHEM_BIN_DIR` द्वारा नामित डायरेक्टरी में। नीचे की जाँच के लिए उस डायरेक्टरी का `PATH` पर होना आवश्यक है। यदि वह नहीं है, तो इंस्टॉलर जोड़ने के लिए `export PATH` पंक्ति प्रिंट करता है। जब तक वह डायरेक्टरी `PATH` पर नहीं होती, शेल `apothem` नहीं ढूँढ सकता, और जाँच विफल हो जाती है। यदि इंस्टॉलर लॉन्चर नहीं रख सकता, तो वह एक चेतावनी प्रिंट करता है और कोई `export PATH` पंक्ति नहीं।
+इंस्टॉलर `apothem` लॉन्चर को `~/.local/bin` में लिखता है, या जब
+`APOTHEM_BIN_DIR` चर सेट हो, तो उसके द्वारा नामित डायरेक्टरी में। नीचे की जाँच
+के लिए उस डायरेक्टरी का `PATH` पर होना आवश्यक है। यदि वह नहीं है, तो इंस्टॉलर
+जोड़ने के लिए `export PATH` पंक्ति प्रिंट करता है। जब तक वह डायरेक्टरी `PATH` पर
+नहीं होती, शेल `apothem` नहीं ढूँढ सकता, और जाँच विफल हो जाती है। यदि इंस्टॉलर
+लॉन्चर नहीं रख सकता, तो वह एक चेतावनी प्रिंट करता है और `export PATH` पंक्ति प्रिंट नहीं करता। जिस होस्ट के पास अभी मेंटेनर की हस्ताक्षर कुंजी नहीं है, वहाँ पहली पंक्ति
+उसे आयात करती है; उसके बिना इंस्टॉलर रुक जाता है।
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -239,7 +246,11 @@ apothem --version
 
 ### 5.4 एक-चरण स्क्रिप्ट इंस्टॉलर (Windows)
 
+पहली पंक्ति मेंटेनर की हस्ताक्षर कुंजी Git के अपने `bash` के माध्यम से आयात करती
+है, जिसकी `gpg` कीरिंग वही है जिसे `git verify-tag` पढ़ता है।
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

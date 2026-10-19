@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -141,8 +141,9 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 ## 3. Installateurs en une seule étape
 
 **Prérequis :** Python 3.10+ du système sur le `PATH` (l'installateur propose
-d'ajouter les prérequis `click` / `rich` pour vous) ; `git` n'est nécessaire que
-pour une installation réseau qui clone le code source.
+d'ajouter les prérequis `click` / `rich` pour vous) ; `git` et `gpg` sont requis
+pour une installation réseau, qui clone le code source et vérifie l'étiquette
+de publication signée (Git for Windows fournit les deux).
 
 Les scripts d'installation résolvent la dernière étiquette de publication
 signée, vérifient sa signature, placent l'arborescence source d'Apothem dans
@@ -154,6 +155,22 @@ pour appliquer les vôtres. Relancer est idempotent : une arborescence existante
 est de nouveau extraite à l'étiquette résolue et l'environnement est
 rematérialisé. L'installation vérifiée, épinglée à une étiquette, est la voie
 par défaut et recommandée.
+
+Importez d'abord la clé de signature du mainteneur, une seule fois. L'installateur
+s'arrête lorsque la clé n'est pas dans votre trousseau. Vérifiez que l'empreinte
+affiche `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, la valeur que
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
+publie. Sous Windows, `git verify-tag` lit le trousseau du `gpg` fourni avec Git
+for Windows ; l'importation passe donc par le `bash` de Git lui-même :
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -181,8 +198,8 @@ signature de l'étiquette récupérée est vérifiée avec `git verify-tag` ; un
 étiquette non signée, altérée ou invérifiable interrompt l'installation avant
 toute écriture. Une étiquette signée dont la clé publique du mainteneur ne
 figure pas encore dans le trousseau local interrompt plutôt l'installation avec
-des instructions d'importation de la clé : importez la clé, comparez son
-empreinte à la valeur publiée dans
+des instructions d'importation de la clé : importez la clé comme indiqué
+ci-dessus, comparez son empreinte à la valeur publiée dans
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md),
 puis relancez. Épinglez une publication précise avec `APOTHEM_REF` :
 

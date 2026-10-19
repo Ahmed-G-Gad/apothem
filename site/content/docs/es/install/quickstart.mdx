@@ -2,7 +2,7 @@
 title: "Guía rápida"
 description: "Instala Apothem, redacta un perfil, materializa tu primer entorno y verifícalo — un recorrido para copiar y pegar con la salida esperada."
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,10 +31,18 @@ admitidos.
 
 ## 1. Instalar Apothem
 
-Apothem se distribuye como un tiempo de ejecución autónomo — el motor se ejecuta
-directamente desde su árbol de código fuente con dependencias incorporadas. Un
-solo comando descarga el código fuente, coloca el motor y materializa tu primer
-entorno:
+Apothem se distribuye como un tiempo de ejecución autónomo: el motor se ejecuta directamente desde su árbol de código fuente con dependencias incorporadas. Un solo comando descarga el código fuente, coloca el motor y materializa tu primer entorno. Verifica primero el lanzamiento firmado, así que importa la clave de firma del mantenedor una sola vez antes de la primera instalación y comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Después, ejecuta el instalador:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -44,15 +52,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-El instalador requiere un Python 3.10+ del sistema, además de `git` para la
-forma por red. Comprueba los requisitos previos y coloca el motor en
-`~/.apothem`. Cuando falta `click` o `rich`, instala el paquete con tu
-confirmación o cuando se pasa `--yes` (`-Yes` en PowerShell) o se define
-`APOTHEM_AUTO_INSTALL_DEPS=1`, y en caso contrario se detiene con el comando de
-pip que hay que ejecutar (consulta
-[Requisitos previos de un vistazo](/docs/install#requisitos-previos-de-un-vistazo)).
-Al terminar imprime un banner de próximos pasos; en POSIX, cuando el directorio
-del shim ya está en `PATH`, el banner tiene este aspecto:
+El instalador requiere un Python 3.10+ del sistema, además de `git` y `gpg` para la forma por red. Comprueba los requisitos previos y coloca el motor en `~/.apothem`. Cuando falta `click` o `rich`, instala el paquete con tu confirmación o cuando se pasa `--yes` (`-Yes` en PowerShell) o se define `APOTHEM_AUTO_INSTALL_DEPS=1`, y en caso contrario se detiene con el comando de pip que hay que ejecutar (consulta [Requisitos previos de un vistazo](/docs/install#requisitos-previos-de-un-vistazo)). Al terminar imprime un banner de próximos pasos; en POSIX, cuando el directorio del shim ya está en `PATH`, el banner tiene este aspecto:
 
 ```text
 Installation complete.

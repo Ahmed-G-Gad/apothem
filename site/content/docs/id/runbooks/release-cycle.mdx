@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -230,9 +230,10 @@ Keluaran yang diharapkan: `Apothem, version X.Y.Z`.
 
 ### 5.3 Pemasang skrip satu langkah (POSIX)
 
-Pemasang menulis peluncur `apothem` ke `~/.local/bin`, atau ke direktori yang dinamai oleh `APOTHEM_BIN_DIR` ketika variabel itu diatur. Pemeriksaan di bawah memerlukan direktori tersebut ada di `PATH`. Ketika tidak ada, pemasang mencetak baris `export PATH` yang perlu ditambahkan. Selama direktori tersebut belum ada di `PATH`, shell tidak dapat menemukan `apothem`, dan pemeriksaan gagal. Jika pemasang tidak dapat menempatkan peluncur, ia mencetak peringatan dan tidak mencetak baris `export PATH`.
+Pemasang menulis peluncur `apothem` ke `~/.local/bin`, atau ke direktori yang dinamai oleh `APOTHEM_BIN_DIR` ketika variabel itu diatur. Pemeriksaan di bawah memerlukan direktori tersebut ada di `PATH`. Ketika tidak ada, pemasang mencetak baris `export PATH` yang perlu ditambahkan. Selama direktori tersebut belum ada di `PATH`, shell tidak dapat menemukan `apothem`, dan pemeriksaan gagal. Jika pemasang tidak dapat menempatkan peluncur, ia mencetak peringatan dan tidak mencetak baris `export PATH`. Pada host yang belum memegang kunci penandatanganan pemelihara, baris pertama mengimpornya; pemasang berhenti tanpa kunci tersebut.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -241,7 +242,10 @@ Keluaran yang diharapkan: `Apothem, version X.Y.Z`.
 
 ### 5.4 Pemasang skrip satu langkah (Windows)
 
+Baris pertama mengimpor kunci penandatanganan pemelihara melalui `bash` milik Git, yang keyring `gpg`-nya adalah keyring yang dibaca oleh `git verify-tag`.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

@@ -2,7 +2,7 @@
 title: "البدء السريع"
 description: "ثبِّت Apothem، وألِّف ملفًا تعريفيًا، وجسِّد أول إطار عمل لك وتحقَّق منه — جولة بالنسخ واللصق مع المخرجات المتوقَّعة."
 machineTranslated: true
-sourceHash: "85c4fb40991ae94c"
+sourceHash: "eb82f45cf9d58284"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,18 @@ sourceHash: "85c4fb40991ae94c"
 
 ## 1. ثبِّت <bdi>Apothem</bdi>
 
-يُشحَن <bdi>Apothem</bdi> بوصفه زمن تشغيل مكتفيًا ذاتيًا — يعمل المحرّك مباشرةً
-من شجرة مصدره مع اعتماديّات مُضمَّنة. أمر واحد يجلب المصدر، ويضع المحرّك، ويُجسِّد
-أول إطار عمل لك:
+يُشحَن <bdi>Apothem</bdi> بوصفه زمن التشغيل المكتفي ذاتيًا — يعمل المحرّك مباشرةً من شجرة مصدره مع اعتماديّات مُضمَّنة. أمر واحد يجلب المصدر، ويضع المحرّك، ويُجسِّد أول إطار عمل لك. يتحقّق الأمر من الإصدار الموقَّع أولًا، لذا استورِد مفتاح توقيع المشرف مرةً واحدة قبل أول تثبيت، وتحقّق من أن البصمة هي <bdi>`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`</bdi>:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+ثم شغّل المُثبِّت:
 
 ```bash title="macOS · Linux · WSL2"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -40,16 +49,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-يتطلّب المُثبِّت <bdi>Python 3.10+</bdi> على مستوى النظام، إضافةً إلى
-<bdi>`git`</bdi> للصيغة الشبكية. يفحص المتطلّبات المسبقة ويضع المحرّك تحت
-<bdi>`~/.apothem`</bdi>. وعندما يكون <bdi>`click`</bdi> أو <bdi>`rich`</bdi>
-مفقودًا، يثبّت الحزمة بعد موافقتك، أو عند استخدام <bdi>`--yes`</bdi>
-(<bdi>`-Yes`</bdi> في <bdi>PowerShell</bdi>) أو
-<bdi>`APOTHEM_AUTO_INSTALL_DEPS=1`</bdi>، وإلا فيتوقّف مع أمر <bdi>pip</bdi> الذي
-يجب تشغيله (راجع
-[المتطلّبات المُسبقة بلمحة](/docs/install#المتطلّبات-المُسبقة-بلمحة)). وعند الاكتمال
-يطبع لافتة الخطوات التالية؛ وفي <bdi>POSIX</bdi>، عندما يكون دليل الغلاف موجودًا
-بالفعل على <bdi>`PATH`</bdi>، تبدو اللافتة هكذا:
+يتطلّب المُثبِّت <bdi>Python 3.10+</bdi> على مستوى النظام، إضافةً إلى <bdi>`git`</bdi> و<bdi>`gpg`</bdi> للصيغة الشبكية. يتحقّق من المتطلّبات المُسبقة ويضع المحرّك تحت <bdi>`~/.apothem`</bdi>. وعندما يكون <bdi>`click`</bdi> أو <bdi>`rich`</bdi> مفقودًا، يثبّت الحزمة بعد موافقتك، أو عند استخدام <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> في <bdi>PowerShell</bdi>) أو <bdi>`APOTHEM_AUTO_INSTALL_DEPS=1`</bdi>، وإلا فيتوقّف مع أمر <bdi>pip</bdi> الذي يجب تشغيله (راجع [المتطلّبات المُسبقة بلمحة](/docs/install#المتطلّبات-المُسبقة-بلمحة)). وعند الاكتمال يطبع لافتة الخطوات التالية؛ وفي <bdi>POSIX</bdi>، عندما يكون دليل الغلاف موجودًا بالفعل على <bdi>`PATH`</bdi>، تبدو اللافتة هكذا:
 
 ```text
 Installation complete.

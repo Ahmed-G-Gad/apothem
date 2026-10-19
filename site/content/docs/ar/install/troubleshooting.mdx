@@ -2,7 +2,7 @@
 title: "استكشاف الأخطاء وإصلاحها"
 description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات الإضافة وnpx والمُثبِّت."
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,6 +79,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### يتوقّف المُثبِّت: المفتاح العام للمشرف غير موجود في حلقة المفاتيح المحلية
+
+يتحقّق المُثبِّت من وسم الإصدار الموقَّع، ويتوقّف حين لا يكون مفتاح التوقيع في حلقة المفاتيح لديك. استورِده مرةً واحدة، وتحقّق من أن البصمة هي <bdi>`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`</bdi>، ثم أعِد تشغيل المُثبِّت:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+على <bdi>Windows</bdi>، استورِد عبر <bdi>`bash`</bdi> الخاص بـ<bdi>Git</bdi> كما هو مبيّن: يقرأ <bdi>`git verify-tag`</bdi> حلقة مفاتيح <bdi>`gpg`</bdi> الذي يأتي مع <bdi>Git for Windows</bdi>. ويمكن لمضيف لا يملك <bdi>`gpg`</bdi> أن يثبّت باستخدام <bdi>`APOTHEM_VERIFY=checksum`</bdi>، الذي يتحقّق من بصمة أرشيف الإصدار بدلًا من توقيع الوسم.
 
 ### حجب <bdi>irm / iex</bdi> على <bdi>Windows</bdi>
 

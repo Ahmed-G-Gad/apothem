@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "2da59e39cc2cc8e6"
+sourceHash: "d81816e658c355bf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -142,9 +142,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. Ein-Schritt-Installer
 
-**Voraussetzungen:** System-Python 3.10+ im `PATH` (der Installer bietet an,
-die Voraussetzungen `click` / `rich` für Sie hinzuzufügen); `git` wird nur für
-eine Netzwerkinstallation benötigt, die den Quellcode klont.
+**Voraussetzungen:** System-Python 3.10+ im `PATH` (der Installer bietet an, die Voraussetzungen `click` / `rich` für Sie hinzuzufügen); `git` und `gpg` für eine Netzwerkinstallation, die den Quellcode klont und dessen signiertes Release-Tag prüft (Git for Windows liefert beide mit).
 
 Die Installationsskripte ermitteln das neueste signierte Release-Tag,
 verifizieren seine Signatur, legen den Apothem-Quellbaum auf dem Stand dieses
@@ -156,6 +154,17 @@ Ihre eigenen anzuwenden. Ein erneuter Aufruf ist idempotent: Ein bestehender
 Baum wird erneut auf das ermittelte Tag ausgecheckt, und der Harness wird neu
 materialisiert. Die an ein Tag gepinnte, verifizierte Installation ist der
 Standardweg und der empfohlene Weg.
+
+Importieren Sie den Maintainer-Signaturschlüssel vorab einmalig. Der Installer bricht ab, wenn der Schlüssel nicht in Ihrem Schlüsselbund liegt. Prüfen Sie, dass der Fingerabdruck `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` lautet, also der Wert, den [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) veröffentlicht. Unter Windows liest `git verify-tag` den Schlüsselbund des `gpg`, der mit Git for Windows ausgeliefert wird; daher läuft der Import über Gits eigene `bash`:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -176,18 +185,7 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 
 ### Vertrauensmodell
 
-Ist `APOTHEM_REF` nicht gesetzt, ermittelt der Installer das höchste
-`vMAJOR.MINOR.PATCH`-Release-Tag und checkt *dieses* aus — niemals den
-beweglichen `main`-Branch. Bevor irgendeine Konfiguration materialisiert wird,
-wird die Signatur des abgerufenen Tags mit `git verify-tag` verifiziert; ein
-unsigniertes, manipuliertes oder nicht verifizierbares Tag bricht die
-Installation ab, bevor irgendetwas geschrieben wird. Ein signiertes Tag, dessen
-öffentlicher Maintainer-Schlüssel noch nicht im lokalen Schlüsselbund liegt,
-bricht stattdessen mit einer Anleitung zum Schlüsselimport ab: Importieren Sie
-den Schlüssel, prüfen Sie seinen Fingerabdruck gegen den in
-[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-veröffentlichten Wert und führen Sie den Vorgang erneut aus. Pinnen Sie ein
-bestimmtes Release mit `APOTHEM_REF`:
+Ist `APOTHEM_REF` nicht gesetzt, ermittelt der Installer das höchste `vMAJOR.MINOR.PATCH`-Release-Tag und checkt *dieses* aus — niemals den beweglichen `main`-Branch. Bevor irgendeine Konfiguration materialisiert wird, wird die Signatur des abgerufenen Tags mit `git verify-tag` verifiziert; ein unsigniertes, manipuliertes oder nicht verifizierbares Tag bricht die Installation ab, bevor irgendetwas geschrieben wird. Ein signiertes Tag, dessen öffentlicher Maintainer-Schlüssel noch nicht im lokalen Schlüsselbund liegt, bricht stattdessen mit einer Anleitung zum Schlüsselimport ab: Importieren Sie den Schlüssel wie oben gezeigt, prüfen Sie seinen Fingerabdruck gegen den in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlichten Wert und führen Sie den Vorgang erneut aus. Pinnen Sie ein bestimmtes Release mit `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"

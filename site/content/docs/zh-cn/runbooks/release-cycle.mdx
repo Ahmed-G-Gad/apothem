@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -165,9 +165,10 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 一键脚本安装器（POSIX）
 
-安装器会将 `apothem` 启动器写入 `~/.local/bin`；若设置了 `APOTHEM_BIN_DIR`，则写入该变量指定的目录。下方的检查需要该目录位于 `PATH` 上。若不在，安装器会打印需要添加的 `export PATH` 行。在该目录位于 `PATH` 上之前，shell 无法找到 `apothem`，检查会失败。若安装器无法放置启动器，它会打印警告，而不会打印 `export PATH` 行。
+安装器会将 `apothem` 启动器写入 `~/.local/bin`；若设置了 `APOTHEM_BIN_DIR`，则写入该变量指定的目录。下方的检查需要该目录位于 `PATH` 上。若不在，安装器会打印需要添加的 `export PATH` 行。在该目录位于 `PATH` 上之前，shell 无法找到 `apothem`，检查会失败。若安装器无法放置启动器，它会打印警告，而不会打印 `export PATH` 行。在尚未持有维护者签名密钥的主机上，代码块中的第一行会导入该密钥；缺少该密钥时，安装器会停止。
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -176,7 +177,10 @@ apothem --version
 
 ### 5.4 一键脚本安装器（Windows）
 
+第一行通过 Git 自带的 `bash` 导入维护者签名密钥，该 `gpg` 的密钥环正是 `git verify-tag` 所读取的那一个。
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

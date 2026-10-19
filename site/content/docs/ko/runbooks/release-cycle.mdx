@@ -2,7 +2,7 @@
 title: "릴리스 주기 런북"
 description: "로컬 게이트에서 서명된 GitHub Release를 거쳐 npm 게시에 이르는 완전한 릴리스 워크플로입니다."
 machineTranslated: true
-sourceHash: "d0b48a3651623073"
+sourceHash: "7a12a5990d3adbac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -219,9 +219,10 @@ npx @ahmed-g-gad/apothem@X.Y.Z --version
 
 ### 5.3 원샷 스크립트 설치 프로그램(POSIX)
 
-설치 프로그램은 `apothem` 런처를 `~/.local/bin`에 기록하거나, `APOTHEM_BIN_DIR` 변수가 설정된 경우 그 변수가 지정한 디렉터리에 기록합니다. 아래의 검사를 하려면 해당 디렉터리가 `PATH`에 있어야 합니다. 그렇지 않으면 설치 프로그램은 추가할 `export PATH` 줄을 출력합니다. 해당 디렉터리가 `PATH`에 들어 있지 않은 동안에는 셸이 `apothem`을 찾을 수 없으며 검사는 실패합니다. 설치 프로그램이 런처를 배치할 수 없는 경우에는 경고를 출력하며, `export PATH` 줄은 출력하지 않습니다.
+설치 프로그램은 `apothem` 런처를 `~/.local/bin`에 기록하거나, `APOTHEM_BIN_DIR` 변수가 설정된 경우 그 변수가 지정한 디렉터리에 기록합니다. 아래의 검사를 하려면 그 디렉터리가 `PATH`에 있어야 합니다. 그렇지 않으면 설치 프로그램이 추가할 `export PATH` 줄을 출력합니다. 그 디렉터리가 `PATH`에 들어 있기 전까지는 셸이 `apothem`을 찾지 못하고 검사가 실패합니다. 설치 프로그램이 런처를 배치할 수 없으면 경고를 출력하며, `export PATH` 줄은 출력하지 않습니다. 메인테이너 서명 키를 아직 보유하지 않은 호스트에서는 첫 줄이 키를 가져오며, 키 없이는 설치 프로그램이 중단됩니다.
 
 ```bash
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
@@ -230,7 +231,10 @@ apothem --version
 
 ### 5.4 원샷 스크립트 설치 프로그램(Windows)
 
+첫 줄은 Git 자체의 `bash`를 통해 메인테이너 서명 키를 가져오며, 그 셸의 `gpg` 키링이 바로 `git verify-tag`가 읽는 키링입니다.
+
 ```powershell
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import'
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```

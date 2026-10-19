@@ -2,7 +2,7 @@
 title: "トラブルシューティング"
 description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
 machineTranslated: true
-sourceHash: "69d0d84cf9e84361"
+sourceHash: "dc2d96527e950504"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,6 +57,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 npx clear-npx-cache
 npx @ahmed-g-gad/apothem@latest --version
 ```
+
+### インストーラーが停止する: メンテナーの公開鍵がローカルのキーリングにありません
+
+インストーラーは署名済みリリースタグを検証し、署名鍵がお使いのキーリングにない場合は停止します。一度鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してから、インストーラーを再実行してください:
+
+```bash title="macOS · Linux · WSL2 · BSD — import the key once"
+curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
+gpg --fingerprint 70396FED9C634163
+```
+
+```powershell title="Windows · PowerShell — import the key once"
+& "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
+```
+
+Windows では、上に示したとおり Git の `bash` を通してインポートしてください。`git verify-tag` は Git for Windows に同梱されている `gpg` のキーリングを読み取ります。`gpg` がないホストでは、`APOTHEM_VERIFY=checksum` を指定してインストールできます。この設定では、タグの署名ではなく、リリースアーカイブのダイジェストが検証されます。
 
 ### Windows で irm / iex がブロックされる
 
