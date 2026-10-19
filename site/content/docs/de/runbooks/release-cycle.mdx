@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,6 +120,24 @@ Das Flag `-S` signiert den Commit mit dem GPG-Schlüssel. Der Push löst die
 Standard-CI-Matrix aus (lint, test, build); warten Sie auf Grün, bevor Sie
 taggen.
 
+Die Prüfung in §2.4 setzt außerdem voraus, dass CodeQL und Conformity für den
+Release-Commit grün sind. Beide Workflows laufen nur, wenn sich ihre eigenen
+Pfade ändern, und ein Release-Commit ändert in der Regel keinen dieser Pfade.
+Starten Sie sie daher, sobald der Release-Commit der HEAD von `main` ist, und
+bestätigen Sie anschließend, dass jeder Lauf diesem Commit zugeordnet ist:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Warten Sie, bis beide erfolgreich abgeschlossen sind, bevor Sie taggen, und
+pushen Sie bis zur Veröffentlichung des Releases nichts anderes auf `main`: Ein
+späterer Push verschiebt `main` vom Release-Commit weg, und CI bricht einen
+noch laufenden Lauf auf demselben Branch ab.
+
 ### 2.2 Das Tag signieren und pushen
 
 ```bash
@@ -145,6 +163,22 @@ einem aggregierten `SHA256SUMS`-Manifest und die finale Veröffentlichung des
 GitHub Release aus. Der Maintainer durchsucht das Protokoll des Jobs
 `publish GitHub Release` nach den Bestätigungen der Asset-Uploads.
 
+Der Job `publish GitHub Release` läuft in der Umgebung `release`, die die
+Genehmigung des Maintainers verlangt. Daher wartet der Lauf dort, sobald die
+vorherigen Jobs erfolgreich abgeschlossen sind. Genehmigen Sie ihn auf der
+Seite des Laufs (**Review deployments**) oder über die Shell:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+Der Tag-Push startet außerdem die Workflows für npm und die VS Code-Erweiterung.
+Deren Veröffentlichungsjobs warten auf dieselbe Genehmigung, bis Sie §2.4
+erreichen.
+
 ### 2.4 Die npm-Veröffentlichung bestätigen
 
 Der Tag-Push führt auch `publish-npm.yml` neben `release.yml` aus. Der npm-Workflow wartet nicht auf den Release-Workflow; die Genehmigung der Umgebung `release` ist das Gate. Sobald der Release-Workflow aus §2.3 abgeschlossen ist, bestätigen Sie die Bereitschaft. Die Prüfung liest Releases, Workflow-Läufe und die veröffentlichte SBOM; richten Sie daher zuerst zwei Eingaben ein:
@@ -162,10 +196,14 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 Die Prüfung schlägt fehl, wenn das Release ein Entwurf oder eine Vorabversion ist, wenn ein erforderlicher Workflow für den Commit des Tags nicht grün ist, wenn die SBOM fehlt, wenn sie eine andere Version beschreibt oder wenn sie ein vendorisiertes Paket auslässt. Die Fehlermeldung nennt die Ursache.
 
-Genehmigen Sie dann das Deployment der Umgebung `release`, wenn Sie dazu
-aufgefordert werden. Der Workflow veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z`
-über npm Trusted Publishing (OIDC) auf npmjs.com; im Repository ist kein
-Registry-Token gespeichert.
+Wenn die Prüfung besteht, genehmigen Sie den wartenden Lauf `Publish npm` auf
+dieselbe Weise wie in §2.3 (seine Lauf-ID stammt aus
+`gh run list --workflow=publish-npm.yml`). Der Workflow veröffentlicht
+`@ahmed-g-gad/apothem@X.Y.Z` über npm Trusted Publishing (OIDC) auf npmjs.com;
+im Repository ist kein Registry-Token gespeichert. Genehmigen Sie außerdem den
+wartenden Lauf `Publish VS Code Extension`. Er paketiert `apothem.vsix`; sein
+Schritt für den Visual Studio Marketplace bleibt deaktiviert, bis die
+Repository-Variable `VSCODE_MARKETPLACE_READY` den Wert `true` hat.
 
 Um nach einem fehlgeschlagenen Lauf erneut zu veröffentlichen, starten Sie den
 Workflow für dasselbe Tag

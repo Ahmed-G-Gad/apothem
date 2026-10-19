@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -119,6 +119,25 @@ git push origin main
 Le drapeau `-S` signe le commit avec la clé GPG. Le push déclenche la matrice
 de CI standard (lint, test, build) ; attendez le vert avant d'étiqueter.
 
+La vérification de l'état de préparation du §2.4 exige aussi que CodeQL et
+Conformity soient au vert sur le commit de publication. Les deux ne
+s'exécutent que lorsque leurs propres chemins changent, et un commit de
+publication ne modifie généralement aucun de ces chemins ; lancez-les donc
+une fois que le commit de publication est en tête de `main`, puis
+vérifiez que chaque exécution nomme ce commit :
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Attendez la réussite des deux avant d'étiqueter, et ne poussez rien d'autre
+vers `main` tant que la publication n'est pas parue : un push ultérieur éloigne
+`main` du commit de publication, et la CI annule toute exécution encore en
+cours sur la même branche.
+
 ### 2.2 Signer et pousser l'étiquette
 
 ```bash
@@ -144,6 +163,22 @@ avec un manifeste `SHA256SUMS` agrégé, et la publication finale du GitHub
 Release. Le mainteneur parcourt le journal du job `publish GitHub Release` à la
 recherche des confirmations de téléversement des ressources.
 
+Le job `publish GitHub Release` s'exécute dans l'environnement `release`, qui
+exige l'approbation du mainteneur ; l'exécution attend donc à cette étape une
+fois que les jobs précédents ont réussi. Approuvez-la sur la page de
+l'exécution (**Review deployments**, examiner les déploiements), ou depuis le
+shell :
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+Le push de l'étiquette démarre aussi les flux de travail npm et de l'extension
+VS Code. Leurs jobs de publication attendent la même approbation jusqu'au §2.4.
+
 ### 2.4 Confirmer la publication npm
 
 Le push de l'étiquette exécute aussi `publish-npm.yml` à côté de `release.yml`. Le flux de travail npm n'attend pas le flux de travail de publication ; l'approbation de l'environnement `release` est le point de contrôle. Une fois le flux de travail de publication du §2.3 terminé, confirmez l'état de préparation. La vérification lit les publications (releases), les exécutions de flux de travail et le SBOM publié ; préparez donc d'abord deux éléments :
@@ -168,10 +203,14 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 La vérification échoue lorsque la publication est un brouillon ou une préversion, lorsqu'un flux de travail requis pour le commit de l'étiquette n'est pas au vert, lorsque le SBOM est absent, lorsqu'il décrit une autre version, ou lorsqu'il omet un paquet vendorisé. Le message d'échec indique la cause.
 
-Approuvez ensuite le déploiement de l'environnement `release` lorsque vous y
-êtes invité. Le flux de travail publie `@ahmed-g-gad/apothem@X.Y.Z` sur
-npmjs.com via la publication de confiance npm (OIDC) ; aucun jeton de registre
-n'est stocké dans le dépôt.
+Lorsque la vérification réussit, approuvez l'exécution `Publish npm` en
+attente, de la même manière qu'au §2.3 (son identifiant d'exécution provient de
+`gh run list --workflow=publish-npm.yml`). Le flux de travail publie
+`@ahmed-g-gad/apothem@X.Y.Z` sur npmjs.com via la publication de confiance npm
+(OIDC) ; aucun jeton de registre n'est stocké dans le dépôt. Approuvez aussi
+l'exécution `Publish VS Code Extension` en attente. Elle empaquette
+`apothem.vsix` ; son étape Visual Studio Marketplace reste désactivée tant que
+la variable de dépôt `VSCODE_MARKETPLACE_READY` n'est pas `true`.
 
 Pour publier de nouveau après une exécution en échec, déclenchez le flux de
 travail pour la même étiquette

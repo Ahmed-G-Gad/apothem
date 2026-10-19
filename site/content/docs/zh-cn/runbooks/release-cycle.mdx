@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,6 +77,17 @@ git push origin main
 
 `-S` 标志使用 GPG 密钥对提交进行签名。该推送会触发标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
 
+§2.4 中的就绪检查还要求 CodeQL 和合规工作流在发布提交上均为绿色。这两个工作流都只在各自的路径发生变化时才会运行，而发布提交通常不会改动这些路径，因此请在发布提交成为 `main` 的最新提交之后启动它们，然后确认每次运行都对应该提交：
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+在打标签之前，等待两者都成功；在发布完成之前，不要向 `main` 推送任何其他内容：之后的推送会使 `main` 偏离发布提交，而且 CI 会取消同一分支上仍在进行中的运行。
+
 ### 2.2 签名并推送标签
 
 ```bash
@@ -93,6 +104,17 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 ```
 
 该工作流运行构建（sdist + wheel，然后为这些分发包生成一份 CycloneDX SBOM，写在它们旁边）、无密钥 cosign 签名、SLSA-3 出处溯源的生成与验证、平台归档构建（darwin / linux / windows）、带有聚合 `SHA256SUMS` 清单的归档签名，以及最终的 GitHub Release 发布。维护者检查 `publish GitHub Release` 作业日志中的产物上传确认信息。
+
+`publish GitHub Release` 作业在 `release` 环境中运行，该环境需要维护者批准，因此前面的作业通过后，运行会停在此处等待。可在运行页面上批准（**Review deployments**，审查部署），也可以在 shell 中执行以下命令：
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+标签推送还会启动 npm 和 VS Code 扩展工作流。它们的发布作业会等待同样的批准，直到 §2.4 中处理。
 
 ### 2.4 确认 npm 发布
 
@@ -111,7 +133,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 以下任一情况都会使检查失败：发布为草稿或预发布版本；标签所指提交的某个必需工作流未通过；SBOM 缺失；SBOM 描述的是其他版本；或 SBOM 漏掉了某个 vendored 包。失败信息会指明原因。
 
-然后在出现提示时批准 `release` 环境部署。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。
+检查通过后，请按照 §2.3 中的方式批准等待中的 `Publish npm` 运行（其运行 ID 来自 `gh run list --workflow=publish-npm.yml`）。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。也请批准等待中的 `Publish VS Code Extension` 运行。它会打包 `apothem.vsix`；其 Visual Studio Marketplace 步骤保持关闭，直到仓库变量 `VSCODE_MARKETPLACE_READY` 为 `true`。
 
 若要在一次失败的运行之后再次发布，为同一标签调度该工作流（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。当该版本已在注册表上时，它会跳过发布，因为 npm 版本不可变。
 
