@@ -2,7 +2,7 @@
 title: "रिलीज़-चक्र रनबुक"
 description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -116,6 +116,22 @@ git push origin main
 `-S` फ़्लैग कमिट को GPG कुंजी से हस्ताक्षरित करता है। पुश मानक CI मैट्रिक्स
 (lint, test, build) को ट्रिगर करता है; टैगिंग से पहले हरे की प्रतीक्षा करें।
 
+§2.4 की तत्परता जाँच के लिए रिलीज़ कमिट पर CodeQL और Conformity का हरा होना भी
+आवश्यक है। ये दोनों केवल तब चलते हैं जब उनके अपने पथ बदलते हैं, और रिलीज़ कमिट
+आमतौर पर इनमें से किसी भी पथ को नहीं बदलता। इसलिए जब रिलीज़ कमिट `main` का हेड बन
+जाए, तब इन्हें शुरू करें, फिर पुष्टि करें कि हर रन इसी कमिट से जुड़ा है:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+टैग करने से पहले दोनों के सफल होने की प्रतीक्षा करें, और जब तक रिलीज़ जारी न हो जाए,
+तब तक `main` पर कुछ और न पुश करें: बाद का पुश `main` को रिलीज़ कमिट से दूर ले जाता
+है, और CI उसी ब्रांच पर अभी चल रहे रन को रद्द कर देता है।
+
 ### 2.2 टैग पर हस्ताक्षर करें और पुश करें
 
 ```bash
@@ -140,6 +156,20 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 अनुरक्षक असेट-अपलोड पुष्टियों के लिए `publish GitHub Release` जॉब लॉग को स्कैन
 करता है।
 
+`publish GitHub Release` जॉब `release` एनवायरनमेंट में चलता है, जिसके लिए अनुरक्षक का
+अनुमोदन आवश्यक है, इसलिए पहले के जॉब पास होने के बाद रन वहीं प्रतीक्षा करता है। रन के
+पृष्ठ पर इसे अनुमोदित करें (**Review deployments** — डिप्लॉयमेंट की समीक्षा करें), या शेल से:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+टैग पुश npm और VS Code एक्सटेंशन वर्कफ़्लो को भी शुरू करता है। उनके प्रकाशन जॉब §2.4 तक
+इसी अनुमोदन की प्रतीक्षा करते हैं।
+
 ### 2.4 npm प्रकाशन की पुष्टि करें
 
 टैग पुश `release.yml` के साथ-साथ `publish-npm.yml` भी चलाता है। npm वर्कफ़्लो रिलीज़ वर्कफ़्लो की प्रतीक्षा नहीं करता; `release` एनवायरनमेंट का अनुमोदन ही गेट है। §2.3 का रिलीज़ वर्कफ़्लो पूरा हो जाने के बाद, तत्परता की पुष्टि करें। यह जाँच रिलीज़, वर्कफ़्लो रन और प्रकाशित SBOM पढ़ती है, इसलिए पहले ये दो इनपुट सेट करें:
@@ -157,9 +187,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 जाँच तब विफल होती है जब रिलीज़ ड्राफ़्ट या प्रीरिलीज़ हो, जब टैग के कमिट के लिए आवश्यक कोई वर्कफ़्लो हरा न हो, जब SBOM गायब हो, जब वह किसी अन्य संस्करण का वर्णन करे, या जब वह कोई वेंडर्ड पैकेज छोड़ दे। विफलता संदेश कारण का नाम बताता है।
 
-फिर संकेत मिलने पर `release` एनवायरनमेंट डिप्लॉयमेंट को अनुमोदित करें। वर्कफ़्लो
-npm Trusted Publishing (OIDC) के माध्यम से `@ahmed-g-gad/apothem@X.Y.Z` को
-npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई रजिस्ट्री टोकन संग्रहीत नहीं है।
+जाँच पास होने पर, §2.3 में बताए गए तरीके से ही प्रतीक्षा कर रहे `Publish npm` रन को अनुमोदित करें (उसका रन ID `gh run list --workflow=publish-npm.yml` से मिलता है)। वर्कफ़्लो npm Trusted Publishing (OIDC) के माध्यम से `@ahmed-g-gad/apothem@X.Y.Z` को npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई रजिस्ट्री टोकन संग्रहीत नहीं है। प्रतीक्षा कर रहे `Publish VS Code Extension` रन को भी अनुमोदित करें। यह `apothem.vsix` पैकेज करता है; जब तक रिपॉज़िटरी चर `VSCODE_MARKETPLACE_READY` `true` न हो जाए, तब तक इसका Visual Studio Marketplace चरण बंद रहता है।
 
 किसी विफल रन के बाद फिर से प्रकाशित करने के लिए, उसी टैग के लिए वर्कफ़्लो डिस्पैच
 करें (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`)। जब संस्करण पहले से

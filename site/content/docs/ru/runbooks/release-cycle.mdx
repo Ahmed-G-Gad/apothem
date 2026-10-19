@@ -2,7 +2,7 @@
 title: "Руководство по циклу релиза"
 description: "Полный рабочий процесс релиза от локальных шлюзов через подписанный GitHub Release до публикации в npm."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -118,6 +118,24 @@ git push origin main
 матрицу CI (lint, test, build); дождитесь зелёного статуса перед
 тегированием.
 
+Проверка готовности в §2.4 также требует, чтобы CodeQL и Conformity были
+зелёными на коммите релиза. Оба запускаются только при изменении файлов,
+указанных в их условиях запуска, а коммит релиза обычно не меняет ни одного
+такого файла, поэтому запустите их, как только коммит релиза станет последним
+коммитом в `main`, и затем убедитесь, что в каждом запуске указан этот коммит:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Дождитесь успешного завершения обоих запусков перед тегированием и не
+отправляйте ничего другого в `main`, пока релиз не выпущен: более поздний push
+сдвигает `main` с коммита релиза, а CI отменяет запуск, который ещё
+выполняется на той же ветке.
+
 ### 2.2 Подпись и push тега
 
 ```bash
@@ -143,6 +161,21 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 просматривает журнал задания `publish GitHub Release` на предмет
 подтверждений загрузки ресурсов.
 
+Задание `publish GitHub Release` выполняется в среде `release`, для которой
+требуется одобрение сопровождающего, поэтому запуск ждёт одобрения, как только
+предыдущие задания завершатся успешно. Одобрите его на странице запуска
+(**Review deployments** — проверка развёртываний) или из оболочки:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+Push тега также запускает рабочие процессы npm и расширения VS Code. Их
+задания публикации ждут того же одобрения до §2.4.
+
 ### 2.4 Подтверждение публикации в npm
 
 Отправка тега также запускает `publish-npm.yml` наряду с `release.yml`. Рабочий процесс npm не ждёт рабочего процесса релиза; шлюзом служит одобрение среды `release`. Когда рабочий процесс релиза из §2.3 завершится, подтвердите готовность. Проверка читает релизы, запуски рабочих процессов и опубликованный SBOM, поэтому сначала подготовьте два входных параметра:
@@ -160,9 +193,14 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 Проверка завершается ошибкой, когда релиз является черновиком или предварительным релизом, когда обязательный рабочий процесс для коммита тега не зелёный, когда SBOM отсутствует, когда он описывает другую версию или когда в нём нет вендорённого пакета. Сообщение об ошибке называет причину.
 
-Затем одобрите развёртывание в среде `release`, когда будет предложено.
+Когда проверка пройдёт, одобрите ожидающий запуск `Publish npm` так же, как в
+§2.3 (его ID запуска берётся из `gh run list --workflow=publish-npm.yml`).
 Рабочий процесс публикует `@ahmed-g-gad/apothem@X.Y.Z` на npmjs.com через
 доверенную публикацию npm (OIDC); в репозитории не хранится токен реестра.
+Также одобрите ожидающий запуск `Publish VS Code Extension`. Он упаковывает
+`apothem.vsix`; его шаг публикации в Visual Studio Marketplace остаётся
+отключённым, пока переменная репозитория `VSCODE_MARKETPLACE_READY` не равна
+`true`.
 
 Чтобы опубликовать снова после сбойного запуска, запустите рабочий процесс
 для того же тега (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Он

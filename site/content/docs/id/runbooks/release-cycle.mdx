@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -116,6 +116,24 @@ git push origin main
 Flag `-S` menandatangani commit dengan kunci GPG. Push memicu matriks CI
 standar (lint, test, build); tunggu hingga hijau sebelum membuat tag.
 
+Pemeriksaan kesiapan di §2.4 juga memerlukan CodeQL dan Conformity hijau pada
+commit rilis. Keduanya hanya berjalan ketika path masing-masing berubah, dan
+commit rilis biasanya tidak mengubah satu pun path tersebut, sehingga jalankan
+keduanya setelah commit rilis menjadi head `main`, lalu konfirmasi bahwa setiap
+run menyebut commit tersebut:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Tunggu keduanya berhasil sebelum membuat tag, dan jangan push apa pun lagi ke
+`main` sampai rilis dipublikasikan: push berikutnya memindahkan `main` menjauh
+dari commit rilis, dan CI membatalkan run yang masih berjalan di branch yang
+sama.
+
 ### 2.2 Tandatangani dan push tag
 
 ```bash
@@ -140,6 +158,21 @@ keyless, pembuatan dan verifikasi provenance SLSA-3, build arsip platform
 `SHA256SUMS` teragregasi, dan publikasi GitHub Release akhir. Pemelihara
 memindai log job `publish GitHub Release` untuk konfirmasi unggahan aset.
 
+Job `publish GitHub Release` berjalan di environment `release`, yang memerlukan
+persetujuan pemelihara, sehingga run akan menunggu di sana setelah job
+sebelumnya lolos. Setujui di halaman run-nya lewat **Review deployments**
+(tinjau deployment), atau dari shell:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+Push tag juga memulai alur kerja npm dan ekstensi VS Code. Job publish keduanya
+menunggu persetujuan yang sama hingga §2.4.
+
 ### 2.4 Konfirmasi publikasi npm
 
 Push tag juga menjalankan `publish-npm.yml` di samping `release.yml`. Alur kerja npm tidak menunggu alur kerja rilis; persetujuan environment `release` adalah gerbangnya. Setelah alur kerja rilis dari §2.3 selesai, konfirmasikan kesiapan. Pemeriksaan membaca rilis, eksekusi alur kerja, dan SBOM yang dipublikasikan, sehingga siapkan dua masukan terlebih dahulu:
@@ -157,9 +190,14 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 Pemeriksaan gagal ketika rilis berupa draf atau prarilis, ketika alur kerja yang diwajibkan untuk commit tag tidak hijau, ketika SBOM tidak ada, ketika SBOM menjelaskan versi lain, atau ketika SBOM menghilangkan paket yang di-vendor. Pesan kegagalan menyebutkan penyebabnya.
 
-Lalu setujui deployment environment `release` saat diminta. Alur kerja
-memublikasikan `@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm trusted
-publishing (OIDC); tidak ada token registri yang disimpan di repositori.
+Ketika pemeriksaan lolos, setujui run `Publish npm` yang sedang menunggu dengan
+cara yang sama seperti di §2.3 (ID run-nya diambil dari
+`gh run list --workflow=publish-npm.yml`). Alur kerja memublikasikan
+`@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm trusted publishing (OIDC);
+tidak ada token registri yang disimpan di repositori. Setujui juga run
+`Publish VS Code Extension` yang sedang menunggu. Run ini mengemas
+`apothem.vsix`; langkah Visual Studio Marketplace-nya tetap nonaktif hingga
+variabel repositori `VSCODE_MARKETPLACE_READY` bernilai `true`.
 
 Untuk memublikasikan lagi setelah run yang gagal, dispatch alur kerja untuk
 tag yang sama (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Alur

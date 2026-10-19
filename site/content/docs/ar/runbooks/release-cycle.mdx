@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -116,6 +116,17 @@ git push origin main
 <bdi>CI</bdi> القياسية (<bdi>lint</bdi>، <bdi>test</bdi>، <bdi>build</bdi>)؛ انتظر
 النتيجة الخضراء قبل وضع الوسم.
 
+يحتاج فحص الجاهزية في القسم 2.4 أيضًا إلى أن تكون نتيجة سيرَي عمل <bdi>CodeQL</bdi> و<bdi>Conformity</bdi> خضراء على كوميت الإصدار. يعمل كلٌّ منهما فقط عندما تتغيّر مساراته الخاصة، وعادةً لا يغيّر كوميت الإصدار أيًّا منها، لذا شغِّلهما بعد أن يصبح كوميت الإصدار رأس <bdi>`main`</bdi>، ثم تحقّق من أن كل تشغيل يُسمّي ذلك الكوميت:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+انتظر حتى ينجح الاثنان قبل وضع الوسم، ولا تدفع شيئًا آخر إلى <bdi>`main`</bdi> حتى يُنشر الإصدار: فالدفع اللاحق يُبعد <bdi>`main`</bdi> عن كوميت الإصدار، و<bdi>CI</bdi> يُلغي أي تشغيل ما زال جاريًا على الفرع نفسه.
+
 ### 2.2 توقيع الوسم ودفعه
 
 ```bash
@@ -139,6 +150,17 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 <bdi>`SHA256SUMS`</bdi> مُجمَّع، والنشر النهائي لإصدار <bdi>GitHub</bdi>. يفحص
 المشرف سجلّ مهمة <bdi>`publish GitHub Release`</bdi> بحثًا عن تأكيدات رفع الأصول.
 
+تعمل مهمة <bdi>`publish GitHub Release`</bdi> في بيئة <bdi>`release`</bdi>، وهي تتطلّب موافقة المشرف، لذا ينتظر التشغيل هناك بعد نجاح المهام السابقة. وافِق عليه من صفحة التشغيل عبر الزر **<bdi>Review deployments</bdi>** (مراجعة عمليات النشر)، أو من الصدفة:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+يُطلِق دفعُ الوسم أيضًا سيرَي عمل <bdi>npm</bdi> وامتداد <bdi>VS Code</bdi>. وتنتظر مهام النشر فيهما الموافقة نفسها حتى القسم 2.4.
+
 ### 2.4 تأكيد نشر <bdi>npm</bdi>
 
 يُشغِّل دفعُ الوسم أيضًا <bdi>`publish-npm.yml`</bdi> بجانب <bdi>`release.yml`</bdi>. ولا ينتظر سيرُ عمل <bdi>npm</bdi> سيرَ عمل الإصدار؛ فموافقة بيئة <bdi>`release`</bdi> هي البوابة. وبعد أن ينتهي سير عمل الإصدار من القسم 2.3، تأكّد من الجاهزية. ويقرأ الفحص الإصدارات، وتشغيلات سير العمل، وملف <bdi>SBOM</bdi> المنشور، لذا جهّز مُدخلَين أولًا:
@@ -156,9 +178,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 يفشل الفحص عندما يكون الإصدار مسودّةً أو إصدارًا تجريبيًا (prerelease)، أو عندما لا يكون سير عمل مطلوب لإيداع الوسم أخضر، أو عندما يغيب ملف <bdi>SBOM</bdi>، أو عندما يصف إصدارًا آخر، أو عندما يُغفل حزمةً مُضمَّنة (vendored). وتُسمّي رسالة الفشل السببَ.
 
-ثم وافِق على عملية النشر إلى بيئة <bdi>`release`</bdi> عند المطالبة. ينشر سير العمل
-<bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق
-في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع.
+عند نجاح الفحص، وافِق على تشغيل <bdi>`Publish npm`</bdi> المنتظر بالطريقة نفسها المذكورة في القسم 2.3 (يأتي معرّف التشغيل من <bdi>`gh run list --workflow=publish-npm.yml`</bdi>). ينشر سير العمل <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع. ووافِق كذلك على تشغيل <bdi>`Publish VS Code Extension`</bdi> المنتظر. وهو يحزِم <bdi>`apothem.vsix`</bdi>، وتبقى خطوته الخاصة بـ<bdi>Visual Studio Marketplace</bdi> معطّلة حتى يساوي متغيّر المستودع <bdi>`VSCODE_MARKETPLACE_READY`</bdi> القيمة <bdi>`true`</bdi>.
 
 لإعادة النشر بعد تشغيل فاشل، شغِّل سير العمل يدويًا للوسم نفسه
 (<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>). يتخطّى سير العمل

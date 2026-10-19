@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -99,6 +99,17 @@ git push origin main
 `-S` フラグは GPG キーでコミットに署名します。
 プッシュは標準の CI マトリクス（lint、test、build）をトリガーします。タグ付けの前に、グリーンになるのを待ってください。
 
+§2.4 の準備状態チェックには、リリースコミットで CodeQL とコンフォーミティがグリーンであることも必要です。どちらも、自身のパスが変更されたときにだけ実行されます。リリースコミットは通常どちらのパスも変更しないため、リリースコミットが `main` の先頭になったら両方を開始し、その後、各実行がそのコミットを対象にしていることを確認してください:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+両方が成功するまで待ってからタグ付けしてください。また、リリースが公開されるまで `main` には他に何もプッシュしないでください。後からのプッシュは `main` をリリースコミットから離してしまい、CI は同じブランチで進行中の実行をキャンセルします。
+
 ### 2.2 タグに署名してプッシュする
 
 ```bash
@@ -118,6 +129,17 @@ gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --
 ワークフローは、ビルド（sdist + wheel、続いてそれらのディストリビューションの CycloneDX SBOM をその隣に書き出す）、キーレス cosign 署名、SLSA-3 来歴の生成と検証、プラットフォームアーカイブのビルド（darwin / linux / windows）、集約された `SHA256SUMS` マニフェストによるアーカイブ署名、そして最終的な GitHub Release の公開を実行します。
 メンテナーは `publish GitHub Release` ジョブのログを確認し、アセットアップロードの確認メッセージを探します。
 
+`publish GitHub Release` ジョブは `release` 環境で実行されます。この環境はメンテナーの承認を必要とするため、前のジョブが成功すると、実行はそこで待機します。実行のページの **Review deployments**（デプロイのレビュー）から承認するか、シェルから承認してください:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+タグのプッシュは、npm と VS Code 拡張機能のワークフローも開始します。それらの公開ジョブも、§2.4 までは同じ承認を待機します。
+
 ### 2.4 npm 公開を確認する
 
 タグのプッシュでは、`release.yml` と並んで `publish-npm.yml` も実行されます。npm のワークフローはリリースワークフローの完了を待たず、ゲートとなるのは `release` 環境の承認です。§2.3 のリリースワークフローが完了したら、準備状態を確認します。このチェックは、リリース、ワークフローの実行、公開済みの SBOM を読み取るため、まず 2 つの入力を用意します：
@@ -135,8 +157,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 次の場合、チェックは失敗します。リリースがドラフトまたはプレリリースである場合、タグのコミットに対する必須のワークフローがグリーンでない場合、SBOM が存在しない場合、SBOM が別のバージョンを記述している場合、または SBOM にベンダリングされたパッケージが含まれていない場合です。失敗メッセージには、原因が示されます。
 
-その後、プロンプトが表示されたら、`release` 環境のデプロイを承認します。
-ワークフローは npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。
+準備状態チェックに合格したら、§2.3 と同じ方法で、待機中の `Publish npm` の実行を承認します（その実行 ID は `gh run list --workflow=publish-npm.yml` から取得します）。このワークフローは、npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。待機中の `Publish VS Code Extension` の実行も承認してください。これは `apothem.vsix` をパッケージ化します。その Visual Studio Marketplace へのステップは、リポジトリ変数 `VSCODE_MARKETPLACE_READY` が `true` になるまで無効のままです。
 
 実行が失敗した後に再度公開するには、同じタグに対してワークフローをディスパッチします
 （`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。

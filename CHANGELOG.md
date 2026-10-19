@@ -9,6 +9,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The release runbook covers every step its readiness check and publish
+  approval need.** A release commit changes none of the paths that start
+  CodeQL and Conformity, so the runbook now starts both on the release commit
+  before tagging. It also shows how to approve the `release` environment:
+  the GitHub Release publish first, then npm and the VS Code extension once
+  `check-release-ready.sh` passes.
+
 ## [1.2.1] - 2026-10-19
 
 ### Changed

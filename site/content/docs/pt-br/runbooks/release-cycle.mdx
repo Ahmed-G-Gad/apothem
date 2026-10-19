@@ -2,7 +2,7 @@
 title: "Runbook do ciclo de lançamento"
 description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "7a12a5990d3adbac"
+sourceHash: "acd80d824d887bd6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -117,6 +117,24 @@ git push origin main
 O sinalizador `-S` assina o commit com a chave GPG. O push dispara a matriz de
 CI padrão (lint, test, build); aguarde o verde antes de marcar a tag.
 
+A verificação de prontidão da §2.4 também exige CodeQL e Conformity em verde no
+commit de lançamento. Os dois só são executados quando os caminhos próprios de
+cada um mudam, e um commit de lançamento normalmente não altera nenhum deles;
+por isso, inicie-os depois que o commit de lançamento for o último commit de
+`main`, e então confirme que cada execução identifica esse commit:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Aguarde os dois terminarem com sucesso antes de marcar a tag, e não envie mais
+nada para `main` até que o lançamento esteja publicado: um push posterior afasta
+`main` do commit de lançamento, e o CI cancela a execução que ainda estiver em
+andamento na mesma branch.
+
 ### 2.2 Assinar e enviar a tag
 
 ```bash
@@ -141,6 +159,22 @@ um manifesto `SHA256SUMS` agregado e a publicação final do GitHub Release. O
 mantenedor examina o log do job `publish GitHub Release` em busca das
 confirmações de upload dos ativos.
 
+O job `publish GitHub Release` é executado no ambiente `release`, que exige a
+aprovação do mantenedor; por isso, a execução aguarda ali assim que os jobs
+anteriores passam. Aprove-a na página da execução (**Review deployments**,
+revisar implantações), ou pelo shell:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+O push da tag também inicia os fluxos de trabalho do npm e da extensão do VS
+Code. Os jobs de publicação deles ficam aguardando essa mesma aprovação até a
+§2.4.
+
 ### 2.4 Confirmar a publicação no npm
 
 O push da tag também executa `publish-npm.yml` ao lado de `release.yml`. O fluxo de trabalho do npm não espera pelo fluxo de trabalho de lançamento; a aprovação do ambiente `release` é o portão. Quando o fluxo de trabalho de lançamento da §2.3 tiver terminado, confirme a prontidão. A verificação lê os lançamentos, as execuções de fluxos de trabalho e o SBOM publicado; por isso, prepare duas entradas antes:
@@ -158,10 +192,14 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 A verificação falha quando o lançamento é um rascunho ou um pré-lançamento, quando um fluxo de trabalho exigido para o commit da tag não está verde, quando o SBOM está ausente, quando ele descreve outra versão ou quando omite um pacote incorporado. A mensagem de falha informa a causa.
 
-Em seguida, aprove a implantação do ambiente `release` quando solicitado. O
-fluxo de trabalho publica `@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da
-publicação confiável do npm (OIDC); nenhum token de registro é armazenado no
-repositório.
+Quando a verificação passar, aprove a execução `Publish npm` que está
+aguardando, do mesmo modo que na §2.3 (o ID da execução vem de
+`gh run list --workflow=publish-npm.yml`). O fluxo de trabalho publica
+`@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da publicação confiável do npm
+(OIDC); nenhum token de registro é armazenado no repositório. Aprove também a
+execução `Publish VS Code Extension` que está aguardando. Ela empacota
+`apothem.vsix`; a etapa do Visual Studio Marketplace permanece desativada até que
+a variável do repositório `VSCODE_MARKETPLACE_READY` seja `true`.
 
 Para publicar novamente após uma execução com falha, despache o fluxo de
 trabalho para a mesma tag (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`).

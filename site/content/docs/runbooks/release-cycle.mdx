@@ -114,6 +114,22 @@ The `-S` flag signs the commit with the GPG key. The push triggers
 the standard CI matrix (lint, test, build); wait for green before
 tagging.
 
+The readiness check in §2.4 also needs CodeQL and Conformity green on the
+release commit. Both run only when their own paths change, and a release
+commit usually changes none of them, so start them once the release commit is
+the head of `main`, then confirm each run names that commit:
+
+```bash
+gh workflow run codeql.yml --ref main
+gh workflow run conformity.yml --ref main
+gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
+gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
+```
+
+Wait for both to succeed before tagging, and push nothing else to `main` until
+the release is out: a later push moves `main` away from the release commit, and
+CI cancels a run still in progress on the same branch.
+
 ### 2.2 Sign and push the tag
 
 ```bash
@@ -137,6 +153,21 @@ verification, platform archive builds (darwin / linux / windows), archive
 signing with an aggregated `SHA256SUMS` manifest, and the final GitHub
 Release publish. The maintainer scans the `publish GitHub Release` job
 log for the asset-upload confirmations.
+
+The `publish GitHub Release` job runs in the `release` environment, which
+requires the maintainer's approval, so the run waits there once the earlier
+jobs pass. Approve it on the run's page (**Review deployments**), or from the
+shell:
+
+```bash
+run_id=$(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+env_id=$(gh api repos/ahmed-g-gad/apothem/environments/release --jq .id)
+gh api -X POST "repos/ahmed-g-gad/apothem/actions/runs/${run_id}/pending_deployments" \
+  -F "environment_ids[]=${env_id}" -f state=approved -f comment="vX.Y.Z"
+```
+
+The tag push also starts the npm and VS Code extension workflows. Their
+publish jobs wait for the same approval until §2.4.
 
 ### 2.4 Confirm the npm publish
 
@@ -169,9 +200,13 @@ workflow for the tag's commit is not green, when the SBOM is missing, when it
 describes another version, or when it omits a vendored package. The failure
 message names the cause.
 
-Then approve the `release` environment deployment when prompted. The workflow
-publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com through npm trusted
-publishing (OIDC); no registry token is stored in the repository.
+When the check passes, approve the waiting `Publish npm` run the same way as
+in §2.3 (its run ID comes from `gh run list --workflow=publish-npm.yml`). The
+workflow publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com through npm
+trusted publishing (OIDC); no registry token is stored in the repository.
+Approve the waiting `Publish VS Code Extension` run as well. It packages
+`apothem.vsix`; its Visual Studio Marketplace step stays off until the
+repository variable `VSCODE_MARKETPLACE_READY` is `true`.
 
 To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
