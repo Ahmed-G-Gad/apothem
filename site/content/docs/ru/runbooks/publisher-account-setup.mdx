@@ -2,7 +2,7 @@
 title: "Настройка учётной записи издателя"
 description: "Настройка доверенного издателя npmjs.com для @ahmed-g-gad/apothem и предварительных требований к релизу на стороне GitHub."
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,7 +51,11 @@ sourceHash: "f80ed311f9b18d0b"
    и требует ручного одобрения для развёртывания.
 7. Ограничьте поверхность npm одним публичным пакетом в реестре:
    `@ahmed-g-gad/apothem` на npmjs.com.
-8. Подтвердите готовность к релизу:
+8. Одобрите задание `publish GitHub Release` запуска `release.yml`, который
+   запускается при push тега. Оно ждёт одобрения среды `release`, а для
+   проверки ниже этот запуск должен быть зелёным;
+   [руководство по циклу релиза](/docs/runbooks/release-cycle), §2.3, показывает,
+   как это сделать. Затем подтвердите готовность к релизу:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>

@@ -2,7 +2,7 @@
 title: "发布者账户设置"
 description: "为 @ahmed-g-gad/apothem 配置 npmjs.com 受信任发布者，以及 GitHub 侧的发布前置条件。"
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ GitHub 所有者将来允许变动。在平台允许动态解析的场合，工�
    - 允许的操作：`npm publish`。
 6. 在 GitHub 中，验证 `ahmed-g-gad/apothem` 上存在 `release` 环境，并且其部署需要手动批准。
 7. 将 npm 表面保持为一个公开注册表包：npmjs.com 上的 `@ahmed-g-gad/apothem`。
-8. 确认发布就绪：
+8. 批准标签推送所启动的 `release.yml` 运行中的 `publish GitHub Release` 作业。该作业等待 `release` 环境的批准，下方的就绪检查需要该运行为绿色；[发布周期操作手册](/docs/runbooks/release-cycle) 的 §2.3 说明了具体操作。然后确认发布就绪：
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>

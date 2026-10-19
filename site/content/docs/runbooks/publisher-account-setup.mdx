@@ -52,7 +52,11 @@ package name, not the maintainer account name.
    and requires manual approval for deployment.
 7. Keep the npm surface to one public registry package:
    `@ahmed-g-gad/apothem` on npmjs.com.
-8. Confirm release readiness:
+8. Approve the `publish GitHub Release` job of the `release.yml` run that the tag
+   push starts. It waits for the `release` environment approval, and the check
+   below needs that run green; the
+   [release-cycle runbook](/docs/runbooks/release-cycle), §2.3, shows how. Then
+   confirm release readiness:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>

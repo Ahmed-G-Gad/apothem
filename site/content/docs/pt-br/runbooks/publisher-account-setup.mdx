@@ -2,7 +2,7 @@
 title: "Configuração da conta de publicador"
 description: "Configure o publicador confiável do npmjs.com para @ahmed-g-gad/apothem e os pré-requisitos de lançamento do lado do GitHub."
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,7 +53,11 @@ O proprietário do GitHub pode mudar no futuro. A lógica dos fluxos de trabalho
    e se exige aprovação manual para a implantação.
 7. Mantenha a superfície do npm em um único pacote de registro público:
    `@ahmed-g-gad/apothem` no npmjs.com.
-8. Confirme a prontidão para o lançamento:
+8. Aprove o job `publish GitHub Release` da execução de `release.yml` que o push
+   da tag inicia. Ele aguarda a aprovação do ambiente `release`, e a verificação
+   abaixo exige que essa execução esteja verde; o
+   [runbook do ciclo de lançamento](/docs/runbooks/release-cycle), §2.3, indica
+   como. Depois, confirme a prontidão para o lançamento:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
