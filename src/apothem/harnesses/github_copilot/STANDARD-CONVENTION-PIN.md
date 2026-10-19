@@ -37,14 +37,15 @@
   `rules/source-accessibility.md` step 1 ("retrieve through the host's browser /
   fetch capability").
 - Vendor-confirmed: GitHub Copilot CLI (the agent-invocable surface, distinct
-  from the IDE extension) ships a `web_fetch` tool that retrieves URL content as
-  markdown, gated by `--allow-url` / `--deny-url` permissions. This row reflects
-  the Copilot CLI tool surface; the adapter itself materializes only
-  `.github/copilot-instructions.md` and authors no tool config.
+  from the IDE extension) ships a `web_fetch` tool that retrieves URL content.
+  URL permissions apply to it: `--allow-url` pre-approves a domain and
+  `--deny-url` denies one. This row reflects the Copilot CLI tool surface; the
+  adapter itself materializes only `.github/copilot-instructions.md` and
+  authors no tool config.
 - Evidence: vendor-doc-url
-  <https://docs.github.com/en/copilot/concepts/agents/copilot-cli/research>;
-  snapshot-id living docs; snapshot-date 2026-06-21 (the URL still resolves on
-  2026-10-03).
+  <https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/configure-copilot-cli>;
+  snapshot-id living docs; retrieved 2026-10-19. The page previously cited
+  here moved and no longer names the tool or its URL permissions.
 
 ## Vendor Sources
 
