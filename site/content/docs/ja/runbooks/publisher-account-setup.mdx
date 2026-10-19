@@ -2,7 +2,7 @@
 title: "パブリッシャーアカウントのセットアップ"
 description: "@ahmed-g-gad/apothem 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。"
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,7 +46,10 @@ GitHub のオーナーは、将来変わることが許容されています。�
    デプロイに手動承認を必要とすることを確認します。
 7. npm の面を 1 つの公開レジストリパッケージに保ちます:
    npmjs.com 上の `@ahmed-g-gad/apothem`。
-8. リリースの準備状態を確認します。
+8. タグのプッシュが開始する `release.yml` の実行で、`publish GitHub Release` ジョブを承認します。
+   このジョブは `release` 環境の承認を待機し、以下の準備状態チェックには、その実行がグリーンであることが必要です。
+   [リリースサイクルランブック](/docs/runbooks/release-cycle) の §2.3 に、その方法が示されています。
+   その後、リリースの準備状態を確認します。
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>

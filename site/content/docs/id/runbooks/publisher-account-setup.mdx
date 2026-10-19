@@ -2,7 +2,7 @@
 title: "Penyiapan Akun Penerbit"
 description: "Konfigurasikan penerbit tepercaya npmjs.com untuk @ahmed-g-gad/apothem dan prasyarat rilis di sisi GitHub."
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,7 +51,11 @@ Pemilik GitHub diizinkan berubah di masa mendatang. Logika alur kerja dan pemasa
    `ahmed-g-gad/apothem` dan memerlukan persetujuan manual untuk deployment.
 7. Pertahankan permukaan npm sebagai satu paket registri publik:
    `@ahmed-g-gad/apothem` di npmjs.com.
-8. Konfirmasikan kesiapan rilis:
+8. Setujui job `publish GitHub Release` dari run `release.yml` yang dimulai oleh
+   push tag. Job itu menunggu persetujuan environment `release`, dan pemeriksaan
+   di bawah memerlukan run itu berstatus hijau;
+   [runbook siklus rilis](/docs/runbooks/release-cycle), §2.3, menunjukkan
+   caranya. Lalu konfirmasikan kesiapan rilis:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>

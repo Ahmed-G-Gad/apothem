@@ -2,7 +2,7 @@
 title: "प्रकाशक खाता सेटअप"
 description: "@ahmed-g-gad/apothem के लिए npmjs.com विश्वसनीय प्रकाशक और GitHub-पक्ष की रिलीज़ पूर्वापेक्षाएँ कॉन्फ़िगर करें।"
 machineTranslated: true
-sourceHash: "f80ed311f9b18d0b"
+sourceHash: "54728c41fc2238ad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,7 +50,11 @@ GitHub स्वामी को भविष्य में बदलने �
    मौजूद है और डिप्लॉयमेंट के लिए मैन्युअल अनुमोदन आवश्यक करता है।
 7. npm सतह को एक सार्वजनिक रजिस्ट्री पैकेज तक सीमित रखें:
    npmjs.com पर `@ahmed-g-gad/apothem`।
-8. रिलीज़ तत्परता की पुष्टि करें:
+8. टैग पुश द्वारा शुरू किए गए `release.yml` रन का `publish GitHub Release` जॉब
+   अनुमोदित करें। यह `release` एनवायरनमेंट के अनुमोदन की प्रतीक्षा करता है, और नीचे
+   की जाँच के लिए वह रन हरा होना आवश्यक है;
+   [रिलीज़-चक्र रनबुक](/docs/runbooks/release-cycle), §2.3, बताता है कि यह कैसे किया
+   जाता है। फिर रिलीज़ तत्परता की पुष्टि करें:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
