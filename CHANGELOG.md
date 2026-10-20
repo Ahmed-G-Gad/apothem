@@ -9,6 +9,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-20
+
 ### Added
 
 - **The VS Code extension is on the Visual Studio Marketplace** as
@@ -820,7 +822,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.2
 [1.2.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.1
 [1.2.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0
