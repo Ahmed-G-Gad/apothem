@@ -2,7 +2,7 @@
 title: "Desinstalação"
 description: "Remova o Apothem e limpe as configurações de harness."
 machineTranslated: true
-sourceHash: "a94130c42f86f341"
+sourceHash: "60208ca7c4c5f168"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,8 +51,10 @@ canais são os da
   PowerShell) pula as confirmações. Ambos recusam alvos inseguros.
 - **Extensão da família VS Code (canal 4)** — execute **Apothem: Uninstall**
   primeiro na paleta de comandos, para remover as configurações dos harnesses, e
-  depois remova a extensão na visualização Extensões ou com `code --uninstall-extension ahmed-g-gad.apothem`. Por padrão, a extensão executa o
-  motor por meio do `npx`, portanto a entrada **npx** acima cobre o cache.
+  depois remova a extensão na visualização Extensões ou com `code --uninstall-extension ahmed-g-gad.apothem-vscode`
+  (uma cópia instalada a partir de um `apothem.vsix` anterior é `ahmed-g-gad.apothem`).
+  Por padrão, a extensão executa o motor por meio do `npx`, portanto a entrada
+  **npx** acima cobre o cache.
 - **Bootstraps de linha de comando (canais 5–7)** — remova a extensão ou o
   plugin com a ferramenta do respectivo host depois que as configurações dos
   harnesses tiverem sido removidas. Os hosts:

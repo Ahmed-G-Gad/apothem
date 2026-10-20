@@ -2,7 +2,7 @@
 title: "Установка"
 description: "Обзор установки Apothem — восемь каналов установки, каждый со своими предварительными требованиями, одной готовой к копированию командой и шагом проверки: плагин Claude Code, npm-шим, одношаговые установщики, расширение для семейства VS Code, три загрузочных расширения командной строки и прямой движок."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -239,19 +239,22 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **Предварительные требования:** VS Code, Node.js 18+ и системный Python 3.10+ в
 `PATH`.
 
-Расширение **Apothem** устанавливается из пакета `apothem.vsix`:
-`code --install-extension apothem.vsix` или командой редактора
-*Install from VSIX…*. Релизный рабочий процесс подписывает пакет и прикладывает
-его к каждому GitHub Release. Релизы, опубликованные до того, как рабочий
-процесс начал упаковывать расширение, не содержат `.vsix`; если в последнем
+Расширение **Apothem for VS Code** доступно в
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+как `ahmed-g-gad.apothem-vscode`: установите его из представления «Расширения»
+или командой `code --install-extension ahmed-g-gad.apothem-vscode`. Оно также
+устанавливается из пакета `apothem.vsix`: `code --install-extension apothem.vsix`
+или командой редактора *Install from VSIX…*. Релизный рабочий процесс подписывает
+пакет и прикладывает его к каждому GitHub Release. Релизы, опубликованные до того,
+как рабочий процесс начал упаковывать расширение, не содержат `.vsix`; если в последнем
 релизе его нет, соберите пакет из чекаута с версией vsce, зафиксированной в
 `.github/vsce/` (этой версии vsce нужен Node.js 22 или новее): выполните
 `npm ci --prefix .github/vsce --ignore-scripts`, затем
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Страница расширения в
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) пока не
-опубликована. Одно расширение охватывает редакторы семейства VS Code. Его
-команды палитры (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
+Копия, установленная из более раннего `apothem.vsix`, имеет идентификатор
+`ahmed-g-gad.apothem`; удалите её (`code --uninstall-extension ahmed-g-gad.apothem`),
+чтобы обе копии не регистрировали одни и те же команды. Одно расширение охватывает
+редакторы семейства VS Code. Его команды палитры (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
 запускают тот же движок через настроенное средство запуска (по умолчанию
 `npx @ahmed-g-gad/apothem@<extension version>`, поэтому расширение запускает
 ту версию движка, с которой оно поставлялось; укажите в пользовательской

@@ -9,8 +9,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **The VS Code extension is on the Visual Studio Marketplace** as
+  `ahmed-g-gad.apothem-vscode`, named "Apothem for VS Code". Install it from
+  the Extensions view or with
+  `code --install-extension ahmed-g-gad.apothem-vscode`; the signed
+  `apothem.vsix` attached to each GitHub Release installs the same extension.
+  The channel smoke installs it from the Marketplace too.
+
+### Changed
+
+- **The extension's identifier is `ahmed-g-gad.apothem-vscode`.** The
+  Marketplace already holds the name `apothem`, so the extension takes a new
+  one. A copy installed from an earlier `apothem.vsix` keeps the identifier
+  `ahmed-g-gad.apothem`; uninstall it
+  (`code --uninstall-extension ahmed-g-gad.apothem`) so the two copies do not
+  both register the same commands.
+
 ### Fixed
 
+- **The provenance check verifies the VS Code extension's signature.**
+  `verify-provenance.sh` and `verify-provenance.ps1` checked the release assets
+  named `apothem-*`, which left out `apothem.vsix` and its signature bundle.
+  They now verify it, and fail when a release ships the extension without one.
 - **The release runbook covers every step its readiness check and publish
   approval need.** A release commit changes none of the paths that start
   CodeQL and Conformity, so the runbook now starts both on the release commit

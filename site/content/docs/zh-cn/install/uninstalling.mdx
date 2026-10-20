@@ -2,7 +2,7 @@
 title: "卸载"
 description: "移除 Apothem 并清理工具配置。"
 machineTranslated: true
-sourceHash: "a94130c42f86f341"
+sourceHash: "60208ca7c4c5f168"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - **Claude Code 插件（渠道 1）**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（插件市场条目可以通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
 - **npx（渠道 2）**——无需移除任何内容；`npx` 从其缓存中运行。若要删除缓存副本，请使用 `npm cache clean --force` 清除缓存。
 - **一键安装器（渠道 3）**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。每个脚本都会移除由 `--harness`（PowerShell 中为 `-Harness`）指定的工具；未指定时依次取 `APOTHEM_HARNESS`，最后默认为 Claude Code。它同时还会移除 `apothem` 命令垫片。源码取自 `APOTHEM_SOURCE`（若已设置），否则取自 `APOTHEM_HOME`（默认为 `$HOME/.apothem`）。除非传入 `--remove-source`（PowerShell 中为 `-RemoveSource`），否则源码会保留。该标志只删除 `APOTHEM_HOME` 处的受管克隆，且仅当其包含 `.git` 目录时才会删除。若使用默认位置，它还会删除 `~/.apothem/` 下的安装备份与台账。两者在删除工具配置与源码之前都会先请求确认。`--yes`（PowerShell 中为 `-Yes`）可跳过这些确认。两者都会拒绝不安全的目标。
-- **VS Code 系扩展（渠道 4）**——先从命令面板运行 **Apothem: Uninstall** 以移除工具配置，然后在扩展视图中移除该扩展，或使用 `code --uninstall-extension ahmed-g-gad.apothem` 移除。默认情况下，该扩展通过 `npx` 运行引擎，因此上面的 **npx** 条目已涵盖缓存。
+- **VS Code 系扩展（渠道 4）**——先从命令面板运行 **Apothem: Uninstall** 以移除工具配置，然后在扩展视图中移除该扩展，或使用 `code --uninstall-extension ahmed-g-gad.apothem-vscode` 移除（通过较早的 `apothem.vsix` 安装的副本，标识符为 `ahmed-g-gad.apothem`）。默认情况下，该扩展通过 `npx` 运行引擎，因此上面的 **npx** 条目已涵盖缓存。
 - **命令行引导入口（渠道 5–7）**——在工具配置被移除之后，使用其宿主工具移除该扩展或插件。各宿主如下：
 
   ```text

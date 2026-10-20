@@ -18,11 +18,13 @@ its GitHub Release and its npm version, and all stay published: npm versions
 are immutable (a published `name@version` can never be replaced), and pinned
 installs depend on the tags.
 
-The tag push starts two workflows. `.github/workflows/release.yml` builds,
+The tag push starts three workflows. `.github/workflows/release.yml` builds,
 signs, attests, and publishes the GitHub Release with its full artifact set:
 sdist, wheel, CycloneDX SBOM, Sigstore cosign bundles, SLSA-3 provenance,
 and the platform runtime archives. `publish-npm.yml` publishes
-`@ahmed-g-gad/apothem` to npmjs.com through npm trusted publishing. The
+`@ahmed-g-gad/apothem` to npmjs.com through npm trusted publishing, and
+`publish-vscode.yml` packages the VS Code extension and publishes it to the
+Visual Studio Marketplace. The
 versioned CHANGELOG section lands in the release commit; the operator runs
 the install-path smoke after both workflows finish.
 
@@ -205,8 +207,10 @@ in §2.3 (its run ID comes from `gh run list --workflow=publish-npm.yml`). The
 workflow publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com through npm
 trusted publishing (OIDC); no registry token is stored in the repository.
 Approve the waiting `Publish VS Code Extension` run as well. It packages
-`apothem.vsix`; its Visual Studio Marketplace step stays off until the
-repository variable `VSCODE_MARKETPLACE_READY` is `true`.
+`apothem.vsix` and publishes it to the Visual Studio Marketplace as
+`ahmed-g-gad.apothem-vscode`. The publish step runs only while the repository
+variable `VSCODE_MARKETPLACE_READY` is `true` and the `VSCE_PAT` secret is
+set; otherwise the run packages the extension and skips publication.
 
 To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
@@ -228,6 +232,7 @@ here?":
 | 6 | GitHub Release (VS Code extension) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | asset list includes both; `code --install-extension apothem.vsix` installs it. Releases before the release workflow packaged the extension carry neither |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
 | 8 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` version `X.Y.Z` | the extension's Marketplace page lists `X.Y.Z`; `code --install-extension ahmed-g-gad.apothem-vscode` installs it |
 
 The GitHub Release is the canonical artifact surface; the npm package and
 the script installers are the install paths layered on top of it. The npm

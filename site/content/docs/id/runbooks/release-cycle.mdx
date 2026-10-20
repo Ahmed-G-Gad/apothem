@@ -2,7 +2,7 @@
 title: "Runbook siklus rilis"
 description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga publikasi npm."
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,12 +20,13 @@ yang dihapus. Setiap rilis mempertahankan tag-nya, GitHub Release-nya, dan versi
 npm tidak dapat diubah (`name@version` yang telah dipublikasikan tidak pernah
 dapat diganti), dan pemasangan yang dipatok bergantung pada tag-tag tersebut.
 
-Push tag memulai dua alur kerja. `.github/workflows/release.yml` membangun,
+Push tag memulai tiga alur kerja. `.github/workflows/release.yml` membangun,
 menandatangani, mengatestasi, dan memublikasikan GitHub Release dengan
 kumpulan artefak lengkapnya: sdist, wheel, SBOM CycloneDX, bundel cosign
 Sigstore, provenance SLSA-3, dan arsip runtime platform. `publish-npm.yml`
 memublikasikan `@ahmed-g-gad/apothem` ke npmjs.com melalui npm trusted
-publishing. Bagian CHANGELOG berversi mendarat di commit rilis; operator
+publishing, dan `publish-vscode.yml` mengemas ekstensi VS Code dan
+memublikasikannya ke Visual Studio Marketplace. Bagian CHANGELOG berversi mendarat di commit rilis; operator
 menjalankan smoke jalur instalasi setelah kedua alur kerja selesai.
 
 ## 1. Prasyarat
@@ -196,8 +197,10 @@ cara yang sama seperti di §2.3 (ID run-nya diambil dari
 `@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm trusted publishing (OIDC);
 tidak ada token registri yang disimpan di repositori. Setujui juga run
 `Publish VS Code Extension` yang sedang menunggu. Run ini mengemas
-`apothem.vsix`; langkah Visual Studio Marketplace-nya tetap nonaktif hingga
-variabel repositori `VSCODE_MARKETPLACE_READY` bernilai `true`.
+`apothem.vsix` dan memublikasikannya ke Visual Studio Marketplace sebagai
+`ahmed-g-gad.apothem-vscode`. Langkah publikasi hanya berjalan selama
+variabel repositori `VSCODE_MARKETPLACE_READY` bernilai `true` dan rahasia
+`VSCE_PAT` telah diatur; jika tidak, run ini mengemas ekstensi dan melewati publikasi.
 
 Untuk memublikasikan lagi setelah run yang gagal, dispatch alur kerja untuk
 tag yang sama (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Alur
@@ -219,6 +222,7 @@ mendarat di sini?":
 | 6 | GitHub Release (ekstensi VS Code) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | daftar aset menyertakan keduanya; `code --install-extension apothem.vsix` memasangnya. Rilis yang dibuat sebelum alur kerja rilis mengemas ekstensi tidak membawa keduanya |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` mengembalikan `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` mencetak `Apothem, version X.Y.Z` |
 | 8 | Pages (pemasang skrip) | `install.sh` / `install.ps1` di situs dokumentasi | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` mengembalikan header skrip |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` versi `X.Y.Z` | halaman Marketplace ekstensi mencantumkan `X.Y.Z`; `code --install-extension ahmed-g-gad.apothem-vscode` memasangnya |
 
 GitHub Release adalah permukaan artefak kanonis; paket npm dan pemasang skrip
 adalah jalur instalasi yang dilapiskan di atasnya. Publikasi npm berjalan di

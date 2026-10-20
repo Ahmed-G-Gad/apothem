@@ -1,6 +1,6 @@
 {
-  "name": "apothem",
-  "displayName": "Apothem",
+  "name": "apothem-vscode",
+  "displayName": "Apothem for VS Code",
   "description": "Install and manage the Apothem shared profile for GitHub Copilot and the VS Code family from your workspace — one profile, materialized into the editor's native configuration surface.",
   "version": "1.2.1",
   "publisher": "ahmed-g-gad",

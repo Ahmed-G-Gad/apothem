@@ -2,7 +2,7 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,7 @@ sourceHash: "acd80d824d887bd6"
 
 发布模型是**追加式**的。每次发布在 `main` 上添加一个提交和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。每个发布都保留其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
 
-标签推送会启动两个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在两个工作流都完成后运行安装路径冒烟测试。
+标签推送会启动三个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com，`publish-vscode.yml` 打包 VS Code 扩展，并将其发布到 Visual Studio Marketplace。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在两个工作流都完成后运行安装路径冒烟测试。
 
 ## 1. 前置条件
 
@@ -133,7 +133,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 以下任一情况都会使检查失败：发布为草稿或预发布版本；标签所指提交的某个必需工作流未通过；SBOM 缺失；SBOM 描述的是其他版本；或 SBOM 漏掉了某个 vendored 包。失败信息会指明原因。
 
-检查通过后，请按照 §2.3 中的方式批准等待中的 `Publish npm` 运行（其运行 ID 来自 `gh run list --workflow=publish-npm.yml`）。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。也请批准等待中的 `Publish VS Code Extension` 运行。它会打包 `apothem.vsix`；其 Visual Studio Marketplace 步骤保持关闭，直到仓库变量 `VSCODE_MARKETPLACE_READY` 为 `true`。
+检查通过后，请按照 §2.3 中的方式批准等待中的 `Publish npm` 运行（其运行 ID 来自 `gh run list --workflow=publish-npm.yml`）。该工作流通过 npm 受信任发布（OIDC）将 `@ahmed-g-gad/apothem@X.Y.Z` 发布到 npmjs.com；仓库中不存储任何注册表令牌。也请批准等待中的 `Publish VS Code Extension` 运行。它会打包 `apothem.vsix`，并以 `ahmed-g-gad.apothem-vscode` 的名称将其发布到 Visual Studio Marketplace。发布步骤仅当仓库变量 `VSCODE_MARKETPLACE_READY` 为 `true` 且 `VSCE_PAT` 机密已设置时运行；否则该运行会打包扩展，并跳过发布。
 
 若要在一次失败的运行之后再次发布，为同一标签调度该工作流（`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。当该版本已在注册表上时，它会跳过发布，因为 npm 版本不可变。
 
@@ -151,6 +151,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 | 6 | GitHub Release（VS Code 扩展） | `apothem.vsix` + `apothem.vsix.cosign.bundle` | 产物列表包含两者；`code --install-extension apothem.vsix` 可安装它。在发布工作流开始打包该扩展之前的发布两者都不包含 |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` 返回 `X.Y.Z`；`npx @ahmed-g-gad/apothem@X.Y.Z --version` 打印 `Apothem, version X.Y.Z` |
 | 8 | Pages（脚本安装器） | 文档站点上的 `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` 返回脚本头部 |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` 版本 `X.Y.Z` | 该扩展的 Marketplace 页面列出 `X.Y.Z`；`code --install-extension ahmed-g-gad.apothem-vscode` 可安装它 |
 
 GitHub Release 是规范的产物表面；npm 包和脚本安装器是叠加在其之上的安装路径。npm 发布在同一次标签推送上与发布工作流并行运行。
 

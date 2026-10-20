@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -254,8 +254,11 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prasyarat:** VS Code, Node.js 18+, dan Python sistem 3.10+ pada `PATH`.
 
-Ekstensi **Apothem** dipasang dari paket `apothem.vsix`:
-`code --install-extension apothem.vsix`, atau perintah *Install from VSIX…*
+Ekstensi **Apothem for VS Code** tersedia di
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+sebagai `ahmed-g-gad.apothem-vscode`: pasang dari tampilan Extensions atau dengan
+`code --install-extension ahmed-g-gad.apothem-vscode`. Ekstensi ini juga dapat dipasang dari paket
+`apothem.vsix`: `code --install-extension apothem.vsix`, atau perintah *Install from VSIX…*
 milik editor. Alur kerja rilis menandatangani paket tersebut dan
 melampirkannya ke setiap GitHub Release. Rilis yang dipublikasikan sebelum alur
 kerja mengemas ekstensi tidak menyertakan `.vsix`; jika rilis terbaru tidak
@@ -263,9 +266,10 @@ memilikinya, bangun paket dari checkout dengan rilis vsce yang dikunci di
 `.github/vsce/` (rilis vsce itu memerlukan Node.js 22 atau lebih baru):
 jalankan `npm ci --prefix .github/vsce --ignore-scripts`, lalu
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Listing di [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-belum dipublikasikan. Satu ekstensi mencakup editor-editor dalam keluarga VS
-Code. Perintah paletnya (`Apothem: Install`, `Verify`,
+Salinan yang dipasang dari `apothem.vsix` versi sebelumnya membawa pengenal
+`ahmed-g-gad.apothem`; hapus salinan tersebut (`code --uninstall-extension ahmed-g-gad.apothem`)
+agar kedua salinan tidak sama-sama mendaftarkan perintah yang sama. Satu ekstensi
+mencakup editor-editor dalam keluarga VS Code. Perintah paletnya (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) menjalankan mesin yang sama melalui runner
 yang dikonfigurasi (`npx @ahmed-g-gad/apothem@<extension version>` secara
 default, sehingga ekstensi menjalankan versi mesin yang dikirim bersamanya;

@@ -78,7 +78,7 @@ try {
     # Layer 2: every release asset must carry a bundle that verifies.
     if (Get-Command -Name cosign -ErrorAction SilentlyContinue) {
         Write-Information 'verify-provenance: layer 2 — cosign verify-blob' -InformationAction Continue
-        $candidates = @(Get-ChildItem -File -Filter 'apothem-*') + @(Get-ChildItem -File -Filter 'SHA256SUMS') + @(Get-ChildItem -File -Filter 'sbom.cdx.json')
+        $candidates = @(Get-ChildItem -File -Filter 'apothem-*') + @(Get-ChildItem -File -Filter 'apothem.vsix') + @(Get-ChildItem -File -Filter 'SHA256SUMS') + @(Get-ChildItem -File -Filter 'sbom.cdx.json')
         $signed = 0
         foreach ($item in $candidates) {
             $asset = $item.Name

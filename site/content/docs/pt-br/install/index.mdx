@@ -2,7 +2,7 @@
 title: "Instalação"
 description: "Visão geral da instalação do Apothem — oito canais de instalação, cada um com seus pré-requisitos, um comando pronto para copiar e uma etapa de verificação: o plugin do Claude Code, o shim do npm, os instaladores de uma única etapa, a extensão da família VS Code, as três extensões de bootstrap de linha de comando e o motor direto."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -242,17 +242,22 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Pré-requisitos:** VS Code, Node.js 18+ e o Python 3.10+ do sistema no `PATH`.
 
-A extensão **Apothem** é instalada a partir de um pacote `apothem.vsix`:
-`code --install-extension apothem.vsix`, ou o comando *Install from VSIX…* do
-editor. O fluxo de trabalho de lançamento assina o pacote e o anexa a cada
-GitHub Release. Os lançamentos publicados antes de o fluxo de trabalho
+A extensão **Apothem for VS Code** está disponível no
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+como `ahmed-g-gad.apothem-vscode`: instale-a pela visualização Extensões ou com
+`code --install-extension ahmed-g-gad.apothem-vscode`. Ela também é instalada a
+partir de um pacote `apothem.vsix`: `code --install-extension apothem.vsix`, ou o
+comando *Install from VSIX…* do editor. O fluxo de trabalho de lançamento assina
+o pacote e o anexa a cada GitHub Release. Os lançamentos publicados antes de o fluxo de trabalho
 empacotar a extensão não trazem nenhum `.vsix`; quando o lançamento mais recente
 não o traz, gere o pacote a partir de um checkout com a versão do vsce travada
 em `.github/vsce/` (essa versão do vsce exige Node.js 22 ou posterior): execute
 `npm ci --prefix .github/vsce --ignore-scripts` e depois
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Uma listagem no [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-ainda não foi publicada. Uma única extensão cobre os editores da família VS
+Uma cópia instalada a partir de um `apothem.vsix` anterior tem o identificador
+`ahmed-g-gad.apothem`; desinstale-a (`code --uninstall-extension ahmed-g-gad.apothem`)
+para que as duas cópias não registrem os mesmos comandos. Uma única extensão
+cobre os editores da família VS
 Code. Seus comandos de paleta (`Apothem: Install`,
 `Verify`, `Update`, `Uninstall`, `Doctor`) executam o mesmo motor por meio do
 executor configurado (`npx @ahmed-g-gad/apothem@<extension version>` por padrão,

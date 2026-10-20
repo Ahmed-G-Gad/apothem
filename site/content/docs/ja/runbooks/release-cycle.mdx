@@ -2,7 +2,7 @@
 title: "リリースサイクルランブック"
 description: "ローカルゲートから、署名済みの GitHub Release を経て、npm 公開に至るまでの完全なリリースワークフロー。"
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,9 +14,9 @@ sourceHash: "acd80d824d887bd6"
 各リリースは `main` に 1 つのコミットと、署名付きの注釈付き `vX.Y.Z` タグを 1 つ追加します。何も強制プッシュされず、以前のタグ、GitHub Release、npm バージョンが削除されることもありません。
 各リリースはそれぞれのタグ、GitHub Release、npm バージョンを保持し、すべて公開されたままです。npm のバージョンは不変であり（公開済みの `name@version` は決して置き換えられません）、ピン留めされたインストールはタグに依存しています。
 
-タグのプッシュは 2 つのワークフローを開始します。
+タグのプッシュは 3 つのワークフローを開始します。
 `.github/workflows/release.yml` は、GitHub Release を完全な成果物セット（sdist、wheel、CycloneDX SBOM、Sigstore cosign バンドル、SLSA-3 来歴、プラットフォームランタイムアーカイブ）とともにビルド、署名、構成証明、公開します。
-`publish-npm.yml` は、npm Trusted Publishing を通じて `@ahmed-g-gad/apothem` を npmjs.com へ公開します。
+`publish-npm.yml` は、npm Trusted Publishing を通じて `@ahmed-g-gad/apothem` を npmjs.com へ公開し、`publish-vscode.yml` は VS Code 拡張機能をパッケージ化して Visual Studio Marketplace へ公開します。
 バージョン付きの CHANGELOG セクションはリリースコミットに含まれます。オペレーターは、両方のワークフローが完了した後にインストールパスのスモークテストを実行します。
 
 ## 1. 前提条件
@@ -157,7 +157,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 次の場合、チェックは失敗します。リリースがドラフトまたはプレリリースである場合、タグのコミットに対する必須のワークフローがグリーンでない場合、SBOM が存在しない場合、SBOM が別のバージョンを記述している場合、または SBOM にベンダリングされたパッケージが含まれていない場合です。失敗メッセージには、原因が示されます。
 
-準備状態チェックに合格したら、§2.3 と同じ方法で、待機中の `Publish npm` の実行を承認します（その実行 ID は `gh run list --workflow=publish-npm.yml` から取得します）。このワークフローは、npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。待機中の `Publish VS Code Extension` の実行も承認してください。これは `apothem.vsix` をパッケージ化します。その Visual Studio Marketplace へのステップは、リポジトリ変数 `VSCODE_MARKETPLACE_READY` が `true` になるまで無効のままです。
+準備状態チェックに合格したら、§2.3 と同じ方法で、待機中の `Publish npm` の実行を承認します（その実行 ID は `gh run list --workflow=publish-npm.yml` から取得します）。このワークフローは、npm Trusted Publishing（OIDC）を通じて `@ahmed-g-gad/apothem@X.Y.Z` を npmjs.com へ公開します。リポジトリにレジストリトークンは保存されません。待機中の `Publish VS Code Extension` の実行も承認してください。この実行は `apothem.vsix` をパッケージ化し、それを `ahmed-g-gad.apothem-vscode` として Visual Studio Marketplace へ公開します。公開ステップは、リポジトリ変数 `VSCODE_MARKETPLACE_READY` が `true` であり、かつ `VSCE_PAT` シークレットが設定されている間だけ実行されます。そうでない場合、この実行は拡張機能をパッケージ化するだけで公開はスキップします。
 
 実行が失敗した後に再度公開するには、同じタグに対してワークフローをディスパッチします
 （`gh workflow run publish-npm.yml --field tag=vX.Y.Z`）。
@@ -177,6 +177,7 @@ npm のバージョンは不変であるため、バージョンがすでにレ�
 | 6 | GitHub Release（VS Code 拡張機能） | `apothem.vsix` + `apothem.vsix.cosign.bundle` | アセットリストに両方が含まれる。`code --install-extension apothem.vsix` でインストールできる。リリースワークフローが拡張機能をパッケージ化するようになる前のリリースには、どちらも含まれない |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` が `X.Y.Z` を返す。`npx @ahmed-g-gad/apothem@X.Y.Z --version` が `Apothem, version X.Y.Z` を出力する |
 | 8 | Pages（スクリプトインストーラー） | ドキュメントサイト上の `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` がスクリプトヘッダーを返す |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` バージョン `X.Y.Z` | 拡張機能の Marketplace ページに `X.Y.Z` が表示される。`code --install-extension ahmed-g-gad.apothem-vscode` でインストールできる |
 
 GitHub Release は正規の成果物面であり、npm パッケージとスクリプトインストーラーは、その上に重ねられたインストールパスです。
 npm の公開は、同じタグのプッシュでリリースワークフローと並行して実行されます。

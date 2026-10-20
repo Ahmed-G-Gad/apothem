@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -247,7 +247,11 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Voraussetzungen:** VS Code, Node.js 18+ und System-Python 3.10+ im `PATH`.
 
-Die **Apothem**-Erweiterung wird aus einem `apothem.vsix`-Paket installiert:
+Die Erweiterung **Apothem for VS Code** ist im
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+als `ahmed-g-gad.apothem-vscode` verfügbar: Installieren Sie sie über die
+Erweiterungsansicht oder mit `code --install-extension ahmed-g-gad.apothem-vscode`.
+Sie lässt sich außerdem aus einem `apothem.vsix`-Paket installieren:
 `code --install-extension apothem.vsix` oder der Befehl *Install from VSIX…*
 des Editors. Der Release-Workflow signiert das Paket und hängt es an jedes
 GitHub Release an. Releases, die veröffentlicht wurden, bevor der Workflow die
@@ -257,8 +261,10 @@ festgeschriebenen vsce-Release (dieses vsce-Release benötigt Node.js 22 oder
 neuer): Führen Sie
 `npm ci --prefix .github/vsce --ignore-scripts` aus, dann
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Ein Eintrag im [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-ist noch nicht veröffentlicht. Eine Erweiterung deckt die Editoren der
+Eine Kopie, die aus einem früheren `apothem.vsix` installiert wurde, trägt den
+Bezeichner `ahmed-g-gad.apothem`; deinstallieren Sie sie
+(`code --uninstall-extension ahmed-g-gad.apothem`), damit die beiden Kopien nicht
+dieselben Befehle registrieren. Eine Erweiterung deckt die Editoren der
 VS Code-Familie ab. Ihre
 Palettenbefehle (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
 führen dieselbe Engine über den konfigurierten Runner aus (standardmäßig

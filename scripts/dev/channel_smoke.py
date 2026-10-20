@@ -193,6 +193,17 @@ CHANNELS: tuple[Channel, ...] = (
         notes=("Downloads the .vsix the README says each release attaches.",),
     ),
     Channel(
+        id="vscode-marketplace",
+        title="4 — VS Code family extension (Marketplace)",
+        documented=("code --install-extension ahmed-g-gad.apothem-vscode",),
+        requires=("code",),
+        steps=(Step(("code", "--install-extension", "ahmed-g-gad.apothem-vscode")),),
+        notes=(
+            "Installs the published extension from the Visual Studio Marketplace"
+            " by its identifier.",
+        ),
+    ),
+    Channel(
         id="gemini-cli-extension",
         title="5 — Gemini CLI extension",
         documented=(

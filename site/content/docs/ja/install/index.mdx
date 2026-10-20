@@ -2,7 +2,7 @@
 title: "インストール"
 description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップがあります: Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -173,12 +173,13 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **前提条件:** VS Code、Node.js 18+、および `PATH` 上のシステム Python 3.10+。
 
-**Apothem** 拡張機能は `apothem.vsix` パッケージからインストールします: `code --install-extension apothem.vsix`、またはエディターの *Install from VSIX…* コマンドを使います。
+**Apothem for VS Code** 拡張機能は [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode) に `ahmed-g-gad.apothem-vscode` として公開されています。拡張機能ビューから、または `code --install-extension ahmed-g-gad.apothem-vscode` でインストールできます。
+`apothem.vsix` パッケージからもインストールできます: `code --install-extension apothem.vsix`、またはエディターの *Install from VSIX…* コマンドを使います。
 リリースワークフローがパッケージに署名し、各 GitHub Release に添付します。
 ワークフローが拡張機能をパッケージ化するようになる前に公開されたリリースには、`.vsix` は含まれていません。最新のリリースにそれがない場合は、`.github/vsce/` にロックされた vsce リリース（その vsce リリースには Node.js 22 以降が必要です）を使って、チェックアウトからパッケージをビルドしてください。
 `npm ci --prefix .github/vsce --ignore-scripts` を実行し、続いて
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix` を実行します。
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) への掲載はまだ公開されていません。
+以前の `apothem.vsix` からインストールしたコピーは、識別子 `ahmed-g-gad.apothem` を持ちます。両方のコピーが同じコマンドを登録しないように、`code --uninstall-extension ahmed-g-gad.apothem` で削除してください。
 1 つの拡張機能で、VS Code 系のエディターをカバーします。
 そのパレットコマンド（`Apothem: Install`、`Verify`、`Update`、`Uninstall`、`Doctor`）は、設定されたランナーを通して同じエンジンを実行します（デフォルトは `npx @ahmed-g-gad/apothem@<extension version>` で、拡張機能は自身とともに出荷されたバージョンのエンジンを実行します。ソースから実行するには、ユーザー設定 `apothem.runner` をローカルチェックアウトに向けます）。
 Install、Verify、Update、Uninstall はどのハーネスを対象にするかを尋ね、エディター自身のハーネスを最初に提示します。`all` は選択肢の 1 つであり、決してデフォルトにはなりません。

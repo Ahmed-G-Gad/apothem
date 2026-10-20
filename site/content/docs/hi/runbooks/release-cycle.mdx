@@ -2,7 +2,7 @@
 title: "रिलीज़-चक्र रनबुक"
 description: "स्थानीय गेट से लेकर हस्ताक्षरित GitHub Release से होते हुए npm प्रकाशन तक का संपूर्ण रिलीज़ वर्कफ़्लो।"
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,11 +19,13 @@ sourceHash: "acd80d824d887bd6"
 `name@version` को कभी बदला नहीं जा सकता), और पिन किए गए इंस्टॉल टैगों पर निर्भर
 करते हैं।
 
-टैग पुश दो वर्कफ़्लो शुरू करता है। `.github/workflows/release.yml` GitHub Release
+टैग पुश तीन वर्कफ़्लो शुरू करता है। `.github/workflows/release.yml` GitHub Release
 को उसके पूर्ण आर्टिफ़ैक्ट सेट के साथ बिल्ड करता है, हस्ताक्षर करता है, अटेस्ट
 करता है और प्रकाशित करता है: sdist, wheel, CycloneDX SBOM, Sigstore cosign बंडल,
 SLSA-3 प्रोवेनेंस, और प्लेटफ़ॉर्म रनटाइम आर्काइव। `publish-npm.yml` npm Trusted
-Publishing के माध्यम से `@ahmed-g-gad/apothem` को npmjs.com पर प्रकाशित करता है।
+Publishing के माध्यम से `@ahmed-g-gad/apothem` को npmjs.com पर प्रकाशित करता है, और
+`publish-vscode.yml` VS Code एक्सटेंशन को पैकेज करता है और उसे Visual Studio
+Marketplace पर प्रकाशित करता है।
 संस्करण-युक्त CHANGELOG अनुभाग रिलीज़ कमिट में उतरता है; ऑपरेटर दोनों वर्कफ़्लो
 पूरे होने के बाद इंस्टॉल-पथ स्मोक चलाता है।
 
@@ -187,7 +189,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 जाँच तब विफल होती है जब रिलीज़ ड्राफ़्ट या प्रीरिलीज़ हो, जब टैग के कमिट के लिए आवश्यक कोई वर्कफ़्लो हरा न हो, जब SBOM गायब हो, जब वह किसी अन्य संस्करण का वर्णन करे, या जब वह कोई वेंडर्ड पैकेज छोड़ दे। विफलता संदेश कारण का नाम बताता है।
 
-जाँच पास होने पर, §2.3 में बताए गए तरीके से ही प्रतीक्षा कर रहे `Publish npm` रन को अनुमोदित करें (उसका रन ID `gh run list --workflow=publish-npm.yml` से मिलता है)। वर्कफ़्लो npm Trusted Publishing (OIDC) के माध्यम से `@ahmed-g-gad/apothem@X.Y.Z` को npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई रजिस्ट्री टोकन संग्रहीत नहीं है। प्रतीक्षा कर रहे `Publish VS Code Extension` रन को भी अनुमोदित करें। यह `apothem.vsix` पैकेज करता है; जब तक रिपॉज़िटरी चर `VSCODE_MARKETPLACE_READY` `true` न हो जाए, तब तक इसका Visual Studio Marketplace चरण बंद रहता है।
+जाँच पास होने पर, §2.3 में बताए गए तरीके से ही प्रतीक्षा कर रहे `Publish npm` रन को अनुमोदित करें (उसका रन ID `gh run list --workflow=publish-npm.yml` से मिलता है)। वर्कफ़्लो npm Trusted Publishing (OIDC) के माध्यम से `@ahmed-g-gad/apothem@X.Y.Z` को npmjs.com पर प्रकाशित करता है; रिपॉज़िटरी में कोई रजिस्ट्री टोकन संग्रहीत नहीं है। प्रतीक्षा कर रहे `Publish VS Code Extension` रन को भी अनुमोदित करें। यह `apothem.vsix` पैकेज करता है और उसे `ahmed-g-gad.apothem-vscode` के रूप में Visual Studio Marketplace पर प्रकाशित करता है। प्रकाशन चरण केवल तभी चलता है जब रिपॉज़िटरी चर `VSCODE_MARKETPLACE_READY` `true` हो और `VSCE_PAT` सीक्रेट सेट हो; अन्यथा रन एक्सटेंशन को पैकेज करता है और प्रकाशन छोड़ देता है।
 
 किसी विफल रन के बाद फिर से प्रकाशित करने के लिए, उसी टैग के लिए वर्कफ़्लो डिस्पैच
 करें (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`)। जब संस्करण पहले से
@@ -208,6 +210,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 | 6 | GitHub Release (VS Code एक्सटेंशन) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | असेट सूची में दोनों शामिल हैं; `code --install-extension apothem.vsix` इसे इंस्टॉल करता है। रिलीज़ वर्कफ़्लो द्वारा एक्सटेंशन पैकेज किए जाने से पहले की रिलीज़ में इनमें से कोई भी नहीं है |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` `X.Y.Z` लौटाता है; `npx @ahmed-g-gad/apothem@X.Y.Z --version` `Apothem, version X.Y.Z` प्रिंट करता है |
 | 8 | Pages (स्क्रिप्ट इंस्टॉलर) | दस्तावेज़ साइट पर `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` स्क्रिप्ट हेडर लौटाता है |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` संस्करण `X.Y.Z` | एक्सटेंशन का Marketplace पृष्ठ `X.Y.Z` सूचीबद्ध करता है; `code --install-extension ahmed-g-gad.apothem-vscode` इसे इंस्टॉल करता है |
 
 GitHub Release कैनोनिकल आर्टिफ़ैक्ट सतह है; npm पैकेज और स्क्रिप्ट इंस्टॉलर उसके
 ऊपर परतबद्ध इंस्टॉल पथ हैं। npm प्रकाशन उसी टैग पुश पर रिलीज़ वर्कफ़्लो के

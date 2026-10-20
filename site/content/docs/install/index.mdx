@@ -253,17 +253,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension installs from an `apothem.vsix` package:
-`code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
-command. The release workflow signs the package and attaches it to each GitHub
+The **Apothem for VS Code** extension is on the
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+as `ahmed-g-gad.apothem-vscode`: install it from the Extensions view or with
+`code --install-extension ahmed-g-gad.apothem-vscode`. It also installs from an
+`apothem.vsix` package: `code --install-extension apothem.vsix`, or the
+editor's *Install from VSIX…* command. The release workflow signs the package and attaches it to each GitHub
 Release. Releases published before the workflow packaged the extension carry
 no `.vsix`; when the latest release lacks it, build the package from a checkout
 with the vsce release locked in `.github/vsce/` (that vsce release needs
 Node.js 22 or later):
 run `npm ci --prefix .github/vsce --ignore-scripts`, then
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-A [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
-not yet published. One extension covers the editors of the VS Code family. Its palette
+A copy installed from an earlier `apothem.vsix` carries the identifier
+`ahmed-g-gad.apothem`; uninstall it (`code --uninstall-extension ahmed-g-gad.apothem`)
+so the two copies do not both register the same commands. One extension covers the editors of the VS Code family. Its palette
 commands (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) run the same engine through the configured
 runner (`npx @ahmed-g-gad/apothem@<extension version>` by default, so the

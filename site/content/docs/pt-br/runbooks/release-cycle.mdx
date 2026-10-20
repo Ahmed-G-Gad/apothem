@@ -2,7 +2,7 @@
 title: "Runbook do ciclo de lançamento"
 description: "Fluxo de lançamento completo, dos portões locais, passando pelo GitHub Release assinado, até a publicação no npm."
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,12 +19,13 @@ tag, GitHub Release ou versão do npm anterior é removida. Cada lançamento man
 publicado nunca pode ser substituído), e as instalações fixadas dependem das
 tags.
 
-O push da tag inicia dois fluxos de trabalho. `.github/workflows/release.yml`
+O push da tag inicia três fluxos de trabalho. `.github/workflows/release.yml`
 compila, assina, atesta e publica o GitHub Release com seu conjunto completo de
 artefatos: sdist, wheel, SBOM CycloneDX, bundles cosign do Sigstore, procedência
 SLSA-3 e os arquivos de runtime de cada plataforma. `publish-npm.yml` publica
-`@ahmed-g-gad/apothem` no npmjs.com por meio da publicação confiável do npm. A
-seção versionada do CHANGELOG entra no commit de lançamento; o operador executa
+`@ahmed-g-gad/apothem` no npmjs.com por meio da publicação confiável do npm, e
+`publish-vscode.yml` empacota a extensão do VS Code e a publica no Visual Studio
+Marketplace. A seção versionada do CHANGELOG entra no commit de lançamento; o operador executa
 o teste de fumaça da rota de instalação depois que ambos os fluxos de trabalho
 terminam.
 
@@ -198,8 +199,10 @@ aguardando, do mesmo modo que na §2.3 (o ID da execução vem de
 `@ahmed-g-gad/apothem@X.Y.Z` no npmjs.com por meio da publicação confiável do npm
 (OIDC); nenhum token de registro é armazenado no repositório. Aprove também a
 execução `Publish VS Code Extension` que está aguardando. Ela empacota
-`apothem.vsix`; a etapa do Visual Studio Marketplace permanece desativada até que
-a variável do repositório `VSCODE_MARKETPLACE_READY` seja `true`.
+`apothem.vsix` e o publica no Visual Studio Marketplace como
+`ahmed-g-gad.apothem-vscode`. A etapa de publicação roda somente enquanto a variável
+do repositório `VSCODE_MARKETPLACE_READY` for `true` e o segredo `VSCE_PAT` estiver
+definido; caso contrário, a execução empacota a extensão e pula a publicação.
 
 Para publicar novamente após uma execução com falha, despache o fluxo de
 trabalho para a mesma tag (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`).
@@ -221,6 +224,7 @@ chegou aqui?":
 | 6 | GitHub Release (extensão do VS Code) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | a lista de ativos inclui ambos; `code --install-extension apothem.vsix` a instala. Os lançamentos anteriores ao empacotamento da extensão pelo fluxo de trabalho de lançamento não trazem nenhum dos dois |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` retorna `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` imprime `Apothem, version X.Y.Z` |
 | 8 | Pages (instaladores de script) | `install.sh` / `install.ps1` no site de documentação | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` retorna o cabeçalho do script |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` versão `X.Y.Z` | a página da extensão no Marketplace lista `X.Y.Z`; `code --install-extension ahmed-g-gad.apothem-vscode` a instala |
 
 O GitHub Release é a superfície canônica de artefatos; o pacote do npm e os
 instaladores de script são as rotas de instalação sobrepostas a ele. A

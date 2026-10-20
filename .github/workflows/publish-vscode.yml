@@ -123,4 +123,4 @@ jobs:
       - name: Marketplace publish skipped (not yet enabled)
         if: ${{ steps.token.outputs.configured != 'true' || vars.VSCODE_MARKETPLACE_READY != 'true' }}
         run: |
-          echo "::notice title=Marketplace publish skipped::Resolve the extension identifier (the Marketplace name 'apothem' is registered by another publisher, so the ahmed-g-gad publisher needs a unique name), add the VSCE_PAT secret, then set the repository variable VSCODE_MARKETPLACE_READY=true to enable publication on the next tag. The packaged apothem.vsix artifact was still produced."
+          echo "::notice title=Marketplace publish skipped::Set the VSCE_PAT secret and the repository variable VSCODE_MARKETPLACE_READY=true to publish ahmed-g-gad.apothem-vscode on the next tag. The packaged apothem.vsix artifact was still produced."
