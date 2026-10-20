@@ -2,7 +2,7 @@
 title: "التثبيت"
 description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -238,7 +238,7 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **المتطلّبات المُسبقة:** <bdi>VS Code</bdi>، و<bdi>Node.js 18+</bdi>،
 و<bdi>Python 3.10+</bdi> المُثبَّت على النظام والموجود على <bdi>`PATH`</bdi>.
 
-يُثبَّت امتداد **<bdi>Apothem</bdi>** من حزمة <bdi>`apothem.vsix`</bdi>:
+امتداد **<bdi>Apothem for VS Code</bdi>** متاح على [<bdi>Visual Studio Marketplace</bdi>](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode) بالمعرّف <bdi>`ahmed-g-gad.apothem-vscode`</bdi>، ويُثبَّت من عرض الامتدادات أو بالأمر <bdi>`code --install-extension ahmed-g-gad.apothem-vscode`</bdi>. ويُثبَّت أيضًا من حزمة <bdi>`apothem.vsix`</bdi>:
 <bdi>`code --install-extension apothem.vsix`</bdi>، أو أمر
 *<bdi>Install from VSIX…</bdi>* في المحرِّر. يوقّع سير عمل الإصدار الحزمةَ ويرفقها
 بكل إصدار <bdi>GitHub</bdi>. الإصدارات المنشورة قبل أن يحزّم سير العمل الامتداد لا
@@ -247,8 +247,7 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 (يتطلّب إصدار <bdi>vsce</bdi> هذا <bdi>Node.js</bdi> 22 أو أحدث):
 شغِّل <bdi>`npm ci --prefix .github/vsce --ignore-scripts`</bdi>، ثم
 <bdi>`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`</bdi>.
-لم تُنشَر بعدُ صفحة إدراج في
-[<bdi>Visual Studio Marketplace</bdi>](https://marketplace.visualstudio.com/).
+تحمل نسخةٌ مُثبَّتة سابقًا من <bdi>`apothem.vsix`</bdi> المُعرِّفَ <bdi>`ahmed-g-gad.apothem`</bdi>؛ أزِلها (<bdi>`code --uninstall-extension ahmed-g-gad.apothem`</bdi>) حتى لا تسجّل النسختان معًا الأوامرَ نفسها.
 يغطّي امتداد واحد محرِّرات عائلة <bdi>VS Code</bdi>. تشغّل أوامره في
 لوحة الأوامر (<bdi>`Apothem: Install`</bdi>، و<bdi>`Verify`</bdi>،
 و<bdi>`Update`</bdi>، و<bdi>`Uninstall`</bdi>، و<bdi>`Doctor`</bdi>) المحرّكَ نفسه

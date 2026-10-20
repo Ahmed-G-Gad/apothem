@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,12 +20,14 @@ wird entfernt. Jedes Release behält sein Tag, sein GitHub Release und seine npm
 npm-Versionen sind unveränderlich (ein veröffentlichtes `name@version` kann
 niemals ersetzt werden), und gepinnte Installationen hängen von den Tags ab.
 
-Der Tag-Push startet zwei Workflows. `.github/workflows/release.yml` baut,
+Der Tag-Push startet drei Workflows. `.github/workflows/release.yml` baut,
 signiert, attestiert und veröffentlicht das GitHub Release mit seinem
 vollständigen Artefaktsatz: sdist, Wheel, CycloneDX-SBOM,
 Sigstore-cosign-Bundles, SLSA-3-Provenienz und die Plattform-Laufzeitarchive.
 `publish-npm.yml` veröffentlicht `@ahmed-g-gad/apothem` über npm Trusted
-Publishing auf npmjs.com. Der versionierte CHANGELOG-Abschnitt landet im
+Publishing auf npmjs.com, und `publish-vscode.yml` paketiert die
+VS Code-Erweiterung und veröffentlicht sie im Visual Studio Marketplace. Der
+versionierte CHANGELOG-Abschnitt landet im
 Release-Commit; der Operator führt den Installationspfad-Smoke-Test aus,
 nachdem beide Workflows abgeschlossen sind.
 
@@ -201,9 +203,12 @@ dieselbe Weise wie in §2.3 (seine Lauf-ID stammt aus
 `gh run list --workflow=publish-npm.yml`). Der Workflow veröffentlicht
 `@ahmed-g-gad/apothem@X.Y.Z` über npm Trusted Publishing (OIDC) auf npmjs.com;
 im Repository ist kein Registry-Token gespeichert. Genehmigen Sie außerdem den
-wartenden Lauf `Publish VS Code Extension`. Er paketiert `apothem.vsix`; sein
-Schritt für den Visual Studio Marketplace bleibt deaktiviert, bis die
-Repository-Variable `VSCODE_MARKETPLACE_READY` den Wert `true` hat.
+wartenden Lauf `Publish VS Code Extension`. Er paketiert `apothem.vsix` und
+veröffentlicht es im Visual Studio Marketplace als `ahmed-g-gad.apothem-vscode`.
+Der Veröffentlichungsschritt läuft nur, solange die Repository-Variable
+`VSCODE_MARKETPLACE_READY` den Wert `true` hat und das Secret `VSCE_PAT` gesetzt
+ist; andernfalls paketiert der Lauf die Erweiterung und überspringt die
+Veröffentlichung.
 
 Um nach einem fehlgeschlagenen Lauf erneut zu veröffentlichen, starten Sie den
 Workflow für dasselbe Tag
@@ -226,6 +231,7 @@ hier gelandet?“ beantwortet:
 | 6 | GitHub Release (VS Code-Erweiterung) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | die Asset-Liste enthält beide; `code --install-extension apothem.vsix` installiert sie. Releases aus der Zeit, bevor der Release-Workflow die Erweiterung paketierte, enthalten keines von beiden |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` gibt `X.Y.Z` zurück; `npx @ahmed-g-gad/apothem@X.Y.Z --version` gibt `Apothem, version X.Y.Z` aus |
 | 8 | Pages (Skript-Installer) | `install.sh` / `install.ps1` auf der Dokumentationsseite | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` gibt den Skript-Header zurück |
+| 9 | Visual Studio Marketplace | `ahmed-g-gad.apothem-vscode` Version `X.Y.Z` | die Marketplace-Seite der Erweiterung führt `X.Y.Z` auf; `code --install-extension ahmed-g-gad.apothem-vscode` installiert sie |
 
 Das GitHub Release ist die kanonische Artefaktoberfläche; das npm-Paket und die
 Skript-Installer sind die darauf aufsetzenden Installationspfade. Die

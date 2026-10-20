@@ -199,7 +199,8 @@ plugins and extensions (the Claude Code plugin via
 `/plugin marketplace add ahmed-g-gad/apothem`, a Gemini CLI extension via
 `gemini extensions install`, a Qwen Code extension via
 `qwen extensions install`, a Codex plugin via `codex plugin marketplace add`,
-and a VS Code-family extension packaged as `apothem.vsix`, which the release
+and a VS Code-family extension published to the Visual Studio Marketplace as
+`ahmed-g-gad.apothem-vscode` and packaged as `apothem.vsix`, which the release
 workflow attaches to each new GitHub Release), the npm shim
 (`npx @ahmed-g-gad/apothem` — also the install path for OpenCode and every
 other adapter-only tool, which expose no harness-native plugin surface), and

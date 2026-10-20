@@ -19,8 +19,32 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-20
+
+### Added
+
+- **The VS Code extension is on the Visual Studio Marketplace** as
+  `ahmed-g-gad.apothem-vscode`, named "Apothem for VS Code". Install it from
+  the Extensions view or with
+  `code --install-extension ahmed-g-gad.apothem-vscode`; the signed
+  `apothem.vsix` attached to each GitHub Release installs the same extension.
+  The channel smoke installs it from the Marketplace too.
+
+### Changed
+
+- **The extension's identifier is `ahmed-g-gad.apothem-vscode`.** The
+  Marketplace already holds the name `apothem`, so the extension takes a new
+  one. A copy installed from an earlier `apothem.vsix` keeps the identifier
+  `ahmed-g-gad.apothem`; uninstall it
+  (`code --uninstall-extension ahmed-g-gad.apothem`) so the two copies do not
+  both register the same commands.
+
 ### Fixed
 
+- **The provenance check verifies the VS Code extension's signature.**
+  `verify-provenance.sh` and `verify-provenance.ps1` checked the release assets
+  named `apothem-*`, which left out `apothem.vsix` and its signature bundle.
+  They now verify it, and fail when a release ships the extension without one.
 - **The release runbook covers every step its readiness check and publish
   approval need.** A release commit changes none of the paths that start
   CodeQL and Conformity, so the runbook now starts both on the release commit
@@ -808,7 +832,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.2
 [1.2.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.1
 [1.2.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0

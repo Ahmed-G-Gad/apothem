@@ -177,6 +177,25 @@ def test_unsigned_legacy_sbom_is_skipped(tmp_path: Path) -> None:
     assert "sbom.cdx.json" not in slsa
 
 
+def test_signed_vsix_is_verified(tmp_path: Path) -> None:
+    """The release signs the VS Code extension; its bundle must verify."""
+    fake_bin, log = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "apothem.vsix").write_bytes(b"vsix")
+    (assets / "apothem.vsix.cosign.bundle").write_text("{}", encoding="utf-8")
+    assert _run(assets, fake_bin).returncode == 0
+    assert any(c.endswith(" apothem.vsix") for c in _calls(log, "verify-blob"))
+
+
+def test_unsigned_vsix_fails(tmp_path: Path) -> None:
+    fake_bin, _ = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path)
+    (assets / "apothem.vsix").write_bytes(b"vsix")
+    result = _run(assets, fake_bin)
+    assert result.returncode == 1
+    assert "apothem.vsix has no signature bundle" in result.stderr
+
+
 def test_explicit_tag_overrides_the_derived_one(tmp_path: Path) -> None:
     fake_bin, log = _fake_bin(tmp_path)
     assets = _release_dir(tmp_path)
@@ -272,3 +291,4 @@ def test_ps1_sibling_matches_the_posix_contract() -> None:
     assert "--certificate-identity-regexp" not in text
     assert "provenance.intoto.jsonl" in text
     assert "--source-tag" in text
+    assert "-Filter 'apothem.vsix'" in text, "the .vsix signature is checked"

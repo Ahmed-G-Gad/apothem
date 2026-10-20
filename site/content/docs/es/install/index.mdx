@@ -2,7 +2,7 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -242,18 +242,22 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **Requisitos previos:** VS Code, Node.js 18+ y el Python 3.10+ del sistema en el
 `PATH`.
 
-La extensión **Apothem** se instala desde un paquete `apothem.vsix`:
-`code --install-extension apothem.vsix`, o el comando *Install from VSIX…* del
-editor. El flujo de trabajo de lanzamiento firma el paquete y lo adjunta a cada
-GitHub Release. Los lanzamientos publicados antes de que el flujo de trabajo
-empaquetara la extensión no incluyen ningún `.vsix`; cuando al último
-lanzamiento le falta, compila el paquete desde un checkout con la versión de
-vsce bloqueada en `.github/vsce/` (esa versión de vsce requiere Node.js 22 o
+La extensión **Apothem for VS Code** está en
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+como `ahmed-g-gad.apothem-vscode`: instálala desde la vista de Extensiones o con
+`code --install-extension ahmed-g-gad.apothem-vscode`. También se instala desde un
+paquete `apothem.vsix`: `code --install-extension apothem.vsix`, o el comando
+*Install from VSIX…* del editor. El flujo de trabajo de lanzamiento firma el
+paquete y lo adjunta a cada GitHub Release. Los lanzamientos publicados antes
+de que el flujo de trabajo empaquetara la extensión no incluyen ningún `.vsix`;
+cuando al último lanzamiento le falta, compila el paquete desde un checkout
+con la versión de vsce bloqueada en `.github/vsce/` (esa versión de vsce requiere Node.js 22 o
 posterior): ejecuta `npm ci --prefix .github/vsce --ignore-scripts` y luego
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
-Aún no hay una ficha publicada en
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/). Una sola
-extensión cubre los editores de la familia VS Code. Sus comandos de la paleta
+Una copia instalada desde un `apothem.vsix` anterior lleva el identificador
+`ahmed-g-gad.apothem`; desinstálala (`code --uninstall-extension ahmed-g-gad.apothem`)
+para que las dos copias no registren los mismos comandos. Una sola extensión
+cubre los editores de la familia VS Code. Sus comandos de la paleta
 (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) ejecutan el mismo motor a través del ejecutor
 configurado (`npx @ahmed-g-gad/apothem@<extension version>` de forma

@@ -2,7 +2,7 @@
 title: "इंस्टॉलेशन"
 description: "Apothem इंस्टॉलेशन का अवलोकन — आठ इंस्टॉल चैनल, प्रत्येक अपनी पूर्वापेक्षाओं, एक कॉपी-रेडी कमांड, और एक सत्यापन चरण के साथ: Claude Code प्लगइन, npm शिम, वन-शॉट इंस्टॉलर, VS Code-परिवार एक्सटेंशन, तीन कमांड-लाइन बूटस्ट्रैप एक्सटेंशन, और प्रत्यक्ष इंजन।"
 machineTranslated: true
-sourceHash: "d81816e658c355bf"
+sourceHash: "9bbe909880e8e0b6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -250,7 +250,10 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **पूर्वापेक्षाएँ:** VS Code, Node.js 18+, और `PATH` पर सिस्टम Python 3.10+।
 
-**Apothem** एक्सटेंशन एक `apothem.vsix` पैकेज से इंस्टॉल होता है:
+**Apothem for VS Code** एक्सटेंशन [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode) पर
+`ahmed-g-gad.apothem-vscode` के रूप में उपलब्ध है: इसे एक्सटेंशन व्यू से या
+`code --install-extension ahmed-g-gad.apothem-vscode` से इंस्टॉल करें। यह एक
+`apothem.vsix` पैकेज से भी इंस्टॉल होता है:
 `code --install-extension apothem.vsix`, या संपादक का *Install from VSIX…*
 कमांड। रिलीज़ वर्कफ़्लो पैकेज पर हस्ताक्षर करता है और उसे हर GitHub Release से
 संलग्न करता है। जो रिलीज़ वर्कफ़्लो द्वारा एक्सटेंशन को पैकेज किए जाने से पहले प्रकाशित हुईं,
@@ -259,8 +262,9 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 Node.js 22 या उसके बाद का संस्करण चाहिए):
 `npm ci --prefix .github/vsce --ignore-scripts` चलाएँ, फिर
 `cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`
-चलाएँ। [Visual Studio Marketplace](https://marketplace.visualstudio.com/) लिस्टिंग
-अभी प्रकाशित नहीं हुई है। एक ही एक्सटेंशन VS Code परिवार के संपादकों को कवर करता है।
+चलाएँ। पहले के `apothem.vsix` से इंस्टॉल की गई प्रति पहचानकर्ता `ahmed-g-gad.apothem`
+रखती है; उसे अनइंस्टॉल करें (`code --uninstall-extension ahmed-g-gad.apothem`), ताकि
+दोनों प्रतियाँ एक साथ एक ही कमांड पंजीकृत न करें। एक ही एक्सटेंशन VS Code परिवार के संपादकों को कवर करता है।
 इसके पैलेट कमांड
 (`Apothem: Install`, `Verify`,
 `Update`, `Uninstall`, `Doctor`) कॉन्फ़िगर किए गए रनर के माध्यम से वही इंजन चलाते

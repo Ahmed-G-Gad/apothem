@@ -2,7 +2,7 @@
 title: "अनइंस्टॉल करना"
 description: "Apothem हटाएँ और हार्नेस कॉन्फ़िग साफ़ करें।"
 machineTranslated: true
-sourceHash: "a94130c42f86f341"
+sourceHash: "60208ca7c4c5f168"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - **Claude Code प्लगइन (चैनल 1)** — Claude Code के भीतर से प्लगइन हटाएँ: `/plugin uninstall apothem@apothem` (मार्केटप्लेस प्रविष्टि को `/plugin marketplace remove ahmed-g-gad/apothem` से हटाया जा सकता है)।
 - **npx (चैनल 2)** — हटाने के लिए कुछ नहीं है; `npx` अपने कैश से चलता है। यदि आप कैश की गई प्रति हटाना चाहते हैं, तो `npm cache clean --force` से उसे साफ़ करें।
 - **वन-शॉट इंस्टॉलर (चैनल 3)** — चेकआउट से संगत अनइंस्टॉल स्क्रिप्ट चलाएँ: `scripts/installer/uninstall.sh` (POSIX) या `scripts/installer/uninstall.ps1` (PowerShell)। हर स्क्रिप्ट `--harness` (PowerShell पर `-Harness`) से नामित हार्नेस हटाती है, अन्यथा `APOTHEM_HARNESS`, अन्यथा Claude Code। यह `apothem` कमांड शिम भी हटाती है। स्रोत `APOTHEM_SOURCE` सेट होने पर वहाँ से आता है, अन्यथा `APOTHEM_HOME` (डिफ़ॉल्ट `$HOME/.apothem`) से। स्रोत तब तक बना रहता है जब तक आप `--remove-source` (PowerShell पर `-RemoveSource`) पास न करें। वह फ़्लैग केवल `APOTHEM_HOME` पर प्रबंधित क्लोन को हटाता है, और केवल तभी जब उसमें `.git` डायरेक्टरी हो। डिफ़ॉल्ट स्थान के साथ, यह `~/.apothem/` के अंतर्गत इंस्टॉल बैकअप और लेज़र भी हटाता है। दोनों हार्नेस कॉन्फ़िग और स्रोत हटाने से पहले पुष्टि माँगते हैं। `--yes` (PowerShell पर `-Yes`) प्रॉम्प्ट छोड़ देता है। दोनों असुरक्षित लक्ष्यों को अस्वीकार करते हैं।
-- **VS Code-परिवार का एक्सटेंशन (चैनल 4)** — हार्नेस कॉन्फ़िग हटाने के लिए पहले कमांड पैलेट से **Apothem: Uninstall** चलाएँ, फिर एक्सटेंशन को एक्सटेंशन व्यू से या `code --uninstall-extension ahmed-g-gad.apothem` से हटाएँ। डिफ़ॉल्ट रूप से एक्सटेंशन इंजन को `npx` के माध्यम से चलाता है, इसलिए ऊपर की **npx** प्रविष्टि कैश को कवर करती है।
+- **VS Code-परिवार का एक्सटेंशन (चैनल 4)** — हार्नेस कॉन्फ़िग हटाने के लिए पहले कमांड पैलेट से **Apothem: Uninstall** चलाएँ, फिर एक्सटेंशन को एक्सटेंशन व्यू से या `code --uninstall-extension ahmed-g-gad.apothem-vscode` से हटाएँ (पहले के `apothem.vsix` से इंस्टॉल की गई प्रति `ahmed-g-gad.apothem` है)। डिफ़ॉल्ट रूप से एक्सटेंशन इंजन को `npx` के माध्यम से चलाता है, इसलिए ऊपर की **npx** प्रविष्टि कैश को कवर करती है।
 - **कमांड-लाइन बूटस्ट्रैप (चैनल 5–7)** — हार्नेस कॉन्फ़िग हट जाने के बाद एक्सटेंशन या प्लगइन को उसके होस्ट टूल से हटाएँ। होस्ट ये हैं:
 
   ```text

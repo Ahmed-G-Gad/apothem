@@ -93,7 +93,7 @@ bundle_for() {
 if command -v cosign >/dev/null 2>&1; then
     printf 'verify-provenance: layer 2 — cosign verify-blob\n' >&2
     signed=0
-    for asset in apothem-* SHA256SUMS sbom.cdx.json; do
+    for asset in apothem-* apothem.vsix SHA256SUMS sbom.cdx.json; do
         [[ -f "${asset}" ]] || continue
         case "${asset}" in *.cosign.bundle|*.sig) continue ;; esac
         bundle="$(bundle_for "${asset}")"

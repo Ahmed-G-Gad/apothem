@@ -2,7 +2,7 @@
 title: "دليل تشغيل دورة الإصدار"
 description: "سير عمل الإصدار الكامل من البوابات المحلية مرورًا بإصدار GitHub الموقَّع وصولًا إلى نشر npm."
 machineTranslated: true
-sourceHash: "acd80d824d887bd6"
+sourceHash: "d322cf544cab7ca9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,13 +18,14 @@ sourceHash: "acd80d824d887bd6"
 استبدال <bdi>`name@version`</bdi> منشور)، وعمليات التثبيت المقيّدة بنسخة محدّدة
 تعتمد على الوسوم.
 
-يبدأ دفعُ الوسم سيرَي عمل. يبني <bdi>`.github/workflows/release.yml`</bdi> إصدار
+يبدأ دفعُ الوسم ثلاثةَ سير عمل. يبني <bdi>`.github/workflows/release.yml`</bdi> إصدار
 <bdi>GitHub</bdi> ويوقّعه ويُصدِر شهاداته وينشره مع مجموعة مُنتَجاته الكاملة:
 <bdi>sdist</bdi>، و<bdi>wheel</bdi>، و<bdi>CycloneDX SBOM</bdi>، وحِزم
 <bdi>Sigstore cosign</bdi>، والمنشأ <bdi>SLSA-3</bdi>، وأرشيفات بيئة التشغيل
 الخاصة بالمنصّات. وينشر <bdi>`publish-npm.yml`</bdi> الحزمة
 <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في
-<bdi>npm</bdi>. يصل قسم <bdi>CHANGELOG</bdi> المُرقَّم بالنسخة في كوميت الإصدار؛
+<bdi>npm</bdi>، و<bdi>`publish-vscode.yml`</bdi> يحزّم امتداد <bdi>VS Code</bdi> وينشره على
+<bdi>Visual Studio Marketplace</bdi>. يصل قسم <bdi>CHANGELOG</bdi> المُرقَّم بالنسخة في كوميت الإصدار؛
 ويُشغِّل المُشغِّل اختبار دخان مسار التثبيت بعد انتهاء سيرَي العمل كليهما.
 
 ## 1. المتطلّبات المسبقة
@@ -178,7 +179,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 
 يفشل الفحص عندما يكون الإصدار مسودّةً أو إصدارًا تجريبيًا (prerelease)، أو عندما لا يكون سير عمل مطلوب لإيداع الوسم أخضر، أو عندما يغيب ملف <bdi>SBOM</bdi>، أو عندما يصف إصدارًا آخر، أو عندما يُغفل حزمةً مُضمَّنة (vendored). وتُسمّي رسالة الفشل السببَ.
 
-عند نجاح الفحص، وافِق على تشغيل <bdi>`Publish npm`</bdi> المنتظر بالطريقة نفسها المذكورة في القسم 2.3 (يأتي معرّف التشغيل من <bdi>`gh run list --workflow=publish-npm.yml`</bdi>). ينشر سير العمل <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع. ووافِق كذلك على تشغيل <bdi>`Publish VS Code Extension`</bdi> المنتظر. وهو يحزِم <bdi>`apothem.vsix`</bdi>، وتبقى خطوته الخاصة بـ<bdi>Visual Studio Marketplace</bdi> معطّلة حتى يساوي متغيّر المستودع <bdi>`VSCODE_MARKETPLACE_READY`</bdi> القيمة <bdi>`true`</bdi>.
+عند نجاح الفحص، وافِق على تشغيل <bdi>`Publish npm`</bdi> المنتظر بالطريقة نفسها المذكورة في القسم 2.3 (يأتي معرّف التشغيل من <bdi>`gh run list --workflow=publish-npm.yml`</bdi>). ينشر سير العمل <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> على <bdi>npmjs.com</bdi> عبر النشر الموثوق في <bdi>npm</bdi> (<bdi>OIDC</bdi>)؛ ولا يُخزَّن أي رمز مميّز للسجلّ في المستودع. ووافِق كذلك على تشغيل <bdi>`Publish VS Code Extension`</bdi> المنتظر. وهو يحزّم <bdi>`apothem.vsix`</bdi> وينشره على <bdi>Visual Studio Marketplace</bdi> بالمعرّف <bdi>`ahmed-g-gad.apothem-vscode`</bdi>. لا تعمل خطوة النشر إلا حين يساوي متغيّر المستودع <bdi>`VSCODE_MARKETPLACE_READY`</bdi> القيمة <bdi>`true`</bdi> ويكون سرّ <bdi>`VSCE_PAT`</bdi> مضبوطًا؛ وفي غير ذلك يحزّم التشغيل الامتداد ويتخطّى النشر.
 
 لإعادة النشر بعد تشغيل فاشل، شغِّل سير العمل يدويًا للوسم نفسه
 (<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>). يتخطّى سير العمل
@@ -199,6 +200,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 | 6 | إصدار <bdi>GitHub</bdi> (امتداد <bdi>VS Code</bdi>) | <bdi>`apothem.vsix`</bdi> + <bdi>`apothem.vsix.cosign.bundle`</bdi> | تتضمّن قائمة الأصول كليهما؛ ويُثبّته <bdi>`code --install-extension apothem.vsix`</bdi>. الإصدارات التي سبقت تحزيم سير عمل الإصدار للامتداد لا تحمل أيًّا منهما |
 | 7 | <bdi>npmjs.com</bdi> | <bdi>`@ahmed-g-gad/apothem@X.Y.Z`</bdi> | يُرجِع <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> القيمة <bdi>`X.Y.Z`</bdi>؛ ويطبع <bdi>`npx @ahmed-g-gad/apothem@X.Y.Z --version`</bdi> النص <bdi>`Apothem, version X.Y.Z`</bdi> |
 | 8 | <bdi>Pages</bdi> (مُثبِّتات السكربت) | <bdi>`install.sh`</bdi> / <bdi>`install.ps1`</bdi> على موقع الوثائق | يُرجِع <bdi>`curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1`</bdi> ترويسة السكربت |
+| 9 | <bdi>Visual Studio Marketplace</bdi> | <bdi>`ahmed-g-gad.apothem-vscode`</bdi> النسخة <bdi>`X.Y.Z`</bdi> | تُدرِج صفحة الامتداد في <bdi>Marketplace</bdi> النسخة <bdi>`X.Y.Z`</bdi>؛ ويُثبّته <bdi>`code --install-extension ahmed-g-gad.apothem-vscode`</bdi> |
 
 إصدار <bdi>GitHub</bdi> هو سطح المُنتَجات المرجعي؛ وحزمة <bdi>npm</bdi> ومُثبِّتات
 السكربت هي مسارات التثبيت المبنيّة فوقه. ويعمل نشر <bdi>npm</bdi> بجانب سير عمل

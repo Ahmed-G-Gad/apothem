@@ -2,7 +2,7 @@
 title: "アンインストール"
 description: "Apothem を削除し、ハーネス設定をクリーンアップします。"
 machineTranslated: true
-sourceHash: "a94130c42f86f341"
+sourceHash: "60208ca7c4c5f168"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,7 @@ apothem uninstall --harness all --project /path/to/project --yes
 - **Claude Code プラグイン（チャネル 1）** — Claude Code 内からプラグインを削除します：`/plugin uninstall apothem@apothem`（マーケットプレイスのエントリーは `/plugin marketplace remove ahmed-g-gad/apothem` で削除できます）。
 - **npx（チャネル 2）** — 削除するものはありません。`npx` はそのキャッシュから実行されます。キャッシュされたコピーを消去したい場合は、`npm cache clean --force` を実行してください。
 - **ワンショットインストーラー（チャネル 3）** — チェックアウトから、対応するアンインストールスクリプトを実行します：POSIX では `scripts/installer/uninstall.sh`、PowerShell では `scripts/installer/uninstall.ps1` です。各スクリプトは、`--harness`（PowerShell では `-Harness`）で指定されたハーネスを削除します。指定がない場合は `APOTHEM_HARNESS` を使い、それもない場合は Claude Code を削除します。`apothem` コマンドのシムも削除します。ソースは、`APOTHEM_SOURCE` が設定されていればそこから、そうでなければ `APOTHEM_HOME`（デフォルトは `$HOME/.apothem`）から取得されます。ソースは、`--remove-source`（PowerShell では `-RemoveSource`）を渡さない限り残ります。このフラグが削除するのは `APOTHEM_HOME` にある管理対象のクローンだけであり、それも `.git` ディレクトリがある場合に限られます。デフォルトの場所を使う場合は、`~/.apothem/` 配下のインストールバックアップと台帳も削除されます。どちらのスクリプトも、ハーネス設定とソースを削除する前に確認を求めます。`--yes`（PowerShell では `-Yes`）を指定すると確認をスキップします。どちらも安全でない対象を拒否します。
-- **VS Code 系拡張機能（チャネル 4）** — まず、コマンドパレットから **Apothem: Uninstall** を実行してハーネス設定を削除します。その後、拡張機能ビューから、または `code --uninstall-extension ahmed-g-gad.apothem` で拡張機能を削除します。デフォルトでは、拡張機能は `npx` を介してエンジンを実行するため、キャッシュについては上の **npx** の項目が該当します。
+- **VS Code 系拡張機能（チャネル 4）** — まず、コマンドパレットから **Apothem: Uninstall** を実行してハーネス設定を削除します。その後、拡張機能ビューから、または `code --uninstall-extension ahmed-g-gad.apothem-vscode` で拡張機能を削除します（以前の `apothem.vsix` からインストールしたコピーは `ahmed-g-gad.apothem` です）。デフォルトでは、拡張機能は `npx` を介してエンジンを実行するため、キャッシュについては上の **npx** の項目が該当します。
 - **コマンドラインのブートストラップ（チャネル 5–7）** — ハーネス設定が削除された後で、ホストツールを使って拡張機能またはプラグインを削除します。ホストは次のとおりです：
 
   ```text

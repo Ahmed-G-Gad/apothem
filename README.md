@@ -437,7 +437,15 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension installs from an `apothem.vsix` package: run
+The **Apothem for VS Code** extension is on the
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode)
+as `ahmed-g-gad.apothem-vscode`. Install it from the Extensions view, or run:
+
+```shell
+code --install-extension ahmed-g-gad.apothem-vscode
+```
+
+It also installs from an `apothem.vsix` package: run
 `code --install-extension apothem.vsix`, or use the editor's *Install from
 VSIX…* command. The release workflow signs the package and attaches it to each
 GitHub Release. Releases published before the workflow packaged the extension
@@ -450,10 +458,10 @@ npm ci --prefix .github/vsce --ignore-scripts
 cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
 ```
 
-One extension covers VS Code and GitHub Copilot. A
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
-not yet published: the `apothem` name is held by another publisher, so the
-identifier is still unresolved. Its commands (`Apothem:
+One extension covers VS Code and GitHub Copilot. A copy installed from an
+earlier `apothem.vsix` carries the identifier `ahmed-g-gad.apothem`; uninstall it
+(`code --uninstall-extension ahmed-g-gad.apothem`) so the two copies do not both
+register the same commands. Its commands (`Apothem:
 Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) run the same engine
 through the configured runner (`npx @ahmed-g-gad/apothem@<extension version>`
 by default). Source lives under [`vscode-extension/`](vscode-extension/).
