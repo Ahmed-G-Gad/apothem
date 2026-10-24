@@ -1,12 +1,12 @@
 ---
 name: "plan-status"
-description: "Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the task / phase / artifact dimensions, with a `--verbose` health-grade and spot-check pass. The read-only `/plan` pipeline stage that surveys a suite at any point between `/plan-generate` and `/plan-execute` without mutating a single byte."
+description: "Reports plan-suite progress from its tracking files across tasks, phases and artifacts, read-only. Use when the user asks 'where are we on the plan', 'show plan status', or 'what is left in the phases'. Changes no files; --verbose adds a health grade and spot checks."
 argument-hint: "[path/to/plan-suite/] [--verbose]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

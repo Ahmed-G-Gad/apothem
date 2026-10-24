@@ -1,12 +1,12 @@
 ---
 name: "incident-runbook"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Author and execute operational incident runbooks — matched when the operator asks to 'write a runbook', define an 'on-call procedure', author 'incident response steps', document a 'recovery procedure' or 'recovery steps for a failing service', or capture the response sequence for a failing or compromised service. Produces a runbook in the five-stage shape Trigger → Diagnosis → Action → Verification → Rollback, where every Action step has a paired rollback path and every irreversible Action sits behind a no-default confirmation gate. On execution, advances Diagnosis → Action → Verification in order, confirming each live-infrastructure Action through the structured-inquiry channel and STOPping at the first Verification failure to surface its rollback. NOT for provisioning monitoring/alerting/dashboards, paging on-call rotations or opening incident channels, writing post-mortems or retrospectives, or batch-executing destructive remediation unattended. User-invocable directly."
+updated: "2026-10-24"
+description: "Write or run an incident runbook (Trigger, Diagnosis, Action, Verification, Rollback) with a rollback per action and confirmation before live changes. Use when the user asks to 'write a runbook', 'define an on-call procedure' or 'document recovery steps'. Not for post-mortems."
 archetype: "runbook-template"
 userInvocable: true
 argument-hint: "[--service NAME]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 ---
 

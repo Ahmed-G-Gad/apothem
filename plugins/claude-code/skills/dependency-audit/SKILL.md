@@ -1,12 +1,12 @@
 ---
 name: "dependency-audit"
-description: "Operator-driven per-dependency audit pass (direct + transitive). Walks every dependency declared in the repository's manifest files (pyproject.toml, package.json, Cargo.toml, go.mod, Gemfile, etc.) plus their resolved lockfile entries and emits per-dependency findings covering license compatibility, CVE status, deprecation status, replacement recommendation, transitive depth, pinned-vs-range posture, and security-relevant identification. Tooling: pip-audit + safety + osv-scanner + configured dependency-update automation insights. Output lands at the consuming suite's _inputs/dependency-audit-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
+description: "Audits direct and transitive dependencies for known vulnerabilities, license conflicts, deprecation and loose pins, ranking findings per dependency. Use when the user asks to 'audit dependencies' or 'review licenses'. Not for one named CVE (vuln-triage) or release signing (supply-chain-audit)."
 argument-hint: "[path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

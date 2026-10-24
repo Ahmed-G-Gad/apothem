@@ -1,13 +1,13 @@
 ---
 name: "secret-rotation"
-description: "Safe secret-rotation template — matched when the user says 'rotate a secret', 'a key leaked', 'a token leaked', 'a credential is exposed', 'revoke and re-issue this key', 'an API key was committed', or any phrasing that asks to safely retire and replace an exposed credential. Treats a leaked credential as compromised the moment it touched a tracked file and enforces the revoke-before-re-issue ordering invariant: detects the coarse exposure surface, revokes the compromised credential at its issuer FIRST, re-issues a least-privilege replacement, rewires configuration through env-var or secret-manager indirection (never plaintext), and verifies no plaintext residue remains in the working tree or version-control history. NOT a full secret-scanner (routes the broad sweep to the host's scanner), NOT an issuer client, NOT a history-rewrite engine. User-invocable directly."
+description: "Use when a credential has leaked or been committed ('rotate a secret', 'a key leaked') and must be retired safely: revokes the exposed secret at its issuer first, re-issues a least-privilege replacement, rewires config through env vars or a secret manager, then checks no plaintext remains. Runs only when the user invokes it."
 user-invocable: true
 argument-hint: "[--scope PATH]"
 disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   archetype: "security-template"
 ---
 

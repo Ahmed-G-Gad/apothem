@@ -1,12 +1,12 @@
 ---
 name: "research-experiment"
-description: "Executes the designed study and captures raw data with full provenance — the run-and-record stage of the /research pipeline. Triggered as 'run the experiment and log it', 'execute the study and capture the data', 'collect the data per the preregistered protocol', or the pipeline-chained hand-off from /research-design. Consumes _inputs/study-design.md plus _inputs/preregistration.md and emits _outputs/experiment-log.md (the timestamped protocol trace), the raw data at a host-natural location (e.g. data/), and _outputs/reproducibility-manifest.md (environment snapshot, seed, protocol log, version pins) so an independent party can reproduce the observations. Reproducibility is binding (R2): no observation enters the log without provenance, and a null or unexpected result is recorded as faithfully as a confirming one (R3). The protocol runs exactly as preregistered; every deviation is disclosed (R5), and privacy and conflict-of-interest declarations carry forward (R6)."
+description: "Runs the preregistered study protocol and records raw data with provenance: experiment log, data, and reproducibility manifest (environment, seed, version pins). Manual only, because it executes the protocol and writes data. Deviations are disclosed; null results are recorded as faithfully as confirming ones."
 argument-hint: "[--suite-name NAME] [--override] [--data-dir PATH] [--seed N] [--dry-run]"
-disable-model-invocation: false
+disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

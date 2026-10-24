@@ -1,6 +1,6 @@
 ---
 name: "test-runner"
-description: "Test-suite runner — discovers the host's test command, runs it, and triages every failure by root cause with test+file+line+assertion evidence. Reports, never fixes. Dispatch as a Research/Quality team member after a code change, before a release cut, or to confirm a fix is green — e.g. 'run the tests and tell me what's failing and why', 'is the suite green on this branch?', 'triage the failures in the auth module'. Detects the runner via host-discovery (pytest/jest/cargo test/go test/Makefile target from the manifest + CI config); never assumes pytest."
+description: "Test-suite runner — discovers the host's test command, runs it, and triages every failure by root cause with test+file+line+assertion evidence. Reports, never fixes. Dispatch as a Research/Quality team member after a code change, before a release cut, or to confirm a fix is green — e.g. 'run the tests and tell me what's failing and why', 'is the suite green on this branch?', 'triage the failures in the auth module'. Tests only: lint, type and security gates route to quality-gate. Detects the runner via host-discovery (pytest/jest/cargo test/go test/Makefile target from the manifest + CI config); never assumes pytest."
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

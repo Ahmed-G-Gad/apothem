@@ -1,8 +1,8 @@
 ---
 name: "research-spec"
 version: "0.1.1"
-updated: "2026-10-15"
-description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Produces falsifiable hypotheses with stated null forms (R3), explicit inclusion/exclusion scope, independently-measurable success metrics (R2), and a glossary, surfacing every ambiguity through the structured-inquiry channel instead of inventing scope or hypotheses. Emits `_spec/research-spec.md` plus the Handoff Manifest in the research-suite folder. `--quick` skips elicitation and writes one lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+updated: "2026-10-24"
+description: "Frames a research question or notes into a testable spec: falsifiable hypotheses, inclusion and exclusion scope, success metrics. Use when the user asks to 'frame this research question', 'turn my notes into a research spec', or 'scope this study'. Not for generating questions (research-ideate)."
 argument-hint: "[path/to/question-or-notes] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 portability: "universal"

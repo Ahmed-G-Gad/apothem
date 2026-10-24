@@ -1,12 +1,12 @@
 ---
 name: "plan-spec"
-description: "Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. Six transformation phases (Discovery & Extraction · Meticulous Consideration · Potency Mapping · Preservation Verification · Expertise Application · Question-Resolution Sweep) governed by four operational disciplines (D1 Meticulous Consideration · D2 EXTREME Potency · D3 STRICT Preservation · D4 Extensive Expertise) under the four-discipline operational invariant (six conditions; failure on any blocks emission). Every questionable surfaces via the structured-inquiry channel per ten resolution disciplines D1–D10 across six mandatory gates G0–G5; silent defaulting is forbidden. Emits a `_spec/spec.md` at the suite folder + Handoff Manifest (unconditionally — even on standalone invocation). The `--quick` flag bypasses Forge elicitation and writes a single project-local lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+description: "Turns free-form prose, notes or rough requirements into a spec-grade _spec/spec.md that keeps the author's wording and settles open questions by inquiry. Use when the user asks to 'turn these notes into a spec', 'refine these requirements' or 'prepare this for planning'. Research: research-spec."
 argument-hint: "[path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -64,7 +64,12 @@ The Forge runs under four operational disciplines and emits five appendices inli
 
 ### Phase 1 — Discovery & Extraction (Pre-G1)
 
-> Moved to `references/step-01-discovery-extraction-pre-g1.md`. MUST read it in full before executing this step.
+Read the prose source in full. For MASSIVE prose (>50K tokens), chunk via parallel `Explore` agents (one chunk per agent, ≤10K tokens each) and persist each extraction at `{suite}/_inputs/extract-chunk-{A,B,...}.md`. Capture extraction lineage explicitly — every chunk file is an authoritative signal-lineage anchor referenced at Phase 6's Question-Resolution Audit.
+
+**Establish the suite folder.** Per `rules/context-management.md` §2.6.1, every `_inputs/` and `_spec/` directory is a direct child of a plan-suite folder. Two sub-cases:
+
+- **Suite name known up front (`--suite-name`):** create `{suite}/_inputs/forge.md` directly.
+- **Suite name not provided:** surface via the structured-inquiry channel (single-select; options derived from a prose-content scan; safe default named per §7.1 of the canonical-channel rule). The question fires before any forge write.
 
 ### Phase 2 — Meticulous Consideration (D1)
 

@@ -6,15 +6,23 @@ Gathers ecosystem context at SessionStart and emits a single-line JSON
 envelope: ``{"hookSpecificOutput":{"hookEventName":"SessionStart",...}}``.
 
 The bootstrap produces a plaintext `additionalContext` payload composed
-of up to three sections:
+of up to seven blocks, in this order:
 
+* **Plugin posture** — a pointer to the bundled rules when Apothem runs as a
+  plugin alone.
 * **Session bootstrap** — source, model, and agent-type echoed back from
   the hook's stdin JSON (optional).
+* **Post-compaction recovery** — the recovery read sequence, after a
+  compaction only.
+* **Skill index** — the generated ``hooks/messages/skill-index.md`` (Claude
+  Code only, when the file exists): the shipped skills grouped by task, so
+  discovery survives the harness dropping skill descriptions from its listing.
 * **Memory summary** — first lines of ``## Project Overview``,
   ``**Latest:**`` value, topic file names, and top bullets from
   ``## Key Conventions`` in the project's ``MEMORY.md`` index.
 * **Plan summary** — the most recently modified plan suite (if any) and
   key fields pulled from its ``PROGRESS.md``.
+* **Conformity posture** — the standing session-start posture message.
 
 Any unexpected exception is caught at the outermost boundary; a valid
 failure envelope is emitted and the process exits 0.
@@ -441,6 +449,55 @@ def read_compaction_recovery(root: Path) -> list[str]:
     return _message_lines(root / "hooks" / "messages" / "postcompact.md")
 
 
+#: Prefix the skill index writes before a manual skill's name. Plugin-installed
+#: skills are namespaced; engine-installed ones are not.
+_INDEX_MANUAL_PREFIX: Final[str] = "/apothem:"
+
+#: Under the plugin, every skill is invoked by its namespaced name.
+_PLUGIN_NAME_HINT: Final[str] = (
+    "Each name above is invoked as apothem:<name> under this plugin."
+)
+
+
+def _claude_code_session(root: Path) -> bool:
+    """Return whether this SessionStart runs under Claude Code.
+
+    Claude Code exports ``CLAUDE_PLUGIN_ROOT`` to a plugin's hooks, and an
+    engine install lives under its configuration directory (``~/.claude``, or
+    ``CLAUDE_CONFIG_DIR`` when set). ``CLAUDE_PROJECT_DIR`` is no signal: Qwen
+    Code sets it for every hook as well, and runs this same bootstrap.
+    """
+    if os.environ.get("CLAUDE_PLUGIN_ROOT", "").strip() or ".claude" in root.parts:
+        return True
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    if not config_dir:
+        return False
+    # Windows paths compare case-insensitively; another drive is never inside.
+    return root.absolute().is_relative_to(Path(config_dir).expanduser().absolute())
+
+
+def read_skill_index(root: Path) -> list[str]:
+    """Return the session-start skill index lines, or [] when not applicable.
+
+    The index is generated at build time (``lib/skill_index.py``) into
+    ``hooks/messages/skill-index.md``; this reads it, never scans the catalog.
+    It is emitted only for a Claude Code session and only when the file exists,
+    so a tree without the index, or another harness, is unchanged. Under the
+    plugin a manual skill is typed ``/apothem:<name>``; an engine install has no
+    plugin namespace, so the prefix is dropped there.
+    """
+    if not _claude_code_session(root):
+        return []
+    lines = _message_lines(root / "hooks" / "messages" / "skill-index.md")
+    if not lines:
+        return []
+    if os.environ.get("CLAUDE_PLUGIN_ROOT", "").strip():
+        lines.append(_PLUGIN_NAME_HINT)
+    else:
+        lines = [line.replace(_INDEX_MANUAL_PREFIX, "/") for line in lines]
+    return lines
+
+
 def plugin_alone_pointer() -> list[str]:
     """Return a lean rules-pointer block when running plugin-alone, else [].
 
@@ -519,6 +576,10 @@ def build_context(
         recovery = read_compaction_recovery(root)
         if recovery:
             blocks.append(["Post-compaction recovery:", *recovery])
+
+    skill_index = read_skill_index(root)
+    if skill_index:
+        blocks.append(["Skill index:", *skill_index])
 
     memory_index = find_memory_index(project_dir, (root,))
     if memory_index is not None:
