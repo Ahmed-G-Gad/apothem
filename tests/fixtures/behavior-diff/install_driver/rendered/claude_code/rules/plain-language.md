@@ -51,11 +51,3 @@ Record each interception in the disclosure ledger per `rules/disclosure-ledger.m
 ## Failure tells
 
 A user-facing sentence naming a mechanistic generic (`AI` / `agent` / `LLM`), a harness brand identifier, a plan stage, or a process marker (`ratified` / `attestation` / `cutover-rehearsal`) where natural product wording carries the meaning.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every in-scope user-facing surface emission in the apothem repo. The mechanical matcher at `conformity/plain_language_grep.py`. Every README / docs / workflow-name / asset-alt / PR-template / CHANGELOG / Pages-copy touch under §3 in-scope.
-- **Satisfies →** `CLAUDE.md` §CM-7 (Coherent Product — codebase-artifact-vs-process-artifact boundary). The apothem-scope plain-language mandate and product-artifact boundary ratification.
-- **Established by ↑** The plain-language sweep mandate (apothem-only). `CLAUDE.md` §CM-7. `rules/operational-mandates.md` §CM-7 (the inward-axis driver).
-- **Gated by ←** The §3 boundary (out-of-scope surfaces are exempt). The §2 carve-outs (domain vocabulary and repo's own name retained).
-- **Cross-bound with ↔** `rules/operational-mandates.md` (CM-7 codebase-coherence mandate this rule outward-projects). `rules/clean-room-generation.md` (Writing Protocol §2 produces narrative that naturally honors plain-language; this rule is the post-emission scan). `rules/disclosure-ledger.md` (M2 — plain-language interceptions land in the ledger). `rules/agent-capability-discipline.md` (plain-language-boundary surface — agent-capability prose stays out-of-scope while user-facing surfaces stay in-scope). `conformity/plain_language_grep.py` (the mechanical matcher operationalizing §1 against §3 with §2 carve-outs). `rules/own-voice-reimplementation.md` (sibling user-facing-vocabulary sweep on the same shipped surfaces this rule scans). `rules/freshness-facade.md` (sibling shipped-surface sweep — plain-language owns the mechanistic-vocabulary token-class, freshness-facade owns the freshness-narrative token-class; same scope, non-overlapping sets). `agents-md-convention.md` (the per-folder agent-facing guidance surface — an out-of-scope agent-facing process artifact whose process vocabulary is load-bearing, while the user-facing surfaces this rule scans stay in-scope).

@@ -65,11 +65,3 @@ Translation outcomes recorded in the ledger per `rules/disclosure-ledger.md`:
 ## Failure tells
 
 A site shipping EN-only while the host's i18n config declares twelve locales. A shipped translated page carrying a `[Machine-seeded — pending review]` / `pending` / `partial` deferral banner. Hardcoded `margin-left` in theme CSS used by AR pages. A page with `<html lang="en">` served at `/zh-cn/`. Missing `hreflang` tags. Glossary terms invented per-page rather than centralized.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every translated page across the host's site / docs / marketing surfaces. Every host i18n-config locale registration. The per-locale glossary. The current-version-only translated facade (no deferral banner).
-- **Satisfies →** The Modern Dev Cohort locale baseline; i18n-discipline always-on coverage; the host's production-ready criterion for translated surfaces; the current-version-only facade for translated surfaces.
-- **Established by ↑** Operator-ratified locale coverage and the banner-free clean-facade decision; the host's i18n configuration surface; `rules/production-ready-prs.md` §5 visibility-surface gap-surfacing.
-- **Gated by ←** The trivial-vs-non-trivial threshold (EN-only projects skip the cohort discipline until i18n is introduced). The host's ratified i18n framework.
-- **Cross-bound with ↔** `rules/i18n-discipline-locale-cohorts.md` (companion sub-rule). `rules/host-discovery.md` (M1 — cohort discovered, not invented). `rules/authority-inquiry.md` (M5 — cohort amendments via the structured-inquiry channel). `rules/disclosure-ledger.md` (M2 — per-locale outcomes recorded). `rules/production-ready-prs.md` (M15 — full authored-page-set coverage per cohort locale). `rules/freshness-facade.md` (the shipped translated facade is current-version-only — no machine-seeded / pending / partial deferral banner). `rules/option-annotation.md` (M7 — amendment inquiries carry Recommended + driver).

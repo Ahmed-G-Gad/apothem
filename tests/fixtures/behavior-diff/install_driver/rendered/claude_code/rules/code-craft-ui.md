@@ -70,11 +70,3 @@ When a palette, font, spacing scale, icon set or pattern is looked up and the lo
 ## Enforcement
 
 Path-filtered to the globs in this rule's `pathFilter` field and demand-loaded as the companion to `rules/code-craft-conventions.md` §6. A change that touches a matching file without the verify report, or that matches a refuse entry, is a finding in code review. The `ui-design` skill's pre-delivery checklist is the extended form of §2.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** The craft floor on every edit to component, markup and stylesheet files matching the path filter.
-- **Satisfies →** `rules/code-craft-conventions.md` §6 Companion Sub-Rule Anchor pointer.
-- **Established by ↑** `rules/code-craft-conventions.md` (parent rule; M13 code craft). The `ui-design` skill, whose verify and refuse lists this rule restates in short form.
-- **Gated by ←** The path-filter. The parent rule's host-discovery walk, which supplies the host's tokens and contrast target before this rule's checks run.
-- **Cross-bound with ↔** `rules/code-craft-conventions.md` (parent rule; the parent cites it back under its own `↔` line).

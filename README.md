@@ -665,7 +665,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | Gemini CLI | Project | `<project>/GEMINI.md` + `<project>/.gemini/` |
 | GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` |
 | Hermes | User | `~/.hermes/` |
-| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/.apothem/support/` |
+| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/.apothem/support/` |
 | Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` |
 | Open-Claw | User | `~/.openclaw/` |
 | OpenCode | User | `~/.config/opencode/` |

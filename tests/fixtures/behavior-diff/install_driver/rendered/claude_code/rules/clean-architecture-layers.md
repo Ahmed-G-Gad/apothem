@@ -181,11 +181,3 @@ Layer separation directly enables testability:
 ## Enforcement
 
 Path-filtered (`**/src/**`, `**/lib/**`, `**/app/**`, `**/packages/**`), scaling per the table above. Implements CM-27. Canonical specification for clean architecture layer discipline.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every non-trivial multi-module project's directory layout (§3 Directory Structure Patterns — flat-module vs. domain-driven-module). ● Every cross-layer dependency check (§2.1 Import Discipline; §2.2 Interface Segregation at Boundaries). ● Every composition-root pattern in dependency injection (§2.3). ◐ The Senior Software Architect role's language-agnostic layer discipline declared at `rules/cognitive-identity.md` §1 (Python-language materialization routes through `rules/code-craft-python.md`).
-- **Satisfies →** ● CM-27 (Clean Architecture Layers — rule-delegated mandate). ● the rules registry row "Clean Architecture".
-- **Established by ↑** ● CM-27. ● `rules/cognitive-identity.md` (the Senior Software Architect role declares clean-architecture as structural law, not guideline).
-- **Gated by ←** ● The path-filter (`**/src/**`, `**/lib/**`, `**/app/**`, `**/packages/**`) — this rule activates only on matching artifact touches. ● `rules/cognitive-identity.md` Senior Software Architect role declaration.
-- **Cross-bound with ↔** ↔ `rules/code-craft-python.md` (Python-language materialization of the layer discipline; §1 DIP cross-references this rule's §2.3 dependency-injection discussion). ↔ `rules/cognitive-identity.md` (the cognitive-identity rule declares the Senior Software Architect role this rule operationalizes). ↔ `rules/clean-room-generation.md` (clean-room generation produces layer-correct artifacts; §2 Writing Protocol respects layer boundaries). ↔ `rules/operational-mandates.md` (CM-27 layer discipline lives there).

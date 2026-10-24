@@ -69,5 +69,5 @@ An abstract-only source described as read. A conjecture stated without a status.
 - **Drives →** Every load-bearing claim emitted on a research artifact under the path-filter; the access label, status label, search record, conditions check, and discriminating-check bar each claim meets before it is stated as settled.
 - **Satisfies →** `rules/authoritative-referencing.md` — the evidence-provenance half of the referencing discipline (the parent binds which source supports a claim; this companion binds how far that source was examined and what status the claim holds).
 - **Established by ↑** `rules/authoritative-referencing.md` (parent rule — the citable-source requirement this companion makes inspectable); the meaningful-scope threshold the parent inherits.
-- **Gated by ←** The path-filter (research, manuscript, paper, literature directories and bibliography or TeX files); the parent's always-on baseline, which must be live for this companion to bound coherently.
+- **Gated by ←** The path-filter (research, manuscript, paper, literature directories and bibliography or TeX files); the parent's baseline, which must be live for this companion to bound coherently.
 - **Cross-bound with ↔** `rules/authoritative-referencing.md` (parent rule — the parent binds which source and when; this companion binds the provenance labels, search record, and check discipline).

@@ -1,6 +1,7 @@
 ---
-trigger: always_on
+trigger: glob
 description: "Independent-critique, open-loop, dynamic multi-agent execution is an available, specified capability — opt-in and default-off under the agnostic posture, never imposed on a clean install; the orchestration mechanics are owned by agent-orchestration."
+globs: "**/agents/**/*.md, **/commands/workflow*.md, **/skills/workflow/**, **/*workflow*.md, **/*multi-agent*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Universal code-craft delegation stub for languages without a dedicated per-language rule. Discovers the host's ratified formatter / linter / type-checker / test framework / per-language idioms and honors them per M1; surfaces silence as inquiry per M5; defers to a per-language sibling rule (code-craft-python, code-craft-shell, code-craft-markdown) when one matches the artifact's path."
-globs: "**"
+globs: "**/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.mjs, **/*.cjs, **/*.vue, **/*.svelte, **/*.css, **/*.scss, **/*.html, **/components/**, **/*.go, **/*.rs, **/*.java, **/*.kt, **/*.rb, **/*.c, **/*.cpp, **/*.h, **/*.hpp, **/*.cs, **/*.php, **/*.swift, **/package.json, **/tsconfig.json, **/Cargo.toml, **/go.mod, **/pom.xml, **/build.gradle*, **/CMakeLists.txt, **/Gemfile"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -24,7 +24,7 @@ Applies whenever a code artifact is authored, modified, or reviewed AND its lang
 | `code-craft-shell.md` | `**/*.sh`, `**/*.bash`, `**/*.ps1` | Shell artifacts (POSIX bash + PowerShell) |
 | `code-craft-markdown.md` | `**/*.md`, `**/*.markdown` | Markdown / prose artifacts |
 
-When a sibling's `pathFilter` matches the artifact path, the sibling applies and this stub yields. When no sibling matches (e.g., TypeScript, Go, Rust, Java, C++, Ruby), this stub is the active code-craft authority.
+When a sibling's `pathFilter` matches the artifact path, the sibling applies and this stub yields. When no sibling matches (e.g., TypeScript, Go, Rust, Java, C++, Ruby), this stub is the active code-craft authority. The `pathFilter` lists the source and manifest files of the languages named here. For a language it does not list, the rule index names this stub, so read it before authoring.
 
 ## Required behavior
 

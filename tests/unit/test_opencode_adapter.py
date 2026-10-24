@@ -21,7 +21,9 @@ from apothem.harnesses._shared import install_driver
 from apothem.harnesses.opencode import OpenCodeAdapter
 from apothem.harnesses.opencode.materializer import (
     LEGACY_RULES_GLOB,
+    RETIRED_ALWAYS_ON_RULES,
     instruction_entries,
+    profile_document_instruction,
 )
 from apothem.lib import install_ledger
 from apothem.lib.frontmatter import field_value
@@ -271,6 +273,142 @@ def test_uninstall_removes_the_legacy_glob(
         "instructions": ["CONTRIBUTING.md"],
         "model": "anthropic/operator-model",
     }
+
+
+# --- Rules that moved from always-on to on-demand ---------------------------
+#
+# The four core rules and the rule index are the only rules whose frontmatter
+# sets ``alwaysApply: true``. OpenCode scopes no rule by path, so every other
+# rule is read on demand through the index; the 24 that earlier releases listed
+# in ``instructions`` by path must leave that list, whatever the install record
+# says, and they stay installed.
+
+_CORE_RULES = (
+    "agnostic-posture",
+    "authority-inquiry",
+    "context-management",
+    "session-closure",
+)
+_INDEX_RULE = "apothem-rule-index"
+
+
+def _rule_entry(name: str) -> str:
+    return f"~/.config/opencode/.apothem/support/rules/{name}.md"
+
+
+def _earlier_instructions() -> list[str]:
+    """The ``instructions`` list the release before this one wrote."""
+    names = sorted(
+        [
+            *_CORE_RULES,
+            *(entry.rsplit("/", 1)[1][:-3] for entry in RETIRED_ALWAYS_ON_RULES),
+        ]
+    )
+    return [profile_document_instruction(), *(_rule_entry(name) for name in names)]
+
+
+def test_instructions_are_the_profile_the_core_rules_and_the_index() -> None:
+    assert instruction_entries() == [
+        profile_document_instruction(),
+        *(_rule_entry(name) for name in sorted([*_CORE_RULES, _INDEX_RULE])),
+    ]
+
+
+def test_the_retired_list_names_24_rules_that_still_ship() -> None:
+    assert len(RETIRED_ALWAYS_ON_RULES) == 24
+    assert len(set(RETIRED_ALWAYS_ON_RULES)) == 24
+    assert not set(RETIRED_ALWAYS_ON_RULES) & set(instruction_entries())
+    assert len(_earlier_instructions()) == 29  # the profile plus 28 rules
+    for entry in RETIRED_ALWAYS_ON_RULES:
+        name = entry.rsplit("/", 1)[1]
+        assert entry == _rule_entry(name[:-3])
+        # Demoted, not removed: the rule ships and its frontmatter says on-demand.
+        assert (_RULES_SRC / name).is_file(), name
+        assert (field_value(_RULES_SRC / name, "alwaysApply") or "") == "false", name
+        assert (field_value(_RULES_SRC / name, "pathFilter") or "").strip(), name
+
+
+def test_every_demoted_rule_is_still_installed_for_reading(
+    adapter: OpenCodeAdapter, isolated_home: Path
+) -> None:
+    adapter.install({})
+    support_rules = adapter.output_path.parent / ".apothem" / "support" / "rules"
+    installed = {path.stem for path in support_rules.glob("*.md")}
+    assert _INDEX_RULE in installed
+    for entry in RETIRED_ALWAYS_ON_RULES:
+        assert entry.rsplit("/", 1)[1][:-3] in installed, entry
+
+
+@pytest.mark.parametrize("action", ["install", "update"])
+def test_an_owned_record_of_the_earlier_list_is_replaced(
+    adapter: OpenCodeAdapter,
+    isolated_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    action: str,
+) -> None:
+    # The earlier release recorded ownership of every entry it listed. The next
+    # install strips those and writes the profile plus the core and the index;
+    # the operator's entry and keys survive.
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            opencode_materializer, "instruction_entries", _earlier_instructions
+        )
+        adapter.install({})
+    config = json.loads(adapter.output_path.read_text(encoding="utf-8"))
+    assert config["instructions"] == _earlier_instructions()
+    config["instructions"].append("CONTRIBUTING.md")
+    config["model"] = "anthropic/operator-model"
+    adapter.output_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+    getattr(adapter, action)({})
+
+    config = json.loads(adapter.output_path.read_text(encoding="utf-8"))
+    assert config["instructions"] == ["CONTRIBUTING.md", *instruction_entries()]
+    assert not set(RETIRED_ALWAYS_ON_RULES) & set(config["instructions"])
+    assert config["model"] == "anthropic/operator-model"
+    assert config["$schema"] == "https://opencode.ai/config.json"
+
+
+@pytest.mark.parametrize("action", ["install", "update"])
+def test_a_record_that_predates_ownership_loses_the_retired_rules(
+    adapter: OpenCodeAdapter, isolated_home: Path, action: str
+) -> None:
+    # Without ownership entries the install cannot tell the earlier release's
+    # explicit paths from an operator's own, so the retired list removes them.
+    _write_legacy_install(
+        adapter.output_path,
+        {
+            "$schema": "https://opencode.ai/config.json",
+            "instructions": ["CONTRIBUTING.md", *_earlier_instructions()],
+            "model": "anthropic/operator-model",
+        },
+    )
+
+    getattr(adapter, action)({})
+
+    config = json.loads(adapter.output_path.read_text(encoding="utf-8"))
+    assert config["instructions"] == ["CONTRIBUTING.md", *instruction_entries()]
+    assert not set(RETIRED_ALWAYS_ON_RULES) & set(config["instructions"])
+    assert config["model"] == "anthropic/operator-model"
+
+
+def test_uninstall_removes_the_retired_rules_from_a_legacy_record(
+    adapter: OpenCodeAdapter, isolated_home: Path
+) -> None:
+    _write_legacy_install(
+        adapter.output_path,
+        {
+            "instructions": ["CONTRIBUTING.md", *_earlier_instructions()],
+            "model": "anthropic/operator-model",
+        },
+    )
+
+    adapter.uninstall()
+
+    remaining = json.loads(adapter.output_path.read_text(encoding="utf-8"))
+    assert not set(RETIRED_ALWAYS_ON_RULES) & set(remaining["instructions"])
+    assert "CONTRIBUTING.md" in remaining["instructions"]
+    assert remaining["model"] == "anthropic/operator-model"
 
 
 def test_uninstall_removes_every_always_on_entry(

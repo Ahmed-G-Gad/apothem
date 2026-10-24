@@ -1,8 +1,8 @@
 ---
 name: "source-accessibility"
 description: "Source trust outranks source accessibility — reach a trusted but inaccessible source via browser then operator interview; never prefer an untrusted-but-free source over a trusted-but-inaccessible one; record the source-trust decision in the ledger."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/docs/**, **/site/**, **/README.md, **/research/**, **/manuscript/**, **/paper/**, **/literature/**, **/*.bib, **/*.tex"
+alwaysApply: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -38,7 +38,7 @@ Every source-selection decision of meaningful scope MUST record, in the change l
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Source selection is a discrete behavior that precedes any claim the artifact rests on; the ranking and escalation apply before the claim is committed.
+Applies at every seriousness level, scaling per the table above. Source selection is a discrete behavior that precedes any claim the artifact rests on; the ranking and escalation apply before the claim is committed.
 
 ## Failure tells
 

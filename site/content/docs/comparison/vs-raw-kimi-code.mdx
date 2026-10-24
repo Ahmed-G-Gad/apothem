@@ -18,7 +18,7 @@ against managing it with Apothem.
 | Task | Raw hand-config | Apothem-managed |
 | ---- | --------------- | --------------- |
 | Author the `AGENTS.md` instruction surface | Hand-write and re-sync per project | One managed block rendered from the shared profile |
-| Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
+| Keep rules, commands, skills, agents in sync | Manual copy per project | Skills and commands (as skills) under `<project>/.kimi-code/skills/`; rules, agents, hooks, and templates under `<project>/.kimi-code/.apothem/support/`, on every install |
 | Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
 | Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code --project <path>` |
@@ -26,10 +26,14 @@ against managing it with Apothem.
 ## What Apothem manages
 
 The kimi-code adapter renders the shared rules and governance surface into the
-project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
-agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
-author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. Kimi Code
-reads project instructions from `AGENTS.md` or `.kimi-code/AGENTS.md`; the
+project-root `AGENTS.md` managed block and installs the skills, and the commands
+wrapped as skills, in `.kimi-code/skills/`, the project skills directory Kimi Code
+loads. The hooks, agents, rules, and templates cohorts go under
+`.kimi-code/.apothem/support/`: Kimi Code reads hooks from the user-scope
+`~/.kimi-code/config.toml`, which the adapter does not write, and the tool
+names in Apothem's agent files have not been compared with the names Kimi Code
+matches. The adapter does not author `.kimi-code/mcp.json`; the MCP surface
+stays operator-owned. Kimi Code reads project instructions from `AGENTS.md` or `.kimi-code/AGENTS.md`; the
 adapter writes only the project-root `AGENTS.md`, and the Kimi Code
 documentation does not say which of the two files wins when both exist. Every
 change to the shared rules re-renders the files on the next `apothem update`.
@@ -39,8 +43,8 @@ change to the shared rules re-renders the files on the next `apothem update`.
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the rules from your existing `AGENTS.md` into the shared corpus.
 3. Run `apothem install --harness kimi-code --project <path>` to render the
-   `AGENTS.md` instruction surface and the `.kimi-code/.apothem/support/` support
-   tree.
+   `AGENTS.md` instruction surface, the `.kimi-code/skills/` skills, and the
+   `.kimi-code/.apothem/support/` support tree.
 4. Run `apothem verify --harness kimi-code --project <path>` to confirm the config
    landed.
 5. Use `apothem update --harness kimi-code --project <path>` for every later

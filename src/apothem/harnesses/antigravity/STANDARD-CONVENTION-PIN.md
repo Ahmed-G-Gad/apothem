@@ -24,8 +24,14 @@
   keys `name`, `pathFilter`, and `alwaysApply` are dropped.
 - Always-on budget: all active global and `always_on` rules share a
   20,000-token budget; past it Antigravity demotes the largest rule files to
-  `- <path>: <description>` pointers the agent reads on demand. Single rule
-  files are truncated past 24,000 bytes; no Apothem rule is that large.
+  `- <path>: <description>` pointers the agent reads on demand. The adapter
+  emits five `always_on` rules (the four core rules and the rule index), about
+  38,000 bytes or 11,000 tokens at 3.5 bytes per token, so none is demoted;
+  every other rule is `glob`. Single rule files are truncated past 24,000
+  bytes. Two path-scoped companions exceed that
+  (`interactive-questions-canonical-shapes` and
+  `canonical-layout-reporting-tiers`, measured 2026-10-24), so only their start
+  loads on a match.
 - Manifest: `plugin.json` admits only `name` (required for the CLI) and
   `description`; the published schema sets `additionalProperties: false`. The
   template carries exactly those two keys.

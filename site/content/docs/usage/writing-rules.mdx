@@ -27,6 +27,20 @@ A rule's scope is set by two frontmatter fields, `alwaysApply` and
 | `true` | `""` (empty) | Always-on: every session, every file |
 | `false` | a glob like `"**/*.py"` | Path-filtered: only when the active file matches the glob |
 
+Five shipped rules are always-on: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, and the rule index. An always-on rule
+costs context in every session, so a new rule SHOULD be path-filtered with globs
+that name the files it governs; a filter of `**` alone scopes nothing, and Claude
+Code loads that rule at launch like an always-on one. The
+shipped corpus holds the always-on set to that list and to a byte ceiling; a
+rule promoted to always-on changes both in the same change. Name each rule you
+add in the rule index (`apothem-rule-index`), so a session on a harness that
+does not scope rules by path still finds it. A companion rule
+(`<parent>-<aspect>`) takes its parent's `pathFilter`, or a narrower one, so it
+never loads without its parent. Do not give a rule of your own the name
+`apothem-rule-index`: an install backs up and overwrites a rule file with that
+name.
+
 ## Example rule
 
 ```markdown

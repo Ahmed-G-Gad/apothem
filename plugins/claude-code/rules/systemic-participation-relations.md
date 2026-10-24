@@ -1,7 +1,7 @@
 ---
 name: "systemic-participation-relations"
 description: "Path-filtered companion rule carrying the operational detail of M14 systemic participation — the four systemic relations table, sibling-convention convergence detail, index/registry update table, the three orphan classes, the three silo classes, retirement discipline, and the cross-component reference graph invariant. Demand-loaded when the parent `systemic-participation.md` rule's anchors surface on host-project component touches."
-pathFilter: "**/src/**, **/lib/**, **/tests/**, **/docs/**, **/.github/**, **/migrations/**, **/__init__.py, **/CONTRIBUTING.md, **/CODEOWNERS"
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md, **/__init__.py, **/CONTRIBUTING.md, **/CODEOWNERS, **/migrations/**, **/.github/**"
 alwaysApply: false
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: false
 
 ## Purpose
 
-Carry the operational detail of M14 systemic participation that the parent rule `rules/systemic-participation.md` anchors. The companion is path-filtered: it loads when the assistant edits any host-project component class (source modules, libraries, tests, documentation, CI workflows under `.github/`, migrations, package `__init__.py`, contribution surfaces). The parent rule retains the canonical directive paragraph, the pre-conditions, the disclosure surface, and the failure-tells catalog; this companion carries the seven sub-section bodies that operationalize the directive at the component-touch surface.
+Carry the operational detail of M14 systemic participation that the parent rule `rules/systemic-participation.md` anchors. The companion is path-filtered: it loads when the assistant edits a governed-core authoring surface (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files), CI workflows under `.github/`, migrations, a package `__init__.py`, or a contribution surface (`CONTRIBUTING.md`, `CODEOWNERS`). The parent rule retains the canonical directive paragraph, the pre-conditions, the disclosure surface, and the failure-tells catalog; this companion carries the seven sub-section bodies that operationalize the directive at the component-touch surface.
 
 ## Obligations
 
@@ -97,12 +97,12 @@ The reference-graph state is the host's **systemic invariant**. Every change pre
 
 ## Enforcement
 
-Path-filtered (the nine glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/systemic-participation.md`. The parent rule carries the canonical M14 directive, pre-conditions, disclosure surface, and failure-tells catalog; this companion carries the seven operational sub-sections (four relations, sibling convergence, index/registry update, orphan classes, silo classes, retirement, reference graph).
+Path-filtered (the thirteen glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/systemic-participation.md`. The parent rule carries the canonical M14 directive, pre-conditions, disclosure surface, and failure-tells catalog; this companion carries the seven operational sub-sections (four relations, sibling convergence, index/registry update, orphan classes, silo classes, retirement, reference graph).
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● The four-relations declaration at every newly-introduced host-project component (the §1 table is the operational floor). ● The sibling-convergence walk at §2. ● The index / registry update at §3 across every component class. ● The orphan-recovery and silo-recovery actions at §4 and §5. ● The retirement-discipline unwinding at §6. ● The reference-graph invariant preservation at §7.
 - **Satisfies →** ● the fifteen-mandate registry row **M14 — Ecosystem Systemicity** (operational detail tier). ● `rules/systemic-participation.md` companion-sub-rule anchors.
 - **Established by ↑** ● `rules/systemic-participation.md` (parent-rule anchor). ● the fifteen-mandate registry (ratifies M14). ● the Pre-Emission Gate row 14.
-- **Gated by ←** ● The path-filter (nine glob patterns covering host-project component classes) — this rule demand-loads only on component touches. ● `rules/systemic-participation.md` always-on baseline (parent rule must be live for the anchors to surface).
+- **Gated by ←** ● The path-filter (thirteen glob patterns covering the governed-core authoring surfaces, CI workflows, migrations, package inits, and contribution files) — this rule demand-loads only on component touches. ● `rules/systemic-participation.md` baseline (parent rule must be live for the anchors to surface).
 - **Cross-bound with ↔** ↔ `rules/systemic-participation.md` (parent rule; companion-sub-rule anchors bind this companion). ↔ `rules/canonical-layout.md` (M12 — orphan-prevention discipline at §3 of that rule extends through this companion's §4 to all newly-introduced components). ↔ `rules/bidirectional-binding.md` (M10 — the four systemic relations populate the M10 five-direction binding section). ↔ `rules/host-discovery.md` (M1 — sibling-convergence walks the host-discovery surface). ↔ `rules/code-craft-conventions.md` (universal-delegation stub's sibling-convergence enforcement at §2 binds here for code-language artifacts). ↔ `rules/disclosure-ledger.md` (M2 — systemic-participation outcomes recorded in the ledger). ↔ `rules/harness-adapter-shape-schemas.md` (M14 — convergence-vs-divergence at §2).

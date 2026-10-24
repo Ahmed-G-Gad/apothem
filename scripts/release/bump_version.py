@@ -60,6 +60,7 @@ JSON_ANCHORS: list[tuple[str, tuple[str, ...]]] = [
     (".claude-plugin/marketplace.json", ("metadata",)),
     ("gemini-extension.json", ()),
     ("qwen-extension.json", ()),
+    ("plugins/apothem/plugin.json", ()),
     ("plugins/apothem/.codex-plugin/plugin.json", ()),
     ("package.json", ()),
     ("vscode-extension/package.json", ()),

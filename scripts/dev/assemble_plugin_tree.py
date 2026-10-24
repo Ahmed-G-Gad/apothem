@@ -54,8 +54,9 @@ from apothem.lib.plugin_tree import assemble_plugin_tree  # noqa: E402
 SRC_ROOT = _REPO_ROOT / "src" / "apothem"
 
 #: Committed plugin root. Named for the harness whose plugin surface it is —
-#: the sibling ``plugins/apothem/`` is Codex's ``.codex-plugin`` surface, a
-#: different manifest format for a different host.
+#: the sibling ``plugins/apothem/`` is Codex's surface (a root ``plugin.json``
+#: plus a ``.codex-plugin`` fallback), a different manifest format for a
+#: different host.
 PLUGIN_ROOT = _REPO_ROOT / "plugins" / "claude-code"
 
 

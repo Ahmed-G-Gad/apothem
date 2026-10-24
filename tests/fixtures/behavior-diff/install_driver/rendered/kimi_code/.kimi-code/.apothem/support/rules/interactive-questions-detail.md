@@ -11,7 +11,7 @@ alwaysApply: false
 
 ## Purpose
 
-Carry the demand-load detail for the always-on parent `rules/interactive-questions.md`: the authoring-discipline procedure and the anti-pattern catalog. Loads on path match when a surface authors structured-inquiry invocations, so the detail pays its context cost only where questions are written.
+Carry the demand-load detail for the parent `rules/interactive-questions.md`: the authoring-discipline procedure and the anti-pattern catalog. Loads on path match when a surface authors structured-inquiry invocations, so the detail pays its context cost only where questions are written.
 
 ## Authoring Discipline
 
@@ -36,6 +36,6 @@ Author every invocation in five ordered steps:
 
 - **Drives →** The authoring review every structured-inquiry invocation passes before emission; the anti-pattern checks the parent §8 sweep matchers operationalize.
 - **Satisfies →** The demand-load detail tier for the parent `interactive-questions.md` authoring discipline and anti-pattern catalog.
-- **Established by ↑** `rules/interactive-questions.md` (the always-on parent this companion carries detail for, per the parent / companion-sub-rule pattern).
+- **Established by ↑** `rules/interactive-questions.md` (the parent this companion carries detail for, per the parent / companion-sub-rule pattern).
 - **Gated by ←** The `pathFilter` glob (demand-loads only when a question-authoring surface is touched).
 - **Cross-bound with ↔** `rules/interactive-questions.md` (parent — §9 Authoring Discipline and the Anti-Patterns catalog were moved here under the companion-sub-rule pattern); `rules/interactive-questions-canonical-shapes.md` and `rules/interactive-questions-sweep-matchers.md` (sibling companions carrying the schema worked-examples and the H1–H7 matcher catalog). ↔ `rules/option-annotation-form.md` (choice-overload bound, authoring discipline).

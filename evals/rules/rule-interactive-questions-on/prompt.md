@@ -80,7 +80,7 @@ append_system_prompt: |
 
   ## Enforcement
 
-  Always-on. Implements CM-2 extension. Detail-tier at `rules/interactive-questions-canonical-shapes.md`; matchers at `rules/interactive-questions-sweep-matchers.md`.
+  Applies whenever the user is asked for input. Implements CM-2 extension. Detail-tier at `rules/interactive-questions-canonical-shapes.md`; matchers at `rules/interactive-questions-sweep-matchers.md`.
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,8 +1,16 @@
 ---
 name: "agile-sprints"
 description: "Non-trivial multi-step work in host projects runs as disciplined Agile sprints — Sprint Goal + Backlog + Definition of Ready + Definition of Done + Sprint Review + Retrospective + Velocity tracking. The trivial-vs-non-trivial threshold is the ratifiable choice (line-count + scope hybrid). Empirical process control — transparency, inspection, adaptation — applies throughout."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/.apothem/plans/**, **/.plans/**, **/phases/**, **/PHASE.md, **/MASTER-PLAN.md, **/PROGRESS.md, **/REPORT.md"
+alwaysApply: false
+paths:
+  - "**/.apothem/plans/**"
+  - "**/.plans/**"
+  - "**/phases/**"
+  - "**/PHASE.md"
+  - "**/MASTER-PLAN.md"
+  - "**/PROGRESS.md"
+  - "**/REPORT.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -54,11 +62,3 @@ Every sprint apparatus emission is recorded in the disclosure ledger per `rules/
 ## Failure tells
 
 A bulk multi-day diff with no sprint structure or retrospective. A Sprint Goal phrased as activity rather than outcome. Backlog items without estimates or acceptance criteria. DoD with `n/a` on every criterion. Rubber-stamp Reviews. Vague retrospective actions. Velocity collected but never inspected. Non-trivial work emitting no apparatus (silent threshold-pick). Trivial scope emitting full apparatus (over-calibration). Project-scope threshold override without ratifying-source citation.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every non-trivial multi-step work surface in every host project (the seven canonical sprint elements are the work-shape floor). ● Every `skills/*/SKILL.md` multi-step procedure (Sprint Planning → Execution → Review → Retrospective). ● Every multi-phase plan's per-phase apparatus (the M11 ↔ phase-apparatus correspondence). ● The empirical process control's three pillars (transparency, inspection, adaptation) at every sprint cadence. ● The pre-emission gate's per-increment DoD inspection per `rules/pre-emission-gate.md`.
-- **Satisfies →** ● the fifteen-mandate registry row **M11 — Agile Sprints**. ● the Pre-Emission Gate row 11 (M11 agile-sprints check). ● the trivial-vs-non-trivial threshold (this rule operationalizes the §8.1 ratification at sprint planning).
-- **Established by ↑** ● the fifteen-mandate registry (ratifies M11). ● the trivial-vs-non-trivial threshold (the trivial-threshold ratification). ● the Pre-Emission Gate row 11. ● The Scrum Guide's empirical process control framework (transparency / inspection / adaptation — the canonical Agile foundation; this rule's §2 Three Pillars subsection is the host-project projection of that framework).
-- **Gated by ←** ● The §8.1 trivial-threshold (trivial work is exempt from the sprint apparatus). ● `CLAUDE.md` always-loaded preamble. ● `rules/expertise-posture.md` calibration ladder (depth-to-task calibration governs whether sprint apparatus is the right scale; over-calibration on trivial work is non-conformant per §6's failure tells).
-- **Cross-bound with ↔** ↔ `rules/agile-sprints-elements.md` (path-filtered companion sub-rule carrying §1 per-element bodies, §2 Three Pillars detail, §3 Surface Imposition table, §4 Failure Recovery table). ↔ `rules/canonical-layout.md` (M12 — phase / sub-phase reporting; the M11 ↔ M12 correspondence is mutual). ↔ `rules/pre-emission-gate.md` (M4 — bar 11 enforces sprint-apparatus instantiation). ↔ `rules/expertise-posture.md` (M6 — calibration ladder cross-references the trivial-threshold). ↔ `rules/production-ready-prs.md` (M15 — DoD's `production-ready` criterion). ↔ `rules/disclosure-ledger.md` (M2 — sprint emissions recorded). ↔ `rules/definitiveness.md` (M8 — Sprint Goal definitiveness floor). ↔ `rules/agnostic-posture.md` (the sprint apparatus is opt-in under the host-agnostic posture, not a default-on obligation). ↔ `rules/canonical-layout-reporting-tiers.md` (M11 — the §6 M11 ↔ M12 correspondence table is the mutual-reinforcement surface; sprint apparatus and layout / reporting surface bind both ways). ↔ `rules/expertise-posture-elements.md` (↔ reciprocal of the peer's Cross-bound citation). ↔ `rules/pre-emission-gate-bars.md` (this rule is among the M-rules named in the gate's "Failure → action" column; the bar-level catalog cross-binds each).

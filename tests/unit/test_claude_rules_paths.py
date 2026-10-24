@@ -4,11 +4,16 @@
 """Claude Code rule scoping: ``pathFilter`` becomes the native ``paths:`` list.
 
 Claude Code loads every file under ``~/.claude/rules/`` at launch unless its
-frontmatter carries ``paths:``, the only rule field it reads. The corpus marks
+frontmatter carries a scoping ``paths:`` list (one that is not ``**`` alone), the
+only rule field it reads. The corpus marks
 path-scoped rules with the harness-neutral ``pathFilter`` key, so a verbatim
-copy loaded all 91 rules in every session. The claude_code install renders each
+copy loaded every rule in every session. The claude_code install renders each
 rule through ``_claude_rule_text``, which adds ``paths:`` for path-filtered
-rules and leaves always-on rules byte-identical.
+rules, drops the closing ``## Bindings`` section, and changes nothing else. The
+dropped section, the reinstall over earlier copies and the launch-loaded set of
+a real install are pinned platform-neutral in ``test_claude_rule_emission.py``.
+Which rules are always-on (the four core rules and the rule index) is pinned in
+``test_always_on_core.py``.
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ import pytest
 import yaml
 
 from apothem.harnesses._shared.install_driver_converters import _claude_rule_text
+from tests._shared.claude_rule_scope import loads_at_launch_text
 
 _REPO = Path(__file__).resolve().parents[2]
 _RULES = _REPO / "src" / "apothem" / "rules"
@@ -109,7 +115,7 @@ def test_engine_install_scopes_path_filtered_rules(tmp_path: Path) -> None:
     installed = sorted((home / ".claude" / "rules").glob("*.md"))
     assert installed
     loaded_at_launch = [
-        p.name for p in installed if "paths" not in _frontmatter(p.read_text("utf-8"))
+        p.name for p in installed if loads_at_launch_text(p.read_text("utf-8"))
     ]
     always_on = [
         p.name

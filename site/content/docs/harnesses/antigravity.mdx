@@ -38,8 +38,12 @@ directory that does not open with a valid `trigger`
 each Apothem rule is converted on install. A rule that always applies gets
 `trigger: always_on`; a rule scoped to paths gets `trigger: glob` with the same
 patterns in `globs`; any other rule gets `trigger: model_decision`. Every rule
-keeps its `description`. Antigravity shares a 20,000-token budget across
-always-on rules and turns the largest into on-demand pointers past it.
+keeps its `description`. Five rules always apply: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, and the rule index
+`apothem-rule-index`, which names every other rule and when to read it. The other
+rules carry `trigger: glob`. Antigravity shares a 20,000-token budget across
+always-on rules and turns the largest into on-demand pointers past it; the five
+rules come to about 11,000 tokens, so none is turned into a pointer.
 
 **Plugin manifest.** `plugin.json` carries only `name` and `description`, the
 two keys Antigravity's plugin schema admits.

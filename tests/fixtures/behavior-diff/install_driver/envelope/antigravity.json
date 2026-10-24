@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 196,
+    "created": 197,
     "error": 0,
     "skipped": 0,
     "unchanged": 4,
@@ -56,6 +56,7 @@
     "<ROOT>/antigravity-cli/plugins/apothem/rules/agile-sprints.md",
     "<ROOT>/antigravity-cli/plugins/apothem/rules/agnostic-posture-checklist.md",
     "<ROOT>/antigravity-cli/plugins/apothem/rules/agnostic-posture.md",
+    "<ROOT>/antigravity-cli/plugins/apothem/rules/apothem-rule-index.md",
     "<ROOT>/antigravity-cli/plugins/apothem/rules/authoritative-referencing-homes.md",
     "<ROOT>/antigravity-cli/plugins/apothem/rules/authoritative-referencing-provenance.md",
     "<ROOT>/antigravity-cli/plugins/apothem/rules/authoritative-referencing-quotation.md",

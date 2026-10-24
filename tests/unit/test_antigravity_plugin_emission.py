@@ -30,6 +30,20 @@ _RULES_SRC = _PKG / "rules"
 _TRIGGERS = {"always_on", "model_decision", "glob", "manual"}
 _RULE_KEYS = {"trigger", "description", "globs"}
 
+#: The rules that load in every session, plus the index that names the rest.
+_CORE_RULES = (
+    "agnostic-posture",
+    "authority-inquiry",
+    "context-management",
+    "session-closure",
+)
+_INDEX_RULE = "apothem-rule-index"
+
+#: Antigravity's documented shared budget for always-on and global rules, and
+#: the bytes-per-token estimate the repository uses for context budgets.
+_SHARED_BUDGET_TOKENS = 20_000
+_BYTES_PER_TOKEN = 3.5
+
 #: The "Full JSON schema" published on https://antigravity.google/docs/plugins
 #: (retrieved 2026-10-02).
 _PLUGIN_SCHEMA = {
@@ -89,6 +103,46 @@ def test_trigger_follows_the_source_activation(plugin_root: Path) -> None:
             assert fields["globs"] == source["pathFilter"]
         else:
             assert fields["trigger"] == "model_decision", rule.name
+
+
+def _always_on(plugin_root: Path) -> list[Path]:
+    return [
+        rule
+        for rule in sorted((plugin_root / "rules").glob("*.md"))
+        if _frontmatter(rule.read_text(encoding="utf-8"))["trigger"] == "always_on"
+    ]
+
+
+def test_only_the_core_rules_and_the_index_are_always_on(plugin_root: Path) -> None:
+    assert {rule.stem for rule in _always_on(plugin_root)} == {
+        *_CORE_RULES,
+        _INDEX_RULE,
+    }
+
+
+def test_the_always_on_set_fits_the_shared_token_budget(plugin_root: Path) -> None:
+    # Antigravity gives every active always_on and global rule one shared
+    # budget and demotes the largest files past it. The files carry their
+    # Bindings sections here, so this counts the whole copies.
+    total = sum(len(rule.read_bytes()) for rule in _always_on(plugin_root))
+    assert total / _BYTES_PER_TOKEN < _SHARED_BUDGET_TOKENS
+
+
+def test_no_demoted_rule_loses_its_scope(plugin_root: Path) -> None:
+    # A rule that is not always-on is activated by its own patterns: none
+    # falls to model_decision or manual, where Antigravity would not apply it
+    # to the files it governs.
+    on = {rule.name for rule in _always_on(plugin_root)}
+    demoted = [
+        rule
+        for rule in sorted((plugin_root / "rules").glob("*.md"))
+        if rule.name not in on
+    ]
+    assert demoted
+    for rule in demoted:
+        fields = _frontmatter(rule.read_text(encoding="utf-8"))
+        assert fields["trigger"] == "glob", rule.name
+        assert fields["globs"] == _source_fields(rule.name)["pathFilter"], rule.name
 
 
 def test_rule_body_is_carried_without_source_frontmatter(plugin_root: Path) -> None:

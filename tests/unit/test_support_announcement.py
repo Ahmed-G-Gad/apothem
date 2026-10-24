@@ -20,9 +20,13 @@ from pathlib import Path
 import pytest
 
 import apothem
+from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver_layout import (
     ANNOUNCEMENT_HEADING,
+    RULE_INDEX_CITATION,
+    CorpusLayout,
     harness_layout,
+    support_announcement,
 )
 from apothem.lib.harness_registry import (
     HARNESS_REGISTRY,
@@ -48,6 +52,13 @@ _CITATION = re.compile(
 
 #: A bullet of the announcement: ``- `rules/<path>` is `<dir>/<path>```.
 _BULLET = re.compile(r"^- `([a-z]+)/<path>` is `(.+)/<path>`$", re.MULTILINE)
+
+#: The sentence that points at the installed rule index.
+_INDEX_SENTENCE = re.compile(
+    r"^Start with the rule index at `(.+)`: it names every rule and when to read "
+    r"it\.$",
+    re.MULTILINE,
+)
 
 #: Model-facing files an install writes (rules, skills, commands, agents).
 _BODY_SUFFIXES = frozenset({".md", ".mdc", ".toml"})
@@ -137,6 +148,14 @@ def test_install_announces_only_installed_directories(
     for other in HARNESS_REGISTRY:
         assert other.display_name not in prose, other.display_name
 
+    # One sentence points at the rule index, and the file it names is installed.
+    pointers = _INDEX_SENTENCE.findall(section)
+    assert len(pointers) == 1, entry.public_id
+    shown = Path(pointers[0])
+    located = shown if shown.is_absolute() else project / shown
+    assert located == mapping["rules"] / "apothem-rule-index.md"
+    assert located.is_file()
+
 
 @pytest.mark.parametrize("entry", _WITH_LAYOUT, ids=lambda entry: entry.public_id)
 def test_citations_resolve_against_the_announced_directories(
@@ -168,6 +187,57 @@ def test_citations_resolve_against_the_announced_directories(
         f"{entry.public_id}: {len(measured) - len(unresolved)}/{len(measured)} "
         f"citations resolve; unresolved: {sorted(set(unresolved))}"
     )
+
+
+# --- The rule-index sentence -------------------------------------------------
+
+
+def _rules_layout(base: Path | None = None) -> CorpusLayout:
+    root = (base or Path("/home/user")) / ".tool"
+    return CorpusLayout(
+        dirs=(("rules", root / "rules"), ("hooks", root / "support" / "hooks")),
+        base=base,
+    )
+
+
+def test_the_announcement_points_at_the_installed_rule_index() -> None:
+    text = support_announcement(_rules_layout())
+    index = Path("/home/user/.tool/rules/apothem-rule-index.md").as_posix()
+    sentence = (
+        f"Start with the rule index at `{index}`: it names every rule and when "
+        "to read it."
+    )
+    assert text.count(sentence) == 1
+    # It follows the directory bullets and precedes the closing sentence.
+    assert text.index("- `hooks/<path>`") < text.index(sentence)
+    assert text.index(sentence) < text.index("A cited path whose first segment")
+
+
+def test_a_project_scope_announcement_shows_the_index_relative() -> None:
+    text = support_announcement(_rules_layout(Path("/work/project")))
+    assert "at `.tool/rules/apothem-rule-index.md`:" in text
+
+
+def test_no_rules_directory_means_no_index_sentence() -> None:
+    layout = CorpusLayout(dirs=(("hooks", Path("/home/user/.tool/hooks")),))
+    text = support_announcement(layout)
+    assert text.startswith(ANNOUNCEMENT_HEADING)
+    assert "rule index" not in text
+
+
+def test_a_package_without_the_index_gets_no_sentence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = tmp_path / "package"
+    (package / "rules").mkdir(parents=True)
+    monkeypatch.setattr(install_driver, "APOTHEM_SRC", package)
+    assert "rule index" not in support_announcement(_rules_layout())
+    (package / "rules" / "apothem-rule-index.md").write_text("x", encoding="utf-8")
+    assert "rule index" in support_announcement(_rules_layout())
+
+
+def test_the_shipped_package_carries_the_index_the_citation_names() -> None:
+    assert (_SRC / RULE_INDEX_CITATION).is_file()
 
 
 @pytest.mark.parametrize("entry", _WITHOUT_LAYOUT, ids=lambda entry: entry.public_id)

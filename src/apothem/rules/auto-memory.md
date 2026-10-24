@@ -1,8 +1,8 @@
 ---
 name: "auto-memory"
 description: "Auto memory lifecycle augmenting the harness built-in — classifies memory against PROGRESS.md / PLAN-NOTES.md / skills (stable fact/convention/preference/insight → memory; plan/task-specific → PROGRESS/PLAN-NOTES; reusable technique with detection signal → skill), bans session-specific context / incomplete info / CLAUDE.md duplicates / plan-specific decisions / ephemeral facts, and anchors topic-file hygiene to the path-filtered companion."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/memory/**, **/MEMORY.md, **/projects/**/memory/**, **/promotion-ledger.md"
+alwaysApply: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -56,7 +56,7 @@ MEMORY.md indexing, topic-file naming / sizing / split / merge, deduplication, s
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Implements CM-26. Canonical specification for memory lifecycle, topic organization, and content placement.
+Applies at every seriousness level, scaling per the table above. Implements CM-26. Canonical specification for memory lifecycle, topic organization, and content placement.
 
 ## Bindings (§0.j five-direction)
 
