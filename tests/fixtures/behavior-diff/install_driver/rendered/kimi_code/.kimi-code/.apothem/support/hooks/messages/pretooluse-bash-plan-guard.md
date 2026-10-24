@@ -23,9 +23,8 @@ for users on the Claude Code harness) or any other global-ecosystem path with
 plan-shaped content. Applies the same redirect-required / soft-flag / allow verdict matrix
 that the Write / Edit / NotebookEdit guard applies, projected onto the
 shell-redirection surface. Surfaces the foundational Plans-Locality
-mandate (`CLAUDE.md` Plans Discipline; spec `_spec/spec.md` §3 +
-§5.5.1) at the Bash tool-call surface so shell-redirected writes do not
-bypass the Write-route guard.
+mandate (`CLAUDE.md` Plans Discipline) at the Bash tool-call surface so
+shell-redirected writes do not bypass the Write-route guard.
 
 **Output-redirection patterns inspected.**
 

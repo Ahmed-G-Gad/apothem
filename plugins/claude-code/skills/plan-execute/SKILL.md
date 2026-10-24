@@ -133,7 +133,7 @@ Per `CLAUDE.md` Section 7.6 (including CM-22 §4: ecosystem gap detection). SHAR
 
 ### Step 10: Continuous Execution Transition (CM-16)
 
-> Moved to `references/step-10-continuous-execution-transition-cm-16.md`. MUST read it in full before executing this step.
+> Moved to `references/step-10-continuous-execution-transition.md`. MUST read it in full before executing this step.
 
 ---
 

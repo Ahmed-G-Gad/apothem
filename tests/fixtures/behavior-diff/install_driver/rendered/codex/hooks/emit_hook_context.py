@@ -37,6 +37,7 @@ if str(_LIB_DIR) not in sys.path:
 from events import (
     HOOK_SPECIFIC_OUTPUT_EVENTS as _HOOK_SPECIFIC_OUTPUT_EVENTS,
 )
+from header_check import edit_lacks_header, project_adopts_header, write_lacks_header
 from log import get_logger
 from message_text import advisory_section, fill_placeholders, strip_maintainer_text
 from stdin_json import read_stdin_json
@@ -259,10 +260,11 @@ _SUITE_ROOT_PREFIX_RE: Final[re.Pattern[str]] = re.compile(
     r"(?:\.apothem/plans|\.plans)/[^/\s]+/0\d-[^/\s]+\.md"
 )
 
+_EDIT_HEADER_GUARD_MESSAGE: Final[str] = "pretooluse-edit-header-guard.md"
 _HEADER_GUARD_MESSAGES: Final[frozenset[str]] = frozenset(
     {
         "pretooluse-write-header-guard.md",
-        "pretooluse-edit-header-guard.md",
+        _EDIT_HEADER_GUARD_MESSAGE,
     }
 )
 
@@ -299,6 +301,15 @@ _SHELL_TOOL_NAMES: Final[frozenset[str]] = frozenset(
 )
 _DEPENDENCY_GUARD_MESSAGE: Final[str] = "pretooluse-dependency-guard.md"
 _EVAL_GUARD_MESSAGE: Final[str] = "pretooluse-eval-guard.md"
+#: Commands that only search, record text or change directory. A shell command
+#: made of nothing else never evaluates the text it names, so the eval scan has
+#: nothing to find in it.
+_SEARCH_COMMANDS: Final[frozenset[str]] = frozenset(
+    {"cd", "grep", "egrep", "fgrep", "rg", "git commit", "git grep", "git log"}
+)
+#: A lone ``&`` (background): the statement after it is a command the split misses.
+#: ``&&`` is split earlier and ``2>&1`` / ``&>`` are redirections.
+_BACKGROUND_AMP_RE: Final[re.Pattern[str]] = re.compile(r"(?<![>&])&(?![>&])")
 # Mirrors the manifest and lockfile set in
 # ``hooks/messages/pretooluse-dependency-guard.md`` (Scope); a change to one
 # side is mirrored in the other in the same change-set.
@@ -311,17 +322,32 @@ _DEPENDENCY_MANIFEST_RE: Final[re.Pattern[str]] = re.compile(
 # (Trigger / inspected patterns): dynamic evaluation, shell-out with the shell
 # switched on, and unsafe deserialization. A member access (``re.compile(``,
 # ``regex.exec(``) is excluded by the look-behind, so only the bare primitive
-# matches.
+# matches. The call forms need the parenthesis directly after the name, the
+# shape every formatter emits, and an argument after it, so prose such as
+# ``eval (one-off)`` or ``eval()`` stays quiet; a definition (``def exec(``,
+# ``function eval(``, ``fn``, ``fun``, ``func``, ``class Function(``) is not a
+# call either. The shell
+# ``eval`` is a command word at a statement start (line start, or after ``;``
+# ``&`` ``|``) with a quote, ``$`` or backtick later on its line, the forms that
+# carry a dynamic string; the window is bounded because an unbounded one is
+# quadratic on a long line. An English line that opens with "eval" does not
+# match. ``yaml.load`` is safe when ``SafeLoader`` appears in the call's own
+# argument span, which may cross lines and one level of nested parentheses. A
+# Bash command reaches the scanner whole, heredoc body included: that body is
+# file content, so it is scanned like a Write.
 _EVAL_PRIMITIVE_RES: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"(?<![\w.])(?:eval|exec|compile)\s*\("),
-    re.compile(r"(?<![\w.])(?:new\s+)?Function\s*\("),
-    re.compile(r"(?:^|[;&|]\s*)eval\s", re.MULTILINE),
+    re.compile(
+        r"(?<![\w.])(?<!def )(?<!function )(?<!fn )(?<!fun )(?<!func )"
+        r"(?:eval|exec|compile)\((?!\))"
+    ),
+    re.compile(r"(?<![\w.])(?<!class )(?:new\s+)?Function\((?!\))"),
+    re.compile(r"(?:^[ \t]*|[;&|]\s*)eval(?=[ \t][^\n]{0,200}[\"'`$])", re.MULTILINE),
     re.compile(r"\bos\.system\s*\("),
     re.compile(r"\bshell\s*=\s*True\b"),
     re.compile(r"\bchild_process\b"),
     re.compile(r"\b(?:pickle|cPickle|marshal|dill)\.loads?\s*\("),
     re.compile(r"\byaml\.unsafe_load\s*\("),
-    re.compile(r"\byaml\.load\s*\((?![^\n)]*SafeLoader)"),
+    re.compile(r"\byaml\.load\s*\((?!(?:[^()]|\([^()]*\)){0,400}?SafeLoader)"),
 )
 # Codex ``apply_patch`` carries its targets inside the patch body.
 _PATCH_TARGET_RE: Final[re.Pattern[str]] = re.compile(
@@ -785,37 +811,54 @@ def _looks_plan_shaped(path: str, text: str, root: Path | None = None) -> bool:
     return any(marker in haystack for marker in _PLAN_SHAPED_MARKERS)
 
 
-def _missing_header(path: str, text: str) -> bool:
-    if not path or not text:
+def _tool_string(tool_input: dict[str, object], key: str) -> str:
+    value = tool_input.get(key)
+    return value if isinstance(value, str) else ""
+
+
+def _missing_header(
+    basename: str,
+    path: str,
+    tool_input: dict[str, object],
+    root: Path,
+    base: Path,
+) -> bool:
+    """True when this Write or Edit leaves *path* without the canonical header.
+
+    The header is Apothem's own convention, so only a project that follows it is
+    judged: a git project at *root* that carries the header fixture. Of its files,
+    only one inside the project is checked, against the exemption globs as the
+    project-relative path; a harness config directory such as ``~/.claude`` is not
+    a project, and the conformity gate covers it. The checker is ``header_check``,
+    standard library only, so it runs where the ``apothem`` package is not
+    importable (a plugin install) without paying for that import.
+    """
+    if not project_adopts_header(root):
         return False
-    try:
-        from apothem.conformity import file_header_grep
-    except ImportError as exc:
-        # Plugin-alone installs ship the dispatcher without the ``apothem``
-        # package on the path, so the conformity import is unresolvable. That
-        # is an ABSENT checker, not a header-absent verdict: degrade to
-        # no-advisory (return False) so the header guard does not fire on
-        # EVERY Write/Edit where it cannot actually check the header. The
-        # header invariant is still enforced mechanically in CI and pre-commit.
-        _logger.debug(
-            "file_header_grep unavailable (%s); header guard degraded to no-advisory",
-            type(exc).__name__,
-        )
+    target = _resolve_target(path, base) if path else None
+    if target is None or not _is_inside(target, root):
         return False
+    rel_path = target.relative_to(root).as_posix()
     try:
-        result = file_header_grep.check(text, Path(path))
+        if basename == _EDIT_HEADER_GUARD_MESSAGE:
+            return edit_lacks_header(
+                rel_path,
+                target,
+                _tool_string(tool_input, "old_string"),
+                _tool_string(tool_input, "new_string"),
+                tool_input.get("replace_all") is True,
+            )
+        return write_lacks_header(rel_path, _tool_string(tool_input, "content"))
     except Exception as exc:  # code-craft-boundary: broad-except; fail-closed guard.
-        # A genuine internal defect in file_header_grep.check (the module
-        # imported, but the call raised) fails CLOSED — treat as header-absent
-        # and surface the failing class so a real bug is distinguishable from a
-        # true header-absent verdict rather than silently masked.
+        # A defect in the checker is not a header-absent verdict, but it must not
+        # mute the guard either: fail CLOSED and name the failing class so the
+        # defect is distinguishable from a true verdict rather than silently masked.
         _logger.warning(
-            "file_header_grep.check raised %s for %s; failing closed",
+            "header_check raised %s for %s; failing closed",
             type(exc).__name__,
             path,
         )
         return True
-    return not result.passed
 
 
 def should_suppress_pretooluse_context(
@@ -913,10 +956,13 @@ def guard_values(
                 return {"path": target, "verdict": verdict, "plans_dir": plans_dir}
         return None
     if basename in _HEADER_GUARD_MESSAGES:
-        return {"path": shown} if _missing_header(path, text) else None
+        missing = _missing_header(basename, path, tool_input, root, base)
+        return {"path": shown} if missing else None
     if basename == _DEPENDENCY_GUARD_MESSAGE:
         return {"path": shown} if _touches_dependency_manifest(path, text) else None
     if basename == _EVAL_GUARD_MESSAGE:
+        if _only_searches(_tool_string(tool_input, "command")):
+            return None
         found = _eval_primitives(text)
         if not found:
             return None
@@ -945,6 +991,33 @@ def _touches_dependency_manifest(path: str, text: str) -> bool:
     )
 
 
+def _only_searches(command: str) -> bool:
+    """True when every statement of a shell *command* is a search, a commit or a ``cd``.
+
+    Such a command names ``eval(`` as data: a pattern to find, a message to record.
+    The test is conservative, because a command substitution, a backtick, a
+    here-document or a background ``&`` can run or hide a statement the split does
+    not see, and a command word outside :data:`_SEARCH_COMMANDS` is code to scan.
+    """
+    if "$(" in command or "`" in command or "<<" in command:
+        return False
+    searches = False
+    for statement in _STATEMENT_SPLIT_RE.split(command):
+        tokens = _statement_tokens(statement)
+        if not tokens:
+            continue
+        if any(t[0] not in "\"'" and _BACKGROUND_AMP_RE.search(t) for t in tokens):
+            return False
+        word = _command_word(tokens)
+        name = tokens[word] if word < len(tokens) else ""
+        if name == "git" and word + 1 < len(tokens):
+            name = f"git {tokens[word + 1]}"
+        if name not in _SEARCH_COMMANDS:
+            return False
+        searches = True
+    return searches
+
+
 def _has_eval_primitive(text: str) -> bool:
     """True when *text* contains a dynamic-eval or unsafe-deserialization primitive."""
     return bool(_eval_primitives(text))
@@ -957,7 +1030,8 @@ def _eval_primitives(text: str) -> list[str]:
         # A few matches per pattern are enough to report; scanning every match
         # of a lookahead pattern over a large file is quadratic.
         for match in itertools.islice(pattern.finditer(text or ""), 3):
-            token = f"`{match.group(0).strip(' ;&|')}`"
+            construct = match.group(0).strip(" \t\r\n;&|")
+            token = f"`{construct}`"
             if token not in found:
                 found.append(token)
         if len(found) >= 3:

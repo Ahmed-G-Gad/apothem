@@ -73,11 +73,11 @@ Read the prose source in full. For MASSIVE prose (>50K tokens), chunk via parall
 
 ### Phase 2 — Meticulous Consideration (D1)
 
-> Moved to `references/step-02-meticulous-consideration-d1.md`. MUST read it in full before executing this step.
+> Moved to `references/step-02-meticulous-consideration.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Potency Mapping (D2)
 
-> Moved to `references/step-03-potency-mapping-d2.md`. MUST read it in full before executing this step.
+> Moved to `references/step-03-potency-mapping.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Preservation Verification (D3) — Three Levels
 

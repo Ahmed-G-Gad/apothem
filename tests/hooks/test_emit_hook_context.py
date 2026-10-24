@@ -558,22 +558,43 @@ class TestSuppressBashHookDegradedStdin:
         )
 
 
-class TestMissingHeaderImportDegrade:
-    """A missing conformity package degrades the header guard to no-advisory."""
+class TestMissingHeaderWithoutApothemPackage:
+    """The header guard still judges a write where ``apothem`` cannot be imported."""
 
-    def test_import_error_degrades_to_no_advisory(
-        self, monkeypatch: pytest.MonkeyPatch
+    def test_checker_does_not_need_the_package(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         import builtins
 
         real_import = builtins.__import__
 
         def _fake_import(name: str, *args: object, **kwargs: object) -> object:
-            if name == "apothem.conformity" or name.startswith("apothem.conformity."):
+            if name == "apothem" or name.startswith("apothem."):
                 raise ImportError("no apothem package (plugin-alone)")
             return real_import(name, *args, **kwargs)  # type: ignore[arg-type]
 
+        def _checker_raised(*args: object, **kwargs: object) -> None:
+            raise AssertionError("the checker raised and the guard failed closed")
+
         monkeypatch.setattr(builtins, "__import__", _fake_import)
-        # With the checker unavailable the guard must NOT fire (return False),
-        # rather than fail closed and fire on every Write/Edit.
-        assert ehc._missing_header("some.py", "print('no header')\n") is False
+        # A checker that needed the package would raise, and the guard fails closed
+        # to True, which is also the verdict for a missing header. So a True alone
+        # proves nothing: the warning that path logs fails the test, and the guard
+        # must also return False for a file that carries the header.
+        monkeypatch.setattr(ehc._logger, "warning", _checker_raised)
+        root = tmp_path.resolve()
+        (root / ".git").mkdir()
+        schemas = root / "src" / "apothem" / "schemas"
+        schemas.mkdir(parents=True)
+        tag = "SPDX" + "-License-Identifier: MIT"
+        (schemas / "authorship-header.txt").write_text(f"# {tag}\n", encoding="utf-8")
+        message = "pretooluse-write-header-guard.md"
+        target = str(root / "some.py")
+
+        def missing(content: str) -> bool:
+            return ehc._missing_header(
+                message, target, {"content": content}, root, root
+            )
+
+        assert missing("print('no header')\n") is True
+        assert missing(f"# {tag}\n\nprint('headed')\n") is False

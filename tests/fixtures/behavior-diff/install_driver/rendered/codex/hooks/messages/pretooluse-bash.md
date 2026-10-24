@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-CM-7 git-artifact isolation + M12 numeric-prefix discipline + M15 human-only authorship.
+Git write guard: plan-internal isolation, numeric-prefix discipline, human-only authorship.
 
 Trigger. Bash command contains any of `git commit`, `git checkout -b`, `git branch`, `git tag`, `git merge -m`, `git rebase --exec`, `git stash push -m`, `git notes add`, `git mv`, `git rm`.
 
@@ -8,13 +8,13 @@ The hook scans the message / name / path argument for three independent classes 
 
 The hook runs the three scans mechanically and speaks only on a finding: plan identifiers and the phrases Resumption Contract, Phase Output Registry and convention anchors (Scan 1); a numeric prefix on a suite-root plan file (Scan 2); and agent attribution as a `Co-Authored-By` trailer naming an agent or a bot address, a `[claude]` / `[gpt]` / `[ai]` subject marker, a generated-by, written-by or drafted-by line, the robot emoji, or a `git -c user.email=` override to an agent address (Scan 3). The lists below remain the full checklist for anything the mechanical scan cannot see.
 
-## Scan 1 — CM-7 plan-internal isolation
+## Scan 1 — plan-internal isolation
 
-Scan the message / name argument for any term in the canonical forbidden-terms block at CM-7 (TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", phase-folder names, plan-suite file names, seriousness-level names).
+Scan the message / name argument for any plan-internal term (TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", phase-folder names, plan-suite file names, seriousness-level names).
 
 On hit: STOP. Rewrite the message in natural domain language describing the WHAT and WHY of the change, not the plan structure that produced it. Re-issue.
 
-## Scan 2 — M12 numeric-prefix discipline (suite-root and root-level singletons)
+## Scan 2 — numeric-prefix discipline (suite-root and root-level singletons)
 
 Scan the path argument of `git mv`, `git rm`, and any path appearing in the commit message body (referenced files, renames). Detect candidate violations:
 
@@ -23,7 +23,7 @@ Scan the path argument of `git mv`, `git rm`, and any path appearing in the comm
 
 On hit: STOP. Re-issue the operation against an unprefixed target path. Existing prefixed instances at suite roots that pre-date this discipline are migrated through a normal rename change-set, not silently overwritten.
 
-## Scan 3 — M15 human-only authorship discipline
+## Scan 3 — human-only authorship discipline
 
 Scan the message / name / annotation argument of every git-write command (commit, tag annotation, stash name, notes body, branch name, PR-relevant text in `gh pr create` invocations) for **agent-attribution patterns**:
 

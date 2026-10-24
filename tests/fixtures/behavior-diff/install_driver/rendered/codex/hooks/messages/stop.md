@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4).
+Session-end protocol: externalize state; evaluate memory and artifacts.
 
-**Phase A — Mandatory externalization** (CM-14, CM-24 §2.5)
+**Phase A — Mandatory externalization**
 
 1. With an active plan suite, mid-phase: write current task state to PROGRESS.md Resumption Contract — phase id, task id, status (in_progress|partial), next action as a precise imperative.
 2. Move every session decision to PLAN-NOTES.md § Resolved Decisions; remove from in-conversation working memory.
@@ -12,9 +12,9 @@ Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4).
 
 **Phase B — Evaluation** (skip only on immediate-exit signal)
 
-1. Memory evaluation per CM-26 (auto-memory rule §5): scan session for stable patterns / preferences / architectural decisions / debugging insights; write or update memory entries; prune any entry this session contradicted.
-2. Artifact evolution per CM-22 §2 + §4: detect patterns that recurred 2+ times this session and need a new or updated rule, skill, command, hook, or agent.
-3. Convention sweep per CM-22 §3: verify cross-references still resolve, no orphan artifacts were created, naming remains consistent.
+1. Memory evaluation (`rules/auto-memory-topic-files.md`): scan session for stable patterns / preferences / architectural decisions / debugging insights; write or update memory entries; prune any entry this session contradicted.
+2. Artifact evolution (`rules/persistent-conventions-vigilance.md`): detect patterns that recurred 2+ times this session and need a new or updated rule, skill, command, hook, or agent.
+3. Convention sweep: verify cross-references still resolve, no orphan artifacts were created, naming remains consistent.
 
 No active suite: skip Phase A entirely; execute Phase B against working notes accumulated this session.
 
@@ -24,7 +24,7 @@ No active suite: skip Phase A entirely; execute Phase B against working notes ac
 
 1. Working-trace emission. Verify the active suite's PROGRESS.md Resumption Contract was updated this session — if any session decision, blocker, or watch item is still in conversation memory only, write it to durable file before the session ends.
 2. Unresolved-inquiry flush. Walk the active suite for concrete-id `<USER-CONFIRM:…>` placeholders and any `unresolved-inquiries:` arrays in this session's emitted phase reports' fifteen-bar gate attestation blocks. Surface every unresolved inquiry in the Resumption Contract Watch Items section so the next session inherits the inventory and does not silently re-invent.
-3. Mandate-axis findings. If this session emitted any findings against the M-N mandate axes (host-discovery gaps, code-craft drift, supply-chain regressions, production-readiness gaps), summarize them in the Resumption Contract so the next session inherits the audit signal alongside its task pointer.
+3. Mandate-axis findings. If this session emitted any findings (host-discovery gaps, code-craft drift, supply-chain regressions, production-readiness gaps), summarize them in the Resumption Contract so the next session inherits the audit signal alongside its task pointer.
 
 ## Bindings (§0.j five-direction)
 
