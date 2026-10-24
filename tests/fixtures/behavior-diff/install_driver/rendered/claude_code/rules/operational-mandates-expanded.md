@@ -1,15 +1,17 @@
 ---
 name: "operational-mandates-expanded"
 description: "Path-filtered companion to operational-mandates — carries the per-mandate Violation indicators and Recovery sub-blocks for CM-1 through CM-10; demand-loaded on Markdown / governed-core surface touches."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**"
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 alwaysApply: false
 paths:
-  - "**/*.md"
   - "**/CLAUDE.md"
-  - "**/rules/**"
-  - "**/commands/**"
-  - "**/skills/**"
-  - "**/agents/**"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -18,7 +20,7 @@ paths:
 
 ## Purpose
 
-Carry the expanded per-mandate Violation indicators and Recovery sub-blocks for CM-1 through CM-10 that the parent rule `rules/operational-mandates.md` delegates here. The parent retains the one-line directive plus `(→TM-N)` cross-reference for each mandate, the Seriousness Scaling table, and the Anti-Patterns block; this companion demand-loads when the assistant edits any Markdown / governed-core surface (rules, commands, skills, agents) where mandate enforcement applies, keeping the parent's always-on payload lean.
+Carry the expanded per-mandate Violation indicators and Recovery sub-blocks for CM-1 through CM-10 that the parent rule `rules/operational-mandates.md` delegates here. The parent retains the one-line directive plus `(→TM-N)` cross-reference for each mandate, the Seriousness Scaling table, and the Anti-Patterns block; this companion demand-loads when the assistant edits any Markdown / governed-core surface (rules, commands, skills, agents) where mandate enforcement applies, keeping the parent's payload lean.
 
 ## Obligations
 
@@ -75,12 +77,4 @@ Carry the expanded per-mandate Violation indicators and Recovery sub-blocks for 
 
 ## Enforcement
 
-Path-filtered (the six glob patterns in this rule's `pathFilter` field — `**/*.md`, `**/CLAUDE.md`, `**/rules/**`, `**/commands/**`, `**/skills/**`, `**/agents/**`), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/operational-mandates.md`. The parent rule retains the one-line CM-1..CM-10 directives, the `(→TM-N)` cross-references, the Seriousness Scaling table, and the Anti-Patterns block; this companion carries the per-mandate Violation indicators and Recovery sub-blocks.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every mandate-enforcement decision on Markdown / governed-core surface touches (the per-mandate Violation indicators are the detection signal; the Recovery sub-blocks are the canonical remediation path). ● The parent rule's CM-1..CM-10 enumeration (this companion is the demand-loaded expansion).
-- **Satisfies →** ● CM-1–10 inline definitions (this companion carries the expanded behavioral specification at the path-filtered demand-load surface). ● the rules registry (companion to the "Operational Mandates" row).
-- **Established by ↑** ● `rules/operational-mandates.md` (parent-rule anchor; this companion's CM-N expanded bodies are pointed-to by the parent's per-mandate Companion Sub-Rule Anchor lines). ● the operational-mandate registry.
-- **Gated by ←** ● The path-filter (six glob patterns) — this rule demand-loads only on Markdown / governed-core surface touches. ● `rules/operational-mandates.md` always-on baseline (parent rule's per-mandate anchor lines must be live for the companion to demand-load coherently).
-- **Cross-bound with ↔** ↔ `rules/operational-mandates.md` (parent rule; the per-mandate Companion Sub-Rule Anchor lines bind this companion). ↔ `rules/clean-room-generation.md` (CM-4 §1.1 four-outcome mirror cited in the CM-4 Recovery sub-block). ↔ `rules/interactive-questions.md` (CM-2 structured-inquiry surface cited in the CM-2 directive). ↔ `rules/cognitive-identity.md` (CM-9 Recovery sub-block cites the non-trivial-decision heuristic).
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field, the governed-core set the parent rule shares), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/operational-mandates.md`. The parent rule retains the one-line CM-1..CM-10 directives, the `(→TM-N)` cross-references, the Seriousness Scaling table, and the Anti-Patterns block; this companion carries the per-mandate Violation indicators and Recovery sub-blocks.

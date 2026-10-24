@@ -162,9 +162,11 @@ Claude Code emission splits each one into a slim `SKILL.md` plus files under
   it. The pointers for the Pipeline Contract and the Foundational Stanzas also
   list what the file covers.
 - When `SKILL.md` is still over 15,800 bytes, the largest Workflow steps move
-  to `references/step-NN-<slug>.md`, largest first, until it fits. Steps under
-  600 bytes stay inline. If that is not enough, the Output, Mandates, Critical
-  Rules and Instructions sections move in that order.
+  to `references/step-NN-<slug>.md`, largest first, until it fits. The slug is
+  the step title without its `Step N:` prefix and without a trailing
+  parenthesised mandate or discipline id. Steps under 600 bytes stay inline.
+  If that is not enough, the Output, Mandates, Critical Rules and Instructions
+  sections move in that order.
 - A short note after the preamble tells the model where the files are
   (`${CLAUDE_SKILL_DIR}/references/`) and that it MUST re-read the ones that
   govern its current step after a compaction.
@@ -200,6 +202,13 @@ Install validates that the profile is
 well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see
 [MCP servers](/docs/reference/mcp)).
+
+`~/.claude/agents/` is a shared root that `Claude Code` owns, as is
+`~/.claude/skills/`: other supported tools load those folders, so the agents and
+skills a `Claude Code` install writes there appear in those tools as well, and
+the install prints a note that names them. The
+[harness registry](/docs/reference/harness-registry) lists the readers of each
+root.
 
 Claude Code applies all hook bindings in settings.json on every session start. Each adapter is verified against its own native harness — there is no privileged "reference" harness.
 

@@ -1,8 +1,17 @@
 ---
 name: "expertise-posture"
 description: "Read intent before literal text — amend proactively when literal request leaves a known defect; extend on adjacent gaps; refine with cited rationale; anticipate second-order consequences; calibrate depth to task; import lessons from adjacent domains. Never silent override of authority, agnosticism, or arrogance."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
+alwaysApply: false
+paths:
+  - "**/CLAUDE.md"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -44,11 +53,3 @@ Every proactive amendment / extension / refinement / anticipation / calibration 
 ## Failure tells (Companion Sub-Rule Anchor)
 
 Failure tells span literal-execution diffs that paper over adjacent bugs, missing citations, silent stack picks, idioms imported without host-honoring, and over- / under-calibration on the ladder. Full failure-tell enumeration lives at the path-filtered companion — see `rules/expertise-posture-elements.md` §4.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every host-project artifact emission's pre-flight expertise check (the seven sub-elements run before the pre-emission gate). The `surfaced-gaps` array of the gate attestation per `rules/pre-emission-gate.md`. Every `agents/*.md` return-format `Surfaced gaps` section. Every `commands/*.md` Step-N expertise-amendment surface. The depth-calibration choice between trivial and meaningful-scope paths.
-- **Satisfies →** the fifteen-mandate registry row **M6 — Expertise Incorporation**.
-- **Established by ↑** the fifteen-mandate registry (ratifies M6). The Senior Software Architect role declared at `rules/cognitive-identity.md` §1 (the role's seven-axes-of-breadth taxonomy is the depth surface the seven sub-elements operate against).
-- **Gated by ←** The §8.1 trivial-vs-non-trivial threshold (trivial work skips the proactive-amendment surface). `CLAUDE.md` always-loaded preamble. `rules/operational-mandates.md` §CM-1 Critical Evaluation (every Filter-1 candidate passes through critical evaluation before the seven sub-elements engage).
-- **Cross-bound with ↔** `rules/expertise-posture-elements.md` (path-filtered companion sub-rule carrying the seven sub-element prose bodies, the four-rung calibration ladder, the disclosure-marker enumeration, and the failure tells). `rules/cognitive-identity.md` (Filter 5 aesthetic-demand ↔ sub-element 4 refine-with-rationale; the cognitive-filter sequence and the seven sub-elements together implement CM-21 Creative Quality). `rules/operational-mandates.md` §CM-21 (Creative Quality — the inward-axis analog M6 cross-maps to). `rules/disclosure-ledger.md` (M2 — every expertise-driven amendment is disclosed). `rules/host-discovery.md` (M1 — host idioms are honored before expertise imports a foreign one). `rules/authority-inquiry.md` (M5 — expert certainty never overrides authoritative-data inquiry). `rules/ten-dimension-check.md` (M3 — refinement citations meet the scholarly / technical referencing dimension). `rules/sota-elevation.md` (depth-calibration ladder; MAXIMAL escalates to architectural-rework rung). ↔ `rules/agile-sprints.md` (M6 — calibration ladder cross-references the trivial-threshold). ↔ `rules/disclosure-ledger-markers.md` (M6 — `[Amendment]` / `[Extension]` / `[Refinement]` markers driven by expertise). ↔ `rules/pre-emission-gate.md` (↔ reciprocal of the peer's Cross-bound citation). ↔ `rules/pre-emission-gate-bars.md` (this rule is among the M-rules named in the gate's "Failure → action" column; the bar-level catalog cross-binds each).

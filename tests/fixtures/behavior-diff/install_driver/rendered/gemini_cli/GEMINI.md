@@ -45,6 +45,8 @@ Apothem's support root is `.gemini/.apothem/support/` in this project. Apothem r
 - `templates/<path>` is `.gemini/.apothem/support/templates/<path>`
 - `hooks/<path>` is `.gemini/.apothem/support/hooks/<path>`
 
+Start with the rule index at `.gemini/.apothem/support/rules/apothem-rule-index.md`: it names every rule and when to read it.
+
 A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile

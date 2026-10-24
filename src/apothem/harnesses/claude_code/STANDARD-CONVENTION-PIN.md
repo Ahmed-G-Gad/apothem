@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). Only the skills and memory pages were re-read on 2026-10-24; the other pages keep their earlier retrieval dates. The memory page settles which rules load at launch and what survives a compaction (see Rule loading below). The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). Only the skills and memory pages were re-read on 2026-10-24, along with the Cursor docs for the shared roots; the other pages keep their earlier retrieval dates. The memory page settles which rules load at launch and what survives a compaction (see Rule loading below). The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/claude_code/`
 - Evidence level: vendor-doc pinned (living MDX docs; no immutable pin). No vendor-native UI claim is made here.
 - Authority host: `code.claude.com`; the older `docs.anthropic.com` and `docs.claude.com` paths redirect there.
@@ -15,7 +15,7 @@
 - MCP: registered with `claude mcp add --scope local|project|user` and stored in `~/.claude.json` (user and local scope) and the project `.mcp.json`, not `settings.json`. Apothem authors no MCP server entries; the template `settings.json` carries no `mcpServers`.
 - Permissions: `settings.json` `permissions` holds `allow`, `ask`, and `deny` rules, evaluated deny, then ask, then allow; the first match in that order decides. The Apothem template uses `allow` and `deny`.
 - Hook events: Apothem wires a current subset (SessionStart, PreToolUse with Write/Edit/NotebookEdit/Bash matchers, PreCompact, PostCompact, Stop).
-- Shared root: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode; the registry records Claude Code as its owner and `apothem install` names the other readers.
+- Shared roots: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode, and `~/.claude/agents/`, where it installs agents, is also loaded by Cursor (re-checked 2026-10-24 against the Cursor docs). The VS Code docs list `~/.claude/agents/` for their Anthropic Claude agent, not for the one GitHub Copilot runs, so Copilot is not a reader. The registry records Claude Code as the owner of both roots and `apothem install` names the other readers.
 
 ## Rule loading
 

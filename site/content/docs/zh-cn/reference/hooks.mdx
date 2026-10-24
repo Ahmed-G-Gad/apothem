@@ -66,12 +66,12 @@ sourceHash: "3a6c32f33850537e"
 
 | Name | Description | Source |
 | --- | --- | --- |
-| `postcompact` | Post-compaction Blind Bootstrap (CM-24 §6.2). Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
+| `postcompact` | Post-compaction Blind Bootstrap. Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
 | `posttooluse-proactive-compaction` | Proactive-compaction tracker for PostToolUse tool calls. | [`src/apothem/hooks/messages/posttooluse-proactive-compaction.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/posttooluse-proactive-compaction.md) |
-| `precompact` | Pre-compaction protocol (CM-24 §2.3). Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
+| `precompact` | Pre-compaction protocol. Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
 | `pretooluse-askuserquestion-recommended` | Call-time `(Recommended)`-marker guard for `AskUserQuestion` tool calls. | [`src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md) |
 | `pretooluse-bash-plan-guard` | Plans-Discipline write guard for Bash tool calls (companion to `pretooluse-write-plan-guard.md`). | [`src/apothem/hooks/messages/pretooluse-bash-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md) |
-| `pretooluse-bash` | CM-7 git-artifact isolation + M12 numeric-prefix discipline + M15 human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
+| `pretooluse-bash` | Git write guard: plan-internal isolation, numeric-prefix discipline, human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
 | `pretooluse-conformity` | &gt; Advisory: this hook reports; it does not block. Mechanical enforcement runs in CI. | [`src/apothem/hooks/messages/pretooluse-conformity.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-conformity.md) |
 | `pretooluse-dependency-guard` | Dependency-manifest supply-chain guard (advisory). | [`src/apothem/hooks/messages/pretooluse-dependency-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-dependency-guard.md) |
 | `pretooluse-edit-header-guard` | SPDX-header inject guard for Edit tool calls. | [`src/apothem/hooks/messages/pretooluse-edit-header-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-edit-header-guard.md) |
@@ -83,6 +83,6 @@ sourceHash: "3a6c32f33850537e"
 | `pretooluse-write` | Codebase isolation + frontmatter compliance. | [`src/apothem/hooks/messages/pretooluse-write.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write.md) |
 | `sessionstart` | Session-start conformity posture. | [`src/apothem/hooks/messages/sessionstart.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/sessionstart.md) |
 | `skill-index` | Skills by task. /apothem:name = manual, run only on request. | [`src/apothem/hooks/messages/skill-index.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/skill-index.md) |
-| `stop` | Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4). | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
+| `stop` | Session-end protocol: externalize state; evaluate memory and artifacts. | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
 
 {/* apothem:generated-reference:end */}

@@ -1,10 +1,41 @@
 ---
 name: "code-craft-conventions"
 description: "Universal code-craft delegation stub for languages without a dedicated per-language rule. Discovers the host's ratified formatter / linter / type-checker / test framework / per-language idioms and honors them per M1; surfaces silence as inquiry per M5; defers to a per-language sibling rule (code-craft-python, code-craft-shell, code-craft-markdown) when one matches the artifact's path."
-pathFilter: "**"
+pathFilter: "**/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.mjs, **/*.cjs, **/*.vue, **/*.svelte, **/*.css, **/*.scss, **/*.html, **/components/**, **/*.go, **/*.rs, **/*.java, **/*.kt, **/*.rb, **/*.c, **/*.cpp, **/*.h, **/*.hpp, **/*.cs, **/*.php, **/*.swift, **/package.json, **/tsconfig.json, **/Cargo.toml, **/go.mod, **/pom.xml, **/build.gradle*, **/CMakeLists.txt, **/Gemfile"
 alwaysApply: false
 paths:
-  - "**"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.mjs"
+  - "**/*.cjs"
+  - "**/*.vue"
+  - "**/*.svelte"
+  - "**/*.css"
+  - "**/*.scss"
+  - "**/*.html"
+  - "**/components/**"
+  - "**/*.go"
+  - "**/*.rs"
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.rb"
+  - "**/*.c"
+  - "**/*.cpp"
+  - "**/*.h"
+  - "**/*.hpp"
+  - "**/*.cs"
+  - "**/*.php"
+  - "**/*.swift"
+  - "**/package.json"
+  - "**/tsconfig.json"
+  - "**/Cargo.toml"
+  - "**/go.mod"
+  - "**/pom.xml"
+  - "**/build.gradle*"
+  - "**/CMakeLists.txt"
+  - "**/Gemfile"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -27,7 +58,7 @@ Applies whenever a code artifact is authored, modified, or reviewed AND its lang
 | `code-craft-shell.md` | `**/*.sh`, `**/*.bash`, `**/*.ps1` | Shell artifacts (POSIX bash + PowerShell) |
 | `code-craft-markdown.md` | `**/*.md`, `**/*.markdown` | Markdown / prose artifacts |
 
-When a sibling's `pathFilter` matches the artifact path, the sibling applies and this stub yields. When no sibling matches (e.g., TypeScript, Go, Rust, Java, C++, Ruby), this stub is the active code-craft authority.
+When a sibling's `pathFilter` matches the artifact path, the sibling applies and this stub yields. When no sibling matches (e.g., TypeScript, Go, Rust, Java, C++, Ruby), this stub is the active code-craft authority. The `pathFilter` lists the source and manifest files of the languages named here. For a language it does not list, the rule index names this stub, so read it before authoring.
 
 ## Required behavior
 
@@ -97,11 +128,3 @@ Every host-discovery outcome and every silence-routed inquiry is recorded in the
 ## Failure tells
 
 A TypeScript file in a project standardized on `prettier` + `eslint` that uses a different formatter or quote style than every sibling file (sibling-convergence violation). A Rust file with `unsafe` blocks lacking a `// SAFETY: <invariant>` comment in a project where every other `unsafe` block carries one (idiom drift). A Go file using `panic` as control flow in a project where every other Go file uses error returns (M13.3 error-handling drift). A Ruby file silently introducing a new RuboCop violation in a project with `.rubocop.yml` ratified (M13.7 formatter / linter drift). A new language introduced into a polyglot project without a code-craft sibling rule and without the recurrence-tracking surface (the rule's gap-detection signal is suppressed). A new language file authored without the host-discovery walk (the agent invented conventions where the host has them). A change-set that touches a per-language sibling-rule-covered path AND a stub-covered path, where the stub-covered language drifts while the sibling-covered language remains conformant (asymmetric attention to the per-language sibling vs. the stub's general delegation).
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every code artifact authoring session in a language without a dedicated per-language sibling rule (every TypeScript, Go, Rust, Java, C++, Ruby, Kotlin, Swift, etc. artifact). ● Per-language host-discovery walks for every code-touched language. ● The recurrence-tracking surface that signals new per-language-sibling-rule candidates. ◐ The sibling-convergence enforcement at `rules/systemic-participation.md` (M14).
-- **Satisfies →** ● the fifteen-mandate registry row **M13 — Code Craft** (universal-delegation tier; per-language tier is the per-language sibling rules).
-- **Established by ↑** ● the fifteen-mandate registry (ratifies M13). ● The user-scope ecosystem's mandate to carry a universal code-craft floor for every language regardless of per-language sibling presence.
-- **Gated by ←** ● the trivial-vs-non-trivial threshold (trivial-scope code edits run an abbreviated check covering M13.1 why-not-what + M13.7 formatter / linter only). ● `CLAUDE.md` always-loaded preamble. ● Per-language sibling rule pathFilter precedence (this stub yields when a sibling matches).
-- **Cross-bound with ↔** ↔ `rules/code-craft-python.md` (Python sibling — takes precedence on Python paths). ↔ `rules/code-craft-shell.md` (Shell sibling — takes precedence on shell paths). ↔ `rules/code-craft-markdown.md` (Markdown sibling — takes precedence on Markdown paths). ↔ `rules/code-craft-ui.md` (UI companion — adds the interface craft floor on component, markup and stylesheet paths). ↔ `rules/host-discovery.md` (M1 — per-language discovery is the M1 walk for code-craft conventions). ↔ `rules/authority-inquiry.md` (M5 — silence-routed choices). ↔ `rules/option-annotation.md` (M7 — recommended-option annotation on inquired conventions). ↔ `rules/systemic-participation.md` (M14 — sibling convergence is the M14 silo-prevention surface for code). ↔ `rules/persistent-conventions-vigilance.md` (CM-22 §4 — recurrence-driven gap detection signals new per-language-sibling-rule candidates). ↔ `rules/systemic-participation-relations.md` (universal-delegation stub's sibling-convergence enforcement at §2 binds here for code-language artifacts). ↔ `rules/ten-dimension-check-dimensions.md` (per-language code-craft rules apply dimensions 4, 7, 8, 10 with language-specific failure tells).

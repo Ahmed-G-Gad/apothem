@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-Pre-compaction protocol (CM-24 §2.3). Externalize all in-conversation state BEFORE the harness compresses context.
+Pre-compaction protocol. Externalize all in-conversation state BEFORE the harness compresses context.
 
 With an active plan suite — execute IN ORDER (all mandatory):
 

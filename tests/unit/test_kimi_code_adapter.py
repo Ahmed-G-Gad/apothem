@@ -116,11 +116,12 @@ def test_capabilities_names_operator_owned_mcp_surface() -> None:
 
 
 def test_capabilities_layered_context_names_support_tree() -> None:
-    # The layered-context surface is AGENTS.md plus the
-    # .kimi-code/.apothem/support tree.
+    # The layered-context surface is AGENTS.md, the native skills directory,
+    # and the .kimi-code/.apothem/support tree.
     capabilities = _capabilities()
     layered = str(capabilities["layered_context_surface"])
     assert "AGENTS.md" in layered
+    assert ".kimi-code/skills/" in layered
     assert ".kimi-code/.apothem/support" in layered
 
 

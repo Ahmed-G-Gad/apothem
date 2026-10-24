@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). Only the skills page was re-read on 2026-10-24; the other pages keep their earlier retrieval dates. The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). Only the skills and memory pages were re-read on 2026-10-24, along with the Cursor docs for the shared roots; the other pages keep their earlier retrieval dates. The memory page settles which rules load at launch and what survives a compaction (see Rule loading below). The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/claude_code/`
 - Evidence level: vendor-doc pinned (living MDX docs; no immutable pin). No vendor-native UI claim is made here.
 - Authority host: `code.claude.com`; the older `docs.anthropic.com` and `docs.claude.com` paths redirect there.
@@ -15,14 +15,22 @@
 - MCP: registered with `claude mcp add --scope local|project|user` and stored in `~/.claude.json` (user and local scope) and the project `.mcp.json`, not `settings.json`. Apothem authors no MCP server entries; the template `settings.json` carries no `mcpServers`.
 - Permissions: `settings.json` `permissions` holds `allow`, `ask`, and `deny` rules, evaluated deny, then ask, then allow; the first match in that order decides. The Apothem template uses `allow` and `deny`.
 - Hook events: Apothem wires a current subset (SessionStart, PreToolUse with Write/Edit/NotebookEdit/Bash matchers, PreCompact, PostCompact, Stop).
-- Shared root: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode; the registry records Claude Code as its owner and `apothem install` names the other readers.
+- Shared roots: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode, and `~/.claude/agents/`, where it installs agents, is also loaded by Cursor (re-checked 2026-10-24 against the Cursor docs). The VS Code docs list `~/.claude/agents/` for their Anthropic Claude agent, not for the one GitHub Copilot runs, so Copilot is not a reader. The registry records Claude Code as the owner of both roots and `apothem install` names the other readers.
+
+## Rule loading
+
+- Launch: a rule file under `~/.claude/rules/` with no `paths` field loads at launch with the priority of `.claude/CLAUDE.md`. A `paths` list that is empty after a trailing `/**` is stripped from each entry, or made only of `**`, scopes nothing, so that rule loads at launch too (read from the loader in the build of 2026-10-20, not from the docs). A rule with a scoping `paths` list loads when Claude reads, writes, or edits a matching file, or reads a single matching file with a Bash command that counts as a read. `paths` is the only frontmatter field Claude Code reads from a rule, and it removes the frontmatter before loading the rule.
+- Compaction: after `/compact` the project-root `CLAUDE.md` is re-read and re-injected. A rule with `paths` is not: it loads again only when a file matches again.
+- Imports: an `@path` import in a `CLAUDE.md` resolves relative to the file that holds it, so `@rules/<name>.md` in `~/.claude/CLAUDE.md` names `~/.claude/rules/<name>.md`.
+- Match: each `paths` pattern is relative to the rule's base directory, which for a user-level rule is the session's primary working directory (memory page, retrieved 2026-10-24). The matcher in the build of 2026-10-20 applies `.gitignore` semantics and never matches a file whose path from that directory starts with `..`, so a file outside the working directory does not match. The auto memory directory is outside it.
+- Projection: the adapter writes the corpus `pathFilter` as `paths:` (`claude_rules` install mode), drops the `## Bindings` section from each rule copy, and installs five rules without `paths`: the four core rules and the rule index `apothem-rule-index`. Every other rule carries a `paths` list that scopes it; none is `**` alone.
 
 ## Vendor Sources
 
 Retrieved 2026-10-03 unless marked.
 
 - <https://code.claude.com/docs/en/settings> (settings, `$schema`)
-- <https://code.claude.com/docs/en/memory> (CLAUDE.md files)
+- <https://code.claude.com/docs/en/memory> (CLAUDE.md files; `.claude/rules/` `paths`, `@path` import resolution, and what survives `/compact`; retrieved 2026-10-24)
 - <https://code.claude.com/docs/en/hooks> (hook events)
 - <https://code.claude.com/docs/en/mcp> (MCP scopes and storage)
 - <https://code.claude.com/docs/en/permissions> (rule order; retrieved 2026-10-02)

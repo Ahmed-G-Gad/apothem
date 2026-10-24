@@ -6,7 +6,8 @@ description: "Master Plan Suite template, read by path by the /plan pipeline sta
 archetype: "workflow-template"
 userInvocable: false
 disable-model-invocation: true
-allowed-tools: "Read"
+allowedTools:
+  - "Read"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

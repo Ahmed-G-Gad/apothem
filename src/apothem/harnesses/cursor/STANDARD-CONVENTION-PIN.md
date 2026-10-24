@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against `cursor.com/docs`. The rules page moved to `cursor.com/docs/rules`, the MCP page to `cursor.com/docs/mcp`, and the old `@Web` page is gone. The agent's Browser tool visits URLs, so `web_fetch` moves from partial to yes. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: refreshed against `cursor.com/docs`. The rules page moved to `cursor.com/docs/rules`, the MCP page to `cursor.com/docs/mcp`, and the old `@Web` page is gone. The agent's Browser tool visits URLs, so `web_fetch` moves from partial to yes. The skills and subagents pages were re-read on 2026-10-24; the other pages keep their 2026-10-03 retrieval date. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/cursor/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 
@@ -22,6 +22,13 @@
   `~/.codex/skills/`. The Codex adapter's `~/.agents/skills/` and the Claude
   Code adapter's `~/.claude/skills/` therefore reach Cursor (shared roots in the
   registry).
+- Subagents: Cursor loads `.cursor/agents/` and `~/.cursor/agents/`, and for
+  compatibility `~/.claude/agents/` and `~/.codex/agents/`; on a name clash
+  `.cursor/` wins over `.claude/` and `.codex/` (re-read 2026-10-24). The Claude
+  Code adapter's `~/.claude/agents/` therefore reaches Cursor, and the Codex
+  adapter's `~/.codex/agents/` is a folder Cursor lists (both are shared roots in
+  the registry). TODO(clarify): the page does not say which file formats Cursor
+  parses in the Codex folder, and Codex writes TOML there.
 - The vendor documents plugins (`.cursor-plugin/plugin.json`, bundling agents,
   commands, skills, and hooks) and a marketplace. The adapter delivers only the
   project rules file and authors none of those (deliberate rules-only posture).
@@ -42,11 +49,12 @@
 
 ## Vendor Sources
 
-Retrieved 2026-10-03.
+Retrieved 2026-10-03 unless marked.
 
 - <https://cursor.com/docs/rules> (rules)
 - <https://cursor.com/docs/mcp> (`mcp.json`)
-- <https://cursor.com/docs/skills> (skill directories)
+- <https://cursor.com/docs/skills> (skill directories; retrieved 2026-10-24)
+- <https://cursor.com/docs/subagents> (subagent directories; retrieved 2026-10-24)
 - <https://cursor.com/docs/agent/tools/browser> (Browser tool)
 
 ## Discovery Targets

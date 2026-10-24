@@ -14,9 +14,9 @@ Fires on every Write, Edit, and Bash command that introduces dynamic evaluation 
 
 The hook flags a construct when a dynamic-evaluation or unsafe-deserialization primitive receives an argument that originates from an untrusted source:
 
-- Dynamic code evaluation — `eval(`, `exec(`, `Function(` / `new Function(`, `compile(` followed by `exec`, or an equivalent eval primitive in the target language — applied to interpolated prompt or response text.
+- Dynamic code evaluation — a bare call `eval(`, `exec(`, `compile(`, `Function(` or `new Function(`, with the parenthesis directly after the name as formatters write it and an argument after it (a member access such as `re.compile(` or `regex.exec(` is not a match; neither is prose such as `eval (one-off)` or `eval()`, nor a definition such as `def exec(`, `function eval(`, `fn`, `fun`, `func` or `class Function(`), a shell `eval` statement with a quoted string, a `$` expansion or a backtick command among its arguments on the same line, or an equivalent eval primitive in the target language — applied to interpolated prompt or response text. A shell command made only of searches, commits and `cd` (`grep`, `rg`, `git commit`, `git grep`, `git log`) names these constructs as data and is not scanned, unless it holds a command substitution, a backtick, a here-document or a background `&`.
 - Shell-out on interpolated text — `subprocess` / `child_process` / `os.system` / backtick or `Popen` invocations with `shell=True` (or the runtime's shell-on equivalent) where the command string interpolates model-derived or untrusted input.
-- Unsafe deserialization — `pickle.loads`, `yaml.load` without a safe loader, `marshal.loads`, or an equivalent native-object deserializer applied to model output or network input.
+- Unsafe deserialization — `pickle.loads`, `yaml.load` without a safe loader (`SafeLoader` anywhere in the call's arguments counts as safe), `marshal.loads`, or an equivalent native-object deserializer applied to model output or network input.
 
 The discriminator is the data-flow: the primitive is benign on a trusted literal and a finding on a value that traces back to a prompt, a response, a tool result, or external input.
 

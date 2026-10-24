@@ -49,6 +49,8 @@ Apothem's support root is `<ROOT>/../.config/apothem`. Apothem rules, skills, co
 - `templates/<path>` is `<ROOT>/../.config/apothem/templates/<path>`
 - `hooks/<path>` is `<ROOT>/hooks/<path>`
 
+Start with the rule index at `<ROOT>/../.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
+
 A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile

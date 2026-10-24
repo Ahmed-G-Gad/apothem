@@ -2,23 +2,28 @@
 
 """Apothem harness adapter for glm — project-scope backend-provider config.
 
-GLM (Z.ai) is a **model backend**, not a first-party coding-agent tool: Z.ai
-ships no native GLM coding CLI. GLM is the model an Anthropic-compatible or
-OpenAI-compatible coding agent points at by setting backend environment
-variables. The adapter therefore writes a provider configuration file —
-``<project>/.apothem/providers/glm.toml`` — that records the Anthropic-compatible
-and OpenAI-compatible base URLs, an auth-token placeholder, and
-operator-configurable model-mapping placeholders so an operator can wire any
-compatible agent to GLM. The file is materialized via ``write_text`` as an
-operator-owned valid-TOML config: Apothem writes the template only when the file
-is absent and never overwrites it afterwards, so the operator's backend secrets
-and edits survive every ``install`` / ``update``; ``uninstall`` removes it only
-while it is still the unedited template Apothem created. It carries **no** projected
-shared-profile content and **no** coding-agent cohort (rules, commands, skills,
-agents, hooks): a model backend is not rule-bearing and exposes none. The
-managed-block sentinel machinery is markdown-only (HTML-comment delimiters, a
-frozen contract), so it is deliberately not used here — folding sentinels into
-a ``.toml`` surface would produce invalid TOML.
+GLM (Z.ai) is configured here as a **model backend**. Z.ai also ships a
+first-party coding tool, ZCode, which Z.ai's documentation calls an "Agentic
+Development Environment"; this adapter does not configure ZCode. GLM is the
+model an Anthropic-compatible or OpenAI-compatible coding agent points at by
+setting backend environment variables. The adapter therefore writes a provider
+configuration file — ``<project>/.apothem/providers/glm.toml`` — that records
+the Anthropic-compatible and OpenAI-compatible base URLs, an auth-token
+placeholder, and operator-configurable model-mapping placeholders so an
+operator can wire any compatible agent to GLM. The file is materialized via
+``write_text`` as an operator-owned valid-TOML config: Apothem writes the
+template only when the file is absent and never overwrites it afterwards, so
+the operator's backend secrets and edits survive every ``install`` /
+``update``; ``uninstall`` removes it only while it is still the unedited
+template Apothem created. It carries **no** projected shared-profile content
+and **no** coding-agent cohort (rules, commands, skills, agents, hooks): a
+model backend is not rule-bearing and exposes none. The managed-block sentinel
+machinery is markdown-only (HTML-comment delimiters, a frozen contract), so it
+is deliberately not used here — folding sentinels into a ``.toml`` surface
+would produce invalid TOML.
+
+TODO(clarify): the 2026-10-24 vendor check did not cover ZCode's own
+configuration surface, so whether it needs an adapter target is undecided.
 
 The adapter opts into the project-scope contract via ``requires_project = True``;
 the CLI rejects an install / update / uninstall / verify invocation that omits

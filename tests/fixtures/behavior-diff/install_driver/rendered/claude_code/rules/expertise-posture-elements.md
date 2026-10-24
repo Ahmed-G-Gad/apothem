@@ -1,16 +1,17 @@
 ---
 name: "expertise-posture-elements"
 description: "Path-filtered companion rule carrying the seven sub-elements of expertise (full prose bodies), the four-rung calibration ladder, the disclosure marker enumeration, and the failure tells declared at the parent `expertise-posture.md` rule's anchors; demand-loaded on artifact-authoring touches."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 alwaysApply: false
 paths:
-  - "**/*.md"
   - "**/CLAUDE.md"
-  - "**/rules/**"
-  - "**/commands/**"
-  - "**/skills/**"
-  - "**/agents/**"
-  - "**/docs/**"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -19,7 +20,7 @@ paths:
 
 ## Purpose
 
-Carry the operational depth for **M6 — Expertise Incorporation** that the parent `rules/expertise-posture.md` rule references at its sub-element, calibration-ladder, disclosure-surface, and failure-tells anchors. This companion is path-filtered: it loads when the assistant authors or modifies any artifact whose path matches the Markdown / rules / commands / skills / agents / docs surfaces, keeping the parent's always-on payload lean while preserving full operational fidelity at the demand-load surface. The parent rule remains the canonical home for the M6 standing directive, the one-line list of seven sub-elements, the Never-Silent-Override Guard summary, and the pre-conditions; this companion carries the prose bodies, the calibration ladder, the disclosure marker enumeration, and the failure tells.
+Carry the operational depth for **M6 — Expertise Incorporation** that the parent `rules/expertise-posture.md` rule references at its sub-element, calibration-ladder, disclosure-surface, and failure-tells anchors. This companion is path-filtered: it loads when the assistant authors or modifies any artifact whose path matches the CLAUDE.md / AGENTS.md / rules / commands / skills / agents / hooks / output-styles surfaces, keeping the parent's payload lean while preserving full operational fidelity at the demand-load surface. The parent rule remains the canonical home for the M6 standing directive, the one-line list of seven sub-elements, the Never-Silent-Override Guard summary, and the pre-conditions; this companion carries the prose bodies, the calibration ladder, the disclosure marker enumeration, and the failure tells.
 
 ## Obligations
 
@@ -65,12 +66,4 @@ A literal-execution diff that papers over an obvious adjacent bug. A "yes, I mad
 
 ## Enforcement
 
-Path-filtered (the six glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/expertise-posture.md`. The parent rule carries the M6 standing directive, the one-line list of seven sub-elements, the Never-Silent-Override Guard summary, and the pre-conditions; this companion carries the operational depth — full prose bodies, calibration ladder, disclosure marker enumeration, and failure tells.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every host-project artifact emission's pre-flight expertise check (the seven sub-elements in §1 run before the pre-emission gate). ● The disclosure-ledger marker enumeration (§3) every amendment / extension / refinement / anticipation / calibration / import emits. ● The depth-calibration choice between the four ladder rungs (§2). ◐ The `surfaced-gaps` array of the gate attestation per `rules/pre-emission-gate.md`.
-- **Satisfies →** ● the fifteen-mandate registry row **M6 — Expertise Incorporation** (operational-depth companion). ● `rules/expertise-posture.md` anchors (the parent rule's pointers to this companion's full operational specification).
-- **Established by ↑** ● `rules/expertise-posture.md` (parent rule). ● the fifteen-mandate registry (ratifies M6). ● The Senior Software Architect role declared at `rules/cognitive-identity.md` §1 (the seven-axes-of-breadth taxonomy is the depth surface the seven sub-elements operate against).
-- **Gated by ←** ● The path-filter (the six glob patterns) — this rule demand-loads only on artifact-authoring touches. ● `rules/expertise-posture.md` always-on baseline (parent rule's anchors must be live for the companion to demand-load coherently). ● The §8.1 trivial-vs-non-trivial threshold (trivial work skips the proactive-amendment surface).
-- **Cross-bound with ↔** ↔ `rules/expertise-posture.md` (parent rule; anchors bind this companion). ↔ `rules/cognitive-identity.md` (Filter 5 aesthetic-demand ↔ sub-element 4 refine-with-rationale). ↔ `rules/disclosure-ledger.md` (M2 — every expertise-driven amendment is disclosed via the §3 marker enumeration). ↔ `rules/host-discovery.md` (M1 — host idioms are honored before sub-element 7 imports a foreign one). ↔ `rules/authority-inquiry.md` (M5 — expert certainty never overrides authoritative-data inquiry). ↔ `rules/pre-emission-gate.md` (M4 — bar 6 of the gate enforces the seven sub-elements at §1). ↔ `rules/agile-sprints.md` + `rules/canonical-layout.md` (M11 + M12 — the architectural-rework rung of the calibration ladder routes here). ↔ `rules/sota-elevation-exemplars.md` (calibration ladder at §3).
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/expertise-posture.md`. The parent rule carries the M6 standing directive, the one-line list of seven sub-elements, the Never-Silent-Override Guard summary, and the pre-conditions; this companion carries the operational depth — full prose bodies, calibration ladder, disclosure marker enumeration, and failure tells.

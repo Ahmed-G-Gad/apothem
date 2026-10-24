@@ -7,7 +7,14 @@ archetype: "engineering-template"
 userInvocable: true
 argument-hint: "[create|size|reproduce|fix] [issue number or description]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, Bash(git status *), Bash(git log *), Bash(git diff *), Bash(git show *)"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "Bash(git status *)"
+  - "Bash(git log *)"
+  - "Bash(git diff *)"
+  - "Bash(git show *)"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

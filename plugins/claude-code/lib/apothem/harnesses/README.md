@@ -32,9 +32,9 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 | `cursor` | `<project>/.cursor/rules/apothem-rules.mdc` | Project-scope manifest adapter. |
 | `gemini_cli` | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` and `<project>/.gemini/.apothem/support/` | Project-scope manifest adapter with TOML command conversion. |
 | `github_copilot` | `<project>/.github/copilot-instructions.md` | Project-scope manifest adapter. |
-| `hermes` | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | Materializer (native MCP via `mcp_servers`); support cohorts under `~/.hermes/.apothem/support/`. |
-| `kimi_code` | `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/` | Project-scope manifest adapter; native agent memory. |
-| `open_claw` | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | Support cohorts under `~/.openclaw/.apothem/support/`; no config keys authored (name-allowlist skills, CLI MCP). |
+| `hermes` | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | Materializer (native MCP via `mcp_servers`; support skills listed under `skills.external_dirs`); support cohorts under `~/.hermes/.apothem/support/`. |
+| `kimi_code` | `<project>/AGENTS.md`, `<project>/.kimi-code/skills/`, plus `<project>/.kimi-code/.apothem/support/` | Project-scope manifest adapter; native skills (commands wrapped as skills); native agent memory. |
+| `open_claw` | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | Materializer (support skills listed under `skills.load.extraDirs`; no allowlist or MCP keys authored); support cohorts under `~/.openclaw/.apothem/support/`. |
 | `opencode` | `~/.config/opencode/opencode.json`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native commands, skills, and agents. |
 | `qwen_code` | `~/.qwen/settings.json`, `~/.qwen/QWEN.md`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native hooks, commands, skills, agents, context anchor, and support cohorts. |
 | `windsurf` | `<project>/.devin/rules/apothem-rules.md` | Project-scope manifest adapter (Devin Desktop preferred surface; `.windsurf/rules/` fallback). |
@@ -53,6 +53,7 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 - The shared install driver validates every manifest source and target before writing, reports created/updated/unchanged/skipped/warning/error outcomes, supports dry-run, and projects unsupported or discovery-pending registry capability cells as warnings.
 - Existing matching targets are backed up before replacement. Shared discovery directories are merged child-by-child so unrelated operator-authored entries survive Apothem updates, and unchanged generated content is left untouched.
 - The `claude_code` adapter deliberately does **not** manage the operator-owned memory file at the harness root; governance reaches that harness through the propagated `rules/` tree and the `SessionStart` hook, never by rewriting the operator's memory.
+- Rule activation is read from two source fields, `alwaysApply` and `pathFilter`. Five rules are always-on (the four core rules and the rule index); every other rule carries a path filter. `claude_code` writes `pathFilter` as `paths:` (a list of `**` alone would scope nothing, so no rule uses one) and drops the `## Bindings` section from each rule copy; `antigravity` maps the fields to `trigger: always_on` or `glob`; `opencode` lists the always-on rules in `instructions`, and its `retired_entries` removes the paths of the rules that moved to on-demand. The copy-only adapters load no rule at launch, so the rule index and the sentence that points at it are how a session finds a rule.
 - The `codex` adapter resolves the harness home through the `CODEX_HOME` environment variable, defaulting to the user-scope root when the variable is unset.
 
 ## Related

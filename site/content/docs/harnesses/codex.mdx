@@ -54,27 +54,64 @@ Codex surface: instructions to `AGENTS.md`, hooks to `hooks.json` and
 `hooks/`, agents to TOML, skills to `~/.agents/skills/`, and non-native
 Markdown rules/templates to `~/.config/apothem/` as support material.
 
-Each converted helper sets `name`, `description`, and `developer_instructions`.
-A helper whose tool grant, once the tools in its own `disallowedTools` list are
-removed, includes no file-editing tool (`Write`, `Edit`, `MultiEdit`, or
-`NotebookEdit`) also sets `sandbox_mode = "read-only"`, Codex's own write
-restriction. `Bash` does not count as a file-editing tool, so a helper granted
-`Bash` and none of those tools still gets that setting. No model or reasoning
-effort is set, so each helper inherits the session's choices. Codex has no
-per-helper tool list or turn limit, so a helper's `tools` and `maxTurns` do not
-carry over.
+Each converted helper sets `name`, `description`, and `developer_instructions`,
+which carries the helper's body. No model or reasoning effort is set, so each
+helper inherits the session's choices. Codex has no per-helper tool list or
+turn limit, so a helper's `tools` and `maxTurns` do not carry over.
+
+The read-only helpers (see the [agents reference](/docs/reference/agents)) say
+in their instructions that they edit nothing. Read-only is enforced by the
+parent session's sandbox, not by the helper's TOML file: every helper runs
+under the sandbox and approval settings of the session that started it. A
+helper file cannot override the session's sandbox mode, approval policy, model
+provider, or MCP servers, so the adapter writes none of them, and a helper's
+instructions can ask it to avoid edits without creating a separate read-only
+sandbox. To make a read-only limit binding, set the sandbox and approval
+controls on the Codex session itself. A `Codex` build older than the release
+that added this restriction may still honour `sandbox_mode` in a helper file;
+Apothem has not established which release that is, and it writes no
+`sandbox_mode` either way.
 
 ## Compatibility notes
 
-`~/.agents/skills/` is a shared root that Codex owns: eight other supported
+`~/.agents/skills/` is a shared root that Codex owns: nine other supported
 tools load it too (the [harness registry](/docs/reference/harness-registry)
 lists them), so the Apothem skills a Codex install writes there appear in those
 tools as well, and a Codex uninstall removes them from those tools. The install
-prints a note that names those tools.
+prints a note that names those tools. `~/.codex/agents/` is a second shared
+root: another supported tool lists that folder as a compatibility location (the
+registry names it), and its docs do not say whether it reads the TOML files a
+`Codex` install writes there.
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.
+
+## Codex plugin
+
+Apothem also ships a Codex plugin, added from the repository's plugin
+marketplace (the [install guide](/docs/install) lists the commands under
+channel 7). The plugin is a bootstrap: it bundles one entry skill that runs the
+engine, and `apothem install --harness codex` writes everything listed above.
+
+The plugin lives in `plugins/apothem/`. Its manifest is a root `plugin.json`,
+the location Codex documents for a new package. The manifest names no skills
+path, because Codex discovers a plugin's `skills/` directory from the plugin
+root. A `.codex-plugin/plugin.json` file stays beside it as a compatibility
+fallback for Codex builds that read only that older location; Codex still
+supports it and treats the root manifest as canonical for the plugin's
+identity. Both files carry the release version, and a test holds them to the
+engine's version.
+
+The plugin bundles no agents, hooks, or MCP servers. Codex documents no
+custom-agents component for plugins, so the engine keeps writing agents to
+`~/.codex/agents/*.toml`. Hooks bundled in a plugin are limited to plugins
+installed manually in Codex desktop and are not trusted automatically, so the
+engine keeps writing them to `~/.codex/hooks.json`.
+
+The marketplace entry sets the `policy` block Codex tells authors to always
+include: `policy.installation` is `AVAILABLE` and `policy.authentication` is
+`ON_INSTALL`, the defaults Codex documents for a new entry.
 
 ## Verification
 

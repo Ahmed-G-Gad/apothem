@@ -1,6 +1,7 @@
 ---
-trigger: always_on
+trigger: glob
 description: "The cognitive identity and creative architecture governing every substantive output — the cognitive-insurgent posture and Senior Software Architect role, the five sequential cognitive filters (obvious-purge through aesthetic-demand), the six on-detection ideation techniques, the forbidden / required language standards, and the seven-axes-of-breadth expertise taxonomy. Implements CM-21."
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -68,12 +69,12 @@ Five principles govern: difficulty-is-data, non-adjacent-possible, steal-like-an
 
 ## Enforcement
 
-Always-on at every seriousness level. Implements CM-21. Canonical specification for creative identity and quality standards. Detailed bodies live at the path-filtered companion `rules/cognitive-identity-techniques.md`.
+Applies at every seriousness level. Implements CM-21. Canonical specification for creative identity and quality standards. Detailed bodies live at the path-filtered companion `rules/cognitive-identity-techniques.md`.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every substantive output's pre-emission filter sequence (Filter 1 + Filter 5 always-on; Filter 2-4 on non-trivial decisions). ● The Senior Software Architect role across every language touch (Python via path-filtered `rules/code-craft-python.md`; non-Python via the language-native materialization declared in §1). ● The seven-axes-of-breadth taxonomy (`memory/expertise-gap-log.md` records per-axis amendments and gap closures). ◐ The Performance axis's path-filtered doctrine at `rules/performance-discipline.md`. ◐ The cognitive-insurgent posture for every `/plan` stage's prose-and-code synthesis.
 - **Satisfies →** ● The Cognitive Identity & Software Architecture posture (this rule is its canonical specification). ● CM-21 Creative Quality (rule-delegated mandate). ● The expertise mandate materialized by the seven-axes-of-breadth taxonomy.
 - **Established by ↑** ● `rules/cognitive-identity.md` (the cognitive-identity declaration). ● CM-21 (the registry entry). ● The expertise and decomposition mandates: Filter 4 combinatorial-explosion is the decomposition-recombination engine.
-- **Gated by ←** ● `CLAUDE.md` always-loaded preamble. ● `rules/operational-mandates.md` (CM-1 critical evaluation gate every Filter 1 candidate must pass through).
+- **Gated by ←** ● This rule's `pathFilter` and `rules/apothem-rule-index.md` (the loading surfaces). ● `rules/operational-mandates.md` (CM-1 critical evaluation gate every Filter 1 candidate must pass through).
 - **Cross-bound with ↔** ↔ `rules/cognitive-identity-techniques.md` (path-filtered companion sub-rule carrying the §2–§5 detailed bodies). ↔ `rules/clean-room-generation.md` (Filter 5 aesthetic-demand ↔ §3.4 quality elevation mandate; both implement CM-21's facets). ↔ `rules/planning-techniques.md` (the nine planning techniques are the planning facet of CM-21; Filter 2-4 ↔ ideation-techniques). ↔ `rules/performance-discipline.md` (the Performance axis's per-class budgets close the Performance gap declared in §1's seven-axes taxonomy). ↔ `rules/code-craft-python.md` (Senior Software Architect role's Python-language materialization). ↔ `memory/expertise-gap-log.md` (per-axis amendment and gap-closure ledger). ↔ `rules/sota-elevation.md` (Filter 5 aesthetic-demand binding; SOTA lifts the aesthetic ceiling on distribution-facing surfaces). ↔ `rules/clean-architecture-layers.md` (the cognitive-identity rule declares the Senior Software Architect role this rule operationalizes). ↔ `rules/clean-room-generation-protocols.md` (Filter 5 aesthetic-demand ↔ §3.4 quality elevation; both implement CM-21's facets). ↔ `rules/expertise-posture.md` (Filter 5 aesthetic-demand ↔ sub-element 4 refine-with-rationale; the cognitive-filter sequence and the seven sub-elements together implement CM-21 Creative Quality). ↔ `rules/expertise-posture-elements.md` (Filter 5 aesthetic-demand ↔ sub-element 4 refine-with-rationale). ↔ `rules/operational-mandates-expanded.md` (CM-9 Recovery sub-block cites the non-trivial-decision heuristic).

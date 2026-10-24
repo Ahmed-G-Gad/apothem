@@ -1,8 +1,8 @@
 ---
 name: "multi-agent-workflow"
 description: "Independent-critique, open-loop, dynamic multi-agent execution is an available, specified capability — opt-in and default-off under the agnostic posture, never imposed on a clean install; the orchestration mechanics are owned by agent-orchestration."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/agents/**/*.md, **/commands/workflow*.md, **/skills/workflow/**, **/*workflow*.md, **/*multi-agent*.md"
+alwaysApply: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -32,7 +32,7 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 | gemini_cli | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` | Markdown context plus TOML commands and Markdown skills/agents | `src/apothem/harnesses/gemini_cli/` |
 | github_copilot | `.github/copilot-instructions.md` | Markdown prose; Copilot instructions schema | `src/apothem/harnesses/github_copilot/` |
 | hermes | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | YAML native config plus support cohorts | `src/apothem/harnesses/hermes/` |
-| kimi_code | `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/` | Markdown project instruction surface plus support cohorts | `src/apothem/harnesses/kimi_code/` |
+| kimi_code | `<project>/AGENTS.md`, `<project>/.kimi-code/skills/` plus `<project>/.kimi-code/.apothem/support/` | Markdown project instruction surface plus native skills and support cohorts | `src/apothem/harnesses/kimi_code/` |
 | kiro | `<project>/.kiro/steering/apothem-rules.md` | Markdown steering-directory file; Kiro steering schema | `src/apothem/harnesses/kiro/` |
 | open_claw | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | JSON native config plus support cohorts | `src/apothem/harnesses/open_claw/` |
 | opencode | `~/.config/opencode/opencode.json` plus native commands, skills, and agents | JSON native config plus Markdown cohorts | `src/apothem/harnesses/opencode/` |
@@ -65,7 +65,7 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 | github_copilot | Materializes Markdown prose rather than structured config; no JSON schema |
 | cursor | No materializer; project-scope rules-only adapter writes a single `<project>/.cursor/rules/apothem-rules.mdc` via one `sentinel_merge` and authors no other cohorts |
 | hermes | Materializes `config.yaml` and keeps unsupported cohorts under `~/.hermes/.apothem/support/` |
-| kimi_code | No materializer; project-scope adapter writes the governance surface into `<project>/AGENTS.md` as a `sentinel_merge` managed block and keeps the non-native cohorts under `<project>/.kimi-code/.apothem/support/`; does not author `<project>/.kimi-code/mcp.json` |
+| kimi_code | No materializer; project-scope adapter writes the governance surface into `<project>/AGENTS.md` as a `sentinel_merge` managed block, installs skills and command skills at the native `<project>/.kimi-code/skills/`, and keeps the other cohorts under `<project>/.kimi-code/.apothem/support/`; does not author `<project>/.kimi-code/mcp.json` |
 | open_claw | Materializes `openclaw.json` and keeps unsupported cohorts under `~/.openclaw/.apothem/support/` |
 | opencode | Materializes `opencode.json` while also writing native commands, skills, and agents under `~/.config/opencode/` |
 | qwen_code | Materializes `settings.json` plus `QWEN.md` and writes native command, skill, and agent cohorts under `~/.qwen/` |
@@ -155,11 +155,3 @@ commit-sha + snapshot-date in the same change-set and emit a
 Per-harness pins differ on `vendor-doc-url`, `commit-sha`, `snapshot-date`, `canonical-filename`, and `canonical-schema` only; the template shape is invariant across the cohort.
 
 **Stale-pin findings.** A pin whose `snapshot-date` is older than 90 days against current vendor reality surfaces as a finding at the next adapter-touch boundary. The finding routes to a pin-refresh change-set per the §6 refresh cadence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every per-harness discovery walk; every adapter sub-package's convergence-vs-divergence declaration; every per-harness pre-emission gate adaptation; every 7-column test matrix; every cross-harness hoist decision; every per-harness STANDARD CONVENTION PIN authoring + refresh.
-- **Satisfies →** `rules/harness-adapter-shape.md` §§1–6 Companion Sub-Rule Anchors; per-harness adapter discipline; adapter-test matrix discipline; STANDARD CONVENTION PIN freshness; capability-coverage test matrix shape.
-- **Established by ↑** `rules/harness-adapter-shape.md` (parent-rule anchor) and the adapter cohort's standard pin discipline.
-- **Gated by ←** The path-filter (`**/src/apothem/harnesses/**`, `**/_inputs/harness-*`) — this companion demand-loads only on adapter sub-package or per-harness scratch touches. `rules/harness-adapter-shape.md` always-on baseline.
-- **Cross-bound with ↔** `rules/harness-adapter-shape.md` (parent rule; §§1–6 anchors bind this companion). `rules/host-discovery.md` (M1 — per-harness discovery walks). `rules/host-discovery-manifests.md` (M1 detail — discovery-record provenance schema underwrites the §6 PIN). `rules/systemic-participation.md` + `rules/systemic-participation-relations.md` (M14 — convergence-vs-divergence at §2). `rules/canonical-layout.md` (M12 — adapter sub-packages + PIN files at the canonical layout). `rules/disclosure-ledger.md` (M2 — every discovery, pin refresh, declared divergence recorded). `rules/agent-capability-discipline.md` (co-resident PIN discipline mirror).

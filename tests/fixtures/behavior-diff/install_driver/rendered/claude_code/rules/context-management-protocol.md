@@ -136,13 +136,13 @@ The foundational inter-session protocol. Every phase must be executable by a fre
 3. **Target phase file** (`phases/NN-topic/PHASE.md`) → what needs to be done (scope, tasks, inputs, outputs, verification).
 4. **PREAMBLE.md** → project conventions, standards, architecture. Skip if convention anchors in Resumption Contract are sufficient.
 5. **Prior phase report** (if exists) → what just happened, deviations, watch items.
-6. **Rules** (always-on) → behavioral directives.
+6. **Rules** — the core rules and the rule index (`rules/apothem-rule-index.md`) reload on their own; re-read any path-scoped rule still in force → behavioral directives.
 
 **Ad-hoc sessions (no plan suite):**
 
 1. **Memory files** (MEMORY.md + referenced topic files) — already read as preamble above.
 2. **Active files** referenced in the user's request or prior conversation.
-3. **Rules** (always-on) — auto-loaded by the runtime; need not be explicitly re-read.
+3. **Rules** — the core rules and the rule index reload on their own and need not be re-read; re-read any path-scoped rule you are applying (the index names which rule fits which situation).
 
 **5.3 — Output Validation Gate:** Before executing any phase, verify every declared Input from the phase file exists in the Phase Output Registry as verified. Missing inputs = STOP. Inform user which prerequisite outputs are absent.
 
@@ -166,11 +166,3 @@ Six error classes for structured recovery. Escalate to user after 3 cumulative f
 ## Enforcement
 
 Path-filtered (the eight glob patterns in this rule's `pathFilter` field — `**/.apothem/plans/**`, `**/.plans/**`, `**/PROGRESS.md`, `**/PLAN-NOTES.md`, `**/PHASE.md`, `**/MASTER-PLAN.md`, `**/REPORT.md`, `**/PREAMBLE.md`), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/context-management.md` §2 / §3 / §4 / §4A / §5 / §6 / §8: the parent owns the context-health signals (§1), externalization-invariant summary (§2), compaction summary (§3), blind-execution invariant (§6), context-budget summary (§7), and §2.6 scratch-convention anchor (delegated to `context-management-scratch.md`); this companion owns the operational depth.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every phase-exit externalization sequence (§1.5 Externalize-On-Phase-Exit operationalizes the parent's §2.5 anchor). ● Every compaction trigger evaluation (§2's nine triggers operationalize the parent's §3 summary). ● Every continuous full-suite phase transition (§3.6 operationalizes the parent's §4A anchor). ● Every Blind Bootstrap sequence (§5.2 plan-suite + ad-hoc orderings operationalize the parent's §6 invariant). ● Every error-recovery routing decision (§6's six-class table operationalizes the parent's §8 anchor).
-- **Satisfies →** ● CM-12 / CM-14 / CM-18 / CM-19 / CM-24 (rule-delegated mandates; this companion is the path-filtered procedural depth). ● the rules registry row "Context Management Protocol". ● `rules/context-management.md` §2 / §3 / §4 / §5 / §6 / §8 anchors (the parent rule's pointers to this companion's full specifications).
-- **Established by ↑** ● `rules/context-management.md` §2 / §3 / §4 / §5 / §6 / §8 (parent-rule anchors). ● CM-12 + CM-14 + CM-18 + CM-19 + CM-24 inline definitions. ● the hooks pipeline PreCompact / PostCompact / Stop / SessionStart events.
-- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on plan-workflow artifact touches. ● `rules/context-management.md` always-on baseline (parent rule's §2 / §3 / §4 / §5 / §6 / §8 anchors must be live for the companion to demand-load coherently).
-- **Cross-bound with ↔** ↔ `rules/context-management.md` (parent rule; §2 / §3 / §4 / §4A / §5 / §6 / §8 anchors bind this companion). ↔ `rules/context-management-scratch.md` (sibling companion carrying the §2.6 plan-workflow scratch convention; both companions demand-load on overlapping plan-suite paths). ↔ `rules/context-management-budget.md` (sibling companion carrying the §7 Context Budget Discipline operational bodies — §7.1 budget awareness, §7.2 demand loading, §7.3 pressure signals, §7.4 per-task effort calibration / CM-12d). ↔ `rules/auto-memory.md` (CM-26 owns the session-end memory evaluation that §1.5 phase-exit externalization delegates). ↔ `rules/persistent-conventions-vigilance.md` (CM-22 owns the artifact-evolution evaluation that §1.5 delegates). ↔ `hooks/messages/precompact.md` + `hooks/messages/postcompact.md` + `hooks/messages/stop.md` (the hook contexts the protocol's enforcement points emit).

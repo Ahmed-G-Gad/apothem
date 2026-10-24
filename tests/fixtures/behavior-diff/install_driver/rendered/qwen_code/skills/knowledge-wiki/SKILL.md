@@ -7,7 +7,10 @@ archetype: "research-template"
 userInvocable: true
 argument-hint: "[--mode ingest|lint|drift|hubs] [--kb PATH] [--source PATH_OR_ID] [--focus QUESTION]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -273,21 +273,25 @@ class TestCrossAdapterParity:
 
     def test_hermes_yaml_adapter_renders_non_empty(self):
         from apothem.harnesses.hermes.materializer import (
+            SKILLS_DIRECTORY,
+        )
+        from apothem.harnesses.hermes.materializer import (
             materialize_native_config as hm,
         )
 
         out = hm(self._profile())
         assert len(out) > 0, "hermes produced empty output"
-        # Apothem authors no skills key (skills.config is a registry-package
-        # list per the pin, not a directory loader); the refuted
-        # skills.external_dirs is also gone. A no-MCP profile renders the header
-        # plus an empty managed body.
-        assert "skills" not in out
-        assert "external_dirs" not in out
+        # The one skills key Apothem authors is skills.external_dirs, pointed at
+        # the support skills directory; skills.config holds per-skill settings
+        # the operator owns. A no-MCP profile renders that key and nothing else.
+        assert yaml.safe_load(out) == {"skills": {"external_dirs": [SKILLS_DIRECTORY]}}
 
     def test_json_adapters_render_vendor_shaped_config(self):
         import json
 
+        from apothem.harnesses.open_claw.materializer import (
+            SKILLS_DIRECTORY,
+        )
         from apothem.harnesses.open_claw.materializer import (
             materialize_native_config as oc,
         )
@@ -316,10 +320,12 @@ class TestCrossAdapterParity:
         openclaw_out = oc(profile)
         assert len(openclaw_out) > 0, "open-claw produced empty output"
         openclaw_parsed = json.loads(openclaw_out)
-        # Apothem authors no config keys: agents.defaults.skills is a NAME
-        # allowlist (not a directory loader) and the refuted skills.load.extraDirs
-        # is gone. A directory path in either would be misread as a skill name.
-        assert openclaw_parsed == {}
+        # The one key Apothem authors is skills.load.extraDirs, pointed at the
+        # support skills directory. agents.defaults.skills is a NAME allowlist
+        # the operator owns, so a directory path never goes there.
+        assert openclaw_parsed == {
+            "skills": {"load": {"extraDirs": [SKILLS_DIRECTORY]}}
+        }
 
         qwen_out = qwen(profile)
         assert len(qwen_out) > 0, "qwen-code produced empty output"

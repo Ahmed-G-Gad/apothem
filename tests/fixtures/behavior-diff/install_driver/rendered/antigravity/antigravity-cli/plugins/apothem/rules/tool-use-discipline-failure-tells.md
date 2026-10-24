@@ -1,7 +1,7 @@
 ---
 trigger: glob
-description: "Path-filtered companion to tool-use-discipline carrying the failure-tells enumeration for the three tool-loop disciplines — sequential-where-parallel, act-without-observe, no-verifiable-exit, fixed-count-stop, and false-sequencing — declared at the parent rule's §Failure-tells anchor; demand-loaded on rule, command, skill, agent, and hook authoring surfaces where tool-loop cadence is exercised."
-globs: "**/rules/**, **/commands/**, **/skills/**, **/agents/**, **/hooks/**"
+description: "Path-filtered companion to tool-use-discipline carrying the failure-tells enumeration for the three tool-loop disciplines — sequential-where-parallel, act-without-observe, no-verifiable-exit, fixed-count-stop, and false-sequencing — declared at the parent rule's §Failure-tells anchor; demand-loaded on rule, command, skill, agent, hook, and output-style authoring surfaces where tool-loop cadence is exercised."
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/rules/**, **/commands/**, **/skills/**, **/agents/**, **/hooks/**"
 
 ## Purpose
 
-Carry the failure-tells enumeration for the three tool-loop disciplines that `rules/tool-use-discipline.md` §1 (parallel calls), §2 (observe → decide → act), and §3 (verifiable exit) bind. The parent rule keeps the three standing directives; this companion carries the catalog of failure shapes that betray each discipline broken, so the always-on parent stays lean while the diagnostic detail loads on the authoring surfaces where the tool-loop cadence is exercised. Path-filtered: it demand-loads when the assistant authors or edits a rule, command, skill, agent, or hook — the surfaces that specify or drive tool-loop behavior.
+Carry the failure-tells enumeration for the three tool-loop disciplines that `rules/tool-use-discipline.md` §1 (parallel calls), §2 (observe → decide → act), and §3 (verifiable exit) bind. The parent rule keeps the three standing directives; this companion carries the catalog of failure shapes that betray each discipline broken, so the parent stays lean while the diagnostic detail loads on the authoring surfaces where the tool-loop cadence is exercised. Path-filtered: it demand-loads when the assistant authors or edits a CLAUDE.md, AGENTS.md, rule, command, skill, agent, hook, or output-style file — the surfaces that specify or drive tool-loop behavior.
 
 ## Failure tells
 
@@ -24,12 +24,12 @@ Each tell names one broken discipline and the shape it takes in practice:
 
 ## Enforcement
 
-Path-filtered (the five glob patterns in this rule's `pathFilter` field — rules / commands / skills / agents / hooks), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/tool-use-discipline.md` §Failure-tells. The parent rule carries the §1 parallel-tool-execution directive, the §2 observe → decide → act loop, and the §3 verifiable-exit directive; this companion carries the five failure tells that betray each discipline broken. Advisory under the agnostic posture, matching the parent's disposition.
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field — CLAUDE.md / AGENTS.md / rules / commands / skills / agents / hooks / output-styles), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/tool-use-discipline.md` §Failure-tells. The parent rule carries the §1 parallel-tool-execution directive, the §2 observe → decide → act loop, and the §3 verifiable-exit directive; this companion carries the five failure tells that betray each discipline broken. Advisory under the agnostic posture, matching the parent's disposition.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● The self-check every tool-loop cadence applies before claiming a step done (the five failure-shape diagnostics). ● The reviewer's read of a landed tool-loop for the sequential-where-parallel, act-without-observe, and unchecked-exit tells.
 - **Satisfies →** ● the rules registry row "Tool-Use Discipline Failure Tells". ● `rules/tool-use-discipline.md` §Failure-tells anchor (the parent rule's pointer to this companion's enumeration).
 - **Established by ↑** ● `rules/tool-use-discipline.md` §1 / §2 / §3 (the three disciplines whose broken shapes this companion enumerates). ● `rules/agnostic-posture.md` §2 (advisory disposition inherited from the parent).
-- **Gated by ←** ● The path-filter (the five glob patterns) — this rule demand-loads only on rule / command / skill / agent / hook authoring surfaces. ● `rules/tool-use-discipline.md` always-on baseline (the parent's three directives must be live for the failure tells to diagnose coherently).
+- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on CLAUDE.md / AGENTS.md / rule / command / skill / agent / hook / output-style authoring surfaces. ● `rules/tool-use-discipline.md` baseline (the parent's three directives must be live for the failure tells to diagnose coherently).
 - **Cross-bound with ↔** ↔ `rules/tool-use-discipline.md` (parent rule; §1 / §2 / §3 / §Failure-tells anchors bind this companion). ↔ `rules/agent-orchestration.md` (§3 single-message parallel-launch — the sequential-where-parallel tell is its violation at the ordinary-tool tier). ↔ `rules/large-file-reading.md` (locate-before-read is the observe-step discipline the act-without-observe tell violates). ↔ `rules/multi-agent-workflow.md` (§1 open-loop verifiable-exit — the no-verifiable-exit and fixed-count-stop tells are its violations below the multi-agent threshold).

@@ -1,8 +1,13 @@
 ---
 name: "freshness-facade"
 description: "Shipped public surfaces carry no AI-disclosure, backward/legacy/obsolete/retired/deprecated, placeholder/TBD/coming-soon, or fix/refinement narrative — a current-version-only facade; the freshness-token-grep matcher gives the closed token-class list mechanical teeth on README plus site copy."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/README.md, **/CHANGELOG.md, **/site/**, **/docs/**"
+alwaysApply: false
+paths:
+  - "**/README.md"
+  - "**/CHANGELOG.md"
+  - "**/site/**"
+  - "**/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -49,16 +54,8 @@ The shipped facade **MUST** present the in-force version only, with a concise cu
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
+Applies at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
 
 ## Failure tells
 
 An "AI-generated" disclosure on a shipped page; a "replaces the legacy" replacement narrative; a "coming soon" deferral; a stale earlier-launch narrative restyled rather than documented as a platform limit.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every shipped-surface emission (README, docs / site, end-user release notes, commit / PR narrative); the `conformity/freshness_token_grep.py` matcher operationalizing the closed token-class list.
-- **Satisfies →** The standing-mandate end-state that shipped surfaces carry no AI-disclosure / legacy / placeholder / fix narrative; the current-version-only release facade.
-- **Established by ↑** The operator's standing-mandate set (the plain-language mandate — zero AI-disclosure / backward / placeholder / legacy narrative on shipped surfaces).
-- **Gated by ←** The shipped-vs-developer-surface boundary (developer surfaces retain process vocabulary); `rules/agnostic-posture.md` §2 (the matcher surfaces findings advisorily; CI enforces strictly).
-- **Cross-bound with ↔** `rules/plain-language.md` (sibling shipped-surface sweep — plain-language owns the mechanistic-vocabulary token-class; this rule owns the freshness-narrative token-class, same scope, non-overlapping sets); `rules/production-ready-prs.md` (M15 — the current-version-only facade and same-change-set release discipline); `conformity/freshness_token_grep.py` (the mechanical matcher this rule's §4 operationalizes). ↔ `rules/i18n-discipline.md` (the shipped translated facade is current-version-only — no machine-seeded / pending / partial deferral banner). ↔ `rules/i18n-discipline-locale-cohorts.md` (the §4 banner-free facade is current-version-only — no machine-seeded / pending / partial deferral banner).
