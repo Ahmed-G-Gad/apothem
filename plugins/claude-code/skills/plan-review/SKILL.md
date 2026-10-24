@@ -82,7 +82,7 @@ An explicit `--override` flag bypasses this gate. When `--override` is used, the
 
 ### Step 2: Prose Fidelity Audit (CM-11A)
 
-> Moved to `references/step-02-prose-fidelity-audit-cm-11a.md`. MUST read it in full before executing this step.
+> Moved to `references/step-02-prose-fidelity-audit.md`. MUST read it in full before executing this step.
 
 ### Step 2.7: Pre-Flight Canonical-Audit Dimensions
 
@@ -90,7 +90,7 @@ An explicit `--override` flag bypasses this gate. When `--override` is used, the
 
 ### Step 3: Internal Consistency Audit (CM-11B)
 
-> Moved to `references/step-04-internal-consistency-audit-cm-11b.md`. MUST read it in full before executing this step.
+> Moved to `references/step-04-internal-consistency-audit.md`. MUST read it in full before executing this step.
 
 ### Step 4: Gap and Quality Analysis
 
@@ -149,7 +149,7 @@ Identify the single most impactful revision — the one change that fixes the mo
 
 ### Step 11.5: End-of-Command Synthesis (D6)
 
-> Moved to `references/step-13-end-of-command-synthesis-d6.md`. MUST read it in full before executing this step.
+> Moved to `references/step-13-end-of-command-synthesis.md`. MUST read it in full before executing this step.
 
 ### Step 12: Create or Evolve Artifacts and Handoff
 

@@ -49,6 +49,7 @@ flowchart TD
 | `resolve_root.py` | Project-root resolution for the Apothem ecosystem. |
 | `message_text.py` | Strips the maintainer-only parts of a message file (the license comment line and the `## Bindings` section) before the text reaches the assistant, and extracts and fills a guard's short `## Advisory` template. |
 | `state_dir.py` | Per-user `0700` state directory and safe per-session file keys for the stateful handlers. |
+| `header_check.py` | The authorship-header guards' checker, standard library only: reads the header fixture and the exemption list from the `schemas/` directory beside `hooks/` in the tree it runs from, and decides by comment family from the file extension, by the rules of `scripts/inject-header.py`. |
 | `__init__.py` | Package marker. |
 
 ## `messages/` — per-event context
@@ -73,6 +74,7 @@ Markdown context files emitted into the conversation for each hook event:
 ## Conventions
 
 - The Claude Code `settings.json` hook entries invoke an install-resolved absolute CPython interpreter on `dispatch.py` directly — the `${PYTHON_BIN}` placeholder is substituted at install time (per `apothem.lib.python_resolver`) so no entry runs a bare `python`. The plugin's `hooks.json` registers one entry per event and matcher, as `bash "<plugin-root>/…/hooks/lib/bootstrap.sh" <event> [<message> ...]`, so every guard for a matcher shares one process and no entry depends on a file's executable bit or on a per-platform shell field. A firing guard injects only its message's `## Advisory` section, filled with its findings, plus a pointer to the full message.
+- The authorship-header guards run under a plugin install, where the `apothem` package is not importable: `lib/header_check.py` imports only the standard library, so the guard never pays for that import. It judges only a git project that carries the header fixture (`src/apothem/schemas/authorship-header.txt`), since the SPDX line is Apothem's own convention; a project without it and a directory with no `.git` stay silent. In such a project it judges files inside the project (the git root above the tool call's working directory) against the exemption globs as project-relative paths, and stays silent for an exempt path, an unknown extension, a path outside the project, or a fixture it cannot read. The Write guard checks the content written; the Edit guard fires only when an edit creates a file without the header (an empty `old_string` on a missing file) or strips it from a file that has it.
 - Every registered command meets the runtime contract in `tests/hooks/test_hook_contract.py`: exit 0, empty or single-JSON-object output, registered once, bounded output, delivered on a channel the harness reads, and no code taken from the opened project.
 - `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook, and `conformity/gate.py --hook` honors the same switch.
 

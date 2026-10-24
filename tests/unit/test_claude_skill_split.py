@@ -405,6 +405,25 @@ def test_step_title_prefixes_are_stripped_from_the_slug() -> None:
     )
 
 
+def test_a_trailing_catalog_id_is_left_out_of_the_slug() -> None:
+    body = (
+        "\n## Workflow\n\n"
+        + f"### Step 10: Continuous Execution Transition (CM-16)\n\n{'a' * 700}\n\n"
+        + f"### Step 2: Prose Fidelity Audit (CM-11A)\n\n{'b' * 700}\n\n"
+        + f"### Step 8.5: End-of-Command Synthesis (D6)\n\n{'c' * 700}\n\n"
+        + f"### Step 3: Verify (optional)\n\n{'d' * 700}\n\n"
+        + f"### Step 4: Hash (SHA-256)\n\n{'e' * 700}\n"
+    )
+    paths = split_command_skill(_doc(body), budget=0).moved_steps
+    assert paths == (
+        "references/step-01-continuous-execution-transition.md",
+        "references/step-02-prose-fidelity-audit.md",
+        "references/step-03-end-of-command-synthesis.md",
+        "references/step-04-verify-optional.md",
+        "references/step-05-hash-sha-256.md",
+    )
+
+
 _NUMBERED_BODY = """
 # H
 

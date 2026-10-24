@@ -28,13 +28,13 @@ cited rules:
 
 | Grep | Rule cited | Partition |
 |------|------------|-----------|
-| user-confirm-grep | M5 authority-inquiry-categories §1 | advisory |
-| option-annotation-grep | M7 option-annotation | blocking |
-| binding-reciprocity-grep | M10 bidirectional-binding §Notation | blocking |
-| completion-claim-grep | M12 / M15 completion claims | blocking |
-| unpinned-action-grep | M15 production-ready §Supply-chain | blocking |
-| hedging-grep | M8 definitiveness §Hedging | advisory |
-| secret-leak-grep | M13.8 + M15 production-ready | advisory |
+| user-confirm-grep | authority-inquiry-categories | advisory |
+| option-annotation-grep | option-annotation | blocking |
+| binding-reciprocity-grep | bidirectional-binding §Notation | blocking |
+| completion-claim-grep | phase reporting / production-ready | blocking |
+| unpinned-action-grep | production-ready §Supply-chain | blocking |
+| hedging-grep | definitiveness §Hedging | advisory |
+| secret-leak-grep | code-craft security + production-ready | advisory |
 | file-header-grep | SPDX authorship-header policy | blocking |
 | always-on-budget-grep | token-budget-discipline §Always-on body budget | advisory |
 

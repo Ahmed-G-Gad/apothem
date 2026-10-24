@@ -4,7 +4,7 @@ Codebase isolation (Edit scope).
 
 Scope. Triggered on every Edit. Covers the project's own files only: a target outside the project root (the active harness's config root such as `~/.claude/`, its memory, the session scratchpad) or inside the project's gitignored Apothem working tree (`.apothem/`) is skipped. Public identifiers that share the id shape (`UTF-8`, `SHA-256`, `CVE-...`) are not plan terms.
 
-Action. Scan ONLY the `new_string` (Edit is partial; pre-existing violations elsewhere in the file are out of scope unless this Edit touches them) for plan-internal terminology leaking into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>` (for example `TM-10`, `CM-7`, `CP-20`), phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative.
+Action. Scan ONLY the `new_string` (Edit is partial; pre-existing violations elsewhere in the file are out of scope unless this Edit touches them) for plan-internal terminology leaking into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>`, phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative.
 
 On hit: STOP. Rewrite `new_string` in natural domain language. Re-issue the Edit.
 

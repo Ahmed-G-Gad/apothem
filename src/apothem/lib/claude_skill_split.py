@@ -182,6 +182,10 @@ _TRAILER: Final[re.Pattern[str]] = re.compile(r"(?:\n{2,}---)?\n*\Z")
 _BLANKS: Final[re.Pattern[str]] = re.compile(r"\n*\Z")
 _KIND_CUT: Final[re.Pattern[str]] = re.compile(r"\s+[\u2014\u2013]\s+|\s*[(:]")
 _ITEM: Final[re.Pattern[str]] = re.compile(r"^(\d+\. \*\*.+?\*\*)")
+#: A trailing parenthesised catalog id (``(CM-16)``, ``(D6)``) in a step title.
+_TRAILING_ID: Final[re.Pattern[str]] = re.compile(
+    r"\s*\((?:(?:CM|TM|CP)-\d+[A-Z]?|[DM]\d{1,2})\)\s*$"
+)
 
 
 def _lines(text: str) -> Iterator[tuple[int, str, bool]]:
@@ -443,6 +447,7 @@ def _unit_path(unit: _Unit) -> str:
         title = re.sub(
             r"^(?:Step|Phase|Stanza)\s+[\w.]+\s*[:\-\u2014\u2013]*\s*", "", title
         )
+    title = _TRAILING_ID.sub("", title)
     return f"references/step-{unit.ordinal:02d}-{_slug(title)}.md"
 
 

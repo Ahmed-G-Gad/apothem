@@ -25,6 +25,7 @@ the bootstrap stubs are not on that surface's critical path.
 | `resolve_root.py` | Project-root resolution for the apothem ecosystem. |
 | `message_text.py` | Strips the maintainer-only parts of a message file (the license comment line and the `## Bindings` section) before the text reaches the assistant, and extracts and fills a guard's short `## Advisory` template. |
 | `state_dir.py` | Per-user state directory (mode `0700`) and safe per-session file keys for the stateful handlers; resolution order `APOTHEM_HOOK_STATE_DIR`, `CLAUDE_PLUGIN_DATA/state`, `XDG_STATE_HOME/apothem`, then the platform default. |
+| `header_check.py` | The authorship-header guards' checker, standard library only. Reads `authorship-header.txt` and `header-exceptions.txt` from the `schemas/` directory beside `hooks/` in the tree it runs from (the plugin tree, the engine support tree, a checkout), and decides by comment family from the file extension, using the variant tables and insertion-site rules of `scripts/inject-header.py` (`tests/hooks/test_header_check.py` holds the two equal). It needs no `apothem` import, which is unavailable under a plugin install and slow where it is available. `project_adopts_header` gates the guard to a git project that carries the fixture. A missing fixture leaves the guard silent. |
 | `__init__.py` | Package marker. |
 
 ## Operating in this folder

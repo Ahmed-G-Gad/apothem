@@ -85,6 +85,20 @@ when it needs the detail. Guards judge "inside the project" against the git
 root above the tool call's working directory, never against the tree the hook
 is installed in.
 
+The authorship-header guard decides with the standard library alone, so it works
+under the Claude Code plugin, where the `apothem` package is not importable. It
+reads the header (`authorship-header.txt`) and the exemption list
+(`header-exceptions.txt`) from the `schemas/` directory beside `hooks/` in the
+tree it runs from, and picks the comment family from the file extension. It
+speaks only in a git project that follows the convention, one whose tree carries
+`src/apothem/schemas/authorship-header.txt`: the SPDX line is Apothem's own, so a
+project without that file, and a directory with no `.git`, stay silent. There it
+speaks when a Write leaves a file inside the project without the header, or an
+Edit creates a file without it or strips it from a file that has it. An exempt
+path, a path outside the project, a file type with no comment family, an edit
+elsewhere in the file and an edit that names text to find in a file that does not
+exist stay silent.
+
 ## Runtime contract
 
 Every registered hook command meets the same contract, checked by
@@ -99,8 +113,14 @@ install, Codex, and Qwen Code:
 - **Bounded.** No emitted text exceeds 10,000 characters. The dependency guard
   speaks only when a write targets a dependency manifest or lockfile, and the
   dynamic-eval guard only when the content or command contains an evaluation
-  or unsafe-deserialization primitive. The compaction advisory fires at most
-  twice per compaction cycle.
+  or unsafe-deserialization primitive written as code: a call with the
+  parenthesis directly after the name and an argument after it (`eval(x)`, not
+  the prose `eval (` or `eval()`, and not a definition such as `def exec(`), or
+  a shell `eval` statement with a quoted string, a `$` expansion or a backtick
+  command among its arguments. A shell command made only of searches, commits
+  and `cd` (`grep`, `rg`, `git commit`, `git grep`, `git log`) names those
+  constructs as data and is not scanned. The compaction advisory fires at most twice per compaction
+  cycle.
 - **Uses channels the harness delivers.** PreToolUse guidance travels in
   `hookSpecificOutput`; the AskUserQuestion guard returns `additionalContext`,
   or `permissionDecision: deny` under the strict opt-in. Claude Code discards
@@ -142,12 +162,12 @@ Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
 
 | Name | Description | Source |
 | --- | --- | --- |
-| `postcompact` | Post-compaction Blind Bootstrap (CM-24 §6.2). Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
+| `postcompact` | Post-compaction Blind Bootstrap. Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
 | `posttooluse-proactive-compaction` | Proactive-compaction tracker for PostToolUse tool calls. | [`src/apothem/hooks/messages/posttooluse-proactive-compaction.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/posttooluse-proactive-compaction.md) |
-| `precompact` | Pre-compaction protocol (CM-24 §2.3). Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
+| `precompact` | Pre-compaction protocol. Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
 | `pretooluse-askuserquestion-recommended` | Call-time `(Recommended)`-marker guard for `AskUserQuestion` tool calls. | [`src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md) |
 | `pretooluse-bash-plan-guard` | Plans-Discipline write guard for Bash tool calls (companion to `pretooluse-write-plan-guard.md`). | [`src/apothem/hooks/messages/pretooluse-bash-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md) |
-| `pretooluse-bash` | CM-7 git-artifact isolation + M12 numeric-prefix discipline + M15 human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
+| `pretooluse-bash` | Git write guard: plan-internal isolation, numeric-prefix discipline, human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
 | `pretooluse-conformity` | &gt; Advisory: this hook reports; it does not block. Mechanical enforcement runs in CI. | [`src/apothem/hooks/messages/pretooluse-conformity.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-conformity.md) |
 | `pretooluse-dependency-guard` | Dependency-manifest supply-chain guard (advisory). | [`src/apothem/hooks/messages/pretooluse-dependency-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-dependency-guard.md) |
 | `pretooluse-edit-header-guard` | SPDX-header inject guard for Edit tool calls. | [`src/apothem/hooks/messages/pretooluse-edit-header-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-edit-header-guard.md) |
@@ -158,6 +178,6 @@ Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
 | `pretooluse-write-plan-guard` | Plans-Discipline write guard for Write / Edit / NotebookEdit tool calls. | [`src/apothem/hooks/messages/pretooluse-write-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write-plan-guard.md) |
 | `pretooluse-write` | Codebase isolation + frontmatter compliance. | [`src/apothem/hooks/messages/pretooluse-write.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write.md) |
 | `sessionstart` | Session-start conformity posture. | [`src/apothem/hooks/messages/sessionstart.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/sessionstart.md) |
-| `stop` | Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4). | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
+| `stop` | Session-end protocol: externalize state; evaluate memory and artifacts. | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
 
 {/* apothem:generated-reference:end */}

@@ -141,6 +141,25 @@ class TestEvalGuardPredicate:
             "yaml.load(stream)",
             "yaml.unsafe_load(stream)",
             'eval "$(ssh-agent)"',
+            "result = eval(x)",
+            "new Function('a', 'return a')",
+            "const fn = Function('a')",
+            'eval "$cmd"',
+            "eval $cmd",
+            "eval 'echo hi'",
+            "eval `ssh-agent -s`",
+            'x=1; eval "$x"',
+            'a && eval "$b"',
+            'cd /tmp\n  eval "$(tool env)"',
+            'eval set -- "$OPTS"',
+            'eval export "$x"',
+            'eval -- "$x"',
+            "eval echo ~$USER",
+            "eval cmd_$x",
+            r"eval echo \$$name",
+            "yaml.load(open(path))",
+            "yaml.load(\n    stream,\n    Loader=yaml.FullLoader,\n)",
+            "yaml.load(stream)\nloader = yaml.SafeLoader",
         ],
     )
     def test_primitives_match(self, text: str) -> None:
@@ -154,6 +173,9 @@ class TestEvalGuardPredicate:
             "pattern = re.compile(r'x')",
             "match = regex.exec(line)",
             "yaml.load(stream, Loader=yaml.SafeLoader)",
+            "yaml.load(open('f'), Loader=yaml.SafeLoader)",
+            "yaml.load(open(f), Loader=yaml.CSafeLoader)",
+            "yaml.load(\n    stream,\n    Loader=yaml.SafeLoader,\n)",
             "data = yaml.safe_load(stream)",
             "subprocess.run(['ls'], check=True)",
             "evaluate(model)",
@@ -161,6 +183,196 @@ class TestEvalGuardPredicate:
     )
     def test_benign_text_does_not_match(self, text: str) -> None:
         assert not ehc._has_eval_primitive(text)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            '"""Perf-audit eval (one-off) over the corpus."""',
+            "perf-audit eval (one-off)",
+            "see compile (the docs) for the flags",
+            "Function (deprecated) since 2.0",
+            "the guard flags eval ( in prose",
+            "run exec (the stage) next",
+            "result = eval (x)",
+            "pattern = re.compile (r'x')",
+            "eval is the primitive the guard looks for",
+            "eval the result before shipping",
+            "eval (one-off) results are in the table",
+            "  eval is indented prose",
+            "eval\n$cmd",
+            'retrieval "$x"',
+            "cat <<'EOF'\nPerf-audit eval (one-off)\neval (one-off) is quiet too\nEOF",
+        ],
+    )
+    def test_prose_does_not_match(self, text: str) -> None:
+        assert not ehc._has_eval_primitive(text)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "def compile(self, source):",
+            "    async def exec(self):",
+            "function eval(s) {}",
+            "pub fn eval(&self) -> Value",
+            "fun exec(cmd: String)",
+            "func compile(src string)",
+            "The eval() function is dangerous",
+            "Avoid `eval()` in prose",
+            "Call exec() to run it",
+            "const f = Function()",
+            "class Function(Application, Expr):",
+        ],
+    )
+    def test_definitions_and_empty_calls_are_not_calls(self, text: str) -> None:
+        assert not ehc._has_eval_primitive(text)
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [
+            ("eval(x)", "`eval(`"),
+            ("exec(code)", "`exec(`"),
+            ("compile(src, f, 'exec')", "`compile(`"),
+            ("new Function('a')", "`new Function(`"),
+            ('eval "$cmd"', "`eval`"),
+            ('cd /tmp;\n  eval "$cmd"', "`eval`"),
+            ('make && eval "$cmd"', "`eval`"),
+        ],
+    )
+    def test_reports_the_matched_construct(self, text: str, token: str) -> None:
+        assert ehc._eval_primitives(text) == [token]
+
+    def test_heredoc_body_is_scanned_like_a_write(self) -> None:
+        command = "cat > run.py <<'EOF'\nimport os\nresult = eval(payload)\nEOF"
+        assert ehc._eval_primitives(command) == ["`eval(`"]
+
+    def test_guard_stays_silent_on_prose_and_speaks_on_code(self) -> None:
+        def values(content: str) -> dict[str, str] | None:
+            payload: dict[str, object] = {
+                "cwd": str(_HOOKS_DIR),
+                "tool_name": "Write",
+                "tool_input": {"file_path": "/p/notes.py", "content": content},
+            }
+            return ehc.guard_values(
+                "PreToolUse",
+                str(_MESSAGES / "pretooluse-eval-guard.md"),
+                payload,
+                _HOOKS_DIR,
+            )
+
+        assert values('"""Perf-audit eval (one-off)."""\n') is None
+        assert values("value = eval(text)\n") == {
+            "path": "/p/notes.py",
+            "primitives": "`eval(`",
+        }
+
+    def test_adversarial_whitespace_stays_fast(self) -> None:
+        import time
+
+        started = time.perf_counter()
+        for text in (
+            "\n" * 50_000,
+            ";" + " " * 50_000,
+            "\n\t " * 20_000,
+            ";eval x" * 20_000,
+            "eval" + " " * 100_000,
+        ):
+            assert not ehc._has_eval_primitive(text)
+        assert time.perf_counter() - started < 2.0
+
+    def test_adversarial_yaml_calls_stay_fast(self) -> None:
+        import time
+
+        started = time.perf_counter()
+        for text in (
+            "yaml.load(" * 20_000,
+            "yaml.load(" + "(a)" * 50_000,
+            ("yaml.load(" + "(a)" * 150) * 500,
+        ):
+            assert ehc._has_eval_primitive(text)
+        assert time.perf_counter() - started < 2.0
+
+    @staticmethod
+    def _command_values(command: str) -> dict[str, str] | None:
+        payload: dict[str, object] = {
+            "cwd": str(_HOOKS_DIR),
+            "tool_name": "Bash",
+            "tool_input": {"command": command},
+        }
+        message = str(_MESSAGES / "pretooluse-eval-guard.md")
+        return ehc.guard_values("PreToolUse", message, payload, _HOOKS_DIR)
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "grep -rn 'eval(' src/",
+            r"rg 'exec\(' .",
+            "grep -rn 'eval(' src/ 2>/dev/null | grep -v tests",
+            'git commit -m "narrow the eval() guard"',
+            "git grep -n 'compile(' -- '*.py'",
+            "git log --oneline --grep='eval('",
+            "cd src && grep -n 'exec(' app.py",
+        ],
+    )
+    def test_a_search_or_commit_command_is_not_scanned(self, command: str) -> None:
+        assert self._command_values(command) is None
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "echo 'eval(x)' > run.py",
+            "sed -i 's/a/eval(b)/' run.py",
+            'grep x f; eval "$y"',
+            'grep x f & eval "$y"',
+            'grep x f && eval "$y"',
+            "grep -n \"$(python -c 'eval(1)')\" f",
+            "grep `python -c 'exec(1)'` f",
+            "git commit -m \"$(cat <<'EOF'\nresult = eval(x)\nEOF\n)\"",
+            "grep x f | xargs -I{} python -c 'eval({})'",
+        ],
+    )
+    def test_any_other_command_is_still_scanned(self, command: str) -> None:
+        assert self._command_values(command) is not None
+
+    @pytest.mark.parametrize(
+        ("command", "fires"),
+        [
+            ("grep -rn 'eval(' src/", False),
+            ('git commit -m "narrow the eval() guard"', False),
+            ("python -c 'eval(input())'", True),
+            ("grep -n x f; python -c 'exec(s)'", True),
+        ],
+    )
+    def test_the_dispatched_bash_hook_follows_the_search_skip(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+        command: str,
+        fires: bool,
+    ) -> None:
+        payload = {
+            "tool_name": "Bash",
+            "cwd": str(_HOOKS_DIR),
+            "tool_input": {"command": command},
+        }
+        stream = io.StringIO(json.dumps(payload))
+        stream.isatty = lambda: False  # type: ignore[method-assign]
+        monkeypatch.setattr(sys, "stdin", stream)
+        message = str(_MESSAGES / "pretooluse-eval-guard.md")
+        ehc.run_hook_mode_multi("PreToolUse", [message], False, _HOOKS_DIR)
+        envelope = json.loads(capsys.readouterr().out)
+        context = envelope["hookSpecificOutput"]["additionalContext"]
+        assert bool(context) is fires
+        if fires:
+            assert "Dynamic evaluation" in context
+
+    def test_the_search_skip_does_not_reach_a_write(self) -> None:
+        payload: dict[str, object] = {
+            "cwd": str(_HOOKS_DIR),
+            "tool_name": "Write",
+            "tool_input": {"file_path": "/p/a.py", "content": "grep x\neval(y)\n"},
+        }
+        message = str(_MESSAGES / "pretooluse-eval-guard.md")
+        assert ehc.guard_values("PreToolUse", message, payload, _HOOKS_DIR) is not None
 
 
 class TestShellToolNames:

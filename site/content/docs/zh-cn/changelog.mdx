@@ -50,6 +50,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Hook messages point at files the model can open.** Mandate, gate-bar and
+  section references in the text hooks inject either name the shipped rule
+  file they come from or say what they require, so they still mean something
+  under a plugin install, where the rules are not loaded. No message grew.
 - **Claude Code receives commands as skills that survive compaction.** The
   plugin and the engine install now ship each command as a skill: a
   `SKILL.md` of at most about 5,000 tokens with the procedure the model
@@ -86,6 +90,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The dynamic-evaluation guard ignores prose.** A call now needs its
+  parenthesis right after the name and an argument, definitions named `eval`
+  or `compile` are skipped, a shell `eval` must start a statement and expand
+  something, and a command that only searches or commits is not scanned.
+  `yaml.load` with a `SafeLoader` anywhere in its arguments is quiet. Text
+  such as "eval (one-off)" no longer raises an advisory.
+- **The authorship-header guard works under the plugin.** It used to stay
+  silent there because its checker needed the full package. A small
+  standard-library checker now reads the header and exemption lists from the
+  installed tree. It speaks only in a project that carries Apothem's own header
+  fixture, so it never asks for an MIT line in your project, and an edit
+  fires only when it would create a file without the header or remove one.
 - **The plans guard no longer fires on the project's own plans tree.** It
   judged "inside the project" against the tree the plugin is installed in, so
   every write to `<project>/.apothem/plans/` under a plugin install looked
