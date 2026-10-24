@@ -67,14 +67,16 @@ Behavioral rules live under `src/apothem/rules/` — a small always-on core plus
 
 ## 3. Delegated Workers
 
-Twelve persistent worker definitions ship with the ecosystem; the orchestration rule's team patterns dispatch to them. Each definition lives at the file path listed below.
+Fourteen persistent worker definitions ship with the ecosystem; the orchestration rule's team patterns dispatch to them. Each definition lives at the file path listed below.
 
 ```text
 Worker              File                                       Pattern         Model Policy
 ------------------- ------------------------------------------ --------------- -------------
+Citation Auditor    src/apothem/agents/citation-auditor.md    Audit           host-selected
 Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
 Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
 Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Design Critic       src/apothem/agents/design-critic.md       Audit           host-selected
 Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
 MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
 Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
@@ -141,6 +143,7 @@ Reusable skills live under `src/apothem/skills/`, one folder per skill.
 
 | Skill | Path | User-Invocable | Purpose |
 | ----- | ---- | -------------- | ------- |
+| Decision Matrix | `src/apothem/skills/decision-matrix/` | Yes | Weighted, evidence-cited choice between options with a sensitivity check |
 | Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Yes | Changelog-reviewed, pinned, gate-verified dependency upgrades |
 | Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Yes | Disciplined engineering loops — structured debugging, test-first red-green-refactor, vertical-slice decomposition, requirement-to-issue breakdown |
 | Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Yes | Author → validate → render → export pipeline for declarative diagrams and data visualizations (SVG / PNG / PDF) |
@@ -148,6 +151,8 @@ Reusable skills live under `src/apothem/skills/`, one folder per skill.
 | Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Yes | Blind audit of the Apothem configuration tree |
 | Eval Harness | `src/apothem/skills/eval-harness/` | Yes | Reproducible language-model evaluation harnesses with explicit pass criteria |
 | Incident Runbook | `src/apothem/skills/incident-runbook/` | Yes | Runbook authoring as Trigger → Diagnosis → Action → Verification → Rollback |
+| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Yes | Issue to fix with evidence at each stage: drafts, sizing, a failing-test checkpoint, the fix |
+| Knowledge Wiki | `src/apothem/skills/knowledge-wiki/` | Yes | Index-first Markdown knowledge base with lint, drift and hub analysis |
 | Multi-Source Research | `src/apothem/skills/multi-source-research/` | Yes | Fanned-out, cross-verified, cited research reports |
 | Plan Suite | `src/apothem/skills/plan-suite/` | No | Master template consumed by the `/plan` pipeline stages |
 | Projectify | `src/apothem/skills/projectify/` | Yes | Chat-app Project elevation — the Description / Instruction / knowledge-Files deliverables to SOTA conventions within a measurable per-platform context budget |
@@ -158,6 +163,7 @@ Reusable skills live under `src/apothem/skills/`, one folder per skill.
 | Research Suite | `src/apothem/skills/research-suite/` | No | Canonical research-suite surface — the ten rigor mandates (R1–R10), the thirteen-stage research lifecycle, and the Principal-Investigator Framework; resolved by path from the `/research` pipeline stages |
 | Surgical Guard | `src/apothem/skills/surgical-guard/` | Yes | Minimal-diff anchor-bounded editing paired with a reactive, diff-based post-edit quality guard |
 | Test Authoring | `src/apothem/skills/test-authoring/` | Yes | Behavior-first test authoring with Arrange-Act-Assert discipline |
+| UI Design | `src/apothem/skills/ui-design/` | Yes | Interface design and refinement to a craft floor with a `DESIGN.md` context |
 | Vuln Triage | `src/apothem/skills/vuln-triage/` | Yes | Severity-classifies security advisories and routes remediation |
 | Workflow | `src/apothem/skills/workflow/` | Yes | General-purpose multi-agent workflow harnessing with adversarial refute-by-default verification and disclosed beyond-mission remediation |
 

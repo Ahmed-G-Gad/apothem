@@ -20,7 +20,7 @@ and `evals/case.schema.json` describes it.
 
 | Kind | Cases | What passes |
 | --- | --- | --- |
-| Trigger | 64 | Each model-invocable command and each subagent fires on a request in its domain and stays quiet on a near miss. The three destructive release commands are user-invoked only, so their cases check that they do not start on their own. |
+| Trigger | 74 | Each model-invocable command, model-invocable skill and subagent fires on a request in its domain and stays quiet on a near miss. The three destructive release commands are user-invoked only, so their cases check that they do not start on their own. |
 | Outcome | 32 | One per stage: the eight plan stages, the thirteen research stages and the eleven audit dimensions. Each runs the stage on a seeded workspace and checks the artifact it writes; audit cases also check that nothing in the seeded sources was edited. |
 | Rule effect | 6 pairs | Two copies of one request, one with an always-on rule's text appended to the system prompt and one without. The pair isolates the rule's effect, because an eval run loads no rules of its own. |
 

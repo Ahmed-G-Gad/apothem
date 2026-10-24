@@ -1,7 +1,7 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-10-02"
+updated: "2026-10-24"
 description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or hands off a non-trivial multi-step mission that benefits from independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide), runs every load-bearing finding through an EXTREMELY-CRITIQUE refute-by-default pass (default 3 independent critics with distinct lenses; survival only on a non-refute majority), may remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), and emits a deterministic result. Multi-agent dispatch and auto-execution are opt-in and confirmation-gated. A request one tool call resolves is below this skill's threshold."
 archetype: "orchestration-template"
 user-invocable: true
@@ -90,6 +90,10 @@ Every load-bearing finding faces an independent refute-by-default verification p
 - A finding survives only on a non-refute majority; a majority-refute kills it.
 - Where a finding can fail in more than one way, give each critic a distinct lens (correctness / security / reproducibility / regression), not N identical refuters.
 - Contradictory verdicts surface to the operator with evidence — never silently reconciled.
+- Tell every reviewer and critic in its brief that returning no findings (or failing to refute) is a valid, expected result. A brief that demands output makes reviewers invent flaws.
+- Point reviewers at what was removed as well as what was added: deleted lines, files, tests, validations and error handling are reviewed with the same care as new code.
+- Treat a non-refute majority as a filter, not proof. Critics built on the same model share blind spots, so their agreement counts as coverage, not independent confirmation. Raise confidence by varying the lens, the evidence source or the tool (a test run, a grep, a reproduction), not by adding more identical votes.
+- Keep a verifier ledger: every finding dropped during verification is listed with the critic lens and the reason, so a reader can audit what the filter removed.
 
 ### 5. Remediate (mission + disclosed beyond-mission)
 
@@ -119,7 +123,8 @@ Autonomy is opt-in, never the shipped default, per `rules/agnostic-posture.md`. 
 A deterministic result surface:
 
 - The **mission outcome** (testable against the framing at step 1).
-- The **surviving (verified) findings** with evidence.
+- The **surviving (verified) findings** with evidence, or an explicit statement that none survived.
+- The **verifier ledger**: each dropped finding and why it was dropped.
 - The **disclosure ledger** of every beyond-mission amendment.
 - The **fifteen-bar gate attestation** per `rules/pre-emission-gate.md`.
 - A single `## Recommended Next Step`.

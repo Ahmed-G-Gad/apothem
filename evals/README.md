@@ -9,7 +9,7 @@
 | File | Purpose |
 | --- | --- |
 | `case.schema.json` | JSON Schema (draft 2020-12) for one case: `prompt.md` frontmatter, `case.yaml`, and each grader. It also documents how each grader type maps to a runner-neutral check. `tests/unit/test_eval_suite.py` validates every case against it. |
-| `triggers/` | 64 trigger cases, one directory per case. |
+| `triggers/` | 74 trigger cases, one directory per case. |
 | `outcomes/plan/`, `outcomes/research/`, `outcomes/audit/` | One outcome case per pipeline stage: 8 plan stages, 13 research stages, 11 audit dimensions. |
 | `rules/` | Rule-effect pairs for six always-on rules (the rule-scoping regression set). |
 
@@ -38,7 +38,7 @@ Unknown frontmatter keys fail a case at load time, so metadata travels in `tags`
 
 ## Case kinds
 
-- **Trigger (64).** Every model-invocable command and every subagent has a `trigger-<name>` case (a request in its domain, phrased as a user would type it, never naming it) graded by `tool_used` on `Skill` or `Agent` with the component's name in `input_match`, and a `no-trigger-<name>` near miss graded by the same check with `min: 0`, `max: 0`, `arm: both`. The three user-invoked-only commands have `no-auto-trigger-<name>` instead of `trigger-<name>`: a request that matches them exactly must still not start them.
+- **Trigger (74).** Every model-invocable command, every model-invocable skill and every subagent has a `trigger-<name>` case (a request in its domain, phrased as a user would type it, never naming it) graded by `tool_used` on `Skill` or `Agent` with the component's name in `input_match`, and a `no-trigger-<name>` near miss graded by the same check with `min: 0`, `max: 0`, `arm: both`. The three user-invoked-only commands have `no-auto-trigger-<name>` instead of `trigger-<name>`: a request that matches them exactly must still not start them.
 - **Outcome (32).** The prompt runs the stage as a user would (`/apothem:<stage> …`) on a workspace seeded by `scaffold.sh`, and free graders check the artifact the stage contract names (`file_exists`, `regex` over the file or the reply). Audit cases plant one defect per dimension and also assert the audit is report-only (no `Edit` of the seeded sources). No outcome case needs an `llm` grader.
 - **Rule effect (6 pairs).** A plugin eval run loads no rules and no `CLAUDE.md`, so each sampled always-on rule has a `rule-<name>-on` and a `rule-<name>-off` case that differ only by `append_system_prompt`, which carries the rule's runtime text (the rule file without frontmatter, SPDX line and `## Bindings`). Sampled rules: `session-closure`, `option-annotation`, `interactive-questions`, `authority-inquiry`, `definitiveness`, `freshness-facade`.
 

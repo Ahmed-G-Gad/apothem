@@ -70,7 +70,7 @@ plugin manifest. Installing the plugin *alone* — without running
 | Artifact class | Persists plugin-alone? | Mechanism / limit |
 |---|---|---|
 | Commands | Yes | The manifest `commands` array (45 entries, one per command file) loads the 45 slash-commands from the plugin tree. |
-| Agents | Yes | The manifest `agents` array (12 entries) loads sub-agents from the plugin tree. |
+| Agents | Yes | The manifest `agents` array (14 entries) loads sub-agents from the plugin tree. |
 | Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree. |
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |
 | Output styles | Yes | The 4 styles ship in the plugin's default `output-styles/` folder, which Claude Code scans when the manifest sets no `outputStyles` key ([plugins reference](https://code.claude.com/docs/en/plugins-reference), retrieved 2026-10-03); they are selectable from `/config` with the plugin alone. |
