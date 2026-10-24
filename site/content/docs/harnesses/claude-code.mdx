@@ -48,9 +48,10 @@ verbatim. The support files section names the absolute directory each
 repository-style citation in the installed rules, skills, and agents resolves
 against: `rules/<name>.md` under `~/.claude/rules/`, and `templates/...`,
 `schemas/...`, `hooks/...`, and `conformity/...` under
-`~/.claude/.apothem/support/`. The rest of the Apothem governance surface
-reaches Claude Code through the propagated `rules/` tree and the SessionStart
-hook. OpenCode also loads `~/.claude/CLAUDE.md` when no
+`~/.claude/.apothem/support/`. It also points at the rule index,
+`~/.claude/rules/apothem-rule-index.md`. The rest of the Apothem governance
+surface reaches Claude Code through the propagated `rules/` tree and the
+SessionStart hook. OpenCode also loads `~/.claude/CLAUDE.md` when no
 `~/.config/opencode/AGENTS.md` exists, so the block names no single tool as its
 reader.
 
@@ -98,6 +99,52 @@ Both also carry the Apothem-only frontmatter keys (`version`, `updated`,
 in that fixed order. Claude Code ignores unknown top-level keys, and the open
 skill format keeps client-specific extras in `metadata`. The source files do
 not change, and every other harness receives the keys at the top level as before.
+
+### Rules and what loads at launch
+
+Claude Code loads a rule file at launch unless its frontmatter carries a
+`paths:` list that scopes it. With `paths:` it loads the rule when it reads or
+edits a file that matches. A list made only of `**` scopes nothing, so that rule
+also loads at launch; no Apothem rule uses one. The install turns each rule's
+`pathFilter` into that list. Five rules carry none and load in every session: `agnostic-posture`, `authority-inquiry`,
+`session-closure`, `context-management`, and the rule index,
+`apothem-rule-index`. Every other rule is installed under `~/.claude/rules/`
+with `paths:` and loads on a matching touch.
+
+Claude Code matches those globs, with `.gitignore` semantics, against the path
+of the file relative to the working directory, and never against a file outside
+it. The auto memory directory sits under `~/.claude/projects/`, so
+`auto-memory` and `auto-memory-topic-files` never load on a path match. Editing
+`~/.claude/CLAUDE.md` or a file under `~/.claude/rules/` from another project
+does not load the rules scoped to those files either. These rules reach a session
+through the index.
+
+The index names each rule and the situation that calls for it. A step that cites
+`rules/<name>.md` as its procedure reads that file first. After a context
+compaction, read again any rule you were applying: Claude Code does not
+re-inject a path-scoped rule until a matching file is touched again. The name
+`apothem-rule-index.md` is reserved, because an install backs up and overwrites
+a rule file with that name.
+
+The rules that govern Apothem's own surfaces are scoped to `CLAUDE.md`,
+`AGENTS.md`, and the Markdown under `rules/`, `commands/`, `skills/`, `agents/`,
+`hooks/`, and `output-styles/`. An application repository rarely contains those
+files, so in one these rules reach a session through the index, through a skill,
+command, or helper that cites them, and through the hooks, not through a path
+match.
+
+The rule copies are written without their closing `## Bindings` section, as
+command skills are. The section holds reciprocal references for maintainers and
+the conformity gate. The source files keep it, and so do the copies other
+harnesses receive.
+
+To keep a scoped rule on in every session, you can try importing it from text
+outside the Apothem block in `~/.claude/CLAUDE.md`, for example
+`@rules/definitiveness.md`. The Claude Code memory page documents the import and
+says an imported path resolves relative to the importing file. It does not say
+how an imported rule's `paths` list is treated, and Apothem has not verified
+this. Check with the `InstructionsLoaded` hook that the rule loads at launch and
+does not load a second time on a path match.
 
 ### Command skills and reference files
 
@@ -147,8 +194,9 @@ above the cap.
 
 ## Compatibility notes
 
-Command prompts are converted into skill directories; agents, rules, skills,
-and output styles are copied as they are. Install validates that the profile is
+Command prompts are converted into skill directories and rules are rendered as
+described above; agents, skills, and output styles are copied as they are.
+Install validates that the profile is
 well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see
 [MCP servers](/docs/reference/mcp)).
@@ -221,6 +269,11 @@ The installed `apothem` package and source repository are unaffected.
 ```bash
 python -m apothem.conformity.gate --all .
 ```
+
+Run against the repository, the gate requires the `## Bindings` section on every
+rule, command, helper, and skill. Run against an installed `~/.claude/` tree, it
+accepts a rule or skill copy that has no such section, because the install
+leaves it out, and still checks a section that is present.
 
 ## Troubleshooting
 

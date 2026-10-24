@@ -325,15 +325,18 @@ def test_rule_effect_cases_are_paired() -> None:
         assert "rule-scoping-regression" in case.tags, case.path
         assert arm not in pairs.setdefault(rule, {}), f"{rule}: two {arm} cases"
         pairs[rule][arm] = case
-    assert len(pairs) >= 6, "sample at least six always-on rules"
+    assert len(pairs) >= 6, "sample at least six rules"
+    index = (_CORPUS / "rules" / "apothem-rule-index.md").read_text(encoding="utf-8")
     for rule, arms in pairs.items():
         assert set(arms) == {"rule-on", "rule-off"}, (
             f"{rule}: needs one rule-on and one rule-off case"
         )
         on, off = arms["rule-on"], arms["rule-off"]
-        source = _frontmatter_of(_CORPUS / "rules" / f"{rule}.md")
-        assert source.get("alwaysApply") is True, (
-            f"{rule}: the rule-scoping set samples always-on rules"
+        rule_file = _CORPUS / "rules" / f"{rule}.md"
+        assert rule_file.is_file(), f"{rule}: the sampled rule does not exist"
+        source = _frontmatter_of(rule_file)
+        assert source.get("alwaysApply") is True or f"`{rule}`" in index, (
+            f"{rule}: a sampled rule is always-on or named in the rule index"
         )
         assert on.frontmatter.get("append_system_prompt"), on.path
         assert "append_system_prompt" not in off.frontmatter, off.path

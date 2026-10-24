@@ -15,16 +15,20 @@ The canonical registry is the rules cohort. The same set in flat form:
 
 | Rule | Scope | Implements |
 |------|-------|------------|
-| Auto Memory | Always-on | CM-26 |
-| Clean-Room Generation | Always-on | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Always-on | CM-21 |
+| Agnostic Posture | Always-on | Default-off posture |
+| Authority Inquiry | Always-on | Never invent identity, scope, or version data |
+| Session Closure | Always-on | Verifiable session close |
 | Context Management | Always-on | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
+| Rule Index (`apothem-rule-index`) | Always-on | Which rule to read when |
+| Auto Memory | Path-filtered | CM-26 |
+| Clean-Room Generation | Path-filtered | CM-5 / CM-7 / CM-21 |
+| Cognitive Identity | Path-filtered | CM-21 |
 | Context Management Scratch | Path-filtered | CM-12 / CM-24 (companion) |
-| Conventions Vigilance | Always-on | CM-22 |
-| Interactive Questions | Always-on | CM-2 extension |
+| Conventions Vigilance | Path-filtered | CM-22 |
+| Interactive Questions | Path-filtered | CM-2 extension |
 | Interactive Questions Sweep Matchers | Path-filtered | CM-2 extension (companion) |
-| Operational Mandates | Always-on | CM-1–10 |
-| Worker Orchestration | Always-on | CM-17 / CM-25 |
+| Operational Mandates | Path-filtered | CM-1–10 |
+| Worker Orchestration | Path-filtered | CM-17 / CM-25 |
 | Clean Architecture | Path-filtered | CM-27 |
 | Large File Generation | Path-filtered | CM-23 |
 | Performance Discipline | Path-filtered | Performance axis |
@@ -53,21 +57,36 @@ is `true`; on a path-filtered rule `pathFilter` carries the glob list and
 
 `pathFilter` and `alwaysApply` are harness-neutral. Each adapter translates
 them where its harness has a native scoping field. Claude Code reads only
-`paths:` from a rule and loads every rule without it at launch, so the engine
+`paths:` from a rule and loads every rule without it at launch, as it does a
+rule whose `paths:` is `**` alone, so the engine
 install (`apothem install --harness claude-code`) writes each path-filtered rule
 to `~/.claude/rules/` with a `paths:` list built from its `pathFilter`, and
-copies always-on rules unchanged. The 28 always-on rules load in every session;
-the 63 path-filtered companions load when the assistant reads a matching file.
+writes every rule copy without its closing Bindings section. Five rules load in
+every session: `agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management`, and the rule index. The other 89 rules are path-filtered
+and load when the assistant reads a matching file. Adding a rule to the
+always-on set changes the core list and the byte ceiling in the same change.
+
+The rule index, `apothem-rule-index`, is the one always-on file that names every
+other rule and the situation that calls for it. A harness that scopes rules by
+path loads a scoped rule on a matching touch. A harness that does not loads
+none of them, so the index, the sentence in the instruction file that points at
+it, and the rules and skills that cite a rule by path are how a session reaches
+it. After a context compaction a scoped rule is no longer in context, and the
+index tells the assistant to read again any rule it was applying. Claude Code
+matches a path filter against files inside the working directory only, so the
+auto memory rules, whose files live under `~/.claude/projects/`, reach a session
+through the index and not through a path match.
 
 OpenCode has no per-rule scoping field: it combines every file its
 `opencode.json` `instructions` list names into every session. The OpenCode
 install (`apothem install --harness opencode`) therefore lists your profile
-document and only the rules whose `alwaysApply` is `true`, one explicit
-`~/.config/opencode/...` path per file, read from the rule files when the
-config is written. Every rule,
+document and only the rules whose `alwaysApply` is `true` (the four core rules
+and the rule index), one explicit `~/.config/opencode/...` path per file, read
+from the rule files when the config is written. Every rule,
 path-filtered ones included, is still installed under
-`~/.config/opencode/.apothem/support/rules/`, where a rule, skill, or command
-that cites one reads it on demand.
+`~/.config/opencode/.apothem/support/rules/`, where the index names it and a
+rule, skill, or command that cites one reads it on demand.
 
 ## Authoring discipline
 

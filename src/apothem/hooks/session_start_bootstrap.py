@@ -498,6 +498,20 @@ def read_skill_index(root: Path) -> list[str]:
     return lines
 
 
+#: File name of the rule that names every rule and when to read it.
+_RULE_INDEX_NAME: Final[str] = "apothem-rule-index.md"
+
+#: The rules that apply in every session, in the order the pointer names them.
+#: ``tests/hooks/test_session_start_bootstrap.py`` holds this tuple to the rules
+#: whose frontmatter sets ``alwaysApply: true``.
+_CORE_RULES: Final[tuple[str, ...]] = (
+    "agnostic-posture",
+    "authority-inquiry",
+    "session-closure",
+    "context-management",
+)
+
+
 def plugin_alone_pointer() -> list[str]:
     """Return a lean rules-pointer block when running plugin-alone, else [].
 
@@ -515,7 +529,12 @@ def plugin_alone_pointer() -> list[str]:
     conformity hooks remain active. It locates the bundled ``rules/`` directory
     under the plugin root (``rules/`` in the assembled bundle, or
     ``src/apothem/rules/`` when the repository root is the plugin root) and
-    cites whichever exists, falling back to the assembled location.
+    cites whichever exists, falling back to the assembled location. When that
+    directory holds the rule index it adds one line that tells the session to
+    read the four core rules first, since nothing loads them in this posture,
+    and names the index, so the session learns which rule to read for a task.
+    The index body is not inlined: the SessionStart context is shared with
+    other blocks.
 
     Returns:
         The pointer block's lines, or an empty list when not plugin-alone.
@@ -530,7 +549,7 @@ def plugin_alone_pointer() -> list[str]:
             break
     else:
         rules_dir = base / "rules"
-    return [
+    lines = [
         "Apothem plugin posture:",
         (
             "- Apothem is installed as a Claude Code plugin alone (no engine "
@@ -538,14 +557,24 @@ def plugin_alone_pointer() -> list[str]:
             f"{rules_dir}{os.sep} (read them with the file tools when a task "
             "needs them; they are not loaded as always-on context in this posture)."
         ),
-        (
-            "- Advisory hooks remain active on tool use: plan-term leak, "
-            "authorship-header and plans-locality guards on writes, dependency "
-            "and dynamic-eval guards when a write or command matches, a git-"
-            "mutation reminder on shell commands, and post-compaction recovery "
-            "at session start."
-        ),
     ]
+    rule_index = rules_dir / _RULE_INDEX_NAME
+    if rule_index.is_file():
+        lines.append(
+            "- Nothing loads the four core rules in this posture, so you MUST "
+            f"read them first: {', '.join(_CORE_RULES[:-1])} and "
+            f"{_CORE_RULES[-1]} (each is {rules_dir}{os.sep}<name>.md). Then "
+            f"use the rule index, {rule_index}: it names every rule and when "
+            "to read it."
+        )
+    lines.append(
+        "- Advisory hooks remain active on tool use: plan-term leak, "
+        "authorship-header and plans-locality guards on writes, dependency "
+        "and dynamic-eval guards when a write or command matches, a git-"
+        "mutation reminder on shell commands, and post-compaction recovery "
+        "at session start."
+    )
+    return lines
 
 
 def build_context(

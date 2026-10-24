@@ -14,6 +14,7 @@ populated-input paths for each builder plus the composed ``main`` output.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -493,6 +494,58 @@ class TestBuildContext:
         text = "\n".join(lines)
         assert "${" not in text
         assert str((tmp_path / "plugin" / "rules").resolve()) in text
+
+    def test_plugin_pointer_names_the_rule_index_and_the_core_rules(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rules = tmp_path / "plugin" / "rules"
+        rules.mkdir(parents=True)
+        (rules / "apothem-rule-index.md").write_text("# Index\n", encoding="utf-8")
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(tmp_path / "plugin"))
+        lines = ssb.plugin_alone_pointer()
+        text = "\n".join(lines)
+        # One line tells the session to read the four core rules first (nothing
+        # loads them in this posture) and names the index by its resolved path;
+        # the index body is not inlined.
+        pointer = [line for line in lines if "rule index" in line]
+        assert len(pointer) == 1
+        assert str((rules / "apothem-rule-index.md").resolve()) in pointer[0]
+        assert "MUST read them first" in pointer[0]
+        assert pointer[0].index("MUST read them first") < pointer[0].index("rule index")
+        for name in (
+            "agnostic-posture",
+            "authority-inquiry",
+            "session-closure",
+            "context-management",
+        ):
+            assert name in pointer[0]
+        assert "# Index" not in text
+        assert "${" not in text
+        assert text.isascii()
+
+    def test_plugin_pointer_omits_the_index_line_when_the_file_is_absent(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "plugin" / "rules").mkdir(parents=True)
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(tmp_path / "plugin"))
+        text = "\n".join(ssb.plugin_alone_pointer())
+        assert "rule index" not in text
+        assert "agnostic-posture" not in text
+
+    def test_plugin_pointer_core_rules_are_the_always_on_rules(self) -> None:
+        # The tuple the pointer names is held to the rules that load in every
+        # session: those whose frontmatter sets alwaysApply, bar the index.
+        rules_dir = Path(ssb.__file__).resolve().parents[1] / "rules"
+        always_on = {
+            path.stem
+            for path in rules_dir.glob("*.md")
+            if re.search(
+                r"^alwaysApply:\s*true\s*$",
+                path.read_text(encoding="utf-8").split("\n---\n", 1)[0],
+                re.MULTILINE,
+            )
+        }
+        assert always_on - {"apothem-rule-index"} == set(ssb._CORE_RULES)
 
     def test_posture_comes_from_the_installed_tree_not_the_project(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

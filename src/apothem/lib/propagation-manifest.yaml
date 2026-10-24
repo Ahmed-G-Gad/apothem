@@ -85,7 +85,8 @@ harnesses:
         mode: command_skills
         ownership_class: apothem-owned
       # Claude Code reads only `paths:` from a rule; claude_rules renders the
-      # corpus pathFilter as that list so path-scoped rules stop loading at launch.
+      # corpus pathFilter as that list so path-scoped rules stop loading at launch,
+      # and leaves the closing `## Bindings` section out of each copy.
       - source: "rules/"
         target: "${HARNESS_ROOT}/rules/"
         mode: claude_rules

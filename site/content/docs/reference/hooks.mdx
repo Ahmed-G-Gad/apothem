@@ -82,6 +82,14 @@ install shows manual skills as `/apothem:<name>`; an engine install drops the
 prefix. The text stays under 1,600 characters, and `generate_skill_index.py
 --check` fails when the committed file no longer matches the catalog.
 
+When Apothem runs as a Claude Code plugin alone, no rule file loads at launch.
+The SessionStart hook then adds a short pointer to the bundled `rules/`
+directory. If that directory holds `apothem-rule-index.md`, the pointer also
+tells the session to read the four core rules first, because nothing loads them
+in this posture (`agnostic-posture`, `authority-inquiry`, `session-closure`,
+`context-management`), and names the index, which says which rule to read for
+which task. The index text is not inlined.
+
 Each context file is loaded by the dispatcher when its event fires
 and its context argument is registered in the settings file. The license
 comment line and the closing `## Bindings` section are removed before the text
