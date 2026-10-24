@@ -85,8 +85,10 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
     # time.
     assert first_hook["command"] == (
         '/usr/bin/python3.12 "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py" '
-        "PreToolUse pretooluse-bash"
+        "PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard"
     )
+    # Every guard for the matcher shares this one dispatcher entry.
+    assert len(pretool_entries[0]["hooks"]) == 1
     # Qwen reads command-hook timeouts in seconds (a value of 1000 or more is
     # only accepted as legacy milliseconds).
     assert first_hook["timeout"] == 10

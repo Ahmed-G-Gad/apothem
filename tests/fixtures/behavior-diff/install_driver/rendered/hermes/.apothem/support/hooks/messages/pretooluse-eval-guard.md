@@ -38,6 +38,12 @@ Two layers govern failure. (a) The Python dispatcher at `hooks/dispatch.py` is f
 
 No action. The guard is scoped to the dynamic-evaluation and unsafe-deserialization primitives above applied to untrusted input; every other construct passes unaffected.
 
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Dynamic evaluation or unsafe deserialization in {path}: {primitives}. If its input can come from a model, a tool result or the network, ask the operator before it lands; the recommended fix is a non-evaluating equivalent (dispatch table, argument-vector subprocess, safe loader).
+
 ## Bindings (§0.j five-direction)
 
 - **Drives →** The advisory flag on dynamic evaluation or unsafe deserialization of untrusted or model-derived input in a Write, Edit, or Bash command.

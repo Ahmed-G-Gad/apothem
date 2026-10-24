@@ -65,54 +65,14 @@
             "type": "command",
             "command": "${PYTHON_BIN}",
             "timeout": 10,
-            "statusMessage": "Validating write target and content",
+            "statusMessage": "Checking the write target and content",
             "args": [
               "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
               "PreToolUse",
-              "pretooluse-write"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Injecting authorship header if missing",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-write-header-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on the target path",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-write-plan-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Flagging unpinned or untrusted dependency additions",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-dependency-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
+              "pretooluse-write",
+              "pretooluse-write-header-guard",
+              "pretooluse-write-plan-guard",
+              "pretooluse-dependency-guard",
               "pretooluse-eval-guard"
             ]
           },
@@ -135,54 +95,14 @@
             "type": "command",
             "command": "${PYTHON_BIN}",
             "timeout": 10,
-            "statusMessage": "Validating edit target and content",
+            "statusMessage": "Checking the edit target and content",
             "args": [
               "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
               "PreToolUse",
-              "pretooluse-edit"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Injecting authorship header on file creation",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-edit-header-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on the target path",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-write-plan-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Flagging unpinned or untrusted dependency additions",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-dependency-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
+              "pretooluse-edit",
+              "pretooluse-edit-header-guard",
+              "pretooluse-write-plan-guard",
+              "pretooluse-dependency-guard",
               "pretooluse-eval-guard"
             ]
           },
@@ -205,21 +125,11 @@
             "type": "command",
             "command": "${PYTHON_BIN}",
             "timeout": 10,
-            "statusMessage": "Validating notebook cell content",
+            "statusMessage": "Checking the notebook cell and path",
             "args": [
               "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
               "PreToolUse",
-              "pretooluse-notebookedit"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on the notebook path",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
+              "pretooluse-notebookedit",
               "pretooluse-write-plan-guard"
             ]
           }
@@ -232,32 +142,12 @@
             "type": "command",
             "command": "${PYTHON_BIN}",
             "timeout": 10,
-            "statusMessage": "Validating shell command safety and isolation",
+            "statusMessage": "Checking the shell command",
             "args": [
               "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
               "PreToolUse",
-              "pretooluse-bash"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on shell redirections",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
-              "pretooluse-bash-plan-guard"
-            ]
-          },
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 10,
-            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
-            "args": [
-              "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
-              "PreToolUse",
+              "pretooluse-bash",
+              "pretooluse-bash-plan-guard",
               "pretooluse-eval-guard"
             ]
           }
@@ -293,7 +183,8 @@
               "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py",
               "PostToolUse",
               "posttooluse-proactive-compaction"
-            ]
+            ],
+            "async": true
           }
         ]
       }

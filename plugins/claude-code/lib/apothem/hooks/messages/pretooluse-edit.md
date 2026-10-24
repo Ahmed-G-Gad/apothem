@@ -2,7 +2,7 @@
 
 Codebase isolation (Edit scope).
 
-Scope. Triggered on every Edit. Skip when target is inside the Apothem source repo or the active harness's config root (for the Claude Code harness, `~/.claude/`). Apply otherwise.
+Scope. Triggered on every Edit. Covers the project's own files only: a target outside the project root (the active harness's config root such as `~/.claude/`, its memory, the session scratchpad) or inside the project's gitignored Apothem working tree (`.apothem/`) is skipped. Public identifiers that share the id shape (`UTF-8`, `SHA-256`, `CVE-...`) are not plan terms.
 
 Action. Scan ONLY the `new_string` (Edit is partial; pre-existing violations elsewhere in the file are out of scope unless this Edit touches them) for plan-internal terminology leaking into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>` (for example `TM-10`, `CM-7`, `CP-20`), phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative.
 
@@ -19,6 +19,12 @@ Action. Examine the target `file_path` against the scratch-convention discipline
 Non-matching paths: no action. The scratch-convention check is scoped to the `_inputs/` and `_spec/` directory patterns defined at `rules/context-management-scratch.md` §1–§2 and does not interact with other path classes.
 
 **Fail-disposition.** Two layers govern failure. (a) The Python dispatcher at `hooks/dispatch.py` is fail-open: a hook-emission error converts to a structured failure envelope on stdout and the Edit proceeds, so a harness error never silently blocks the tool call. (b) The assistant's interpretation of this context is fail-closed on a detected violation: when the codebase-isolation scan, an over-budget body, or a scratch-path REJECT class is hit, the directive is to STOP and re-issue the Edit corrected. The two layers are non-redundant: the dispatcher protects the runtime, this context protects the rule. Mechanical enforcement runs in CI and pre-commit via the strict conformity corpus gate.
+
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Plan-internal identifier(s) {terms} in the new text for {path}. Product files must not carry plan, task or phase ids: rewrite the passage in plain domain language (do not just delete the id) and re-issue the edit.
 
 ## Bindings (§0.j five-direction)
 

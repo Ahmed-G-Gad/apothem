@@ -29,8 +29,19 @@ What it guarantees.
   threshold crosses, the per-session counters reset (back-off), so the next
   advisory is at least another full window away.
 
-Configuration. Two thresholds, each overridable by an environment variable
-(falling back to a default grounded in the §2 catalog):
+Signal. The primary signal is the measured context size: the newest assistant
+``usage`` record in the transcript tail (input + cache-read + cache-creation
+tokens). With ``APOTHEM_CONTEXT_WINDOW_TOKENS`` (or Claude Code's
+``CLAUDE_CODE_AUTO_COMPACT_WINDOW``) set, the tracker asks the agent to save
+state at 50% of the window and to compact at 75%; without a known window it uses
+120K and 250K tokens. A sharp drop in the measured size marks a compaction and
+restarts the two-advisory budget. Claude Code runs this hook in the background
+(``async``), so it never delays a tool result.
+
+Fallback. When no context size is measurable (a harness without a transcript,
+or no usage record yet) the tracker counts activity instead, with two
+thresholds, each overridable by an environment variable (falling back to a
+default grounded in the §2 catalog):
 
 * ``APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD`` (default ``18``) — tool calls
   since the last advisory; mirrors the §2 "~18 tool calls" trigger.
@@ -68,11 +79,11 @@ TOOL_THRESHOLD_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD"
 #: ``off`` (case-folded) silence it without editing installed hook configuration.
 ENABLED_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_ENABLED"
 _DISABLED_VALUES: Final[frozenset[str]] = frozenset({"0", "false", "no", "off"})
-#: Advisories allowed per session. The window resets after each advisory, so
-#: without a cap the tracker re-fires every window for the life of the session
-#: and has no fixed point: complying (writing PROGRESS.md) does not change what
-#: it asserts next window. Two advisories bound the cost and still reach the
-#: operator twice in a long session.
+#: Advisories allowed per compaction cycle (per session when the context size is
+#: not measurable). Without a cap the tracker re-fires for the life of the
+#: session and has no fixed point: complying (writing PROGRESS.md) does not
+#: change what it asserts next time. Two advisories ("save state", then "compact
+#: now") bound the cost; a measured compaction restarts the budget.
 MAX_ADVISORIES_PER_SESSION: Final[int] = 2
 OUTPUT_THRESHOLD_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD"
 
@@ -120,12 +131,14 @@ class SessionState:
 
     ``tool_calls`` counts PostToolUse firings; ``output_bytes`` accumulates the
     estimated size of each tool's output. Both reset to zero when an advisory
-    fires (the anti-spam back-off).
+    fires (the anti-spam back-off). ``context_tokens`` is the last measured
+    context size (0 when unmeasured); a sharp drop marks a compaction.
     """
 
     tool_calls: int = 0
     output_bytes: int = 0
     advisories: int = 0
+    context_tokens: int = 0
 
     def to_dict(self) -> dict[str, int]:
         """Serialize to the on-disk JSON shape."""
@@ -133,6 +146,7 @@ class SessionState:
             "tool_calls": self.tool_calls,
             "output_bytes": self.output_bytes,
             "advisories": self.advisories,
+            "context_tokens": self.context_tokens,
         }
 
     @classmethod
@@ -147,7 +161,11 @@ class SessionState:
         tool_calls = obj.get("tool_calls")
         output_bytes = obj.get("output_bytes")
         advisories = obj.get("advisories")
+        context_tokens = obj.get("context_tokens")
         return cls(
+            context_tokens=context_tokens
+            if isinstance(context_tokens, int) and context_tokens >= 0
+            else 0,
             advisories=advisories
             if isinstance(advisories, int) and advisories >= 0
             else 0,
@@ -280,25 +298,149 @@ def estimate_output_bytes(payload: dict[str, object] | None) -> int:
     return len(text.encode("utf-8"))
 
 
-def _advisory_text() -> str:
+#: How much of the transcript's end is scanned for the latest usage record. One
+#: assistant line is a few KB; the tail covers many turns while keeping the read
+#: constant-time however long the session grows.
+_TRANSCRIPT_TAIL_BYTES: Final[int] = 256 * 1024
+#: Usage fields whose sum is the prompt the model last saw: the context size.
+_CONTEXT_USAGE_FIELDS: Final[tuple[str, ...]] = (
+    "input_tokens",
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+)
+#: Context-window size override, in tokens. Falls back to Claude Code's own
+#: auto-compact window variable when that is set; otherwise the window is unknown
+#: and the policy decides on absolute size alone.
+CONTEXT_WINDOW_ENV: Final[str] = "APOTHEM_CONTEXT_WINDOW_TOKENS"
+_HARNESS_WINDOW_ENV: Final[str] = "CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+#: A measured context below this share of the last one means the conversation
+#: was compacted (or cleared): the advisory budget starts over.
+_COMPACTION_DROP_RATIO: Final[float] = 0.5
+#: Context-fill policy (the maintainer's choice). With a known window: save state
+#: at half full, compact at three quarters. Without one, absolute sizes: quality
+#: degrades with prompt length whatever the window, and 120K / 250K tokens sit
+#: below the auto-compaction point of the common 200K window and well inside a
+#: 1M one.
+_SAVE_STATE_FRACTION: Final[float] = 0.50
+_COMPACT_NOW_FRACTION: Final[float] = 0.75
+_SAVE_STATE_TOKENS: Final[int] = 120_000
+_COMPACT_NOW_TOKENS: Final[int] = 250_000
+
+
+def context_tokens(payload: dict[str, object] | None) -> int | None:
+    """Return the session's current context size in tokens, or ``None``.
+
+    Reads the newest main-thread assistant ``usage`` record from the tail of the
+    payload's ``transcript_path``: input plus cache-read plus cache-creation
+    tokens is exactly the prompt the model last received. A harness without a
+    transcript, a transcript with no usage yet, or any read error yields
+    ``None`` and the caller falls back to activity counting.
+    """
+    path = payload.get("transcript_path") if payload else None
+    if not isinstance(path, str) or not path:
+        return None
+    try:
+        with open(path, "rb") as handle:  # noqa: PTH123 - binary tail read
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            handle.seek(max(0, size - _TRANSCRIPT_TAIL_BYTES))
+            tail = handle.read()
+    except OSError:
+        return None
+    for line in reversed(tail.splitlines()):
+        if b'"usage"' not in line or b'"isSidechain":true' in line:
+            continue
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue  # the first line of the tail is usually cut mid-record
+        message = record.get("message") if isinstance(record, dict) else None
+        usage = message.get("usage") if isinstance(message, dict) else None
+        if not isinstance(usage, dict):
+            continue
+        total = sum(
+            value
+            for field in _CONTEXT_USAGE_FIELDS
+            if isinstance(value := usage.get(field), int)
+        )
+        if total > 0:
+            return total
+    return None
+
+
+def context_window() -> int | None:
+    """Return the context-window size from the environment, or ``None``."""
+    for name in (CONTEXT_WINDOW_ENV, _HARNESS_WINDOW_ENV):
+        value = _positive_int_env(name, 0)
+        if value > 0:
+            return value
+    return None
+
+
+def advisory_level(tokens: int, window: int | None, advisories_sent: int) -> int | None:
+    """Decide whether this tool call should raise a context advisory.
+
+    Args:
+        tokens: The measured context size in tokens (always > 0 here).
+        window: The context-window size in tokens, or ``None`` when unknown.
+        advisories_sent: Advisories already raised since the last compaction
+            (0 or 1; the caller stops calling after
+            ``MAX_ADVISORIES_PER_SESSION``).
+
+    Returns:
+        The 1-based advisory to raise now (1 = "externalize state",
+        2 = "compact now"), or ``None`` to stay silent.
+    """
+    if window:
+        compact_now = tokens >= window * _COMPACT_NOW_FRACTION
+        save_state = tokens >= window * _SAVE_STATE_FRACTION
+    else:
+        compact_now = tokens >= _COMPACT_NOW_TOKENS
+        save_state = tokens >= _SAVE_STATE_TOKENS
+    # A session resumed already large may skip straight to level 2.
+    if compact_now:
+        return 2
+    if save_state and advisories_sent == 0:
+        return 1
+    return None
+
+
+def _advisory_text(
+    level: int = 1, tokens: int | None = None, window: int | None = None
+) -> str:
     """Return the model-facing advisory: the step the model can take itself."""
+    if tokens is None:
+        measured = "Activity since the last checkpoint is high"
+    elif window:
+        measured = f"Context is about {tokens:,} tokens ({tokens * 100 // window}% of the window)"
+    else:
+        measured = f"Context is about {tokens:,} tokens"
+    # The model is told only what it can do itself; compacting the conversation
+    # is the operator's action and lives in the operator note.
+    urgency = (
+        " Do this before the next step: the operator has been told the session is long."
+        if level >= 2
+        else ""
+    )
     return (
-        "Apothem proactive-compaction advisory (CM-19): activity since the last "
-        "checkpoint has crossed a context-rot threshold. Externalize in-conversation "
-        "state to durable files now: update the PROGRESS.md Resumption Contract "
-        "(phase, task, next action, convention anchors, critical-files manifest) and "
-        "record session decisions in PLAN-NOTES.md. With no active suite, externalize "
-        "to a scratch file under the active harness's config root. Every turn must "
-        "stay executable from durable files alone. Advisory only; it does not block."
+        f"Apothem proactive-compaction advisory: {measured}. Externalize "
+        "in-conversation state to durable files now: update the active plan's "
+        "PROGRESS.md Resumption Contract (phase, task, next action, critical files) "
+        "and record decisions in PLAN-NOTES.md; with no active suite, write a short "
+        f"plan under <project-root>/.apothem/plans/.{urgency} Advisory only."
     )
 
 
-def _operator_text() -> str:
+def _operator_text(level: int = 1, tokens: int | None = None) -> str:
     """Return the operator-facing note: compaction is the operator's action."""
+    size = f" (about {tokens:,} tokens of context)" if tokens else ""
+    if level >= 2:
+        return (
+            f"Apothem: this session is long{size}. Compact or start a fresh session "
+            "once the current step is saved."
+        )
     return (
-        "Apothem: this session has crossed a context-rot threshold. Consider "
-        "compacting the conversation or starting a fresh session once the current "
-        "step is saved."
+        f"Apothem: this session is growing{size}; the agent is saving state to files."
     )
 
 
@@ -371,6 +513,36 @@ def evaluate(payload: dict[str, object] | None) -> dict[str, object]:
     _purge_stale_state(path.parent)
 
     state = _read_state(path)
+    tokens = context_tokens(payload)
+    if tokens is not None:
+        if (
+            state.context_tokens
+            and tokens < state.context_tokens * _COMPACTION_DROP_RATIO
+        ):
+            # The context shrank sharply: compacted or cleared. Start over.
+            state = SessionState()
+        state.context_tokens = tokens
+        if state.advisories >= MAX_ADVISORIES_PER_SESSION:
+            _write_state(path, state)
+            return {}
+        window = context_window()
+        level = advisory_level(tokens, window, state.advisories)
+        if level is not None:
+            # "Compact now" ends the cycle's budget, so it is never repeated.
+            state.advisories = max(state.advisories + 1, level)
+        _write_state(path, state)
+        if level is None:
+            return {}
+        return {
+            "systemMessage": _operator_text(level, tokens),
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": _advisory_text(level, tokens, window),
+            },
+        }
+
+    # No measurable context (no transcript, or no usage record yet): fall back
+    # to counting activity since the last advisory.
     if state.advisories >= MAX_ADVISORIES_PER_SESSION:
         return {}
     state.tool_calls += 1

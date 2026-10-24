@@ -18,11 +18,14 @@ from __future__ import annotations
 import re
 from typing import Final
 
-__all__ = ["strip_maintainer_text"]
+__all__ = ["advisory_section", "fill_placeholders", "strip_maintainer_text"]
 
 _COMMENT_OPEN: Final[str] = "<!--"
 _COMMENT_CLOSE: Final[str] = "-->"
 _BINDINGS_HEADING_RE: Final[re.Pattern[str]] = re.compile(r"^##\s+Bindings\b")
+_ADVISORY_HEADING_RE: Final[re.Pattern[str]] = re.compile(r"^##\s+Advisory\s*$")
+_SECTION_HEADING_RE: Final[re.Pattern[str]] = re.compile(r"^##\s")
+_PLACEHOLDER_RE: Final[re.Pattern[str]] = re.compile(r"\{([a-z_]+)\}")
 
 
 def _is_maintainer_comment(line: str) -> bool:
@@ -54,3 +57,36 @@ def strip_maintainer_text(text: str) -> str:
             continue
         kept.append(line)
     return "\n".join(kept).strip()
+
+
+def advisory_section(text: str) -> str | None:
+    """Return the body of the message's ``## Advisory`` section, or ``None``.
+
+    A guard message carries its full procedure for maintainers and for an agent
+    that wants the detail, plus one short ``## Advisory`` template: the only text
+    a firing guard injects. The section runs to the next ``##`` heading. A message
+    without the section returns ``None`` so the caller can fall back to the whole
+    stripped body.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if _ADVISORY_HEADING_RE.match(line):
+            body: list[str] = []
+            for rest in lines[index + 1 :]:
+                if _SECTION_HEADING_RE.match(rest):
+                    break
+                if not _is_maintainer_comment(rest):
+                    body.append(rest)
+            section = "\n".join(body).strip()
+            return section or None
+    return None
+
+
+def fill_placeholders(template: str, values: dict[str, str]) -> str:
+    """Replace each ``{name}`` in *template* with ``values[name]``.
+
+    Plain token replacement, not ``str.format``: message prose may contain
+    literal braces, and a placeholder with no value is left as written rather
+    than raising.
+    """
+    return _PLACEHOLDER_RE.sub(lambda m: values.get(m.group(1), m.group(0)), template)

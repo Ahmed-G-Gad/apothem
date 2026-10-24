@@ -455,7 +455,7 @@ class TestFailureEnvelope:
         def _boom(*_args: object, **_kwargs: object) -> None:
             raise RuntimeError("hook mode exploded")
 
-        monkeypatch.setattr(ehc, "run_hook_mode", _boom)
+        monkeypatch.setattr(ehc, "run_hook_mode_multi", _boom)
         # main must catch and emit a valid JSON failure envelope, never raise.
         ehc.main(["--hook-event-name", "PreToolUse", "--context-file", "x.md"])
         envelope = json.loads(capsys.readouterr().out)

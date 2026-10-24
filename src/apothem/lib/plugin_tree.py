@@ -135,29 +135,68 @@ _ASSEMBLED_ENGINE_ROOT_REL: Final[str] = "lib/apothem"
 #: ``source: compact`` instead. Shell guards match ``Bash|PowerShell`` so the
 #: PowerShell tool, where enabled, is covered too.
 #:
-#: Each tuple is ``(event_name, matcher, timeout_seconds, message_basename)``;
-#: ``message_basename`` is ``None`` for events the dispatcher handles without a
-#: Markdown context (``SessionStart`` runs the session-start bootstrap directly).
-_PLUGIN_HOOK_ENTRIES: Final[tuple[tuple[str, str, int, str | None], ...]] = (
-    ("SessionStart", "*", 30, None),
-    ("PreToolUse", "Write", 10, "pretooluse-write"),
-    ("PreToolUse", "Write", 10, "pretooluse-write-header-guard"),
-    ("PreToolUse", "Write", 10, "pretooluse-write-plan-guard"),
-    ("PreToolUse", "Write", 10, "pretooluse-dependency-guard"),
-    ("PreToolUse", "Write", 10, "pretooluse-eval-guard"),
-    ("PreToolUse", "Edit", 10, "pretooluse-edit"),
-    ("PreToolUse", "Edit", 10, "pretooluse-edit-header-guard"),
-    ("PreToolUse", "Edit", 10, "pretooluse-write-plan-guard"),
-    ("PreToolUse", "Edit", 10, "pretooluse-dependency-guard"),
-    ("PreToolUse", "Edit", 10, "pretooluse-eval-guard"),
-    ("PreToolUse", "NotebookEdit", 10, "pretooluse-notebookedit"),
-    ("PreToolUse", "NotebookEdit", 10, "pretooluse-write-plan-guard"),
-    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-bash"),
-    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-bash-plan-guard"),
-    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-eval-guard"),
-    ("PreToolUse", "AskUserQuestion", 10, "pretooluse-askuserquestion-recommended"),
-    ("PostToolUse", "*", 10, "posttooluse-proactive-compaction"),
-    ("Stop", "*", 60, "stop"),
+#: Each tuple is ``(event_name, matcher, timeout_seconds, message_basenames,
+#: run_async)``. Every guard for one matcher shares a single entry: the
+#: bootstrap passes all of its messages to one dispatcher process, which reads
+#: the payload once and returns one envelope, so a Write starts one interpreter
+#: rather than one per guard. ``message_basenames`` is empty for events the
+#: dispatcher handles without a Markdown context (``SessionStart`` runs the
+#: session-start bootstrap directly). ``run_async`` marks a hook Claude Code
+#: runs in the background: the compaction tracker only counts activity and its
+#: advisory may arrive on the next turn, so it never delays a tool result
+#: (https://code.claude.com/docs/en/hooks, "Run hooks in the background",
+#: retrieved 2026-10-24).
+_PLUGIN_HOOK_ENTRIES: Final[tuple[tuple[str, str, int, tuple[str, ...], bool], ...]] = (
+    ("SessionStart", "*", 30, (), False),
+    (
+        "PreToolUse",
+        "Write",
+        10,
+        (
+            "pretooluse-write",
+            "pretooluse-write-header-guard",
+            "pretooluse-write-plan-guard",
+            "pretooluse-dependency-guard",
+            "pretooluse-eval-guard",
+        ),
+        False,
+    ),
+    (
+        "PreToolUse",
+        "Edit",
+        10,
+        (
+            "pretooluse-edit",
+            "pretooluse-edit-header-guard",
+            "pretooluse-write-plan-guard",
+            "pretooluse-dependency-guard",
+            "pretooluse-eval-guard",
+        ),
+        False,
+    ),
+    (
+        "PreToolUse",
+        "NotebookEdit",
+        10,
+        ("pretooluse-notebookedit", "pretooluse-write-plan-guard"),
+        False,
+    ),
+    (
+        "PreToolUse",
+        "Bash|PowerShell",
+        10,
+        ("pretooluse-bash", "pretooluse-bash-plan-guard", "pretooluse-eval-guard"),
+        False,
+    ),
+    (
+        "PreToolUse",
+        "AskUserQuestion",
+        10,
+        ("pretooluse-askuserquestion-recommended",),
+        False,
+    ),
+    ("PostToolUse", "*", 10, ("posttooluse-proactive-compaction",), True),
+    ("Stop", "*", 60, ("stop",), False),
 )
 
 #: The thin alias shim re-exporting the engine's public submodules.
@@ -423,7 +462,11 @@ def _bootstrap_command(engine_root_rel: str, suffix: str) -> str:
 
 
 def _entry_command_block(
-    engine_root_rel: str, event: str, timeout: int, message: str | None
+    engine_root_rel: str,
+    event: str,
+    timeout: int,
+    messages: tuple[str, ...],
+    run_async: bool = False,
 ) -> list[dict[str, object]]:
     """Return the single command hook for one plugin hook entry.
 
@@ -441,24 +484,30 @@ def _entry_command_block(
         event: The hook event name (e.g. ``PreToolUse``).
         timeout: Per-entry timeout in seconds, mirrored from the engine's
             ``settings.json`` block.
-        message: The message-file basename (without ``.md``), or ``None`` for
-            events the dispatcher handles without a Markdown context.
+        messages: The message-file basenames (without ``.md``) the one
+            dispatcher process evaluates; empty for events the dispatcher
+            handles without a Markdown context.
+        run_async: Emit ``"async": true`` so Claude Code runs the hook in the
+            background.
 
     Returns:
         A one-element list holding the command-hook dict.
     """
-    if message is None:
-        suffix = event
-    else:
-        msg_rel = f"{engine_root_rel}/hooks/messages/{message}.md"
-        suffix = f'{event} "${{CLAUDE_PLUGIN_ROOT}}/{msg_rel}"'
-    return [
-        {
-            "type": "command",
-            "command": _bootstrap_command(engine_root_rel, suffix),
-            "timeout": timeout,
-        }
-    ]
+    suffix = " ".join(
+        [event]
+        + [
+            f'"${{CLAUDE_PLUGIN_ROOT}}/{engine_root_rel}/hooks/messages/{message}.md"'
+            for message in messages
+        ]
+    )
+    entry: dict[str, object] = {
+        "type": "command",
+        "command": _bootstrap_command(engine_root_rel, suffix),
+        "timeout": timeout,
+    }
+    if run_async:
+        entry["async"] = True
+    return [entry]
 
 
 def build_plugin_hooks_json(engine_root_rel: str) -> dict[str, object]:
@@ -467,7 +516,7 @@ def build_plugin_hooks_json(engine_root_rel: str) -> dict[str, object]:
     Produces the plugin-alone hook configuration: a ``hooks`` map keyed by
     event name, each event carrying matcher-grouped command blocks. Every
     command drives the bash bootstrap stub under ``${CLAUDE_PLUGIN_ROOT}``
-    (one entry per dispatch-routable hook), so the conformity nudges, the
+    (one entry per matcher, every guard for it in one process), so the conformity nudges, the
     session bootstrap (which also carries the post-compaction recovery context
     on ``source: compact``) and the stop handler fire when the plugin is
     installed alone — without an apothem
@@ -489,15 +538,15 @@ def build_plugin_hooks_json(engine_root_rel: str) -> dict[str, object]:
     Returns:
         A ``hooks.json`` dict carrying the ``hooks`` event map.
     """
-    # Accumulate one command-list per (event, matcher) so consecutive entries
-    # sharing a matcher (e.g. the three Write guards) collapse into a single
-    # matcher group with an ordered command list — mirroring the engine
+    # Accumulate one command-list per (event, matcher) — mirroring the engine
     # ``settings.json`` grouping. ``dict`` preserves first-seen order, so the
     # emitted event and matcher ordering is deterministic across runs.
     accumulators: dict[tuple[str, str], list[dict[str, object]]] = {}
-    for event, matcher, timeout, message in _PLUGIN_HOOK_ENTRIES:
+    for event, matcher, timeout, messages, run_async in _PLUGIN_HOOK_ENTRIES:
         commands = accumulators.setdefault((event, matcher), [])
-        commands.extend(_entry_command_block(engine_root_rel, event, timeout, message))
+        commands.extend(
+            _entry_command_block(engine_root_rel, event, timeout, messages, run_async)
+        )
     events: dict[str, list[dict[str, object]]] = {}
     for (event, matcher), commands in accumulators.items():
         events.setdefault(event, []).append({"matcher": matcher, "hooks": commands})

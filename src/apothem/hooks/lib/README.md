@@ -23,7 +23,7 @@ the bootstrap stubs are not on that surface's critical path.
 | `stdin_json.py` | Shared hook stdin JSON reader. Several handlers need the harness's event payload; this is the one canonical reader they consume, so the read path — and its behavior on absent, empty, or malformed stdin — cannot drift between them. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the apothem ecosystem. |
-| `message_text.py` | Strips the maintainer-only parts of a message file (the license comment line and the `## Bindings` section) before the text reaches the assistant. |
+| `message_text.py` | Strips the maintainer-only parts of a message file (the license comment line and the `## Bindings` section) before the text reaches the assistant, and extracts and fills a guard's short `## Advisory` template. |
 | `state_dir.py` | Per-user state directory (mode `0700`) and safe per-session file keys for the stateful handlers; resolution order `APOTHEM_HOOK_STATE_DIR`, `CLAUDE_PLUGIN_DATA/state`, `XDG_STATE_HOME/apothem`, then the platform default. |
 | `__init__.py` | Package marker. |
 

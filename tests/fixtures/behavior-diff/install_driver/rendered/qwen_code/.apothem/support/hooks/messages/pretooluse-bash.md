@@ -6,6 +6,8 @@ Trigger. Bash command contains any of `git commit`, `git checkout -b`, `git bran
 
 The hook scans the message / name / path argument for three independent classes of finding. Any one finding is a STOP — fix the cause, do not silently strip, and re-issue the Bash call.
 
+The hook runs the three scans mechanically and speaks only on a finding: plan identifiers and the phrases Resumption Contract, Phase Output Registry and convention anchors (Scan 1); a numeric prefix on a suite-root plan file (Scan 2); and agent attribution as a `Co-Authored-By` trailer naming an agent or a bot address, a `[claude]` / `[gpt]` / `[ai]` subject marker, a generated-by, written-by or drafted-by line, the robot emoji, or a `git -c user.email=` override to an agent address (Scan 3). The lists below remain the full checklist for anything the mechanical scan cannot see.
+
 ## Scan 1 — CM-7 plan-internal isolation
 
 Scan the message / name argument for any term in the canonical forbidden-terms block at CM-7 (TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", phase-folder names, plan-suite file names, seriousness-level names).
@@ -37,6 +39,12 @@ On hit: STOP. Strip the agent-attribution and re-issue without it. The sole auth
 ## Non-matching commands
 
 No action. The hook is scoped to the ten git-write triggers above; other Bash commands pass unaffected.
+
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Git write check: {findings}. Fix the cause and re-issue the command; rewrite rather than strip, and keep authorship to the operator's own identity.
 
 ## Bindings (§0.j five-direction)
 

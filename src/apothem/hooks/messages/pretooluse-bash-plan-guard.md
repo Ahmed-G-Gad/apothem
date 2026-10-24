@@ -10,7 +10,7 @@ surface so a shell-redirected write does not bypass the Write-route guard. It
 reports a redirection that would land a plan outside the sole canonical
 project-local plans tree `<project-root>/.apothem/plans/` and recommends a
 redirection; the operator decides. A legacy `<project-root>/.plans/` tree is no
-longer canonical and is redirect-recommended to `.apothem/plans/` (operators
+longer canonical; the session-start bootstrap recommends upgrading it to `.apothem/plans/` (operators
 upgrade it via `apothem migrate-workspace`). Mechanical enforcement of
 Plans-Locality runs in CI and pre-commit via the strict conformity corpus gate
 (`no_global_plans_grep`), not at this tool call.
@@ -45,9 +45,10 @@ applies the same path-classification predicate as
 1. Resolve every extracted path to its absolute form (relative paths are
    resolved against the Bash command's working directory, falling back to
    the tool-call's `cwd` field when present).
-2. Resolve the **current project root** by walking from the working
-   directory to the nearest enclosing `.git/` directory; when no
-   enclosing repo exists, the working directory is the project root.
+2. Resolve the **current project root** by walking from the tool call's
+   working directory (the payload `cwd`) to the nearest enclosing `.git/`
+   directory; when none exists, that directory is the project root. The tree
+   the hook is installed in is never the project root.
 3. Apply the verdict matrix (recursion-self allow / redirect-required /
    soft-flag / allow-otherwise) per the table in
    `pretooluse-write-plan-guard.md`.
@@ -73,14 +74,21 @@ majority of Bash commands fall into this class.
 
 - Quoted paths are unwrapped (`> "path with spaces.md"` → `path with spaces.md`).
 - Variable expansions are best-effort (`> $HOME/.plans/x.md` resolves
-  `$HOME` against the tool-call's environment block when present;
-  otherwise treated as a soft-flag candidate pending operator review).
+  `$HOME` from the hook's environment); a target whose variables stay
+  unresolved is skipped rather than guessed. Null devices (`/dev/null`,
+  `$null`, `NUL`) are never targets.
 - Glob patterns are inspected as literal paths (a redirect target is a
   single file, not a glob expansion site).
-- Subshell-piped commands (`(cmd1; cmd2) > path`) are inspected at the
-  outer redirect.
-- Multi-statement commands separated by `;` / `&&` / `||` are inspected
-  per-statement.
+- Statements separated by `;`, `&&`, `||`, `|` or a newline are inspected one
+  by one; heredoc bodies and `#` comments are not read as commands.
+- `tee` and `touch` write every operand; `cp`, `mv` and `install` write
+  their last operand or the `-t` / `--target-directory` directory; the
+  PowerShell cmdlets (`Out-File`, `Set-Content`, `Add-Content`, `New-Item`,
+  `Tee-Object`, `Copy-Item`, `Move-Item`) write the path named by parameter
+  or by position.
+- Relative targets resolve against the tool call's working directory. UNC
+  and device paths are never resolved (resolving one contacts a network
+  host). At most 50 distinct targets are classified per command.
 
 **Fail-disposition.** Two layers govern failure. (a) The Python dispatcher at
 `hooks/dispatch.py` is fail-open: a hook error (parse failure on the Bash
@@ -95,6 +103,12 @@ non-redundant: the dispatcher protects the runtime, this context protects the
 Plans-Locality discipline. The Plans-Locality invariant itself is enforced
 mechanically in CI and pre-commit via the strict conformity corpus gate
 (`no_global_plans_grep`).
+
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Plans locality ({verdict}): this command writes {targets}, outside this project's plans tree `{plans_dir}`. Ask the operator whether to redirect the output there (recommended) or run it as written.
 
 ## Bindings (§0.j five-direction)
 

@@ -20,6 +20,12 @@ Fail-disposition. Two layers govern failure. (a) The Python dispatcher at `hooks
 
 Non-matching paths. No action. The guard is scoped to the dependency-manifest and lockfile patterns above; every other path class passes unaffected.
 
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+{path} is a dependency manifest or lockfile. Before the change lands, check each new or changed dependency: pinned the way its siblings are, from a source the manifest already trusts, and not a git or URL dependency. Ask the operator about any that is not (pin-to-exact is the recommended option).
+
 ## Bindings (§0.j five-direction)
 
 - **Drives →** The advisory flag on a newly introduced or changed dependency line in a manifest or lockfile that is unpinned or from an untrusted source.
