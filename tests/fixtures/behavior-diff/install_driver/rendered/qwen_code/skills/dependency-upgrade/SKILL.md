@@ -7,7 +7,10 @@ archetype: "maintenance-template"
 userInvocable: true
 argument-hint: "[--package NAME] [--dry-run]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

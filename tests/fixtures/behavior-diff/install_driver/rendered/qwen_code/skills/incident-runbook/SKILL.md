@@ -7,7 +7,10 @@ archetype: "runbook-template"
 userInvocable: true
 argument-hint: "[--service NAME]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

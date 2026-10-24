@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Final
 
 import yaml
 
@@ -12,26 +12,42 @@ from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import mcp_servers_for, render_mcp_standard
 
+#: The harness root in the home-anchored form the vendor docs use (``~/``).
+_HOME_ANCHORED_ROOT: Final[str] = "~/.hermes"
+
+#: The directory the install fills with Apothem's skills, listed under
+#: ``skills.external_dirs``. It is the manifest's ``skills/`` target for this
+#: harness in the home-anchored form; a test keeps the two in step.
+SKILLS_DIRECTORY: Final[str] = f"{_HOME_ANCHORED_ROOT}/.apothem/support/skills"
+
 
 def materialize_native_config(profile: dict[str, Any]) -> str:
     """Render the hermes native configuration from *profile*.
 
-    Renders the profile's MCP inventory under the top-level ``mcp_servers`` map
-    Hermes reads its MCP servers from. (``auxiliary.mcp`` is a different
+    Renders ``skills.external_dirs`` with one entry, :data:`SKILLS_DIRECTORY`:
+    the documented list of extra skill directories. Hermes lists it last in its
+    precedence order (project skills, ``~/.hermes/skills/``,
+    ``skills.create_dir``, then ``external_dirs``). The docs reviewed do not
+    state which copy loads when two locations hold a skill of the same name; the
+    adapter reads the order as earlier wins and writes into no earlier location.
+    The entry goes after the operator's own ``external_dirs`` entries and is the
+    only one an uninstall removes.
+
+    Also renders the profile's MCP inventory under the top-level ``mcp_servers``
+    map Hermes reads its MCP servers from. (``auxiliary.mcp`` is a different
     setting: the auxiliary model Hermes uses for MCP tool dispatch.)
     Apothem does NOT author ``skills.config`` — per the convention pin that key
-    is a list of installable registry *packages* (not a directory loader), so a
-    directory path there would be misread as a non-existent package. Apothem's
-    shared command/skill content lands under ``~/.hermes/.apothem/support/``
-    (support subtree) and the profile reaches Hermes through the projected managed-block
-    document. Returns a YAML string ready to be written to ``output_path``.
+    stores per-skill settings the operator owns. Apothem's other shared cohorts
+    land under ``~/.hermes/.apothem/support/`` (support subtree) and the profile
+    reaches Hermes through the projected managed-block document. Returns a YAML
+    string ready to be written to ``output_path``.
     """
     for_harness = coerce_profile(profile).for_harness("hermes")
     header = (
         "# hermes configuration — managed by Apothem\n"
         "# Do not edit manually; run `apothem update --harness hermes` to regenerate.\n"
     )
-    config: dict[str, object] = {}
+    config: dict[str, object] = {"skills": {"external_dirs": [SKILLS_DIRECTORY]}}
     mcp = render_mcp_standard(mcp_servers_for(for_harness))
     if mcp:
         config["mcp_servers"] = mcp

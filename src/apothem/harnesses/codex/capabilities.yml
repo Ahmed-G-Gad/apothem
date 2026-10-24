@@ -38,8 +38,9 @@ agent_memory_surface: "AGENTS.md hierarchy"
 # What each source frontmatter key becomes in a converted cohort (see
 # tests/unit/test_conversion_losses.py for the value vocabulary). Codex reads
 # only name and description from SKILL.md; implicit invocation is controlled by
-# agents/openai.yaml. Custom agents have no tool allowlist or turn limit, so a
-# read-only grant becomes sandbox_mode = "read-only" and maxTurns is dropped.
+# agents/openai.yaml. Custom agents have no tool allowlist or turn limit, and
+# the parent session owns the sandbox (an agent file cannot override it), so the
+# tool grant and maxTurns are dropped; a read-only agent's body states the limit.
 conversion_losses:
   commands:
     name: "native:name"
@@ -53,8 +54,8 @@ conversion_losses:
   agents:
     name: "native:name"
     description: "native:description"
-    tools: "native:sandbox_mode"
-    disallowedTools: "native:sandbox_mode"
+    tools: "dropped"
+    disallowedTools: "dropped"
     maxTurns: "dropped"
     version: "dropped"
     updated: "dropped"

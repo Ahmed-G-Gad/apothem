@@ -132,6 +132,56 @@ def test_materializer_hook_timeouts_are_seconds(
             assert handler["timeout"] < 1000
 
 
+# The 22 members of ``HookEventName`` in ``packages/core/src/hooks/types.ts`` at
+# Qwen Code v0.26.0 (the hooks page lists the same 22), retrieved 2026-10-24.
+# ``SessionDelete``, ``TodoCreated`` and ``TodoCompleted`` have no Claude Code
+# counterpart; Claude Code names the todo events ``TaskCreated`` and
+# ``TaskCompleted``.
+_QWEN_HOOK_EVENTS = frozenset(
+    {
+        "PreToolUse",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "PostToolBatch",
+        "Notification",
+        "UserPromptSubmit",
+        "UserPromptExpansion",
+        "SessionStart",
+        "Stop",
+        "MessageDisplay",
+        "SubagentStart",
+        "SubagentStop",
+        "PreCompact",
+        "PostCompact",
+        "SessionEnd",
+        "SessionDelete",
+        "PermissionRequest",
+        "PermissionDenied",
+        "StopFailure",
+        "TodoCreated",
+        "TodoCompleted",
+        "InstructionsLoaded",
+    }
+)
+
+
+def test_every_emitted_hook_event_is_a_documented_qwen_event(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # An event name Qwen Code does not define is dead config: Qwen never fires
+    # it, so the guard wired to it never runs. Claude Code's ``TaskCreated`` and
+    # ``TaskCompleted`` are names Qwen Code does not have.
+    from apothem.harnesses.qwen_code import materializer as qwen_materializer
+
+    monkeypatch.setattr(
+        qwen_materializer, "resolve_python_bin", lambda: Path("/usr/bin/python3")
+    )
+    assert len(_QWEN_HOOK_EVENTS) == 22
+    emitted = set(json.loads(materialize_native_config({}))["hooks"])
+    assert emitted
+    assert emitted <= _QWEN_HOOK_EVENTS, emitted - _QWEN_HOOK_EVENTS
+
+
 @pytest.mark.parametrize(
     "interpreter",
     [

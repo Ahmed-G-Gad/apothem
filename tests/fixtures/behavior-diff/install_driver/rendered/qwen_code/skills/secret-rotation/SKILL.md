@@ -7,7 +7,10 @@ archetype: "security-template"
 userInvocable: true
 argument-hint: "[--scope PATH]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

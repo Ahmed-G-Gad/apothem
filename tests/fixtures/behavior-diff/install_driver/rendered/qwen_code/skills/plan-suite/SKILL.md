@@ -6,7 +6,8 @@ description: "Master Plan Suite template container — matched when the work is 
 archetype: "workflow-template"
 userInvocable: false
 disable-model-invocation: true
-allowed-tools: "Read"
+allowedTools:
+  - "Read"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -5,13 +5,15 @@
 Materializes ``~/.openclaw/openclaw.json`` from the shared profile:
 OpenClaw's user-global configuration file. Delegates install logic to
 :mod:`apothem.harnesses.open_claw.install`, which renders the native config
-via :mod:`apothem.harnesses.open_claw.materializer`. OpenClaw's
-``agents.defaults.skills`` is a name allowlist (not a directory loader) and MCP
-is a CLI surface, so Apothem authors no config keys; the shared cohorts (rules,
-agents, skills, hooks, templates) land as individual files under
-``~/.openclaw/.apothem/support/`` for operator reference. No single profile
-document is projected — OpenClaw auto-loads no instruction file, so the
-operator wires the cohorts in through the vendor's own mechanisms.
+via :mod:`apothem.harnesses.open_claw.materializer`. The one config key Apothem
+authors is ``skills.load.extraDirs``, which lists the support skills directory
+so OpenClaw loads the installed skills at the lowest precedence. OpenClaw's
+``agents.defaults.skills`` is a name allowlist the operator owns and MCP is a
+CLI surface, so Apothem authors neither; the shared cohorts (rules, agents,
+skills, hooks, templates) land as individual files under
+``~/.openclaw/.apothem/support/``. No single profile document is projected —
+OpenClaw auto-loads no instruction file, so the operator wires the other
+cohorts in through the vendor's own mechanisms.
 """
 
 from __future__ import annotations

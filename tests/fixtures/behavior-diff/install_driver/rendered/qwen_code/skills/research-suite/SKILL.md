@@ -6,7 +6,8 @@ description: "Research Suite template — matched when the request is a structur
 archetype: "workflow-template"
 userInvocable: false
 disable-model-invocation: true
-allowed-tools: "Read"
+allowedTools:
+  - "Read"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

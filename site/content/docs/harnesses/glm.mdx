@@ -9,13 +9,18 @@ description: "Apothem harness adapter for GLM (Z.ai) as a configurable model bac
 **Status:** GA
 **Native config:** `<project>/.apothem/providers/glm.toml`
 
-GLM (Z.ai) is a **model backend**, not a coding tool of its own. Z.ai ships no
-first-party GLM command line; instead, a tool that speaks the Anthropic-compatible
-or OpenAI-compatible protocol is pointed at GLM by setting a backend base URL
-and a key. Apothem still counts GLM among its harness adapters, so you select it
-with `--harness glm` like any other. The `glm` adapter writes a provider
-configuration file that records both compatibility surfaces so any compatible
-tool can be wired to the GLM model family.
+The `glm` adapter configures GLM (Z.ai) as a **model backend**. A tool that
+speaks the Anthropic-compatible or OpenAI-compatible protocol is pointed at GLM
+by setting a backend base URL and a key, and you select the adapter with
+`--harness glm` like any other. It writes a provider configuration file that
+records both compatibility surfaces so any compatible tool can be wired to the
+GLM model family.
+
+Z.ai also ships a first-party coding tool of its own, ZCode, which Z.ai's
+[documentation](https://docs.z.ai/devpack/tool/zcode) calls an "Agentic
+Development Environment". This adapter does not configure ZCode. Apothem has
+not checked ZCode's own configuration surface, so the adapter writes nothing
+for it.
 
 ## Installation
 
@@ -45,14 +50,30 @@ placeholders you fill from the current
 [Z.ai documentation](https://docs.z.ai/devpack/tool/claude). Nothing from the
 shared profile goes into this file; it is a fixed template.
 
+### Role-to-model mapping
+
+Z.ai's own statements about the role-to-model mapping disagree, so the file
+leaves the three `ANTHROPIC_DEFAULT_*_MODEL` values as placeholders and carries
+a `TODO(clarify)` comment above them. You decide which mapping to use:
+
+- The manual `settings.json` example in the vendor's Anthropic-compatible setup
+  guide maps opus and sonnet to `glm-5.3[1m]` and haiku to `glm-5.3-flash[1m]`,
+  and sets `CLAUDE_CODE_AUTO_COMPACT_WINDOW` to `1000000`.
+- The same guide's stated default mapping lists `GLM-5.3-Flash` for all three
+  roles.
+- Z.ai's `@z_ai/coding-helper` tool defaults to `glm-5.3-flash`, appends `[1m]`
+  to all three roles, and writes a compaction window of `1048576`.
+
+Apothem pins none of these values and does not choose between them.
+
 ## Compatibility notes
 
-Because GLM is a backend rather than a coding tool, it exposes no surface for
-rules, commands, skills, or hooks — the adapter writes only the backend
-provider file and nothing else. Your Z.ai key and your model-id choices stay
-operator-owned. The vendor surface conventions the adapter relies on are pinned
-at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against
-the live Z.ai documentation.
+The GLM backend exposes no surface for rules, commands, skills, or hooks, so
+the adapter writes only the backend provider file and nothing else. Apothem has
+not checked whether ZCode exposes such surfaces. Your Z.ai key and your
+model-id choices stay operator-owned. The vendor surface conventions the adapter
+relies on are pinned at `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`,
+snapshotted against the live Z.ai documentation.
 
 GLM runs the GLM model family from Z.ai; see the
 [vendor configuration reference](https://docs.z.ai/devpack/tool/claude) for the
@@ -90,8 +111,10 @@ apothem uninstall --harness glm --project /path/to/project
 
 Removes the provider file only when Apothem created it and it is still the
 unedited template, backing it up under the Apothem backup root first. A file you
-created or edited is left in place. The shared profile YAML and the Apothem
-engine are unaffected.
+created or edited is left in place. An unedited file written by an earlier
+release no longer matches the current template, so uninstall leaves it in place
+too; delete it by hand. The shared profile YAML and the Apothem engine are
+unaffected.
 
 ## Conformity gate
 

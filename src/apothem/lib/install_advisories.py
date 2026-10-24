@@ -38,6 +38,8 @@ from apothem.lib.harness_registry import (
 
 _HOME_PREFIX = "~/"
 _PROJECT_PREFIX = "<project>/"
+# Claude Code writes agents as ``<name>.md`` and Codex as ``<name>.toml``.
+_AGENT_SUFFIXES = (".md", ".toml")
 
 
 def _display_name(public_id: str) -> str:
@@ -69,11 +71,26 @@ def _apothem_skill_names() -> frozenset[str]:
     return frozenset(names)
 
 
+@lru_cache(maxsize=1)
+def _apothem_agent_names() -> frozenset[str]:
+    """Return the agent file stems an Apothem install writes."""
+    package = Path(apothem.__file__).resolve().parent
+    names = {child.stem for child in (package / "agents").glob("*.md")}
+    names.discard("README")
+    return frozenset(names)
+
+
 def _holds_apothem_content(resolved: Path) -> bool:
     """Return True when *resolved* carries content an Apothem install wrote."""
     if resolved.is_dir():
-        return any(
+        if any(
             (resolved / name / "SKILL.md").is_file() for name in _apothem_skill_names()
+        ):
+            return True
+        return any(
+            (resolved / f"{name}{suffix}").is_file()
+            for name in _apothem_agent_names()
+            for suffix in _AGENT_SUFFIXES
         )
     if resolved.is_file():
         try:
@@ -81,6 +98,13 @@ def _holds_apothem_content(resolved: Path) -> bool:
         except (OSError, UnicodeDecodeError):
             return False
     return False
+
+
+def _qualified(root: SharedRoot, reader: str) -> str:
+    """Return *reader*'s display name plus any condition it loads *root* under."""
+    name = _display_name(reader)
+    condition = root.reader_conditions.get(reader)
+    return f"{name} ({condition})" if condition else name
 
 
 def _entry(
@@ -104,11 +128,12 @@ def shared_root_advisories(
     """Return the shared-root advisories for installing *public_id*.
 
     For each shared root *public_id* owns, one ``owner`` advisory names every
-    reader. For each shared root *public_id* reads that already holds Apothem
-    content (an Apothem skill folder in a skills root, or the Apothem managed
-    block in an instruction file), one ``reader`` advisory names the owner whose
-    install placed it there. Project roots are skipped when *project* is
-    ``None``. Reads the filesystem; writes nothing.
+    reader, with the condition a reader loads the root under when the registry
+    records one. For each shared root *public_id* reads that already holds
+    Apothem content (an Apothem skill folder or agent file in a skills or agents
+    root, or the Apothem managed block in an instruction file), one ``reader``
+    advisory names the owner whose install placed it there. Project roots are
+    skipped when *project* is ``None``. Reads the filesystem; writes nothing.
     """
     advisories: list[dict[str, object]] = []
     for root in SHARED_ROOTS:
@@ -118,7 +143,7 @@ def shared_root_advisories(
         if resolved is None:
             continue
         if public_id == root.owner:
-            readers = ", ".join(_display_name(reader) for reader in root.readers)
+            readers = ", ".join(_qualified(root, reader) for reader in root.readers)
             single = len(root.readers) == 1
             message = (
                 f"{root.path} is shared: {readers} also "
@@ -129,8 +154,8 @@ def shared_root_advisories(
             advisories.append(_entry(public_id, root, resolved, "owner", message))
         elif _holds_apothem_content(resolved):
             message = (
-                f"{_display_name(public_id)} also loads {root.path}, which holds "
-                f"Apothem content from the {_display_name(root.owner)} install."
+                f"{_qualified(root, public_id)} also loads {root.path}, which "
+                f"holds Apothem content from the {_display_name(root.owner)} install."
             )
             advisories.append(_entry(public_id, root, resolved, "reader", message))
     return advisories

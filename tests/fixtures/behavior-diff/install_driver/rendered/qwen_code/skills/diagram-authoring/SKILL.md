@@ -7,7 +7,11 @@ archetype: "authoring-template"
 userInvocable: true
 argument-hint: "[diagram subject] [--notation auto|declarative|data-driven] [--format svg|png|pdf]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, WebSearch"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

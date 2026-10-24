@@ -7,7 +7,17 @@ archetype: "orchestration-template"
 userInvocable: true
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, Agent, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "Agent"
+  - "WebSearch"
+  - "TodoWrite"
+  - "TaskCreate"
+  - "TaskGet"
+  - "TaskList"
+  - "TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

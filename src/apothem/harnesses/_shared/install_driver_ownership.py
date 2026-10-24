@@ -261,12 +261,16 @@ def owned_additions(
     """Return the entries *incoming* adds to the operator's *base*.
 
     ``hooks`` handlers are owned by path, not recorded here; only a ``hooks``
-    mapping Apothem creates is recorded (as a container).
+    mapping Apothem creates is recorded (as a container). A key the operator
+    left null (``skills:`` with nothing under it) holds nothing of theirs, so
+    Apothem's value there is recorded as its own, like an absent key.
     """
     owned: list[OwnedEntry] = []
     for key, value in incoming.items():
         at = (*path, key)
         current = base.get(key, _MISSING) if isinstance(base, dict) else _MISSING
+        if current is None:
+            current = _MISSING
         if key == "hooks" and isinstance(value, dict):
             if current is _MISSING:
                 owned.append(OwnedEntry(at, "container"))
@@ -292,7 +296,53 @@ def owned_additions(
     return owned
 
 
+def _shape_conflict(
+    base: object, incoming: dict[str, object], path: tuple[str, ...] = ()
+) -> tuple[tuple[str, ...], str, object] | None:
+    """Return where *incoming* needs a mapping or list that *base* holds otherwise.
+
+    The result is the key path, the shape Apothem needs there (``"mapping"`` or
+    ``"list"``) and the operator's value, or ``None``. A missing key or a null
+    value is no conflict (Apothem fills it), and neither is a scalar Apothem
+    writes: scalars take the incoming value. A mapping or list cannot replace an
+    operator's scalar, or the other container shape, without losing that value.
+    """
+    if not isinstance(base, dict):
+        return None
+    for key, value in incoming.items():
+        current = base.get(key)
+        if current is None or not isinstance(value, (dict, list)):
+            continue
+        at = (*path, key)
+        if isinstance(value, dict) and isinstance(current, dict):
+            nested = _shape_conflict(current, value, at)
+            if nested is not None:
+                return nested
+        elif not (isinstance(value, list) and isinstance(current, list)):
+            return at, "mapping" if isinstance(value, dict) else "list", current
+    return None
+
+
+def _shape_conflict_refusal(
+    target: Path, path: tuple[str, ...], wanted: str, current: object
+) -> _LossyRewriteError:
+    """Build the refusal for an operator value that is not the shape Apothem needs."""
+    dotted = ".".join(path)
+    held = (
+        "a mapping"
+        if isinstance(current, dict)
+        else "a list"
+        if isinstance(current, list)
+        else "a scalar value"
+    )
+    return _LossyRewriteError(
+        f"{target} holds {held} at {dotted}, where Apothem writes a {wanted}",
+        f"Make {dotted} in {target.name} a {wanted}, or remove it, and re-run.",
+    )
+
+
 def _merge_mapping(
+    target: Path,
     existing: dict[str, object],
     incoming: dict[str, object],
     *,
@@ -303,6 +353,12 @@ def _merge_mapping(
 
     The base the incoming config merges into is the operator's own content:
     Apothem's previously-owned entries and its hook handlers removed first.
+
+    Raises:
+        _LossyRewriteError: When the operator holds a scalar, or the other
+            container shape, where Apothem writes a mapping or list: replacing
+            it would lose the value, and Apothem would record no ownership of
+            the entry it wrote in its place.
     """
     operator_only = copy.deepcopy(existing)
     _strip_hook_handlers(operator_only, harness_root)
@@ -314,6 +370,9 @@ def _merge_mapping(
     else:
         base_obj = strip_owned(operator_only, prior)
     base = base_obj if isinstance(base_obj, dict) else {}
+    conflict = _shape_conflict(base, incoming)
+    if conflict is not None:
+        raise _shape_conflict_refusal(target, *conflict)
     merged = ownership_merge(base, incoming, harness_root=harness_root)
     return merged, tuple(owned_additions(base, incoming))
 
@@ -352,7 +411,7 @@ def _operator_json_merge(
     if not isinstance(existing, dict) or not isinstance(incoming, dict):
         return MergeOutcome(existing_text, ())
     merged, owned = _merge_mapping(
-        existing, incoming, prior=prior, harness_root=harness_root
+        target, existing, incoming, prior=prior, harness_root=harness_root
     )
     if merged == existing:
         return MergeOutcome(existing_text, owned)
@@ -403,7 +462,7 @@ def _operator_yaml_merge(
             f"Repair {target.name} (or move it aside) and re-run.",
         )
     merged, owned = _merge_mapping(
-        existing, incoming, prior=prior, harness_root=harness_root
+        target, existing, incoming, prior=prior, harness_root=harness_root
     )
     if merged == existing:
         return MergeOutcome(existing_text, owned)

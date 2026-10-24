@@ -85,13 +85,31 @@ uninstalling the owner removes it from every reader.
 
 | Path | Owner | Readers |
 | --- | --- | --- |
-| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
+| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Qwen Code, Windsurf, Zed |
 | `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `~/.claude/agents/` | Claude Code | Cursor |
+| `~/.codex/agents/` | Codex | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
 | `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+
+A reader is listed only where its vendor docs show a default load of that
+exact path. One reader carries a condition, and the install note repeats it:
+`Open-Claw` indexes `~/.agents/skills/` only under its default state directory
+(it skips the folder when `OPENCLAW_STATE_DIR` points elsewhere). The `Cursor`
+docs list `~/.codex/agents/` as a `Codex` compatibility folder but do not say
+which file formats `Cursor` parses there, and a `Codex` install writes TOML
+files, so whether `Cursor` reads those helpers is not confirmed.
+
+Some tools are deliberately not readers of `~/.agents/skills/`: the
+`Antigravity`, `CodeBuddy`, `Kiro`, and `Trae` docs do not say they load it by
+default (`Trae` loads the project `.agents/skills/` folder only after a setting
+is switched on), and the `Hermes` docs name it only as an example value for
+`skills.external_dirs`. `GitHub Copilot` is not a reader of `~/.claude/agents/`:
+the VS Code docs list that folder for the Anthropic Claude agent, not for the
+agent `GitHub Copilot` runs.
 
 The Apothem block an owner writes into a shared instruction file names no
 single tool as its reader. `tests/unit/test_shared_roots.py` fails when two

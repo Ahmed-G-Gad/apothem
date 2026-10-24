@@ -7,7 +7,15 @@ archetype: "guard-template"
 userInvocable: true
 argument-hint: "[change target] [--guard clean-code|test|docs|all]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "TodoWrite"
+  - "TaskCreate"
+  - "TaskGet"
+  - "TaskList"
+  - "TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

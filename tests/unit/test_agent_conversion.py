@@ -3,12 +3,16 @@
 """Converted agents keep their tool and turn limits, or drop the claim.
 
 A source agent whose tool grant excludes Write and Edit is described as
-read-only. Each converted agent must either carry a native restriction or make
-no read-only claim:
+read-only. Each converted agent must either carry a native restriction, say so
+in its instructions, or make no read-only claim:
 
-- Codex custom agents accept ``sandbox_mode = "read-only"``; omitted
+- Codex custom agents cannot set the sandbox: ``sandbox_mode``,
+  ``approval_policy``, ``model_provider`` and ``mcp_servers`` in an agent file
+  do not override the parent session, so none is emitted. A read-only agent
+  states its limit in ``developer_instructions``; omitted
   ``model_reasoning_effort`` inherits the parent's effort
-  (https://developers.openai.com/codex/subagents, retrieved 2026-10-02).
+  (https://learn.chatgpt.com/docs/agent-configuration/subagents, retrieved
+  2026-10-24).
 - Gemini CLI subagents accept a ``tools`` allowlist of Gemini tool names and
   ``max_turns`` (https://geminicli.com/docs/core/subagents, same date).
 - Antigravity subagents take ``name`` and ``description``; an unmapped tool
@@ -71,7 +75,7 @@ def test_corpus_has_both_kinds_of_agent() -> None:
     assert kinds == {True, False}
 
 
-def test_codex_agents_sandbox_read_only_agents_and_inherit_effort(
+def test_codex_agents_emit_only_the_keys_an_agent_file_may_set(
     tmp_path: Path,
 ) -> None:
     install_driver.run_install("codex", harness_root=tmp_path)
@@ -79,12 +83,27 @@ def test_codex_agents_sandbox_read_only_agents_and_inherit_effort(
         data = tomllib.loads(
             (tmp_path / "agents" / f"{source.stem}.toml").read_text("utf-8")
         )
-        assert "model_reasoning_effort" not in data, source.stem
-        assert {"name", "description", "developer_instructions"} <= set(data)
-        if _read_only(source):
-            assert data.get("sandbox_mode") == "read-only", source.stem
-        else:
-            assert "sandbox_mode" not in data, source.stem
+        assert set(data) == {"name", "description", "developer_instructions"}, (
+            source.stem
+        )
+
+
+def test_codex_read_only_agents_state_it_in_their_instructions(
+    tmp_path: Path,
+) -> None:
+    install_driver.run_install("codex", harness_root=tmp_path)
+    for source in _AGENTS:
+        if not _read_only(source):
+            continue
+        data = tomllib.loads(
+            (tmp_path / "agents" / f"{source.stem}.toml").read_text("utf-8")
+        )
+        stated = [
+            line
+            for line in str(data["developer_instructions"]).splitlines()
+            if "read-only" in line.lower() and "gated by" not in line.lower()
+        ]
+        assert stated, source.stem
 
 
 def test_gemini_agents_carry_tool_allowlist_and_turn_limit(tmp_path: Path) -> None:

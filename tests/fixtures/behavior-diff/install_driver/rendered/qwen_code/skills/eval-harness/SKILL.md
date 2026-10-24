@@ -7,7 +7,10 @@ archetype: "ai-template"
 userInvocable: true
 argument-hint: "[--dataset PATH] [--scorer NAME]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -2,18 +2,20 @@
 
 # GLM (Z.ai) backend-provider configuration — operator-owned.
 #
-# GLM is a MODEL BACKEND, not a coding-agent tool. Z.ai ships no first-party
-# GLM coding CLI; instead, an Anthropic-compatible or OpenAI-compatible coding
-# agent is pointed at GLM by setting the backend base URL and an auth token.
-# This file records both compatibility surfaces plus operator-configurable
-# model-mapping placeholders so any compatible agent can be wired to the GLM
-# model family. Replace every <...> placeholder; the auth token is a
-# placeholder, never a committed secret.
+# This file wires a coding agent to GLM as a MODEL BACKEND. Z.ai also ships a
+# first-party coding tool of its own, ZCode, which Z.ai's documentation calls
+# an "Agentic Development Environment"; this adapter does not configure
+# ZCode. An Anthropic-compatible or OpenAI-compatible coding agent is pointed
+# at GLM by setting the backend base URL and an auth token. This file records
+# both compatibility surfaces plus operator-configurable model-mapping
+# placeholders so any compatible agent can be wired to the GLM model family.
+# Replace every <...> placeholder; the auth token is a placeholder, never a
+# committed secret.
 #
-# This file is operator-owned. GLM is a model backend, not a rule-bearing
-# coding agent, so Apothem projects NO shared-profile instruction content here
-# (no rules, no opted-in behaviors — a backend exposes none): the file carries
-# only the backend wiring below. Apothem writes this template only when the
+# This file is operator-owned. The GLM backend is not rule-bearing, so Apothem
+# projects NO shared-profile instruction content here (no rules, no opted-in
+# behaviors — a backend exposes none): the file carries only the backend
+# wiring below. Apothem writes this template only when the
 # file is absent; thereafter the file is yours: `apothem install` and
 # `apothem update` never overwrite it, and `apothem uninstall` removes it only
 # while it is still this unedited template.
@@ -44,6 +46,15 @@ base_url = "https://api.z.ai/api/anthropic"
 ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
 ANTHROPIC_AUTH_TOKEN = "<YOUR_ZAI_API_KEY>"
 API_TIMEOUT_MS = "<TIMEOUT_MS>"
+# TODO(clarify): Z.ai's own statements disagree on this role-to-model mapping,
+# so the three values stay placeholders and the operator chooses (statements
+# checked 2026-10-24; see STANDARD-CONVENTION-PIN.md):
+#   - The manual settings.json example at https://docs.z.ai/devpack/tool/claude
+#     maps opus and sonnet to glm-5.3[1m] and haiku to glm-5.3-flash[1m], and
+#     sets CLAUDE_CODE_AUTO_COMPACT_WINDOW to 1000000.
+#   - The same page's default mapping lists GLM-5.3-Flash for all three roles.
+#   - Z.ai's @z_ai/coding-helper 0.1.1 defaults to glm-5.3-flash, appends [1m]
+#     to all three roles, and writes a compaction window of 1048576.
 ANTHROPIC_DEFAULT_OPUS_MODEL = "<GLM_MODEL_ID>"
 ANTHROPIC_DEFAULT_SONNET_MODEL = "<GLM_MODEL_ID>"
 ANTHROPIC_DEFAULT_HAIKU_MODEL = "<GLM_MODEL_ID>"
