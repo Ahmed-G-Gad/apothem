@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-### End-of-Command Synthesis (D6)
+### End-of-Command Synthesis
 
-Just before G5 Handoff Manifest emission, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before G5 Handoff Manifest emission, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Spec phase complete. Are there any suggested improvements, ambiguities, contradictions to surface before handoff?`
 - `header:` `End synthesis`

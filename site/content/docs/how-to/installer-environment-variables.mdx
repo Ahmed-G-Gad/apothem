@@ -26,7 +26,7 @@ environment variables before you run it.
 | `APOTHEM_VERIFY` | `signature` verifies the release tag's GPG signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Download base for checksum mode | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Explicit local source tree to use instead of cloning | unset (clone) |
-| `APOTHEM_HARNESS` | Harness to install | `claude-code` |
+| `APOTHEM_HARNESS` | User-scope harness to install (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). The installer does not pass `--project`, so a project-scope harness fails with `project.required`; install those afterward with `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Path to the shared profile YAML | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Skip the post-install verify step when set to `1` | `0` (verify runs) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Install the missing `click` / `rich` prerequisites automatically, without prompting, when set to `1` | `0` (prompt, or decline in a non-interactive pipe) |
@@ -76,10 +76,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## Steps (POSIX bash)
 
-1. Install a non-default harness:
+1. Install a non-default user-scope harness:
 
    ```bash
-   APOTHEM_HARNESS=cursor bash install.sh
+   APOTHEM_HARNESS=codex bash install.sh
    ```
 
 2. Pin the install destination and select the moving `main` branch. A branch is
@@ -103,7 +103,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 Set each variable on `$env:` before running the installer:
 
 ```powershell
-$env:APOTHEM_HARNESS = 'cursor'
+$env:APOTHEM_HARNESS = 'codex'
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -127,7 +127,15 @@ The installer prints `✓ Harness <name> installed`, then (unless
 `APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Confirm independently:
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness codex
+```
+
+For a project-scope harness such as Cursor, run the install and the verify
+yourself after the installer, with `--project`:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem verify --harness cursor --project /path/to/project
 ```
 
 When the profile did not yet exist, the installer creates one from the example

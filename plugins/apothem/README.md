@@ -9,7 +9,7 @@ installed through Codex's native marketplace:
 codex plugin marketplace add ahmed-g-gad/apothem
 ```
 
-It is a thin wrapper, not authoritative source. What lives here:
+It is a hand-authored bootstrap, not authoritative source. What lives here:
 
 | Path | Holds |
 | ---- | ----- |
@@ -19,5 +19,7 @@ It is a thin wrapper, not authoritative source. What lives here:
 **Do not edit behavior here.** Everything Apothem ships is authored once under
 [`src/apothem/`](../../src/apothem) and converted to each tool's native surface
 at install / materialize time — see the Repository Layout section of the
-[contributor guide](../../CONTRIBUTING.md). To change what a skill does, edit
-its source under `src/apothem/skills/`, not this generated wrapper.
+[contributor guide](../../CONTRIBUTING.md). To change what a shipped skill does,
+edit its source under `src/apothem/skills/`. The `apothem` entry skill has no
+source there: `skills/apothem/SKILL.md` is hand-authored and is edited directly
+in this directory.

@@ -70,10 +70,20 @@ You can steer the install with environment variables. The ones you are most
 likely to use:
 
 ```bash
-# Install a different harness as the default, and point at a project profile.
-APOTHEM_HARNESS=cursor \
-APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
-  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+# Install a different user-scope harness and name the profile path explicitly.
+# Put the variables on the `bash` side of the pipe: a variable placed before
+# `curl` reaches only curl, not the installer.
+curl -fsSL https://apothem.ahmedgad.com/install.sh | \
+  APOTHEM_HARNESS=codex \
+  APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  bash
+```
+
+The installer installs user-scope harnesses only. Install a project-scope
+harness afterward, naming the project:
+
+```bash
+apothem install --harness cursor --project /path/to/project
 ```
 
 Other recognized variables are `APOTHEM_REPO` and `APOTHEM_REF` (which remote to
@@ -177,8 +187,9 @@ correctly:
 apothem verify --harness claude-code
 ```
 
-`verify` checks that the harness's expected config files exist and match what
-the profile declares. A clean run means the materialization succeeded.
+`verify` checks that the harness's managed config files exist and parse. Add
+`--profile PATH` and it also fails when an installed file has drifted from what
+that profile would produce. A clean run means the materialization succeeded.
 
 For a whole-machine health check across every registered adapter, run:
 
@@ -208,11 +219,14 @@ harness.
 
 - **Add another tool.** The [harness list](/docs/harnesses) covers every supported
   platform and its adapter name. Repeat Step 3 with a new `--harness`.
-- **Go deeper on a single task.** The [how-to guides](/docs/how-to)
-  are task-focused recipes for writing rules, authoring plans, and running the
-  conformity gate.
-- **Look up specifics.** The [reference](/docs/harnesses) documents each adapter,
-  the profile schema, and the CLI surface in full.
+- **Go deeper on a single task.** The [how-to recipes](/docs/how-to) cover adding
+  a harness, editing the profile, and driving the installer. The
+  [usage guides](/docs/usage) cover writing rules, authoring plans, and running
+  the conformity gate.
+- **Look up specifics.** The [reference](/docs/reference) documents each artifact
+  class and the profile schema, and the [CLI reference](/docs/cli-reference)
+  covers every command. Each adapter has its own page under
+  [harnesses](/docs/harnesses).
 - **Plan work that outlives a session.** [Resumable planning](/docs/concepts/resumable-planning)
   explains how Apothem externalizes long-running work to a project-local
   `.apothem/plans/` suite so a fresh session on any machine resumes it in place.

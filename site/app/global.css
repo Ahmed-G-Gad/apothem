@@ -16,10 +16,14 @@
  *   - polygon (slate)    — the structural hexagon outline and supports
  *   - field (deep navy)  — the surface the geometry is drawn on
  *
- * Values are authored in OKLCH for perceptually even ramps. The hexes that
- * anchor the families are the logo's own colours (#059669 / #34d399 emerald,
- * #333c50–#c2ccda slate, #0f172a navy); the intermediate steps are derived
- * ramps, not sampled from any external site.
+ * Values are authored in OKLCH. The surface and text variables in :root and
+ * .dark (--background, --foreground, --card, --popover, --primary, --secondary,
+ * --muted, --border, --input, --ring and the light --accent) are the exact
+ * sRGB design-token steps from assets/design-tokens.css, converted to OKLCH,
+ * and each carries a comment naming its token step. --destructive and the dark
+ * --accent are site-local values. The apothem-*, polygon-* and field-* ramps in @theme
+ * are derived approximations that sit near the token steps named in their
+ * comments; they are not equal to them.
  */
 
 @theme {
@@ -29,8 +33,8 @@
   --color-apothem-200: oklch(0.88 0.09 164);
   --color-apothem-300: oklch(0.81 0.13 163);
   --color-apothem-400: oklch(0.74 0.15 162);
-  --color-apothem-500: oklch(0.68 0.15 162); /* #34d399 family — dark accent */
-  --color-apothem-600: oklch(0.6 0.13 162); /* #059669 family — light accent */
+  --color-apothem-500: oklch(0.68 0.15 162); /* near emerald-400 — dark accent */
+  --color-apothem-600: oklch(0.6 0.13 162); /* near emerald-600 — light accent */
   --color-apothem-700: oklch(0.5 0.11 162);
   --color-apothem-800: oklch(0.42 0.09 162);
   --color-apothem-900: oklch(0.35 0.07 163);
@@ -39,59 +43,59 @@
   --color-polygon-50: oklch(0.98 0.004 250);
   --color-polygon-100: oklch(0.95 0.006 250);
   --color-polygon-200: oklch(0.9 0.008 250);
-  --color-polygon-300: oklch(0.83 0.012 250); /* #c2ccda family */
-  --color-polygon-400: oklch(0.71 0.018 252); /* #94a2b8 family */
-  --color-polygon-500: oklch(0.6 0.025 254); /* #65748c family */
+  --color-polygon-300: oklch(0.83 0.012 250); /* near slate-300 */
+  --color-polygon-400: oklch(0.71 0.018 252); /* near slate-400 */
+  --color-polygon-500: oklch(0.6 0.025 254); /* near slate-500 */
   --color-polygon-600: oklch(0.5 0.03 256);
-  --color-polygon-700: oklch(0.4 0.032 258); /* #333c50 family */
+  --color-polygon-700: oklch(0.4 0.032 258); /* near slate-700 */
   --color-polygon-800: oklch(0.3 0.03 260);
   --color-polygon-900: oklch(0.22 0.028 262);
 
   /* field surface — deep navy ramp */
   --color-field-700: oklch(0.28 0.03 264);
   --color-field-800: oklch(0.21 0.03 265);
-  --color-field-900: oklch(0.17 0.028 266); /* #0f172a family */
+  --color-field-900: oklch(0.17 0.028 266); /* near slate-900 */
   --color-field-950: oklch(0.14 0.025 266);
 
   /* fonts */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
-    Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+    'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial,
+    sans-serif;
   --font-mono:
-    ui-monospace, 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', Menlo,
-    Consolas, 'Liberation Mono', monospace;
+    'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono',
+    monospace;
 }
 
 @layer base {
   :root {
     --radius: 0.625rem;
 
-    /* light theme — field families lighten to a near-white drawing surface */
-    --background: oklch(0.99 0.003 250);
-    --foreground: oklch(0.22 0.028 262);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.22 0.028 262);
+    /* light theme — semantic aliases from assets/design-tokens.css (light remap) */
+    --background: oklch(0.9842 0.0034 247.86); /* slate-50 #f8fafc */
+    --foreground: oklch(0.2077 0.0398 265.75); /* slate-900 #0f172a */
+    --card: oklch(1 0 0); /* white */
+    --card-foreground: oklch(0.2077 0.0398 265.75); /* slate-900 */
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.22 0.028 262);
-    /* apothem-600 emerald, darkened to L0.49 so emerald text clears WCAG AA
-       4.5:1 on every light surface it sits on: 5.5:1 on bg, 4.8:1 on the 10%
-       primary wash of the active sidebar item, 4.9:1 on the secondary surface
-       behind inline code; white-on-emerald labels reach 5.7:1. Hue + chroma
-       preserve the family. lib/theme-tokens.test.mjs checks these. */
-    --primary: oklch(0.49 0.13 162);
-    --primary-foreground: oklch(0.99 0.003 250);
-    --secondary: oklch(0.95 0.006 250); /* polygon-100 */
-    --secondary-foreground: oklch(0.3 0.03 260);
-    --muted: oklch(0.95 0.006 250);
-    --muted-foreground: oklch(0.5 0.025 254);
-    --accent: oklch(0.94 0.05 165); /* apothem-100 wash */
-    --accent-foreground: oklch(0.4 0.11 162);
+    --popover-foreground: oklch(0.2077 0.0398 265.75);
+    /* emerald-700 #047857 is the accent text colour on light surfaces: 5.2:1 on
+       slate-50, so emerald text clears WCAG AA 4.5:1 on the page, on the 10%
+       primary wash of the active sidebar item and on the secondary surface
+       behind inline code; white-on-emerald labels reach 5.5:1.
+       lib/theme-tokens.test.mjs checks these. */
+    --primary: oklch(0.5081 0.1049 165.61); /* emerald-700 #047857 */
+    --primary-foreground: oklch(0.9842 0.0034 247.86); /* slate-50 */
+    --secondary: oklch(0.9595 0.008 253.85); /* slate-100 #eef2f7 */
+    --secondary-foreground: oklch(0.2077 0.0398 265.75); /* slate-900 */
+    --muted: oklch(0.9595 0.008 253.85); /* slate-100 */
+    --muted-foreground: oklch(0.4322 0.0383 267.42); /* slate-600 #475066 */
+    --accent: oklch(0.9505 0.0507 163.05); /* emerald-100 #d1fae5 wash */
+    --accent-foreground: oklch(0.4318 0.0865 166.91); /* emerald-800 #065f46 */
     --destructive: oklch(0.58 0.21 25);
-    --border: oklch(0.9 0.008 250); /* polygon-200 */
-    --input: oklch(0.9 0.008 250);
-    /* emerald focus ring darkened to L0.52 so the indicator clears the 3:1
-       non-text contrast floor against the near-white light surface (4.8:1). */
-    --ring: oklch(0.52 0.15 162);
+    --border: oklch(0.9131 0.0144 254.61); /* slate-200 #dce3ec */
+    --input: oklch(0.9131 0.0144 254.61);
+    /* emerald-600 #059669, the light-surface accent graphic: 3.6:1 on slate-50,
+       above the 3:1 non-text contrast floor. */
+    --ring: oklch(0.596 0.1274 163.23);
 
     /* fumadocs surface bridge — light */
     --color-fd-background: var(--background);
@@ -113,25 +117,25 @@
   }
 
   .dark {
-    /* dark-first theme — field families are the deep-navy drawing ground */
-    --background: oklch(0.17 0.028 266); /* field-900 */
-    --foreground: oklch(0.94 0.006 250); /* polygon-100 */
-    --card: oklch(0.21 0.03 265); /* field-800 */
-    --card-foreground: oklch(0.94 0.006 250);
-    --popover: oklch(0.21 0.03 265);
-    --popover-foreground: oklch(0.94 0.006 250);
-    --primary: oklch(0.68 0.15 162); /* apothem-500 emerald — dark accent */
-    --primary-foreground: oklch(0.17 0.028 266);
-    --secondary: oklch(0.28 0.03 264); /* field-700 */
-    --secondary-foreground: oklch(0.94 0.006 250);
-    --muted: oklch(0.26 0.03 264);
-    --muted-foreground: oklch(0.71 0.018 252); /* polygon-400 */
+    /* dark-first theme — semantic aliases from assets/design-tokens.css */
+    --background: oklch(0.2077 0.0398 265.75); /* slate-900 #0f172a */
+    --foreground: oklch(0.9842 0.0034 247.86); /* slate-50 #f8fafc */
+    --card: oklch(0.2604 0.0324 263.76); /* slate-800 #1c2434 */
+    --card-foreground: oklch(0.9842 0.0034 247.86);
+    --popover: oklch(0.2604 0.0324 263.76);
+    --popover-foreground: oklch(0.9842 0.0034 247.86);
+    --primary: oklch(0.7729 0.1535 163.22); /* emerald-400 #34d399 — dark accent */
+    --primary-foreground: oklch(0.2077 0.0398 265.75); /* slate-900 */
+    --secondary: oklch(0.3567 0.037 265.74); /* slate-700 #333c50 */
+    --secondary-foreground: oklch(0.9842 0.0034 247.86);
+    --muted: oklch(0.2604 0.0324 263.76); /* slate-800 */
+    --muted-foreground: oklch(0.8418 0.0224 256.74); /* slate-300 #c2ccda */
     --accent: oklch(0.32 0.05 230);
-    --accent-foreground: oklch(0.94 0.006 250);
+    --accent-foreground: oklch(0.9842 0.0034 247.86);
     --destructive: oklch(0.66 0.18 25);
-    --border: oklch(0.32 0.025 262);
-    --input: oklch(0.32 0.025 262);
-    --ring: oklch(0.68 0.15 162);
+    --border: oklch(0.3567 0.037 265.74); /* slate-700 */
+    --input: oklch(0.3567 0.037 265.74);
+    --ring: oklch(0.7729 0.1535 163.22); /* emerald-400 */
 
     /* fumadocs surface bridge — dark */
     --color-fd-background: var(--background);

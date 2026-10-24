@@ -32,6 +32,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "assets"
 SRC = ASSETS / "src"
 SITE_PUBLIC = REPO_ROOT / "site" / "public"
+VSCODE_ICON = REPO_ROOT / "vscode-extension" / "icon.png"
 
 
 def find_resvg(operator_override: str | None) -> Path:
@@ -100,8 +101,10 @@ def render_banner(resvg: Path, svg: Path, png: Path, width: int, height: int) ->
 def build_favicon_ico(resvg: Path, out: Path) -> None:
     """Build multi-resolution favicon.ico from the favicon SVG master.
 
-    Container holds 16x16, 32x32, 48x48 layers. Pillow's `save(format='ICO')`
-    is the canonical Python path for multi-res ICO generation.
+    Container holds 16x16, 32x32, 48x48 layers, each rendered from the SVG at
+    its own size. Pillow embeds an ``append_images`` frame only when its size is
+    listed in ``sizes`` and no larger than the base image, so the largest layer
+    (48x48) is the base and the smaller layers are appended.
     """
     with tempfile.TemporaryDirectory(prefix="apothem-favicon-") as tmp:
         tmp_path = Path(tmp)
@@ -111,17 +114,22 @@ def build_favicon_ico(resvg: Path, out: Path) -> None:
             render_png(resvg, ASSETS / "favicon.svg", layer, size)
             with Image.open(layer) as image:
                 layers.append(image.copy())
-        layers[1].save(
+        layers[2].save(
             out,
             format="ICO",
             sizes=[(16, 16), (32, 32), (48, 48)],
-            append_images=[layers[0], layers[2]],
+            append_images=[layers[0], layers[1]],
         )
 
 
 def sync_runtime_svgs() -> None:
     """Copy editable SVG masters into their runtime asset locations."""
-    for name in ("logo.svg", "logo-dark.svg", "logo-animated.svg"):
+    for name in (
+        "logo.svg",
+        "logo-dark.svg",
+        "logo-animated.svg",
+        "logo-animated-light.svg",
+    ):
         shutil.copy2(SRC / name, ASSETS / name)
 
 
@@ -132,6 +140,7 @@ def mirror_site_public() -> None:
         "logo.svg",
         "logo-dark.svg",
         "logo-animated.svg",
+        "logo-animated-light.svg",
         "logo-wordmark.svg",
         "logo-wordmark-dark.svg",
         "logo.png",
@@ -249,6 +258,12 @@ def main() -> int:
     # and two files no build step read.
     mirror_site_public()
     print("[OK] site asset mirror")
+
+    # 10) VS Code extension icon. The Marketplace listing needs a PNG of at
+    # least 128 px; it is the 256 px light mark, rendered from the same master
+    # as logo.png so the two cannot drift.
+    render_png(resvg, SRC / "logo.svg", VSCODE_ICON, 256)
+    print("[OK] vscode-extension/icon.png (256)")
 
     print("\nRebuild complete. Run 'git diff --stat assets/' to review.")
     return 0

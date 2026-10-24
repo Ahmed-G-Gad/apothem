@@ -52,7 +52,7 @@ Execute `/plan-review`. Conduct a multi-pass review verifying prose fidelity, in
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence.
 
 ---
 
@@ -147,9 +147,9 @@ Identify the single most impactful revision — the one change that fixes the mo
 
 > Moved to `references/step-12-final-verification.md`. MUST read it in full before executing this step.
 
-### Step 11.5: End-of-Command Synthesis (D6)
+### Step 11.5: End-of-Command Synthesis
 
-> Moved to `references/step-13-end-of-command-synthesis-d6.md`. MUST read it in full before executing this step.
+> Moved to `references/step-13-end-of-command-synthesis.md`. MUST read it in full before executing this step.
 
 ### Step 12: Create or Evolve Artifacts and Handoff
 

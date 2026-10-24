@@ -24,8 +24,8 @@ The current line ships the host-agnostic harness configuration manager: a
 shared profile (`~/.config/apothem/profile.yaml`) materialized into
 harness-native configuration for the registered adapters, driven by the
 `apothem` command line (`quickstart` · `install` · `update` · `uninstall` ·
-`rollback` · `verify` · `status` · `diff` · `harnesses` · `profile` ·
-`doctor` · `migrate-workspace` · `completion`).
+`rollback` · `backups` · `verify` · `status` · `diff` · `harnesses` ·
+`profile` · `doctor` · `migrate-workspace` · `completion`).
 
 | Item | Status | Notes |
 | ---- | ------ | ----- |
@@ -38,6 +38,8 @@ harness-native configuration for the registered adapters, driven by the
 | Audit and drift-review infrastructure | shipped | Inventory and drift scanners behind the audit commands |
 | Conformity gate | shipped | Validators for authorship headers, naming, code craft, hedging and binding reciprocity over every materialized surface, with behavior-diff goldens locking each adapter's output |
 | Durable memory and opt-in continuous learning | shipped | A persistent memory tier and an opt-in learning loop that carry confirmed conventions across sessions |
+| npm / npx distribution | shipped | The `@ahmed-g-gad/apothem` package runs the engine through `npx @ahmed-g-gad/apothem` |
+| Claude Code plugin listing | shipped | Installed with `/plugin marketplace add ahmed-g-gad/apothem` |
 | CI/CD pipeline and signed-release supply chain | shipped | Every change gated on lint, tests, type checks, a docs build and supply-chain checks before release |
 
 ## Near term
@@ -45,8 +47,8 @@ harness-native configuration for the registered adapters, driven by the
 | Item | Status | Notes |
 | ---- | ------ | ----- |
 | Documentation guides | in-progress | More task-focused guides, diagrams and examples for real harness setups |
-| npm / npx distribution | planned | Keep the `@ahmed-g-gad/apothem` npx entry point aligned with each release and broaden its platform coverage |
-| Claude Code plugin listing | planned | Grow the plugin listing as the marketplace surface stabilizes |
+| npx platform coverage | planned | Keep the `@ahmed-g-gad/apothem` npx entry point aligned with each release and broaden its platform coverage |
+| Plugin listing growth | planned | Grow the plugin listing as the marketplace surface stabilizes |
 | More harness adapters | planned | Additional harnesses as their configuration conventions stabilize and users request them |
 | Profile schema enhancements | planned | Richer per-harness override surfaces and stricter validation diagnostics |
 | Profile validation in the conformity gate | planned | Validate the shared profile against its schema as a gate check |

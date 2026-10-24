@@ -32,7 +32,7 @@ authors:
     email: "me@ahmedgad.com"
     website: "https://ahmedgad.com"
 # TODO(clarify): add a `doi:` field (and a matching `identifiers:` entry) once
-# the v1.0.2 tag is deposited to an archival registry such as Zenodo. The DOI is
+# a release tag is deposited to an archival registry such as Zenodo. The DOI is
 # an operator-minted value that cannot be derived from the repository; until the
 # deposit exists, citations resolve through the repository URL above.
 preferred-citation:
