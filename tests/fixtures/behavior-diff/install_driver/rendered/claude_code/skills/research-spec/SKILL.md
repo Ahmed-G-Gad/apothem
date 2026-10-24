@@ -1,17 +1,20 @@
 ---
 name: "research-spec"
-version: "0.1.1"
-updated: "2026-10-15"
 description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Produces falsifiable hypotheses with stated null forms (R3), explicit inclusion/exclusion scope, independently-measurable success metrics (R2), and a glossary, surfacing every ambiguity through the structured-inquiry channel instead of inventing scope or hypotheses. Emits `_spec/research-spec.md` plus the Handoff Manifest in the research-suite folder. `--quick` skips elicitation and writes one lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
 argument-hint: "[path/to/question-or-notes] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.1"
+  updated: "2026-10-15"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /research-spec — Frame the Research Question
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -29,38 +32,13 @@ Read the question or notes in full. Triple-extract the implicit **claim**, **sco
 
 ## Pipeline Contract
 
-**Pipeline position.** **Stage 2 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This command consumes the ideation that `/research-ideate` produced, accepts a free-form question, raw notes, or an ad-hoc research idea as input, and emits the Handoff Manifest the downstream stages consume.
-
-**Handoff Manifest.**
-
-- **Consumed.** `{suite}/_inputs/ideation.md` (the ideation from `/research-ideate`) when present, otherwise the research question or notes source the operator supplies (see the Sequence Gate). When `/research-ideate` ran, the Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for its attestation block.
-- **Emitted.** `{suite}/_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml`. The manifest carries the authored `_spec/research-spec.md` path, the spec's section completeness (question · hypotheses · scope · inclusion/exclusion criteria · success metrics · glossary), the Question-Resolution Audit's open-vs-resolved counts, the Deferral Ledger's downstream routing entries, and the rigor-mandate attestation block (R1–R7 applicability per §Mandates).
-
-**Pre-flight inquiry set.** The suite-name inquiry surfaces before any spec write per `rules/interactive-questions.md`. Every implicit hypothesis form, every unstated scope boundary, every undefined success threshold enters the inquiry set; every authoritative-data gap surfaces as a `USER-CONFIRM` placeholder (the canonical `kind=`-tagged form) per the canonical-channel rule.
-
-**Pre-emission gate.** The fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` runs against the candidate `_spec/research-spec.md` before promotion. The Handoff Manifest carries the gate attestation block; failure on any bar blocks promotion until resolved.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror, scoped to the research-spec domain. Both default mode and `--quick` mode are bound by these stanzas.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this stage's stated mission (default mode produces a spec-grade `_spec/research-spec.md`; `--quick` mode produces a single project-local lightweight research brief). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. When framing surfaces a contradiction the operator must resolve — two hypotheses that cannot both hold, a scope that excludes its own success metric — halt and surface the contradiction instead of silently choosing.
-
-### Output Surface
-
-Default mode emits `{suite}/_spec/research-spec.md` (the promoted spec) and `{suite}/_inputs/handoff-manifest.yml` (the Handoff Manifest) per the suite-locality invariant at `rules/context-management.md` §2.6.1 and the research-suite storage convention. `--quick` mode emits `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md` (a single project-local lightweight research brief). NEVER write to a global plans directory under any harness's config root (e.g., `~/.claude/.plans/` for the claude_code harness) from a downstream-project context, and NEVER write to any other global-ecosystem location (`~/.config/`, `/etc/`, vendored language-runtime trees). `--quick` refuses any path that resolves under any harness's config root or any sibling global location; refusal is explicit per §Mode `--quick`.
-
-### File-Authoring Contract
-
-Spec and brief files (default mode's `{suite}/_spec/research-spec.md` and `--quick` mode's `<project-root>/.apothem/plans/<filename>.md`) are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is NOT invoked on these emissions. When this stage incidentally authors a non-plan file (a fresh or updated `<project-root>/.gitignore` snippet), the file is exempt as a configuration artifact under the same exception list. This stage never injects banners; all banner-applicable files are out of its emission surface.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or about any hypothesis form, scope boundary, metric threshold, inclusion criterion, or glossary definition that materially affects the spec — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3 (rationale / recommendation / default-pointer). Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data; gaps surface as `USER-CONFIRM` placeholders (the canonical `kind=`-tagged form) until the operator supplies them.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -97,21 +75,7 @@ Emit the blocked line, name the absent ideation artifact, and halt. Do not inven
 
 ## Mode: `--quick` (Lightweight Research Brief)
 
-`--quick` is the lightweight path: `/research-spec` writes a single project-local research brief in seconds, bypassing the full framing workflow. Default mode (invocation without `--quick`) and `--quick` mode are mutually exclusive per invocation.
-
-### Behavior
-
-1. **Resolve the current project root.** Walk upward from `pwd` to the nearest `.git/` parent; that ancestor is the project root. When no `.git/` is found on the path to the filesystem root, halt with structured inquiry per `rules/interactive-questions.md` §3 (`question`: how to proceed; options `Use this directory` / `Let me cd first (Recommended)` / `Create a new project here` / `Cancel`, each carrying the three-segment body).
-2. **Refuse global-ecosystem paths.** When the resolved root is any harness's config root (e.g., `~/.claude/` for the claude_code harness) or any other global-ecosystem location (`~/.config/`, `/etc/`, vendored language-runtime trees), halt with an explicit refusal — `--quick` writes are project-local by design.
-3. **Ensure `<project-root>/.apothem/plans/` exists.** Create the directory when absent. Verify `<project-root>/.gitignore` carries the canonical `.apothem/plans/` ignore snippet; append the snippet with a header comment when absent.
-4. **Compose the destination filename.** The pattern is `<YYYY-MM-DD>--<kebab-slug>.md` where `YYYY-MM-DD` is today's UTC date and `<kebab-slug>` is the operator-supplied slug validated as kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`).
-5. **Write the lightweight research brief.** Frontmatter required fields: `name` (the slug), `created` (ISO-8601 timestamp), `project` (the resolved project root absolute path), `status` (`draft`), `tags` (array from `--tag` invocations; empty array when none supplied). Body carries the question, one or more falsifiable hypotheses with null forms (R3), a short scope statement, and the success metric. The brief is a single-shot artifact, not the six-section spec.
-6. **Banner-exempt.** Do NOT inject the authorship banner — research-brief files are exempt per the `.apothem/**` exception class.
-7. **Print metadata-only output.** Emit the absolute destination path, the resolved project root, the chosen filename, and a one-line confirmation. Do NOT echo the brief body or any pipeline state.
-
-### Mutual Exclusivity
-
-`--quick` is mutually exclusive with `--refine-existing` and with the full framing workflow's output (`_spec/research-spec.md`, the Handoff Manifest). When `--quick` is supplied, the framing workflow does NOT execute; the stage writes the single brief and exits. When neither `--quick` nor a default-mode flag is supplied, the framing workflow executes per the phases below.
+> Moved to `references/mode-quick.md`. MUST read it when invoked with `--quick`; otherwise skip it.
 
 ---
 
@@ -127,21 +91,11 @@ Emit the blocked line, name the absent ideation artifact, and halt. Do not inven
 
 ### Phase 1 — Discovery & Extraction
 
-Read the question or notes in full. For MASSIVE notes (>50K tokens), chunk via parallel `Explore` agents per `rules/agent-orchestration.md` (one chunk per agent, ≤10K tokens per chunk). At every clause, triple-extract: the **claim** the source asserts, the **scope** it implies, the **success condition** it presumes. Surface the prose's implicit research domain and the adjacent domains its assumptions inherit.
-
-**Establish the suite folder.** Per `rules/context-management.md` §2.6.1, every `_inputs/` and `_spec/` directory is a direct child of a research-suite folder. When the suite name is provided via `--suite-name`, create `{suite}/_spec/` directly; otherwise surface the name via the structured-inquiry channel before any spec write.
+> Moved to `references/step-01-discovery-extraction.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — Aims Hierarchy, Question Framing & Hypothesis Crystallization (R3 Falsifiability, R10)
 
-Structure the inquiry as an **aims-and-objectives hierarchy** before crystallizing hypotheses: a single **broad aim** (the study's overarching purpose) decomposes into **specific objectives**, each objective resolves to one or more **research questions**, and each question resolves to a **falsifiable hypothesis**. Every objective is **SMART** — Specific, Measurable, Achievable, Relevant, Time-bound — per the Theory-of-Change toolkit at <https://analysisfunction.civilservice.gov.uk/policy-store/the-analysis-function-theory-of-change-toolkit/>; an objective that names no measurable end-state is returned for restatement, never carried as a vague aspiration.
-
-Frame each research question against a **structured template** — **PICO** (Population · Intervention · Comparator · Outcome) for interventional questions, **PECO** (Population · Exposure · Comparator · Outcome) for observational/exposure questions, or the domain-appropriate analogue the operator ratifies through the structured-inquiry channel. The framing template is the question's structural contract; a question whose Population, Comparator, or Outcome the source leaves implicit surfaces through the channel before the hypothesis crystallizes.
-
-Anchor the study to a named **theoretical framework** (R10) — the theory, model, or conceptual lens the hypotheses operationalize — and **forward-reference it to `/research-theory`**, which develops the framework into the study's theoretical grounding. A study with no theoretical anchor is recorded as a `USER-CONFIRM` placeholder until the operator names the lens or explicitly declares the study atheoretical-by-design with its rationale.
-
-Re-frame each research question as one or more **falsifiable hypotheses** — testable, refutable predictions, each paired with its **null form** (the state of the world that, if observed, refutes the hypothesis). A question that admits no refuting observation is not a research question; surface the unfalsifiability through the structured-inquiry channel and re-frame until each hypothesis carries a null. Record null-result handling: a hypothesis whose null is confirmed is a recorded outcome, not a failure to suppress (R3).
-
-**Constrain to distinct, parsimonious, ablatable contributions.** Each contribution the hypothesis set commits to MUST be distinct and substantial — not an increment of, nor a near-duplicate of, another contribution in the same program — and the design surface the hypotheses imply MUST resolve to a minimal-yet-effective set of ablatable components and tunable knobs, so each hypothesis maps to a single component whose marginal contribution can later be isolated. This is a forward reference to the ablation the design and experiment stages run: a component the hypotheses cannot separate is a component the downstream ablation cannot attribute a gain to, per `skills/research-suite/references/advancement-gate.md`. Two hypotheses that collapse into one contribution under examination are one hypothesis, framed as such rather than double-counted (R3).
+> Moved to `references/step-02-aims-hierarchy-question-framing.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Scope & Criteria Drawing
 
@@ -149,9 +103,7 @@ Draw the scope with **explicit inclusion criteria** (what the study covers) and 
 
 ### Phase 4 — Success Metrics & Glossary
 
-Declare **success metrics** an independent party measures the same way (R2 reproducibility): each metric names what is measured, the threshold that constitutes success, and the measurement procedure. Where a metric rests on a statistical claim, name the effect-size and confidence-interval form per R7, never a bare significance threshold. Build a **glossary** for every domain term the hypotheses, scope, or metrics depend on; an undefined term is an ambiguity the structured-inquiry channel resolves before the spec promotes.
-
-**Scale the rigor floor to the target-venue ambition.** The depth of the required rigor floor — the replication-count floor, the significance-plus-effect-size-plus-ranks reporting form, budget-parity across comparators, and the tuning-split that separates tuning from evaluation, all forward-declared here and run downstream — scales to the ambition of the target venue (R2, R7): a higher-ambition target raises the bar the success metrics and the downstream artifact set MUST meet, per `skills/research-suite/references/advancement-gate.md`. The success metrics accordingly forward-declare the reproducibility-evidence outputs that will scaffold the deliverable's evidence package, so the artifacts are assembled once and shipped as the same set. Surface the target-venue ambition as a `USER-CONFIRM` placeholder (the canonical `kind=`-tagged form) when the source leaves it unspecified; NEVER invent it.
+> Moved to `references/step-04-success-metrics-glossary.md`. MUST read it in full before executing this step.
 
 ### Phase 5 — Question-Resolution Sweep & Emission
 
@@ -188,52 +140,13 @@ Definitively resolve every ambiguity — every implicit hypothesis form, every u
 
 ## Example — Default framing run
 
-```text
-$ /research-spec ./notes/cache-eviction-idea.md --suite-name cache-eviction-study
-
-[Phase 1] Read 1 notes file (3.2K tokens). Triple-extracted: claim "LRU loses to ARC under scan-heavy workloads"; scope "key-value caches"; success condition "measurable hit-rate delta".
-[Phase 1] Suite folder created: <project-root>/.apothem/plans/cache-eviction-study/_spec/.
-[Phase 2] Crystallized 2 falsifiable hypotheses. H1 null: "ARC hit-rate ≤ LRU hit-rate under scan workload W". H2 carried a non-refutable framing → structured inquiry fired → re-framed with a null.
-[Phase 3] Scope drawn. Inclusion: read-heavy KV caches, ≥1M ops/run. Exclusion: write-through caches, distributed multi-node (one undefined boundary → inquiry → operator excluded multi-node).
-[Phase 4] 1 success metric: hit-rate delta ≥ 3 percentage points, 95% CI excluding 0 (R7 effect-size form). Glossary: 6 terms defined.
-[Phase 5] Question-Resolution Audit: 3 invocations, 3 resolved, 0 silent-defaulted. Fifteen-bar gate PASS.
-[Phase 5] Promoted to _spec/research-spec.md; Handoff Manifest emitted; downstream: /research-theory.
-```
+> Moved to `references/examples.md`. SHOULD read it before composing the final output.
 
 ---
 
 ## Decision Tree
 
-```mermaid
-%%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
-%% provenance: commands/research-spec.md §Workflow %%
-%% cross-reference: rules/interactive-questions.md (canonical channel) %%
-flowchart TD
-    Start[/research-spec invoked/] --> Quick{--quick flag set?}
-    Quick -->|yes| Brief[Resolve project root · write lightweight brief · exit]
-    Quick -->|no| Source{Question or notes source resolves?}
-    Source -->|no| AskSrc[structured inquiry: surface the missing source · do not invent]
-    Source -->|yes| Refine{--refine-existing and research-spec.md exists?}
-    Refine -->|yes| Iter[Iterative refinement on existing spec]
-    Refine -->|no| Fresh[Fresh framing run]
-    Iter --> P1[Phase 1: Discovery and Extraction]
-    Fresh --> P1
-    P1 --> P2[Phase 2: Hypothesis Crystallization]
-    P2 --> Fals{Every hypothesis carries a null form?}
-    Fals -->|no| AskFals[structured inquiry: re-frame the unfalsifiable hypothesis]
-    AskFals --> P2
-    Fals -->|yes| P3[Phase 3: Scope and Criteria Drawing]
-    P3 --> P4[Phase 4: Success Metrics and Glossary]
-    P4 --> P5[Phase 5: Question-Resolution Sweep]
-    P5 --> Open{Open ambiguities remain?}
-    Open -->|yes| AskOpen[structured inquiry: surface each unresolved boundary or threshold]
-    AskOpen --> P5
-    Open -->|no| Gate{Fifteen-bar pre-emission gate PASS?}
-    Gate -->|no| Revise[Revise the failing bar · re-run the gate]
-    Revise --> Gate
-    Gate -->|yes| Emit[Promote to _spec/research-spec.md · emit Handoff Manifest]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -253,14 +166,6 @@ flowchart TD
 ## Recommended Next Step
 
 Invoke `/research-theory` to develop the named theoretical framework this spec anchors to into the study's theoretical grounding before the evidence base is assembled; `/research-theory` is the canonical pipeline successor that consumes the promoted `_spec/research-spec.md` and its forward-referenced theoretical anchor.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● `commands/research-theory.md` (the canonical downstream consumer; `/research-theory` consumes the promoted `_spec/research-spec.md` and develops its forward-referenced theoretical framework). ● `{suite}/_spec/research-spec.md` (the principal artifact). ● `{suite}/_inputs/handoff-manifest.yml` (the Handoff Manifest). ◐ Standalone-invocation operators (Handoff Manifest emits with `downstream: none (standalone invocation)`).
-- **Satisfies →** ● The research-pipeline design contract's per-stage row 2 (question-framing stage; emits the aims-hierarchy + falsifiable-hypothesis spec with its theoretical anchor). ● `rules/interactive-questions.md` §1 canonical-channel obligation (every ambiguity routes through the structured-inquiry channel). ● `rules/context-management.md` §2.6.1 suite-locality invariant.
-- **Established by ↑** ● `commands/research-ideate.md` (the upstream producer of the ideation this stage frames). ● `commands/plan-spec.md` (the shape exemplar this stage mirrors). ● The research-suite rigor mandates R1–R10.
-- **Gated by ←** ● The Sequence Gate (`/research-ideate` ideation present, or a resolving question/notes source, or `--override` with rationale). ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/pre-emission-gate.md` (the fifteen-bar gate runs before promotion).
-- **Cross-bound with ↔** ↔ `commands/research-ideate.md` (Ideate → Spec handoff; this stage frames the ideation `/research-ideate` produced). ↔ `commands/research-theory.md` (Spec → Theory handoff; `/research-theory` consumes research-spec.md and its theoretical anchor). ↔ `commands/research.md` (the `/research` wrapper dispatches this stage as a workflow phase). ↔ `skills/research-suite/SKILL.md` (the knowledge surface this stage resolves by path for the rigor mandates R1–R10 and lifecycle). ↔ `rules/cognitive-identity.md` (the Principal-Investigator research lens). ↔ `rules/visual-leverage.md` (the Decision Tree diagram carries provenance + verified + cross-reference headers).
 
 ## Installed Reference Paths
 

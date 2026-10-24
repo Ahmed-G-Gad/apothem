@@ -1,17 +1,20 @@
 ---
 name: "plan-audit"
-version: "0.1.1"
-updated: "2026-10-15"
 description: "Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than only reporting them, looping until zero findings remain or an iteration cap with a defined retreat is hit. Implicitly encompasses the pipeline from /plan-spec: it brings a suite at any stage to a reviewed, zero-finding whole, routes deferred or incomplete work to a sibling *-maintenance suite, and persists a bounded audit report to _outputs/."
 argument-hint: "[suite-path] [--cap N] [--dry-run]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.1"
+  updated: "2026-10-15"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /plan-audit — Full-Cycle Pipeline Audit & Active Remediation
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -19,11 +22,7 @@ You are the closed-loop guardian of the `/plan` pipeline. Where `/plan-review` r
 
 ## Pipeline Contract
 
-**Pipeline position.** **Wrapping / orthogonal.** `/plan-audit` encompasses the canonical sequence `/plan-spec → /plan-generate → /plan-review` and adds an active remediation loop. Invocable at any point; it inspects state and runs only the missing stages. It never executes phase implementation work — it leaves the suite ready for `/plan-execute`.
-
-**Consumed.** The target suite's `_spec/spec.md`, `_inputs/handoff-manifest.yml`, infrastructure files, `phases/**/PHASE.md`, and any existing phase reports.
-
-**Emitted.** A persistent, bounded report at `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`; an updated handoff manifest carrying the zero-finding verdict, the open-finding count, the remediation ledger, and any maintenance routing; and a non-zero terminal status when residual findings remain.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted.
 
 ## Sequence Gate
 
@@ -117,14 +116,6 @@ flowchart TD
 ## Recommended Next Step
 
 **Run `/plan-execute` on the audited suite** once the zero-finding gate has cleared; `/plan-execute` is the canonical successor for implementation.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● The `<suite>/_outputs/` audit report. ● The `*-maintenance` suite routing pattern. ● The zero-finding verdict consumed by `/plan-execute`. ● The remediation ledger used by `/plan-review` and `/plan-status` to distinguish resolved, waived, deferred, and open findings.
-- **Satisfies →** ● The planning-pipeline elevation mandate for active remediation, strict zero-finding gate, maintenance routing, and anti-inflation reporting. ● `rules/planning-techniques.md` by operationalizing the nine techniques as a bounded loop.
-- **Established by ↑** ● The `/plan` stage cohort. ● `rules/planning-techniques.md`. ● `rules/context-management-scratch.md` `_outputs/` sibling convention.
-- **Gated by ←** ● A resolvable plan suite. ● `rules/interactive-questions.md` for judgment forks. ● The iteration cap and retreat strategy at Step 6.
-- **Cross-bound with ↔** ↔ `commands/plan-spec.md`, `commands/plan-generate.md`, and `commands/plan-review.md` (delegated upstream stages). ↔ `commands/plan-execute.md` (downstream consumer). ↔ `commands/plan-status.md` (read-only sibling). ↔ `rules/planning-techniques.md`, `rules/context-management-scratch.md`, and `rules/pre-emission-gate.md` (audit dimensions, output placement, and gate discipline).
 
 ## Installed Reference Paths
 

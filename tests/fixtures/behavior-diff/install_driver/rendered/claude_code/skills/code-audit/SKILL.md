@@ -1,12 +1,13 @@
 ---
 name: "code-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · Cross-File Dependency Walk · Type-Hint + Coverage Audit · Dead-Code + Duplicate Detection · Architectural-Integrity Audit · Findings Emission + Validation Gate) interrogate cross-file consistency, hidden coupling, layer-boundary violations, type-hint accuracy under `mypy --strict`, test-coverage gaps against critical paths, dead code via `vulture`, duplicate code via `pylint --disable=all --enable=duplicate-code`, and architectural integrity at the implementation layer. Findings carry severity (HIGH / MEDIUM / LOW) with concrete-driver rationale and land at the consuming suite's `_inputs/code-audit-findings.md` ready for review-fortress consumption. Distinct from `/code-review` (per-file craft) — `/code-audit` is the cross-file forensic surface."
 argument-hint: "[path/to/repo/] [--focus AREA] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /code-audit — Cross-File Forensic Code Audit
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -36,44 +39,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** **Terminal review-fortress command.** This command consumes the deployed repository (post-execution code at the host's canonical layout) and emits the cross-file forensic findings artifact downstream review-fortress consumers read.
-
-**Audit-fortress sequence position.** **Upstream:** `/code-review` (per-file craft hand-off). **Downstream:** `/security-audit`. Position 2 of 11 in the canonical audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`).
-
-**Handoff Manifest.**
-
-- **Consumed.** The consuming suite's `_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml`. The upstream manifest carries the per-phase REPORTs and the production-deployment attestation. The Phase 0 input-ingest step at `## Workflow` reads the deployed-repository manifest as prerequisite evidence; a deployment whose CI gate fails blocks audit emission until resolved.
-- **Emitted.** The same manifest augmented with the findings-artifact path (`_inputs/code-audit-findings.md`), the per-severity finding counts (HIGH / MEDIUM / LOW), the per-phase tool-output attestations (`mypy --strict` exit code · `vulture` finding count · duplicate-code finding count · coverage report path), and the Phase 5 validation-gate attestation block. Downstream review-fortress consumers read the findings artifact at every audit-bearing surface.
-
-**Pre-flight inquiry set.** Phase 1 (Cross-File Dependency Walk) emits the typed inquiry set per `rules/authority-inquiry.md`. Every audit-scope gap — ambiguous module boundaries, undeclared layer assignments, missing test-coverage baseline, unratified severity thresholds — surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 5 (Findings Emission + Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate findings artifact before promotion. The gate attestation block is recorded inside the emitted artifact and surfaced in the Handoff Manifest. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every severity-threshold ratification, every layer-assignment ambiguity, every dead-code-vs-public-API disambiguation, every duplicate-code consolidation choice, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the cross-file forensic findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository whose CI gate has not run (no test-coverage baseline; no lint baseline) at SHARED+ — route through the host's CI pipeline first. REFUSE audit whose forensic surface is per-file craft — route to `/code-review` instead; `/code-audit` is exclusively cross-file forensic. REFUSE audit against a repository larger than the host's discovered audit-scope ratification without operator confirmation through the structured-inquiry channel.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/code-audit-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. The Handoff Manifest update at `_inputs/handoff-manifest.yml` is suite-internal. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings artifact outside the suite folder; NEVER modify files inside the audited repository (the audit is read-only against the target); NEVER write to any global-ecosystem location.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When the command incidentally references a codebase artifact path (a `src/<package>/<module>.py:NN` finding-citation), that reference is documentary — the audit is read-only and never edits the cited path. Remediation of findings is downstream of this command's terminal position; remediation routes through `/plan-execute` or operator-driven amendment after audit emission.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or about any branch-point or judgment call that materially affects the audit outcome — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data. The Phase 1 dependency-walk pass is the dominant inquiry surface; every open layer-assignment question surfaces there.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -160,20 +132,7 @@ Apply `rules/ten-dimension-check.md` at the forensic bar per module (dimensions 
 
 ### Phase 5 — Findings Emission + Validation Gate
 
-Emit the consuming suite's `_inputs/code-audit-findings.md` with the canonical sections:
-
-1. **`## §1 Executive Summary`** — audit scope + per-severity counts (HIGH / MEDIUM / LOW) + per-phase tool-output attestations (`mypy --strict` exit code, `vulture` count, duplicate-code count, coverage % against critical paths) + any `--focus` narrowing.
-2. **`## §2 HIGH-Severity Findings`** — each as `Finding-NN: <one-sentence summary>` + Location (file:line-range) · Rationale (concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1) · Recommended Remediation · Reversibility note · Recurrence count.
-3. **`## §3 MEDIUM-Severity Findings`** — §2 shape.
-4. **`## §4 LOW-Severity Findings`** — §2 shape.
-5. **`## §5 Per-Phase Tool-Output Attestations`** — per forensic phase, the tool invocation, exit code, and parsed finding count (provenance trail).
-6. **`## §6 Open Audit Questions`** — every deferred structured-inquiry question with its inquiry-id and recommended option.
-7. **`## §7 Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
-8. **`## §8 Bindings (§0.j five-direction)`** — the artifact's outward bindings.
-
-Apply incremental generation per `rules/large-file-generation.md` above 500 lines (plan sections first; Write the first; Edit-append the rest; verify transition coherence at each boundary).
-
-Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Audit-tier deltas: **M5** (every finding cites a verified `file:line`; no fabrication); **M7** (every severity-threshold / layer-assignment / dead-code-vs-API call carries `**Recommended**` + concrete-driver rationale); **M14** (declare upstream `/code-review` + deployed repo, downstream `/security-audit` + remediation, peers fortress siblings, enforcers `mypy` / `vulture` / `pylint` / coverage). N/A (reason recorded): M11 (single-sprint), M15 (production-ready applies at remediation). Iterate on failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
+> Moved to `references/step-06-findings-emission-validation-gate.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -191,7 +150,7 @@ Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` `mypy --strict` · `vulture` · `pylint --disable=all --enable=duplicate-code` · coverage report · `borderline-classes:` public-API dead-code disambiguation · open layer-assignment questions · gate-bar `n/a` rationales · `focus-semantics:` `--focus AREA` ∈ `{type-hints, coverage, dead-code, duplicates, architecture, all}` skips irrelevant phases · `pipeline-tail-handoff:` Terminal review-fortress consumer reads) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -207,15 +166,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/security-audit` to advance the audit-fortress sequence; `/security-audit` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/security-audit.md` (audit-fortress next-step: cross-file forensic findings hand off to security-axis audit). Every downstream review-fortress cycle that audits a deployed repository's cross-file integrity. The remediation surface at `/plan-execute` invocations targeting an architectural amendment phase (consumes the findings artifact to drive remediation phase tasks). The fifteen-bar pre-emission gate at Phase 5.
-- **Driven by ←** `commands/code-review.md` (audit-fortress upstream: per-file craft review precedes cross-file forensic audit in the canonical linear sequence).
-- **Satisfies →** The `commands/README.md` command catalog's Audit/review-passes row for `/code-audit` (the registry entry that ratifies this command's place in the slash-command catalog). The consuming suite's audit-fortress catalog (the cross-file forensic audit command rounds out the review-fortress surface alongside `/code-review`, `/architecture-review`, `/security-audit`). The consuming suite's decisions ratifying audit-scope surfaces when present.
-- **Established by ↑** The `commands/README.md` command catalog. `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the audit attests against Architecture · Testing · Tooling axes). `rules/ten-dimension-check.md` (the forensic-bar ten-dimension check this command operationalizes). `rules/clean-architecture-layers.md` (the layer-discipline this command's Phase 4 audits against). `rules/code-craft-python.md` (the per-language code-craft sibling this command's Phase 2 honors for Python repositories).
-- **Gated by ←** The target repository's mandatory file presence (host-ratified source layout · CI configuration · test-coverage baseline at SHARED+). The harness's Agent + structured inquiry + Read + Bash tool surface (the audit invokes `mypy --strict`, `vulture`, `pylint --disable=all --enable=duplicate-code` via Bash; the read-only invariant means Edit / Write touch only the consuming suite's `_inputs/`).
-- **Cross-bound with ↔** `commands/code-review.md` (per-file craft sibling; co-equal complementary surface). `commands/architecture-review.md` (architectural sibling; cross-references at the layer-discipline surface). `commands/security-audit.md` (security-axis sibling; cross-references at the security-relevant-code-path surface). `commands/plan-execute.md` (downstream remediation consumer). `rules/cognitive-identity.md` (seven-axes taxonomy drives Phase 4). `rules/ten-dimension-check.md` (forensic-bar ten-dimension check). `rules/clean-architecture-layers.md` (Phase 4 layer-violation audit). `rules/code-craft-python.md` (Phase 2 type-hint audit honors the per-language sibling). `rules/host-discovery.md` (audit honors host-discovered tool surface). `rules/option-annotation.md` (every finding's severity carries concrete-driver rationale). `rules/authority-inquiry.md` (every audit-scope ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 5 fifteen-bar validation). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template).
 
 ## Installed Reference Paths
 

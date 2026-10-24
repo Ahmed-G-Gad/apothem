@@ -1,12 +1,13 @@
 ---
 name: "fortress"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "The production-hardening fortress wrapped as a single dynamic multi-agent workflow. One call drives a repository from detected weaknesses to a hardened, release-gated state, closing the loop the report-only /audit leaves open: dispatch /audit to DETECT, verify every finding through an EXTREMELY-CRITIQUE refute-by-default pass, REMEDIATE each surviving finding at its owning surface through the surgical-guard skill (secrets via secret-rotation, dependency CVEs via vuln-triage, broad lifts via scoped /elevate), RE-AUDIT until the walls hold (bounded by --max-rounds, with a deterministic BLOCKED retreat), and GATE through /release-readiness, emitting one fortress-posture report with a single recommended next move. Distinct from report-only /audit, open-loop /elevate, and single-verdict /release-readiness. Dispatch, remediation, and chaining are opt-in and confirmation-gated; every irreversible step is confirmed. Invoke with a repository path, or --scope to weight the sweep."
 argument-hint: "[path/to/repo/] [--scope security|hardening|all] [--autonomous] [--max-rounds N] [--verify-panel N]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /fortress — The Hardening Fortress as a Wrapped Dynamic Workflow
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -37,37 +40,13 @@ The deep workflow procedure lives in the `workflow` skill (`skills/workflow/SKIL
 
 ## Pipeline Contract
 
-**Pipeline position.** Wrapped-workflow meta-orchestrator over the whole detect → remediate → gate hardening loop — the canonical single-call entry for production hardening, and the hardening analogue of `/plan` (planning) and `/research` (research). It consumes a repository surface and a scope weighting, drives the closed loop to a hardened, release-gated state, and emits the hardened source plus a deterministic fortress-posture report. It closes the loop `/audit` deliberately leaves open: `/audit` detects and reports; `/fortress` detects, remediates, re-audits, and gates.
-
-**Consumed.** The operator's target path; the `--scope` weighting (`security` — the four defensive-security dimensions; `hardening` — security plus performance and code craft; `all` — the full eleven-dimension fortress); the `--autonomous` opt-in; the `--max-rounds N` iteration cap; the `--verify-panel N` budget. The whole-repo ingest reads the shared Derived Project Context Block per `rules/host-discovery.md`, so the hardening loop inherits the same derived-context surface as `/elevate`. When the mission follows a planning suite, the executed work `/plan-execute` produced is the upstream surface this loop hardens.
-
-**Emitted.** The hardened source (remediated in place at each finding's owning surface), plus the deterministic result surface: the fortress-posture report (per round — detected / verified / remediated / residual counts by severity), the per-round verified findings with evidence, the disclosure ledger of every remediation and beyond-mission amendment, the `/release-readiness` READY / BLOCKED verdict, the fifteen-bar gate attestation, the per-run workflow trace (rounds run, remediations applied, refutations recorded, halt / continue decisions), and the single recommended next move.
-
-**Pre-flight inquiry set.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the target, scope weighting, or remediation boundary is underspecified — which repository, which scope, how aggressive the remediation, scope direction, security posture. Required-category inquiries block dispatch until answered; the `--autonomous` opt-in is itself confirmed before continuous remediation engages, and every irreversible remediation is per-action confirmed regardless of the opt-in.
-
-**Pre-emission gate.** Each dispatched command runs its own fifteen-bar gate per `rules/pre-emission-gate.md`; this command does not duplicate a stage's gate but verifies each detect / gate attestation is present before consuming it, and runs the workflow's own fifteen-bar gate over the final fortress-posture report.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE to author or reimplement any detector, remediator, or gate — the orchestrator only dispatches first-class commands and skills. REFUSE to remediate a finding whose refute-by-default verification leaves it contested — a contested finding survives with both positions and their evidence, never a silent fix. REFUSE an unbounded re-audit loop — the `--max-rounds` cap and its deterministic retreat are mandatory per `rules/planning-techniques.md` §1. REFUSE any irreversible or outward-facing remediation, and any remediation touching a high-risk always-gate class per `rules/authority-inquiry-categories.md`, without per-action confirmation — this floor holds even under `--autonomous`, routed per-file through the destructive-op option sets at `rules/interactive-questions.md` §6. REFUSE continuous remediation without the `--autonomous` opt-in. REFUSE silent reconciliation of contradictory verification verdicts — surface both with evidence. Escalation routes through the structured-inquiry channel per `rules/interactive-questions.md`.
-
-### Output Surface
-
-Detect / findings artifacts land where their commands place them (the consuming suite's `_inputs/` per the suite-locality invariant at `rules/context-management.md` §2.6.1); remediations land in place at each finding's owning surface in the host source; the fortress-posture report + workflow trace land at `{suite}/_outputs/fortress-report-<date>.md` or PLAN-NOTES.md. Per `rules/operational-mandates.md` CM-7, no plan-internal scaffolding leaks into codebase artifacts. NEVER write a hardening artifact to a global plans directory under any harness's config root from a downstream-project context.
-
-### File-Authoring Contract
-
-The orchestrator authors no codebase files of its own; the remediations it routes land through the minimal-diff `surgical-guard` skill, which preserves each file's existing authorship-header banner and routes any NEW file through `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`; exempt classes at `src/apothem/schemas/header-exceptions.txt`). The fortress-posture report is a plan-suite artifact, header-exempt under the `.apothem/**` class.
-
-### Structured Inquiry on Ambiguity
-
-When the target repository, the scope weighting, a finding's in-scope status, or the aggressiveness of a remediation is ambiguous, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. NEVER fabricate a target path, a finding, or a remediation. Every destructive operation routes per-file through the canonical destructive-op option sets at `rules/interactive-questions.md` §6.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -128,48 +107,13 @@ The workflow is granted to identify any defect the detect or verification reveal
 
 ## Decision Tree
 
-```mermaid
-%% verified: 2026-06-16 %%
-%% provenance: commands/fortress.md §Workflow %%
-%% cross-reference: commands/audit.md, commands/elevate.md, commands/release-readiness.md, commands/plan.md, commands/research.md, skills/workflow/SKILL.md, rules/planning-techniques.md %%
-flowchart TD
-    Start[/fortress invoked/] --> Frame{Target + scope unambiguous?}
-    Frame -->|no| Inquiry[Frame: structured-inquiry target + scope + remediation boundary]
-    Inquiry --> Frame
-    Frame -->|yes| Detect[Detect: dispatch /audit over scoped dimensions · consume verified findings]
-    Detect --> Verify[EXTREMELY-CRITIQUE verify each remediation target · refute-by-default]
-    Verify --> Survive{Fix survives non-refute majority?}
-    Survive -->|no| Rederive[Re-derive fix or escalate finding]
-    Rederive --> Verify
-    Survive -->|yes| OptIn{--autonomous set?}
-    OptIn -->|no| Plan[Present remediation plan · confirm · per-action gate irreversible steps]
-    OptIn -->|yes| Remediate[Remediate at root via surgical-guard / secret-rotation / vuln-triage / scoped /elevate]
-    Plan --> Remediate
-    Remediate --> Reaudit[Re-audit: re-run scoped /audit over remediated repo]
-    Reaudit --> Clear{HIGH count == 0 AND MEDIUM remediated-or-accepted?}
-    Clear -->|no| Cap{--max-rounds reached?}
-    Cap -->|no| Detect
-    Cap -->|yes| Retreat[Deterministic retreat: BLOCKED report · residual findings + owners + routed next action]
-    Clear -->|yes| Gate[Gate: dispatch /release-readiness → READY/BLOCKED]
-    Retreat --> Synth
-    Gate --> Synth[Synthesize fortress-posture report · workflow fifteen-bar gate]
-    Synth --> Emit[Emit deterministic report + recommended next move]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
 ## Recommended Next Step
 
 **Invoke `/fortress path/to/repo/`** to harden a repository to a release-gated state — the wrapped workflow detects through `/audit`, remediates each verified finding at its root, re-audits until the walls hold, and closes at `/release-readiness` — or `/fortress path/to/repo/ --scope all` for the full eleven-dimension sweep. After a planning suite, `/plan-execute` hands the executed work here as the canonical hardening step before ship. Review each round's verified findings and remediations, then pass `--autonomous` to chain the remediate / re-audit loop continuously once the detection and remediation plan reads correctly; the halt-at-round-boundary mode is the safe default, and every irreversible remediation stays per-action confirmed.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/audit.md` (the detect + finding-verification front it dispatches over the scoped dimensions), `commands/security-audit.md` + `commands/dependency-audit.md` + `commands/supply-chain-audit.md` + `commands/threat-model-audit.md` (the security dimensions it weights by default), `skills/surgical-guard/SKILL.md` + `skills/secret-rotation/SKILL.md` + `skills/vuln-triage/SKILL.md` (the remediation primitives it routes findings to), `commands/elevate.md` (the scoped broad-lift remediation route), `commands/release-readiness.md` (the production gate it closes on). The bounded re-audit loop (Phase 5). The refute-by-default verify panel over each finding and fix (Phase 3). The workflow's fifteen-bar gate over the synthesized report (Phase 6). The disclosure ledger for every remediation and beyond-mission amendment.
-- **Driven by ←** The operator's target path + `--scope` / `--autonomous` / `--max-rounds` / `--verify-panel` flags. The structured-inquiry target + scope + remediation-boundary resolutions from the Frame phase. The executed work `/plan-execute` produces (the planning → hardening bridge). The `--max-rounds` iteration cap that bounds the re-audit loop.
-- **Satisfies →** The directive that production hardening drives as a single wrapped dynamic workflow (the hardening analogue of `/plan` and `/research`, no separate `*-workflow` command) — closing the loop that report-only `/audit` leaves open. The `commands/README.md` command catalog's fortress orchestrator entry. The deterministic-output contract at `rules/determinism.md`. The iteration-safety discipline at `rules/planning-techniques.md` §1 (cap + retreat).
-- **Established by ↑** `commands/plan.md` + `commands/research.md` + `commands/audit.md` (the wrapped-workflow pattern this specializes for the hardening loop). `commands/workflow.md` (the general wrapped-workflow surface). `rules/agent-orchestration.md` (the Quality-Team fan-out + adversarial-verify). `rules/agnostic-posture.md` + `rules/multi-agent-workflow.md` (the opt-in default-off frame). `rules/planning-techniques.md` §1 (the iteration-safety cap + retreat).
-- **Gated by ←** A resolvable target repository. The operator's `--autonomous` opt-in for continuous remediation. The `--max-rounds` iteration cap + its deterministic retreat. The destructive-op floor for every irreversible / outward-facing remediation. The harness's Agent + structured-inquiry + Read + Grep + Edit + Write + Bash tool surface.
-- **Cross-bound with ↔** `commands/plan.md` + `commands/research.md` (the sibling pipeline wrappers). `commands/audit.md` (the report-only detect front `/fortress` consumes and closes the loop on — `/audit` reports, `/fortress` remediates + re-audits + gates). `commands/elevate.md` (the broad open-loop SOTA remediator `/fortress` routes broad lifts to — `/elevate` elevates whole-repo, `/fortress` hardens security/production-scoped to a gated state). `commands/release-readiness.md` (the single-verdict gate `/fortress` closes on). `commands/workflow.md` + `skills/workflow/SKILL.md` (the workflow procedure). `skills/surgical-guard/SKILL.md` + `skills/secret-rotation/SKILL.md` + `skills/vuln-triage/SKILL.md` (the remediation primitives). `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (orchestration + adversarial-verify). `rules/agnostic-posture.md` + `rules/multi-agent-workflow.md` (opt-in autonomy). `rules/planning-techniques.md` §1 (iteration safety). `rules/surgical-manipulation.md` (minimal-diff remediation). `rules/authority-inquiry-categories.md` (the high-risk always-gate classes each irreversible remediation is per-action confirmed against). `rules/host-discovery.md` (the Derived Project Context Block the whole-repo ingest reads, shared with `/elevate`). `rules/disclosure-ledger.md` (amendment disclosure). `rules/determinism.md` (deterministic report).
 
 ## Installed Reference Paths
 

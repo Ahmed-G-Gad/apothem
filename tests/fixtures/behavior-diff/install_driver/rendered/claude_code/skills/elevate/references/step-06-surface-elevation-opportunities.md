@@ -1,0 +1,3 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+6. **Surface elevation opportunities.** Beyond remediating findings, run the Beyond-Mission Recommendation Grant: surface every elevation / enhancement opportunity the critique revealed — a missing visualization, a consolidation, a modularity boundary, an extensibility seam, a newcomer-facing documentation surface — each disclosed per `rules/disclosure-ledger.md` and routed for the operator's decision through the structured-inquiry channel where judgment-dependent, applied in place where mechanically safe. This is the command's standing "research for further opportunities" obligation; a pass that remediates only the literal findings and surfaces no opportunity has under-elevated.

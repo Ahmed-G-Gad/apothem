@@ -9,6 +9,8 @@ import re
 from pathlib import Path
 from typing import Final
 
+from apothem.lib.claude_skill_frontmatter import fold_apothem_metadata
+from apothem.lib.claude_skill_split import split_command_skill
 from apothem.lib.frontmatter import (
     field_value,
     field_value_in_text,
@@ -144,12 +146,14 @@ def _native_skill_emission(
     without a skill-level translation get the text unchanged and no sidecars:
 
     - ``claude_code``: source key names renamed to Claude Code's spelling
-      (:data:`CLAUDE_CODE_SKILL_KEY_RENAMES`).
+      (:data:`CLAUDE_CODE_SKILL_KEY_RENAMES`), then the Apothem-only keys
+      folded under ``metadata`` (:func:`fold_apothem_metadata`).
     - ``codex``: ``agents/openai.yaml`` disabling implicit invocation for a
       skill whose source sets ``disable-model-invocation: true``.
     """
     if harness_name == "claude_code":
-        return _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES), {}
+        renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
+        return fold_apothem_metadata(renamed), {}
     if harness_name == "codex" and _source_disables_model_invocation(skill_text):
         return skill_text, {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
     return skill_text, {}
@@ -160,10 +164,36 @@ def claude_code_skill_text(skill_text: str) -> str:
     return _native_skill_emission("claude_code", skill_text)[0]
 
 
+def claude_code_command_skill_files(
+    source_text: str, *, note: str = ""
+) -> dict[str, str]:
+    """Return a command's Claude Code skill directory as path -> text.
+
+    The command is folded and split (:func:`split_command_skill`): ``SKILL.md``
+    keeps the procedure and points at ``references/`` files for the rest. *note*
+    is the install root's ``## Installed Reference Paths`` note, appended last;
+    the plugin tree ships no note. A command with nothing to move yields a
+    ``SKILL.md`` that differs from the source only by the frontmatter fold.
+    """
+    split = split_command_skill(claude_code_skill_text(source_text))
+    return {"SKILL.md": split.skill.rstrip() + "\n" + note, **split.references}
+
+
 def _command_skill_files(
     source_path: Path, *, harness_name: str, install_root: Path
 ) -> dict[str, bytes]:
     """Return the files of a command rendered as a native skill directory."""
+    if harness_name == "claude_code":
+        source = source_path.read_text(encoding="utf-8")
+        note = (
+            ""
+            if REFERENCE_NOTE_HEADING in source
+            else _installed_reference_note(harness_name, install_root)
+        )
+        return {
+            name: body.encode("utf-8")
+            for name, body in claude_code_command_skill_files(source, note=note).items()
+        }
     text, sidecars = _native_skill_emission(
         harness_name,
         _generated_skill_text(

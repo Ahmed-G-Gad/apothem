@@ -1,17 +1,20 @@
 ---
 name: "research-ideate"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with ranking — the new entry stage of the /research pipeline. Triggered as 'help me find a research question', 'scan the opportunity space for this domain', 'what's worth studying here', 'generate candidate research questions', 'what prior hypotheses have already been invalidated', or a fresh research engagement with no framed question yet. Frames the problem space against an a-priori theoretical anchor (R10), grounds every candidate against prior art (R1), and generates candidate research questions each stated in a falsifiable form (R3). Emits _inputs/ideation.md carrying the framed problem space, the opportunity-and-gap scan, the invalidated-prior-hypothesis scan, and the ranked candidate-question slate that /research-spec consumes, plus the Handoff Manifest at the research-suite folder."
 argument-hint: "[path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /research-ideate — Problem Formulation & Question Generation
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -34,38 +37,13 @@ Read the domain notes or seed material in full. Scan the opportunity-and-gap spa
 
 ## Pipeline Contract
 
-**Pipeline position.** **Entry stage (1 of 13).** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage accepts domain notes, a seed idea, or an opportunity sketch as input and emits the framed problem space plus the ranked candidate-question slate the framing stage consumes. SOTA framing: the research-lifecycle "Plan" stage per the [Princeton Research Lifecycle Guide](https://researchdata.princeton.edu/research-lifecycle-guide/research-lifecycle-guide) and the [NNLM Research Lifecycle](https://www.nnlm.gov/resources/data-glossary/research-lifecycle).
-
-**Handoff Manifest.**
-
-- **Consumed.** None (entry-position stage).
-- **Emitted.** `{suite}/_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml`. The manifest carries the authored `_inputs/ideation.md` path, the ideation artifact's section completeness (framed problem space · opportunity-and-gap scan · invalidated-prior-hypothesis scan · ranked candidate-question slate · theoretical anchor), the Question-Resolution Audit's open-vs-resolved counts, and the rigor-mandate attestation block (R1 / R3 / R10 applicability per §Mandates), naming `downstream: /research-spec`.
-
-**Pre-flight inquiry set.** The suite-name inquiry surfaces before any ideation write per `rules/interactive-questions.md`. Every undefined domain boundary, every theoretical-anchor choice, every ranking criterion enters the inquiry set; every authoritative-data gap surfaces as a `USER-CONFIRM` placeholder (the canonical `kind=`-tagged form) per the canonical-channel rule.
-
-**Pre-emission gate.** The fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` runs against the candidate `_inputs/ideation.md` before the manifest emits. The Handoff Manifest carries the gate attestation block; failure on any bar blocks emission until resolved.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror, scoped to the research-ideate domain.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this stage's stated mission (producing a framed problem space plus a ranked candidate-question slate). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE framing a candidate question that admits no refuting observation — re-frame it until it carries a falsifiable form (R3) or drop it from the slate. REFUSE proposing a candidate that re-tests a hypothesis the invalidated-prior-hypothesis scan shows already refuted, unless the operator explicitly directs a replication.
-
-### Output Surface
-
-This stage emits `{suite}/_inputs/ideation.md` (the framed problem space + ranked slate) and `{suite}/_inputs/handoff-manifest.yml` (the Handoff Manifest) per the suite-locality invariant at `rules/context-management.md` §2.6.1 and the research-suite storage convention. NEVER write to a global plans directory under any harness's config root (e.g., `~/.claude/.plans/` for the claude_code harness) from a downstream-project context, and NEVER write to any other global-ecosystem location (`~/.config/`, `/etc/`, vendored language-runtime trees).
-
-### File-Authoring Contract
-
-The ideation artifact is header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on this emission. Every candidate question's prior-art grounding cites its source documentarily (permalinked URL, author or organization, access date); the source itself is never authored or rewritten by this command.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about the research domain, the theoretical anchor, a ranking criterion, a domain boundary, or whether a candidate's prior-art grounding is real, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3 (rationale / recommendation / default-pointer). Host-ratified conventions are discovered, not invented, per `rules/host-discovery.md`. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data — a prior-art claim, a domain fact, or a citation is grounded in a real source or surfaces as a `USER-CONFIRM` placeholder until the operator supplies it (R1, R4).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -146,46 +124,13 @@ R5 (preregistration), R6 (ethics), R7 (statistical rigor), R8 (FAIR), and R9 (EQ
 
 ## Example — Standard ideation run
 
-```text
-$ /research-ideate ./notes/edge-inference-domain.md --suite-name edge-inference-study
-
-[Phase 1] Read 1 notes file (4.1K tokens). Theoretical anchor: memory-bandwidth-bound compute theory. Suite folder created: <project-root>/.apothem/plans/edge-inference-study/_inputs/.
-[Phase 2] Opportunity & gap scan (Research Team, 3 Explore agents): 6 gaps grounded against prior art; 2 unexploited methods surfaced.
-[Phase 3] Invalidated-prior-hypothesis scan: 3 prior hypotheses already refuted recorded with their refuting sources; 1 candidate dropped as settled ground.
-[Phase 4] Generated 5 candidate questions, each falsifiable (R3). Ranked by novelty × feasibility × impact; ranking criteria ratified via inquiry.
-[Phase 5] Question-Resolution Audit: 4 invocations, 4 resolved, 0 silent-defaulted. Fifteen-bar gate PASS.
-[Phase 5] Emitted _inputs/ideation.md; Handoff Manifest emitted; downstream: /research-spec.
-```
+> Moved to `references/examples.md`. SHOULD read it before composing the final output.
 
 ---
 
 ## Decision Tree
 
-```mermaid
-%%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-16 %%
-%% provenance: commands/research-ideate.md §Workflow %%
-%% cross-reference: commands/research-spec.md (successor), skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle, rules/interactive-questions.md (canonical channel) %%
-flowchart TD
-    Start[/research-ideate invoked/] --> Source{Domain or notes source resolves?}
-    Source -->|no| AskSrc[structured inquiry: surface the missing domain · do not invent]
-    AskSrc --> Source
-    Source -->|yes| P1[Phase 1: Domain Ingest and Theoretical Anchor]
-    P1 --> P2[Phase 2: Opportunity and Gap Scan]
-    P2 --> P3[Phase 3: Invalidated-Prior-Hypothesis Scan]
-    P3 --> P4[Phase 4: Candidate Generation and Ranking]
-    P4 --> Fals{Every candidate stated in a falsifiable form?}
-    Fals -->|no| AskFals[structured inquiry: re-frame or drop the unfalsifiable candidate]
-    AskFals --> P4
-    Fals -->|yes| P5[Phase 5: Question-Resolution Sweep]
-    P5 --> Open{Open ambiguities remain?}
-    Open -->|yes| AskOpen[structured inquiry: surface each unresolved boundary or criterion]
-    AskOpen --> P5
-    Open -->|no| Gate{Fifteen-bar pre-emission gate PASS?}
-    Gate -->|no| Revise[Revise the failing bar · re-run the gate]
-    Revise --> Gate
-    Gate -->|yes| Emit[Emit _inputs/ideation.md · emit Handoff Manifest]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -203,14 +148,6 @@ flowchart TD
 ## Recommended Next Step
 
 Invoke `/research-spec` to frame the top-ranked candidate question from the slate into a spec-grade `_spec/research-spec.md` with falsifiable hypotheses, scope, criteria, and metrics; `/research-spec` is the canonical pipeline successor that consumes the ranked candidate-question slate in `_inputs/ideation.md`.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● `commands/research-spec.md` (the canonical downstream consumer; `/research-spec` consumes the ranked candidate-question slate from `_inputs/ideation.md`). ● `{suite}/_inputs/ideation.md` (the principal artifact). ● `{suite}/_inputs/handoff-manifest.yml` (the Handoff Manifest). ● The fifteen-bar pre-emission gate at Phase 5.
-- **Satisfies →** ● The research-pipeline Stage 1 ideation slot (the new entry stage; emits the ranked candidate-question slate). ● `rules/interactive-questions.md` §1 canonical-channel obligation (every ambiguity routes through the structured-inquiry channel). ● `rules/context-management.md` §2.6.1 suite-locality invariant. ● `skills/research-suite/SKILL.md` §Thirteen-Stage Research Lifecycle (the `/research-ideate` Plan-stage row).
-- **Established by ↑** ● `skills/research-suite/SKILL.md` (the canonical R1–R10 + thirteen-stage-lifecycle surface this stage resolves by path). ● `commands/research-spec.md` (the shape exemplar this stage mirrors). ● The research-lifecycle Plan-stage framings ([Princeton Research Lifecycle Guide](https://researchdata.princeton.edu/research-lifecycle-guide/research-lifecycle-guide); [NNLM Research Lifecycle](https://www.nnlm.gov/resources/data-glossary/research-lifecycle)).
-- **Gated by ←** ● Operator invocation with a domain or notes source (or `--override` with rationale). ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/pre-emission-gate.md` (the fifteen-bar gate runs before emission).
-- **Cross-bound with ↔** ↔ `commands/research-spec.md` (Ideate → Spec handoff; `/research-spec` consumes the ranked candidate-question slate). ↔ `commands/research.md` (the `/research` wrapper dispatches this stage as its first workflow phase). ↔ `skills/research-suite/SKILL.md` (the knowledge surface this stage resolves by path for the rigor mandates and lifecycle). ↔ `rules/cognitive-identity.md` (the Principal-Investigator + Cognitive-Insurgent ideation lens; the five filters). ↔ `rules/visual-leverage.md` (the Decision Tree diagram carries provenance + verified + cross-reference headers).
 
 ## Installed Reference Paths
 

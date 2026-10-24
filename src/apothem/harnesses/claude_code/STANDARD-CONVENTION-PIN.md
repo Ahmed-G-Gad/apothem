@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/claude_code/`
 - Evidence level: vendor-doc pinned (living MDX docs; no immutable pin). No vendor-native UI claim is made here.
 - Authority host: `code.claude.com`; the older `docs.anthropic.com` and `docs.claude.com` paths redirect there.
@@ -26,7 +26,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://code.claude.com/docs/en/hooks> (hook events)
 - <https://code.claude.com/docs/en/mcp> (MCP scopes and storage)
 - <https://code.claude.com/docs/en/permissions> (rule order; retrieved 2026-10-02)
-- <https://code.claude.com/docs/en/skills> (skills; retrieved 2026-10-02)
+- <https://code.claude.com/docs/en/skills> (skills, `references/` files, post-compaction attachment; retrieved 2026-10-24)
 - <https://code.claude.com/docs/en/sub-agents> (agent frontmatter; retrieved 2026-10-02)
 
 ## Discovery Targets
@@ -62,16 +62,16 @@ Retrieved 2026-10-03 unless marked.
 Claude Code is the one harness with a **full standalone plugin**:
 `plugins/claude-code/.claude-plugin/plugin.json` (the marketplace `source`,
 installed via `/plugin marketplace add ahmed-g-gad/apothem`) declares
-`commands`, `agents`, `skills`, and `hooks` (`./lib/apothem/hooks/hooks.json`,
+`agents`, `skills`, and `hooks` (`./lib/apothem/hooks/hooks.json`,
 resolved against `${CLAUDE_PLUGIN_ROOT}`). The repository root carries no
 plugin manifest. Installing the plugin *alone* — without running
 `apothem install` — persists most of the cohort directly.
 
 | Artifact class | Persists plugin-alone? | Mechanism / limit |
 |---|---|---|
-| Commands | Yes | The manifest `commands` array (45 entries, one per command file) loads the 45 slash-commands from the plugin tree. |
+| Commands | Yes | Each of the 45 commands ships as a skill directory under `skills/`, invoked as `/apothem:<name>` ([skills](https://code.claude.com/docs/en/skills), retrieved 2026-10-24): 43 split `SKILL.md` files with their `references/`, and `projectify` and `workflow`, which keep their native skill. The assembled tree has no `commands/` folder and the manifest declares no `commands` array. |
 | Agents | Yes | The manifest `agents` array (12 entries) loads sub-agents from the plugin tree. |
-| Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree. |
+| Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree, including the 43 command-derived skills. |
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |
 | Output styles | Yes | The 4 styles ship in the plugin's default `output-styles/` folder, which Claude Code scans when the manifest sets no `outputStyles` key ([plugins reference](https://code.claude.com/docs/en/plugins-reference), retrieved 2026-10-03); they are selectable from `/config` with the plugin alone. |
 | Rules | Degraded — requires `apothem install` for full reference tree | The plugin carries no rules-directory primitive; the embedded directives degrade to a SessionStart `additionalContext` pointer. The full `${HARNESS_ROOT}/rules/` reference tree lands only via the engine. |

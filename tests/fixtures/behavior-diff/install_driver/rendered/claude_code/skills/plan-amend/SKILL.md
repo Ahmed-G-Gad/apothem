@@ -1,17 +1,20 @@
 ---
 name: "plan-amend"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream artifacts (spec, master-plan, phases, notes), preserves the PLAN-NOTES.md decision ledger as authoritative and append-only, and routes every ambiguity through the structured-inquiry channel rather than inventing scope, identity, or decisions. The re-entrant `/plan` stage that revisits a converged-or-in-progress suite at any point in the spec → generate → review → execute chain."
 argument-hint: "[amend|extend|refine|revert|weave] [suite-path] [--dry-run]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /plan-amend — Amend an Existing Plan Suite
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -19,11 +22,7 @@ You are the steward of an existing plan suite. Where `/plan-generate` produces a
 
 ## Pipeline Contract
 
-**Pipeline position.** **Wrapping / orthogonal.** `/plan-amend` operates on a suite that already exists at any stage of the canonical sequence `/plan-spec → /plan-generate → /plan-review → /plan-design (CONDITIONAL — architecture-bearing suites only) → /plan-execute`. Invocable at any point once a suite exists; it inspects the suite's current stage and re-derives only the affected downstream artifacts. It never executes phase implementation work — it leaves the amended suite ready for re-review.
-
-**Consumed.** The target suite's `_spec/spec.md`, `_inputs/handoff-manifest.yml`, infrastructure files (PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md), `phases/**/PHASE.md`, and any existing phase reports. The PLAN-NOTES.md decision ledger is the authoritative record of prior resolved decisions and is read first.
-
-**Emitted.** The re-derived subset of downstream artifacts the amendment touches (spec, master-plan, phase files, notes); an appended PLAN-NOTES.md decision-ledger entry recording the amendment mode, the affected artifacts, and the rationale; and an updated handoff manifest reflecting the amended suite shape. Artifacts the amendment does not touch are left byte-unchanged.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted.
 
 ## Sequence Gate
 
@@ -94,14 +93,6 @@ Write the re-derived subset of artifacts. Append the decision-ledger entry to PL
 ## Recommended Next Step
 
 **Invoke `/plan-review` on the amended suite.** `/plan-review` re-audits the amended suite from scratch under the Blind Review Mandate, confirming the amendment introduced no regression before any downstream execution — it is the canonical successor to every amendment.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● The re-derived subset of downstream artifacts (spec, master-plan, phase files, notes). ● The appended PLAN-NOTES.md decision-ledger entry recording each amendment. ● The updated handoff manifest reflecting the amended suite shape. ● The re-review verdict consumed by `/plan-review`.
-- **Satisfies →** ● The plan-suite amendment discipline — modifying a suite in place without destroying prior resolved decisions and re-deriving only the affected downstream artifacts. ● `rules/clean-room-generation.md` §3 by re-deriving changed prose from the amended specification under the clean-room barrier.
-- **Established by ↑** ● The `/plan` stage cohort. ● `rules/context-management-scratch.md` `_inputs/` / `_outputs/` suite-locality convention. ● `rules/interactive-questions.md` (the canonical channel every ambiguity routes through).
-- **Gated by ←** ● An existing plan suite at the target path. ● `rules/interactive-questions.md` for every ambiguity and every contradiction with a prior resolved decision. ● The append-only decision-ledger invariant at Step 3.
-- **Cross-bound with ↔** ↔ `commands/plan-generate.md` (generate produces the suite this command amends). ↔ `commands/plan-spec.md` (spec amendments re-derive the suite's `_spec/spec.md`). ↔ `commands/plan-review.md` (review re-audits the amended suite). ↔ `commands/plan-design.md` (design re-runs when an amendment touches an architecture-bearing surface). ↔ `commands/plan-audit.md` (audit wraps amendment findings into a closed remediation loop). ↔ `commands/plan-execute.md` (execute consumes the amended suite after re-review). ↔ `commands/plan-status.md` (read-only sibling reports the amended suite state). ↔ `rules/clean-room-generation.md`, `rules/interactive-questions.md`, and `rules/context-management-scratch.md` (re-derivation discipline, inquiry channel, and output placement).
 
 ## Installed Reference Paths
 

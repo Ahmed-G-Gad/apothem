@@ -1,12 +1,13 @@
 ---
 name: "dependency-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Operator-driven per-dependency audit pass (direct + transitive). Walks every dependency declared in the repository's manifest files (pyproject.toml, package.json, Cargo.toml, go.mod, Gemfile, etc.) plus their resolved lockfile entries and emits per-dependency findings covering license compatibility, CVE status, deprecation status, replacement recommendation, transitive depth, pinned-vs-range posture, and security-relevant identification. Tooling: pip-audit + safety + osv-scanner + configured dependency-update automation insights. Output lands at the consuming suite's _inputs/dependency-audit-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
 argument-hint: "[path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /dependency-audit — Per-Dependency Audit (Direct + Transitive)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -34,44 +37,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** **Terminal review-fortress command.** This command sits at the dependency-fortress slot of the audit-fortress sequence. It consumes the repository's manifest + lockfile state and emits the findings artifact downstream remediation cycles consume. The command does not modify source; the findings are read-only diagnostics.
-
-**Audit-fortress sequence position.** **Upstream:** `/docs-review`. **Downstream:** `/supply-chain-audit`. Position 9 of 11 in the canonical audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`).
-
-**Handoff Manifest.**
-
-- **Consumed.** The repository's manifest tree (`pyproject.toml`, `setup.cfg`, `requirements*.txt`, `Pipfile`, `package.json`, `Cargo.toml`, `go.mod`, `Gemfile`, etc.) plus their resolved lockfile siblings (`uv.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`, `Gemfile.lock`). No upstream manifest is required; the command operates against the on-disk state. When the consuming suite carries a Handoff Manifest at `_inputs/handoff-manifest.yml`, the prior fortress-phase attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/dependency-audit-findings.md` plus an optional Handoff Manifest augmentation with the per-dependency finding count, the per-severity breakdown, the CVE inventory, the license-compatibility matrix, the per-axis attestation against the seven-axes-of-breadth taxonomy, and the audit's `verified:` date.
-
-**Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the manifest shape is ambiguous (e.g., the host has manifests for multiple languages, the lockfiles are out of sync with the manifests, the host's accepted-license list is undeclared). Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate findings artifact before promotion. The gate attestation block is recorded inside the emitted findings artifact. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every severity ratification (HIGH / MEDIUM / LOW), every CVSS-score borderline call (e.g., CVSS 6.9 vs. the 7.0 HIGH floor), every license-compatibility call on dual-licensed or relicensed dependencies, every axis-attestation gap, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the per-dependency findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository whose lockfiles are missing or stale (the transitive graph cannot be deterministically walked without lockfiles). REFUSE authoring remediation patches — the command's surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/dependency-audit-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings artifact outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any manifest or lockfile — the command is read-only against the repository.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When a finding cites a manifest entry, the citation is documentary (`manifest:line`); the underlying manifest is never written by this command.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about manifest scope, focus boundary, severity assignment on borderline CVSS / license / deprecation findings, or axis-of-attention attestation on multi-axis findings, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete `manifest:line` or `package@version` plus the detecting tool (pip-audit advisory ID, safety CVE ID, osv-scanner GHSA / CVE).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -129,17 +101,7 @@ Attest each detected issue as one canonical finding class:
 
 ### Phase 2 — Per-Finding Triage
 
-Assign each drafted finding a severity from the closed taxonomy `{HIGH, MEDIUM, LOW}` with concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1:
-
-- **HIGH** — CVE with CVSS v3.1 ≥ 7.0 and an exploit-available indicator; license incompatibility with a production-distributed dependency (GPL / AGPL into MIT / Apache redistribution surfaces); security-critical dependency at transitive depth ≥ 3 with no direct equivalent; or yanked production dependency with no published replacement. Cites class 3 (named constraint — CVE / SPDX identifier) or class 6 (tool advisory).
-- **MEDIUM** — CVE with CVSS v3.1 in 4.0–6.9; license uncertainty (dual-licensed dependency, active license unclear); deprecation of a development-tier dependency; unpinned production dependency without an active CVE; or transitive-depth concern at depth = 2. Cites class 3 or class 6.
-- **LOW** — CVE with CVSS v3.1 < 4.0; license drift (a non-load-bearing dev dependency on an unusual but permissive license); deprecation of a test-only dependency; or a transitive-depth concern without a security or licensing trigger. Cites class 5 (rule citation) or class 6.
-
-**Axis attestation.** Every finding names which seven-axes it touches: CVE findings load Security heavily + Tooling (scanner instrumentation); license findings load Security + Architecture (redistribution-surface implications); deprecation findings load Tooling + Observability (registry-marker drift). Multi-axis findings carry the full set.
-
-**Borderline calls route through inquiry.** When severity is genuinely underdetermined (CVSS 6.9 vs. the 7.0 floor; dual-license disposition; transitive-depth = 2 borderline), surface the triage through the structured-inquiry channel — the option set names both candidate severities with concrete-driver rationale per `rules/interactive-questions.md` §3.
-
-**Remediation routing.** Each CVE finding routes its disposition through `skills/vuln-triage` (the seven-field severity-band + reachability + route record); each finding whose remediation is an audited version bump routes through `skills/dependency-upgrade` (changelog-reviewed, pinned, gate-verified). The command records the routed owner per finding; it never re-publishes CVSS, re-solves the graph, or authors the bump inline.
+> Moved to `references/step-03-per-finding-triage.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Findings Emission
 
@@ -183,7 +145,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` `pip-audit` · `safety` · `osv-scanner` · lockfile resolvers · `borderline-classes:` borderline CVE severity calls · lockfile-generation ratification · `focus-semantics:` `--focus` restricts walk to a single manifest or package (default: full dependency graph) · `pipeline-tail-handoff:` Pipeline terminates — findings ready for remediation) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -198,15 +160,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/supply-chain-audit` to advance the audit-fortress sequence; `/supply-chain-audit` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/supply-chain-audit.md` (audit-fortress next-step; consumes this audit's CVE inventory and license matrix). The `agents/dependency-auditor.md` dispatch (Phase 1 invokes its read-only risk scan). The `skills/vuln-triage` routing (each CVE finding routes its disposition there) and the `skills/dependency-upgrade` routing (each upgrade-remediation finding routes there). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-dependency walk against every direct and transitive dependency declared in the manifest tree. The fifteen-bar pre-emission gate at Phase 4. The supply-chain audit (which consumes this audit's CVE inventory and license matrix).
-- **Driven by ←** `commands/docs-review.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and dependency-review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/dependency-audit` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** The `commands/README.md` command catalog. pip-audit (PyPA) + safety (PyUp) + osv-scanner (Google OSV) — the canonical CVE-detection surfaces. The SPDX License List + the host's ratified accepted-license set — the canonical license-compatibility surfaces. `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the axis-of-attention attestation surface; Security + Tooling load-bearing).
-- **Gated by ←** The repository's manifest presence (at least one of `pyproject.toml`, `package.json`, `Cargo.toml`, `go.mod`, `Gemfile`, or sibling). The lockfile siblings (without them the transitive graph is not deterministically walkable). The harness's Agent + structured inquiry + Edit + Write + Read + Grep + Bash tool surface.
-- **Cross-bound with ↔** `commands/security-audit.md` (sibling review-fortress surface — security audit examines code-level vulnerabilities; dependency audit examines the supply-chain-relevant ones). `commands/supply-chain-audit.md` (consumes this audit's CVE inventory and license matrix; both audits operate on the same upstream advisory feeds). `commands/plan-execute.md` (downstream remediation cycles route through phase execution). `rules/cognitive-identity.md` (the seven-axes taxonomy). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/host-discovery.md` (manifest walk against the host's manifests). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template). `agents/dependency-auditor.md` (owns the read-only ecosystem-detection + four-risk-class dependency-tree scan Phase 1 dispatches). `skills/vuln-triage/SKILL.md` (owns the seven-field CVE / advisory disposition each known-vulnerable finding routes through). `skills/dependency-upgrade/SKILL.md` (owns the changelog-reviewed, pinned, gate-verified bump each upgrade-remediation finding routes to).
 
 ## Installed Reference Paths
 

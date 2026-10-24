@@ -5,11 +5,22 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import jsonschema
 import pytest
 
+from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_converters import (
+    claude_code_command_skill_files,
+    claude_code_skill_text,
+)
+from apothem.harnesses._shared.install_driver_layout import (
+    harness_layout,
+    reference_note,
+)
+from apothem.lib.claude_skill_split import REFERENCE_HEADER
 from apothem.lib.plugin_tree import (
     PluginAssemblyError,
     assemble_plugin_tree,
@@ -64,16 +75,29 @@ def test_schema_requires_https_listing_urls(key: str) -> None:
 
 def test_build_manifest_arrays_non_empty_and_sorted() -> None:
     manifest = build_plugin_manifest(_SRC_ROOT)
-    for key in ("commands", "agents", "skills"):
+    for key in ("agents", "skills"):
         members = manifest[key]
         assert isinstance(members, list)
         assert members, f"{key} array must be non-empty"
         assert members == sorted(members), f"{key} array must be sorted"
 
 
+def test_assembled_manifest_declares_no_commands() -> None:
+    """The commands ship as skills, so the assembled layout has no array."""
+    assert "commands" not in build_plugin_manifest(_SRC_ROOT)
+
+
+def test_nested_manifest_keeps_the_sorted_commands_array() -> None:
+    manifest = build_plugin_manifest(_SRC_ROOT, catalog_prefix="./src/apothem/")
+    commands = manifest["commands"]
+    assert isinstance(commands, list)
+    assert commands
+    assert commands == sorted(commands)
+
+
 def test_build_manifest_component_paths_are_plugin_root_relative() -> None:
     manifest = build_plugin_manifest(_SRC_ROOT)
-    for key in ("commands", "agents", "skills"):
+    for key in ("agents", "skills"):
         members = manifest[key]
         assert isinstance(members, list)
         for path in members:
@@ -83,13 +107,15 @@ def test_build_manifest_component_paths_are_plugin_root_relative() -> None:
 
 
 def test_build_manifest_excludes_documentation_files() -> None:
-    manifest = build_plugin_manifest(_SRC_ROOT)
-    for key in ("commands", "agents"):
-        members = manifest[key]
-        assert isinstance(members, list)
-        for path in members:
-            assert not path.endswith("README.md"), f"doc file leaked into {key}"
-            assert not path.endswith("AGENTS.md"), f"doc file leaked into {key}"
+    nested = build_plugin_manifest(_SRC_ROOT, catalog_prefix="./src/apothem/")
+    assembled = build_plugin_manifest(_SRC_ROOT)
+    for manifest, keys in ((nested, ("commands", "agents")), (assembled, ("agents",))):
+        for key in keys:
+            members = manifest[key]
+            assert isinstance(members, list)
+            for path in members:
+                assert not path.endswith("README.md"), f"doc file leaked into {key}"
+                assert not path.endswith("AGENTS.md"), f"doc file leaked into {key}"
 
 
 def test_build_manifest_repo_layout_prefix() -> None:
@@ -143,8 +169,9 @@ def test_assemble_produces_layout_contract(tmp_path: Path) -> None:
     assert (dest / "lib" / "apothem_lib.py").is_file()
     assert (dest / "lib" / "apothem" / "_vendor").is_dir()
 
-    for name in ("skills", "agents", "commands", "rules", "hooks", "output-styles"):
+    for name in ("skills", "agents", "rules", "hooks", "output-styles"):
         assert (dest / name).is_dir(), f"catalog dir {name} missing"
+    assert not (dest / "commands").exists(), "commands ship as skills"
 
 
 def test_assemble_shim_reexports_public_api(tmp_path: Path) -> None:
@@ -168,6 +195,114 @@ def test_assemble_is_idempotent(tmp_path: Path) -> None:
     )
     assert first == second
     assert (dest / "lib" / "apothem" / "__init__.py").is_file()
+
+
+@pytest.fixture(scope="module")
+def assembled(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return assemble_plugin_tree(
+        _SRC_ROOT, tmp_path_factory.mktemp("assembled") / "plugin"
+    )
+
+
+def _command_stems() -> list[str]:
+    return sorted(
+        p.stem for p in (_SRC_ROOT / "commands").glob("*.md") if p.name != "README.md"
+    )
+
+
+def _native_stems() -> set[str]:
+    return {p.parent.name for p in (_SRC_ROOT / "skills").glob("*/SKILL.md")}
+
+
+def test_assemble_ships_each_command_as_a_split_skill(assembled: Path) -> None:
+    native = _native_stems()
+    emitted = [stem for stem in _command_stems() if stem not in native]
+    assert len(emitted) == 43
+    for stem in emitted:
+        source = (_SRC_ROOT / "commands" / f"{stem}.md").read_text(encoding="utf-8")
+        files = claude_code_command_skill_files(source)
+        for rel, text in files.items():
+            on_disk = assembled / "skills" / stem / rel
+            assert on_disk.read_bytes() == text.encode("utf-8"), (stem, rel)
+        skill_dir = assembled / "skills" / stem
+        shipped = {
+            p.relative_to(skill_dir).as_posix()
+            for p in skill_dir.rglob("*")
+            if p.is_file()
+        }
+        assert shipped == set(files), stem
+
+
+def test_assemble_keeps_the_native_skill_of_a_shadowed_command(assembled: Path) -> None:
+    for stem in sorted(set(_command_stems()) & _native_stems()):
+        source = (_SRC_ROOT / "skills" / stem / "SKILL.md").read_text(encoding="utf-8")
+        shipped = (assembled / "skills" / stem / "SKILL.md").read_text(encoding="utf-8")
+        assert shipped == claude_code_skill_text(source), stem
+        assert "Moved to `references/" not in shipped, stem
+
+
+def test_assemble_writes_a_licensed_reference_file_per_pointer(assembled: Path) -> None:
+    for skill in sorted((assembled / "skills").glob("*/SKILL.md")):
+        text = skill.read_text(encoding="utf-8")
+        for rel in re.findall(r"Moved to `(references/[^`]+)`", text):
+            reference = skill.parent / rel
+            assert reference.read_text(encoding="utf-8").startswith(REFERENCE_HEADER)
+
+
+def test_assemble_leaves_no_commands_folder_and_removes_a_stale_one(
+    tmp_path: Path,
+) -> None:
+    dest = tmp_path / "plugin_root"
+    (dest / "commands").mkdir(parents=True)
+    (dest / "commands" / "stale.md").write_text("stale\n", encoding="utf-8")
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    assert not (dest / "commands").exists()
+    manifest = json.loads(
+        (dest / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    assert "commands" not in manifest
+    assert manifest["skills"] == ["./skills/"]
+
+
+def test_assemble_command_skills_are_idempotent(tmp_path: Path) -> None:
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    first = {
+        rel: (dest / rel).read_bytes()
+        for rel in _tree_files(dest)
+        if rel.startswith("skills/")
+    }
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    second = {
+        rel: (dest / rel).read_bytes()
+        for rel in _tree_files(dest)
+        if rel.startswith("skills/")
+    }
+    assert first == second
+    assert any("/references/" in rel for rel in first)
+
+
+def test_plugin_skills_are_the_engine_skills_minus_the_note(
+    assembled: Path, tmp_path: Path
+) -> None:
+    root = tmp_path / ".claude"
+    install_driver.run_install("claude_code", harness_root=root)
+    note = reference_note(harness_layout("claude_code", root))
+    for stem in sorted(set(_command_stems()) - _native_stems()):
+        engine_dir = root / "skills" / stem
+        plugin_dir = assembled / "skills" / stem
+        engine = (engine_dir / "SKILL.md").read_text(encoding="utf-8")
+        assert engine.endswith(note), stem
+        assert engine[: -len(note)] == (plugin_dir / "SKILL.md").read_text("utf-8"), (
+            stem
+        )
+        for ref in sorted((plugin_dir / "references").glob("*.md")):
+            assert (
+                engine_dir / "references" / ref.name
+            ).read_bytes() == ref.read_bytes()
+        assert sorted(
+            p.name for p in (engine_dir / "references").glob("*.md")
+        ) == sorted(p.name for p in (plugin_dir / "references").glob("*.md"))
 
 
 def test_assemble_missing_source_raises(tmp_path: Path) -> None:
@@ -370,7 +505,7 @@ def test_assemble_prunes_catalog_doc_files(tmp_path: Path) -> None:
     """
     dest = tmp_path / "plugin_root"
     assemble_plugin_tree(_SRC_ROOT, dest)
-    for name in ("skills", "agents", "commands", "rules", "output-styles"):
+    for name in ("skills", "agents", "rules", "output-styles"):
         for doc in ("README.md", "AGENTS.md"):
             assert not (dest / name / doc).exists(), (
                 f"{name}/{doc} leaked into the tree"

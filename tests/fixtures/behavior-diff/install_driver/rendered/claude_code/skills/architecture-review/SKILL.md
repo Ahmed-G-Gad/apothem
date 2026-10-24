@@ -1,12 +1,13 @@
 ---
 name: "architecture-review"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at `rules/clean-architecture-layers.md`. Five-phase pipeline (Input Ingest · Design-to-Code Traceability Walk · Layer-Boundary Integrity Audit · Cross-Package Coupling Sweep · Findings Emission + Validation Gate) audits layer-boundary integrity, harness-adapter abstraction integrity, src-layout integrity, CLI surface coherence, entry-point registration completeness, and cross-package coupling. Emits `_inputs/architecture-review-findings.md` with HIGH / MEDIUM / LOW severity classifications grounded in concrete-driver rationale per the option-annotation rule."
 argument-hint: "[path/to/repo/] [--focus LAYER] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /architecture-review — Design-to-Code Architectural Integrity Review
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -34,44 +37,13 @@ Execute `/architecture-review`: ingest the target repository and its design arti
 
 ## Pipeline Contract
 
-**Pipeline position.** **Terminal review-fortress command.** Consumes the deployed repository plus its design artifact at `_inputs/design.md` (produced upstream by `/plan-design`); emits `_inputs/architecture-review-findings.md` consumed by remediation phases. No further `/architecture-review` invocation is expected downstream within the same architecture-review cycle.
-
-**Audit-fortress sequence position.** **Upstream:** `/perf-audit`. **Downstream:** `/ux-review`. Position 5 of 11 in the canonical audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`).
-
-**Handoff Manifest.**
-
-- **Consumed.** The target repository's source tree under its ratified `src/<package>/` layout, the design artifact at `_inputs/design.md`, the suite's `_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml`. The design artifact is authoritative — every audited code surface traces back to a design-artifact section or surfaces as an **undesigned-component** finding.
-- **Emitted.** The findings report at `_inputs/architecture-review-findings.md` with per-finding severity (HIGH / MEDIUM / LOW), concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1, design-section back-reference, and recommended remediation surface. The handoff manifest is augmented with the findings-report path and the per-axis attestation against the seven-axes-of-breadth taxonomy.
-
-**Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the design artifact is absent or stale, when the target repository's layout diverges from the design's declared structure, or when the operator-supplied `--focus` axis is ambiguous. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 (Findings Emission + Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate findings report before promotion. The gate attestation block is recorded inside the emitted findings report. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every undesigned-component classification, every severity-floor ratification, every layer-boundary edge-case interpretation, every cross-package coupling tolerance threshold, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the architectural-integrity findings report for the target repository against its design artifact). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE review against a repository whose design artifact at `_inputs/design.md` is absent — route through `/plan-design` first. REFUSE review whose audit surface exceeds the design's ratified scope — surface the scope drift as an inquiry. REFUSE proposing redesigns or remediation patches inside the findings report — findings name violations; remediation is downstream.
-
-### Output Surface
-
-The findings report lands at the target repository's `_inputs/architecture-review-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings report outside the target's `_inputs/` directory; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any source file in the target repository — review is read-only on code.
-
-### File-Authoring Contract
-
-The findings report is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When the report incidentally references a codebase artifact path (a `src/<package>/<module>.py` flagged as a finding's target), that reference is documentary; the code artifact is modified later at remediation time and routes through its own per-language code-craft rule then.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or about any audit-boundary or severity-classification call that materially affects the findings outcome — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data. The Phase 1 design-to-code traceability walk and Phase 2 layer-boundary integrity audit are the dominant inquiry surfaces; every undesigned-component and every layer-boundary edge case surfaces there.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -137,20 +109,7 @@ Build the package dependency graph from the source tree's import surface; for ea
 
 ### Phase 4 — Findings Emission + Validation Gate
 
-Emit the target's `_inputs/architecture-review-findings.md` with the canonical sections:
-
-1. **`## §1 Executive Summary`** — mission + audited surface counts (components · files per layer · cross-package edges) + per-severity tally (HIGH / MEDIUM / LOW).
-2. **`## §2 Findings — HIGH Severity`** — one subsection per finding: identifier (`F-H<N>`), title, design-section back-reference, code-surface evidence (file:line-range), concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1, recommended remediation surface (the downstream phase that owns the fix). Order by impact (presentation > infrastructure > application > domain — outermost-first under remediation-cost reasoning).
-3. **`## §3 Findings — MEDIUM Severity`** — §2 shape (`F-M<N>`).
-4. **`## §4 Findings — LOW Severity`** — §2 shape (`F-L<N>`).
-5. **`## §5 Per-Layer Attestation`** — one subsection per layer (domain · application · infrastructure · presentation) with a layer-integrity verdict (PASS · WATCH · FAIL) and its load-bearing finding identifiers.
-6. **`## §6 Seven-Axes Coverage`** — per-axis verdict against the seven-axes-of-breadth taxonomy (`rules/cognitive-identity.md` §1).
-7. **`## §7 Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
-8. **`## §8 Bindings (§0.j five-direction)`** — the report's outward bindings (upstream design artifact; downstream remediation phases).
-
-Apply incremental generation per `rules/large-file-generation.md` above 500 lines (plan sections first; Write the first; Edit-append the rest; verify transition coherence at each boundary).
-
-**Validation gate.** Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Architecture-review deltas: **M5** (every cited file path, line range, and import statement is verified to exist; zero fabrication); **M9** (the package dependency graph carries a Mermaid `graph LR` diagram per `rules/visual-leverage.md` — **not** n/a for this command); **M10** (every finding's design-section back-reference closes reciprocally); **M14** (every finding declares its upstream design-section + downstream remediation surface). N/A (reason recorded): M11 (single-sprint), M13 (no executable code), M15 (findings precede production-readiness). Iterate on failure per `rules/pre-emission-gate-bars.md` §3 until every bar passes or its three-round cap returns BLOCKED.
+> Moved to `references/step-05-findings-emission-validation-gate.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -168,7 +127,7 @@ Apply incremental generation per `rules/large-file-generation.md` above 500 line
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` `_inputs/design.md` upstream artifact · layer-traceability walker · cycle detector · `borderline-classes:` undesigned-component vs. design-gap vs. code-undiscipline vs. future-delivery classification · `focus-semantics:` `--focus LAYER` restricts audit to a single layer (Domain / Application / Infrastructure / Presentation) · `pipeline-tail-handoff:` Pipeline handoff to remediation phases) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -183,15 +142,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/ux-review` to advance the audit-fortress sequence; `/ux-review` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/ux-review.md` (audit-fortress next-step). The consuming suite's architecture-review slot. Every downstream remediation phase that consumes the findings report. The fifteen-bar pre-emission gate at Phase 4. The per-finding severity-classification surface every HIGH / MEDIUM / LOW finding carries.
-- **Driven by ←** `commands/perf-audit.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and architectural-integrity review constituent. The Architecture axis at `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy. `rules/clean-architecture-layers.md` §1–§5 (the canonical layer discipline this command audits against). The `commands/README.md` command catalog's Audit/review-passes row for `/architecture-review` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** Clean Architecture (Robert C. Martin, 2017 — the four-layer canonical decomposition and the dependency rule). Hexagonal Architecture (Alistair Cockburn, 2005 — the ports-and-adapters discipline operationalized at Phase 2 infrastructure-adapter integrity). Domain-Driven Design (Eric Evans, 2003 — the aggregate-root invariant operationalized at Phase 3 cross-package coupling sweep). `rules/clean-architecture-layers.md` (the internal canonical projection of the above SOTA). `rules/cognitive-identity.md` §1 (the seven-axes taxonomy).
-- **Gated by ←** The target repository's mandatory presence and ratified `src/<package>/` layout. The design artifact at `_inputs/design.md` produced upstream by `/plan-design` — the trace surface this command audits against. The harness's Agent + structured inquiry + Edit + Write + Read tool surface.
-- **Cross-bound with ↔** `commands/plan-design.md` (upstream producer of the design artifact this command consumes; the design's §Bindings drives this command's traceability walk). `commands/code-audit.md` (sibling review-fortress constituent). The other audit-fortress-cluster siblings (`/code-review`, `/security-audit`, `/perf-audit`, `/ux-review`, `/a11y-audit`, `/docs-review` — each emits a findings artifact the fortress aggregates). `rules/clean-architecture-layers.md` (canonical reference). `rules/bidirectional-binding.md` (reciprocal-closure invariant). `rules/visual-leverage.md` (§6 package-dependency-graph diagram requirement). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/option-annotation.md` (every severity classification cites a concrete-driver class). `rules/authority-inquiry.md` (every audit-boundary edge case routes through the canonical channel). `rules/canonical-layout.md` (src-layout integrity + orphan-package detection). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template).
 
 ## Installed Reference Paths
 

@@ -1,12 +1,13 @@
 ---
 name: "ux-review"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Developer-experience review of a host repository — audits CLI ergonomics (argument naming, help text, error messages, progress indicators), installation flow, documentation discoverability, per-harness install parity, dev-loop ergonomics, and error-recovery affordances. Reads every surface from the first-time-operator posture, never the maintainer's familiar terrain. Reference frame: clig.dev Command Line Interface Guidelines, Nielsen Norman Group ten usability heuristics, GNU coreutils convention manual. Read-only against the host; emits a severity-ranked findings ledger at the consuming suite's _inputs/ux-review-findings.md with HIGH/MEDIUM/LOW classifications grounded in concrete-driver rationale. Invoke with a repository path, or --focus SURFACE to re-run one surface after a remediation cycle."
 argument-hint: "[path/to/repo/] [--focus SURFACE] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /ux-review — Developer-Experience Review (CLI · Install · Docs · Errors)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Execute `/ux-review`: ingest the deployed repository (the operator-facing artifa
 
 ## Pipeline Contract
 
-**Pipeline position.** Terminal review-fortress command inside the developer-experience cluster. It consumes the deployed host repository plus its operator-facing surfaces and emits the developer-experience findings ledger the fortress phase aggregates alongside sibling reviews (`/a11y-audit`, `/docs-review`, etc.). It modifies no source.
-
-**Audit-fortress sequence.** Position **6 of 11**. **Upstream:** `/architecture-review`. **Downstream:** `/a11y-audit`. Canonical sequence: `/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The deployed repository at the supplied path — the installed CLI binary, the install/update/uninstall scripts at the repo root, the rendered documentation site (or the source Markdown when no site is built), the README header, and every CLI subcommand's `--help` output. When a Handoff Manifest exists at `_inputs/handoff-manifest.yml`, the upstream design artifact's CLI-surface declarations are honored as the ratified contract the review measures against.
-- **Emitted.** The findings ledger at `_inputs/ux-review-findings.md` carrying per-finding severity (HIGH/MEDIUM/LOW), concrete-driver rationale, observed surface (file path + line range or CLI invocation + stderr capture), and proposed remediation. The downstream fortress phase reads it as one of N sibling review outputs.
-
-**Pre-flight inquiry.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md`. Every scope ambiguity — target harness (POSIX/PowerShell/both), the documentation site's rendered URL when build artifacts are absent, the supported-versions matrix, the deployment mode (local checkout / installed binary / containerized) — surfaces with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the candidate ledger; the attestation block is recorded inside it and surfaced in the Handoff Manifest; any bar failure blocks promotion until resolved per the iterate-on-failure protocol.
-
-### Inquiry Cadence (D4)
-
-Operate at **maximal structured-inquiry saturation**. Every review-scope decision, severity ratification, concrete-driver citation choice, diagram-provenance choice, and gate-bar `n/a (with reason)` marking routes through the canonical channel (`rules/interactive-questions.md` §1) — free-form prose questions as primary input are forbidden. Every invocation carries the three-segment body per §3; every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed state). Up to four questions batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence; Handoff Manifest; Pre-flight inquiry; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task exceeding this command's mission (a developer-experience review ledger for a deployed host repository). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE review against a non-deployed repository (no installed binary, no built documentation site, no install scripts) — route through the deployment pipeline first, or surface the absence as a HIGH finding rather than fabricating observations. REFUSE review whose target surface exceeds the `--focus` scope when the flag is set.
-
-### Output Surface
-
-The ledger lands at the consuming suite's `_inputs/ux-review-findings.md` per the suite-locality invariant (`rules/context-management.md` §2.6.1); the Handoff Manifest update is suite-internal. Plan-internal files are header-exempt per the `.apothem/**` class at `schemas/header-exceptions.txt`, so `scripts/inject-header.{sh,py}` is NOT invoked. NEVER write outside the suite folder; NEVER modify any artifact in the host repository under review (the review is read-only against the host).
-
-### File-Authoring Contract
-
-The ledger is header-exempt per the `.apothem/**` class; the command never invokes the authorship-header injector on its emissions. Every host-repository quote (a snippet from `scripts/installer/install.sh`, a `--help` transcript, a README header excerpt) is documentary; the host artifact is unmodified.
-
-### Structured Inquiry on Ambiguity
-
-Route through the structured-inquiry channel with the three-segment annotation (`rules/interactive-questions.md` §3) on any uncertainty about review scope, target-harness selection, severity classification, or any branch-point that materially affects findings. Free-form prose questions as primary input are forbidden. NEVER fabricate observations against surfaces not present in the deployed repository.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -175,7 +147,7 @@ Apply incremental generation (`rules/large-file-generation.md`) past 500 lines. 
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` CLI-ergonomics walker · installation-flow probe · error-recovery harness · documentation-discoverability sweep · `borderline-classes:` surface-gap disposition (inventory completeness) · `focus-semantics:` `--focus SURFACE` restricts the walk to a single named surface (cli / install / errors / docs) · `pipeline-tail-handoff:` pipeline handoff to fortress review.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -191,15 +163,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/a11y-audit` to advance the audit-fortress sequence — the canonical successor per the 11-command audit-fortress sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/a11y-audit.md` (audit-fortress next-step). The consuming suite's developer-experience review slot (the fortress phase aggregates this ledger alongside sibling outputs). Every subsequent remediation pass in the host repository (HIGH findings block release-tier governance per `rules/production-ready-prs.md` §7 CI-Green Discipline). The maintainer-facing remediation backlog the host tracks against the ledger.
-- **Driven by ←** `commands/architecture-review.md` (audit-fortress upstream).
-- **Satisfies →** The audit-fortress command catalog's developer-experience slot. The `commands/README.md` command catalog's Audit/review-passes row for `/ux-review`. The consuming suite's developer-experience acceptance criteria.
-- **Established by ↑** clig.dev Command Line Interface Guidelines (the canonical CLI-ergonomics rulebook this command projects). The Nielsen Norman Group ten usability heuristics (the documentation-discoverability and error-recovery rulebook). The GNU coreutils convention manual (argument naming, short/long flag parity, standard-stream discipline). The `commands/README.md` command catalog. `rules/cognitive-identity.md` §1 (the Senior DX Engineer role's cognitive-insurgent posture).
-- **Gated by ←** The deployed-repository presence (installed CLI binary OR manifest-declared entry point, AND install scripts, AND documentation surface). The harness's Agent + structured-inquiry + Read + Write tool surface. The consuming suite's spec ratification of the review-fortress catalog.
-- **Cross-bound with ↔** Sibling review commands (`/a11y-audit`, `/docs-review`, and other fortress-cluster siblings — each emits a findings ledger the fortress aggregates). `commands/plan-execute.md` (the fortress phase invokes this command). `rules/production-ready-prs.md` (§6 Modern Project Surface — the install/update/uninstall/README-header/install-guide surfaces this command audits). `rules/production-ready-prs-surfaces.md` (§6.1–§6.7 the audit measures against). `rules/code-craft-markdown.md` (the documentation-discoverability sweep applies its purpose-driven-structure and link-discipline rules). `rules/interactive-questions-canonical-shapes.md` (§3.2.1 concrete-driver classes ground every severity classification). `rules/authority-inquiry.md` (review-scope ambiguities route through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/visual-leverage.md` (the Decision Tree's Mermaid diagram honors the rule's metadata header convention). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
 
 ## Installed Reference Paths
 

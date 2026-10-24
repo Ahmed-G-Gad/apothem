@@ -1,0 +1,9 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 4 — Per-Source Extraction with Provenance
+
+For every screened-in source, author `{suite}/sources/<id>.md` carrying: the canonical citation (permalink/DOI/commit-pin), the access date (R4, for mutable sources), the author/organization attribution, the source's load-bearing claims extracted verbatim or faithfully paraphrased with locus, the source's stated method/scope (to support downstream reproducibility assessment per R2), and a provenance line naming the discovery facet and the discovering scout. Folklore or unverifiable claims a source carries are marked as such and never extracted as load-bearing.
+
+When a screened-in source is paywalled, login-gated, purchase-only, or otherwise inaccessible after the fetch attempt, do NOT silently screen it out for a lower-trust accessible substitute — trust outranks reachability per `rules/source-accessibility.md`. STOP and request the full source content from the operator through the structured-inquiry channel; extract from the operator-supplied content. Only after the operator interview is exhausted may the source be screened out as unreachable, with the source-trust decision (which source, its trust tier, whether the trusted source was reachable, why it was screened out) recorded in the source ledger's disclosure surface per `rules/disclosure-ledger.md`.
+
+Dispatch `fact-checker` (`agents/fact-checker.md`) adversarially across the extracted set: every citation resolves to a real, reachable source (R4); a citation that fails to resolve is a phantom citation — the source is screened out and the failure is recorded. The `fact-checker` pass is refute-by-default — it confirms reachability and attribution, not the truth of the source's claims (claim verification against independent sources is `/research-synthesis`'s remit).

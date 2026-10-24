@@ -93,6 +93,58 @@ Code reads only the hyphenated key. The two template containers
 menu. Every output style sets `keep-coding-instructions: true`, so selecting
 one keeps Claude Code's built-in software engineering instructions.
 
+Both also carry the Apothem-only frontmatter keys (`version`, `updated`,
+`archetype`, `portability`) under a trailing `metadata:` map of quoted strings,
+in that fixed order. Claude Code ignores unknown top-level keys, and the open
+skill format keeps client-specific extras in `metadata`. The source files do
+not change, and every other harness receives the keys at the top level as before.
+
+### Command skills and reference files
+
+After a context compaction Claude Code re-attaches only the first 5,000 tokens
+of each invoked skill, and it recommends a `SKILL.md` of about 500 lines or
+fewer with detail in sibling files. The command prompts run to 67 KB, so the
+Claude Code emission splits each one into a slim `SKILL.md` plus files under
+`references/`:
+
+- The `## Bindings` section is dropped. It is maintainer text for the
+  conformity gate and the model never needs it.
+- The Pipeline Contract, Foundational Stanzas, Decision Tree, examples, mode
+  sections and a few cited inventories move to reference files. The heading
+  stays, and a one-line pointer under it names the file and says when to read
+  it. The pointers for the Pipeline Contract and the Foundational Stanzas also
+  list what the file covers.
+- When `SKILL.md` is still over 15,800 bytes, the largest Workflow steps move
+  to `references/step-NN-<slug>.md`, largest first, until it fits. Steps under
+  600 bytes stay inline. If that is not enough, the Output, Mandates, Critical
+  Rules and Instructions sections move in that order.
+- A short note after the preamble tells the model where the files are
+  (`${CLAUDE_SKILL_DIR}/references/`) and that it MUST re-read the ones that
+  govern its current step after a compaction.
+
+Every emitted `SKILL.md`, including the `## Installed Reference Paths` note the
+install appends, stays at or under 17,000 bytes for an install root of up to
+140 characters. The plugin ships the same files without that note, and its
+commands are skills under `skills/`, so it has no `commands/` folder; the
+invocation `/apothem:<name>` is unchanged. The split is deterministic and
+reversible: the text of `SKILL.md` and its reference files rebuilds the source
+command minus Bindings. The source files, and the output for every other
+harness, are unchanged. Other tools also read skills from `~/.claude/skills/`,
+so they see the same files; `apothem install` names them.
+
+To see the numbers for every command, run the measurement script from a
+checkout:
+
+```bash
+python scripts/dev/measure_claude_skills.py          # per-command table
+python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
+```
+
+It reports source, `SKILL.md` and reference sizes, the headroom to the budget,
+and an estimated token count, and lists the native skills for comparison.
+`research-suite`, a native skill whose source is not split, is the one skill
+above the cap.
+
 ## Compatibility notes
 
 Command prompts are converted into skill directories; agents, rules, skills,

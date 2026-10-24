@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+## Pipeline Contract
+
+**Pipeline position.** **Terminal.** This command sits at the tail of the `/plan` pipeline. The canonical sequence is `/plan-spec → /plan-generate → /plan-review → /plan-design (CONDITIONAL — architecture-bearing suites only) → /plan-execute`; `/plan-status` is orthogonal read-only at any point. When `/plan-design` participates upstream (architecture-bearing suites), this command additionally consumes the design artifact and its design-gate attestation from the manifest. It consumes the generated suite plus its review-augmented Handoff Manifest and emits per-phase reports (`phases/NN-topic/REPORT.md`), the final completion summary (`COMPLETION.md` at the suite root), and codebase artifacts at canonical host-project locations.
+
+**Handoff Manifest.**
+
+- **Consumed.** `{suite}/_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml`. The upstream manifest carries the suite-generation outcome from `/plan-generate` and the review-augmented Review Scorecards from `/plan-review`. The Step 2 Review Gate at SHARED+ reads the scorecards as the prerequisite evidence for execution; FAIL scorecards block until resolved or overridden via the Step 2 inquiry surface.
+- **Emitted.** Per-phase REPORT.md files at the canonical layout (`phases/NN-topic/REPORT.md`) and operator-facing mirrors at `{suite}/_outputs/<phase-name>/REPORT.md`; Phase Output Registry rows in PROGRESS.md (verified outputs with on-disk paths); the Resumption Contract at every phase exit (next-action prose, active-task pointer, critical-files manifest); and the final COMPLETION.md at the suite root when the last phase exits clean. The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` is updated at every phase exit with the phase's verified-output set, gate-attestation block, and watch items.
+
+**Pre-flight inquiry set.** Step 2 (Verify Prerequisites and Conformity) and Step 3 (Execute Tasks) emit the per-phase pre-flight inquiry set. Every prerequisite gap, missing input, scorecard FAIL, quality-gate exhaustion, and partial-task resumption surfaces via the structured-inquiry channel per `rules/interactive-questions.md` with the three-segment option annotation. The inquiry surface fires at the phase boundary so authoritative-data gaps are resolved before tasks execute, not mid-execution.
+
+**Pre-emission gate.** Step 6.7 (Plan-Internal Isolation Check) and Step 6.9 (End-of-Phase Commit Gate) operate inline; the canonicalized fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` runs as the penultimate verification before Step 7 REPORT.md emission. The phase-level gate attestation is recorded in REPORT.md and surfaced in the updated Handoff Manifest. Failure on any bar marks the phase BLOCKED via the Step 4 / 6.8 BLOCKED path, and the dependency graph is walked to mark transitively-blocked phases SKIPPED.

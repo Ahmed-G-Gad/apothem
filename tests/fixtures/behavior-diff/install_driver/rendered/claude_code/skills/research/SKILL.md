@@ -1,12 +1,13 @@
 ---
 name: "research"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "The research pipeline wrapped as a single dynamic multi-agent workflow. One call drives a research mission from a raw idea to a disseminated, peer-reviewed paper by dispatching the first-class stages — research-ideate → research-spec → research-theory → research-sources → research-synthesis → research-proposal → research-design → research-experiment → research-analysis → research-paper → research-review → research-publish → research-disseminate — as workflow phases under named Handoff-Manifest return contracts, verifying each stage's hand-off refute-by-default before the next stage consumes it. Invoke it with a research question or domain ('research whether X causes Y', 'investigate the SOTA on Z', 'run the study from idea to paper'), an existing research suite path to resume, or `--quick` for a one-shot cited report. Stage logic stays in commands/research-*.md; this command adds only the workflow harness. Multi-agent dispatch and continuous chaining are opt-in and confirmation-gated."
 argument-hint: "[<<question>> | suite path] [--autonomous] [--max-rounds N] [--quick] [--verify-panel N] [--from ideate|spec|theory|sources|synthesis|proposal|design|experiment|analysis|paper|review|publish|disseminate]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /research — The Research Pipeline as a Wrapped Dynamic Workflow
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -45,37 +48,13 @@ The deep workflow procedure is the `workflow` skill (`skills/workflow/SKILL.md`)
 
 ## Pipeline Contract
 
-**Pipeline position.** Wrapped-workflow meta-orchestrator over the whole `/research` pipeline; the canonical single-call entry for the pipeline. It consumes a research mission (raw question or an existing suite path) and drives the stage chain to completion through the workflow harness; it emits no artifact of its own beyond the chain's outputs (the suite, its per-stage artifacts, the paper deliverable, the publication record) plus the workflow's deterministic result surface and run trace.
-
-**Consumed.** The operator's question or suite path; the `--autonomous` opt-in; the `--quick` mode; the `--verify-panel N` budget; the optional `--from <stage>` resume point. At each stage transition, the upstream stage's **Handoff Manifest** at `{suite}/_inputs/handoff-manifest.yml` (per `src/apothem/schemas/handoff-manifest.yaml`) is the named return contract the next phase consumes.
-
-**Emitted.** The chain's own artifacts (owned by each stage command — the research spec, source ledger, synthesis, study design, experiment log, analysis, paper, review report, publication record), plus the workflow's deterministic result surface: the research outcome, the per-stage verified hand-offs with evidence, the per-deliverable advance-gate decisions with the thresholds each cleared (verified from the stage's own advancement-gate attestation, never recomputed), the disclosure ledger of any beyond-mission remediation, the fifteen-bar gate attestation, the per-run workflow trace (stages run, manifest hand-offs, verification verdicts, halt/continue decisions), and the single recommended next move.
-
-**Pre-flight inquiry set.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the mission or entry point is underspecified — fresh idea vs. resume, which suite, which resume stage, scope direction, time horizon, domain boundary, operative term definitions, identity, public-surface naming, ethics / data-privacy posture (R6). Required-category inquiries block dispatch until answered; the `--autonomous` opt-in is itself confirmed before continuous chaining engages.
-
-**Pre-emission gate.** Each stage command runs its own fifteen-bar gate per `rules/pre-emission-gate.md`; this command does not duplicate a stage's gate but verifies each stage's gate attestation is present in its manifest before dispatching downstream, and runs the workflow's own fifteen-bar gate over the final synthesized result.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE an unbounded remediation loop — the `--max-rounds` cap and its BLOCKED retreat are mandatory per `rules/planning-techniques.md` §1. REFUSE to author or reimplement any stage's logic — the orchestrator only dispatches first-class stage commands; stage behavior lives in `commands/research-*.md`. REFUSE to dispatch past a stage whose Sequence Gate fails (a missing / failing upstream manifest) — surface the failed gate and halt. REFUSE continuous chaining without the `--autonomous` opt-in. REFUSE asserting a claim as established when a hand-off's verification leaves it contested — contested claims survive in the stage's contested-claims ledger with both positions and their evidence, never collapsed into a false consensus. REFUSE silent reconciliation of contradictory verification verdicts at a stage hand-off — surface both with evidence. Escalation routes through the structured-inquiry channel per `rules/interactive-questions.md`.
-
-### Output Surface
-
-Stage artifacts land where their stage commands place them: research-suite working state inside the active suite per the suite-locality invariant at `rules/context-management.md` §2.6.1; paper, data, figures, and code deliverables at host-natural locations per `rules/host-discovery.md` (`paper/`, `data/`, `analysis/figures/`), never inside `.apothem/plans/`. The workflow trace lands in PROGRESS.md / PLAN-NOTES.md or `{suite}/_outputs/`. Per `rules/operational-mandates.md` CM-7, no plan-internal scaffolding leaks into deliverable artifacts. NEVER write a research-suite artifact to a global plans directory under any harness's config root from a downstream-project context.
-
-### File-Authoring Contract
-
-The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands honor the authorship-header contract via `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`) on deliverable artifacts; research-suite working state is a plan-suite artifact, header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`. Cited sources are documentary (permalinked URL / DOI, author or organization, access date per R4); a source is never written by this command.
-
-### Structured Inquiry on Ambiguity
-
-When the mission, entry point, resume stage, suite identity, research scope, time horizon, operative term definitions, or ethics / conflicts posture (R6) is ambiguous, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. NEVER fabricate a suite path, a question, a citation, or a stage decision — every load-bearing claim cites a real, retrievable source per R1/R4 or survives as contested. Every destructive operation routes per-file through the canonical destructive-op option sets at `rules/interactive-questions.md` §6.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -138,51 +117,13 @@ The workflow is granted to identify any defect a stage hand-off's verification r
 
 ## Decision Tree
 
-```mermaid
-%% verified: 2026-06-16 %%
-%% provenance: commands/research.md §Workflow %%
-%% cross-reference: commands/workflow.md, commands/research-ideate.md, research-spec.md, research-theory.md, research-sources.md, research-synthesis.md, research-proposal.md, research-design.md, research-experiment.md, research-analysis.md, research-paper.md, research-review.md, research-publish.md, research-disseminate.md, skills/workflow/SKILL.md, skills/research-suite/SKILL.md %%
-flowchart TD
-    Start[/research invoked/] --> Frame{Mission + entry point unambiguous?}
-    Frame -->|no| Inquiry[Frame: structured-inquiry scope + entry + ethics set]
-    Inquiry --> Frame
-    Frame -->|raw idea or domain| Ideate[entry = research-ideate]
-    Frame -->|--quick| QuickEntry[entry = research-sources · terminate after research-synthesis]
-    Frame -->|existing suite| Resume[resume stage from manifests / --from]
-    Ideate --> Decompose[Decompose pipeline into staged work-items + manifest return contracts]
-    QuickEntry --> Decompose
-    Resume --> Decompose
-    Decompose --> OptIn{--autonomous set?}
-    OptIn -->|no| Plan[Present next-stage plan · confirm]
-    OptIn -->|yes| Dispatch[Dispatch /research-stage · resume from upstream manifest]
-    Plan --> Dispatch
-    Dispatch --> RunStage[stage runs · emits manifest + gate attestation]
-    RunStage --> Verify[Refute-by-default critics over the hand-off · R1-R10 lenses]
-    Verify --> AdvGate{At analysis-to-paper boundary: advancement-gate attestation cleared? R7 convincingly + significantly}
-    AdvGate -->|no| Halt
-    AdvGate -->|yes / not at boundary| Survive{Non-refute majority AND Sequence Gate passes?}
-    Survive -->|no| Halt[Halt · surface failed gate / refuted hand-off / non-cleared advancement gate · remediate at owning stage]
-    Halt --> Dispatch
-    Survive -->|yes| More{more stages in scope?}
-    More -->|yes| Decompose
-    More -->|no| Synth[research-disseminate record / --quick synthesis → synthesize · workflow fifteen-bar gate]
-    Synth --> Emit[Emit deterministic result + recommended next move]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
 ## Recommended Next Step
 
 Invoke `/research <question>` for a fresh research mission (the wrapped workflow starts at `/research-ideate` and drives to a disseminated, peer-reviewed paper), `/research <question> --quick` for a one-shot cited report (runs `/research-sources` + `/research-synthesis` only), or `/research <project-root>/.apothem/plans/{suite}/` to resume an existing suite from its first incomplete stage; review each stage hand-off's refute-by-default verification, then pass `--autonomous` to chain continuously once the decomposition and return contracts read correctly. The planned (halt-at-boundary) mode is the safe default — autonomy is the explicit opt-in.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/research-ideate.md`, `commands/research-spec.md`, `commands/research-theory.md`, `commands/research-sources.md`, `commands/research-synthesis.md`, `commands/research-proposal.md`, `commands/research-design.md`, `commands/research-experiment.md`, `commands/research-analysis.md`, `commands/research-paper.md`, `commands/research-review.md`, `commands/research-publish.md`, `commands/research-disseminate.md` (the stages it dispatches as workflow phases). The per-stage Handoff Manifests it consumes as return contracts. The refute-by-default verify panel at each hand-off (Phase 4). The workflow's fifteen-bar gate over the synthesized result (Phase 6). The disclosure ledger for every beyond-mission amendment.
-- **Driven by ←** The operator's question / suite path + `--autonomous` / `--quick` / `--verify-panel` / `--from` flags. The structured-inquiry entry + scope + ethics resolutions from the Frame phase. The rigor mandates R1–R10 the research-suite skill ratifies.
-- **Satisfies →** The directive that `/research` drives the research pipeline as a single wrapped dynamic workflow (no separate `*-workflow` command). The `commands/README.md` command catalog's Research-pipeline row for `/research` (the registry entry that ratifies this command's place in the slash-command catalog). The deterministic-output contract at `rules/determinism.md`. Preserves first-class stages and opt-in chaining; `--quick` preserves the single-shot cited-report capability.
-- **Established by ↑** `commands/workflow.md` (the general wrapped-workflow pattern this specializes). `commands/plan.md` (the sibling pipeline-as-workflow shape this mirrors). `rules/agent-orchestration.md` (the team patterns + adversarial-verify). `rules/agnostic-posture.md` (the opt-in default-off frame). `skills/research-suite/SKILL.md` (the research knowledge surface + R1–R10 rigor floor).
-- **Gated by ←** A statable question or resolvable suite path. Each stage's Sequence Gate (dispatch only when the upstream manifest + gate attestation is present). The operator's `--autonomous` opt-in for continuous chaining. The harness's Agent + structured-inquiry + Edit + Write + Read + Grep + WebSearch + WebFetch tool surface. The destructive-op floor for irreversible / outward-facing steps (data collection, publication submission).
-- **Cross-bound with ↔** `commands/workflow.md` (the general wrapped-workflow sibling) + `commands/plan.md` + `commands/fortress.md` (the sibling pipeline wrappers — `/plan` planning, `/research` research, `/fortress` hardening). `commands/research-ideate.md` + `commands/research-spec.md` + `commands/research-theory.md` + `commands/research-sources.md` + `commands/research-synthesis.md` + `commands/research-proposal.md` + `commands/research-design.md` + `commands/research-experiment.md` + `commands/research-analysis.md` + `commands/research-paper.md` + `commands/research-review.md` + `commands/research-publish.md` + `commands/research-disseminate.md` (the dispatched stages). `skills/workflow/SKILL.md` (the workflow procedure) + `skills/research-suite/SKILL.md` (the research knowledge surface). `agents/research-scout.md` + `agents/fact-checker.md` (the discovery + verification lenses stages fan out). `skills/multi-source-research/SKILL.md` + `skills/source-synthesis/SKILL.md` (the extraction + synthesis procedures stages dispatch). `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (orchestration + adversarial-verify). `rules/agnostic-posture.md` (opt-in autonomy). `rules/context-management.md` §4A (continuous-execution boundary). `rules/host-discovery.md` (deliverable locations). `rules/disclosure-ledger.md` (amendment disclosure). `rules/determinism.md` (deterministic result).
 
 ## Installed Reference Paths
 
