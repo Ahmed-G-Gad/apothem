@@ -32,7 +32,7 @@ help:
 	@echo "  uninstall              Uninstall with default-backup (paired scripts/installer/uninstall.sh / uninstall.ps1)."
 	@echo "  update                 Re-fetch the Apothem source and re-materialize harness config (paired scripts/installer/update.sh / update.ps1)."
 	@echo ""
-	@echo "  lint                   Run ruff check + ruff format --check across the tree."
+	@echo "  lint                   Run ruff check, ruff format --check, and mypy (strict, scoped)."
 	@echo "  format                 Run ruff format (writes); follow with lint to verify."
 	@echo "  test                   Run pytest across tests/."
 	@echo "  validate               Run the conformity gate --all --strict (every standalone validator; findings fail the run)."
@@ -64,6 +64,7 @@ update:
 lint:
 	$(RUFF) check .
 	$(RUFF) format --check .
+	$(MYPY)
 
 format:
 	$(RUFF) format .

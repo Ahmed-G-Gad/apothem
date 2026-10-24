@@ -11,8 +11,13 @@ the semantic hues — is owned by the design tokens at
 [`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
 (and its `assets/design-tokens.json` mirror). The site theme at
 [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-mirrors those token values into the CSS variables the Fumadocs theme consumes. Every value below
-is a step of the slate or emerald ramp in those design tokens; a step name such as slate-600 refers to that ramp's value.
+restates the semantic token values as OKLCH in the CSS variables the Fumadocs theme consumes: the
+page background, text, primary, border and focus-ring variables resolve to the exact token steps (the
+`lib/theme-tokens.test.mjs` check holds the background, foreground, primary and ring variables to
+them). The `apothem-*`, `polygon-*` and `field-*` ramps declared in the same file are derived
+approximations of the token ramps, not copies, and are not part of the specification. Every value
+below is a step of the slate or emerald ramp in the design tokens; a step name such as slate-600
+refers to that ramp's value.
 
 | Role | Token (CSS) | Light mode | Dark mode | Use |
 |---|---|---|---|---|

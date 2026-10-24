@@ -26,7 +26,7 @@ const LOCALE_DIR_SCRIPT = `(function(){try{var P=${JSON.stringify(
 // address bar, PWA chrome) blends with the page rather than flashing a default.
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fcfcfd' },
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
     { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
   ],
 };

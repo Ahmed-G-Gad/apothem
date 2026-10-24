@@ -34,7 +34,7 @@ Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — conditional mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Applicability gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — conditional mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Applicability gate; Inquiry Cadence.
 
 ---
 

@@ -34,7 +34,7 @@ Execute the `/plan-generate` skill. Ingest prose, generate a complete plan suite
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence.
 
 ---
 
@@ -117,9 +117,9 @@ Deploy a parallel Generation Team (CM-25A — each agent creates one phase folde
 
 Per CLAUDE.md Section 7.6 (including CM-22 §4: ecosystem gap detection). SHARED+: mandatory evaluation; create / evolve when the detection trigger is met (CM-22 §2). PERSONAL_USE: on corrections. EXPLORING: optional.
 
-### Step 8.5: End-of-Command Synthesis (D6)
+### Step 8.5: End-of-Command Synthesis
 
-Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Plan-suite generation complete. Are there any suggested improvements, ambiguities, contradictions to surface before approval?`
 - `header:` `End synthesis`

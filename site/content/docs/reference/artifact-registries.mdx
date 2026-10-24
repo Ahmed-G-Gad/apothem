@@ -123,8 +123,8 @@ session-start bootstrap, not routed through `settings.json`.
 Event             Automates                Timeout  Purpose
 ----------------- ------------------------ -------- --------------------------------------------------
 SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
-PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
-PostCompact       CM-24 §6.2               30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PreCompact        CM-24                    30s      Verify state externalized before compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
+PostCompact       CM-24                    30s      Restore working state after compaction. Codex and Qwen Code register it; the Claude Code settings.json template does not
 Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
 PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
 PostToolUse       Proactive compaction     10s      Proactive-compaction advisory on every tool call; the Claude Code settings.json template routes it on the all-tools matcher

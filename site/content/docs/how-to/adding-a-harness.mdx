@@ -42,7 +42,7 @@ configuration from your shared profile.
 3. Preview the install without writing files:
 
    ```bash
-   apothem install --harness cursor --dry-run
+   apothem install --harness cursor --project /path/to/project --dry-run
    ```
 
 4. Install the harness. For a user-scope harness:
@@ -64,7 +64,7 @@ configuration from your shared profile.
 ## Verify
 
 ```bash
-apothem verify --harness cursor
+apothem verify --harness cursor --project /path/to/project
 ```
 
 A `✓ <harness-id> is verified` line confirms the managed targets exist and parse.

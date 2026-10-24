@@ -88,18 +88,24 @@ class TestSyncRuntimeSvgs:
     def test_copies_each_master_into_assets(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        rar_masters = (
+            "logo.svg",
+            "logo-dark.svg",
+            "logo-animated.svg",
+            "logo-animated-light.svg",
+        )
         src = tmp_path / "src"
         assets = tmp_path / "assets"
         src.mkdir()
         assets.mkdir()
-        for name in ("logo.svg", "logo-dark.svg", "logo-animated.svg"):
+        for name in rar_masters:
             (src / name).write_text(f"<svg>{name}</svg>", encoding="utf-8")
         monkeypatch.setattr(rar, "SRC", src)
         monkeypatch.setattr(rar, "ASSETS", assets)
 
         rar.sync_runtime_svgs()
 
-        for name in ("logo.svg", "logo-dark.svg", "logo-animated.svg"):
+        for name in rar_masters:
             assert (assets / name).read_text(encoding="utf-8") == f"<svg>{name}</svg>"
 
 
@@ -124,6 +130,7 @@ class TestMirrorSitePublic:
             "logo.svg",
             "logo-dark.svg",
             "logo-animated.svg",
+            "logo-animated-light.svg",
             "logo-wordmark.svg",
             "logo-wordmark-dark.svg",
             "logo.png",
@@ -150,3 +157,23 @@ class TestMirrorSitePublic:
         assert public.is_dir()
         for name in names:
             assert (public / name).is_file()
+
+
+class TestBuildFaviconIco:
+    """The favicon container embeds every size the generator documents."""
+
+    def test_embeds_16_32_and_48_layers(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PIL import Image
+
+        def fake_render(_resvg: Path, _svg: Path, png: Path, size: int) -> None:
+            Image.new("RGBA", (size, size), (16, 185, 129, 255)).save(png)
+
+        monkeypatch.setattr(rar, "render_png", fake_render)
+        out = tmp_path / "favicon.ico"
+
+        rar.build_favicon_ico(Path("resvg"), out)
+
+        with Image.open(out) as icon:
+            assert sorted(icon.info["sizes"]) == [(16, 16), (32, 32), (48, 48)]

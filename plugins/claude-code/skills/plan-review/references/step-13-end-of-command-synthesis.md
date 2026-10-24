@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-### Step 11.5: End-of-Command Synthesis (D6)
+### Step 11.5: End-of-Command Synthesis
 
-Just before review-report finalization at Step 12 handoff, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before review-report finalization at Step 12 handoff, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Review complete. Are there any deferred findings or improvements to surface before finalization?`
 - `header:` `End synthesis`

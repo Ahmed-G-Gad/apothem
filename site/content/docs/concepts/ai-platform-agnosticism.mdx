@@ -78,7 +78,8 @@ single distance from the core to every edge, identical along every direction. Th
 is the design: one shared profile at the center, seventeen equidistant harnesses on the
 perimeter, every materialization the same length away from the source of truth. The
 core does not change when an edge changes; the edges share a single relationship to
-the core. Drift is structurally impossible.
+the core. Because every harness derives from one profile, drift is detectable
+(`apothem status` reports it) and correctable (`apothem update` re-materializes it).
 
 ## Portability guarantees
 

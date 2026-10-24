@@ -27,6 +27,11 @@ right-to-left rendering, and how each language's pages are wired into routing.
   filesystem, so a page is advertised in a locale only when that locale has it.
 - **Right-to-left rendering: active.** The shared stylesheets use logical CSS
   properties throughout, so Arabic pages render correctly under `dir="rtl"`.
+- **Translation review: tracked per page.** Machine-seeded locale pages are
+  served and carry `machineTranslated: true` in their frontmatter until a human
+  reviews them; the flag is review-tracking metadata and the page does not
+  display it. English is the fallback for any page a locale lacks. Having 80% of
+  a locale's pages reviewed is a review target, not a gate on publishing.
 - **Translation freshness: tracked per page.** Each locale page records the
   English text it was translated from. When the English page changes later,
   the translated page shows a one-line note linking the English page, which

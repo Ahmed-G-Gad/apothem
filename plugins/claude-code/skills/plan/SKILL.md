@@ -88,10 +88,10 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 | Discipline | Rule | Enforcement point |
 | ---------- | ---- | ----------------- |
 | Pipeline ordering | The stage commands' Sequence Gates | Dispatch downstream only when each upstream manifest + gate attestation is present. |
-| First-class stages preserved | `_spec/spec.md` §WS-B R-B2 | The orchestrator never reimplements a stage; stage behavior is unchanged. |
+| First-class stages preserved | Each stage's own command file (`commands/plan-spec.md` through `commands/plan-execute.md`) | The orchestrator never reimplements a stage; stage behavior is unchanged. |
 | Adversarial verification | `rules/agent-orchestration-patterns.md` §Quality patterns | Phase 4 refute-by-default panel gates every stage hand-off. |
 | Opt-in autonomy | `rules/agnostic-posture.md` + `rules/context-management.md` §4A | Continuous chaining engages only under `--autonomous`; default halts at each boundary. |
-| Cross-stage non-contradiction | R-B6 + `conformity/plan_next_step_consistency_grep.py` | Output paths registered per stage; a contradiction is a finding. |
+| Cross-stage non-contradiction | Per-stage output-path registration + `conformity/plan_next_step_consistency_grep.py` | Output paths registered per stage; a contradiction is a finding. |
 | Disclosure | `rules/disclosure-ledger.md` | Every beyond-mission amendment disclosed with cited rationale. |
 | Determinism | `rules/determinism.md` | Result-surface shape byte-stable; `(Recommended)` markers; terminal next move. |
 | Pre-emission gate | `rules/pre-emission-gate.md` | Each stage runs its own gate; the workflow runs the fifteen bars over the synthesized result. |

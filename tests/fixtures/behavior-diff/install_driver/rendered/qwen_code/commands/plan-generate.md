@@ -33,9 +33,9 @@ Execute the `/plan-generate` skill. Ingest prose, generate a complete plan suite
 
 **Pre-emission gate.** Step 7 (Final Sweep) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact (PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, every `phases/NN-topic/PHASE.md`). The Step 7 scorecards are the M3 ten-dimension surface; the gate attestation block is recorded in PLAN-NOTES.md and surfaced in the emitted Handoff Manifest. Failure on any bar blocks Step 9 user-approval until resolved.
 
-### Inquiry Cadence (D4)
+### Inquiry Cadence
 
-This command operates at **maximal structured-inquiry saturation** per D4 (Q-022). Every phase-decomposition decision, gate placement, dependency-ordering choice, option-set ratification, authority-data inquiry, and architectural ratification routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation; treat the spec input as a newbie sketch — surface every gap rather than silently inferring decomposition or ordering. **Question-fatigue-optimization is FORBIDDEN**. The DURING cadence runs throughout Steps 3 (Discovery), 6 (Phase Files), and 7 (Final Sweep); the END-of-command synthesis question fires per D6 just before Step 9 user-approval (see `End-of-Command Synthesis (D6)` at the workflow tail).
+This command operates at **maximal structured-inquiry saturation**. Every phase-decomposition decision, gate placement, dependency-ordering choice, option-set ratification, authority-data inquiry, and architectural ratification routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation; treat the spec input as a newbie sketch — surface every gap rather than silently inferring decomposition or ordering. **Question-fatigue-optimization is FORBIDDEN**. The DURING cadence runs throughout Steps 3 (Discovery), 6 (Phase Files), and 7 (Final Sweep); the END-of-command synthesis question fires just before Step 9 user-approval (see `End-of-Command Synthesis` at the workflow tail).
 
 ---
 
@@ -202,9 +202,9 @@ Deploy an Audit Team (CM-25A) for parallel traceability, naming, dependency, and
 
 Per CLAUDE.md Section 7.6 (including CM-22 §4: ecosystem gap detection). SHARED+: mandatory evaluation; create / evolve when the detection trigger is met (CM-22 §2). PERSONAL_USE: on corrections. EXPLORING: optional.
 
-### Step 8.5: End-of-Command Synthesis (D6)
+### Step 8.5: End-of-Command Synthesis
 
-Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Plan-suite generation complete. Are there any suggested improvements, ambiguities, contradictions to surface before approval?`
 - `header:` `End synthesis`
