@@ -1,6 +1,6 @@
 ---
 name: "ui-design"
-description: "Design or refine a user interface to a craft floor. Matched when the user asks to 'design a page', 'build a landing page, dashboard or form', 'improve this UI', 'make it look better', or 'pick a palette and type scale'. Classifies the surface, applies ranked rules, keeps DESIGN.md current."
+description: "Designs or refines a user interface: classifies the surface, applies design rules and keeps DESIGN.md current, when the user asks to 'design a landing page', 'improve this UI', 'make it look better' or 'pick a palette and type scale'. Not for critique-only review (design-critic) or backend logic."
 user-invocable: true
 argument-hint: "[surface or page] [--variance conventional|balanced|distinctive] [--motion none|subtle|expressive] [--density airy|comfortable|compact]"
 disable-model-invocation: false

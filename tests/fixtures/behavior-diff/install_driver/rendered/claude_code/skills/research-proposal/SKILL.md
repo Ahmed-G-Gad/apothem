@@ -1,12 +1,12 @@
 ---
 name: "research-proposal"
-description: "Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record — the proposal stage of the /research pipeline. Triggered as 'write the research proposal', 'turn the gap into a SMART aims hierarchy', 'build the feasibility and risk register', 'plan the preregistration', 'select the EQUATOR reporting guideline', 'map the impact pathway', or the pipeline-chained hand-off from /research-synthesis. Consumes the suite's _inputs/synthesis.md and _inputs/theory.md and emits _inputs/proposal.md carrying the SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register, the impact pathway (R10), the preregistration plan (R5), and the EQUATOR reporting-guideline pre-selection (R9) — the plan-of-record that /research-design operationalizes into a frozen study design. Ethics feasibility is surfaced up front (R6)."
+description: "Turns a research gap and theoretical framework into a fundable proposal: SMART aims, feasibility, risk register, impact pathway, reporting-guideline choice. Use when the user asks to 'write the research proposal' or 'build the aims hierarchy'. Precedes study design, which owns preregistration."
 argument-hint: "[--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

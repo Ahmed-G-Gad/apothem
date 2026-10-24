@@ -39,6 +39,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Read-only skills and commands are model-invocable; side effects stay
+  manual.** 35 audit, review, planning, research and authoring commands and
+  skills can now be chosen by the model when a request matches them. Commands
+  that edit, publish, release or rotate secrets (`elevate`, `fortress`,
+  `freshify`, both GitHub deploy commands, `release-readiness`, `workflow`,
+  `plan-execute`, `research-experiment`, `research-publish`,
+  `dependency-upgrade`, `secret-rotation` and `issue-lifecycle`) run only when
+  you invoke them. `plan-suite` and `research-suite` are reference templates
+  read by path and are not listed. Every description now leads with what the
+  skill does and the requests it serves, in about 300 characters (the 52
+  model-invocable descriptions total about 15,000 characters, down from
+  about 42,000 before trimming), and overlapping skills, commands and
+  subagents name where each neighbouring request goes instead.
+- **Session start lists the skills by task.** A short generated index (one
+  line per domain, about 400 tokens) reaches Claude Code at session start, so
+  the model still knows a skill exists when its harness drops descriptions
+  from a long skill listing. `scripts/dev/generate_skill_index.py --check`
+  keeps it in step with the catalog.
 - **Claude Code receives commands as skills that survive compaction.** The
   plugin and the engine install now ship each command as a skill: a
   `SKILL.md` of at most about 5,000 tokens with the procedure the model

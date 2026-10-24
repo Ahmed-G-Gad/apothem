@@ -374,16 +374,18 @@ version: "X.Y.Z"
 updated: "2026-04-20"
 description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
 `disable-model-invocation: true` makes a command operator-invoked only; with
-`false`, the model may run it when a request matches its description. Most
-commands use `true`, but most plan and research pipeline stages use `false`.
-The invocation table in `src/apothem/commands/README.md` lists every
+`false`, the model may run it when a request matches its description. The
+default is `false` for read-only and advisory commands, with a description that
+leads with the use case; 35 of the 45 commands use it. A command stays `true`
+when it changes state outside the working tree or depends on the operator
+choosing the moment (10 commands). The invocation table in `src/apothem/commands/README.md` lists every
 command's setting; add a row for a new command. Keep
 `allowed-tools` read-only: a harness that honors it runs those tools without
 asking. Grant a side-effecting tool only as a scoped rule, such as
@@ -705,9 +707,9 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 
 ### Behavioural evals
 
-The suite under `evals/` measures behaviour rather than form: 74 trigger cases
+The suite under `evals/` measures behaviour rather than form: 142 trigger cases
 (each model-invocable command, skill and subagent fires on a request in its domain
-and stays quiet on a near miss), 32 outcome cases (one per plan stage,
+and stays quiet on a near miss, and six user-invoked-only commands do not start on their own), 32 outcome cases (one per plan stage,
 research stage and audit dimension) and 6 rule-effect pairs (an always-on
 rule's text on and off). The cases are plain data validated for free by
 `python -m pytest tests/unit/test_eval_suite.py`; running them is billed and

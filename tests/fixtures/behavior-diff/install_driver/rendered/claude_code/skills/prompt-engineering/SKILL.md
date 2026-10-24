@@ -1,13 +1,13 @@
 ---
 name: "prompt-engineering"
-description: "Design and eval-validate structured prompts for language-model systems — matched when the user asks to 'design a prompt', 'write a system prompt for', 'improve this prompt', 'engineer a prompt', 'build a prompt template', or any phrasing that asks for a model-driven instruction surface backed by falsifiable evaluation. Clarifies the task contract, drafts a structured prompt with explicit role / instructions / output schema, defines happy / edge / adversarial eval cases, iterates against them, and records the prompt with its eval rationale. Produces a prompt plus its eval set — NOT a running agent, a fine-tuning pipeline, a cross-model benchmark, or a model-selection decision. Model-agnostic and harness-agnostic; no single vendor is assumed. User-invocable directly."
+description: "Designs a structured prompt and validates it against happy, edge and adversarial eval cases, when the user asks to 'design a prompt', 'write a system prompt for' or 'improve this prompt'. Delivers the prompt plus its eval set; not a running agent or a model benchmark (eval-harness)."
 user-invocable: true
 argument-hint: "[--task DESCRIPTION]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   archetype: "ai-template"
 ---
 

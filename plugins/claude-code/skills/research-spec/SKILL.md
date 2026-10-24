@@ -1,12 +1,12 @@
 ---
 name: "research-spec"
-description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Produces falsifiable hypotheses with stated null forms (R3), explicit inclusion/exclusion scope, independently-measurable success metrics (R2), and a glossary, surfacing every ambiguity through the structured-inquiry channel instead of inventing scope or hypotheses. Emits `_spec/research-spec.md` plus the Handoff Manifest in the research-suite folder. `--quick` skips elicitation and writes one lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+description: "Frames a research question or notes into a testable spec: falsifiable hypotheses, inclusion and exclusion scope, success metrics. Use when the user asks to 'frame this research question', 'turn my notes into a research spec', or 'scope this study'. Not for generating questions (research-ideate)."
 argument-hint: "[path/to/question-or-notes] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.1"
-  updated: "2026-10-15"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -91,7 +91,9 @@ Emit the blocked line, name the absent ideation artifact, and halt. Do not inven
 
 ### Phase 1 — Discovery & Extraction
 
-> Moved to `references/step-01-discovery-extraction.md`. MUST read it in full before executing this step.
+Read the question or notes in full. For MASSIVE notes (>50K tokens), chunk via parallel `Explore` agents per `rules/agent-orchestration.md` (one chunk per agent, ≤10K tokens per chunk). At every clause, triple-extract: the **claim** the source asserts, the **scope** it implies, the **success condition** it presumes. Surface the prose's implicit research domain and the adjacent domains its assumptions inherit.
+
+**Establish the suite folder.** Per `rules/context-management.md` §2.6.1, every `_inputs/` and `_spec/` directory is a direct child of a research-suite folder. When the suite name is provided via `--suite-name`, create `{suite}/_spec/` directly; otherwise surface the name via the structured-inquiry channel before any spec write.
 
 ### Phase 2 — Aims Hierarchy, Question Framing & Hypothesis Crystallization (R3 Falsifiability, R10)
 

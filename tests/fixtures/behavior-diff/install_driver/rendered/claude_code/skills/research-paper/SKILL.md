@@ -1,12 +1,12 @@
 ---
 name: "research-paper"
-description: "Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, limitations, conclusion, and references — with every citation verified to resolve to a real source (R4: no phantom citations). The manuscript-assembly stage of the /research pipeline. Triggered as 'write up the results into a paper draft', 'assemble the manuscript from the synthesis and analysis', 'turn the analysis into a paper with verified references', 'build the references section and confirm every citation resolves', or the pipeline-chained hand-off from /research-analysis. Consumes _inputs/synthesis.md, _inputs/study-design.md, and _outputs/analysis.md and emits the paper deliverable at a host-natural location (paper/) with the nine canonical sections. The fact-checker verifies every reference refute-by-default: a citation stays only after it resolves to a real, retrievable source (permalink, DOI, or commit pin); a phantom citation never lands."
+description: "Assembles a paper draft from the synthesis, study design, and analysis, with every citation checked to resolve. Use when the user asks to 'write up the results as a paper', 'assemble the manuscript' or 'build the references section'. Not for critique (research-review) or theses (document-authoring)."
 argument-hint: "[--suite-name NAME] [--override] [--venue STYLE] [--anonymized]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -81,7 +81,9 @@ The stage runs as one disciplined sprint: a single authoritative manuscript at t
 
 ### Phase 3 — Build & Cross-Check the Reference Ledger
 
-> Moved to `references/step-03-build-cross-check-the-reference-ledger.md`. MUST read it in full before executing this step.
+Assemble every in-text citation into the reference ledger at `{suite}/_inputs/reference-ledger.md`. Each entry carries: the source's authoritative locator (DOI for peer-reviewed work, permalink for official documentation, commit pin for code or archival snapshots); the bibliographic fields the venue style requires; and the back-link to the `/research-sources` source-ledger entry it derives from (R1, R4).
+
+**Cross-check bidirectionally.** Every in-text citation has a reference-ledger entry, and every reference-ledger entry is cited at least once in the manuscript. An **orphan reference** (listed, never cited) and a **dangling citation** (cited, never listed) are both findings resolved here, before Phase 4. A citation the synthesis carried but whose source the ledger cannot locate routes through the structured-inquiry channel — it never lands as an unresolvable reference (R4). Format the list in the discovered or `--venue` citation style.
 
 ### Phase 4 — Adversarial Reference & Claim Verification
 

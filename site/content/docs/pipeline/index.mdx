@@ -144,50 +144,50 @@ generated from the same definition.
 
 | Command | Summary |
 | --- | --- |
-| [/plan](/docs/pipeline/plan) | The plan-suite pipeline wrapped as one dynamic multi-agent workflow. |
-| [/plan-spec](/docs/pipeline/plan-spec) | Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. |
-| [/plan-generate](/docs/pipeline/plan-generate) | Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five … |
-| [/plan-review](/docs/pipeline/plan-review) | Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and … |
-| [/plan-design](/docs/pipeline/plan-design) | Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation … |
-| [/plan-execute](/docs/pipeline/plan-execute) | Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and … |
-| [/plan-amend](/docs/pipeline/plan-amend) | Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream … |
-| [/plan-audit](/docs/pipeline/plan-audit) | Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than … |
-| [/plan-status](/docs/pipeline/plan-status) | Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the … |
-| [/research](/docs/pipeline/research) | The research pipeline wrapped as a single dynamic multi-agent workflow. |
-| [/research-ideate](/docs/pipeline/research-ideate) | Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with … |
-| [/research-spec](/docs/pipeline/research-spec) | Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing … |
-| [/research-theory](/docs/pipeline/research-theory) | Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. |
-| [/research-sources](/docs/pipeline/research-sources) | Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. |
-| [/research-synthesis](/docs/pipeline/research-synthesis) | Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the … |
-| [/research-proposal](/docs/pipeline/research-proposal) | Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record — the proposal stage of the /research pipeline. |
-| [/research-design](/docs/pipeline/research-design) | Operationalizes the synthesized research gap into testable predictions and a complete study design, then freezes the analysis plan in a preregistration before … |
-| [/research-experiment](/docs/pipeline/research-experiment) | Executes the designed study and captures raw data with full provenance — the run-and-record stage of the /research pipeline. |
-| [/research-analysis](/docs/pipeline/research-analysis) | Analyzes the raw data per the frozen preregistration — runs the planned statistical tests, reports effect sizes with confidence intervals (R7: never p-values … |
-| [/research-paper](/docs/pipeline/research-paper) | Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, … |
-| [/research-review](/docs/pipeline/research-review) | Subjects the finished paper to a peer-review-grade adversarial critique against venue standards — scores novelty, rigor, reproducibility, clarity, ethics, … |
-| [/research-publish](/docs/pipeline/research-publish) | Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability … |
-| [/research-disseminate](/docs/pipeline/research-disseminate) | Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer … |
-| [/audit](/docs/pipeline/audit) | The audit fortress wrapped as a single dynamic multi-agent workflow. |
-| [/a11y-audit](/docs/pipeline/a11y-audit) | Operator-driven accessibility audit pass against WCAG 2.2 AA. |
-| [/architecture-review](/docs/pipeline/architecture-review) | Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at … |
-| [/code-audit](/docs/pipeline/code-audit) | Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · … |
-| [/code-review](/docs/pipeline/code-review) | Operator-driven per-file code-quality review pass. |
-| [/dependency-audit](/docs/pipeline/dependency-audit) | Operator-driven per-dependency audit pass (direct + transitive). |
-| [/docs-review](/docs/pipeline/docs-review) | Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. |
-| [/perf-audit](/docs/pipeline/perf-audit) | Audits a deployed repository against the per-class performance budgets at `rules/performance-discipline.md` §1 — hook-handler runtime (10s/30s/60s tiers), … |
-| [/security-audit](/docs/pipeline/security-audit) | Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). |
-| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. |
-| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Operator-driven threat-modeling audit pass against STRIDE + PASTA. |
-| [/ux-review](/docs/pipeline/ux-review) | Developer-experience review of a host repository — audits CLI ergonomics (argument naming, help text, error messages, progress indicators), installation flow, … |
-| [/fortress](/docs/pipeline/fortress) | The production-hardening fortress wrapped as a single dynamic multi-agent workflow. |
-| [/elevate](/docs/pipeline/elevate) | Aggressive, zero-trust, open-loop MASTER repository-elevation command. |
-| [/eval](/docs/pipeline/eval) | Model-agnostic language-model evaluation campaign. |
-| [/freshify](/docs/pipeline/freshify) | Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. |
-| [/github-deploy-fresh](/docs/pipeline/github-deploy-fresh) | GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: &lt;repo-name&gt; v0.1.0 … |
-| [/github-deploy-next](/docs/pipeline/github-deploy-next) | Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull … |
-| [/projectify](/docs/pipeline/projectify) | Chat-app Project elevation command. |
-| [/release-readiness](/docs/pipeline/release-readiness) | Operator-driven pre-release gate sweep against the production-ready discipline. |
-| [/test-suite](/docs/pipeline/test-suite) | Behavior-first test authoring and execution workflow for a deployed repository. |
-| [/workflow](/docs/pipeline/workflow) | General-purpose workflow-harnessing command. |
+| [/plan](/docs/pipeline/plan) | Runs the planning pipeline (spec, generate, review, design) with independent verification, confirming at each hand-off; execute stays a manual step the … |
+| [/plan-spec](/docs/pipeline/plan-spec) | Turns free-form prose, notes or rough requirements into a spec-grade _spec/spec.md that keeps the author's wording and settles open questions by inquiry. |
+| [/plan-generate](/docs/pipeline/plan-generate) | Generates a full plan suite (master plan, progress log, decision notes, per-phase files) from a written spec or raw prose. |
+| [/plan-review](/docs/pipeline/plan-review) | Reads an existing plan suite line by line for fidelity, consistency, completeness and risk, then applies only the revisions the user approves. |
+| [/plan-design](/docs/pipeline/plan-design) | Writes the architectural design for a reviewed plan suite at _inputs/design.md: components, interfaces, decisions and diagrams. |
+| [/plan-execute](/docs/pipeline/plan-execute) | Use to implement one phase of a reviewed plan suite: reads the phase file and progress notes, verifies prerequisites and review scorecards, implements each … |
+| [/plan-amend](/docs/pipeline/plan-amend) | Changes an existing plan suite without losing resolved decisions, re-deriving only the affected spec, phases and notes. |
+| [/plan-audit](/docs/pipeline/plan-audit) | Audits a plan suite across spec, generate and review, then fixes findings in a loop without per-revision approval until none remain or the cap is hit. |
+| [/plan-status](/docs/pipeline/plan-status) | Reports plan-suite progress from its tracking files across tasks, phases and artifacts, read-only. |
+| [/research](/docs/pipeline/research) | Runs the research pipeline from idea to peer-reviewed paper, verifying each stage hand-off and halting before data collection or publication. |
+| [/research-ideate](/docs/pipeline/research-ideate) | Finds a research question from zero by scanning opportunities, gaps, and invalidated hypotheses, then ranking candidates. |
+| [/research-spec](/docs/pipeline/research-spec) | Frames a research question or notes into a testable spec: falsifiable hypotheses, inclusion and exclusion scope, success metrics. |
+| [/research-theory](/docs/pipeline/research-theory) | Builds the conceptual framework for a framed research question: theory of change, constructs with operational definitions and a conceptual-model diagram. |
+| [/research-sources](/docs/pipeline/research-sources) | Collects and screens the literature for a ratified research spec: deduplication, ranking and extraction with provenance. |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Reconciles collected sources into a state-of-the-art map, a literature matrix and a research-gap statement. |
+| [/research-proposal](/docs/pipeline/research-proposal) | Turns a research gap and theoretical framework into a fundable proposal: SMART aims, feasibility, risk register, impact pathway, reporting-guideline choice. |
+| [/research-design](/docs/pipeline/research-design) | Turns a synthesized research gap into testable predictions, a study design and a frozen preregistration. |
+| [/research-experiment](/docs/pipeline/research-experiment) | Runs the preregistered study protocol and records raw data with provenance: experiment log, data, and reproducibility manifest (environment, seed, version … |
+| [/research-analysis](/docs/pipeline/research-analysis) | Runs the preregistered statistical analysis on collected data: effect sizes with confidence intervals, multiple-comparison correction, robustness checks, … |
+| [/research-paper](/docs/pipeline/research-paper) | Assembles a paper draft from the synthesis, study design, and analysis, with every citation checked to resolve. |
+| [/research-review](/docs/pipeline/research-review) | Runs a hostile peer review of a finished paper: scores novelty, rigor, reproducibility, and ethics, then lists severity-ranked required revisions. |
+| [/research-publish](/docs/pipeline/research-publish) | Builds the venue submission package for a reviewed paper: template formatting, cover letter, data and code availability statement, ethics and conflict … |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Plans post-acceptance dissemination and impact: preprint announcement, FAIR data and code archive, altmetrics tracking, rebuttal loop. |
+| [/audit](/docs/pipeline/audit) | Sweeps a repository across all eleven review dimensions in one multi-agent run and returns one verified, severity-ranked report; it never fixes anything. |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Audits rendered pages of a web surface against WCAG 2.2 AA and reports severity-ranked findings per page, without fixing anything. |
+| [/architecture-review](/docs/pipeline/architecture-review) | Reviews a repository against its design document and layer rules, reporting boundary violations, coupling and wiring gaps as ranked findings. |
+| [/code-audit](/docs/pipeline/code-audit) | Cross-file forensic audit: hidden coupling, type-hint gaps, coverage holes, dead and duplicate code. |
+| [/code-review](/docs/pipeline/code-review) | Reviews source files one at a time for readability, naming, complexity, idiom fit and comment quality, and reports severity-ranked findings without editing. |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Audits direct and transitive dependencies for known vulnerabilities, license conflicts, deprecation and loose pins, ranking findings per dependency. |
+| [/docs-review](/docs/pipeline/docs-review) | Reviews documentation pages for prose clarity, broken links, code-block tags, citations and public-API coverage, reporting severity-ranked findings per page. |
+| [/perf-audit](/docs/pipeline/perf-audit) | Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint) with its benchmark drivers, … |
+| [/security-audit](/docs/pipeline/security-audit) | Audits a repository's security posture: secrets, injection, unsafe deserialization, path traversal, vulnerable dependencies. |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Audits a repository's release pipeline: build provenance, artifact signing, SBOM completeness, pinned CI actions and minimum permissions. |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Threat-models a repository with STRIDE per element and trust boundaries, classifying actors and rating residual risk. |
+| [/ux-review](/docs/pipeline/ux-review) | Reviews a repository's developer experience from a first-time user's view: CLI ergonomics, error messages, install flow and docs discoverability. |
+| [/fortress](/docs/pipeline/fortress) | Hardens a repository end to end: runs the audit sweep, verifies each finding, remediates survivors through the surgical-guard, secret-rotation and vuln-triage … |
+| [/elevate](/docs/pipeline/elevate) | Whole-repository elevation: runs the audit sweep, then critiques naming, structure, storytelling and extensibility, remediates what it finds (deletions are … |
+| [/eval](/docs/pipeline/eval) | Runs one evaluation campaign for a language model or prompt: scores each output over a dataset and reports metrics by category plus regressions against a … |
+| [/freshify](/docs/pipeline/freshify) | Use when a repository must be made fresh and release-clean: purges caches and stale artifacts, removes legacy narrative and back-references, normalizes file … |
+| [/github-deploy-fresh](/docs/pipeline/github-deploy-fresh) | Use when a GitHub repository needs one clean first release on origin/main: a single v0.1.0 release commit, green workflow cards, a first-version changelog, and … |
+| [/github-deploy-next](/docs/pipeline/github-deploy-next) | Use to run the next release cycle on a GitHub repository: merge ready pull requests, resolve the issues the release addresses, derive the SemVer bump from … |
+| [/projectify](/docs/pipeline/projectify) | Builds the Description, Instruction and knowledge files for a chat-app Project or custom assistant through guided questions, within the platform's context … |
+| [/release-readiness](/docs/pipeline/release-readiness) | Pre-release gate sweep: use before shipping a repository to check lint, format, types, tests, dependency and supply-chain risk, visibility surfaces, changelog … |
+| [/test-suite](/docs/pipeline/test-suite) | Authors and runs behavior-first tests for a repository, triages failures and reports coverage gaps on critical paths. |
+| [/workflow](/docs/pipeline/workflow) | Use to run a non-trivial mission as an independent multi-agent workflow: parallel subagents under named return contracts, refute-by-default verification of … |
 
 {/* apothem:generated-reference:end */}

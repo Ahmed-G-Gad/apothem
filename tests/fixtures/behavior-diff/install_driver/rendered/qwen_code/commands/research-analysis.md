@@ -1,5 +1,5 @@
 ---
-description: "Analyzes the raw data per the frozen preregistration — runs the planned statistical tests, reports effect sizes with confidence intervals (R7: never p-values alone), applies multiple-comparison correction, runs robustness and sensitivity checks, and discloses every deviation from the preregistered plan. The results-and-statistics stage of the /research pipeline. Triggered as 'run the preregistered analysis', 'compute the effect sizes and confidence intervals', 'apply the multiple-comparison correction', 'run the robustness checks on the results', or the pipeline-chained hand-off from /research-experiment. Consumes the experiment's raw data plus _inputs/preregistration.md and emits _outputs/analysis.md (tests with effect sizes and CIs, the correction, the robustness battery, the deviation ledger, null results recorded as findings) plus figures and tables. The fact-checker verifies every reported result refute-by-default before it becomes a claim."
+description: "Runs the preregistered statistical analysis on collected data: effect sizes with confidence intervals, multiple-comparison correction, robustness checks, deviation log. Use when the user asks to 'run the preregistered analysis' or 'compute effect sizes and CIs'."
 ---
 
 # /research-analysis — Results & Statistics

@@ -1,12 +1,12 @@
 ---
 name: "surgical-guard"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Surgical-edit + reactive-guard skill — matched when the operator asks to 'edit surgically', 'make a minimal diff', 'guard this change', 'review the diff for quality', 'don't rewrite the whole file', or needs a precise, anchor-bounded change plus a post-edit quality pass before it lands. Stage 1 edits through a managed-block or anchor-bounded region, preserving the surrounding bytes — never a whole-file overwrite where a scoped edit suffices. Stage 2 reviews only the change's diff, loading only the rule references its context matches, and catches the common failure modes of generated changes: clean-code (swallowed errors, hardcoded success returns, hallucinated APIs, silent contract changes), test (mock-boundary violations, hollow assertions, missing coverage of the changed behavior), and docs (hallucinated symbols, broken samples, docs-vs-code drift). NOT for green-field file creation, vendor-specific lint rule packs, or producing the change itself via debugging or TDD (routes to dev-toolkit)."
+updated: "2026-10-24"
+description: "Makes a minimal, anchor-bounded edit, then reviews only its diff for swallowed errors, hollow tests and docs drift, when the user asks to 'edit surgically', 'make a minimal diff' or 'guard this change'. Not for working out what the change should be (dev-toolkit)."
 archetype: "guard-template"
 userInvocable: true
 argument-hint: "[change target] [--guard clean-code|test|docs|all]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 

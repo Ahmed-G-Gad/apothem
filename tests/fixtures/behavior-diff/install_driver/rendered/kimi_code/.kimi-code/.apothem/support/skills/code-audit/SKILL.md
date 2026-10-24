@@ -1,10 +1,10 @@
 ---
 name: "code-audit"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · Cross-File Dependency Walk · Type-Hint + Coverage Audit · Dead-Code + Duplicate Detection · Architectural-Integrity Audit · Findings Emission + Validation Gate) interrogate cross-file consistency, hidden coupling, layer-boundary violations, type-hint accuracy under `mypy --strict`, test-coverage gaps against critical paths, dead code via `vulture`, duplicate code via `pylint --disable=all --enable=duplicate-code`, and architectural integrity at the implementation layer. Findings carry severity (HIGH / MEDIUM / LOW) with concrete-driver rationale and land at the consuming suite's `_inputs/code-audit-findings.md` ready for review-fortress consumption. Distinct from `/code-review` (per-file craft) — `/code-audit` is the cross-file forensic surface."
+updated: "2026-10-24"
+description: "Cross-file forensic audit: hidden coupling, type-hint gaps, coverage holes, dead and duplicate code. Use when the user asks to 'find hidden coupling', 'find dead code' or 'check cross-file consistency'. Not per-file style (code-review), layer rules (architecture-review) or a full sweep (audit)."
 argument-hint: "[path/to/repo/] [--focus AREA] [--dry-run]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---

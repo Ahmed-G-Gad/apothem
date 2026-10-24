@@ -1,12 +1,12 @@
 ---
 name: "research-disseminate"
-description: "Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer rebuttal / revision loop, and the registered-report stage-2 path — the terminal stage of the /research pipeline. Triggered as 'plan the dissemination and impact', 'announce the preprint and build the public artifacts', 'archive the data and code to a FAIR repository', 'set up altmetrics tracking', 'draft the reviewer rebuttal', or the pipeline-chained hand-off from /research-publish. Consumes _outputs/publication-record.md and emits _outputs/dissemination-plan.md carrying the preprint announcement, the public-artifact plan (talk / poster / blog), the FAIR archival deposit record (R8), the altmetrics and impact-tracking plan (R10), the rebuttal / revision loop, and the registered-report stage-2 path. The operator performs the public actions; the stage stops at a ready plan, never auto-publishes."
+description: "Plans post-acceptance dissemination and impact: preprint announcement, FAIR data and code archive, altmetrics tracking, rebuttal loop. Use when the user asks to 'plan the dissemination', 'archive the data and code', or 'draft the reviewer rebuttal'. Stops at a plan; the user posts."
 argument-hint: "[--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -119,7 +119,14 @@ Read the publication record in full. Compose the preprint announcement (the prep
 
 ## Output
 
-> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
+| Artifact | Path | Purpose |
+| -------- | ---- | ------- |
+| Dissemination plan | `{suite}/_outputs/dissemination-plan.md` | The dissemination-and-impact record: preprint announcement + public-artifact plan + FAIR archival deposit record + altmetrics/impact-tracking plan + rebuttal/revision loop + registered-report stage-2 path + the readiness-checklist outcome, ready for the operator to execute. |
+| Public artifacts | host-natural (a blog draft, a talk script, a poster source) | Optional artifact drafts authored at the host-natural location, each restating the paper's claims. |
+| Dissemination-requirement inventory | `{suite}/_inputs/dissemination-requirements.md` | Optional Phase 1 working file (the public-artifact, archival, and impact-tracking requirement list). |
+| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Closed at Phase 5 with `downstream: operator dissemination (terminal)`, the per-identifier and per-claim verification attestation, and the readiness-checklist outcome. |
+
+The `dissemination-plan.md` carries these canonical sections: `## §1 Publication Recap & Preprint Announcement` (the `ready` package recap, the reserved DOI, the preprint server and timing); `## §2 FAIR Archival Deposit` (the repository, the persistent identifier, the access terms and any restriction basis; R8); `## §3 Public Artifacts` (the talk / poster / blog plan, each claim traced to the paper); `## §4 Altmetrics & Impact Tracking` (the reach-and-impact measurement plan traced to the impact pathway; R10); `## §5 Rebuttal / Revision Loop & Registered-Report Path` (the route back through `/research-review` and the stage-2 path); `## §6 Identifier-Integrity Report` (the Phase 4 per-identifier resolution outcomes; R8); `## §7 Dissemination-Readiness Checklist` (the requirement × verdict table; the `ready` / `not-ready` verdict); `## §8 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
 
 ---
 

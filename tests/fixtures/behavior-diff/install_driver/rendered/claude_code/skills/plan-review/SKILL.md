@@ -1,12 +1,12 @@
 ---
 name: "plan-review"
-description: "Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and architecture — then refine through interactive Q&A. Mid-chain `/plan` stage; emits Review Scorecards that gate downstream execution at SHARED+ and a zero-open-finding terminal verdict."
+description: "Reads an existing plan suite line by line for fidelity, consistency, completeness and risk, then applies only the revisions the user approves. Use when the user asks to 'review the plan', 'check the phases for gaps' or 'is the plan complete'. Writes no new plan; unattended fix loop: plan-audit."
 argument-hint: "[path/to/plan-suite/] [--focus AREA] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

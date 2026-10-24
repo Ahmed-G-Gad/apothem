@@ -1,12 +1,12 @@
 ---
 name: "research-analysis"
-description: "Analyzes the raw data per the frozen preregistration — runs the planned statistical tests, reports effect sizes with confidence intervals (R7: never p-values alone), applies multiple-comparison correction, runs robustness and sensitivity checks, and discloses every deviation from the preregistered plan. The results-and-statistics stage of the /research pipeline. Triggered as 'run the preregistered analysis', 'compute the effect sizes and confidence intervals', 'apply the multiple-comparison correction', 'run the robustness checks on the results', or the pipeline-chained hand-off from /research-experiment. Consumes the experiment's raw data plus _inputs/preregistration.md and emits _outputs/analysis.md (tests with effect sizes and CIs, the correction, the robustness battery, the deviation ledger, null results recorded as findings) plus figures and tables. The fact-checker verifies every reported result refute-by-default before it becomes a claim."
+description: "Runs the preregistered statistical analysis on collected data: effect sizes with confidence intervals, multiple-comparison correction, robustness checks, deviation log. Use when the user asks to 'run the preregistered analysis' or 'compute effect sizes and CIs'."
 argument-hint: "[--suite-name NAME] [--override] [--correction METHOD] [--alpha LEVEL]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -73,7 +73,11 @@ The stage runs as one disciplined sprint: a single authoritative analysis artifa
 
 ### Phase 1 — Ingest the Raw Data & the Frozen Plan
 
-> Moved to `references/step-01-ingest-the-raw-data-the-frozen-plan.md`. MUST read it in full before executing this step.
+**Read the plan before the data.** Open `{suite}/_inputs/preregistration.md` in full *first*: the frozen plan is authoritative over every analysis choice, and reading it ahead of the data is what keeps the analysis from drifting toward whichever framing the data flatters (R5). Then read `{suite}/_outputs/experiment-log.md` and `{suite}/_outputs/reproducibility-manifest.md` to resolve the raw-data location, the seed, and the environment pins, and ingest the raw data per the locate-before-read discipline at `rules/large-file-reading.md`.
+
+Build the **analysis inventory** — for each preregistered test: its variables, its planned statistic, its declared alpha and tail, and its place in any comparison family — plus the declared correction method and the robustness/sensitivity checks the plan committed to. When the inventory exceeds a single pass, externalise it to `{suite}/_inputs/analysis-plan.md` (a free-form `{kebab-case-topic}.md` scratch file per `rules/context-management-scratch.md` §1).
+
+**Integrity check before any test runs.** Verify the raw data against the reproducibility manifest's expected shape — row count, variable set, value ranges. A mismatch is a finding surfaced *here*, before a single statistic is computed.
 
 ### Phase 2 — Run the Preregistered Tests with Effect Sizes & CIs
 
