@@ -60,6 +60,12 @@ non-redundant: the dispatcher protects the runtime, this context protects the
 header discipline. The header invariant itself is enforced mechanically in CI
 and pre-commit via the strict conformity corpus gate.
 
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+After this edit {path} would lack the canonical `SPDX-License-Identifier: MIT` header (or carry it malformed). Restore the line first in the file's comment syntax and re-issue. To skip it, ask the operator first (Authorship-Header option set, `rules/interactive-questions-canonical-shapes.md`).
+
 ## Bindings (§0.j five-direction)
 
 - **Drives →** The corrected content recommendation when an Edit would create an applicable file without the SPDX header line or remove an existing one. `conformity/file_header_grep.py` (the header check it runs).

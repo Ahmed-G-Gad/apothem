@@ -26,15 +26,16 @@ contract).
 **Decision predicate.**
 
 1. Resolve the **target path** to its absolute form.
-2. Resolve the **current project root** by walking from the working directory
-   to the nearest enclosing `.git/` directory; when no enclosing repo exists,
-   the current working directory is the project root.
+2. Resolve the **current project root** by walking from the tool call's
+   working directory (the payload `cwd`) to the nearest enclosing `.git/`
+   directory; when none exists, that directory is the project root. The tree
+   the hook is installed in is never the project root.
 3. Apply the verdict matrix below.
 
 In the conditions below, the **canonical project-local plans tree** is the sole
 location `<project-root>/.apothem/plans/` (the shared Apothem working
 directory's plans child). A legacy `<project-root>/.plans/` tree is no longer
-canonical and is redirect-recommended to `.apothem/plans/`. A **global plans
+canonical; the session-start bootstrap recommends upgrading it to `.apothem/plans/`. A **global plans
 location** is a `.plans/` OR `.apothem/plans/` directory under a root that is
 NOT the resolved project root (a harness-config root such as `~/.claude/`, the
 user home such as `~/.apothem/plans/`, or any other non-project location).
@@ -42,10 +43,10 @@ user home such as `~/.apothem/plans/`, or any other non-project location).
 | Case | Condition | Verdict |
 |------|-----------|---------|
 | **Project-local (allow)** | Target path is under the resolved project's canonical plans tree `<project-root>/.apothem/plans/` | **Allow** — the canonical project-local plans location |
-| **Legacy-local (redirect-recommended)** | Target path is under the resolved project's legacy `<project-root>/.plans/` tree | **Redirect-recommended** — surface a structured inquiry recommending redirection to `<project-root>/.apothem/plans/` (run `apothem migrate-workspace` to upgrade the legacy tree) |
+| **Legacy-local (allow)** | Target path is under the resolved project's legacy `<project-root>/.plans/` tree | **Allow** — the write stays in the project; the session-start bootstrap surfaces the `apothem migrate-workspace` upgrade once per session rather than on every write |
 | **Recursion-self (allow)** | Resolved project root IS the Apothem source repo itself (case-insensitive on Windows; for Claude Code users that working tree is `~/.claude/`) AND target path is under the apothem-source-repo canonical plans tree `.apothem/plans/` | **Allow** — the working tree IS the Apothem source repo; its own plans tree is the canonical destination for this project |
 | **Redirect-required** | Target path is under a global plans location (a harness-config-root `.plans/` or `.apothem/plans/` directory — e.g., `~/.claude/.plans/`, `~/.claude/<anything>/.plans/`, `~/.apothem/plans/` — for the Claude Code harness) AND project root is NOT the Apothem source repo | **Redirect-required** — surface a structured inquiry recommending redirection to the project-local plans tree |
-| **Soft-flag** | Target path is in another global-ecosystem location (`~/Desktop`, `~/Downloads`, `~/Documents`, `~/`, OR any path outside the resolved project root) AND filename matches `*plan*.md`, `*notes*.md`, `*draft*.md` (case-insensitive) OR proposed content carries plan-shaped frontmatter (`name:`, `phases:`, `master-plan:`, `phase-id:`) | **Soft-flag** — surface a structured inquiry proposing redirection |
+| **Soft-flag** | Target path is in another global-ecosystem location (`~/Desktop`, `~/Downloads`, `~/Documents`, `~/`, OR any path outside the resolved project root) AND filename matches `*plan*.md`, `*notes*.md`, `*draft*.md` (case-insensitive) OR proposed content carries plan-shaped markers (`phases:`, `master-plan:`, `phase-id:`, a Resumption Contract or Phase Output Registry), outside the session scratchpad and the system temp directories | **Soft-flag** — surface a structured inquiry proposing redirection |
 | **Allow** | Any other write | **Allow** unchanged |
 
 **Action — redirect-required path.**
@@ -70,6 +71,12 @@ write. The two layers are non-redundant: the dispatcher protects the runtime,
 this context protects the Plans-Locality discipline. The Plans-Locality
 invariant itself is enforced mechanically in CI and pre-commit via the strict
 conformity corpus gate (`no_global_plans_grep`).
+
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Plans locality ({verdict}): {path} is a plan-shaped write outside this project's plans tree `{plans_dir}`. Ask the operator whether to redirect it there (recommended) or write as proposed; do not write first.
 
 ## Bindings (§0.j five-direction)
 

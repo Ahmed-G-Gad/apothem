@@ -20,24 +20,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
+            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash pretooluse-bash-plan-guard pretooluse-eval-guard",
             "timeout": 10,
-            "statusMessage": "Validating shell command safety and isolation"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash-plan-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash-plan-guard",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on shell redirections"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
-            "timeout": 10,
-            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization"
+            "statusMessage": "Checking the shell command"
           }
         ]
       },
@@ -46,38 +32,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
+            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write pretooluse-write-header-guard pretooluse-write-plan-guard pretooluse-dependency-guard pretooluse-eval-guard",
             "timeout": 10,
-            "statusMessage": "Validating write target and content"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-header-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-header-guard",
-            "timeout": 10,
-            "statusMessage": "Injecting authorship header if missing"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-plan-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-plan-guard",
-            "timeout": 10,
-            "statusMessage": "Enforcing plans locality on the target path"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-dependency-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-dependency-guard",
-            "timeout": 10,
-            "statusMessage": "Flagging unpinned or untrusted dependency additions"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
-            "commandWindows": "\"${PYTHON_BIN}\" \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
-            "timeout": 10,
-            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization"
+            "statusMessage": "Checking the write target and content"
           }
         ]
       }

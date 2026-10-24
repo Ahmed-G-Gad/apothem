@@ -4,37 +4,43 @@ Proactive-compaction tracker for PostToolUse tool calls.
 
 > Advisory: this hook reports; it never blocks. A PostToolUse hook cannot block the tool call that already ran.
 
-This handler mechanically operationalizes the CM-19 proactive-compaction
-triggers (`rules/context-management-protocol.md` §2): the ~18-tool-call window
-and the large-cumulative-emission band. The dispatcher routes this message
-basename to the per-session activity tracker (`hooks/proactive_compaction_tracker.py`)
-rather than emitting this static context — the tracker maintains lightweight
-per-session counters keyed off the `session_id` field of the hook stdin payload
-and surfaces a concise proactive-compaction advisory once a threshold crosses,
-then resets the counters (anti-spam back-off) so it does not fire on every
-subsequent tool call.
+This handler mechanically operationalizes the proactive-compaction triggers
+(`rules/context-management-protocol.md` §2). The dispatcher routes this message
+basename to the per-session tracker (`hooks/proactive_compaction_tracker.py`)
+rather than emitting this static context. Claude Code runs it in the background
+(`async`), so it never delays a tool result; its advisory arrives on the next
+turn.
 
-**Scope.** Fires on every PostToolUse tool call (empty matcher — all tools).
-Per session, it tracks the tool-call count and a cumulative tool-output-size
-estimate since the last advisory.
+**Signal.** The tracker reads the newest main-thread assistant `usage` record
+from the tail of the payload's `transcript_path`: input plus cache-read plus
+cache-creation tokens is the context the model last received. A sharp drop in
+that size marks a compaction and restarts the advisory budget.
 
-**Thresholds (configurable).**
+**Policy.** With `APOTHEM_CONTEXT_WINDOW_TOKENS` (or Claude Code's
+`CLAUDE_CODE_AUTO_COMPACT_WINDOW`) set, the first advisory fires at 50% of the
+window and the second at 75%; without a known window, at 120,000 and 250,000
+tokens. A session resumed already past the second mark gets the second advisory
+directly, and that one ends the cycle's budget.
+
+**Fallback.** When no context size is measurable (a harness without a
+transcript, or no usage record yet) the tracker counts activity since the last
+advisory instead:
 
 - `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` (default `18`) — tool calls
   since the last advisory; mirrors the §2 "~18 tool calls" trigger.
 - `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` (default `20000`) — cumulative
-  tool-output bytes since the last advisory; a mechanical proxy for the §2
-  "500-line emission" / heavy-read band (~20 KB). A non-positive or
-  unparseable override falls back to the default, so a typo can never silently
-  disable the tracker.
+  tool-output bytes since the last advisory, counted only after three calls. A
+  non-positive or unparseable override falls back to the default, so a typo can
+  never silently disable the tracker.
 
-**Advisory shape.** When a threshold crosses, the tracker emits a
-`systemMessage` that suggests compaction to the operator, plus
+**Advisory shape.** The tracker emits a `systemMessage` for the operator (the
+session is growing; at the second mark, compact or start a fresh session) plus
 `additionalContext` asking the assistant to externalize in-conversation state
-(PROGRESS.md Resumption Contract + PLAN-NOTES.md, or a scratch file under the
-active harness's config root when no suite is active). Compaction stays the
-operator's call. The advisory fires at most twice per session, and
-`APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` silences it.
+(the active plan's PROGRESS.md Resumption Contract and PLAN-NOTES.md, or a short
+plan under `<project-root>/.apothem/plans/` when no suite is active). Compaction
+stays the operator's call, so the assistant-facing text never asks the assistant
+to compact. At most two advisories fire per compaction cycle, and
+`APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` silences them.
 
 **State.** Per-session counters live in the per-user hook state directory
 (`<state-dir>/proactive-compaction/<session>.json`, mode `0700`; the directory

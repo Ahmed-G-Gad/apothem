@@ -2,7 +2,7 @@
 
 Codebase isolation + frontmatter compliance.
 
-Scope. Triggered on every Write. Skip the codebase-isolation scan when `target` is inside the Apothem source repo or the active harness's config root (for the Claude Code harness, `~/.claude/`) — those locations are the ecosystem meta-config and are allowed to reference plan terms. Apply the scan otherwise.
+Scope. Triggered on every Write. The codebase-isolation scan covers the project's own files only: a target outside the project root (the active harness's config root such as `~/.claude/`, its memory, the session scratchpad) or inside the project's gitignored Apothem working tree (`.apothem/`: plans, memory, scratch) is where plan terms belong and is skipped. Public identifiers that share the id shape (`UTF-8`, `SHA-256`, `ISO-8601`, `CVE-...`, `RFC-...`) are not plan terms.
 
 Codebase-isolation scan. Reject content that leaks plan-internal terminology into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>` (for example `TM-10`, `CM-7`, `CP-20`), phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative. On hit: STOP. Rewrite the offending passage in natural domain language and re-issue the Write — do not silently strip the term, since the surrounding sentence binds to the term and breaks when the term is excised without restructuring.
 
@@ -19,6 +19,12 @@ Action. Examine the target `file_path` against the scratch-convention discipline
 Non-matching paths (anything that is not a scratch or prose path): no action. The scratch-convention check is scoped to the `_inputs/` and `_spec/` directory patterns defined at `rules/context-management-scratch.md` §1–§2 and does not interact with other path classes.
 
 **Fail-disposition.** Two layers govern failure. (a) The Python dispatcher at `hooks/dispatch.py` is fail-open: a hook-emission error converts to a structured failure envelope on stdout and the Write proceeds, so a harness error never silently blocks the tool call. (b) The assistant's interpretation of this context is fail-closed on a detected violation: when the codebase-isolation scan, a frontmatter gap, an over-budget body, or a scratch-path REJECT class is hit, the directive is to STOP and re-issue the Write corrected. The two layers are non-redundant: the dispatcher protects the runtime, this context protects the rule. Mechanical enforcement runs in CI and pre-commit via the strict conformity corpus gate.
+
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+Plan-internal identifier(s) {terms} in {path}. Product files must not carry plan, task or phase ids: rewrite the passage in plain domain language (do not just delete the id, the sentence depends on it) and re-issue the write.
 
 ## Bindings (§0.j five-direction)
 

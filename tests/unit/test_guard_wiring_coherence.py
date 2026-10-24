@@ -50,22 +50,24 @@ _UNWIRED_BY_DESIGN = frozenset({"pretooluse-conformity"})
 _MESSAGE_RE = re.compile(r"pretooluse-[a-z0-9-]+")
 
 
-def _entry_message(entry: dict[str, object]) -> str | None:
-    """Return the ``pretooluse-*`` guard basename a hook entry dispatches, or None.
+def _entry_messages(entry: dict[str, object]) -> set[str]:
+    """Return the ``pretooluse-*`` guard basenames a hook entry dispatches.
+
+    One entry may list several guards: every guard for a matcher shares one
+    dispatcher process.
 
     Handles both config shapes: the command-string form (``hooks.json`` /
     codex / qwen, where the basename is a token of ``command``) and the
     args-array form (``settings.json``, where the dispatcher message is the
     final ``args`` element). The ``gate.py --hook`` conformity entries carry no
-    ``pretooluse-*`` token and resolve to None, so they are skipped.
+    ``pretooluse-*`` token and resolve to an empty set.
     """
     command = entry.get("command")
     args = entry.get("args")
     text = command if isinstance(command, str) else ""
     if isinstance(args, list):
         text = f"{text} {' '.join(str(a) for a in args)}"
-    match = _MESSAGE_RE.search(text)
-    return match.group(0) if match else None
+    return set(_MESSAGE_RE.findall(text))
 
 
 def _pretooluse_guard_sets(hooks_config: dict[str, object]) -> dict[str, set[str]]:
@@ -77,8 +79,11 @@ def _pretooluse_guard_sets(hooks_config: dict[str, object]) -> dict[str, set[str
         assert isinstance(group, dict)
         inner = group["hooks"]
         assert isinstance(inner, list)
-        names = {_entry_message(h) for h in inner if isinstance(h, dict)}
-        result[str(group["matcher"])] = {n for n in names if n}
+        names: set[str] = set()
+        for h in inner:
+            if isinstance(h, dict):
+                names |= _entry_messages(h)
+        result[str(group["matcher"])] = names
     return result
 
 

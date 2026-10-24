@@ -64,25 +64,27 @@ Compaction is the primary defense against context rot. Trigger proactively (scop
 
 **Post-compaction restoration** — execute Blind Bootstrap Sequence (§4.2 below).
 
-**Mechanical operationalization (proactive-compaction advisory).** The two
-size-based triggers above — the "~18 tool calls" trigger and the "500-line
-emission" / heavy-read band — are no longer agent-discipline only: a
+**Mechanical operationalization (proactive-compaction advisory).** The
+size-based triggers above are no longer agent-discipline only: a
 dispatch-routed `PostToolUse` hook (`hooks/proactive_compaction_tracker.py`,
-wired all-tools via the empty matcher) maintains lightweight per-session
-counters keyed off the hook stdin `session_id` and surfaces a concise
-proactive-compaction advisory once a threshold crosses, then resets the
-counters (anti-spam back-off), at most twice per session. This makes the
-existing CM-19 triggers *mechanical* rather than introducing a competing policy:
-the advisory asks for the same externalization this section already mandates
-and suggests compaction to the operator, and the hook itself never blocks (a `PostToolUse` hook fires after the tool ran). The
-two thresholds default to the catalog values (18 tool calls; ~20 KB cumulative
-output ≈ the 500-line emission band) and are each overridable by an environment
-variable — `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` and
+wired all-tools via the empty matcher, and run in the background where the
+harness supports it) reads the measured context size from the newest usage record in the
+session transcript. With a known context window
+(`APOTHEM_CONTEXT_WINDOW_TOKENS`, or the harness's own auto-compact window
+variable) it raises the first advisory at 50% of the
+window and the second at 75%; without one, at 120,000 and 250,000 tokens. Both
+advisories ask for the externalization this section already mandates; the
+second also tells the operator the session is long, since compacting is the
+operator's action. A sharp drop in the measured size marks a compaction and
+restarts the two-advisory budget. Where no transcript is available the hook
+falls back to the catalog's activity triggers (18 tool calls; ~20 KB of
+cumulative output), overridable through
+`APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` and
 `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD`; a non-positive or unparseable
 override falls back to the default so a typo can never silently disable the
-tracker; `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` disables it explicitly.
-The hook is advisory-on but low-noise (silent below threshold), fast (a single
-small counter-file read + write), and fail-open (any error emits nothing).
+tracker, and `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` disables it explicitly.
+The hook never blocks (a `PostToolUse` hook fires after the tool ran), stays
+silent below threshold, reads only the transcript tail, and fails open.
 Per-session state lives in a per-user `0700` state directory, never in the
 repository tree. The hook complements `PreCompact`/`PostCompact` (which fire
 only once compaction is already underway; where a harness discards their

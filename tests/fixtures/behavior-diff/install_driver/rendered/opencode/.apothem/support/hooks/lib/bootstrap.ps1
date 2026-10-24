@@ -46,7 +46,10 @@ param(
     [Parameter(Mandatory = $true)]
     [Alias('Event')]
     [string]$HookEvent,
-    [Parameter(Mandatory = $false)][string]$ContextFile
+    [Parameter(Mandatory = $false)][string]$ContextFile,
+    # Further message files: the hook configuration lists every guard for one
+    # matcher in a single invocation, so one interpreter start serves them all.
+    [Parameter(Mandatory = $false, ValueFromRemainingArguments = $true)][string[]]$MoreContextFiles
 )
 
 # Why 'Continue' (not 'Stop'): the dispatch contract is fail-open — any
@@ -88,32 +91,83 @@ if (-not $root) {
     exit 0
 }
 
-# --- Locate Python via the locator stub --------------------------------------
-$locator = Join-Path $root 'hooks\lib\find-python.ps1'
-if (-not (Test-Path -LiteralPath $locator)) {
-    Write-DiagnosticEnvelope -Message ("hook {0} skipped: locator stub missing at {1}" -f $HookEvent, $locator)
-    exit 0
+# --- Interpreter cache --------------------------------------------------------
+# The locator executes each PATH candidate to read its version; its answer
+# changes only when Python is installed or removed. The winner is cached per
+# user, in the state root hooks/lib/state_dir.py uses, and trusted while the
+# file still exists. A miss, a stale entry, or no resolvable state root
+# re-probes. Only an absolute state root and an absolute cached path are
+# accepted: a relative one would resolve against the opened project, and the
+# hook must never execute a path the project chose. Mirrors bootstrap.sh, but
+# keeps its own file (interpreter-path-ps1): the two shells spell paths
+# differently. Plain .NET file I/O, so no byte-order mark is written or read on
+# either Windows PowerShell 5.1 or PowerShell 7.
+$stateRoot = $null
+if ($env:APOTHEM_HOOK_STATE_DIR) {
+    $stateRoot = $env:APOTHEM_HOOK_STATE_DIR
+} elseif ($env:CLAUDE_PLUGIN_DATA) {
+    $stateRoot = Join-Path $env:CLAUDE_PLUGIN_DATA 'state'
+} elseif ($env:XDG_STATE_HOME) {
+    $stateRoot = Join-Path $env:XDG_STATE_HOME 'apothem'
+} elseif ($env:LOCALAPPDATA) {
+    $stateRoot = Join-Path $env:LOCALAPPDATA 'apothem\state'
+} elseif ($env:HOME) {
+    $stateRoot = Join-Path $env:HOME '.local/state/apothem'
 }
-. $locator
-# find-python.ps1 sets `Set-StrictMode -Version Latest` and
-# `$ErrorActionPreference = 'Stop'` at its top level; dot-sourcing runs those
-# in THIS scope, silently overriding the justified fail-open 'Continue'
-# preference set above. Re-assert bootstrap's preferences so a later
-# non-terminating error still reaches the diagnostic-envelope branches rather
-# than aborting the fail-open stub.
-$ErrorActionPreference = 'Continue'
-Set-StrictMode -Off
-
+$cacheFile = $null
+if ($stateRoot -and [System.IO.Path]::IsPathRooted($stateRoot)) {
+    $cacheFile = Join-Path $stateRoot 'interpreter-path-ps1'
+}
 $py = $null
-try {
-    $py = Find-RealPython
-} catch {
-    Write-DiagnosticEnvelope -Message ("hook {0} skipped: locator raised {1}" -f $HookEvent, $_.Exception.Message)
-    exit 0
+if ($cacheFile -and (Test-Path -LiteralPath $cacheFile -PathType Leaf)) {
+    $cached = $null
+    try {
+        $cached = ([System.IO.File]::ReadAllText($cacheFile)).Trim()
+    } catch {
+        $cached = $null
+    }
+    if ($cached -and [System.IO.Path]::IsPathRooted($cached) -and (Test-Path -LiteralPath $cached -PathType Leaf)) {
+        $py = $cached
+    }
 }
+
 if (-not $py) {
-    Write-DiagnosticEnvelope -Message ("hook {0} skipped: no Python interpreter found" -f $HookEvent)
-    exit 0
+    # --- Locate Python via the locator stub ----------------------------------
+    $locator = Join-Path $root 'hooks\lib\find-python.ps1'
+    if (-not (Test-Path -LiteralPath $locator)) {
+        Write-DiagnosticEnvelope -Message ("hook {0} skipped: locator stub missing at {1}" -f $HookEvent, $locator)
+        exit 0
+    }
+    . $locator
+    # find-python.ps1 sets `Set-StrictMode -Version Latest` and
+    # `$ErrorActionPreference = 'Stop'` at its top level; dot-sourcing runs those
+    # in THIS scope, silently overriding the justified fail-open 'Continue'
+    # preference set above. Re-assert bootstrap's preferences so a later
+    # non-terminating error still reaches the diagnostic-envelope branches rather
+    # than aborting the fail-open stub.
+    $ErrorActionPreference = 'Continue'
+    Set-StrictMode -Off
+
+    try {
+        $py = Find-RealPython
+    } catch {
+        Write-DiagnosticEnvelope -Message ("hook {0} skipped: locator raised {1}" -f $HookEvent, $_.Exception.Message)
+        exit 0
+    }
+    if (-not $py) {
+        Write-DiagnosticEnvelope -Message ("hook {0} skipped: no Python interpreter found" -f $HookEvent)
+        exit 0
+    }
+    if ($cacheFile) {
+        # Best effort: a cache that cannot be written only costs the next probe.
+        try {
+            $cacheDir = Split-Path -Parent $cacheFile
+            New-Item -ItemType Directory -Force -Path $cacheDir -ErrorAction Stop | Out-Null
+            [System.IO.File]::WriteAllText($cacheFile, [string]$py)
+        } catch {
+            $null = $_
+        }
+    }
 }
 
 $dispatch = Join-Path $root 'hooks\dispatch.py'
@@ -123,9 +177,11 @@ if (-not (Test-Path -LiteralPath $dispatch)) {
 }
 
 # --- Hand off to dispatch.py -------------------------------------------------
-if ($ContextFile) {
-    & $py $dispatch --event-name $HookEvent --context-file $ContextFile
-} else {
-    & $py $dispatch --event-name $HookEvent
+$dispatchArgs = @('--event-name', $HookEvent)
+foreach ($message in @($ContextFile) + @($MoreContextFiles)) {
+    if ($message) {
+        $dispatchArgs += @('--context-file', $message)
+    }
 }
+& $py $dispatch @dispatchArgs
 exit $LASTEXITCODE

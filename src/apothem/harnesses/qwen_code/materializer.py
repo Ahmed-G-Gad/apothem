@@ -57,7 +57,7 @@ def _hook(command: str, timeout: int, description: str) -> dict[str, object]:
     }
 
 
-def _dispatch(python_bin: str, event_name: str, message_name: str | None = None) -> str:
+def _dispatch(python_bin: str, event_name: str, *message_names: str) -> str:
     """Render a hook command that invokes the installed dispatcher by path.
 
     *python_bin* is the absolute path to a real CPython >= 3.10 resolved by
@@ -70,6 +70,9 @@ def _dispatch(python_bin: str, event_name: str, message_name: str | None = None)
     tokens before writing), so the command points at the dispatcher materialized
     under ``~/.qwen/.apothem/support/hooks/`` without requiring an importable
     ``apothem`` package on the host.
+
+    Each name in *message_names* is a guard message the dispatcher evaluates
+    against the one stdin payload; several names yield one merged envelope.
 
     Qwen runs ``command`` as a shell command, and Apothem sets no ``shell``
     field, so an interpreter path that contains a space is wrapped in double
@@ -88,8 +91,7 @@ def _dispatch(python_bin: str, event_name: str, message_name: str | None = None)
         '"${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py"',
         event_name,
     ]
-    if message_name:
-        parts.append(message_name)
+    parts.extend(message_names)
     return " ".join(parts)
 
 
@@ -120,21 +122,15 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "matcher": "^run_shell_command$",
                 "hooks": [
                     _hook(
-                        _dispatch(python_bin, "PreToolUse", "pretooluse-bash"),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Validate shell command safety and isolation.",
-                    ),
-                    _hook(
                         _dispatch(
-                            python_bin, "PreToolUse", "pretooluse-bash-plan-guard"
+                            python_bin,
+                            "PreToolUse",
+                            "pretooluse-bash",
+                            "pretooluse-bash-plan-guard",
+                            "pretooluse-eval-guard",
                         ),
                         _PRETOOLUSE_TIMEOUT_S,
-                        "Enforce plans locality on shell redirections.",
-                    ),
-                    _hook(
-                        _dispatch(python_bin, "PreToolUse", "pretooluse-eval-guard"),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Flag unsafe dynamic evaluation or deserialization.",
+                        "Check the shell command.",
                     ),
                 ],
                 "sequential": True,
@@ -143,35 +139,17 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "matcher": "WriteFile|Edit",
                 "hooks": [
                     _hook(
-                        _dispatch(python_bin, "PreToolUse", "pretooluse-write"),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Validate write target and content.",
-                    ),
-                    _hook(
                         _dispatch(
-                            python_bin, "PreToolUse", "pretooluse-write-header-guard"
+                            python_bin,
+                            "PreToolUse",
+                            "pretooluse-write",
+                            "pretooluse-write-header-guard",
+                            "pretooluse-write-plan-guard",
+                            "pretooluse-dependency-guard",
+                            "pretooluse-eval-guard",
                         ),
                         _PRETOOLUSE_TIMEOUT_S,
-                        "Inject the authorship header when required.",
-                    ),
-                    _hook(
-                        _dispatch(
-                            python_bin, "PreToolUse", "pretooluse-write-plan-guard"
-                        ),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Enforce plans locality on the target path.",
-                    ),
-                    _hook(
-                        _dispatch(
-                            python_bin, "PreToolUse", "pretooluse-dependency-guard"
-                        ),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Flag unpinned or untrusted dependency additions.",
-                    ),
-                    _hook(
-                        _dispatch(python_bin, "PreToolUse", "pretooluse-eval-guard"),
-                        _PRETOOLUSE_TIMEOUT_S,
-                        "Flag unsafe dynamic evaluation or deserialization.",
+                        "Check the write target and content.",
                     ),
                 ],
                 "sequential": True,

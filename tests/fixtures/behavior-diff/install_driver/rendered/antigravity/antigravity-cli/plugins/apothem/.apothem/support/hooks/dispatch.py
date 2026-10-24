@@ -11,11 +11,14 @@ failure envelope on stdout so the hook runtime never sees a raw traceback.
 
 from __future__ import annotations
 
-import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Final
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    import argparse
 
 _HOOK_DIR: Final[Path] = Path(__file__).resolve().parent
 _LIB_DIR: Final[Path] = _HOOK_DIR / "lib"
@@ -108,19 +111,84 @@ _PROACTIVE_COMPACTION_MESSAGE_BASENAME: Final[str] = "posttooluse-proactive-comp
 _SESSION_END_MESSAGE_BASENAME: Final[str] = "stop"
 
 
+_FAST_FLAGS: Final[dict[str, str]] = {
+    "--event-name": "event",
+    "-e": "event",
+    "--context-file": "context",
+    "-c": "context",
+}
+
+
+def fast_parse(argv: list[str]) -> SimpleNamespace | None:
+    """Parse the fixed invocation shapes without argparse; ``None`` otherwise.
+
+    Every shipped hook configuration calls the dispatcher in one of the two
+    shapes :func:`parse_args` documents. Building an ``argparse`` parser costs
+    tens of milliseconds on current CPython (help-formatter and colour setup),
+    paid before every tool call, so those shapes are read directly. Anything
+    else (``--help``, ``--flag=value``, an unknown option, a missing value or
+    event) returns ``None`` and the caller falls back to :func:`parse_args`,
+    which keeps argparse's errors and exit codes for malformed input.
+    """
+    event: str | None = None
+    files: list[str] = []
+    names: list[str] = []
+    positionals: list[str] = []
+    quiet = False
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token in ("--quiet", "-q"):
+            quiet = True
+        elif token in _FAST_FLAGS:
+            if index + 1 >= len(argv):
+                return None
+            value = argv[index + 1]
+            index += 1
+            if _FAST_FLAGS[token] == "event":
+                event = value
+            else:
+                files.append(value)
+        elif token.startswith("-"):
+            return None
+        else:
+            positionals.append(token)
+        index += 1
+    if positionals:
+        if event is None:
+            event = positionals[0]
+            names = positionals[1:]
+        else:
+            return None
+    if not event:
+        return None
+    files = [f for f in files if f]
+    if not files:
+        files = [str(_MESSAGES_DIR / f"{name}.md") for name in names]
+    return SimpleNamespace(
+        event_name=event,
+        context_files=files,
+        context_file=files[0] if files else "",
+        quiet=quiet,
+    )
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse dispatch CLI arguments.
 
     Two invocation shapes are accepted:
 
     1. **Short positional form** (preferred — settings.json invocations):
-       ``apothem-hook <Event> [<message-name>]``. ``<message-name>`` is
-       the bare basename of a Markdown fixture under
+       ``apothem-hook <Event> [<message-name> ...]``. Each ``<message-name>``
+       is the bare basename of a Markdown fixture under
        ``apothem.hooks.messages`` (e.g., ``pretooluse-write``); the ``.md``
        suffix is added automatically.
     2. **Flag form**: an alternate invocation shape accepted alongside
        the positional form:
-       ``--event-name <Event> --context-file <path>``.
+       ``--event-name <Event> --context-file <path> [--context-file <path> ...]``.
+
+    Several messages in one invocation are evaluated against one payload and
+    answered with one envelope.
 
     When the positional form is used, ``<message-name>`` resolves to
     ``<apothem-hooks-package-dir>/messages/<name>.md`` so the file is
@@ -128,17 +196,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     checkout or a materialized ``apothem/hooks/`` tree under a harness
     root).
     """
+    import argparse
+
     parser = argparse.ArgumentParser(prog="apothem-hook")
     parser.add_argument("event_positional", nargs="?", default=None)
-    parser.add_argument("message_name_positional", nargs="?", default=None)
+    parser.add_argument("message_name_positional", nargs="*", default=[])
     parser.add_argument("--event-name", "-e", default=None)
-    parser.add_argument("--context-file", "-c", default="")
+    parser.add_argument("--context-file", "-c", action="append", default=[])
     parser.add_argument("--quiet", "-q", action="store_true")
     args = parser.parse_args(argv)
     if args.event_positional and not args.event_name:
         args.event_name = args.event_positional
-    if args.message_name_positional and not args.context_file:
-        args.context_file = str(_MESSAGES_DIR / f"{args.message_name_positional}.md")
+    args.context_files = [c for c in args.context_file if c]
+    if args.message_name_positional and not args.context_files:
+        args.context_files = [
+            str(_MESSAGES_DIR / f"{name}.md") for name in args.message_name_positional
+        ]
+    # ``context_file`` keeps the single-message shape for callers that read it;
+    # it names the first message when several are given.
+    args.context_file = args.context_files[0] if args.context_files else ""
     if not args.event_name:
         parser.error("event name is required (positional or --event-name)")
     return args
@@ -235,8 +311,12 @@ def _run_session_end_gate(context_file: str, quiet: bool) -> None:
     seg.main(["--context-file", context_file])
 
 
-def _run_emit(event_name: str, context_file: str, quiet: bool) -> None:
-    """Invoke emit_hook_context in hook mode.
+def _run_emit(event_name: str, context_files: list[str], quiet: bool) -> None:
+    """Invoke emit_hook_context in hook mode for one or more messages.
+
+    Several messages share one process and one envelope: the hook
+    configuration lists every guard for a matcher in a single invocation, so a
+    Write costs one interpreter start rather than one per guard.
 
     Fail-disposition: fail-open. Hook-context emission is advisory; a
     failure here degrades the contextual nudge but must never block the
@@ -245,19 +325,24 @@ def _run_emit(event_name: str, context_file: str, quiet: bool) -> None:
     """
     import emit_hook_context as ehc
 
-    argv = [
-        "--hook-event-name",
-        event_name,
-        "--context-file",
-        context_file,
-    ]
-    if quiet:
-        argv.append("--quiet")
-    ehc.main(argv)
+    ehc.run_hook_entry(event_name, context_files, quiet)
 
 
-def dispatch(event_name: str, context_file: str, quiet: bool) -> None:
-    """Route `event_name` to the correct hook script."""
+def dispatch(
+    event_name: str,
+    context_file: str,
+    quiet: bool,
+    context_files: list[str] | None = None,
+) -> None:
+    """Route `event_name` to the correct hook script.
+
+    *context_files* lists every message for a combined invocation; when absent,
+    *context_file* alone is used. The dedicated handlers (session start, the
+    AskUserQuestion validator, the compaction tracker, the session-end gate) are
+    selected by the first message and take exactly one.
+    """
+    files = [c for c in (context_files or [context_file]) if c]
+    context_file = files[0] if files else ""
     if event_name not in _VALID_EVENTS:
         raise ValueError(f"Unknown event: {event_name}")
 
@@ -285,10 +370,10 @@ def dispatch(event_name: str, context_file: str, quiet: bool) -> None:
         _run_session_end_gate(context_file, quiet)
         return
 
-    if not context_file:
+    if not files:
         raise ValueError(f"--context-file required for event '{event_name}'")
 
-    _run_emit(event_name, context_file, quiet)
+    _run_emit(event_name, files, quiet)
 
 
 def _best_effort_event_name(argv: list[str] | None) -> str:
@@ -302,6 +387,8 @@ def _best_effort_event_name(argv: list[str] | None) -> str:
     is recoverable. Never raises: argparse's own ``SystemExit`` (e.g. a missing
     option-argument) is caught and degrades to ``""``.
     """
+    import argparse
+
     try:
         lenient = argparse.ArgumentParser(add_help=False)
         lenient.add_argument("event_positional", nargs="?", default=None)
@@ -327,11 +414,18 @@ def main(argv: list[str] | None = None) -> None:
     """
     if hooks_disabled():
         return
+    fast = fast_parse(sys.argv[1:] if argv is None else argv)
+    if fast is not None:
+        try:
+            dispatch(fast.event_name, fast.context_file, fast.quiet, fast.context_files)
+        except Exception as exc:
+            _emit_failure(fast.event_name, str(exc))
+        return
     event_name = _best_effort_event_name(argv)
     try:
         args = parse_args(argv)
         event_name = args.event_name
-        dispatch(event_name, args.context_file, args.quiet)
+        dispatch(event_name, args.context_file, args.quiet, args.context_files)
     except SystemExit as exc:
         if exc.code in (0, None):
             raise

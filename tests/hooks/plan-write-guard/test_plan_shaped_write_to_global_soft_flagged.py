@@ -27,8 +27,12 @@ def test_soft_flag_filename_heuristics_named(write_plan_guard_text: str) -> None
 
 
 def test_soft_flag_frontmatter_signature_named(write_plan_guard_text: str) -> None:
-    """The soft-flag predicate names the plan-shaped frontmatter markers."""
-    for marker in ("name:", "phases:", "master-plan:", "phase-id:"):
+    """The soft-flag predicate names the plan-shaped frontmatter markers.
+
+    ``name:`` is not one: every skill, agent and command file carries it, so it
+    cannot mark a plan, and the guard never matched on it.
+    """
+    for marker in ("phases:", "master-plan:", "phase-id:"):
         assert marker in write_plan_guard_text, f"missing frontmatter marker: {marker}"
 
 
