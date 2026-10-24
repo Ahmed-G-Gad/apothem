@@ -31,10 +31,10 @@ cited rules:
 | user-confirm-grep | authority-inquiry-categories | advisory |
 | option-annotation-grep | option-annotation | blocking |
 | binding-reciprocity-grep | bidirectional-binding §Notation | blocking |
-| completion-claim-grep | phase reporting / production-ready | blocking |
-| unpinned-action-grep | production-ready §Supply-chain | blocking |
+| completion-claim-grep | session-closure §verifiable close | blocking |
+| unpinned-action-grep | production-ready-prs §Supply-chain posture | blocking |
 | hedging-grep | definitiveness §Hedging | advisory |
-| secret-leak-grep | code-craft security + production-ready | advisory |
+| secret-leak-grep | code-craft-conventions security + production-ready-prs | advisory |
 | file-header-grep | SPDX authorship-header policy | blocking |
 | always-on-budget-grep | token-budget-discipline §Always-on body budget | advisory |
 
