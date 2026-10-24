@@ -38,3 +38,19 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/AGENTS.md"
 agent_memory_surface: "AGENTS.md durable context (memory bank)"
+
+# Commands ship to .kimi-code/skills/ as skills with every source key kept.
+# Kimi Code's skills page documents name, description and
+# disable-model-invocation (alongside type, whenToUse and arguments); the other
+# keys stay in the file, and how Kimi treats them is the open question in
+# STANDARD-CONVENTION-PIN.md.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "native:disable-model-invocation"
+    allowed-tools: "ignored"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"
