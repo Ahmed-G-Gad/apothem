@@ -658,7 +658,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | Harness | Scope | Materialization root |
 |---|---|---|
 | Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/antigravity-cli/plugins/apothem/` |
-| Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks}/` |
+| Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` |
 | CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` |
 | Codex | User | `~/.codex/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Cursor | Project | `<project>/.cursor/rules/` |

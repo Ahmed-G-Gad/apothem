@@ -14,8 +14,8 @@ catalog in [`src/apothem/`](../src/apothem/). Edit the source, not these trees.
 ## Why `claude-code/` is committed rather than built at release
 
 The repository root is not a shippable plugin package. Cowork caps a plugin
-package at 5,000 files and this repository carries roughly 6,150 — `site/` and
-`tests/` alone are 85% of it, and neither is plugin content. Plugin packages
+package at 5,000 files and this repository carries about 7,800 — `site/` and
+`tests/` alone are about 70% of it, and neither is plugin content. Plugin packages
 have no exclusion mechanism (no `.pluginignore`, no `exclude` manifest field),
 so the only way to ship a package that fits is to give the plugin a root holding
 plugin content and nothing else.

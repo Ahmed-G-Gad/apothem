@@ -48,14 +48,16 @@ workspace.
 - Documentation: <https://apothem.ahmedgad.com/>
 - Source and issues: <https://github.com/ahmed-g-gad/apothem>
 
-Distributed as the signed `apothem.vsix` that the release workflow attaches to
-each new GitHub Release (or built from a checkout with the vsce locked in
+The extension is published on the Visual Studio Marketplace as
+`ahmed-g-gad.apothem-vscode`. Install it from the Extensions view, or run
+`code --install-extension ahmed-g-gad.apothem-vscode`.
+
+It is also distributed as the signed `apothem.vsix` that the release workflow
+attaches to each new GitHub Release (or built from a checkout with the vsce locked in
 `.github/vsce/`, which needs Node.js 22 or later: run
 `npm ci --prefix .github/vsce --ignore-scripts` at the repository root, then
 `../.github/vsce/node_modules/.bin/vsce package --no-dependencies` in this
 folder) — install with
 `code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
 command. It installs across the VS Code family and manages the
-GitHub Copilot instruction surface. A Marketplace listing is not yet published:
-the `apothem` name is held by another publisher, so the extension identifier is
-still unresolved.
+GitHub Copilot instruction surface.

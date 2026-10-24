@@ -217,13 +217,12 @@ SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
 SPDX-License-Identifier = "MIT"
 
 # ---------------------------------------------------------------------------
-# GitHub-tier metadata (CODEOWNERS, FUNDING, CodeQL config, Copilot instructions)
+# GitHub-tier metadata (CODEOWNERS, CodeQL config, Copilot instructions)
 # ---------------------------------------------------------------------------
 
 [[annotations]]
 path = [
   ".github/CODEOWNERS",
-  ".github/FUNDING.yml",
   ".github/copilot-instructions.md",
 ]
 SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"

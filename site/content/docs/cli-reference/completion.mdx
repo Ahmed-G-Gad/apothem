@@ -75,7 +75,7 @@ predictable and reversible — removing the appended block disables completion.
 | Code | Meaning |
 |---|---|
 | 0 | Completion script emitted |
-| 64 | Unsupported shell requested, or another usage error (under `--json`, a `cli.usage` error envelope) |
+| 64 | Unsupported shell requested, or another usage error such as an unknown option. `completion` has no `--json` mode: it prints a script, and passing `--json` is itself a usage error. |
 
 ## See also
 

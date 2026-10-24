@@ -77,7 +77,6 @@ Discussions   = "https://github.com/ahmed-g-gad/apothem/discussions"
 Changelog     = "https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md"
 Security      = "https://github.com/ahmed-g-gad/apothem/security"
 Brand         = "https://apothem.ahmedgad.com/docs/brand/"
-Funding       = "https://github.com/sponsors/ahmed-g-gad"
 
 # Console scripts are intentionally absent: apothem installs as a per-harness
 # plugin and runs directly on the system Python interpreter. The engine CLI

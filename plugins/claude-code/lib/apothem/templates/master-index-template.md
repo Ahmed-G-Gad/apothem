@@ -17,7 +17,7 @@
 | Stable ID | Spec section | Title / one-line summary | Phase coverage | Notes |
 |---|---|---|---|---|
 | `R-0001` | `_spec/spec.md §1` | Mission statement | `P-01`, `P-20` | — |
-| `R-0002` | `_spec/spec.md §2.1` | Token-usage optimization directive | `P-04` | Ratified at Q-014 |
+| `R-0002` | `_spec/spec.md §2.1` | Token-usage optimization directive | `P-04` | Ratified by the operator |
 | `R-NNNN` | `_spec/spec.md §M.N` | `[one-line summary]` | `P-NN`, `P-NN` | `[notes]` |
 
 ---
@@ -88,6 +88,6 @@
 
 - **Drives →** Every fresh-session navigation of this suite (the index is the first read after PROGRESS.md per `src/apothem/rules/context-management.md` §6 Blind Bootstrap at medium+ tier); every `/plan-review` cycle's audit-coverage decision (the §6 cadence table records what was last audited and what is due); every cross-suite federation parent's child-suite enumeration at large tier.
 - **Satisfies →** `src/apothem/rules/canonical-layout.md` §7 Three-Tier Scalability (medium+ tier indexing requirement); the §7.2 drift-prevention `MASTER-INDEX.md` mechanism; the §7.5 tier-transition emission contract.
-- **Established by ↑** `_spec/spec.md` §8 (D7 source — Q-011 three-tier ratification); the medium-tier transition decision recorded in PLAN-NOTES.md when the suite crosses the 50-phase or 100-spec boundary.
+- **Established by ↑** `src/apothem/rules/canonical-layout-reporting-tiers.md` §7 Three-Tier Scalability Framework; the medium-tier transition decision recorded in PLAN-NOTES.md when the suite crosses the 50-phase or 100-spec boundary.
 - **Gated by ←** Tier classification (small-tier suites omit this index); operator's borderline-tier structured inquiry resolution per §7.3 of the canonical-layout companion when phase count sits within ±10% of a boundary.
 - **Cross-bound with ↔** `src/apothem/templates/trace-matrix-template.md` (sibling drift-prevention surface; the trace matrix's row × column shape and this index's anchor tables together close the bidirectional traceability invariant); `PROGRESS.md` (per-phase status mirrors the §2 Phase Anchor Table's Status column); `_spec/spec.md` (every §1 row maps back to a spec section); `PLAN-NOTES.md` (every §4 row maps back to a Q-NNN resolution); every `phases/NN-kebab-topic/PHASE.md` (every §2 row resolves to a PHASE.md file).

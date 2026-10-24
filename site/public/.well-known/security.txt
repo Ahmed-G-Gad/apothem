@@ -8,7 +8,7 @@
 
 Contact: https://github.com/ahmed-g-gad/apothem/security/advisories/new
 Contact: mailto:me@ahmedgad.com
-Expires: 2026-12-01T00:00:00.000Z
+Expires: 2027-07-01T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://apothem.ahmedgad.com/.well-known/security.txt
 Policy: https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md

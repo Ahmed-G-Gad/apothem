@@ -65,6 +65,41 @@ function lightToken(name) {
 	return oklchToHex(Number(match[1]), Number(match[2]), Number(match[3]));
 }
 
+/** Read a dark-theme token (the `.dark` block) from app/global.css. */
+function darkToken(name) {
+	const css = readFileSync(new URL('../app/global.css', import.meta.url), 'utf8');
+	const dark = css.slice(css.indexOf('.dark {'));
+	const match = dark.match(new RegExp(`--${name}: oklch\\(([\\d.]+) ([\\d.]+) ([\\d.]+)\\)`));
+	assert.ok(match, `--${name} not found in the dark theme`);
+	return oklchToHex(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+/** Hex distance between two colours, as the largest per-channel difference. */
+function channelDelta(a, b) {
+	const [x, y] = [channels(a), channels(b)];
+	return Math.max(...x.map((v, i) => Math.abs(v - y[i])));
+}
+
+describe('semantic variables mirror assets/design-tokens.css', () => {
+	// Each pair is [theme reader, variable, token hex]. A one-step channel
+	// tolerance absorbs OKLCH rounding; a different token step fails.
+	const cases = [
+		[lightToken, 'background', '#f8fafc'], // slate-50
+		[lightToken, 'foreground', '#0f172a'], // slate-900
+		[lightToken, 'primary', '#047857'], // emerald-700
+		[lightToken, 'ring', '#059669'], // emerald-600
+		[darkToken, 'background', '#0f172a'], // slate-900
+		[darkToken, 'foreground', '#f8fafc'], // slate-50
+		[darkToken, 'primary', '#34d399'], // emerald-400
+		[darkToken, 'ring', '#34d399'], // emerald-400
+	];
+	for (const [read, name, hex] of cases) {
+		it(`${read === lightToken ? 'light' : 'dark'} --${name} is ${hex}`, () => {
+			assert.ok(channelDelta(read(name), hex) <= 1, `${name}: ${read(name)} vs ${hex}`);
+		});
+	}
+});
+
 describe('light theme --primary', () => {
 	it('reaches 4.5:1 on the active-item wash, the secondary surface and the page', () => {
 		const primary = lightToken('primary');

@@ -1,6 +1,6 @@
 ---
 name: Apothem Agent Instructions
-updated: 2026-07-06
+updated: 2026-10-24
 description: Canonical project-scoped instructions for AI coding agents working in the Apothem source repository; the surface CLAUDE.md and .github/copilot-instructions.md mirror.
 scope: project
 portability: project-local

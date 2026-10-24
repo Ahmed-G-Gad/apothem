@@ -37,8 +37,9 @@ themselves.
 
 ## JSON output contract
 
-Every command accepts `--json` (shorthand for `--format json`) and then writes
-exactly one JSON document to stdout. Each document starts with a top-level
+Every command except `completion` (which emits a shell script) accepts `--json`
+(shorthand for `--format json`) and then writes exactly one JSON document to
+stdout. Each document starts with a top-level
 `schema_version` key, an integer that is `1` today:
 
 ```json
