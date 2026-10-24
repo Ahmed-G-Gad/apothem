@@ -144,6 +144,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The question guard names questions from one and reads "destructive" as
+  the rule does.** Its findings said `[Q2]` for the third question; they now
+  count from one. A recommended option is flagged as destructive for the
+  operations the questions rule lists (delete, overwrite, revert uncommitted
+  work and their synonyms) and for dropping a table or database, not for
+  words like "retire" or "drop it from the copies".
 - **The GLM adapter describes Z.ai's own coding tool.** Z.ai ships ZCode, an
   agentic development environment; the docs and the `glm.toml` template no
   longer say it ships none, and say this adapter configures GLM only as a
