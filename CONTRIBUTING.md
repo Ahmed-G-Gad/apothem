@@ -61,7 +61,7 @@ make validate-ecosystem
 make test
 ```
 
-All four targets are wired into CI; running them locally catches the common failures before a reviewer is involved. The orchestrator at `src/apothem/conformity/gate.py` is the canonical entry point for both `make validate` and the local pre-commit hooks below — list the registered validators with `python -m apothem.conformity.gate --list` or invoke a single one with `python -m apothem.conformity.gate --check <name>`.
+CI runs the equivalent commands directly (Ruff, mypy, pytest, the ecosystem sweep, and the conformity gate) rather than through `make`; running the targets locally catches the common failures before a reviewer is involved. The orchestrator at `src/apothem/conformity/gate.py` is the canonical entry point for both `make validate` and the local pre-commit hooks below — list the registered validators with `python -m apothem.conformity.gate --list` or invoke a single one with `python -m apothem.conformity.gate --check <name>`.
 
 ### Pre-commit hooks
 

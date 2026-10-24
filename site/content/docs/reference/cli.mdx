@@ -74,8 +74,10 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 | `--project PATH` | Project root for project-scope harnesses. |
 | `--dry-run` | Preview update without writing files. |
 
-`update` re-materializes harness output. It does not update the Apothem CLI
-package; use the package manager that installed Apothem for package upgrades.
+`update` re-materializes harness output. It does not upgrade the Apothem
+engine itself; update the engine through the channel you installed it with
+(the `/plugin` flow, `npx`, or the installer and update scripts), as described
+in [Updating](/docs/install/updating).
 
 ### `apothem uninstall`
 
@@ -136,6 +138,7 @@ into the drift state:
 | `in-sync` | Installed and matching the profile baseline. |
 | `drift` | Installed but no longer matching — remediate with `apothem update`. |
 | `unknown` | Installed, but the baseline profile could not be read. |
+| `needs-project` | A project-scope harness was reported without `--project`, so its target cannot be resolved. |
 
 `installed` answers "did Apothem install here?", not "is this harness present
 on the machine?". It is keyed on Apothem's own artifacts — the managed block

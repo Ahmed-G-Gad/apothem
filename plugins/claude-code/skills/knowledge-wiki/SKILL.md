@@ -1,6 +1,6 @@
 ---
 name: "knowledge-wiki"
-description: "Grow and audit an index-first Markdown knowledge base built from project sources — matched when the user says 'add this paper to the wiki', 'ingest these sources into the knowledge base', 'lint the wiki', 'what changed in the knowledge base', or 'which pages does the wiki hinge on'. Modes: ingest, lint, drift, hubs. Never records a claim from an unopened source as fact."
+description: "Adds sources to and audits an index-first Markdown knowledge base, when the user asks to 'add this paper to the wiki', 'ingest these sources', 'lint the wiki' or 'what changed in the knowledge base'. Modes: ingest, lint, drift, hubs. Not source discovery or a one-off summary."
 user-invocable: true
 argument-hint: "[--mode ingest|lint|drift|hubs] [--kb PATH] [--source PATH_OR_ID] [--focus QUESTION]"
 disable-model-invocation: false

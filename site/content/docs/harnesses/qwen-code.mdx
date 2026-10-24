@@ -51,6 +51,27 @@ that names the absolute directory under `~/.qwen/.apothem/support/` each
 repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
 resolves against.
 
+**Skill tool lists.** `Qwen Code` reads a skill's tool allow-list from the
+camelCase `allowedTools` frontmatter key, and the value must be a YAML list. It
+ignores the hyphenated `allowed-tools` key written for other agents. Installed
+skills therefore carry `allowedTools` as a list, one entry per line, in place of
+the source corpus's comma-separated `allowed-tools` string. Each entry keeps the
+source's spelling, including patterns such as `Bash(git status *)`. Every other
+skill key, and the skill body, install unchanged.
+
+**Skill folders.** The adapter writes skills to `~/.qwen/skills/`. `Qwen Code`
+also reads `~/.agents/skills/` and, inside a project, `.qwen/skills/` and
+`.agents/skills/`. When two folders hold a skill with the same name, the one
+under `.qwen` wins, so an Apothem skill in `~/.qwen/skills/` takes precedence
+over a same-named skill another adapter wrote to `~/.agents/skills/`.
+
+**Hook events.** The adapter wires `SessionStart`, `PreToolUse`, `PreCompact`,
+`PostCompact`, and `Stop`. `Qwen Code` defines 22 hook events and each of these
+five is one of them. Three of the 22 (`SessionDelete`, `TodoCreated`, and
+`TodoCompleted`) have no `Claude Code` event of the same name (`Claude Code`
+names the todo events `TaskCreated` and `TaskCompleted`); the adapter wires none
+of them.
+
 ## Verification
 
 ```bash

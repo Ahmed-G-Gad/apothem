@@ -1,8 +1,8 @@
 ---
 name: "plan-review"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and architecture — then refine through interactive Q&A. Mid-chain `/plan` stage; emits Review Scorecards that gate downstream execution at SHARED+ and a zero-open-finding terminal verdict."
+updated: "2026-10-24"
+description: "Reads an existing plan suite line by line for fidelity, consistency, completeness and risk, then applies only the revisions the user approves. Use when the user asks to 'review the plan', 'check the phases for gaps' or 'is the plan complete'. Writes no new plan; unattended fix loop: plan-audit."
 argument-hint: "[path/to/plan-suite/] [--focus AREA] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
@@ -60,9 +60,9 @@ Execute `/plan-review`. Conduct a multi-pass review verifying prose fidelity, in
 
 **Pre-emission gate.** Step 8 (Final Review Report Emission) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted review report, the updated PLAN-NOTES.md scorecards, and the augmented Manifest. The gate attestation block is recorded in the review report and surfaced in the Manifest. Failure on any bar blocks the report's promotion until resolved.
 
-### Inquiry Cadence (D4)
+### Inquiry Cadence
 
-This command operates at **maximal structured-inquiry saturation** per D4 (Q-022). Every finding triage, severity ratification, blind-re-audit decision, disposition choice (accept · revise · reject · defer), revision-impact map, and authority-data inquiry routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation. Treat the generated suite as a newbie sketch under the Blind Review Mandate — surface every gap rather than inheriting trust from prior generation. **Question-fatigue-optimization is FORBIDDEN**. The DURING cadence runs throughout Steps 4 (Gap Analysis), 5 (Risk Assessment), 7 (User Clarification Batches), 8 (Propose Revisions), and 9 (Wait for Approval); the END-of-command synthesis question fires per D6 just before Step 12 review-report finalization (see `End-of-Command Synthesis (D6)` at the workflow tail).
+This command operates at **maximal structured-inquiry saturation**. Every finding triage, severity ratification, blind-re-audit decision, disposition choice (accept · revise · reject · defer), revision-impact map, and authority-data inquiry routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation. Treat the generated suite as a newbie sketch under the Blind Review Mandate — surface every gap rather than inheriting trust from prior generation. **Question-fatigue-optimization is FORBIDDEN**. The DURING cadence runs throughout Steps 4 (Gap Analysis), 5 (Risk Assessment), 7 (User Clarification Batches), 8 (Propose Revisions), and 9 (Wait for Approval); the END-of-command synthesis question fires just before Step 12 review-report finalization (see `End-of-Command Synthesis` at the workflow tail).
 
 ---
 
@@ -415,9 +415,9 @@ Deploy an Audit Team (CM-25A) for parallel re-scoring. This step re-applies the 
 - Findings Registry: verify zero `open` findings remain. If any finding remains open, return to Step 8 or exit BLOCKED; do not hand off to `/plan-execute`.
 - **Final Completeness Assertion:** revisit the Pre-Audit Baseline registry from Step 1. Confirm every in-scope element has been individually verified. If any in-scope element remains unverified, the review is incomplete — examine it now. If `--focus` narrowed scope, state explicitly which dimensions were audited and which remain unaudited.
 
-### Step 11.5: End-of-Command Synthesis (D6)
+### Step 11.5: End-of-Command Synthesis
 
-Just before review-report finalization at Step 12 handoff, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before review-report finalization at Step 12 handoff, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Review complete. Are there any deferred findings or improvements to surface before finalization?`
 - `header:` `End synthesis`

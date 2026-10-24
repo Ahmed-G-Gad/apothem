@@ -1,12 +1,12 @@
 ---
 name: "research-review"
-description: "Subjects the finished paper to a peer-review-grade adversarial critique against venue standards — scores novelty, rigor, reproducibility, clarity, ethics, statistical review, and reporting-guideline conformance, then emits a severity-triaged required-revision list with a concrete-driver rationale per finding. Refute-by-default: every claim is treated as unsupported until the manuscript's evidence forces otherwise. The peer-review stage of the /research pipeline. Triggered as 'review this paper like a hostile reviewer', 'what would Reviewer 2 reject this for', 'give me the required-revision list before submission', or the pipeline-chained hand-off from /research-paper. Consumes the paper deliverable and emits _outputs/review-report.md with the seven-axis scorecard, the HIGH/MEDIUM/LOW revision list, the reproducibility re-run verdict, the citation-integrity audit, and a recommend/major-revision/reject verdict. The fact-checker verifies every finding before it lands."
+description: "Runs a hostile peer review of a finished paper: scores novelty, rigor, reproducibility, and ethics, then lists severity-ranked required revisions. Use when the user asks to 'review this paper like Reviewer 2' or 'give me the revision list'. Critique only; it does not rewrite the paper."
 argument-hint: "[--suite-name NAME] [--override] [--venue STANDARD] [--blind]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

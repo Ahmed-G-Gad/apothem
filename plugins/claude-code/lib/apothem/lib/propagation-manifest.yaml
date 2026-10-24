@@ -544,9 +544,13 @@ harnesses:
         target: "${HARNESS_ROOT}/QWEN.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # native_skills rewrites each skill's `allowed-tools` string as the
+      # `allowedTools` array Qwen Code reads; Qwen Code ignores the hyphenated
+      # key and rejects a non-array value. Qwen Code also reads ~/.agents/skills/,
+      # where a same-named skill in ~/.qwen/skills/ wins.
       - source: "skills/"
         target: "${HARNESS_ROOT}/skills/"
-        mode: merge_tree_entries
+        mode: native_skills
         ownership_class: apothem-owned
       - source: "commands/"
         target: "${HARNESS_ROOT}/commands/"
@@ -589,9 +593,11 @@ harnesses:
   hermes:
     # ~/.hermes/config.yaml is rendered by materializer.py, not copied from the
     # tree, so it has no install entry below. The profile's MCP servers are
-    # written there under the top-level mcp_servers key. Commands and skills
-    # land under the Apothem support subtree; skills.config is a vendor
-    # registry-package list Apothem does not author.
+    # written there under the top-level mcp_servers key, together with
+    # skills.external_dirs, the documented list of extra skill directories, which
+    # carries the support skills directory. Commands and skills land under the
+    # Apothem support subtree; skills.config holds per-skill settings and stays
+    # operator-owned.
     install:
       - source: "commands/"
         target: "${HARNESS_ROOT}/.apothem/support/skills/"
@@ -642,8 +648,11 @@ harnesses:
 
   open_claw:
     # OpenClaw receives ~/.openclaw/openclaw.json from materializer.py.
+    # The one key it authors is skills.load.extraDirs, the documented list of
+    # extra skill directories, which carries the support skills directory.
     # Commands and skills land under the Apothem support subtree; OpenClaw's
-    # agents.defaults.skills is a name allowlist (not a dir loader), so no key is authored.
+    # agents.defaults.skills is a name allowlist the operator owns, so no key is
+    # authored there.
     install:
       - source: "commands/"
         target: "${HARNESS_ROOT}/.apothem/support/skills/"
@@ -869,9 +878,10 @@ harnesses:
     per-directory-filters: {}
 
   glm:
-    # GLM (Z.ai) is a model backend, not a coding-agent tool: Z.ai ships no
-    # native GLM coding CLI. An Anthropic-compatible or OpenAI-compatible agent
-    # is pointed at GLM by setting backend environment variables. The adapter
+    # GLM (Z.ai) is configured here as a model backend. Z.ai also ships a
+    # first-party coding tool, ZCode, which this adapter does not configure. An
+    # Anthropic-compatible or OpenAI-compatible agent is pointed at GLM by
+    # setting backend environment variables. The adapter
     # writes a single provider config file at
     # <project>/.apothem/providers/glm.toml recording the Anthropic-compatible
     # base URL (https://api.z.ai/api/anthropic), the OpenAI-compatible base URL

@@ -29,7 +29,9 @@ derive from it rather than re-declaring it.
 - **`theme-tokens.test.mjs`** — reads the light theme's `--primary`,
   `--background` and `--secondary` tokens from `app/global.css` and holds
   `--primary` text to 4.5:1 on the active-item wash, the secondary surface and
-  the page (run by `npm test`).
+  the page; it also holds the light and dark `--background`, `--foreground`,
+  `--primary` and `--ring` variables to the `assets/design-tokens.css` steps
+  they mirror (run by `npm test`).
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.

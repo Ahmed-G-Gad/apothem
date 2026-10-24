@@ -1,5 +1,5 @@
 ---
-description: "Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the /research pipeline. Triggered as 'map the SOTA', 'synthesize the sources into a gap statement', 'what does the literature say and where is the hole', 'build the literature matrix', or the pipeline-chained hand-off from /research-sources. Consumes the suite's _inputs/source-ledger.md plus the per-source extractions under sources/ and emits _inputs/synthesis.md carrying the SOTA map, the dimension-by-source literature matrix, the contested-findings ledger, and the one-sentence gap statement the study addresses. Every load-bearing claim is adversarially verified refute-by-default by the fact-checker agent before it earns a place in the map; the source-synthesis skill drives the reconciliation."
+description: "Reconciles collected sources into a state-of-the-art map, a literature matrix and a research-gap statement. Use when the user asks to 'map the SOTA', 'build the literature matrix' or 'state the research gap'. Needs a source ledger from research-sources; loose documents: source-synthesis."
 ---
 
 # /research-synthesis — SOTA Map & Gap Analysis

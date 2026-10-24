@@ -6,6 +6,11 @@
 # Commands are Markdown + YAML (TOML is deprecated). MCP is declared within
 # settings.json's mcpServers namespace. settings.json renders directly (no Jinja
 # template); the shipped instruction template is templates/QWEN.md.
+# Skills install through the native_skills mode: Qwen Code reads a skill's tool
+# allow-list from the `allowedTools` key as an array and ignores `allowed-tools`,
+# so each skill's `allowed-tools` string is rewritten as an `allowedTools` list.
+# Qwen Code also reads ~/.agents/skills/ and .agents/skills/; a same-named skill
+# in .qwen/skills/ wins. See STANDARD-CONVENTION-PIN.md "Skills".
 
 mcp_servers:
   - settings.json-mcpServers-namespace

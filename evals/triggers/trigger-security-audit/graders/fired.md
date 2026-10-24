@@ -1,0 +1,7 @@
+---
+type: tool_used
+tool: Skill
+input_match: '"skill"\s*:\s*"(?:[\w-]+:)?security-audit"'
+---
+
+<!-- SPDX-License-Identifier: MIT -->

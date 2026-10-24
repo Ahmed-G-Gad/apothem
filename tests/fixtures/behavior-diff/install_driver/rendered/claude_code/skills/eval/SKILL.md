@@ -1,12 +1,12 @@
 ---
 name: "eval"
-description: "Model-agnostic language-model evaluation campaign. Defines an evaluation dataset and scorer using the eval-harness skill, runs a candidate model or prompt over the dataset, scores every output with the prompt-evaluator agent, aggregates campaign metrics plus a per-category breakdown, and emits a report that surfaces regressions against the prior baseline. Operates against any model provider — no single vendor is assumed; the dataset, scorer, and candidate endpoint are all operator-supplied. Output lands at the consuming suite's `_inputs/eval-findings.md` with per-category scores, aggregate metrics, and a regression ledger ready for downstream release-readiness review."
+description: "Runs one evaluation campaign for a language model or prompt: scores each output over a dataset and reports metrics by category plus regressions against a baseline. Use when the user asks to 'run an eval campaign', 'evaluate this prompt' or 'check for regressions'. A reusable harness is eval-harness."
 argument-hint: "[--dataset PATH] [--scorer NAME]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

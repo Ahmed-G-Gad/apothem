@@ -39,6 +39,46 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Read-only skills and commands are model-invocable; side effects stay
+  manual.** 35 audit, review, planning, research and authoring commands and
+  skills can now be chosen by the model when a request matches them. Commands
+  that edit, publish, release or rotate secrets (`elevate`, `fortress`,
+  `freshify`, both GitHub deploy commands, `release-readiness`, `workflow`,
+  `plan-execute`, `research-experiment`, `research-publish`,
+  `dependency-upgrade`, `secret-rotation` and `issue-lifecycle`) run only when
+  you invoke them. `plan-suite` and `research-suite` are reference templates
+  read by path and are not listed. Every description now leads with what the
+  skill does and the requests it serves, in about 300 characters (the 52
+  model-invocable descriptions total about 15,000 characters, down from
+  about 42,000 before trimming), and overlapping skills, commands and
+  subagents name where each neighbouring request goes instead.
+- **Session start lists the skills by task.** A short generated index (one
+  line per domain, about 400 tokens) reaches Claude Code at session start, so
+  the model still knows a skill exists when its harness drops descriptions
+  from a long skill listing. `scripts/dev/generate_skill_index.py --check`
+  keeps it in step with the catalog.
+- **OpenClaw and Hermes load Apothem's skills without hand wiring.** Install
+  adds Apothem's support skills folder to OpenClaw's `skills.load.extraDirs`
+  and Hermes's `skills.external_dirs`, after any entries you already have;
+  uninstall removes only that entry, and `verify` checks it. Both lists come
+  last in their tool's lookup order, so a skill of your own with the same name
+  is the one that loads. A commented `openclaw.json` or `config.yaml` that
+  lacks the entry is refused with the line to add, as for OpenCode and Qwen
+  Code.
+- **Qwen Code reads Apothem's skill tool lists.** Skills now carry
+  `allowedTools` as a list, the key and shape Qwen Code reads; it ignores
+  `allowed-tools` and rejects a comma-separated string.
+- **Codex helper files carry only keys Codex reads.** They no longer set
+  `sandbox_mode = "read-only"`, which Codex ignores in a custom agent file:
+  the session's own sandbox governs writes, and each read-only helper states
+  it in its instructions.
+- **Shared-folder advisories cover more readers.** Install now notes that Qwen
+  Code also reads `~/.agents/skills/` (OpenClaw only under its default state
+  directory) and that Cursor reads `~/.claude/agents/` and `~/.codex/agents/`.
+- **Native config merges refuse a shape they cannot merge.** Where your file
+  holds a scalar or a different kind of value at a key Apothem writes a list or
+  mapping to, install refuses and writes nothing instead of replacing your
+  value; an explicit `null` counts as absent.
 - **Hook messages point at files the model can open.** Mandate, gate-bar and
   section references in the text hooks inject either name the shipped rule
   file they come from or say what they require, so they still mean something
@@ -77,8 +117,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   a plan-internal identifier, a numeric prefix on a suite-root plan file, or
   agent-attribution text, and names the finding.
 
+- **One tagline and token-aligned marks.** Every public surface now says
+  "one profile, every harness", and the logo, favicon, social images and
+  animated mark use the design-system colour tokens; a light animated mark
+  joins the dark one, and `scripts/dev/rebuild-assets-resvg.py` rebuilds
+  every raster from its source.
+- **`make lint` also runs `mypy`.** The target now matches the lint gate the
+  docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
+
+### Removed
+
+- **Funding links.** `.github/FUNDING.yml` and the `Funding` URL in
+  `pyproject.toml` are gone; the project takes no sponsorship.
+
 ### Fixed
 
+- **The GLM adapter describes Z.ai's own coding tool.** Z.ai ships ZCode, an
+  agentic development environment; the docs and the `glm.toml` template no
+  longer say it ships none, and say this adapter configures GLM only as a
+  model backend. The template's model mapping stays a placeholder because
+  Z.ai's pages give conflicting values. An unedited `glm.toml` written by an
+  earlier release no longer matches the template, so uninstall leaves it in
+  place.
 - **The dynamic-evaluation guard ignores prose.** A call now needs its
   parenthesis right after the name and an argument, definitions named `eval`
   or `compile` are skipped, a shell `eval` must start a statement and expand
@@ -109,6 +169,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Writes outside the project or into its `.apothem/` working tree are not
   scanned, and `UTF-8`, `SHA-256`, `ISO-8601`, `CVE-…` and `RFC-…` no longer
   read as plan identifiers.
+
+- **`/.well-known/security.txt` is published.** The Pages upload left out
+  dot-prefixed paths, so the file returned 404; the site workflow now uploads
+  it, allows no other hidden path, and checks the archive holds it. The site
+  copy's `Expires` matches the root copy.
+- **The docs match the code again.** Install examples for project-scope
+  harnesses name the project, the `verify` and `doctor` pages describe what
+  the commands do, `TRANSLATING.md` describes the machine-seeded locale pages
+  as they are served, broken links are fixed, and internal decision ids no
+  longer appear in shipped commands, rules or templates.
+
+### Security
+
+- **Release build tooling updated for two advisories.** The hash-locked build
+  environment moves to `certifi` 2026.10.19 (PYSEC-2026-4320, a distrusted
+  root certificate) and `setuptools` 84.1.0 (GHSA-xmj3-9gf7-h52w, a
+  legacy wheel-install path), and `build-system.requires` pins the same
+  `setuptools`. Neither advisory reaches an Apothem install: the setuptools
+  path is reached only through the deprecated `setup_requires` mechanism,
+  which Apothem does not use, and the build environment's `certifi` is not
+  shipped.
 
 ## [1.2.2] - 2026-10-20
 

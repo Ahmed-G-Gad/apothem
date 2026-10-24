@@ -17,6 +17,9 @@
 # hostname is served without an extra step. The packaged JSON schemas
 # (src/apothem/schemas/*.schema.json) are copied into site/dist/schemas/ the
 # same way, so each schema's $id URL serves the packaged file.
+# Pages artifact upload passes include-hidden-files so site/dist/.well-known/
+# (security.txt, per RFC 9116) is published; a step before the upload allows no
+# other hidden path, and a step after it checks the archive holds security.txt.
 # The two "Validate synced" steps lint the staged install scripts before the
 # deploy. installer-lint.yml runs the same two commands on scripts/installer/
 # for every pull request, so a lint finding fails the pull request before it
@@ -210,10 +213,40 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
 
+      - name: Assert the build ships .well-known/security.txt and no other hidden file
+        # upload-pages-artifact leaves out every dot-prefixed path unless it is
+        # told otherwise (include-hidden-files below), which is how
+        # /.well-known/security.txt once returned 404. Only .well-known/ and
+        # .nojekyll may be hidden in the build output, so enabling hidden files
+        # cannot publish a stray dotfile.
+        run: |
+          set -euo pipefail
+          test -s site/dist/.well-known/security.txt
+          grep -q '^Canonical: https://apothem.ahmedgad.com/.well-known/security.txt$' \
+            site/dist/.well-known/security.txt
+          stray="$(find site/dist -mindepth 1 -name '.*' \
+            -not -path 'site/dist/.well-known' \
+            -not -path 'site/dist/.well-known/*' \
+            -not -path 'site/dist/.nojekyll')"
+          if [ -n "${stray}" ]; then
+            echo "Unexpected hidden paths in site/dist:" >&2
+            echo "${stray}" >&2
+            exit 1
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: site/dist/
+          include-hidden-files: true
+
+      - name: Assert the Pages artifact contains .well-known/security.txt
+        # upload-pages-artifact writes the archive to $RUNNER_TEMP/artifact.tar
+        # before uploading it; listing it proves the hidden directory survived.
+        run: |
+          set -euo pipefail
+          tar -tf "${RUNNER_TEMP}/artifact.tar" > "${RUNNER_TEMP}/artifact.list"
+          grep -qx './.well-known/security.txt' "${RUNNER_TEMP}/artifact.list"
 
   deploy:
     name: deploy

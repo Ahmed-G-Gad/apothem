@@ -57,8 +57,8 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 
 Per-event Markdown contexts live under `src/apothem/hooks/messages/`:
 
-- Session lifecycle: `sessionstart.md`, `precompact.md`, `postcompact.md`,
-  `stop.md`, `posttooluse-proactive-compaction.md`
+- Session lifecycle: `sessionstart.md`, `skill-index.md`, `precompact.md`,
+  `postcompact.md`, `stop.md`, `posttooluse-proactive-compaction.md`
 - Shell calls: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
 - File writes: `pretooluse-write.md`, `pretooluse-edit.md`,
   `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
@@ -72,6 +72,16 @@ On Claude Code, `postcompact.md` is delivered by the SessionStart hook when the
 session resumes after compaction, because Claude Code does not pass PreCompact
 or PostCompact hook output to the assistant.
 
+`skill-index.md` is generated, not written: `scripts/dev/generate_skill_index.py`
+renders it from the skill and command catalog, one line per task group, with
+manual skills shown as `/apothem:<name>`. On Claude Code the SessionStart hook
+adds it to the session context when the file exists. It exists because Claude
+Code drops skill descriptions from its listing once the listing outgrows its
+character budget, and the index keeps every skill findable by task. A plugin
+install shows manual skills as `/apothem:<name>`; an engine install drops the
+prefix. The text stays under 1,600 characters, and `generate_skill_index.py
+--check` fails when the committed file no longer matches the catalog.
+
 Each context file is loaded by the dispatcher when its event fires
 and its context argument is registered in the settings file. The license
 comment line and the closing `## Bindings` section are removed before the text
@@ -84,20 +94,6 @@ The rest of the file is the full procedure, which the assistant reads only
 when it needs the detail. Guards judge "inside the project" against the git
 root above the tool call's working directory, never against the tree the hook
 is installed in.
-
-The authorship-header guard decides with the standard library alone, so it works
-under the Claude Code plugin, where the `apothem` package is not importable. It
-reads the header (`authorship-header.txt`) and the exemption list
-(`header-exceptions.txt`) from the `schemas/` directory beside `hooks/` in the
-tree it runs from, and picks the comment family from the file extension. It
-speaks only in a git project that follows the convention, one whose tree carries
-`src/apothem/schemas/authorship-header.txt`: the SPDX line is Apothem's own, so a
-project without that file, and a directory with no `.git`, stay silent. There it
-speaks when a Write leaves a file inside the project without the header, or an
-Edit creates a file without it or strips it from a file that has it. An exempt
-path, a path outside the project, a file type with no comment family, an edit
-elsewhere in the file and an edit that names text to find in a file that does not
-exist stay silent.
 
 ## Runtime contract
 
@@ -113,14 +109,8 @@ install, Codex, and Qwen Code:
 - **Bounded.** No emitted text exceeds 10,000 characters. The dependency guard
   speaks only when a write targets a dependency manifest or lockfile, and the
   dynamic-eval guard only when the content or command contains an evaluation
-  or unsafe-deserialization primitive written as code: a call with the
-  parenthesis directly after the name and an argument after it (`eval(x)`, not
-  the prose `eval (` or `eval()`, and not a definition such as `def exec(`), or
-  a shell `eval` statement with a quoted string, a `$` expansion or a backtick
-  command among its arguments. A shell command made only of searches, commits
-  and `cd` (`grep`, `rg`, `git commit`, `git grep`, `git log`) names those
-  constructs as data and is not scanned. The compaction advisory fires at most twice per compaction
-  cycle.
+  or unsafe-deserialization primitive. The compaction advisory fires at most
+  twice per compaction cycle.
 - **Uses channels the harness delivers.** PreToolUse guidance travels in
   `hookSpecificOutput`; the AskUserQuestion guard returns `additionalContext`,
   or `permissionDecision: deny` under the strict opt-in. Claude Code discards
@@ -178,6 +168,7 @@ Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
 | `pretooluse-write-plan-guard` | Plans-Discipline write guard for Write / Edit / NotebookEdit tool calls. | [`src/apothem/hooks/messages/pretooluse-write-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write-plan-guard.md) |
 | `pretooluse-write` | Codebase isolation + frontmatter compliance. | [`src/apothem/hooks/messages/pretooluse-write.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write.md) |
 | `sessionstart` | Session-start conformity posture. | [`src/apothem/hooks/messages/sessionstart.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/sessionstart.md) |
+| `skill-index` | Skills by task. /apothem:name = manual, run only on request. | [`src/apothem/hooks/messages/skill-index.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/skill-index.md) |
 | `stop` | Session-end protocol: externalize state; evaluate memory and artifacts. | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
 
 {/* apothem:generated-reference:end */}

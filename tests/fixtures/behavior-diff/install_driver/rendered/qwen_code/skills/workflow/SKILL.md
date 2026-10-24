@@ -2,12 +2,22 @@
 name: "workflow"
 version: "0.1.0"
 updated: "2026-10-24"
-description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or hands off a non-trivial multi-step mission that benefits from independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide), runs every load-bearing finding through an EXTREMELY-CRITIQUE refute-by-default pass (default 3 independent critics with distinct lenses; survival only on a non-refute majority), may remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), and emits a deterministic result. Multi-agent dispatch and auto-execution are opt-in and confirmation-gated. A request one tool call resolves is below this skill's threshold."
+description: "Use for a non-trivial mission that needs independent parallel work plus adversarial verification: decomposes it, dispatches independent subagents under named return contracts, runs a refute-by-default critique on every finding, and discloses any beyond-mission fixes. Runs only when the user invokes it, as in 'fan out and verify'."
 archetype: "orchestration-template"
 userInvocable: true
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, Agent, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "Agent"
+  - "WebSearch"
+  - "TodoWrite"
+  - "TaskCreate"
+  - "TaskGet"
+  - "TaskList"
+  - "TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,8 +1,8 @@
 ---
 name: "elevate"
 version: "0.4.1"
-updated: "2026-10-02"
-description: "Aggressive, zero-trust, open-loop MASTER repository-elevation command. DETECTS across every auditable dimension by dispatching the report-only /audit fortress (reusing its eleven passes, never re-deriving them), then runs independent critique agents over the elevation dimensions no audit covers (storytelling, naming uniformity, cross-sync, consolidation/modularity, aesthetics, visualization/tabulation, extensibility), folder by folder, file by file, line by line. Lifts each surface to current SOTA per rules/sota-elevation.md, remediates with the most fitting action (destruction included; every destructive step confirmation-gated), propagates each change across the reference graph per rules/propagation.md, and ends trace-free and production-ready by handing off to /freshify. Orchestration runs through the workflow harness (skills/workflow/SKILL.md); no model tier or effort is preset. WARNING: a full run is a relentless multi-pass undertaking — bound it with --dimensions / --max-passes for a scoped run."
+updated: "2026-10-24"
+description: "Whole-repository elevation: runs the audit sweep, then critiques naming, structure, storytelling and extensibility, remediates what it finds (deletions are confirmation-gated), propagates each change and hands off to freshify. A long multi-pass run that edits files, so it runs only when the user invokes it; bound it with --dimensions or --max-passes."
 argument-hint: "[path/to/repo/] [--dimensions all|<list>] [--max-passes N] [--open-loop] [--autonomous] [--verify-panel N] [--strict]"
 disable-model-invocation: true
 portability: "universal"

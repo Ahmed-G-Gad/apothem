@@ -101,7 +101,7 @@ make validate                                                 # conformity gate 
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
-make lint                                                     # ruff check + ruff format --check
+make lint                                                     # ruff check + ruff format --check + mypy
 make test                                                     # exit 0, no failures
 ```
 

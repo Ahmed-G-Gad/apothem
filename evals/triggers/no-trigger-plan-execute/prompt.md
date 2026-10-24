@@ -1,6 +1,6 @@
 ---
 description: A near-miss request that plan-execute must not pick up.
-tags: [no-trigger, 'class:command', 'component:plan-execute']
+tags: [no-trigger, 'class:command', 'component:plan-execute', user-invoked-only]
 expected_outcome: Claude does not invoke plan-execute.
 max_turns: 3
 timeout_seconds: 180

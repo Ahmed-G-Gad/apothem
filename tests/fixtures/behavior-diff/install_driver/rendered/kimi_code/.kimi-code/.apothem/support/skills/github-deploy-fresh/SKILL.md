@@ -1,8 +1,8 @@
 ---
 name: "github-deploy-fresh"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: <repo-name> v0.1.0 commit, strictly-green and maximal-score workflow cards (OpenSSF Scorecard where applicable), a curated concise first-version CHANGELOG, and zero residual GitHub traces (caches, branches, pull requests, prior releases/packages/deployments, failed runs, workflow-run history, draft/pre-releases, stale tags, gist/wiki traces, Pages build history, Actions run logs, environment/deployment records, branch-protection drift, git history). Inherits the agnostic freshening core from /freshify and adds only the forge-specific surface; in-place freshening is the default and every destructive step is confirmation-gated through the structured-inquiry channel."
+updated: "2026-10-24"
+description: "Use when a GitHub repository needs one clean first release on origin/main: a single v0.1.0 release commit, green workflow cards, a first-version changelog, and no residual runs, branches, tags, releases or history. Builds on freshify. Runs only when the user invokes it; every destructive step is confirmed."
 argument-hint: "[path/to/repo/] [--purge-runs] [--rewrite-history] [--recreate-repo] [--strict]"
 disable-model-invocation: true
 portability: "universal"

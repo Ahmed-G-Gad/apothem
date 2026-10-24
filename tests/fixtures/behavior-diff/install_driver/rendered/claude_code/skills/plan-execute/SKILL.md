@@ -1,8 +1,8 @@
 ---
 name: "plan-execute"
-description: "Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and review scorecards, implements every task with per-task commits, runs quality gates, and emits the phase `REPORT.md` before transitioning to the next phase (granular or continuous) — all under conformity checking, the fifteen-bar pre-emission gate, and a per-file destructive-op floor. The terminal `/plan` stage that turns a reviewed suite into landed, verified work."
+description: "Use to implement one phase of a reviewed plan suite: reads the phase file and progress notes, verifies prerequisites and review scorecards, implements each task with per-task commits, runs quality gates, and writes the phase report. Runs only when the user invokes it, because it changes code and commits."
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
-disable-model-invocation: false
+disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"

@@ -1,6 +1,6 @@
 ---
 name: "issue-lifecycle"
-description: "Issue-to-fix lifecycle with evidence at each step — matched when the operator asks to 'create an issue', 'size this issue', 'reproduce this bug', 'write a repro test', or 'fix issue 123'. Runs one stage per invocation: create drafts an issue after reading the issue templates and searching for duplicates; size classifies the work read-only as small, medium, large, or dependency-rooted; reproduce commits a failing test as a marked checkpoint on a repro branch; fix decides whether the defect is ours or a dependency's, offers options, and lands the chosen one on a fix branch. Never files an issue the operator has not approved and never auto-closes one. Delegates debugging and test-first mechanics to the dev-toolkit skill."
+description: "Takes a reported defect from issue to fix, one stage per run: create an issue, size it, reproduce it with a failing test, or fix it on a branch. Use for 'create an issue', 'size this issue', 'reproduce this bug' or 'fix issue 123'. Runs only when the user invokes it; never files or closes an issue unasked."
 user-invocable: true
 argument-hint: "[create|size|reproduce|fix] [issue number or description]"
 disable-model-invocation: true

@@ -1,13 +1,13 @@
 ---
 name: "multi-source-research"
-description: "Multi-source research harness — matched when the operator asks to 'research X deeply', 'investigate', 'find sources on', 'gather evidence about', 'fact-check', or any phrasing that demands a fanned-out, cross-verified, cited report rather than a single answer recalled from memory. Runs a five-step pipeline: decompose the question into testable sub-questions, fan out parallel source-discovery queries through a Research Team agent dispatch, fetch and extract claims per source, adversarially verify each claim against two or more independent sources, and synthesize a cited report where every claim carries its sources, a HIGH/MEDIUM/LOW confidence level, and an open-questions list. A single-source claim never closes at HIGH; an unverifiable claim is reported at LOW with the gap named, never papered over with an invented citation. User-invocable directly. NOT a single-answer lookup, a code generator, a plan-suite generator, a documentation generator, or a single-source summarizer."
+description: "Produces a cited, cross-verified research report with confidence levels, when the user asks to 'research X deeply', 'find sources on' or 'gather evidence about'. Finds new sources and writes the report; given documents: source-synthesis, one claim: fact-checker, a bare source list: research-scout."
 user-invocable: true
 argument-hint: "[research question]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, WebSearch, Agent"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   archetype: "research-template"
 ---
 
@@ -21,7 +21,7 @@ The load-bearing discipline is **adversarial verification**: a claim is not clos
 
 ## Detection Signal
 
-Triggers when the operator asks to "research X deeply", "investigate", "find sources on", "gather evidence about", "fact-check", or any phrasing that demands a fanned-out, cross-verified, cited report — never a single answer recalled from memory. The signal is the demand for *sourced, multi-source evidence* over a single-shot reply.
+Triggers when the operator asks to "research X deeply", "investigate", "find sources on", "gather evidence about", or any phrasing that demands a fanned-out, cross-verified, cited report — never a single answer recalled from memory. The signal is the demand for *sourced, multi-source evidence* over a single-shot reply. Verifying one stated claim routes to the fact-checker agent.
 
 ## Non-Goals
 
