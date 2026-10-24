@@ -7,7 +7,16 @@ archetype: "authoring-template"
 userInvocable: true
 argument-hint: "[document subject] [--kind thesis|paper|report|book] [--format latex|markdown]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
+  - "TodoWrite"
+  - "TaskCreate"
+  - "TaskGet"
+  - "TaskList"
+  - "TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

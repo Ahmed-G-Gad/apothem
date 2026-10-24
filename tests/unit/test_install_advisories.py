@@ -24,7 +24,7 @@ from apothem.lib.install_advisories import (
     shared_root_advisories,
 )
 
-_AGENTS_SKILLS = next(root for root in SHARED_ROOTS if root.owner == "codex")
+_AGENTS_SKILLS = next(root for root in SHARED_ROOTS if root.path == "~/.agents/skills/")
 
 
 def _skill(home: Path, name: str) -> None:
@@ -35,19 +35,66 @@ def _skill(home: Path, name: str) -> None:
     )
 
 
+def _agent_file(folder: Path, name: str) -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_text("x\n", encoding="utf-8")
+
+
+def _owner_entry(advisories: list[dict[str, object]], path: str) -> dict[str, object]:
+    matches = [
+        a
+        for a in advisories
+        if a["role"] == "owner" and str(a["message"]).startswith(path)
+    ]
+    assert len(matches) == 1, path
+    return matches[0]
+
+
 def test_owner_install_names_every_reader(tmp_path: Path) -> None:
     advisories = shared_root_advisories("codex", home=tmp_path, project=None)
-    owner = [a for a in advisories if a["role"] == "owner"]
-    assert len(owner) == 1
-    entry = owner[0]
+    entry = _owner_entry(advisories, "~/.agents/skills/")
     assert entry["outcome"] == "advisory"
     assert entry["operation"] == "shared_root"
     assert entry["harness"] == "codex"
     assert entry["path"] == str(tmp_path / ".agents" / "skills")
     message = str(entry["message"])
-    assert "~/.agents/skills/" in message
     for reader in _AGENTS_SKILLS.readers:
         assert get_harness_entry(reader).display_name in message, reader
+    assert "Qwen Code" in message
+
+
+def test_owner_note_states_the_condition_a_reader_loads_the_root_under(
+    tmp_path: Path,
+) -> None:
+    # Open-Claw skips ~/.agents/skills when its state directory is not the default.
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    message = str(_owner_entry(advisories, "~/.agents/skills/")["message"])
+    assert "Open-Claw (only under its default state directory)" in message
+    assert "Cursor," in message  # an unconditional reader carries no qualifier
+    assert "Cursor (" not in message
+
+
+def test_codex_agents_folder_is_shared_with_cursor(tmp_path: Path) -> None:
+    advisories = shared_root_advisories("codex", home=tmp_path, project=None)
+    entry = _owner_entry(advisories, "~/.codex/agents/")
+    assert entry["path"] == str(tmp_path / ".codex" / "agents")
+    assert entry["readers"] == ["cursor"]
+    # Where Codex writes the folder is not a condition on Cursor's reading it.
+    assert str(entry["message"]) == (
+        "~/.codex/agents/ is shared: Cursor also loads it. Installing or "
+        "uninstalling Codex changes what that tool loads."
+    )
+
+
+def test_claude_code_agents_folder_is_shared_with_cursor(tmp_path: Path) -> None:
+    advisories = shared_root_advisories("claude-code", home=tmp_path, project=None)
+    entry = _owner_entry(advisories, "~/.claude/agents/")
+    assert entry["path"] == str(tmp_path / ".claude" / "agents")
+    assert entry["readers"] == ["cursor"]
+    assert str(entry["message"]) == (
+        "~/.claude/agents/ is shared: Cursor also loads it. Installing or "
+        "uninstalling Claude Code changes what that tool loads."
+    )
 
 
 def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
@@ -74,6 +121,60 @@ def test_reader_install_names_the_owner_when_apothem_content_is_present(
     message = str(reader[0]["message"])
     assert "~/.agents/skills/" in message
     assert "Codex" in message
+
+
+def test_qwen_code_install_names_codex_when_apothem_skills_are_present(
+    tmp_path: Path,
+) -> None:
+    _skill(tmp_path, "workflow")
+    advisories = shared_root_advisories("qwen-code", home=tmp_path, project=None)
+    reader = [a for a in advisories if a["role"] == "reader"]
+    assert len(reader) == 1
+    assert str(reader[0]["message"]) == (
+        "Qwen Code also loads ~/.agents/skills/, which holds Apothem content "
+        "from the Codex install."
+    )
+
+
+def test_reader_note_carries_the_condition_the_reader_loads_the_root_under(
+    tmp_path: Path,
+) -> None:
+    _skill(tmp_path, "workflow")
+    advisories = shared_root_advisories("open-claw", home=tmp_path, project=None)
+    reader = [a for a in advisories if a["role"] == "reader"]
+    assert len(reader) == 1
+    assert str(reader[0]["message"]) == (
+        "Open-Claw (only under its default state directory) also loads "
+        "~/.agents/skills/, which holds Apothem content from the Codex install."
+    )
+
+
+@pytest.mark.parametrize(
+    ("folder", "filename", "owner"),
+    [
+        (".claude/agents", "test-runner.md", "Claude Code"),
+        (".codex/agents", "test-runner.toml", "Codex"),
+    ],
+)
+def test_cursor_install_names_the_owner_when_apothem_agents_are_present(
+    tmp_path: Path, folder: str, filename: str, owner: str
+) -> None:
+    _agent_file(tmp_path / folder, filename)  # an Apothem agent name
+    advisories = shared_root_advisories("cursor", home=tmp_path, project=None)
+    reader = [a for a in advisories if a["role"] == "reader"]
+    assert len(reader) == 1
+    message = str(reader[0]["message"])
+    assert f"~/{folder}/" in message
+    assert f"from the {owner} install" in message
+
+
+def test_reader_install_is_silent_for_agent_files_apothem_does_not_write(
+    tmp_path: Path,
+) -> None:
+    _agent_file(tmp_path / ".claude" / "agents", "someone-elses-agent.md")
+    _agent_file(tmp_path / ".codex" / "agents", "someone-elses-agent.toml")
+    advisories = shared_root_advisories("cursor", home=tmp_path, project=None)
+    assert [a for a in advisories if a["role"] == "reader"] == []
 
 
 def test_reader_install_is_silent_without_apothem_content(tmp_path: Path) -> None:
@@ -135,8 +236,9 @@ def test_cli_codex_install_lists_the_readers(cli_env: tuple[Path, Path]) -> None
 
     payload = json.loads(runner.invoke(main, [*args, "--format", "json"]).output)
     shared = [w for w in payload["warnings"] if w.get("operation") == "shared_root"]
-    assert len(shared) == 1
-    assert shared[0]["outcome"] == "advisory"
+    assert {w["owner"] for w in shared} == {"codex"}
+    assert len(shared) == 2  # ~/.agents/skills/ and ~/.codex/agents/
+    assert {w["outcome"] for w in shared} == {"advisory"}
 
 
 # --- MCP profile advisories ---------------------------------------------------

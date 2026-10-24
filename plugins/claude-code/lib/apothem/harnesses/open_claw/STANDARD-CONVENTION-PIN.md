@@ -4,26 +4,57 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against `docs.openclaw.ai` (agent workspace and bootstrap files, skills, MCP CLI). Skills load from `~/.openclaw/skills` and each agent workspace, then filter through the agent skill allowlists (`agents.defaults.skills`); MCP servers live in the `mcp.servers` config block, managed with `openclaw mcp list|show|set|unset`. OpenClaw also documents plugins and the ClawHub registry. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: skill loading re-checked against `docs.openclaw.ai` (skills, skills config, config extensions) on 2026-10-24. Correction: `skills.load.extraDirs` is a documented `string[]` of extra skill directories read at the lowest precedence of the skill sources, so the adapter lists its support skills directory there. The agent workspace, allowlist, MCP and plugin facts carry over from 2026-10-03: skills also filter through the agent skill allowlists (`agents.defaults.skills`); MCP servers live in the `mcp.servers` config block, managed with `openclaw mcp list|show|set|unset`; OpenClaw also documents plugins and the ClawHub registry. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/open_claw/`
 - Evidence level: vendor-doc pinned for `~/.openclaw/openclaw.json` (JSON5).
-  Skills load from `~/.openclaw/skills` (shared root) plus each agent workspace,
-  then are filtered by the effective allowlist under `agents.defaults.skills`
-  (per-agent override `agents.list[].skills`). Subagents are documented via
+  Skills load from these sources, highest precedence first, and the highest
+  source wins when the same skill name appears in more than one:
+  `<workspace>/skills`, `<workspace>/.agents/skills`, `~/.agents/skills`
+  (default state directory only), `<state-dir>/skills` (`~/.openclaw/skills` by
+  default), workshop skills, bundled and custodian skills, then every directory
+  under `skills.load.extraDirs` together with plugin skills (the config page
+  puts `extraDirs` below plugin skills; either way it is last). The vendor
+  examples write an entry with a leading `~/`. The operator's skill allowlist
+  lives under `agents.defaults.skills` (per-agent override
+  `agents.list[].skills`; the 2026-10-03 reading is that it filters the loaded
+  set, see the first `TODO(clarify)` below). Subagents are documented via
   `agents.list[].subagents.allowAgents` (with `maxConcurrent` /
   `runTimeoutSeconds`). MCP servers live in the `mcp.servers` config block,
   managed via the `openclaw mcp` CLI subcommands (list / show / set / unset).
   OpenClaw is a multi-channel messaging gateway. No vendor-native UI claim is
   made here. Versionless docs carry no version or SHA — no-immutable-source
   exception.
+- Adapter skill wiring: the adapter appends `~/.openclaw/.apothem/support/skills`
+  to `skills.load.extraDirs` and owns only that entry. The operator's own
+  `extraDirs` entries stay first and survive an uninstall, and the adapter
+  writes into none of the higher-precedence skill folders, so a skill of the
+  same name that the operator keeps in any of them wins over the Apothem copy.
+  `apothem verify` requires the entry.
+- TODO(clarify): the 2026-10-24 check does not say whether the
+  `agents.defaults.skills` allowlist filters skills loaded from
+  `skills.load.extraDirs`, or what an unset allowlist means. The adapter does
+  not edit the allowlist.
+- TODO(clarify): with a non-default `OPENCLAW_STATE_DIR` the docs say session
+  skill indexes leave out home-scoped roots "such as `~/.agents/skills`"; the
+  2026-10-24 check does not say whether that covers home-scoped
+  `skills.load.extraDirs` entries. The adapter writes only
+  `~/.openclaw/openclaw.json`.
+- TODO(clarify): the vendor pages quoted in the 2026-10-24 check do not name the
+  `SKILL.md` frontmatter keys OpenClaw reads, so `capabilities.yml`
+  `conversion_losses` keeps every key as `ignored`.
 
 ## Vendor Sources
+
+Retrieved 2026-10-24.
+
+- <https://docs.openclaw.ai/tools/skills> (skill sources, precedence and the name-clash rule)
+- <https://docs.openclaw.ai/tools/skills-config> (`skills.load.extraDirs` as a `string[]` at the lowest precedence)
+- <https://docs.openclaw.ai/gateway/config-extensions> (`load.extraDirs` example and precedence)
 
 Retrieved 2026-10-03.
 
 - <https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap> (agent workspace and bootstrap files)
-- <https://docs.openclaw.ai/tools/skills> (skill loading and allowlists)
 - <https://docs.openclaw.ai/cli/mcp> (`mcp.servers` and the `openclaw mcp` CLI)
 
 ## Discovery Targets
@@ -60,7 +91,7 @@ standalone-installable bundle; every artifact requires the full
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Config / agents | No — requires `apothem install` | `~/.openclaw/openclaw.json` is materializer-rendered by the engine; nothing persists before that run. |
-| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.openclaw/.apothem/support/` (support subtree) via the engine; OpenClaw `agents.defaults.skills` is a name-allowlist the adapter does not author. |
+| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.openclaw/.apothem/support/` (support subtree) via the engine; the support skills directory is listed under `skills.load.extraDirs`, and OpenClaw `agents.defaults.skills` is a name-allowlist the adapter does not author. |
 | Hooks / Settings | No — adapter scope | No Apothem-authored hook or settings surface beyond the config materializer. |
 | MCP | No — operator-owned | OpenClaw MCP servers live in the `mcp.servers` config block (managed via the `openclaw mcp` CLI subcommands; `mcp.*` hot-applies); the adapter authors no entries. |
 

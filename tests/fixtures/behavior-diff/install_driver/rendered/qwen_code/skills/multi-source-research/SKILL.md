@@ -7,7 +7,12 @@ archetype: "research-template"
 userInvocable: true
 argument-hint: "[research question]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep, WebSearch, Agent"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
+  - "Agent"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

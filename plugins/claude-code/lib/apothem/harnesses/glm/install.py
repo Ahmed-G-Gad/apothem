@@ -3,10 +3,10 @@
 """Install logic for the glm harness adapter.
 
 Materializes the GLM backend-provider configuration into the operator-supplied
-project root. GLM (Z.ai) is a model backend an Anthropic-compatible or
-OpenAI-compatible coding agent points at; it exposes no native coding-agent
-config surface, so the adapter writes a single provider file at
-``<project>/.apothem/providers/glm.toml`` recording the backend base URLs, an
+project root. GLM (Z.ai) is configured here as a model backend an
+Anthropic-compatible or OpenAI-compatible coding agent points at; the adapter
+does not target ZCode, Z.ai's own coding tool. It writes a single provider file
+at ``<project>/.apothem/providers/glm.toml`` recording the backend base URLs, an
 auth-token placeholder, and operator-configurable model-mapping placeholders.
 
 The propagation contract is declared in the canonical manifest at

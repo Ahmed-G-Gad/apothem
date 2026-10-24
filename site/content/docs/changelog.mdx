@@ -67,6 +67,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the model still knows a skill exists when its harness drops descriptions
   from a long skill listing. `scripts/dev/generate_skill_index.py --check`
   keeps it in step with the catalog.
+- **OpenClaw and Hermes load Apothem's skills without hand wiring.** Install
+  adds Apothem's support skills folder to OpenClaw's `skills.load.extraDirs`
+  and Hermes's `skills.external_dirs`, after any entries you already have;
+  uninstall removes only that entry, and `verify` checks it. Both lists come
+  last in their tool's lookup order, so a skill of your own with the same name
+  is the one that loads. A commented `openclaw.json` or `config.yaml` that
+  lacks the entry is refused with the line to add, as for OpenCode and Qwen
+  Code.
+- **Qwen Code reads Apothem's skill tool lists.** Skills now carry
+  `allowedTools` as a list, the key and shape Qwen Code reads; it ignores
+  `allowed-tools` and rejects a comma-separated string.
+- **Codex helper files carry only keys Codex reads.** They no longer set
+  `sandbox_mode = "read-only"`, which Codex ignores in a custom agent file:
+  the session's own sandbox governs writes, and each read-only helper states
+  it in its instructions.
+- **Shared-folder advisories cover more readers.** Install now notes that Qwen
+  Code also reads `~/.agents/skills/` (OpenClaw only under its default state
+  directory) and that Cursor reads `~/.claude/agents/` and `~/.codex/agents/`.
+- **Native config merges refuse a shape they cannot merge.** Where your file
+  holds a scalar or a different kind of value at a key Apothem writes a list or
+  mapping to, install refuses and writes nothing instead of replacing your
+  value; an explicit `null` counts as absent.
 - **Claude Code receives commands as skills that survive compaction.** The
   plugin and the engine install now ship each command as a skill: a
   `SKILL.md` of at most about 5,000 tokens with the procedure the model
@@ -116,6 +138,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The GLM adapter describes Z.ai's own coding tool.** Z.ai ships ZCode, an
+  agentic development environment; the docs and the `glm.toml` template no
+  longer say it ships none, and say this adapter configures GLM only as a
+  model backend. The template's model mapping stays a placeholder because
+  Z.ai's pages give conflicting values. An unedited `glm.toml` written by an
+  earlier release no longer matches the template, so uninstall leaves it in
+  place.
 - **The plans guard no longer fires on the project's own plans tree.** It
   judged "inside the project" against the tree the plugin is installed in, so
   every write to `<project>/.apothem/plans/` under a plugin install looked

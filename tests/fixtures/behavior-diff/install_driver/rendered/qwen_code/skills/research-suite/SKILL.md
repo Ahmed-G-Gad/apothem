@@ -6,7 +6,8 @@ description: "Research Suite template, read by path by the /research pipeline st
 archetype: "workflow-template"
 userInvocable: false
 disable-model-invocation: true
-allowed-tools: "Read"
+allowedTools:
+  - "Read"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

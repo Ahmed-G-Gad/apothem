@@ -7,7 +7,10 @@ archetype: "research-template"
 userInvocable: true
 argument-hint: "[--sources GLOB_OR_PATHS]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

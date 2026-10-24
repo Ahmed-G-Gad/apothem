@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Hermes docs at commit `1c56fed0480e67ffd56675d10862e607fb61a55b` of `github.com/NousResearch/hermes-agent` (configuration, MCP, skills, hooks, context files, slash commands). Corrections: MCP servers live in the top-level `mcp_servers` map of `~/.hermes/config.yaml`, not an `auxiliary.mcp` block; `skills.external_dirs` is a documented key for extra skill directories; and `skills.config` stores per-skill settings rather than a package list. Previous 2026-06-25 at commit `355af2c20f495b97c22c9aeb4c227fb0ca010da7`.
+- Snapshot date: 2026-10-24
+- Snapshot note: skills and context files re-checked against the live Hermes docs on 2026-10-24; the rest was refreshed against the Hermes docs at commit `1c56fed0480e67ffd56675d10862e607fb61a55b` of `github.com/NousResearch/hermes-agent` (configuration, MCP, skills, hooks, context files, slash commands). Corrections: MCP servers live in the top-level `mcp_servers` map of `~/.hermes/config.yaml`, not an `auxiliary.mcp` block; `skills.external_dirs` is a documented key for extra skill directories, which the adapter now points at its support skills directory; and `skills.config` stores per-skill settings rather than a package list. Previous 2026-10-03 at that commit.
 - Adapter source: `src/apothem/harnesses/hermes/`
 - Evidence level: vendor-repo pinned at commit
   `1c56fed0480e67ffd56675d10862e607fb61a55b`. Hermes is a multi-platform
@@ -15,10 +15,36 @@
     (`command`, `args`, `env`) or a remote server (`url`, with optional
     `auth: oauth`); `hermes import-agent claude-code` maps Claude Code's
     `mcpServers` onto it.
-  - Skills: `~/.hermes/skills/` is the primary directory; project skills take
-    precedence, then local, then `skills.external_dirs` (opt-in extra
-    directories). Every installed skill is available as a slash command, and
-    per-skill settings live under `skills.config`.
+  - Skills: `~/.hermes/skills/` is the primary directory. The documented
+    precedence is project skills, then local (`~/.hermes/skills/`), then
+    `skills.create_dir`, then `skills.external_dirs` (opt-in extra
+    directories under the `skills` section of `config.yaml`; the vendor example
+    lists `~/.agents/skills`, an absolute path and `${SKILLS_REPO}/skills`).
+    Project skills load from `<project-root>/.hermes/skills/` and
+    `<project-root>/.agents/skills/`, and Hermes does not auto-load them from
+    arbitrary cloned repos. `~/.agents/skills` is not a default location; it is
+    only the vendor's example of an `external_dirs` entry. Every installed skill
+    is available as a slash command, and per-skill settings live under
+    `skills.config`.
+  - Adapter skill wiring: the adapter appends `~/.hermes/.apothem/support/skills`
+    to `skills.external_dirs` and owns only that entry. The operator's own
+    `external_dirs` entries stay first and survive an uninstall, and the adapter
+    writes into none of the earlier locations in the precedence order, so
+    install, update and uninstall never replace a skill the operator keeps in
+    any of them. `apothem verify` requires the entry.
+  - Context files: Hermes loads one project context type per session, first
+    match wins, in the order `.hermes.md`, `AGENTS.override.md`, `AGENTS.md`,
+    `CLAUDE.md`, `.cursorrules`. The adapter writes none of them.
+  - TODO(clarify): the Hermes context-files page contradicts itself on
+    `AGENTS.override.md`: its "Priority system" section lists it in the chain,
+    while its "At startup" scan step omits it.
+  - TODO(clarify): the skills page states the precedence order, but the
+    2026-10-24 check quotes no sentence saying which copy Hermes loads when two
+    sources hold a skill of the same name; the adapter reads the order as
+    "earlier wins".
+  - TODO(clarify): the 2026-10-24 check does not name the `SKILL.md`
+    frontmatter keys Hermes reads, so `capabilities.yml` `conversion_losses`
+    keeps every key as `ignored`.
   - Sub-agent dispatch: the `delegation` block, bounded by
     `max_concurrent_children` and `max_spawn_depth`.
   - Commands: `quick_commands` plus skill slash commands.
@@ -26,6 +52,11 @@
   - Hooks and plugins: `~/.hermes/hooks/<name>/` and `~/.hermes/plugins/<name>/`.
 
 ## Vendor Sources
+
+Retrieved 2026-10-24 from the live docs site (versionless, no commit SHA — no-immutable-source exception).
+
+- <https://hermes-agent.nousresearch.com/docs/user-guide/features/skills> (skill directories, the precedence order and `skills.external_dirs`)
+- <https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files> (project context-file priority)
 
 Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607fb61a55b`.
 
@@ -83,15 +114,15 @@ Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607f
 
 Hermes is a multi-platform messaging gateway with **no vendor plugin or
 extension install surface** that Apothem ships. The adapter materializes
-`~/.hermes/config.yaml` (MCP under the top-level `mcp_servers` map) via its materializer
-and keeps non-native cohorts under the Apothem support subtree
+`~/.hermes/config.yaml` (MCP under the top-level `mcp_servers` map, the skills
+directory under `skills.external_dirs`) via its materializer and keeps non-native cohorts under the Apothem support subtree
 (`~/.hermes/.apothem/support/`). There is no standalone-installable bundle; every artifact
 requires the full `apothem install --harness hermes` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Config / MCP | No — requires `apothem install` | `~/.hermes/config.yaml` is materializer-rendered by the engine; nothing persists before that run. |
-| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.hermes/.apothem/support/` (support subtree) via the engine; Hermes skill directories and `skills.config` settings are operator-owned and the adapter authors neither. |
+| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.hermes/.apothem/support/` (support subtree) via the engine; the support skills directory is listed under `skills.external_dirs`, while Hermes's own skill directories and `skills.config` settings are operator-owned and the adapter authors neither. |
 | Hooks / Settings | No — adapter scope | Hermes documents hooks (`~/.hermes/hooks/`) and plugins (`~/.hermes/plugins/`); Apothem authors neither beyond the config materializer. |
 
 Apothem ships no Hermes plugin, so the engine install is the sole persistence

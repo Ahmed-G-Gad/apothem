@@ -7,7 +7,10 @@ archetype: "security-template"
 userInvocable: true
 argument-hint: "[--advisory ID] [--focus PATH]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

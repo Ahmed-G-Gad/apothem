@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against `qwenlm.github.io/qwen-code-docs` (settings, commands, sub-agents, skills, hooks, MCP, `.qwenignore`) and the Qwen Code source. The 2026-10-02 adapter changes followed these pages: hook timeouts are written in seconds, the hook interpreter path is quoted, and the extension's `/apothem` command is Markdown, since TOML commands are deprecated. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: refreshed against `qwenlm.github.io/qwen-code-docs` (settings, commands, sub-agents, skills, hooks, MCP, `.qwenignore`) and the Qwen Code source. The 2026-10-02 adapter changes followed these pages: hook timeouts are written in seconds, the hook interpreter path is quoted, and the extension's `/apothem` command is Markdown, since TOML commands are deprecated. The 2026-10-24 refresh re-checked skills and hooks against the Qwen Code v0.26.0 source: a skill's tool allow-list is the `allowedTools` array, skills are also read from `.agents/skills/`, and hooks have 22 events (see Skills and Hook Events below). Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/qwen_code/`
 - Evidence level: vendor-doc pinned for `~/.qwen/settings.json`, `QWEN.md`
   (`context.fileName`), Markdown+YAML commands (TOML deprecated),
@@ -47,8 +47,74 @@ Retrieved 2026-10-03 unless marked.
 - <https://qwenlm.github.io/qwen-code-docs/en/users/features/commands/> (Markdown commands)
 - <https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/> (MCP)
 - <https://qwenlm.github.io/qwen-code-docs/en/users/features/sub-agents/> (sub-agents; retrieved 2026-10-02)
-- <https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/> (skills; retrieved 2026-10-02)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/> (skills; retrieved 2026-10-24)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/hooks/> (hook events, matchers, timeouts; retrieved 2026-10-24)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/v0.26.0/packages/core/src/skills/types.ts> (`parseAllowedToolsField`; retrieved 2026-10-24)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/v0.26.0/packages/core/src/config/storage.ts> (`SKILL_PROVIDER_CONFIG_DIRS`; retrieved 2026-10-24)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/v0.26.0/packages/core/src/skills/skill-manager.ts> (skill base directories; retrieved 2026-10-24)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/v0.26.0/packages/core/src/hooks/types.ts> (`HookEventName`; retrieved 2026-10-24)
 - <https://raw.githubusercontent.com/QwenLM/qwen-code/a011f66944768e05b432a10548ffa4576f1d8ef8/packages/cli/src/services/FileCommandLoader.ts> (extension command directories; retrieved 2026-10-02)
+
+## Skills
+
+Pinned to the Qwen Code v0.26.0 source (tag `ac97ce7a`, published 2026-10-21),
+retrieved 2026-10-24.
+
+- Tool allow-list key: `SKILL.md` frontmatter only. Qwen Code reads the
+  camelCase `allowedTools` key, and its value must be a YAML array of strings;
+  any other shape throws `"allowedTools" must be an array`
+  (`parseAllowedToolsField` in `packages/core/src/skills/types.ts`). The
+  hyphenated `allowed-tools` key written for other agents is ignored (the skills
+  page says so, and neither `types.ts` nor `skill-manager.ts` mentions it). The
+  `native_skills` install mode therefore rewrites each skill's `allowed-tools`
+  string as an `allowedTools` list (`lib/qwen_skill_frontmatter.py`); a plain key
+  rename would leave a string that Qwen Code rejects.
+- Not changed: sub-agent files keep `tools` and `disallowedTools` in Qwen Code's
+  tool names, Markdown commands carry only `description`, and `settings.json`
+  holds no allow-list key. No vendor evidence at this snapshot says any of them
+  reads `allowedTools`.
+- Discovery roots: `SKILL_PROVIDER_CONFIG_DIRS = ['.qwen', '.agents']`
+  (`packages/core/src/config/storage.ts`), joined with the project root and with
+  the home directory. Qwen Code reads `<project>/.qwen/skills/`,
+  `<project>/.agents/skills/`, `~/.qwen/skills/` and `~/.agents/skills/`. A skill
+  in a `.qwen` root wins over a same-named skill in the matching `.agents` root.
+  Apothem writes `~/.qwen/skills/`, so its copy shadows a same-named skill that
+  another adapter wrote to `~/.agents/skills/` (the Codex adapter does). A stale
+  comment in `skill-manager.ts` orders the roots `.qwen > .agent > .cursor`; the
+  array is what runs. `.claude/skills` is not a default root.
+- `TODO(clarify)`: the vendor sources do not say how Qwen Code interprets one
+  `allowedTools` entry. Apothem carries each entry as the source writes it,
+  including pattern entries such as `Bash(git status *)`. The hooks page says
+  permission rules accept Claude Code's `Bash`, `Read` and `Write` names, but no
+  check has confirmed the pattern syntax or a mapping to Qwen Code's tool ids.
+- `TODO(clarify)`: Qwen Code's `types.ts` documents a hyphenated
+  `user-invocable` key where the source corpus writes `userInvocable`, and the
+  Claude Code emission already renames it. This pin does not rename it for Qwen
+  Code until the key has been checked against the vendor source.
+
+## Hook Events
+
+Pinned to the Qwen Code v0.26.0 source, retrieved 2026-10-24.
+
+- Qwen Code defines 22 hook events (the `HookEventName` enum in
+  `packages/core/src/hooks/types.ts`; the hooks page table lists the same 22):
+  `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`,
+  `Notification`, `UserPromptSubmit`, `UserPromptExpansion`, `SessionStart`,
+  `Stop`, `MessageDisplay`, `SubagentStart`, `SubagentStop`, `PreCompact`,
+  `PostCompact`, `SessionEnd`, `SessionDelete`, `PermissionRequest`,
+  `PermissionDenied`, `StopFailure`, `TodoCreated`, `TodoCompleted`,
+  `InstructionsLoaded`.
+- Nineteen of the 22 share a name with a Claude Code event. `SessionDelete`,
+  `TodoCreated` and `TodoCompleted` do not; Claude Code names the todo events
+  `TaskCreated` and `TaskCompleted`.
+- Apothem emits `SessionStart`, `PreToolUse`, `PreCompact`, `PostCompact` and
+  `Stop`. All five are among the 22, so none is dead config, and none is one of
+  the three Qwen Code-only names. A unit test fails when the materializer emits
+  a name outside the 22.
+- Claude Code compatibility: the hooks page accepts Claude Code tool names in a
+  matcher (`"Bash"` and `"Write|Edit"` work unchanged) and sets
+  `CLAUDE_PROJECT_DIR`. It does not state that the hook input and output JSON
+  match Claude Code's, so this pin does not claim it.
 
 ## Discovery Targets
 
@@ -92,9 +158,9 @@ artifact to its Qwen-native shape (Markdown+YAML commands/agents, `.qwen/skills/
 |---|---|---|
 | Context anchor (rules-as-text) | Yes | `QWEN.md` is loaded as session context by `context.fileName`; it now embeds the core engineering disciplines (Plans-Locality, Authority hygiene, Definitiveness, Production-ready, Plain-language) so those directives persist as context text. |
 | Commands | Bootstrap only | The bundled `/apothem` command (`qwen-commands/apothem.md`, Markdown with a `description` frontmatter key) persists; it shells `npx @ahmed-g-gad/apothem`. The full converted command cohort (`~/.qwen/commands/`) requires `apothem install`, and the engine converts it to the Markdown+YAML shape. Qwen Code documents TOML commands as deprecated and shows a migration prompt when it finds one, so the Qwen extension no longer reads the Gemini TOML file. |
-| Skills | No — requires `apothem install` | The extension manifest bundles no skills; `~/.qwen/skills/*/SKILL.md` lands only via the engine. |
+| Skills | No — requires `apothem install` | The extension manifest bundles no skills; `~/.qwen/skills/*/SKILL.md` lands only via the engine, with each `allowed-tools` string written as an `allowedTools` list. |
 | Rules (as native primitive) | No — platform limit | Qwen Code has no native rules-directory primitive; Apothem rules persist as the `QWEN.md` context text above, or as the engine-installed `~/.qwen/.apothem/support/rules/` reference tree. |
-| Hooks | No — requires `apothem install` | The adapter's materializer authors the native `settings.json` `hooks` block (SessionStart, PreToolUse, PreCompact, PostCompact, Stop); the extension manifest bundles none, so hooks land only via the engine run. Hook helper material lands under `~/.qwen/.apothem/support/hooks/`. |
+| Hooks | No — requires `apothem install` | The adapter's materializer authors the native `settings.json` `hooks` block (SessionStart, PreToolUse, PreCompact, PostCompact, Stop, all among Qwen Code's 22 events); the extension manifest bundles none, so hooks land only via the engine run. Hook helper material lands under `~/.qwen/.apothem/support/hooks/`. |
 | MCP servers | No — requires `apothem install` | The adapter's materializer projects the profile's MCP inventory into the native `settings.json` `mcpServers` block; the extension manifest authors no MCP entries, so they land only via the engine run. |
 | Tools / settings | No — requires `apothem install` | `~/.qwen/settings.json` is materializer-rendered by the engine (context anchor, hooks, MCP); the extension manifest writes none of it. |
 

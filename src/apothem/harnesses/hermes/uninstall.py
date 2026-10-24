@@ -14,10 +14,11 @@ _HARNESS_NAME: str = "hermes"
 
 # The native ``config.yaml`` is rendered by the materializer rather than the
 # manifest, so it is cleaned surgically: only the entries the install ledger
-# records as Apothem's (the MCP servers it wrote) are stripped from the parsed
-# operator YAML — operator keys, including the rest of an ``auxiliary`` block,
-# survive — and the file is deleted only when Apothem created it and nothing
-# operator-authored remains. An install from an earlier release, which wrote the
+# records as Apothem's (the MCP servers it wrote and the skills directory it
+# added to ``skills.external_dirs``) are stripped from the parsed operator YAML —
+# operator keys, including the rest of an ``auxiliary`` block and the operator's
+# own ``external_dirs`` entries, survive — and the file is deleted only when
+# Apothem created it and nothing operator-authored remains. An install from an earlier release, which wrote the
 # MCP servers under ``auxiliary.mcp``, has that value removed while it is still
 # exactly what that release wrote (the rule an update applies), so uninstalling
 # without updating first leaves no stale block. The pre-mutation file is copied
