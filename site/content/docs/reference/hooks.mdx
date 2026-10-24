@@ -16,7 +16,7 @@ and the Qwen Code `settings.json` hooks map.
 | PreCompact | 30 seconds | Verify state externalized before compaction (Codex, Qwen Code; not registered on Claude Code) |
 | PostCompact | 30 seconds | Restore working state after compaction (Codex, Qwen Code; not registered on Claude Code) |
 | Stop | 60 seconds | Session-end protocol, opt-in |
-| PostToolUse | 10 seconds | Proactive-compaction advisory, at most twice per session |
+| PostToolUse | 10 seconds | Context-size advisory: save state at the first mark, and at the second the operator is told the session is long; at most twice per compaction cycle; runs in the background on Claude Code |
 | PreToolUse (shell: Bash, PowerShell, `run_shell_command`) | 10 seconds | Git-artifact isolation, plans locality, dynamic-eval guard |
 | PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 seconds | Plan-reference isolation, authorship header, plans locality, dependency and dynamic-eval guards |
 | PreToolUse (AskUserQuestion) | 10 seconds | `(Recommended)`-marker well-formedness |
@@ -30,10 +30,21 @@ Claude Code and Qwen Code materialize the dispatcher under
 `<harness-root>/.apothem/support/hooks/`; Codex under `<harness-root>/hooks/`.
 Claude Code entries use exec form (`command` plus `args`), so they need no
 shell. The Claude Code plugin runs each hook as
-`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`,
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]`,
 in Claude Code's default hook shell (`sh` on macOS and Linux, Git Bash on
 Windows); the bootstrap locates a Python 3.10+ interpreter and runs the
-bundled dispatcher. On Windows without Git for Windows, use the engine install
+bundled dispatcher. It caches the interpreter it found in `interpreter-path`
+(`interpreter-path-ps1` for `bootstrap.ps1`) under the hook state directory
+(below) and reuses it while the interpreter still exists, so the PATH probe
+runs once rather than before every tool call; delete the cache file to force a
+new probe. Only an absolute state directory and an absolute cached path are
+honoured.
+
+Every surface registers one dispatcher entry per event and matcher, listing
+every message that matcher evaluates: one process reads the payload once, runs
+each guard, and answers with one envelope, so a Write starts one dispatcher
+rather than one per guard. The Claude Code engine install also runs the
+conformity gate (`gate.py --hook`) on Write and Edit as its own entry. On Windows without Git for Windows, use the engine install
 (`apothem install --harness claude-code`), whose exec-form hooks need no shell.
 The dispatcher is a standalone stdlib script: it bootstraps its own
 `sys.path`, so no importable `apothem` package is needed on the host. From a source
@@ -66,6 +77,14 @@ and its context argument is registered in the settings file. The license
 comment line and the closing `## Bindings` section are removed before the text
 reaches the assistant; both exist for maintainers and the conformity gate.
 
+A guard that finds nothing injects nothing. A guard that fires injects only
+the `## Advisory` section of its message, filled with what it found (the path,
+the identifier, the primitive), followed by `Full procedure: <message-file>`.
+The rest of the file is the full procedure, which the assistant reads only
+when it needs the detail. Guards judge "inside the project" against the git
+root above the tool call's working directory, never against the tree the hook
+is installed in.
+
 ## Runtime contract
 
 Every registered hook command meets the same contract, checked by
@@ -74,13 +93,14 @@ install, Codex, and Qwen Code:
 
 - **Runs from a plain checkout.** Exit 0, and standard output is empty or one
   JSON object. No hook depends on a file's executable bit.
-- **Registered once.** Each event, matcher, and message pair appears once per
-  surface, so a hook never runs twice on one tool call.
+- **Registered once.** Each event and matcher has one dispatcher entry per
+  surface, listing every message it evaluates, so a guard never runs twice on
+  one tool call.
 - **Bounded.** No emitted text exceeds 10,000 characters. The dependency guard
   speaks only when a write targets a dependency manifest or lockfile, and the
   dynamic-eval guard only when the content or command contains an evaluation
   or unsafe-deserialization primitive. The compaction advisory fires at most
-  twice per session.
+  twice per compaction cycle.
 - **Uses channels the harness delivers.** PreToolUse guidance travels in
   `hookSpecificOutput`; the AskUserQuestion guard returns `additionalContext`,
   or `permissionDecision: deny` under the strict opt-in. Claude Code discards
@@ -100,9 +120,16 @@ install, Codex, and Qwen Code:
 | `APOTHEM_SESSION_END_ENABLED` | off | `1`, `true`, `yes` or `on` enables the session-end protocol on Stop. A Stop hook that returns context makes the assistant continue, so the protocol costs one extra turn per session; it never fires on a stop that already follows a hook-driven continuation |
 | `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Turn-ends before the session-end protocol may fire |
 | `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | on | `0`, `false`, `no` or `off` silences the compaction advisory |
-| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Tool calls per advisory window |
-| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Tool-output bytes per advisory window |
+| `APOTHEM_CONTEXT_WINDOW_TOKENS` | unset | Context-window size; with it (or Claude Code's `CLAUDE_CODE_AUTO_COMPACT_WINDOW`) the advisories fire at 50% and 75% of the window, otherwise at 120,000 and 250,000 tokens |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Tool calls per advisory window, used only when the context size cannot be measured |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Tool-output bytes per advisory window, used only when the context size cannot be measured |
 | `APOTHEM_HOOK_STATE_DIR` | see below | Directory for per-session hook state |
+
+The compaction advisory measures the context from the newest usage record in
+the session transcript (input plus cached tokens), so it reflects what the model
+actually holds. A sharp drop in that size marks a compaction and restarts the
+two-advisory budget. Where no transcript is available it counts tool calls and
+output bytes instead.
 
 Per-session hook state lives in a per-user directory created with mode `0700`:
 `APOTHEM_HOOK_STATE_DIR` when set, else `${CLAUDE_PLUGIN_DATA}/state` for the

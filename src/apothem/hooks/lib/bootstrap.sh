@@ -47,7 +47,12 @@ set -u
 trap 'printf "{\"systemMessage\":\"hook bootstrap: unexpected error at line %s\"}\n" "${LINENO}"; exit 0' ERR
 
 event="${1:-}"
-context_file="${2:-}"
+if [ "$#" -gt 0 ]; then
+    shift
+fi
+# Every remaining argument is a message file: the hook configuration lists all
+# guards for one matcher in a single invocation, so one interpreter start
+# serves them all.
 
 if [ -z "$event" ]; then
     printf '{"systemMessage":"hook bootstrap: missing event name"}\n'
@@ -55,31 +60,95 @@ if [ -z "$event" ]; then
 fi
 
 # --- Resolve the installed tree that ships this stub ------------------------
-script_dir="$(cd "$(dirname "$0")" && pwd)"
-root="$(cd "$script_dir/../.." && pwd)"
+# Parameter expansion, not `$(cd "$(dirname "$0")" && pwd)`: every command
+# substitution forks, and a fork costs tens of milliseconds under Git Bash on
+# Windows, on a path that runs before every tool call.
+# A Windows caller may pass the stub path with backslashes, so either separator
+# ends the directory part.
+case "$0" in
+    */* | *\\*) script_dir="${0%[/\\]*}" ;;
+    *) script_dir="." ;;
+esac
+root="$script_dir/../.."
 if [ ! -f "$root/hooks/dispatch.py" ]; then
     printf '{"systemMessage":"hook %s skipped: dispatch missing beside the bootstrap stub"}\n' "$event"
     exit 0
 fi
 
-# --- Locate Python via the locator stub --------------------------------------
-locator="$root/hooks/lib/find-python.sh"
-if [ ! -f "$locator" ]; then
-    printf '{"systemMessage":"hook %s skipped: locator stub missing at %s"}\n' \
-        "$event" "$locator"
-    exit 0
+# --- Interpreter cache --------------------------------------------------------
+# The locator executes each PATH candidate to read its version, which costs
+# most of a second on Windows and repeats on every hook. Its answer changes only
+# when Python is installed or removed, so the winner is cached per user, in the
+# state root hooks/lib/state_dir.py uses, and trusted while it still exists and
+# is executable. A miss, a stale entry, or an unresolvable state root re-probes.
+# Only an absolute state root and an absolute cached path are accepted: a
+# relative one would resolve against the opened project, and the hook must
+# never execute a path the project chose. bootstrap.ps1 keeps its own file
+# (interpreter-path-ps1) because the two shells spell paths differently.
+is_absolute() {
+    case "$1" in
+        /* | [A-Za-z]:/* | [A-Za-z]:\\*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+state_root=""
+if [ -n "${APOTHEM_HOOK_STATE_DIR:-}" ]; then
+    state_root="$APOTHEM_HOOK_STATE_DIR"
+elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ]; then
+    state_root="$CLAUDE_PLUGIN_DATA/state"
+elif [ -n "${XDG_STATE_HOME:-}" ]; then
+    state_root="$XDG_STATE_HOME/apothem"
+elif [ -n "${LOCALAPPDATA:-}" ]; then
+    state_root="$LOCALAPPDATA/apothem/state"
+elif [ -n "${HOME:-}" ]; then
+    state_root="$HOME/.local/state/apothem"
 fi
-# shellcheck source=find-python.sh disable=SC1091
-. "$locator"
+cache_file=""
+if [ -n "$state_root" ] && is_absolute "$state_root"; then
+    cache_file="$state_root/interpreter-path"
+fi
+py=""
+if [ -n "$cache_file" ] && [ -f "$cache_file" ]; then
+    { IFS= read -r py < "$cache_file"; } 2>/dev/null || true
+    py="${py%$'\r'}"
+    if [ -z "$py" ] || ! is_absolute "$py" || [ ! -f "$py" ] || [ ! -x "$py" ]; then
+        py=""
+    fi
+fi
 
-# Guard the command substitution so the ERR trap does NOT fire on the
-# expected no-interpreter path. `if ! winner=$(...)` consumes the locator's
-# non-zero exit as a tested condition rather than an uncaught error, so a
-# host with no real CPython sees the intended "no Python interpreter found"
-# envelope, not the trap's "unexpected error at line N" line.
-if ! py="$(find_real_python 2>/dev/null)" || [ -z "$py" ]; then
-    printf '{"systemMessage":"hook %s skipped: no Python interpreter found"}\n' "$event"
-    exit 0
+if [ -z "$py" ]; then
+    # --- Locate Python via the locator stub ----------------------------------
+    locator="$root/hooks/lib/find-python.sh"
+    if [ ! -f "$locator" ]; then
+        printf '{"systemMessage":"hook %s skipped: locator stub missing at %s"}\n' \
+            "$event" "$locator"
+        exit 0
+    fi
+    # shellcheck source=find-python.sh disable=SC1091
+    . "$locator"
+
+    # Guard the command substitution so the ERR trap does NOT fire on the
+    # expected no-interpreter path. `if ! winner=$(...)` consumes the locator's
+    # non-zero exit as a tested condition rather than an uncaught error, so a
+    # host with no real CPython sees the intended "no Python interpreter found"
+    # envelope, not the trap's "unexpected error at line N" line.
+    if ! py="$(find_real_python 2>/dev/null)" || [ -z "$py" ]; then
+        printf '{"systemMessage":"hook %s skipped: no Python interpreter found"}\n' "$event"
+        exit 0
+    fi
+    if [ -n "$cache_file" ]; then
+        # Best effort: a cache that cannot be written only costs the next probe.
+        # The whole group is silenced: a redirection that fails to open is
+        # reported by the shell itself, before any per-command 2>/dev/null.
+        {
+            (
+                umask 077
+                mkdir -p "${cache_file%/*}" &&
+                    printf '%s\n' "$py" > "$cache_file.$$" &&
+                    mv -f "$cache_file.$$" "$cache_file"
+            ) || rm -f "$cache_file.$$" || true
+        } 2>/dev/null
+    fi
 fi
 
 dispatch="$root/hooks/dispatch.py"
@@ -90,8 +159,16 @@ if [ ! -f "$dispatch" ]; then
 fi
 
 # --- Hand off to dispatch.py -------------------------------------------------
-if [ -n "$context_file" ]; then
-    exec "$py" "$dispatch" --event-name "$event" --context-file "$context_file"
-else
-    exec "$py" "$dispatch" --event-name "$event"
-fi
+# Rebuild the argument list in place: each message becomes one --context-file.
+# Positional parameters, not an array, so an empty list stays safe under `set -u`
+# on bash 3.2.
+count="$#"
+while [ "$count" -gt 0 ]; do
+    message="$1"
+    shift
+    if [ -n "$message" ]; then
+        set -- "$@" --context-file "$message"
+    fi
+    count=$((count - 1))
+done
+exec "$py" "$dispatch" --event-name "$event" "$@"

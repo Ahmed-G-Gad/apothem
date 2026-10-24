@@ -25,7 +25,7 @@ Externalize critical state to durable files before it can decay; conversation hi
 
 ### 3. Compaction Discipline (CM-19) (Companion Sub-Rule Anchor)
 
-Compaction is the primary defense against context rot — trigger proactively per the cataloged boundaries; post-compaction restoration runs the Blind Bootstrap Sequence. A dispatch-routed `PostToolUse` hook makes the size-based triggers mechanical: it tracks per-session activity and surfaces a proactive-compaction advisory once a threshold crosses (advisory-only, never blocks, fail-open). (Companion Sub-Rule Anchor) See rules/context-management-protocol.md §2 for the full trigger catalog and the proactive-advisory hook.
+Compaction is the primary defense against context rot — trigger proactively per the cataloged boundaries; post-compaction restoration runs the Blind Bootstrap Sequence. A dispatch-routed `PostToolUse` hook makes the size-based triggers mechanical: it measures the context size from the session transcript and surfaces a save-state advisory at half the window and again at three quarters (advisory-only, never blocks, fail-open). (Companion Sub-Rule Anchor) See rules/context-management-protocol.md §2 for the full trigger catalog and the proactive-advisory hook.
 
 ### 4. Long Conversation Resilience (Companion Sub-Rule Anchor)
 

@@ -44,6 +44,12 @@ this context protects the header discipline. The header invariant itself is
 enforced mechanically in CI and pre-commit via the strict conformity corpus
 gate.
 
+## Advisory
+
+<!-- The only text this guard injects when it fires; placeholders are filled by hooks/emit_hook_context.py. -->
+
+{path} is missing the canonical `SPDX-License-Identifier: MIT` header (or it is malformed). Put the line first in the file's comment syntax (second, after a shebang) and re-issue. To skip it, ask the operator first (Authorship-Header option set, `rules/interactive-questions-canonical-shapes.md`).
+
 ## Bindings (§0.j five-direction)
 
 - **Drives →** The corrected content recommendation when a Write would create an applicable file without the SPDX header line. `conformity/file_header_grep.py` (the header check it runs).

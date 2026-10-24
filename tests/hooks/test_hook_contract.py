@@ -108,6 +108,20 @@ _STORE_ALIAS_MESSAGE = (
 _STORE_ALIAS_EXIT = 49
 
 
+#: Splits a shell command into tokens, keeping a double-quoted token whole.
+_TOKEN = re.compile(r'"[^"]*"|\S+')
+#: The scripts that front a dispatcher call; the event and messages follow.
+_DISPATCHERS = frozenset({"dispatch.py", "bootstrap.sh"})
+
+
+def _basename(token: str) -> str:
+    return token.strip('"').replace("\\", "/").rsplit("/", 1)[-1]
+
+
+def _message_name(token: str) -> str:
+    return _basename(token).removesuffix(".md")
+
+
 @dataclass(frozen=True)
 class HookEntry:
     """One registered hook command as a harness would run it."""
@@ -119,14 +133,57 @@ class HookEntry:
     label: str
 
     @property
-    def message(self) -> str:
-        """Return the routed message basename (or the event for SessionStart)."""
-        for token in reversed(self.argv):
-            name = Path(token.strip('"')).name
-            if name.endswith(".md"):
-                return name[:-3]
-        tail = self.label.split()[-1]
-        return tail.rsplit("/", 1)[-1].removesuffix(".md")
+    def tokens(self) -> tuple[str, ...]:
+        """Return the command's tokens, quotes kept, as the host would split them."""
+        if self.argv[:2] == (_SHELL, "-c") and len(self.argv) == 3:
+            return tuple(_TOKEN.findall(self.argv[2]))
+        return self.argv
+
+    @property
+    def dispatcher_index(self) -> int | None:
+        """Return the index of the dispatcher or bootstrap token, if there is one."""
+        for index, token in enumerate(self.tokens):
+            if _basename(token) in _DISPATCHERS:
+                return index
+        return None
+
+    @property
+    def messages(self) -> tuple[str, ...]:
+        """Return every routed message basename, in order.
+
+        One dispatcher entry lists several guards, so this is a tuple. The
+        event name stands in for a handler with no message (``SessionStart``),
+        and an entry that is not a dispatcher call (the conformity gate) yields
+        its last token.
+        """
+        tokens = self.tokens
+        index = self.dispatcher_index
+        if index is None:
+            return (_basename(tokens[-1]),)
+        names = tuple(_message_name(token) for token in tokens[index + 2 :])
+        return names or (_message_name(tokens[index + 1]),)
+
+    @property
+    def name(self) -> str:
+        """Return the messages joined for a failure message."""
+        return "+".join(self.messages)
+
+    def only(self, message: str) -> HookEntry:
+        """Return this entry reduced to the one *message* (the guard in isolation)."""
+        index = self.dispatcher_index
+        assert index is not None, self.label
+        tokens = self.tokens
+        kept = [
+            token for token in tokens[index + 2 :] if _message_name(token) == message
+        ]
+        assert kept, (message, self.label)
+        reduced = (*tokens[: index + 2], *kept)
+        argv = (
+            (self.argv[0], "-c", " ".join(reduced))
+            if tokens is not self.argv
+            else reduced
+        )
+        return HookEntry(self.surface, self.event, self.matcher, argv, self.label)
 
 
 @pytest.fixture(autouse=True)
@@ -191,7 +248,7 @@ def _payload(
         base["source"] = "startup"
     elif event == "PreToolUse":
         tool = matcher.split("|")[0].strip("^$")
-        if tool in {"Write", "Edit", "apply_patch"}:
+        if tool in {"Write", "Edit", "apply_patch", "WriteFile"}:
             base.update(
                 tool_name="Write",
                 tool_input={
@@ -445,22 +502,20 @@ def test_clause1_3_5_every_command_executes_bounded_and_fast(
         result, seconds = _run(entry, payload, env, workspace["project"])
         if result.returncode != 0:
             failures.append(
-                f"{entry.surface} {entry.event} {entry.message}: exit "
+                f"{entry.surface} {entry.event} {entry.name}: exit "
                 f"{result.returncode}: {result.stderr.strip()[-300:]}"
             )
             continue
         try:
             output = _parse(result.stdout)
         except (json.JSONDecodeError, AssertionError) as exc:
-            failures.append(f"{entry.surface} {entry.event} {entry.message}: {exc}")
+            failures.append(f"{entry.surface} {entry.event} {entry.name}: {exc}")
             continue
         for text in _strings(output):
             if len(text) > _OUTPUT_CAP:
-                failures.append(f"{entry.surface} {entry.message}: {len(text)} chars")
+                failures.append(f"{entry.surface} {entry.name}: {len(text)} chars")
             if "${" in text:
-                failures.append(
-                    f"{entry.surface} {entry.message}: unexpanded placeholder"
-                )
+                failures.append(f"{entry.surface} {entry.name}: unexpanded placeholder")
         if seconds > _LATENCY_BUDGET_SECONDS:
             # A loaded CI runner can stall one interpreter start-up for several
             # seconds. Time the command once more, so only a hook that is over
@@ -468,7 +523,7 @@ def test_clause1_3_5_every_command_executes_bounded_and_fast(
             _, retimed = _run(entry, payload, env, workspace["project"])
             seconds = min(seconds, retimed)
         if seconds > _LATENCY_BUDGET_SECONDS:
-            failures.append(f"{entry.surface} {entry.message}: {seconds:.2f}s")
+            failures.append(f"{entry.surface} {entry.name}: {seconds:.2f}s")
     assert not failures, "\n".join(failures)
 
 
@@ -548,7 +603,11 @@ def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) 
         if entry.surface not in {"plugin", "claude-engine"}:
             continue
         assert entry.event not in _CLAUDE_DISCARDED_EVENTS, entry.label
-    aq = [e for e in _all_entries(workspace) if "askuserquestion" in e.message]
+    aq = [
+        e
+        for e in _all_entries(workspace)
+        if any("askuserquestion" in m for m in e.messages)
+    ]
     assert aq
     for entry in aq:
         payload = _payload("PreToolUse", "AskUserQuestion", workspace["project"], "aq")
@@ -584,26 +643,54 @@ def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) 
 
 
 def test_clause6_missing_message_fails_open(workspace: dict[str, Path]) -> None:
-    """A message file that does not exist still yields exit 0 and valid JSON."""
+    """A message file that does not exist still yields exit 0 and valid JSON.
+
+    Each consolidated entry runs with every message file missing, then with each
+    one missing in turn, so one absent file never silences or breaks the rest.
+    """
+    checked = 0
     for entry in _plugin_entries(workspace["plugin"]):
-        if not entry.label.rstrip().endswith('.md"'):
+        command = entry.argv[2]
+        if not command.rstrip().endswith('.md"'):
             continue
-        broken = HookEntry(
-            surface=entry.surface,
-            event=entry.event,
-            matcher=entry.matcher,
-            argv=(
-                entry.argv[0],
-                entry.argv[1],
-                entry.argv[2].replace('.md"', '-missing.md"'),
-            ),
-            label=entry.label,
-        )
-        payload = _payload(entry.event, entry.matcher, workspace["project"], "c6")
-        env = _env_for(entry, workspace, workspace["project"])
-        result, _ = _run(broken, payload, env, workspace["project"])
-        assert result.returncode == 0, result.stderr[-300:]
-        _parse(result.stdout)
+        variants = [command.replace('.md"', '-missing.md"')]
+        variants += [_break_nth(command, i) for i in range(command.count('.md"'))]
+        for variant in variants:
+            broken = HookEntry(
+                surface=entry.surface,
+                event=entry.event,
+                matcher=entry.matcher,
+                argv=(entry.argv[0], entry.argv[1], variant),
+                label=entry.label,
+            )
+            payload = _payload(entry.event, entry.matcher, workspace["project"], "c6")
+            env = _env_for(entry, workspace, workspace["project"])
+            result, _ = _run(broken, payload, env, workspace["project"])
+            assert result.returncode == 0, (variant, result.stderr[-300:])
+            _parse(result.stdout)
+            checked += 1
+    assert checked, "no plugin entry routes a message file"
+
+
+def _break_nth(command: str, position: int) -> str:
+    """Return *command* with only its *position*-th message file made missing."""
+    pieces = command.split('.md"')
+    head = '.md"'.join(pieces[: position + 1])
+    tail = '.md"'.join(pieces[position + 1 :])
+    return f'{head}-missing.md"{tail}'
+
+
+def test_plugin_message_files_exist(workspace: dict[str, Path]) -> None:
+    """Every message a plugin entry routes is a file in the plugin tree."""
+    messages = workspace["plugin"] / "lib" / "apothem" / "hooks" / "messages"
+    missing = [
+        (entry.event, entry.matcher, name)
+        for entry in _plugin_entries(workspace["plugin"])
+        if entry.argv[2].rstrip().endswith('.md"')
+        for name in entry.messages
+        if not (messages / f"{name}.md").is_file()
+    ]
+    assert not missing, missing
 
 
 def test_clause7_kill_switch_silences_every_command(workspace: dict[str, Path]) -> None:
@@ -621,13 +708,25 @@ def test_clause7_kill_switch_silences_every_command(workspace: dict[str, Path]) 
 
 
 def test_clause8_single_registration_per_surface(workspace: dict[str, Path]) -> None:
-    """Each (event, matcher, message) is registered once; no dual-shell pairs."""
+    """Each (event, matcher, message) is registered once; no dual-shell pairs.
+
+    Every guard for a matcher shares one dispatcher entry, so a message repeated
+    within an entry or across two entries of one matcher is a duplicate, and so
+    is a second dispatcher entry for a matcher.
+    """
     seen: dict[tuple[str, str, str, str], int] = {}
+    dispatchers: dict[tuple[str, str, str], int] = {}
     for entry in _all_entries(workspace):
-        key = (entry.surface, entry.event, entry.matcher, entry.message)
-        seen[key] = seen.get(key, 0) + 1
+        for message in entry.messages:
+            key = (entry.surface, entry.event, entry.matcher, message)
+            seen[key] = seen.get(key, 0) + 1
+        if not _is_engine_gate(entry):
+            where = (entry.surface, entry.event, entry.matcher)
+            dispatchers[where] = dispatchers.get(where, 0) + 1
     duplicates = {key: count for key, count in seen.items() if count > 1}
     assert not duplicates, duplicates
+    split = {key: count for key, count in dispatchers.items() if count > 1}
+    assert not split, f"one dispatcher entry per matcher expected: {split}"
     for entry in _plugin_entries(workspace["plugin"]):
         assert entry.argv[2].startswith('bash "'), entry.label
 
@@ -663,17 +762,19 @@ def test_codex_windows_command_mirrors_the_command(workspace: dict[str, Path]) -
 def test_shell_guards_cover_the_powershell_tool(workspace: dict[str, Path]) -> None:
     """Claude Code shell guards also match the PowerShell tool."""
     for entry in _all_entries(workspace):
-        if entry.surface in {"plugin", "claude-engine"} and entry.message in {
+        if entry.surface in {"plugin", "claude-engine"} and {
             "pretooluse-bash",
             "pretooluse-bash-plan-guard",
-        }:
+        } & set(entry.messages):
             assert "PowerShell" in entry.matcher.split("|"), entry.matcher
 
 
 def test_qwen_shell_matcher_names_the_runtime_tool(workspace: dict[str, Path]) -> None:
     """Qwen matches regex matchers against its tool id, run_shell_command."""
     for entry in _all_entries(workspace):
-        if entry.surface == "qwen" and entry.message.startswith("pretooluse-bash"):
+        if entry.surface == "qwen" and any(
+            m.startswith("pretooluse-bash") for m in entry.messages
+        ):
             assert "run_shell_command" in entry.matcher, entry.matcher
 
 
@@ -697,29 +798,41 @@ def test_hooks_never_run_project_supplied_code(workspace: dict[str, Path]) -> No
 
 
 def test_guards_are_silent_on_benign_payloads(workspace: dict[str, Path]) -> None:
-    """Dependency and eval guards inject nothing unless the payload matches."""
+    """Dependency and eval guards inject nothing unless the payload matches.
+
+    Each guard runs alone for the silence check, so another guard in the same
+    consolidated entry cannot mask or cause its output. The whole entry then
+    runs on a matching payload and must still deliver that guard's context.
+    """
+    guards = ("pretooluse-dependency-guard", "pretooluse-eval-guard")
     entries = [
         e
         for e in _all_entries(workspace)
-        if e.message in {"pretooluse-dependency-guard", "pretooluse-eval-guard"}
+        if not _is_engine_gate(e) and set(guards) & set(e.messages)
     ]
-    assert entries
+    for guard in guards:
+        assert any(guard in e.messages for e in entries), f"{guard} is wired nowhere"
     for entry in entries:
         env = _env_for(entry, workspace, workspace["project"])
         benign = _payload("PreToolUse", entry.matcher, workspace["project"], "benign")
-        result, _ = _run(entry, benign, env, workspace["project"])
-        assert _context_chars(_parse(result.stdout)) == 0, entry.label
-        if entry.message == "pretooluse-dependency-guard":
-            hit = _payload("PreToolUse", "Write", workspace["project"], "dep")
-            hit["tool_input"] = {
-                "file_path": str(workspace["project"] / "pyproject.toml"),
-                "content": '[project]\ndependencies = ["requests"]\n',
-            }
-        else:
-            hit = _payload("PreToolUse", "Write", workspace["project"], "eval")
-            hit["tool_input"] = {
-                "file_path": str(workspace["project"] / "run.py"),
-                "content": "import pickle\nobj = pickle.loads(reply)\n",
-            }
-        result, _ = _run(entry, hit, env, workspace["project"])
-        assert _context_chars(_parse(result.stdout)) > 0, entry.label
+        for guard in (g for g in guards if g in entry.messages):
+            alone = entry.only(guard)
+            result, _ = _run(alone, benign, env, workspace["project"])
+            assert result.returncode == 0, (entry.label, result.stderr[-300:])
+            assert _context_chars(_parse(result.stdout)) == 0, alone.label
+            if guard == "pretooluse-dependency-guard":
+                hit = _payload("PreToolUse", "Write", workspace["project"], "dep")
+                hit["tool_input"] = {
+                    "file_path": str(workspace["project"] / "pyproject.toml"),
+                    "content": '[project]\ndependencies = ["requests"]\n',
+                }
+            else:
+                hit = _payload("PreToolUse", "Write", workspace["project"], "eval")
+                hit["tool_input"] = {
+                    "file_path": str(workspace["project"] / "run.py"),
+                    "content": "import pickle\nobj = pickle.loads(reply)\n",
+                }
+            for runner in (alone, entry):
+                result, _ = _run(runner, hit, env, workspace["project"])
+                assert result.returncode == 0, (runner.label, result.stderr[-300:])
+                assert _context_chars(_parse(result.stdout)) > 0, runner.label

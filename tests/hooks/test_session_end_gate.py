@@ -308,7 +308,7 @@ class TestDispatchRouting:
     ) -> None:
         routed: list[str] = []
         monkeypatch.setattr(
-            dispatch, "_run_emit", lambda _e, ctx, _q: routed.append(ctx)
+            dispatch, "_run_emit", lambda _e, ctxs, _q: routed.extend(ctxs)
         )
         ctx = str(tmp_path / "some-other-context.md")
         dispatch.dispatch("Stop", ctx, quiet=False)

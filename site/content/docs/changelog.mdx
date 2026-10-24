@@ -19,6 +19,53 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **Hooks run one dispatcher per tool call, not one per guard.** On every
+  surface (the Claude Code plugin and engine install, Codex, Qwen Code) each
+  event and matcher now has one dispatcher entry that lists every guard it
+  evaluates; one process reads the payload, runs them all, and returns one
+  envelope. The plugin's bootstrap also caches the interpreter it found, so the
+  PATH probe runs once instead of before every tool call. Measured on Windows, a Write went
+  from five hook processes of about 1.5 seconds each to one of about 0.45
+  seconds. The compaction tracker runs in the background, so it no longer
+  delays any tool result.
+- **A guard that fires says only what it found.** It injects the short
+  `## Advisory` section of its message, filled with the path, identifier or
+  primitive it matched, plus a pointer to the full procedure, instead of the
+  whole message (2 to 7 KB). A guard that finds nothing stays silent.
+- **The compaction advisory measures the context.** It reads the context size
+  from the session transcript and asks the assistant to save state at half the
+  window and again at three quarters, when it also tells you the session is
+  long (at 120,000 and 250,000 tokens when the window is unknown; set
+  `APOTHEM_CONTEXT_WINDOW_TOKENS` to give it).
+  A compaction restarts its two-advisory budget. The old activity counters
+  remain the fallback where no transcript exists.
+- **The git-write reminder is a check.** It fires only when the command carries
+  a plan-internal identifier, a numeric prefix on a suite-root plan file, or
+  agent-attribution text, and names the finding.
+
+### Fixed
+
+- **The plans guard no longer fires on the project's own plans tree.** It
+  judged "inside the project" against the tree the plugin is installed in, so
+  every write to `<project>/.apothem/plans/` under a plugin install looked
+  global. It now uses the git root above the tool call's working directory.
+- **The Bash plans guard inspects what a command writes.** It matched any
+  command that mentioned a plans path, including `ls` and `mkdir`; it now
+  classifies the targets of redirects, `tee`, `touch`, the destination of
+  `cp`, `mv` and `install`, and the PowerShell write cmdlets, resolving
+  relative paths against the command's working directory. Heredoc bodies and
+  comments are not read as commands, and network (UNC) paths are never
+  resolved.
+- **Codex `apply_patch` writes are checked.** The plans and isolation guards
+  read the targets named in the patch body, as the dependency guard already
+  did.
+- **The isolation scan skips non-product files and public identifiers.**
+  Writes outside the project or into its `.apothem/` working tree are not
+  scanned, and `UTF-8`, `SHA-256`, `ISO-8601`, `CVE-…` and `RFC-…` no longer
+  read as plan identifiers.
+
 ## [1.2.2] - 2026-10-20
 
 ### Added
