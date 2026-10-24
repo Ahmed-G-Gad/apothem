@@ -83,9 +83,9 @@ adapter does not write to them yet, for these reasons.
 - **Hooks.** Kimi Code reads hooks from the `[[hooks]]` array in
   `~/.kimi-code/config.toml` (`$KIMI_CODE_HOME/config.toml` when that variable
   is set). Apothem writes none. That file is user scope while this adapter
-  writes under the project root; an entry takes exactly four fields (`event`,
-  `matcher`, `command`, `timeout`) and an extra field stops the config from
-  loading; and Apothem has no TOML merge that could later remove only its own
+  writes under the project root; an entry allows only four fields (`event` and
+  `command` required, `matcher` and `timeout` optional) and an extra field
+  stops the config from loading; and Apothem has no TOML merge that could later remove only its own
   entries. The hook helper scripts stay in the support tree.
 - **Skill frontmatter.** The vendor page documents the `SKILL.md` keys `name`
   and `description` (both required), `type`, `whenToUse`,
