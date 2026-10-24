@@ -76,7 +76,23 @@ def test_every_row_passes_its_own_invariants() -> None:
         assert row.headroom_bytes == row.budget_bytes - row.plugin_bytes
         assert row.engine_bytes > row.plugin_bytes
         assert row.fits_cap == (row.engine_bytes <= measure_mod.SKILL_MD_CAP_BYTES)
+        assert row.fits_window
+        assert row.est_tokens <= measure_mod.WINDOW_TOKENS
         assert row.lines <= 500
+
+
+def test_the_window_estimate_uses_the_splitters_constants() -> None:
+    from apothem.lib import claude_skill_split as split_mod
+
+    assert measure_mod.BYTES_PER_TOKEN is split_mod.BYTES_PER_TOKEN
+    assert measure_mod.WINDOW_TOKENS is split_mod.WINDOW_TOKENS
+
+
+def test_check_reports_a_row_outside_the_window() -> None:
+    row = next(r for r in measure_mod.measure() if not r.shadowed)
+    over = dataclasses.replace(row, fits_window=False, est_tokens=5_200)
+    found = measure_mod.problems([over], [])
+    assert any("post-compaction window" in line for line in found)
 
 
 def test_check_passes_on_the_committed_corpus(

@@ -50,10 +50,12 @@ from apothem.harnesses._shared.install_driver_converters import (  # noqa: E402
 )
 from apothem.lib.claude_skill_frontmatter import METADATA_KEYS  # noqa: E402
 from apothem.lib.claude_skill_split import (  # noqa: E402
+    BYTES_PER_TOKEN,
     NATIVE_SKILL_CEILINGS,
     NOTE_RESERVE_BYTES,
     SKILL_MD_CAP_BYTES,
     SKILL_MD_MAX_LINES,
+    WINDOW_TOKENS,
     restore_command_skill,
     split_command_skill,
     without_bindings,
@@ -66,10 +68,6 @@ SRC_ROOT = _REPO_ROOT / "src" / "apothem"
 DEFAULT_ROOT = Path("/home/user/.claude")
 #: Install-root length the cap must hold at (the note reserve covers up to 140).
 CHECK_ROOT_LENGTH = 120
-#: Estimated bytes per token, a conservative figure; no tokenizer is available.
-BYTES_PER_TOKEN = 3.3
-#: Claude Code's post-compaction allowance per invoked skill, in tokens.
-WINDOW_TOKENS = 5_000
 #: Headroom under this many bytes is reported as a warning.
 HEADROOM_WARN_BYTES = 300
 
@@ -234,6 +232,11 @@ def problems(
             found.append(f"{row.name}: {-row.headroom_bytes} B over the split budget")
         if row.lines > SKILL_MD_MAX_LINES:
             found.append(f"{row.name}: {row.lines} lines, over {SKILL_MD_MAX_LINES}")
+        if cap is None and not row.fits_window:
+            found.append(
+                f"{row.name}: about {row.est_tokens} tokens, over the "
+                f"{WINDOW_TOKENS}-token post-compaction window"
+            )
     for native in natives:
         if not native.ok:
             found.append(f"native skill {native.name}: {native.bytes} B breaks its cap")
@@ -254,6 +257,8 @@ def _table(rows: Sequence[Row], natives: Sequence[NativeRow], limit: int) -> str
             notes.append("LOW HEADROOM")
         if not row.fits_cap:
             notes.append("OVER CAP")
+        if not row.fits_window:
+            notes.append("OVER WINDOW")
         if row.moved_sections:
             notes.append("moved: " + ", ".join(row.moved_sections))
         out.append(

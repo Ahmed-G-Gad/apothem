@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-24
-- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-10-03.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). Only the skills page was re-read on 2026-10-24; the other pages keep their earlier retrieval dates. The 2026-10-24 adapter changes followed the skills page: commands are emitted as a slim `SKILL.md` plus `references/` files (the page recommends about 500 lines and on-demand detail files, and re-attaches only the first 5,000 tokens of an invoked skill after a compaction), the Apothem-only frontmatter keys sit under `metadata`, and the plugin ships its commands as skills. The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/claude_code/`
 - Evidence level: vendor-doc pinned (living MDX docs; no immutable pin). No vendor-native UI claim is made here.
 - Authority host: `code.claude.com`; the older `docs.anthropic.com` and `docs.claude.com` paths redirect there.

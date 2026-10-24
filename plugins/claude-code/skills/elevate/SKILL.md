@@ -38,19 +38,19 @@ Apply the Five Cognitive Filters at full intensity. Filter 1 (Obvious Purge) dis
 
 ## Instructions
 
-> Moved to `references/instructions.md`. MUST read it before the first step; it binds every step. Covers: Relentless, exhaustive major undertaking; Reuse the audit fortress; do not re-derive it; The "etc." extension rule; Zero-trust posture; Agnostic orchestration; Behavior preservation under a captured baseline.
+> Moved to `references/instructions.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Relentless, exhaustive major undertaking; Reuse the audit fortress; do not re-derive it; The "etc." extension rule; Zero-trust posture; Agnostic orchestration; Behavior preservation under a captured baseline.
 
 ---
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted; Pre-flight inquiry set; Source-access contract; Confirmation contract; Pre-emission gate.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted; Pre-flight inquiry set; Source-access contract; Confirmation contract; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -102,31 +102,31 @@ The elevation self-augments from current authoritative sources, not training mem
 
 ## Per-Nuance Stop Inventory
 
-> Moved to `references/per-nuance-stop-inventory.md`. MUST read it when a step cites it, before applying it.
+> Moved to `references/per-nuance-stop-inventory.md`. MUST read it before the first step; later steps cite it by name.
 
 ---
 
 ## Cross-Dimension Critique Axes
 
-> Moved to `references/cross-dimension-critique-axes.md`. MUST read it when a step cites it, before applying it.
+> Moved to `references/cross-dimension-critique-axes.md`. MUST read it before the first step; later steps cite it by name.
 
 ---
 
 ## Remediation Action Vocabulary
 
-> Moved to `references/remediation-action-vocabulary.md`. MUST read it when a step cites it, before applying it.
+> Moved to `references/remediation-action-vocabulary.md`. MUST read it before the first step; later steps cite it by name.
 
 ---
 
 ## Mandates
 
-> Moved to `references/mandates.md`. MUST read it before the first step; it binds every step.
+> Moved to `references/mandates.md`. MUST read it before the first step and after any context compaction; it binds every step.
 
 ---
 
 ## Output
 
-> Moved to `references/output.md`. MUST read it before producing the final output.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 

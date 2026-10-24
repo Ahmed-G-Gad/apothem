@@ -22,7 +22,7 @@ You are the closed-loop guardian of the `/plan` pipeline. Where `/plan-review` r
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted.
 
 ## Sequence Gate
 

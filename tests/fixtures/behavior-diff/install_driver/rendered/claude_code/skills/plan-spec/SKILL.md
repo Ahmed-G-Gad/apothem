@@ -31,13 +31,13 @@ The Forge runs under four operational disciplines and emits five appendices inli
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, and again before the final step or any handoff. Covers: Pipeline position — Initial; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — Initial; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4).
 
 ---
 
 ## Foundational Stanzas
 
-> Moved to `references/foundational-stanzas.md`. MUST read it before the first step; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -143,6 +143,8 @@ The invariant is checked at G4 (Pre-emission); failure on any condition holds th
 ---
 
 ## Verification Recipe (per §I.6)
+
+Where an installed copy holds this command as a skill directory (a `SKILL.md` plus `references/` files), run each `rg` below against that directory instead of `commands/plan-spec.md`, and count a step heading once even though it appears in both `SKILL.md` and its step file.
 
 1. **Frontmatter.** `rg --no-heading -nP '^name: "plan-spec"$' commands/plan-spec.md` returns 1 hit; `rg --no-heading -nP '^description: .+$' commands/plan-spec.md` returns 1 hit with a non-empty description.
 2. **Phase enumeration.** `rg --no-heading -nP '^### Phase [1-6] —' commands/plan-spec.md` returns 6 hits (one per transformation phase).

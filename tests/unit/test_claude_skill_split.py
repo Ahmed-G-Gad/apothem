@@ -99,6 +99,18 @@ def test_section_classes_are_disjoint_and_triggers_resolve() -> None:
         assert split_mod._LAST_RESORT_TRIGGER[kind] in split_mod._TRIGGERS
 
 
+def test_only_bindings_are_dropped() -> None:
+    # restore == without_bindings reads DROP_KINDS on both sides, so this literal
+    # is what stops a content section from being moved into the dropped set.
+    assert frozenset({"Bindings"}) == DROP_KINDS
+
+
+def test_the_cap_is_the_window_at_the_byte_estimate() -> None:
+    assert split_mod.WINDOW_TOKENS == 5_000
+    assert split_mod.BYTES_PER_TOKEN == 3.4
+    assert SKILL_MD_CAP_BYTES == 17_000
+
+
 def test_constants_are_consistent() -> None:
     assert SPLIT_BUDGET_BYTES == SKILL_MD_CAP_BYTES - NOTE_RESERVE_BYTES == 15_800
     assert STEP_MOVE_MIN_BYTES == 600
@@ -125,8 +137,8 @@ def test_block_stub_text_is_exact() -> None:
     result = split_command_skill(doc)
     assert _stub_lines(result.skill) == [
         "> Moved to `references/pipeline-contract.md`. MUST read it before the "
-        "first step, and again before the final step or any handoff. "
-        "Covers: Alpha; Beta.",
+        "first step, after any context compaction, and before the final step "
+        "or any handoff. Covers: Alpha; Beta.",
         "> Moved to `references/decision-tree.md`. SHOULD read it when a "
         "branch, gate failure, or state transition is unclear.",
         "> Moved to `references/examples.md`. SHOULD read it before composing "
@@ -167,6 +179,46 @@ def test_digest_lists_at_most_eight_items_and_320_bytes() -> None:
     assert (
         split_mod._digest("Pipeline Contract", "## Pipeline Contract\n\nplain\n") == ""
     )
+
+
+def test_outline_digest_lists_h3_titles_and_bold_leads_in_source_order() -> None:
+    body = (
+        "## Pipeline Contract\n\n**Position.** a\n\n### Inquiry Cadence (D4)\n\n"
+        "x\n\n**Gate:** b\n"
+    )
+    assert split_mod._digest("Pipeline Contract", body) == (
+        " Covers: Position; Inquiry Cadence (D4); Gate."
+    )
+    stanzas = "## Foundational Stanzas\n\n### Alpha\n\nx\n\n**Per-file floor.** y\n"
+    assert split_mod._digest("Foundational Stanzas", stanzas) == (
+        " Covers: Alpha; Per-file floor."
+    )
+    inline = (
+        "## Foundational Stanzas\n\n### Alpha\n\nNEVER guess. **Inline floor.** y\n"
+    )
+    assert split_mod._digest("Foundational Stanzas", inline) == (
+        " Covers: Alpha; Inline floor."
+    )
+
+
+def test_binding_and_output_triggers_say_when_the_read_is_due() -> None:
+    doc = _doc("\n# H\n\n## Foundational Stanzas\n\n### A\n\nx\n\n## Output\n\no\n")
+    stubs = _stub_lines(split_command_skill(doc, budget=0).skill)
+    assert "after any context compaction; it binds every step." in stubs[0]
+    assert "before the first step, because the steps write into the output" in stubs[1]
+
+
+def test_two_workflow_sections_with_steps_raise() -> None:
+    doc = _doc(
+        "\n# H\n\n## Workflow — A\n\n"
+        + _step(1, 900)
+        + _step(2, 900)
+        + "## Workflow — B\n\n"
+        + _step(1, 900)
+        + _step(2, 900)
+    )
+    with pytest.raises(SkillSplitError, match="more than one Workflow"):
+        split_command_skill(doc, budget=0)
 
 
 def test_digest_sources_per_kind() -> None:
@@ -216,8 +268,13 @@ def test_seed_sections_move_with_the_cited_trigger() -> None:
         "references/per-nuance-stop-inventory.md",
         "references/remediation-action-vocabulary.md",
     ]
+    stubs = _stub_lines(result.skill)
+    assert len(stubs) == 3
     assert all(
-        line.endswith("before applying it.") for line in _stub_lines(result.skill)
+        line.endswith(
+            "MUST read it before the first step; later steps cite it by name."
+        )
+        for line in stubs
     )
 
 

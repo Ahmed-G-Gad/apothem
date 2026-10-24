@@ -36,9 +36,13 @@ from typing import Final
 
 from apothem.lib.frontmatter import split_frontmatter
 
-#: Cap on the whole emitted ``SKILL.md`` (frontmatter, body and note), about
-#: 5,000 tokens at 3.4 bytes per token.
-SKILL_MD_CAP_BYTES: Final[int] = 17_000
+#: Claude Code's post-compaction allowance per invoked skill, in tokens.
+WINDOW_TOKENS: Final[int] = 5_000
+#: Estimated bytes per token; no tokenizer is available to the build.
+BYTES_PER_TOKEN: Final[float] = 3.4
+#: Cap on the whole emitted ``SKILL.md`` (frontmatter, body and note): the
+#: window at :data:`BYTES_PER_TOKEN`.
+SKILL_MD_CAP_BYTES: Final[int] = int(WINDOW_TOKENS * BYTES_PER_TOKEN)
 #: Room kept for the ``## Installed Reference Paths`` note appended after the
 #: split (599 bytes at a 20-character install root, 1,199 at 140).
 NOTE_RESERVE_BYTES: Final[int] = 1_200
@@ -132,14 +136,20 @@ CLASSIFIED_KINDS: Final[frozenset[str]] = (
 
 _TRIGGERS: Final[Mapping[str, str]] = {
     "pipeline": (
-        "MUST read it before the first step, and again before the final step "
-        "or any handoff."
+        "MUST read it before the first step, after any context compaction, and "
+        "before the final step or any handoff."
     ),
-    "binding": "MUST read it before the first step; it binds every step.",
+    "binding": (
+        "MUST read it before the first step and after any context compaction; "
+        "it binds every step."
+    ),
     "tree": "SHOULD read it when a branch, gate failure, or state transition is unclear.",
     "example": "SHOULD read it before composing the final output.",
-    "cited": "MUST read it when a step cites it, before applying it.",
-    "output": "MUST read it before producing the final output.",
+    "cited": "MUST read it before the first step; later steps cite it by name.",
+    "output": (
+        "MUST read it before the first step, because the steps write into the "
+        "output, and again before producing the final output."
+    ),
     "step": "MUST read it in full before executing this step.",
 }
 
@@ -249,8 +259,8 @@ def _slug(text: str, limit: int = SLUG_MAX) -> str:
 # --------------------------------------------------------------------------
 
 _DIGEST_MODE: Final[Mapping[str, str]] = {
-    "Foundational Stanzas": "h3",
-    "Pipeline Contract": "paragraph",
+    "Foundational Stanzas": "outline",
+    "Pipeline Contract": "outline",
     "Critical Rules": "list",
     "Instructions": "list",
 }
@@ -262,10 +272,19 @@ def _digest(kind: str, content: str) -> str:
     if mode is None:
         return ""
     body = content.split("\n", 1)[1] if "\n" in content else ""
-    if mode == "h3":
-        items = [ln[4:].strip() for ln in body.split("\n") if ln.startswith("### ")]
-    elif mode == "paragraph":
-        items = re.findall(r"^\*\*([^*\n]{2,80}?)\*\*", body, re.MULTILINE)
+    if mode == "outline":
+        # H3 titles, bold paragraph leads and bold sentence leads inside a
+        # paragraph, in source order, so a standing obligation inside a
+        # stanza is advertised as well as the stanza.
+        items = [
+            (m.group(1) or m.group(2) or m.group(3)).strip()
+            for m in re.finditer(
+                r"^(?:### (.{2,80}?)[ \t]*$|\*\*([^*\n]{2,80}?)\*\*)"
+                r"|(?<=[.!?] )\*\*([^*\n]{2,80}?\.)\*\*",
+                body,
+                re.MULTILINE,
+            )
+        ]
     else:
         items = re.findall(
             r"^(?:\d+\.|[-*]) \*\*([^*\n]{2,80}?)\*\*", body, re.MULTILINE
@@ -562,7 +581,13 @@ def split_command_skill(text: str, *, budget: int = SPLIT_BUDGET_BYTES) -> Split
     def size() -> int:
         return len(_render(frontmatter, pre, sections, plan)[0].encode("utf-8"))
 
-    workflow = next((s for s in sections if s.kind == "Workflow" and s.units), None)
+    workflows = [s for s in sections if s.kind == "Workflow" and s.units]
+    if len(workflows) > 1:
+        raise SkillSplitError(
+            "more than one Workflow section with steps; step files are keyed "
+            "by one Workflow's step ordinals"
+        )
+    workflow = workflows[0] if workflows else None
     if workflow is not None and size() > budget:
         for unit in sorted(workflow.units, key=lambda u: (-u.size, u.ordinal)):
             if size() <= budget:
