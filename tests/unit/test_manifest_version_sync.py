@@ -50,6 +50,10 @@ _JSON_MANIFESTS: list[tuple[str, tuple[str, ...]]] = [
     (".claude-plugin/marketplace.json", ("metadata",)),
     ("gemini-extension.json", ()),
     ("qwen-extension.json", ()),
+    # The Codex plugin carries its version twice: the root manifest Codex
+    # prefers and the `.codex-plugin` compatibility fallback older Codex
+    # builds read. Both are gated so the fallback cannot trail the root.
+    ("plugins/apothem/plugin.json", ()),
     ("plugins/apothem/.codex-plugin/plugin.json", ()),
     # The Antigravity plugin template carries no version: Antigravity's
     # plugin.json schema admits only name and description

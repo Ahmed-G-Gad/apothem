@@ -76,6 +76,32 @@ Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.
 
+## Codex plugin
+
+Apothem also ships a Codex plugin, added from the repository's plugin
+marketplace (the [install guide](/docs/install) lists the commands under
+channel 7). The plugin is a bootstrap: it bundles one entry skill that runs the
+engine, and `apothem install --harness codex` writes everything listed above.
+
+The plugin lives in `plugins/apothem/`. Its manifest is a root `plugin.json`,
+the location Codex documents for a new package. The manifest names no skills
+path, because Codex discovers a plugin's `skills/` directory from the plugin
+root. A `.codex-plugin/plugin.json` file stays beside it as a compatibility
+fallback for Codex builds that read only that older location; Codex still
+supports it and treats the root manifest as canonical for the plugin's
+identity. Both files carry the release version, and a test holds them to the
+engine's version.
+
+The plugin bundles no agents, hooks, or MCP servers. Codex documents no
+custom-agents component for plugins, so the engine keeps writing agents to
+`~/.codex/agents/*.toml`. Hooks bundled in a plugin are limited to plugins
+installed manually in Codex desktop and are not trusted automatically, so the
+engine keeps writing them to `~/.codex/hooks.json`.
+
+The marketplace entry sets the `policy` block Codex tells authors to always
+include: `policy.installation` is `AVAILABLE` and `policy.authentication` is
+`ON_INSTALL`, the defaults Codex documents for a new entry.
+
 ## Verification
 
 ```bash

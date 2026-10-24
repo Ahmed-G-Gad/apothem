@@ -7,7 +7,7 @@ description: "Apothem harness adapter for Kimi Code (GA)."
 **Vendor:** Moonshot
 **Install name:** `kimi-code`
 **Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**Native config:** `<project>/AGENTS.md`, `<project>/.kimi-code/skills/`, and `<project>/.kimi-code/.apothem/support/`
 
 ## Installation
 
@@ -17,19 +17,24 @@ apothem install --harness kimi-code --project /path/to/project
 
 The adapter writes the shared Apothem governance surface into the project-root
 `AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+sentinels is preserved). It installs skills, and commands wrapped as skills, in
+Kimi Code's native project skills directory, `<project>/.kimi-code/skills/`.
+The other cohorts stay under the Apothem-owned support tree at
+`<project>/.kimi-code/.apothem/support/`.
 A project `AGENTS.md` is read by many coding tools besides Kimi Code, so the
 block is written as project-wide guidance that names no single tool as its
 reader.
 
 Kimi Code reads the project-root `AGENTS.md` instruction file following the
 universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+`<project>/.kimi-code/`. Kimi Code takes the project root to be the nearest
+directory containing `.git`, searching upward from the working directory, so
+pass the repository root as `--project`. The `<project>/.kimi-code/mcp.json`
+surface is operator-owned; Apothem names it but authors no entries.
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
+**Files written:** `<project>/AGENTS.md` (managed block), the skills and the
+commands (as skills) under `<project>/.kimi-code/skills/`, and the hooks,
+agents, rules, and templates cohorts under
 `<project>/.kimi-code/.apothem/support/`.
 
 ## Profile-to-native-config mapping
@@ -37,21 +42,70 @@ skills, hooks, agents, rules, and templates cohorts under
 The adapter reads Apothem's shared profile and renders the project-root
 `AGENTS.md` instruction surface on every `apothem install` or `apothem update`
 run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface. This is the adapter's chosen layout, not a gap in Kimi Code: Kimi Code
-loads skills from `.kimi-code/skills/` and `.agents/skills/`, custom agents from
-`.kimi-code/agents/` and `.agents/agents/`, and hooks from the `[[hooks]]` array
-in `~/.kimi-code/config.toml`, but it does not load them from the support tree,
-so the Apothem copies there are reference material the `AGENTS.md` block points
-to. The block ends with an Apothem support files section that names, relative to
-the project root, the directory under `.kimi-code/.apothem/support/` each
-repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
-resolves against, so a committed `AGENTS.md` carries no machine-specific path. (Kimi Code behavior per its customization pages for
-[skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
-[subagents](https://moonshotai.github.io/kimi-code/en/customization/agents), and
-[hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), read
-2026-10-02.)
+`AGENTS.md`. Each skill, and each command wrapped as a skill, lands at
+`.kimi-code/skills/<name>/SKILL.md`, a project skills directory Kimi Code
+loads. The adapter writes only that Kimi-specific folder and never
+`.agents/skills/`, which other tools also read. Skills you add to
+`.kimi-code/skills/` yourself under other names are kept on install, update, and
+uninstall. A skill there with the same name as an Apothem skill is replaced:
+install and update overwrite it, and uninstall removes it, each after a
+timestamped copy under `~/.apothem/backups/`, and the install prints no notice
+of the collision. Give your own skills names that differ from Apothem's.
+
+The hooks, agents, rules, and templates cohorts are placed under
+`.kimi-code/.apothem/support/` and referenced from the instruction surface.
+Kimi Code does not load them from the support tree, so the Apothem copies there
+are reference material the `AGENTS.md` block points to. The block ends with an
+Apothem support files section that names, relative to the project root, the
+directory under `.kimi-code/.apothem/support/` each repository-style citation
+(`rules/<name>.md`, `templates/...`, `hooks/...`) resolves against, so a
+committed `AGENTS.md` carries no machine-specific path. (Kimi Code behavior per
+its customization pages for
+[skills](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html),
+[helper definitions](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/agents.html), and
+[hooks](https://www.kimi.com/code/docs/en/kimi-code-cli/customization/hooks.html), read
+2026-10-24.)
+
+## Not installed natively
+
+Kimi Code documents native places for helper definitions and hooks. The
+adapter does not write to them yet, for these reasons.
+
+- **Helper definitions.** Kimi Code loads custom helpers from
+  `.kimi-code/agents/` and `.agents/agents/`, as Markdown files with a
+  frontmatter block. The vendor page documents the keys `name`, `description`,
+  `whenToUse`, `override`, `tools`, `disallowedTools`, and `subagents`, and says
+  other keys are ignored. Apothem's helper definitions carry Claude Code
+  frontmatter, and their `tools` entries name Claude Code tools. Kimi Code
+  matches tool names exactly and warns on a name no tool has, and that
+  comparison is not done, so the helper definitions stay in the support tree
+  instead of becoming project helpers.
+- **Hooks.** Kimi Code reads hooks from the `[[hooks]]` array in
+  `~/.kimi-code/config.toml` (`$KIMI_CODE_HOME/config.toml` when that variable
+  is set). Apothem writes none. That file is user scope while this adapter
+  writes under the project root; an entry takes exactly four fields (`event`,
+  `matcher`, `command`, `timeout`) and an extra field stops the config from
+  loading; and Apothem has no TOML merge that could later remove only its own
+  entries. The hook helper scripts stay in the support tree.
+- **Skill frontmatter.** The vendor page documents the `SKILL.md` keys `name`
+  and `description` (both required), `type`, `whenToUse`,
+  `disableModelInvocation` (also accepted as `disable-model-invocation`), and
+  `arguments`. It states no rule for other keys. Skills install with the
+  frontmatter they have in the Apothem source, so keys such as `version`,
+  `updated`, `archetype`, `userInvocable`, `argument-hint`, `portability`, and
+  `allowed-tools` reach Kimi Code, which may ignore or reject them.
+- **Same-name skills.** Kimi Code gives the project level priority over the user
+  level, so a skill in `<project>/.kimi-code/skills/` takes precedence over a
+  skill of the same name in `~/.agents/skills/`, which a different Apothem
+  adapter writes. The vendor page does not say how `.kimi-code/skills/` and
+  `.agents/skills/` rank against each other inside the project level.
+
+{/* TODO(clarify): the hook install decision (user-scope TOML merge with
+surgical uninstall), whether the helper definitions become native helper files
+once their tool names are compared with Kimi Code's, how Kimi Code treats a
+SKILL.md key outside the documented list, and how .kimi-code/skills/ ranks
+against .agents/skills/ inside the project level are open; see Open Questions in
+src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md. */}
 
 ## Compatibility notes
 
@@ -66,7 +120,7 @@ exposes no statusline or output-style file surface, so those cohorts are not
 materialized.
 
 Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
+[vendor configuration reference](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files)
 for the current model and configuration surface.
 
 ## Verification
@@ -78,9 +132,9 @@ apothem verify --harness kimi-code --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists; managed files are non-empty, and JSON or YAML
-   configs parse. Add `--profile PATH` to also confirm that the installed files
-   match that profile.
+2. Each managed target exists, including the skills directory; managed files are
+   non-empty, and JSON or YAML configs parse. Add `--profile PATH` to also
+   confirm that the installed files match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -89,8 +143,12 @@ The verify command confirms that:
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+Re-derives the project-root `AGENTS.md` managed block, the skills, and the
+support cohorts from the current shared profile state. An update over an
+install made before skills moved to `.kimi-code/skills/` removes the old
+`<project>/.kimi-code/.apothem/support/skills/` directory, so each skill is
+present once. A timestamped copy of the removed directory is saved under
+`~/.apothem/backups/` first.
 
 ## Uninstalling
 
@@ -100,10 +158,13 @@ apothem uninstall --harness kimi-code --project /path/to/project
 
 Removes the Apothem block from the project-root `AGENTS.md` and keeps any text
 outside the sentinels. The file is deleted only when nothing else remains in it.
-Also removes the support files Apothem placed under
-`<project>/.kimi-code/.apothem/support/`. Before the change, a timestamped copy
-of each file is saved under `~/.apothem/backups/`; no backup file is left in the
-project. The shared profile YAML and Apothem engine are unaffected.
+Also removes the skills Apothem placed under `<project>/.kimi-code/skills/`
+(skills you added there under other names are kept) and the support files under
+`<project>/.kimi-code/.apothem/support/`, including the old support-tree
+`skills/` directory of an install that was never updated. Before the change, a
+timestamped copy of each file is saved under `~/.apothem/backups/`; no backup
+file is left in the project. The shared profile YAML and Apothem engine are
+unaffected.
 
 ## Conformity gate
 
@@ -117,6 +178,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
 | Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
+| Skills missing in Kimi Code | Check that `--project` names the repository root (the directory containing `.git`), then re-run the install |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
 
 ## Configuration knobs

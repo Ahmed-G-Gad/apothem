@@ -698,11 +698,23 @@ harnesses:
     # snapshot-date 2026-10-03) and keeps project configuration under
     # <project>/.kimi-code/. Apothem writes its governance surface into
     # AGENTS.md as a sentinel-delimited managed block (operator prose outside
-    # the sentinels is preserved) and keeps non-native Markdown cohorts under
-    # the Apothem-owned support tree at <project>/.kimi-code/.apothem/support/. The
-    # <project>/.kimi-code/mcp.json MCP surface is operator-owned and out of
-    # apothem's adapter scope. The adapter at src/apothem/harnesses/kimi_code/
-    # opts into the project-scope contract (requires_project = True).
+    # the sentinels is preserved). Skills and command skills install at the
+    # native project skills directory <project>/.kimi-code/skills/ (vendor
+    # docs at https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html,
+    # snapshot-date 2026-10-24); the tool-specific folder only, never the
+    # cross-tool .agents/skills/. The remaining non-native cohorts stay
+    # under the Apothem-owned support tree at
+    # <project>/.kimi-code/.apothem/support/:
+    #   agents  - the conversion is not scoped: the tool names in the agent
+    #             files are not compared with Kimi Code's, so the agent files
+    #             stay here (TODO(clarify) in the pin);
+    #   hooks   - [[hooks]] lives in the user-scope ~/.kimi-code/config.toml,
+    #             which this project-scope adapter does not write (the pin
+    #             records the gap).
+    # The <project>/.kimi-code/mcp.json MCP surface is operator-owned and out
+    # of apothem's adapter scope. The adapter at
+    # src/apothem/harnesses/kimi_code/ opts into the project-scope contract
+    # (requires_project = True).
     install:
       - source: "harnesses/kimi_code/templates/AGENTS.md"
         target: "${PROJECT_ROOT}/AGENTS.md"
@@ -717,11 +729,11 @@ harnesses:
         mode: merge_tree_entries
         ownership_class: apothem-owned
       - source: "skills/"
-        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/skills/"
-        mode: merge_tree_entries
+        target: "${PROJECT_ROOT}/.kimi-code/skills/"
+        mode: native_skills
         ownership_class: apothem-owned
       - source: "commands/"
-        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/skills/"
+        target: "${PROJECT_ROOT}/.kimi-code/skills/"
         mode: command_skills
         ownership_class: apothem-owned
       - source: "agents/"
@@ -744,9 +756,13 @@ harnesses:
     # Legacy cleanup on migration. The live install targets now sit under the
     # dotted <project>/.kimi-code/.apothem/support/ tree, so the old non-dotted
     # <project>/.kimi-code/apothem/ machinery (templates, hooks) AND cohort
-    # (rules, skills, agents) dirs are stale and swept. Sweeping the old
-    # non-dotted paths is safe: none is a live install target any longer, so no
-    # remove + recreate churn on a fresh install.
+    # (rules, skills, agents) dirs are stale and swept. Skills and command
+    # skills moved from <project>/.kimi-code/.apothem/support/skills/ to the
+    # native <project>/.kimi-code/skills/, so the support-tree skills dir is
+    # swept too: an update or an uninstall over the earlier layout leaves one
+    # copy of each skill, the native one. Sweeping these paths is safe: none is
+    # a live install target any longer, so no remove + recreate churn on a
+    # fresh install.
     stale-sweep:
       - ".kimi-code/apothem/skills/AGENTS.md"
       - ".kimi-code/apothem/templates"
@@ -754,6 +770,7 @@ harnesses:
       - ".kimi-code/apothem/rules"
       - ".kimi-code/apothem/skills"
       - ".kimi-code/apothem/agents"
+      - ".kimi-code/.apothem/support/skills"
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.

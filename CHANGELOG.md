@@ -39,6 +39,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Kimi Code loads Apothem's skills natively.** Skills and command skills now
+  install to the project's `.kimi-code/skills/`, the folder Kimi Code reads,
+  instead of a support folder it never scanned; update and uninstall clear the
+  old copies, so each skill exists once. Helper definitions stay in the support
+  folder until their tool names are mapped, and hooks are not written because
+  Kimi keeps them in a user-level TOML file Apothem cannot yet edit and undo
+  safely. A skill of yours with the same name as an Apothem skill is replaced
+  after a backup.
+- **The Codex plugin ships a root `plugin.json`.** The plugin now declares the
+  Agent Plugins schema in `plugin.json` at its root, the format Codex documents
+  for new packages, and keeps `.codex-plugin/plugin.json` as the documented
+  fallback. The marketplace entry carries the `policy` block Codex asks for.
 - **Claude Code receives commands as skills that survive compaction.** The
   plugin and the engine install now ship each command as a skill: a
   `SKILL.md` of at most about 5,000 tokens with the procedure the model

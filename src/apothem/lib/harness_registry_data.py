@@ -447,6 +447,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/AGENTS.md",
+            "<project>/.kimi-code/skills/",
             "<project>/.kimi-code/.apothem/support/",
         ),
         docs_path="site/content/docs/harnesses/kimi-code.mdx",
@@ -459,8 +460,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.kimi_code",
         template_sources=("harnesses/kimi_code/templates/AGENTS.md",),
         capability_status=_matrix(
-            commands="support-tree",
-            skills="support-tree",
+            commands="converted",
+            skills="native",
             hooks="support-tree",
             agents="support-tree",
             rules="support-tree",

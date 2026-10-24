@@ -193,10 +193,11 @@ harnesses:
     supports_statuslines: false
     platform: [linux, macos, windows]
     notes: >-
-      Project-root AGENTS.md managed block plus an Apothem support tree under
-      <project>/.kimi-code/.apothem/support/ carrying hooks, rules, commands,
-      skills, agents, and templates. Apothem does not register the hook scripts
-      with Kimi Code; they are reference material. The
+      Project-root AGENTS.md managed block, skills and commands (as skills)
+      under the native <project>/.kimi-code/skills/, plus an Apothem support
+      tree under <project>/.kimi-code/.apothem/support/ carrying hooks, rules,
+      agents, and templates. Apothem does not register the hook scripts with
+      Kimi Code; they are reference material. The
       <project>/.kimi-code/mcp.json MCP surface is
       operator-owned.
 

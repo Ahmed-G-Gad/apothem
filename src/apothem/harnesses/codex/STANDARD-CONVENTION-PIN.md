@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Codex docs, which moved from `developers.openai.com/codex` to `learn.chatgpt.com/docs` (the old addresses redirect). The AGENTS.md chain (`CODEX_HOME`, `AGENTS.override.md`), `[mcp_servers.<name>]` tables in `config.toml`, `~/.codex/agents/*.toml` subagents, `$HOME/.agents/skills`, `hooks.json`, and the web search tool are confirmed. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: the plugin-package facts (manifest location, compatibility fallback, bundled components, marketplace `policy`) are re-checked against the Codex plugin build guide, which lives at `developers.openai.com/plugins/build/plugins` (the older `developers.openai.com/codex/plugins/build` address carries the same text). The rest was last refreshed on 2026-10-03 against the Codex docs, which moved from `developers.openai.com/codex` to `learn.chatgpt.com/docs` (the old addresses redirect): the AGENTS.md chain (`CODEX_HOME`, `AGENTS.override.md`), `[mcp_servers.<name>]` tables in `config.toml`, `~/.codex/agents/*.toml` subagents, `$HOME/.agents/skills`, `hooks.json`, and the web search tool are confirmed. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/codex/`
 - Evidence level: vendor-doc pinned (living docs; no immutable pin). No vendor-native UI claim is made here.
 - Shared root: Codex owns `~/.agents/skills/`, which Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, and Zed also load. The registry records those readers and `apothem install` names them.
@@ -32,6 +32,12 @@ Retrieved 2026-10-03 unless marked.
 - <https://learn.chatgpt.com/docs/hooks> (`hooks.json`)
 - <https://learn.chatgpt.com/docs/agent-configuration/subagents> (agent TOML; retrieved 2026-10-02)
 - <https://learn.chatgpt.com/docs/web-search> (web search modes)
+- <https://developers.openai.com/plugins/build/plugins> (plugin layout, `.codex-plugin/plugin.json` fallback, bundled components, marketplace `policy`; retrieved 2026-10-24)
+- <https://learn.chatgpt.com/docs/plugins> (plugin component overview; retrieved 2026-10-24)
+- <https://raw.githubusercontent.com/openai/skills/main/skills/.system/plugin-creator/references/plugin-json-spec.md> (marketplace `policy` allowed values and defaults; retrieved 2026-10-24)
+- <https://agent-plugins.org/schemas/1.0.0/plugin.schema.json> (portable `plugin.json` schema; retrieved 2026-10-24)
+- <https://github.com/openai/codex/issues/18988> (open request: plugins that bundle custom agents; retrieved 2026-10-24)
+- <https://github.com/openai/codex/issues/18308> (open request: agents in the plugin system; retrieved 2026-10-24)
 
 ## Discovery Targets
 
@@ -70,8 +76,27 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 Codex exposes a plugin-marketplace surface (`codex plugin marketplace add`).
-The bundle is `plugins/apothem/` with `.codex-plugin/plugin.json`
-(`"skills": "./skills/"`) referenced by `.agents/plugins/marketplace.json`.
+The bundle is `plugins/apothem/`, referenced by `.agents/plugins/marketplace.json`.
+Its manifest is the root `plugins/apothem/plugin.json`, the location Codex
+documents for a new package: it declares the Agent Plugins 1.0.0 schema
+(`$schema`, `additionalProperties: false`) and carries identity only, with no
+`skills` key because Codex discovers a portable package's `skills/` directory
+from the plugin root. `plugins/apothem/.codex-plugin/plugin.json`
+(`"skills": "./skills/"`) stays beside it as a compatibility fallback: Codex
+documents existing `.codex-plugin/plugin.json` files as still supported, treats
+the root manifest as canonical for identity, and reads the fallback only for
+OpenAI-specific settings and only while the root has no `extensions.com.openai`
+object (that object replaces the whole overlay; the two are not merged). The
+fallback holds no such settings today, so on a Codex build that reads the root
+manifest it adds nothing; it exists for builds that read only the older
+location. `tests/unit/test_codex_plugin_manifest.py` holds both manifests to
+this shape, and `tests/unit/test_manifest_version_sync.py` holds their versions
+to `apothem.__version__`.
+
+The plugin components Codex documents include skills, an `mcp.json` of bundled
+MCP servers, hooks, and assets. None of the reviewed pages lists a custom-agents
+component, so neither manifest declares one.
+
 Installing the plugin *alone* — without running `apothem install` — persists
 only what the plugin package bundles; the full user-scope cohort still requires
 the engine, which converts agents to TOML and wires `~/.codex/hooks.json`.
@@ -82,15 +107,42 @@ the engine, which converts agents to TOML and wires `~/.codex/hooks.json`.
 | Commands | No — folded into the bootstrap skill | Codex has no separate marketplace command primitive in this bundle; the `/apothem`-equivalent entry is the bootstrap skill above. The full command cohort (command-prompt skills under `~/.agents/skills/`) lands only via `apothem install`. |
 | Context anchor (rules-as-text) | No — requires `apothem install` | `~/.codex/AGENTS.md` is written by the engine, not the plugin package. The plugin bundles no AGENTS.md, so the embedded engineering disciplines persist only after the engine run. |
 | Rules (as native primitive) | No — platform limit | Codex reserves `~/.codex/rules/` for `.rules` execution-policy files; Apothem rules are never a Codex-native rules primitive. They land as `~/.config/apothem/rules/` reference material via `apothem install`. |
-| Agents | No — requires `apothem install` | `~/.codex/agents/*.toml` is engine-converted; the plugin package bundles no agents. |
-| Hooks | No — requires `apothem install` | `~/.codex/hooks.json` + `~/.codex/hooks/` are engine-installed; the plugin package wires no hooks. |
-| MCP servers | No — operator-owned | `[mcp_servers.<name>]` tables live in operator-owned `~/.codex/config.toml`; neither the plugin nor the engine authors them. |
+| Agents | No — no documented plugin component | `~/.codex/agents/*.toml` is engine-converted and stays that way: Codex documents agents as standalone TOML files and lists no agents component for plugins (the upstream requests openai/codex#18988 and #18308 are open). The plugin package bundles no agents. |
+| Hooks | No — requires `apothem install` | `~/.codex/hooks.json` + `~/.codex/hooks/` are engine-installed; the plugin package wires no hooks. Codex plugins can bundle lifecycle hooks, but only for plugins installed manually in Codex desktop; installing or enabling a plugin does not trust its hooks, and a plugin that carries them is not eligible for the public plugin directory. |
+| MCP servers | No — operator-owned | `[mcp_servers.<name>]` tables live in operator-owned `~/.codex/config.toml`; neither the plugin nor the engine authors them. Codex plugins can bundle an `mcp.json`; this plugin ships none. |
 
 Bundle wiring status: the plugin package persists a bootstrap launcher skill
-that runs the engine. Embedding the full converted cohort (agents-as-TOML,
-command skills, an AGENTS.md anchor carrying the engineering disciplines)
-directly into `plugins/apothem/` is a documented future enhancement — the
-conversion logic lives in the engine (`codex_agents` / `command_skills` modes
-in `propagation-manifest.yaml`), so a build step that pre-renders those into the
-bundled `plugins/apothem/` tree would let the plugin carry the cohort without a
-post-install engine run.
+that runs the engine. Of the cohorts the engine converts, command skills are the
+only one that maps onto a documented plugin component (skills) without an engine
+run: a build step that pre-renders the `command_skills` mode of
+`propagation-manifest.yaml` into the bundled `plugins/apothem/skills/` tree
+would carry them, and it is not built. Agents-as-TOML do not follow, because
+Codex documents no plugin component for agents, so `~/.codex/agents/*.toml`
+stays engine-installed. Hooks stay engine-installed for the reasons in the
+table.
+
+TODO(clarify): whether a Codex plugin can carry an AGENTS.md instruction anchor
+is not stated in the reviewed plugin pages, so the context anchor stays
+engine-written until the vendor documents a component for it.
+
+TODO(clarify): the Codex changelog gives no release for when a root
+`plugin.json` became readable, so the `.codex-plugin/plugin.json` fallback is
+kept on the strength of "still supported" rather than a known minimum Codex
+version. Name that version, then decide whether to retire the fallback (retire
+its anchors in `scripts/release/bump_version.py` and
+`tests/unit/test_manifest_version_sync.py` and the fallback tests in
+`tests/unit/test_codex_plugin_manifest.py` in the same change).
+
+The marketplace entry in `.agents/plugins/marketplace.json` carries a `policy`
+block. Codex tells authors to always include `policy.installation` (allowed
+values `NOT_AVAILABLE`, `AVAILABLE`, `INSTALLED_BY_DEFAULT`; default for a new
+entry `AVAILABLE`) and `policy.authentication` (allowed values `ON_INSTALL`,
+`ON_USE`; default for a new entry `ON_INSTALL`) on each plugin entry; the
+vendor's marketplace example sets `ON_INSTALL`. The entry sets the two defaults,
+and `tests/unit/test_codex_plugin_manifest.py` holds both fields to the
+documented sets.
+
+TODO(clarify): the Codex pages reviewed on 2026-10-24 do not say which
+`policy.authentication` timing the vendor intends for a plugin that needs no
+sign-in. The entry uses the documented default, `ON_INSTALL`; switch to `ON_USE`
+only if a live Codex shows an install-time sign-in prompt for this plugin.

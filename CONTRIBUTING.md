@@ -162,7 +162,7 @@ at the authoritative cohorts; they do not contain the logic you edit:
 | `.claude-plugin/marketplace.json` | Claude Code plugin-marketplace entry; its plugin `source` is `plugins/claude-code/`. The repository root is not a plugin and carries no `plugin.json`. |
 | `plugins/claude-code/` | The Claude Code plugin package, manifest included — generated from the source cohorts (see the regeneration checklist below) |
 | `commands/apothem.toml` | A single passthrough slash-command that shells out to the engine, for the tool whose native commands are TOML files |
-| `plugins/apothem/` | The bundled plugin tree for the tool that consumes a local plugin source (carries `.codex-plugin/plugin.json` plus a bundled `skills/` copy) |
+| `plugins/apothem/` | The bundled plugin tree for the tool that consumes a local plugin source (carries the root `plugin.json`, a `.codex-plugin/plugin.json` compatibility fallback, and a bundled `skills/` copy) |
 | `.agents/plugins/marketplace.json` | The plugin-marketplace entry that points at `plugins/apothem/` |
 | `gemini-extension.json` | Gemini CLI extension manifest |
 | `qwen-extension.json` | Qwen Code extension manifest |
