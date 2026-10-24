@@ -1,7 +1,7 @@
 ---
 name: "test-authoring"
 version: "0.1.0"
-updated: "2026-10-02"
+updated: "2026-10-24"
 description: "Behavior-first test authoring with strict Arrange-Act-Assert discipline — matched when the developer asks to 'write tests', 'add coverage', 'add a test for', 'test this function', 'cover this module', 'write a failing test', 'increase coverage', or otherwise requests new test cases that assert observable behavior of a unit under test. Discovers the unit's behavior contract (input domains, return shapes, side effects, raised exceptions, edge boundaries such as empty/null/zero/max/Unicode/off-by-one), writes failing AAA assertions first, covers the happy path, edge boundaries, and failure modes (pinning any named bug with a regression test), and reports remaining coverage gaps. Authors tests only — never edits the implementation, runs the suite, computes coverage, edits coverage config, or mocks the unit under test (mocks only at owned boundaries). Fixing a failing test by editing the implementation, scaffolding a project, or running an existing suite is NOT a match."
 archetype: "authoring-template"
 userInvocable: true
@@ -34,20 +34,21 @@ A deliberately narrow surface. The skill is NOT:
 
 ## Workflow
 
-Five numbered, independently-verifiable steps. Test authoring only — no implementation edits.
+Six numbered, independently-verifiable steps. Test authoring only — no implementation edits.
 
 1. **Resolve the unit and the framework.** Discover the host's ratified test framework, test-directory layout, fixture conventions, and naming idioms by walking the host's source-of-truth files per `rules/host-discovery.md` (e.g., `pyproject.toml [tool.pytest.ini_options]`, sibling `test_*.py`, `*.test.ts`, `*_test.go`). `--focus PATH` names the unit; `--framework NAME` overrides the discovered framework when the host runs more than one.
 2. **Extract the behavior contract.** Read the unit under test and enumerate its observable contract — every input domain, every return shape, every side effect, every raised exception type, every edge boundary (empty, null, zero, max, Unicode, boundary off-by-one). Record each contract item as a distinct row; one row becomes one test.
 3. **Write failing AAA assertions first.** For each contract row, author one test in strict Arrange-Act-Assert form: the **Arrange** block builds the fixture and inputs, the **Act** block invokes the unit once, the **Assert** block checks exactly one observable outcome. The assertion fails against absent or current behavior before the implementation satisfies it. One behavioral claim per test; behavior-descriptive names (`test_<unit>_<condition>_<expected>`).
 4. **Cover happy, edge, and failure paths.** Partition the contract into the **happy path** (valid in-domain inputs), the **edge boundaries** (empty, null, zero, max, Unicode), and the **failure modes** (invalid inputs, missing dependencies, raised exceptions asserted with the framework's exception-matcher). Every partition carries at least one covering test; a bug-fix request adds a regression test pinning the prior defect.
-5. **Report residual coverage gaps.** Name every contract row left uncovered and why (data not yet discoverable, behavior under-specified, boundary requires host input). Uncovered rows surface as findings for operator triage, never silently dropped.
+5. **Prove each check can fail.** A test that cannot fail verifies nothing. For every partition add one control: an assertion built to fail, such as an input the unit must reject asserted as accepted, or a deliberately wrong expected value. Mark each control with the framework's expected-failure marker, in its strict form where one exists, so the suite stays green while the control fails and an unexpected pass is reported. This skill does not run the suite, so name the command whose output must show every control as an expected failure; a control that reports an unexpected pass means the check is vacuous and the surrounding assertions are not trusted until it is fixed. Record each control in the coverage map.
+6. **Report residual coverage gaps.** Name every contract row left uncovered and why (data not yet discoverable, behavior under-specified, boundary requires host input). Uncovered rows surface as findings for operator triage, never silently dropped.
 
 ## Return Contract
 
 Output is the set of authored test files plus a coverage-map summary (markdown). Maximum response: 800 tokens. Structure:
 
 - **Tests authored:** bulleted list — file path, test name, contract row, partition (happy / edge / failure).
-- **Coverage map:** contract rows covered vs. residual, with each residual row's triage reason.
+- **Coverage map:** contract rows covered vs. residual, with each residual row's triage reason and the control-case outcome per partition.
 - **Gaps:** behavior contracts the host has not yet specified (if applicable).
 
 **Token-budget override.** The invoker may request a higher budget for exhaustive enumeration; honor it. Prefer raising the budget over truncating the coverage map.
@@ -74,7 +75,7 @@ When the skill reaches a decision in any of the seven authoritative-data categor
 
 ## Recommended Next Step
 
-**Run the host's test command against the authored files** (e.g., `python -m pytest <focus-path>`) to confirm every new assertion fails before the implementation lands, then hand the failing suite to the implementation surface.
+**Run the host's test command against the authored files** (e.g., `python -m pytest <focus-path>`) to confirm every new assertion fails before the implementation lands and every control reports its expected failure, then hand the failing suite to the implementation surface.
 
 ## Bindings (§0.j five-direction)
 
