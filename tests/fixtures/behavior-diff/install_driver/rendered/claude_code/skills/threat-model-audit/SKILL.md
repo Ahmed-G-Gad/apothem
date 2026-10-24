@@ -1,12 +1,13 @@
 ---
 name: "threat-model-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Operator-driven threat-modeling audit pass against STRIDE + PASTA. Walks the repository's architecture, data-flow, and trust-boundary surfaces, applies STRIDE per element (Spoofing · Tampering · Repudiation · Information disclosure · Denial of service · Elevation of privilege) and the PASTA seven-stage pass, classifies threat actors against the canonical taxonomy, and emits per-threat findings with trust-boundary citation, MITRE ATT&CK references, mitigation posture, and residual-risk acceptance — HIGH/MEDIUM/LOW severity-triaged with concrete-driver rationale. SOTA references: STRIDE (Microsoft), PASTA (VerSprite), OWASP Threat Modeling, MITRE ATT&CK. Terminal command of the audit fortress — ratifies TIER 3 convergence. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/threat-model-audit-findings.md. Invoke with a repository path, or --focus BOUNDARY_OR_ACTOR to model one attack chain incrementally."
 argument-hint: "[path/to/repo/] [--focus BOUNDARY_OR_ACTOR] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /threat-model-audit — Per-Threat Threat-Modeling Audit (STRIDE + PASTA)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** Terminal review-fortress command at the final slot; its PASS verdict ratifies TIER 3 review-fortress convergence. It consumes the architectural surface plus the security-, dependency-, and supply-chain-audit findings, and emits read-only threat-model diagnostics for downstream remediation. It modifies no source.
-
-**Audit-fortress sequence.** Position **11 of 11 (final, terminal)**. **Upstream:** `/supply-chain-audit`. **Downstream:** none. Canonical sequence: `/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The architectural surface — source layout, integration adapters, external-interface declarations, configuration (env vars, secrets, network endpoints, file-system paths), CI workflow surface (build/release trust boundaries). Plus the upstream fortress artifacts at `_inputs/security-audit-findings.md`, `_inputs/dependency-audit-findings.md`, and `_inputs/supply-chain-audit-findings.md` — the per-vulnerability inventory the threat model contextualizes. No upstream Handoff Manifest is required; when present, prior fortress attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/threat-model-audit-findings.md`, plus an optional Handoff Manifest augmentation carrying the per-threat finding count, per-severity breakdown, trust-boundary inventory, STRIDE-coverage matrix, per-axis seven-axes attestation, and the audit's `verified:` date.
-
-**Pre-flight inquiry.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md` when the surface is ambiguous (threat-actor taxonomy unstated; residual-risk acceptance authority undeclared; data-classification scheme absent). Each ambiguity carries the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the candidate artifact; the attestation block is recorded inside it; any bar failure blocks promotion until resolved per the iterate-on-failure protocol (`rules/pre-emission-gate.md` §3).
-
-### Inquiry Cadence (D4)
-
-Operate at **maximal structured-inquiry saturation**. Every severity ratification, threat-actor classification (nation-state vs financially-motivated vs opportunistic vs insider), STRIDE-category interpretation (Tampering vs Elevation-of-privilege on a borderline data-write path), residual-risk-acceptance vs open-mitigation call, axis-attestation gap, and gate-bar `n/a (with reason)` marking routes through the canonical channel (`rules/interactive-questions.md` §1) — free-form prose questions as primary input are forbidden. Every invocation carries the three-segment body per §3; every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed state). Up to four questions batch per invocation. Question-fatigue-optimization is FORBIDDEN.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence; Handoff Manifest; Pre-flight inquiry; Pre-emission gate; Inquiry Cadence (D4).
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task exceeding this command's mission (the per-threat findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository whose architecture is undocumented to the point where trust boundaries cannot be identified (the STRIDE walk presumes identifiable trust-boundary edges). REFUSE authoring remediation patches — the surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits. REFUSE attributing a residual-risk acceptance to an authority the operator has not ratified — surface as an inquiry instead.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/threat-model-audit-findings.md` per the suite-locality invariant (`rules/context-management.md` §2.6.1). Plan-internal files are header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`, so `scripts/inject-header.{sh,py}` is NOT invoked. NEVER write outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any architectural artifact.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` class; the command never invokes the authorship-header injector on its emissions. Every architectural citation is documentary (`adapter:line` or `boundary:edge`); the underlying source is never written.
-
-### Structured Inquiry on Ambiguity
-
-Route through the structured-inquiry channel with the three-segment annotation (`rules/interactive-questions.md` §3) on any uncertainty about trust-boundary scope, focus boundary, borderline STRIDE-category severity, threat-actor classification, residual-risk attribution, or multi-axis attestation. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete trust-boundary edge, a STRIDE category, and (where applicable) a MITRE ATT&CK technique ID.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -173,7 +145,7 @@ The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` STRIDE per-element walker · PASTA per-tier walker · threat-actor taxonomy · upstream security/dependency/supply-chain artifacts · `borderline-classes:` boundary-set ratification · upstream-first vs proceed-without ratification · borderline severity/actor calls · `focus-semantics:` `--focus` restricts the walk to a single trust boundary or threat actor (default: full architectural surface) · `pipeline-tail-handoff:` TIER 3 convergence attestation ready.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -188,15 +160,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/release-readiness` — the threat-model audit is the terminal command of the 11-command audit-fortress sequence, and `/release-readiness` is the pass/fail pre-release gate that consumes the fortress's closure artifacts.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 STRIDE per-element walk + PASTA per-tier pass. The fifteen-bar pre-emission gate at Phase 4. The TIER 3 review-fortress convergence attestation (this command's PASS verdict ratifies TIER 3). The fortress→release hand-back to `/release-readiness` (the pass/fail pre-release gate that consumes the fortress closure artifacts). **Terminal in the audit-fortress sequence** — no downstream audit-fortress command follows.
-- **Driven by ←** `commands/supply-chain-audit.md` (audit-fortress upstream; immediate predecessor).
-- **Satisfies →** The consuming suite's audit-fortress catalog and threat-model review slot; TIER 3 complete. The `commands/README.md` command catalog's Audit/review-passes row for `/threat-model-audit`.
-- **Established by ↑** The `commands/README.md` command catalog. STRIDE (Microsoft; Shostack, 2014). PASTA (VerSprite; UcedaVélez & Morana, 2015). OWASP Threat Modeling (OWASP Foundation). MITRE ATT&CK (MITRE Corporation). `rules/clean-architecture-layers.md` (the trust-boundary identification surface). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (Security + Architecture load-bearing).
-- **Gated by ←** The repository's architectural-surface identifiability (trust boundaries must be discernible). The upstream fortress artifacts (security, dependency, supply-chain). The host's ratified threat-actor taxonomy and data-classification scheme (discovered at Phase 0). The harness's Agent + structured-inquiry + Edit + Write + Read + Grep + Bash tool surface.
-- **Cross-bound with ↔** `commands/security-audit.md` (produces per-vulnerability findings this audit contextualizes against the trust-boundary graph). `commands/dependency-audit.md` (produces CVE inventory + license matrix). `commands/supply-chain-audit.md` (produces release-engineering posture; threat model includes supply-chain trust boundaries). `commands/architecture-review.md` (sibling — architecture review examines structural soundness; threat model examines its security implications). `commands/plan-execute.md` (downstream remediation cycles). `rules/clean-architecture-layers.md` (the trust-boundary identification methodology). `rules/cognitive-identity.md` (the seven-axes taxonomy; Filter 3 Inversion Press is the attack lens). `rules/visual-leverage.md` (the §Trust-Boundary Map Mermaid diagram). `rules/option-annotation.md` (every severity-triage and actor-classification call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
 
 ## Installed Reference Paths
 

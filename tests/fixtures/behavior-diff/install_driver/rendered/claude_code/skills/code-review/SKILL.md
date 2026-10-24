@@ -1,12 +1,13 @@
 ---
 name: "code-review"
-version: "0.1.0"
-updated: "2026-10-24"
 description: "Operator-driven per-file code-quality review pass. Walks every source file under src/, scripts/, and tools/ in a deployed repository and emits per-file findings covering readability, maintainability, idiom-conformance, naming, complexity, magic-numbers, and comment-quality per the four code-craft rules (Python, shell, Markdown, universal-delegation) and the ten quality dimensions. Output lands at the consuming suite's _inputs/code-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. Distinct from `/code-audit` (cross-file forensic, repository-corpus scope) — `/code-review` is the per-file craft surface; not for plan-suite prose audits (use `/plan-review`) or remediation authoring (the command is read-only and never writes source)."
 argument-hint: "[path/to/repo/] [--focus FILE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-24"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /code-review — Per-File Code Quality Review
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -34,44 +37,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** Entry diagnostic surface of the audit-fortress sequence. Consumes the deployed repository's source tree under `src/` + `scripts/` + `tools/`; emits the read-only findings artifact that remediation cycles consume. Modifies no source.
-
-**Audit-fortress sequence position.** `/code-review` is the **entry point** of the canonical 11-command audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`). **Upstream:** none from the fortress (entered from `/plan-execute`'s Step 9 handoff). **Downstream:** `/code-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The deployed repository's source tree. No upstream manifest required — the command operates against on-disk state. A Handoff Manifest at `_inputs/handoff-manifest.yml`, when present, is read as context but does not gate execution.
-- **Emitted.** The findings artifact at `_inputs/code-review-findings.md`, plus an optional manifest augmentation carrying the per-file finding count, the per-severity breakdown, the per-axis attestation against the seven-axes-of-breadth taxonomy, and the review's `verified:` date.
-
-**Pre-flight inquiry set.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md` when the source-tree shape is ambiguous (e.g., `src/` absent, or `--focus` points at a non-existent path). Every ambiguity surfaces through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate artifact before promotion; the attestation block is recorded inside the emitted artifact. Any bar failure blocks promotion until resolved per the iterate-on-failure protocol at `rules/pre-emission-gate-bars.md` §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every severity ratification (HIGH / MEDIUM / LOW), every borderline idiom-conformance call, every axis-attestation gap, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4); Question-fatigue-optimization is FORBIDDEN.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the per-file findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE review against a repository whose source-tree shape diverges from the canonical `src/` + `scripts/` + `tools/` layout without operator ratification of the alternate scope. REFUSE authoring remediation patches — the command's surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/code-review-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings artifact outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any source file under `src/` + `scripts/` + `tools/` — the command is read-only against the repository.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When a finding cites a source-file path, the citation is documentary (file:line); the source file is never written by this command.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about repository scope, focus boundary, severity assignment on borderline findings, or axis-of-attention attestation on multi-axis findings, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete file:line and a concrete rule clause.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -174,7 +146,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` host manifests (`pyproject.toml` / `package.json` / sibling) for convention defaults · `borderline-classes:` borderline severity calls on per-file craft findings · `focus-semantics:` `--focus` restricts walk to focus subtree (default: `src/` + `scripts/` + `tools/`) · `pipeline-tail-handoff:` Pipeline terminates — findings ready for remediation) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -189,15 +161,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/code-audit` to advance the audit-fortress sequence; `/code-audit` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/code-audit.md` (audit-fortress next-step: per-file craft review hands off to cross-file forensic audit). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-file walk against every source file under `src/` + `scripts/` + `tools/`. The fifteen-bar pre-emission gate at Phase 4.
-- **Driven by ←** `commands/plan-execute.md` Step 9 pipeline handoff (audit-fortress entry point; `/code-review` is the canonical first command of the audit-fortress linear sequence).
-- **Satisfies →** The audit-fortress command catalog's per-file review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/code-review` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** The `commands/README.md` command catalog. `rules/code-craft-python.md` + `rules/code-craft-shell.md` + `rules/code-craft-markdown.md` + `rules/code-craft-conventions.md` (the four per-language code-craft rules whose clauses ground every finding). `rules/ten-dimension-check.md` (the ten dimensions the per-file walk applies). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the axis-of-attention attestation surface).
-- **Gated by ←** The deployed repository's source-tree presence (at least one of `src/`, `scripts/`, `tools/`). The host's ratified convention set discovered at Phase 0 (formatter, linter, type-checker, test framework). The harness's Agent + structured inquiry + Edit + Write + Read + Grep tool surface.
-- **Cross-bound with ↔** `commands/plan-review.md` (forensic audit of plan suites; sibling review surface — `/plan-review` audits prose-and-spec, `/code-review` audits code-and-craft). `commands/plan-design.md` (the design artifact materializes at `/plan-execute` time as code this command later reviews). `commands/plan-execute.md` (downstream remediation cycles route through phase execution). `rules/code-craft-python.md` + `rules/code-craft-shell.md` + `rules/code-craft-markdown.md` + `rules/code-craft-conventions.md` (the four primary rule citations every finding grounds against). `rules/ten-dimension-check.md` (the dimension catalog). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 4 fifteen-bar validation). `rules/visual-leverage.md` (structural-defect diagrams when warranted). `rules/host-discovery.md` (Phase 0 manifest walk). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template). `skills/surgical-guard/SKILL.md` (owns the clean-code / test / docs guard-class taxonomy this command's Phase 1 walk applies as its finding-class lens; the skill guards a diff before it lands, this command audits a deployed tree into a read-only findings artifact).
 
 ## Installed Reference Paths
 

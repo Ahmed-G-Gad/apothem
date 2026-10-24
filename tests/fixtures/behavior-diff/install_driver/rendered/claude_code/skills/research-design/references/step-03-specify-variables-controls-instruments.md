@@ -1,0 +1,13 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 3 — Specify Variables, Controls & Instruments
+
+Specify the variable structure as a table: every **independent variable** (the manipulated or grouping factor) with its levels; every **dependent variable** (the measured outcome) with its operational measure and instrument; every **control variable** (the held-constant or covaried factor) with the confound it rules out. **Identify the confounders from a causal DAG.** Draw the directed acyclic graph of the exposure, the outcome, and the candidate covariates, and read the adjustment set off the graph — adjusting for confounders (common causes) while avoiding adjustment for colliders and mediators that would bias the estimate. The DAG is a diagram carried in the design with the metadata header per `rules/visual-leverage.md`; it makes the confounder-control logic auditable rather than ad-hoc. Enumerate the confounds Filter 4 surfaces past the obvious, and pair each with the DAG-justified control that addresses it. Name each instrument — the measurement device, scale, assay, or coding scheme — and record its provenance: a validated instrument cites the source ID that validates it; a new instrument declares the validation it requires before use (R1). The sample frame names the population, the inclusion/exclusion criteria carried from the spec, the recruitment or sampling procedure, and — when the frame touches human or animal subjects, identifiable data, or privacy-sensitive material — the ethics posture, consent, and data-handling plan (R6), surfaced as a required inquiry until the operator supplies it.
+
+#### Ablation Design
+
+Specify the **ablation matrix** as an independent-variable factor: disable or remove exactly one component at a time so the delta between the component-present and component-absent levels isolates that one component's marginal contribution (R3). The factor's levels are `component-present` and `component-absent`, and each ablation variant MUST toggle exactly one component — one variant per removed component, never two removals folded into a single run — so the attribution is unambiguous. The ablation matrix is planned here at design time and executed against the frozen frame per `skills/research-suite/references/experiment-program-scaffold.md`.
+
+#### Sensitivity Sweeps
+
+Plan a **sensitivity sweep** for each tunable parameter: sweep the parameter over a principled range and preregister the robustness claim — how the primary metric responds across that range, not a single point (R7). The swept range and the preregistered robustness claim are fixed here before data collection, and the sweep is executed against the frozen frame per `skills/research-suite/references/experiment-program-scaffold.md`.

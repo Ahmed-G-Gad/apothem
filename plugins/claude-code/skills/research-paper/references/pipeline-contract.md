@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+## Pipeline Contract
+
+**Pipeline position.** **Stage 10 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the synthesis, study design, and analysis the upstream stages produced and emits the manuscript the review stage audits.
+
+**Handoff Manifest.**
+
+- **Consumed.** `{suite}/_inputs/synthesis.md` (the SOTA map, literature matrix, and explicit gap statement the paper's introduction and related-work sections build on), `{suite}/_inputs/study-design.md` (the operationalized predictions, variables, controls, sample, and instruments the method section reproduces), and `{suite}/_outputs/analysis.md` (the confirmed results with effect sizes and CIs, the disclosed-deviation ledger, and the null/fragile results the results and limitations sections report). The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block.
+- **Emitted.** The paper deliverable at the host-natural location (`paper/`, discovered per `rules/host-discovery.md`) — abstract, introduction, related work, method, results, discussion, limitations, conclusion, and references — plus the verified reference list. The manifest's `invocation_sequence` increments, `downstream` names `/research-review`, and the verification attestation records the per-reference resolve-by-default outcomes and the count of citations that resolved against the count claimed.
+
+**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the venue or citation style is undeclared and the host carries no existing manuscript convention to discover, when the manuscript's authorship line requires identity the operator has not supplied (author names, affiliations, corresponding-author contact — never invented per R6), or when a synthesis claim the introduction needs lacks a resolvable source in the source ledger. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. Scope-direction, identity (authorship), and any citation-source-gap inquiry block emission until answered.
+
+**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate manuscript before the manifest update. The gate attestation block is recorded in `{suite}/_outputs/paper-attestation.md`. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.

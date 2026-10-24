@@ -400,6 +400,13 @@ Structure:
 - Workflow section with steps
 - Return contract / output format
 
+One harness's skill emission splits each command into a slim `SKILL.md` plus
+`references/` files by H2 section. Give a command one `## Workflow` section,
+close every code fence, and classify any new H2 kind in
+`src/apothem/lib/claude_skill_split.py`; `tests/unit/test_claude_skill_split.py`
+fails on an unclassified kind. The rules are in the Skill-emission split
+contract of `src/apothem/commands/README.md`.
+
 ### 4. Update the README and CHANGELOG.md
 
 Add a row to the table for the command's section in `src/apothem/commands/README.md`, in addition to the invocation-table row from step 2; add a CHANGELOG row under the next release's `### Added` section.

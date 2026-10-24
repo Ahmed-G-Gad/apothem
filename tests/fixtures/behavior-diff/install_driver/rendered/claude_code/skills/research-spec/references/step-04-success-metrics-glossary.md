@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 4 — Success Metrics & Glossary
+
+Declare **success metrics** an independent party measures the same way (R2 reproducibility): each metric names what is measured, the threshold that constitutes success, and the measurement procedure. Where a metric rests on a statistical claim, name the effect-size and confidence-interval form per R7, never a bare significance threshold. Build a **glossary** for every domain term the hypotheses, scope, or metrics depend on; an undefined term is an ambiguity the structured-inquiry channel resolves before the spec promotes.
+
+**Scale the rigor floor to the target-venue ambition.** The depth of the required rigor floor — the replication-count floor, the significance-plus-effect-size-plus-ranks reporting form, budget-parity across comparators, and the tuning-split that separates tuning from evaluation, all forward-declared here and run downstream — scales to the ambition of the target venue (R2, R7): a higher-ambition target raises the bar the success metrics and the downstream artifact set MUST meet, per `skills/research-suite/references/advancement-gate.md`. The success metrics accordingly forward-declare the reproducibility-evidence outputs that will scaffold the deliverable's evidence package, so the artifacts are assembled once and shipped as the same set. Surface the target-venue ambition as a `USER-CONFIRM` placeholder (the canonical `kind=`-tagged form) when the source leaves it unspecified; NEVER invent it.

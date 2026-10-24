@@ -1,12 +1,13 @@
 ---
 name: "a11y-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Operator-driven accessibility audit pass against WCAG 2.2 AA. Walks every rendered page of a deployed web surface (documentation site, landing portal, in-app surfaces) via ax-core + Pa11y + Lighthouse Accessibility, attests each issue against the WCAG 2.2 success-criterion catalog (including the six 2.2-new criteria — 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements, 2.5.8 Target Size, 3.3.7 Redundant Entry, 3.3.8 Accessible Authentication, plus the carried-forward AA floor), and emits per-page findings — HIGH/MEDIUM/LOW severity-triaged with concrete-driver rationale per finding. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/a11y-audit-findings.md. Invoke with a site path or URL, or --focus PAGE_OR_DIR to audit a recent docs change-set incrementally."
 argument-hint: "[path/to/site/ or URL] [--focus PAGE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /a11y-audit — Per-Page Accessibility Audit (WCAG 2.2 AA)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** Terminal review-fortress command at the a11y slot. It consumes the deployed web surface state — every reachable rendered page under the operator-supplied root — and emits read-only accessibility diagnostics for downstream remediation. It modifies no source.
-
-**Audit-fortress sequence.** Position **7 of 11**. **Upstream:** `/ux-review`. **Downstream:** `/docs-review`. Canonical sequence: `/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The deployed web surface (filesystem path to a rendered static site, staging URL, or production URL). No upstream manifest is required; the command operates against deployed state. When a Handoff Manifest exists at `_inputs/handoff-manifest.yml`, prior fortress attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/a11y-audit-findings.md`, plus an optional Handoff Manifest augmentation carrying the per-page finding count, per-severity breakdown, per-WCAG-criterion attestation, per-axis seven-axes attestation, and the audit's `verified:` date.
-
-**Pre-flight inquiry.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md` when the deployed-surface shape is ambiguous (the root URL returns no reachable pages; the focus argument points at a non-existent page; the rendered site requires authentication credentials the audit does not carry). Each ambiguity carries the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the candidate artifact; the attestation block is recorded inside it; any bar failure blocks promotion until resolved per the iterate-on-failure protocol (`rules/pre-emission-gate.md` §3).
-
-### Inquiry Cadence (D4)
-
-Operate at **maximal structured-inquiry saturation**. Every severity ratification, borderline WCAG-conformance call (e.g. contrast at 4.49:1 versus the 4.5:1 floor), axis-attestation gap, and gate-bar `n/a (with reason)` marking routes through the canonical channel (`rules/interactive-questions.md` §1) — free-form prose questions as primary input are forbidden. Every invocation carries the three-segment body per §3; every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed state). Up to four questions batch per invocation. Question-fatigue-optimization is FORBIDDEN.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence; Handoff Manifest; Pre-flight inquiry; Pre-emission gate; Inquiry Cadence (D4).
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task exceeding this command's mission (the per-page accessibility findings artifact for a deployed web surface against WCAG 2.2 AA). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a surface whose page set is genuinely unbounded without operator-supplied focus narrowing (the crawl must terminate). REFUSE authoring remediation patches — the surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits. REFUSE audit against a higher conformance level (WCAG 2.2 AAA) without explicit operator ratification — WCAG 2.2 AA is the canonical default.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/a11y-audit-findings.md` per the suite-locality invariant (`rules/context-management.md` §2.6.1). Plan-internal files are header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`, so `scripts/inject-header.{sh,py}` is NOT invoked. NEVER write outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any rendered page or underlying source.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` class; the command never invokes the authorship-header injector on its emissions. Every page/URL citation is documentary (`page:selector`); the underlying source file is never written.
-
-### Structured Inquiry on Ambiguity
-
-Route through the structured-inquiry channel with the three-segment annotation (`rules/interactive-questions.md` §3) on any uncertainty about page-set scope, focus boundary, borderline contrast / focus-visibility / heading-hierarchy severity, or multi-axis attestation. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete `page:selector` (or `page:line` for source-mapped findings), a WCAG 2.2 success criterion, and the detecting tool (ax-core rule ID, Pa11y issue ID, Lighthouse audit ID).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -177,7 +149,7 @@ The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` ax-core · Pa11y · Lighthouse · `borderline-classes:` borderline a11y severity calls (WCAG level interpretation, AT-impact disambiguation) · `focus-semantics:` `--focus` restricts the crawl to a focus subtree (default: all reachable pages up to the host ceiling) · `pipeline-tail-handoff:` pipeline terminates — findings ready for remediation.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -192,15 +164,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/docs-review` to advance the audit-fortress sequence — the canonical successor per the 11-command audit-fortress sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/docs-review.md` (audit-fortress next-step). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-page audit against every reachable rendered page under the operator-supplied root. The fifteen-bar pre-emission gate at Phase 4.
-- **Driven by ←** `commands/ux-review.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and accessibility review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/a11y-audit`.
-- **Established by ↑** The `commands/README.md` command catalog. The WCAG 2.2 AA Recommendation (W3C, 2023) — the canonical accessibility standard grounding every finding. ax-core (Deque) + Pa11y (Pa11y team) + Lighthouse Accessibility (Google Chrome team) — the three detecting-tool surfaces producing the raw candidates. `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (Tooling + Observability load-bearing).
-- **Gated by ←** The deployed web surface's reachability (at least one rendered page resolves at the operator-supplied root). The host's ratified tooling discovered at Phase 0 (ax-core version, Pa11y config, Lighthouse config). The harness's Agent + structured-inquiry + Edit + Write + Read + Grep + Bash tool surface (Bash required for the three CLI tools).
-- **Cross-bound with ↔** `commands/code-review.md` (sibling — `/code-review` audits source craft, `/a11y-audit` audits rendered accessibility). `commands/ux-review.md` (sibling — `/ux-review` audits ergonomics, `/a11y-audit` audits the WCAG 2.2 AA floor; overlap at keyboard-navigability and focus-visible). `commands/perf-audit.md` (sibling — Lighthouse runs both Accessibility and Performance audits in one pass). `commands/plan-execute.md` (downstream remediation cycles). `rules/cognitive-identity.md` (the seven-axes taxonomy). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 4 fifteen-bar validation). `rules/visual-leverage.md` (structural-defect diagrams when warranted). `rules/host-discovery.md` (Phase 0 manifest walk against the host's accessibility-tooling configuration). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
 
 ## Installed Reference Paths
 

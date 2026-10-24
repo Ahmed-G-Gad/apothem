@@ -64,19 +64,20 @@ all runnable from the self-contained plugin tree:
 After the install, the Apothem command set, the bundled delegated workers, the
 skills, and the four [output styles](/docs/reference/output-styles) (pick one
 with `/output-style` or from `/config`) are available in every Claude Code
-session. Plugin commands carry
-the plugin's prefix: `/apothem:plan-spec`, `/apothem:security-audit`, and the
-rest. Claude Code also accepts the short form (`/plan-spec`) while no other
-command uses that name. Two names are taken by Claude Code itself: `/plan`
-enters plan mode and `/code-review` runs the bundled review, so type
-`/apothem:plan` and `/apothem:code-review` for the Apothem commands. When the
-Apothem engine installs into Claude Code instead of the plugin, commands become
-personal skills under `~/.claude/skills/` without a prefix, and a personal
+session. The plugin ships each command as a skill, a `SKILL.md` with the
+detail it loads on demand in a `references/` folder beside it, so Claude Code
+invokes it with the plugin's prefix: `/apothem:plan-spec`,
+`/apothem:security-audit`, and the rest. Two names are taken by Claude Code
+itself: `/plan` enters plan mode and `/code-review` runs the bundled review, so
+type `/apothem:plan` and `/apothem:code-review` for the Apothem commands. When
+the Apothem engine installs into Claude Code instead of the plugin, the same
+skills are written to `~/.claude/skills/` without a prefix, and a personal
 `code-review` skill replaces the bundled `/code-review` (its `/review` alias
-still runs the bundled one). Two names, `projectify` and `workflow`, ship as
-both a command and a skill; Claude Code runs the skill when both exist, so the
-plugin runs the skill and the engine install writes only the skill, not a skill
-derived from the command, to `~/.claude/skills/<name>/`. See [Slash commands](/docs/reference/commands)
+still runs the bundled one). Two names, `projectify` and `workflow`, are also
+native skills; the native skill is the one the plugin and the engine install
+ship, not a skill derived from the command. See
+[Claude Code](/docs/harnesses/claude-code#command-skills-and-reference-files)
+for how the commands are split, and [Slash commands](/docs/reference/commands)
 for the full command catalog.
 
 **Verify:** run `/plugin` inside Claude Code and confirm **apothem** is listed

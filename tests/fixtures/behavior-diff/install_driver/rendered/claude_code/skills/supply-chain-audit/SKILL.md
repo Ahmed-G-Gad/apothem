@@ -1,12 +1,13 @@
 ---
 name: "supply-chain-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. Walks the repository's release-engineering surface (CI workflows, build provenance, artifact signing, dependency manifests) across seven canonical axes — SLSA provenance level, Sigstore cosign signatures, CycloneDX/SPDX SBOM completeness, OpenSSF Scorecard score, REUSE.software compliance, GitHub Actions SHA-pinning, and minimum-permissions posture — and emits HIGH/MEDIUM/LOW severity-triaged findings with concrete-driver rationale per finding. SOTA references: SLSA, Sigstore, in-toto, OpenSSF Scorecard, SCITT, REUSE. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/supply-chain-audit-findings.md. Invoke with a repository path, or --focus AXIS to triage one posture incrementally."
 argument-hint: "[path/to/repo/] [--focus AXIS] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /supply-chain-audit — Per-Axis Supply-Chain Audit (SLSA + Sigstore + SBOM)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** Terminal review-fortress command at the supply-chain slot. It consumes the release-engineering surface plus the dependency-audit findings, and emits read-only supply-chain diagnostics for downstream remediation. It modifies no source.
-
-**Audit-fortress sequence.** Position **10 of 11**. **Upstream:** `/dependency-audit`. **Downstream:** `/threat-model-audit`. Canonical sequence: `/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The release-engineering surface — `.github/workflows/*.yml`, release scripts (`scripts/`, `Makefile`), signing config (`cosign.pub`, `.sigstore/`), SBOM config (CycloneDX/SPDX), REUSE config (`REUSE.toml`, `.reuse/`), and OpenSSF Scorecard config. Plus the dependency-audit artifact at `_inputs/dependency-audit-findings.md` (CVE inventory + license matrix). No upstream Handoff Manifest is required; when present, prior fortress attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/supply-chain-audit-findings.md`, plus an optional Handoff Manifest augmentation carrying the per-axis finding count, per-severity breakdown, SLSA-level attestation, Scorecard-score snapshot, per-axis seven-axes attestation, and the audit's `verified:` date.
-
-**Pre-flight inquiry.** Phase 0 emits the typed inquiry set per `rules/authority-inquiry.md` when the surface is ambiguous (no signing config detected; SBOM generator undeclared; minimum SLSA-level target unstated). Each ambiguity carries the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the candidate artifact; the attestation block is recorded inside it; any bar failure blocks promotion until resolved per the iterate-on-failure protocol (`rules/pre-emission-gate.md` §3).
-
-### Inquiry Cadence (D4)
-
-Operate at **maximal structured-inquiry saturation**. Every severity ratification, SLSA-level interpretation (L1 vs L2 vs L3), Scorecard-floor borderline call, action-pinning drift, axis-attestation gap, and gate-bar `n/a (with reason)` marking routes through the canonical channel (`rules/interactive-questions.md` §1) — free-form prose questions as primary input are forbidden. Every invocation carries the three-segment body per §3; every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed state). Up to four questions batch per invocation. Question-fatigue-optimization is FORBIDDEN.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence; Handoff Manifest; Pre-flight inquiry; Pre-emission gate; Inquiry Cadence (D4).
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task exceeding this command's mission (the per-axis supply-chain findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository with no CI surface absent operator ratification (the seven axes presume a release-engineering surface). REFUSE authoring remediation patches — the surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/supply-chain-audit-findings.md` per the suite-locality invariant (`rules/context-management.md` §2.6.1). Plan-internal files are header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`, so `scripts/inject-header.{sh,py}` is NOT invoked. NEVER write outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any CI workflow, release script, or signing-key config.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` class; the command never invokes the authorship-header injector on its emissions. Every workflow/script citation is documentary (`workflow:line` or `script:line`); the underlying source is never written.
-
-### Structured Inquiry on Ambiguity
-
-Route through the structured-inquiry channel with the three-segment annotation (`rules/interactive-questions.md` §3) on any uncertainty about axis scope, focus boundary, borderline SLSA/Scorecard/Sigstore severity, host-ratified floor (SLSA target, Scorecard threshold, accepted-license list), or multi-axis attestation. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete `workflow:line` or `attestation-artifact:reference` plus the relevant SOTA clause (SLSA level definition, Scorecard check ID, REUSE specification section).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -166,7 +138,7 @@ The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` host-ratified targets across the seven release-engineering axes (signing · provenance · SBOM · pinning · CI permissions · publish flow · attestation) · `borderline-classes:` borderline severity calls on per-axis findings · `focus-semantics:` `--focus AXIS` restricts the walk to a single axis (default: all seven) · `pipeline-tail-handoff:` pipeline terminates — findings ready for remediation.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -181,15 +153,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/threat-model-audit` to advance the audit-fortress sequence — the canonical successor that consumes this audit's posture inventory to model supply-chain-attack trust boundaries.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/threat-model-audit.md` (audit-fortress next-step; consumes this audit's posture inventory). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-axis walk across SLSA / Sigstore / SBOM / Scorecard / REUSE / action-pinning / permissions. The fifteen-bar pre-emission gate at Phase 4.
-- **Driven by ←** `commands/dependency-audit.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and supply-chain review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/supply-chain-audit`.
-- **Established by ↑** The `commands/README.md` command catalog. SLSA Framework (Google + OpenSSF). Sigstore (sigstore.dev) + in-toto (in-toto.io). CycloneDX (OWASP) + SPDX (Linux Foundation). OpenSSF Scorecard (securityscorecards.dev). SCITT (IETF Supply Chain Integrity, Transparency, and Trust). REUSE.software (Free Software Foundation Europe). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (Security + Tooling + Observability load-bearing).
-- **Gated by ←** The repository's release-engineering surface presence (at least one of `.github/workflows/`, a release script, or a build manifest). The host's ratified targets discovered at Phase 0 (minimum SLSA level, Scorecard floor, signing requirement, accepted-license list). The dependency-audit artifact. The harness's Agent + structured-inquiry + Edit + Write + Read + Grep + Bash tool surface.
-- **Cross-bound with ↔** `commands/security-audit.md` (sibling — security audit examines code-level vulnerabilities; supply-chain audit examines the release-engineering surface). `commands/dependency-audit.md` (produces the CVE inventory + license matrix this audit consumes). `commands/threat-model-audit.md` (consumes this audit's posture inventory). `commands/plan-execute.md` (downstream remediation cycles). `rules/cognitive-identity.md` (the seven-axes taxonomy). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/production-ready-prs.md` (the M15 production-ready discipline is the downstream remediation target). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
 
 ## Installed Reference Paths
 

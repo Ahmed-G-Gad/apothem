@@ -1,12 +1,13 @@
 ---
 name: "docs-review"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. Walks every Markdown page under the host docs source (Apothem: site/content/docs/) plus README, CONTRIBUTING, CHANGELOG, ADRs, and RFCs, then emits per-page findings covering prose clarity, sentence-level justification, precision-over-politeness, active-voice construction, hedge-elimination, link-integrity, code-block language tags, Mermaid verified metadata, citation completeness, and public-API coverage. Output lands at the consuming suite's _inputs/docs-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
 argument-hint: "[path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /docs-review — Per-Page Documentation Review
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -34,44 +37,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; creat
 
 ## Pipeline Contract
 
-**Pipeline position.** **Terminal review-fortress command.** This command sits at the docs-fortress slot of the audit-fortress sequence. It consumes the deployed documentation corpus state — every Markdown page under the host docs source plus the host's ratified documentation singletons — and emits the findings artifact downstream remediation cycles consume. The command does not modify source; the findings are read-only diagnostics.
-
-**Audit-fortress sequence position.** **Upstream:** `/a11y-audit`. **Downstream:** `/dependency-audit`. Position 8 of 11 in the canonical audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`).
-
-**Handoff Manifest.**
-
-- **Consumed.** The repository's documentation corpus (`site/content/docs/**/*.{md,mdx}` plus root-level documentation singletons for Apothem). No upstream manifest is required; the command operates against the on-disk state. When the consuming suite carries a Handoff Manifest at `_inputs/handoff-manifest.yml`, the prior fortress-phase attestations are read as context but do not gate execution.
-- **Emitted.** The findings artifact at `_inputs/docs-review-findings.md` plus an optional Handoff Manifest augmentation with the per-page finding count, the per-severity breakdown, the per-dimension-failure breakdown (against the ten dimensions), the per-axis attestation against the seven-axes-of-breadth taxonomy, and the review's `verified:` date.
-
-**Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the documentation-corpus shape is ambiguous (e.g., the docs source directory is absent, the focus argument points at a non-existent path, the host's docs-site generator is not host-discoverable). Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate findings artifact before promotion. The gate attestation block is recorded inside the emitted findings artifact. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every severity ratification (HIGH / MEDIUM / LOW), every borderline hedge-elimination call, every broken-link / stale-citation triage call, every axis-attestation gap, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4); Question-fatigue-optimization is FORBIDDEN.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the per-page documentation findings artifact for a deployed repository). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE review against a corpus whose shape diverges from the host-ratified docs source plus root-singletons layout without operator ratification of the alternate scope. REFUSE authoring remediation patches — the command's surface is diagnostic only; remediation routes through `/plan-execute` or operator-initiated edits.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/docs-review-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings artifact outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER modify any documentation page — the command is read-only against the corpus.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When a finding cites a documentation page, the citation is documentary (`file:line` or `file:heading-anchor`); the underlying source is never written by this command.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about corpus scope, focus boundary, severity assignment on borderline hedge / passive-voice / heading-hierarchy findings, broken-link disposition, or axis-of-attention attestation on multi-axis findings, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate findings — every finding cites a concrete `file:line` (or `file:anchor`) and a concrete rule clause from the Markdown craft rule or a specific dimension from the ten-dimension catalog.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -173,7 +145,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` host's docs-site generator (Fumadocs / Docusaurus / Sphinx / sibling) for convention defaults · `borderline-classes:` borderline severity calls on per-page documentation findings · `focus-semantics:` `--focus` restricts walk to focus subtree (default: host docs source + root singletons) · `pipeline-tail-handoff:` Pipeline terminates — findings ready for remediation) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -188,15 +160,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/dependency-audit` to advance the audit-fortress sequence; `/dependency-audit` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/dependency-audit.md` (audit-fortress next-step). Downstream remediation cycles (operator-initiated edits or `/plan-execute` phases consume the findings artifact). The Phase 1 per-page walk against every Markdown file under the host docs source plus the host's ratified root-level documentation singletons. The fifteen-bar pre-emission gate at Phase 4.
-- **Driven by ←** `commands/a11y-audit.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and documentation review slot. The `commands/README.md` command catalog's Audit/review-passes row for `/docs-review` (the registry entry that ratifies this command's place in the slash-command catalog).
-- **Established by ↑** The `commands/README.md` command catalog. `rules/code-craft-markdown.md` (the Markdown craft rule whose clauses ground every finding). `rules/ten-dimension-check.md` (the ten dimensions the per-page walk applies). `rules/definitiveness.md` (the hedge-vocabulary forbid list for prescriptive prose). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the axis-of-attention attestation surface).
-- **Gated by ←** The repository's documentation corpus presence (at least one Markdown file under the operator-supplied root). The host's ratified docs-site generator + frontmatter schema discovered at Phase 0. The harness's Agent + structured inquiry + Edit + Write + Read + Grep tool surface.
-- **Cross-bound with ↔** `commands/code-review.md` (sibling review-fortress surface). `commands/architecture-review.md` (sibling surface — architecture review audits structural soundness; docs review audits how that structure is documented). `commands/plan-execute.md` (downstream remediation cycles route through phase execution). `rules/code-craft-markdown.md` (the primary rule citation every finding grounds against). `rules/ten-dimension-check.md` (the dimension catalog). `rules/definitiveness.md` (hedge-vocabulary closed forbid list). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 4 fifteen-bar validation). `rules/visual-leverage.md` (structural-defect diagrams when warranted). `rules/host-discovery.md` (Phase 0 manifest walk). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template).
 
 ## Installed Reference Paths
 
