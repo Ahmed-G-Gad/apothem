@@ -496,9 +496,9 @@ _PLAN_NAME_HINTS: Final[tuple[str, ...]] = ("plan", "notes", "draft")
 #: Shared temp locations on POSIX hosts that do not export ``TMPDIR``. They are
 #: compared against, never written to.
 _POSIX_TEMP_ROOTS: Final[tuple[str, ...]] = (
-    "/tmp",  # noqa: S108 — an exemption root for classification, not a temp file
+    "/tmp",  # noqa: S108  # nosec B108 — an exemption root, never written to
     "/private/tmp",
-    "/var/tmp",  # noqa: S108 — an exemption root for classification, not a temp file
+    "/var/tmp",  # noqa: S108  # nosec B108 — an exemption root, never written to
     "/var/folders",
 )
 
