@@ -4,7 +4,8 @@
 
 OpenCode, Qwen Code and Open-Claw read configs that may carry comments or
 JSON5 syntax. Install must either keep every operator key with the file's
-bytes intact, or exit non-zero with ``config.unparseable`` and write nothing.
+bytes intact (the file already holds what install would write), or exit
+non-zero with ``config.unparseable`` and write nothing.
 """
 
 from __future__ import annotations
@@ -16,11 +17,17 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
+from apothem.harnesses.open_claw.materializer import SKILLS_DIRECTORY
 from apothem.schemas import profile_minimal_path
 
 _JSONC_OPENCODE = '{\n  // operator note\n  "model": "anthropic/operator-model",\n}\n'
 _JSONC_QWEN = '{\n  /* mine */\n  "model": {"name": "operator-model"},\n}\n'
 _JSON5_OPENCLAW = "// gateway\n{\n  gateway: { port: 18789, },\n}\n"
+# The same file once the operator has listed the skills directory themselves.
+_JSON5_OPENCLAW_LISTED = (
+    "// gateway\n{\n  gateway: { port: 18789, },\n"
+    f'  skills: {{ load: {{ extraDirs: ["{SKILLS_DIRECTORY}",], }}, }},\n}}\n'
+)
 
 
 def _install(harness: str) -> tuple[int, dict[str, object]]:
@@ -43,6 +50,7 @@ def _install(harness: str) -> tuple[int, dict[str, object]]:
     [
         ("opencode", ".config/opencode/opencode.json", _JSONC_OPENCODE),
         ("qwen-code", ".qwen/settings.json", _JSONC_QWEN),
+        ("open-claw", ".openclaw/openclaw.json", _JSON5_OPENCLAW),
     ],
 )
 def test_install_refuses_commented_config_and_writes_nothing(
@@ -71,20 +79,20 @@ def test_install_refuses_commented_config_and_writes_nothing(
     assert sorted(p.name for p in config.parent.iterdir()) == [config.name]
 
 
-def test_install_leaves_json5_openclaw_config_byte_identical(
+def test_install_leaves_json5_openclaw_config_that_lists_the_skills_dir_identical(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     home = tmp_path / "home"
     config = home / ".openclaw" / "openclaw.json"
     config.parent.mkdir(parents=True)
-    config.write_text(_JSON5_OPENCLAW, encoding="utf-8")
+    config.write_text(_JSON5_OPENCLAW_LISTED, encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))
 
     exit_code, envelope = _install("open-claw")
 
     assert exit_code == 0, envelope
-    assert config.read_text(encoding="utf-8") == _JSON5_OPENCLAW
+    assert config.read_text(encoding="utf-8") == _JSON5_OPENCLAW_LISTED
     # verify reads the JSON5 file as a valid config, not a corrupt one.
     verify = CliRunner().invoke(main, ["verify", "--harness", "open-claw", "--json"])
     assert verify.exit_code == 0, verify.output

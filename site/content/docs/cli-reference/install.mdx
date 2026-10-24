@@ -72,10 +72,13 @@ verbosity.
 Install and update also print advisories as `Note:` lines. An advisory never
 changes what the install writes. When an install writes a shared root, a path
 other tools also load (for example the skills folder `~/.agents/skills/`),
-the note names those tools. When an install targets a tool that already loads
-Apothem content from another install's shared root, the note names that
-install. In the `--format json` envelope each advisory is a `warnings` entry
-with `"outcome": "advisory"` and `"operation": "shared_root"`.
+the note names those tools, and puts a tool that loads the path only under a
+condition in parentheses, for example `Open-Claw (only under its default state
+directory)`. When an install targets a tool that
+already loads Apothem content from another install's shared root, the note
+names that install. In the `--format json` envelope each advisory is a
+`warnings` entry with `"outcome": "advisory"` and
+`"operation": "shared_root"`.
 
 The profile's MCP servers get three advisories, each naming the profile field:
 
@@ -105,6 +108,12 @@ trailing commas, and JSON5 syntax. So:
   that harness and exits 1 with the error code `config.unparseable`. The
   `fix` field names the keys install would add, so you can convert the file
   to plain JSON or YAML, or add those keys by hand and re-run.
+- When a key install fills with a mapping or a list (for example
+  `skills.external_dirs` in `config.yaml`) holds a scalar value, or the other
+  container shape, in your file, install writes nothing for that harness and
+  exits 1 with the same error code, because filling the key would discard your
+  value. The error names the key; change it to the shape it names, or remove it,
+  and re-run. A key you left empty (`skills:` with nothing under it) is filled.
 
 ## Options
 

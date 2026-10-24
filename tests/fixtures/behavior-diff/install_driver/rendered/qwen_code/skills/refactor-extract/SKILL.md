@@ -7,7 +7,10 @@ archetype: "refactor-template"
 userInvocable: true
 argument-hint: "[--target SYMBOL_OR_FILE]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

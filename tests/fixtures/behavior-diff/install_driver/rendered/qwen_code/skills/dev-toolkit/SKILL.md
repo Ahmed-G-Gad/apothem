@@ -7,7 +7,15 @@ archetype: "engineering-template"
 userInvocable: true
 argument-hint: "[task or defect] [--mode diagnose|tdd|slice|decompose]"
 disable-model-invocation: false
-allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
+allowedTools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "TodoWrite"
+  - "TaskCreate"
+  - "TaskGet"
+  - "TaskList"
+  - "TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

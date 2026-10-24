@@ -88,7 +88,9 @@ class SharedRoot:
     load ``path`` by default (an opt-in load is not listed), and ``evidence``
     holds those vendor pages, retrieved on ``retrieved``. ``path`` uses the
     registry ``target_paths`` notation (``~/`` for the user home,
-    ``<project>/`` for the project root).
+    ``<project>/`` for the project root). ``reader_conditions`` maps a reader to
+    the condition under which it loads ``path``, for a reader that does not load
+    it unconditionally; the install advisories repeat that condition.
     """
 
     path: str
@@ -96,6 +98,7 @@ class SharedRoot:
     readers: tuple[str, ...]
     evidence: tuple[str, ...]
     retrieved: str
+    reader_conditions: Mapping[str, str] = field(default_factory=dict)
 
 
 def _matrix(**values: CapabilityStatus) -> Mapping[str, CapabilityStatus]:
@@ -890,7 +893,24 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # is the only adapter that writes the path, and every other harness that loads
 # it is a reader. Installing the owner places Apothem content in front of every
 # reader, and uninstalling the owner removes it from every reader, so the
-# install advisories name the readers. Evidence retrieved 2026-10-02.
+# install advisories name the readers. Evidence retrieved 2026-10-02, except
+# ~/.agents/skills/ and the two agents roots, which were read on 2026-10-24.
+#
+# A reader is listed only where the vendor docs show a default load of that exact
+# path. These gaps are open, so the tools they name are not readers yet:
+# TODO(clarify): ~/.agents/skills/ - the 2026-10-24 vendor check found no default
+# load for Antigravity (its docs name ~/.gemini/config/skills/ and the workspace
+# .agents/skills/), Kiro and CodeBuddy (their skills pages do not mention
+# .agents/skills), Trae (the project .agents/skills folder is an opt-in setting
+# and ~/.agents/skills is not documented) or Hermes (its docs name
+# ~/.agents/skills only as a skills.external_dirs example).
+# TODO(clarify): ~/.claude/skills/ - only the VS Code docs list it for GitHub
+# Copilot, Windsurf reads it only when its Claude Code config import is on
+# (the default is not stated), Kimi Code lists it only in its older docs, and
+# Qwen Code reads it only through its skills.directories setting.
+# ~/.claude/agents/ is not an open gap: VS Code lists it for its Anthropic Claude
+# harness, not for the Local harness Copilot uses, so Copilot is not a reader. A
+# VS Code page that names it for the Local harness would add Copilot.
 SHARED_ROOTS: tuple[SharedRoot, ...] = (
     SharedRoot(
         path="~/.agents/skills/",
@@ -902,21 +922,27 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "kimi-code",
             "open-claw",
             "opencode",
+            "qwen-code",
             "windsurf",
             "zed",
         ),
         evidence=(
             "https://learn.chatgpt.com/docs/build-skills",
             "https://cursor.com/docs/skills",
-            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/skills.md",
+            "https://geminicli.com/docs/cli/skills/",
             "https://docs.github.com/en/copilot/concepts/agents/about-agent-skills",
-            "https://moonshotai.github.io/kimi-code/en/customization/skills",
+            "https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html",
             "https://docs.openclaw.ai/tools/skills",
             "https://opencode.ai/docs/skills/",
-            "https://docs.devin.ai/desktop/cascade/skills.md",
+            "https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/",
+            "https://docs.devin.ai/desktop/cascade/skills",
             "https://zed.dev/docs/ai/skills",
         ),
-        retrieved="2026-10-02",
+        retrieved="2026-10-24",
+        # Open-Claw indexes ~/.agents/skills only under its default state
+        # directory; with OPENCLAW_STATE_DIR pointing elsewhere it skips home
+        # scoped roots such as this one.
+        reader_conditions={"open-claw": "only under its default state directory"},
     ),
     SharedRoot(
         path="~/.claude/skills/",
@@ -928,6 +954,24 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://opencode.ai/docs/skills/",
         ),
         retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.claude/agents/",
+        owner="claude-code",
+        readers=("cursor",),
+        evidence=("https://cursor.com/docs/subagents",),
+        retrieved="2026-10-24",
+    ),
+    # Codex writes standalone TOML files here. The Cursor page lists the folder
+    # as a Codex compatibility location, and the 2026-10-24 check did not settle
+    # which file formats Cursor parses in it.
+    # TODO(clarify): confirm that Cursor reads the TOML files Codex writes here.
+    SharedRoot(
+        path="~/.codex/agents/",
+        owner="codex",
+        readers=("cursor",),
+        evidence=("https://cursor.com/docs/subagents",),
+        retrieved="2026-10-24",
     ),
     SharedRoot(
         path="~/.claude/CLAUDE.md",

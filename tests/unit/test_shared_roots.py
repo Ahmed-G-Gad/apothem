@@ -89,7 +89,13 @@ def _written_paths() -> dict[str, list[str]]:
     for entry in HARNESS_REGISTRY:
         for target in entry.target_paths:
             for concrete in _expand(target):
-                writers.setdefault(_normalized(concrete), []).append(entry.public_id)
+                path = _normalized(concrete)
+                writers.setdefault(path, []).append(entry.public_id)
+                # A glob target such as ``~/.codex/agents/*.toml`` writes into
+                # its parent folder, which is the path another tool loads.
+                parent, _, name = path.rpartition("/")
+                if "*" in name:
+                    writers.setdefault(parent, []).append(entry.public_id)
     return writers
 
 
@@ -112,6 +118,8 @@ def test_shared_root_owner_writes_it_and_readers_are_registered(
     assert root.owner not in root.readers
     assert set(root.readers) <= set(SUPPORTED_HARNESS_IDS)
     assert list(root.readers) == sorted(root.readers)
+    assert set(root.reader_conditions) <= set(root.readers)
+    assert all(condition.strip() for condition in root.reader_conditions.values())
     assert root.evidence
     assert all(url.startswith("https://") for url in root.evidence)
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", root.retrieved)
@@ -151,6 +159,48 @@ def test_private_instruction_targets_are_real_registry_targets() -> None:
 def test_codex_owns_the_shared_agents_skills_root() -> None:
     root = _DECLARED["~/.agents/skills"]
     assert root.owner == "codex"
-    assert {"cursor", "gemini-cli", "github-copilot", "opencode", "zed"} <= set(
-        root.readers
-    )
+    assert {
+        "cursor",
+        "gemini-cli",
+        "github-copilot",
+        "kimi-code",
+        "open-claw",
+        "opencode",
+        "qwen-code",
+        "windsurf",
+        "zed",
+    } == set(root.readers)
+
+
+def test_agents_skills_root_lists_no_tool_the_vendor_docs_leave_open() -> None:
+    # Antigravity, Kiro, CodeBuddy and Trae do not document a default load of
+    # ~/.agents/skills, and Hermes names it only as a skills.external_dirs
+    # example. Add one only with a vendor page that shows the load.
+    root = _DECLARED["~/.agents/skills"]
+    open_gaps = {"antigravity", "codebuddy", "hermes", "kiro", "trae"}
+    assert open_gaps.isdisjoint(root.readers)
+
+
+def test_open_claw_reads_agents_skills_only_under_its_default_state_dir() -> None:
+    root = _DECLARED["~/.agents/skills"]
+    assert "default state directory" in root.reader_conditions["open-claw"]
+
+
+@pytest.mark.parametrize(
+    ("path", "owner"),
+    [("~/.claude/agents", "claude-code"), ("~/.codex/agents", "codex")],
+)
+def test_cursor_reads_the_agents_folders_of_claude_code_and_codex(
+    path: str, owner: str
+) -> None:
+    root = _DECLARED[path]
+    assert root.owner == owner
+    assert root.readers == ("cursor",)
+    # Where the owner writes the folder is not a condition on Cursor's reading it.
+    assert not root.reader_conditions
+
+
+def test_github_copilot_is_not_a_reader_of_the_claude_agents_folder() -> None:
+    # The VS Code docs list ~/.claude/agents for the Anthropic Claude harness,
+    # not for the Local harness that GitHub Copilot uses.
+    assert "github-copilot" not in _DECLARED["~/.claude/agents"].readers
