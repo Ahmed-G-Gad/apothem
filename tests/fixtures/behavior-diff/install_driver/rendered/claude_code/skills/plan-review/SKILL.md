@@ -1,12 +1,12 @@
 ---
 name: "plan-review"
-description: "Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and architecture — then refine through interactive Q&A. Mid-chain `/plan` stage; emits Review Scorecards that gate downstream execution at SHARED+ and a zero-open-finding terminal verdict."
+description: "Reads an existing plan suite line by line for fidelity, consistency, completeness and risk, then applies only the revisions the user approves. Use when the user asks to 'review the plan', 'check the phases for gaps' or 'is the plan complete'. Writes no new plan; unattended fix loop: plan-audit."
 argument-hint: "[path/to/plan-suite/] [--focus AREA] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -82,7 +82,7 @@ An explicit `--override` flag bypasses this gate. When `--override` is used, the
 
 ### Step 2: Prose Fidelity Audit (CM-11A)
 
-> Moved to `references/step-02-prose-fidelity-audit-cm-11a.md`. MUST read it in full before executing this step.
+> Moved to `references/step-02-prose-fidelity-audit.md`. MUST read it in full before executing this step.
 
 ### Step 2.7: Pre-Flight Canonical-Audit Dimensions
 
@@ -90,7 +90,7 @@ An explicit `--override` flag bypasses this gate. When `--override` is used, the
 
 ### Step 3: Internal Consistency Audit (CM-11B)
 
-> Moved to `references/step-04-internal-consistency-audit-cm-11b.md`. MUST read it in full before executing this step.
+> Moved to `references/step-04-internal-consistency-audit.md`. MUST read it in full before executing this step.
 
 ### Step 4: Gap and Quality Analysis
 

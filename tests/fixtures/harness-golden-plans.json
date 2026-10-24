@@ -331,7 +331,7 @@
       "target": "<ROOT>/QWEN.md"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "native_skills",
       "source": "skills",
       "target": "<ROOT>/skills"
     },

@@ -39,7 +39,7 @@ Rules carry no `version`, `updated`, `scope`, or `portability` key.
 
 - [ ] `name` — kebab-case command name
 - [ ] `version`, `updated`, `description`, `argument-hint`, `portability`, `allowed-tools` present
-- [ ] `disable-model-invocation` present and intentional (`true` for guidance-only commands)
+- [ ] `disable-model-invocation` present and intentional (`false` for read-only or advisory commands; `true` only when running the command changes state outside the working tree or depends on the operator choosing the moment)
 - [ ] No `effort` key: `command.schema.json` sets `additionalProperties: false` and does not admit it
 
 ### Delegated workers

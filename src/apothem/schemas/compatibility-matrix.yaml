@@ -144,9 +144,10 @@ harnesses:
     supports_statuslines: false
     platform: [linux, macos, windows]
     notes: >-
-      Native config via ~/.openclaw/openclaw.json. agents.defaults.skills is a
-      name allowlist (not a dir loader), so Apothem authors no skills key; support
-      skills land under ~/.openclaw/.apothem/support/.
+      Native config via ~/.openclaw/openclaw.json. Apothem lists its support
+      skills directory (~/.openclaw/.apothem/support/skills) under
+      skills.load.extraDirs; agents.defaults.skills is a name allowlist the
+      operator owns, so Apothem authors no key there.
       Prior target ~/.open-claw/config.yaml used the wrong directory name and
       extension.
 
@@ -162,8 +163,9 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       Native config via ~/.hermes/config.yaml (profile MCP under mcp_servers).
-      skills.config is a vendor registry-package list Apothem does not author;
-      support skills land under ~/.hermes/.apothem/support/.
+      Apothem lists its support skills directory (~/.hermes/.apothem/support/skills)
+      under skills.external_dirs; skills.config holds per-skill settings and
+      stays operator-owned.
       Prior targets ~/.hermes/cli-config.yaml and ~/.hermes/profile.yaml used
       retired filenames.
 
@@ -367,8 +369,8 @@ asset_classes:
       antigravity: "copy to ~/.gemini/antigravity-cli/plugins/apothem/skills/"
       codex: "copy to ~/.agents/skills/"
       gemini-cli: "copy to <project>/.gemini/skills/"
-      hermes: "copy to ~/.hermes/.apothem/support/skills/ (support subtree; skills.config is a vendor registry-package list Apothem does not author)"
-      open-claw: "copy to ~/.openclaw/.apothem/support/skills/ (support subtree; agents.defaults.skills is a name allowlist Apothem does not author)"
+      hermes: "copy to ~/.hermes/.apothem/support/skills/ (support subtree; listed under skills.external_dirs in config.yaml; skills.config stays operator-owned)"
+      open-claw: "copy to ~/.openclaw/.apothem/support/skills/ (support subtree; listed under skills.load.extraDirs in openclaw.json; agents.defaults.skills stays operator-owned)"
       opencode: "copy to ~/.config/opencode/skills/"
       qwen-code: "copy to ~/.qwen/skills/"
       default: "support cohort under apothem/skills/"

@@ -57,8 +57,8 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 
 Per-event Markdown contexts live under `src/apothem/hooks/messages/`:
 
-- Session lifecycle: `sessionstart.md`, `precompact.md`, `postcompact.md`,
-  `stop.md`, `posttooluse-proactive-compaction.md`
+- Session lifecycle: `sessionstart.md`, `skill-index.md`, `precompact.md`,
+  `postcompact.md`, `stop.md`, `posttooluse-proactive-compaction.md`
 - Shell calls: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
 - File writes: `pretooluse-write.md`, `pretooluse-edit.md`,
   `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
@@ -71,6 +71,16 @@ Per-event Markdown contexts live under `src/apothem/hooks/messages/`:
 On Claude Code, `postcompact.md` is delivered by the SessionStart hook when the
 session resumes after compaction, because Claude Code does not pass PreCompact
 or PostCompact hook output to the assistant.
+
+`skill-index.md` is generated, not written: `scripts/dev/generate_skill_index.py`
+renders it from the skill and command catalog, one line per task group, with
+manual skills shown as `/apothem:<name>`. On Claude Code the SessionStart hook
+adds it to the session context when the file exists. It exists because Claude
+Code drops skill descriptions from its listing once the listing outgrows its
+character budget, and the index keeps every skill findable by task. A plugin
+install shows manual skills as `/apothem:<name>`; an engine install drops the
+prefix. The text stays under 1,600 characters, and `generate_skill_index.py
+--check` fails when the committed file no longer matches the catalog.
 
 Each context file is loaded by the dispatcher when its event fires
 and its context argument is registered in the settings file. The license
@@ -142,12 +152,12 @@ Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
 
 | Name | Description | Source |
 | --- | --- | --- |
-| `postcompact` | Post-compaction Blind Bootstrap (CM-24 §6.2). Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
+| `postcompact` | Post-compaction Blind Bootstrap. Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
 | `posttooluse-proactive-compaction` | Proactive-compaction tracker for PostToolUse tool calls. | [`src/apothem/hooks/messages/posttooluse-proactive-compaction.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/posttooluse-proactive-compaction.md) |
-| `precompact` | Pre-compaction protocol (CM-24 §2.3). Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
+| `precompact` | Pre-compaction protocol. Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
 | `pretooluse-askuserquestion-recommended` | Call-time `(Recommended)`-marker guard for `AskUserQuestion` tool calls. | [`src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md) |
 | `pretooluse-bash-plan-guard` | Plans-Discipline write guard for Bash tool calls (companion to `pretooluse-write-plan-guard.md`). | [`src/apothem/hooks/messages/pretooluse-bash-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md) |
-| `pretooluse-bash` | CM-7 git-artifact isolation + M12 numeric-prefix discipline + M15 human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
+| `pretooluse-bash` | Git write guard: plan-internal isolation, numeric-prefix discipline, human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
 | `pretooluse-conformity` | &gt; Advisory: this hook reports; it does not block. Mechanical enforcement runs in CI. | [`src/apothem/hooks/messages/pretooluse-conformity.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-conformity.md) |
 | `pretooluse-dependency-guard` | Dependency-manifest supply-chain guard (advisory). | [`src/apothem/hooks/messages/pretooluse-dependency-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-dependency-guard.md) |
 | `pretooluse-edit-header-guard` | SPDX-header inject guard for Edit tool calls. | [`src/apothem/hooks/messages/pretooluse-edit-header-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-edit-header-guard.md) |
@@ -158,6 +168,7 @@ Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
 | `pretooluse-write-plan-guard` | Plans-Discipline write guard for Write / Edit / NotebookEdit tool calls. | [`src/apothem/hooks/messages/pretooluse-write-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write-plan-guard.md) |
 | `pretooluse-write` | Codebase isolation + frontmatter compliance. | [`src/apothem/hooks/messages/pretooluse-write.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write.md) |
 | `sessionstart` | Session-start conformity posture. | [`src/apothem/hooks/messages/sessionstart.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/sessionstart.md) |
-| `stop` | Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4). | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
+| `skill-index` | Skills by task. /apothem:name = manual, run only on request. | [`src/apothem/hooks/messages/skill-index.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/skill-index.md) |
+| `stop` | Session-end protocol: externalize state; evaluate memory and artifacts. | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
 
 {/* apothem:generated-reference:end */}

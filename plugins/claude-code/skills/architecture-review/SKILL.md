@@ -1,12 +1,12 @@
 ---
 name: "architecture-review"
-description: "Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at `rules/clean-architecture-layers.md`. Five-phase pipeline (Input Ingest · Design-to-Code Traceability Walk · Layer-Boundary Integrity Audit · Cross-Package Coupling Sweep · Findings Emission + Validation Gate) audits layer-boundary integrity, harness-adapter abstraction integrity, src-layout integrity, CLI surface coherence, entry-point registration completeness, and cross-package coupling. Emits `_inputs/architecture-review-findings.md` with HIGH / MEDIUM / LOW severity classifications grounded in concrete-driver rationale per the option-annotation rule."
+description: "Reviews a repository against its design document and layer rules, reporting boundary violations, coupling and wiring gaps as ranked findings. Use when the user asks to 'review the architecture', 'check layer boundaries', or 'compare code to the design'. Not for per-file style (code-review)."
 argument-hint: "[path/to/repo/] [--focus LAYER] [--dry-run]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

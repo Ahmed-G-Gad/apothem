@@ -1,12 +1,12 @@
 ---
 name: "research-synthesis"
-description: "Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the /research pipeline. Triggered as 'map the SOTA', 'synthesize the sources into a gap statement', 'what does the literature say and where is the hole', 'build the literature matrix', or the pipeline-chained hand-off from /research-sources. Consumes the suite's _inputs/source-ledger.md plus the per-source extractions under sources/ and emits _inputs/synthesis.md carrying the SOTA map, the dimension-by-source literature matrix, the contested-findings ledger, and the one-sentence gap statement the study addresses. Every load-bearing claim is adversarially verified refute-by-default by the fact-checker agent before it earns a place in the map; the source-synthesis skill drives the reconciliation."
+description: "Reconciles collected sources into a state-of-the-art map, a literature matrix and a research-gap statement. Use when the user asks to 'map the SOTA', 'build the literature matrix' or 'state the research gap'. Needs a source ledger from research-sources; loose documents: source-synthesis."
 argument-hint: "[--suite-name NAME] [--override] [--matrix-dimensions DIM,DIM,...]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -84,7 +84,15 @@ Lay every source against shared comparison dimensions. When `--matrix-dimensions
 
 ### Phase 3 — Adversarial Verification (refute-by-default)
 
-> Moved to `references/step-03-adversarial-verification-refute-by.md`. MUST read it in full before executing this step.
+Route every load-bearing claim destined for the SOTA map through `agents/fact-checker.md` adversarial verification. The fact-checker treats each claim as false until ≥2 independent sources force otherwise, seeks the strongest counter-evidence first (Filter 3 Inversion Press), and assigns a cited verdict per claim:
+
+| Verdict | Condition | Destination |
+| ------- | --------- | ----------- |
+| `corroborated` | Two or more independent sources agree; no surviving counter-evidence. | Anchors the SOTA map. |
+| `contested` | Sources disagree; both positions carry evidence. | Contested-findings ledger (both positions + evidence). |
+| `unverified` | No independent corroboration. | Contested-findings ledger. |
+
+A claim defaults to contested-or-unverified when evidence is insufficient, never a charitable `corroborated`. Only `corroborated` claims anchor the SOTA map (R1, R3). Dispatch the verification as an Audit Team per `rules/agent-orchestration.md` when the claim count justifies parallel fan-out (3+ independent claims); each agent returns a pass/fail verdict plus cited evidence under the 200-token audit return contract.
 
 ### Phase 4 — Synthesize the SOTA Map, Rate Certainty, Consolidate the Theory & State the Gap
 

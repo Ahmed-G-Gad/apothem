@@ -32,30 +32,61 @@ resolves against.
 The adapter reads Apothem's shared profile and renders the native YAML config,
 including the profile's MCP inventory. The MCP servers come from the profile's
 `mcp_servers` section. They are rendered into `config.yaml` on each install and
-update, not copied as files. The profile's identity, preferences, and rules go
-into the profile document. Shared commands, skills, helper definitions,
-rules, templates, and hook prompts land as support material under
-`~/.hermes/.apothem/support/`.
+update, not copied as files. The adapter also adds
+`~/.hermes/.apothem/support/skills` to `skills.external_dirs`, the list of extra
+skill directories Hermes reads, which is how Hermes finds the installed skills.
+The entry goes after any entries you already list, and your other keys stay as
+they are. The profile's identity, preferences, and rules go into the profile
+document. Shared commands, skills, helper definitions, rules, templates, and
+hook prompts land as support material under `~/.hermes/.apothem/support/`.
 
 ## Compatibility notes
 
-Preview adapter. Hermes does not load the support tree or the profile document
-on its own: nothing in `config.yaml` and none of the context files Hermes reads
-point there, so after install Hermes runs without Apothem's rules, skills, or
-hooks. Hermes reads skills from `~/.hermes/skills/` and from every folder listed
-under `skills.external_dirs` in `config.yaml`; to use the Apothem skills, add
-`~/.hermes/.apothem/support/skills` to that list yourself; `apothem update`
-keeps keys you add to `config.yaml`. The adapter writes the profile's MCP
-inventory under the top-level `mcp_servers` key, where Hermes reads MCP servers.
-Earlier Apothem releases wrote it under `auxiliary.mcp`, which Hermes reads as
-the auxiliary model for MCP tool dispatch; both `apothem update` and
-`apothem uninstall` remove that block when it still matches what such a
-release would write from your current shared profile (see
+Preview adapter. Hermes loads the Apothem skills through
+`skills.external_dirs`, but it does not load the rest of the support tree or the
+profile document on its own: nothing else in `config.yaml` and none of the
+context files Hermes reads point there, so after install Hermes runs without
+Apothem's rules or hooks.
+
+**Name clashes.** Hermes documents this order of precedence for skills: the
+project's skills (`<project>/.hermes/skills/` and `<project>/.agents/skills/`),
+then `~/.hermes/skills/`, then `skills.create_dir`, then the folders listed under
+`skills.external_dirs`. The Apothem directory is an `external_dirs` entry, so it
+comes last. The Hermes docs reviewed do not state which copy Hermes loads when
+two locations hold a skill of the same name; Apothem reads the order as earlier
+locations winning, so expect a skill of the same name that you keep in an earlier
+location to take precedence over the Apothem copy. Apothem writes only to
+`config.yaml` and under `~/.hermes/.apothem/support/`, never into those earlier
+locations, so install, update, and uninstall do not replace a skill you keep
+there.
+
+`apothem update` keeps keys you add to `config.yaml`, including
+`skills.config` and your own `skills.external_dirs` entries. The adapter writes
+the profile's MCP inventory under the top-level `mcp_servers` key, where Hermes
+reads MCP servers. Earlier Apothem releases wrote it under `auxiliary.mcp`,
+which Hermes reads as the auxiliary model for MCP tool dispatch; both
+`apothem update` and `apothem uninstall` remove that block when it still
+matches what such a release would write from your current shared profile (see
 [Uninstalling](#uninstalling) for when it stays). (Hermes behavior per its user
 guide pages on
-[skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
-and [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+[skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills),
+read 2026-10-24, and
+[MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 read 2026-10-02.)
+
+**Comments in `config.yaml`.** Apothem rewrites the file with a YAML library
+that drops comments. When the file carries comments of yours and the entry is
+missing, Apothem leaves the file untouched and install stops with a message that
+names the key. Add the entry yourself, then run the install again:
+
+```yaml
+skills:
+  external_dirs:
+    - ~/.hermes/.apothem/support/skills
+```
+
+An entry you add yourself counts as yours: if you already list this directory,
+Apothem keeps your entry as it is and uninstall leaves it in place.
 
 ## Verification
 
@@ -69,7 +100,10 @@ The verify command confirms that:
 2. Each managed target exists; managed files are non-empty, and JSON or YAML
    configs parse. Add `--profile PATH` to also confirm that the installed files
    match that profile.
-3. The adapter-specific verification routine reports success.
+3. `skills.external_dirs` in the native config lists
+   `~/.hermes/.apothem/support/skills`. Without that entry Hermes does not load
+   the installed skills; `apothem update` adds it back.
+4. The adapter-specific verification routine reports success.
 
 ## Updating
 
@@ -77,7 +111,8 @@ The verify command confirms that:
 apothem update --harness hermes
 ```
 
-Re-derives the native config from the current shared profile state.
+Re-derives the native config from the current shared profile state; the Apothem
+entry in `skills.external_dirs` stays listed once however often you update.
 Run after editing `~/.config/apothem/profile.yaml` or upgrading the installed
 Apothem package.
 
@@ -87,10 +122,12 @@ Apothem package.
 apothem uninstall --harness hermes
 ```
 
-Removes what the adapter added: the `mcp_servers` entries its install recorded
-in `config.yaml` (your own keys stay, and the file is deleted only when Apothem
-created it and nothing of yours is left), the profile document, and the support
-tree. The shared profile YAML and Apothem engine are unaffected.
+Removes what the adapter added: the `mcp_servers` entries and the
+`skills.external_dirs` entry its install recorded in `config.yaml` (your own
+keys stay, including your own `external_dirs` entries and `skills.config`, and
+the file is deleted only when Apothem created it and nothing of yours is left),
+the profile document, and the support tree. The shared profile YAML and Apothem
+engine are unaffected.
 
 An install made by an earlier release, which wrote the profile's servers under
 `auxiliary.mcp`, also has that block removed when it still matches what that
@@ -115,6 +152,8 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness hermes` |
 | Verification failed | Run `apothem update --harness hermes`, then verify again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness hermes` |
+| Install stops with a message about comments in `config.yaml` | Apothem does not rewrite a file it would have to strip comments from. Add the `skills.external_dirs` entry shown under [Compatibility notes](#compatibility-notes) yourself, then run the install again |
+| An Apothem skill does not appear in Hermes | A skill of the same name in the project or in `~/.hermes/skills/` may take precedence over the Apothem copy: Hermes documents the lookup order but not the clash rule (see [Compatibility notes](#compatibility-notes)). Also run `apothem verify --harness hermes` |
 
 ## Configuration knobs
 

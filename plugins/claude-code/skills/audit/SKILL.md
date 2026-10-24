@@ -1,8 +1,8 @@
 ---
 name: "audit"
-description: "The audit fortress wrapped as a single dynamic multi-agent workflow. One call sweeps a deployed repository across all eleven audit/review dimensions — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — dispatching each as a parallel phase under a named findings return contract, routing every finding through an EXTREMELY-CRITIQUE refute-by-default verification pass, and emitting one deterministic severity-triaged (HIGH/MEDIUM/LOW) findings report with a single recommended next move. Each audit stays individually invocable in commands/<audit>.md; this command adds only the workflow harness. Report-only — it NEVER remediates (remediation routes to /elevate or the owning surface); multi-agent dispatch is opt-in and confirmation-gated. Invoke with a repository path, or --dimensions <list> to scope the sweep."
+description: "Sweeps a repository across all eleven review dimensions in one multi-agent run and returns one verified, severity-ranked report; it never fixes anything. Use when the user asks to 'audit the whole repo', 'run every review', or 'full audit'. For a single dimension use that dimension's own review."
 argument-hint: "[path/to/repo/] [--dimensions all|<list>] [--autonomous] [--verify-panel N]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"

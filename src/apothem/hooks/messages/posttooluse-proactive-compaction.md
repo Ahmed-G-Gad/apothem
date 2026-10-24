@@ -27,7 +27,7 @@ transcript, or no usage record yet) the tracker counts activity since the last
 advisory instead:
 
 - `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` (default `18`) — tool calls
-  since the last advisory; mirrors the §2 "~18 tool calls" trigger.
+  since the last advisory; mirrors the "~18 tool calls" trigger.
 - `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` (default `20000`) — cumulative
   tool-output bytes since the last advisory, counted only after three calls. A
   non-positive or unparseable override falls back to the default, so a typo can

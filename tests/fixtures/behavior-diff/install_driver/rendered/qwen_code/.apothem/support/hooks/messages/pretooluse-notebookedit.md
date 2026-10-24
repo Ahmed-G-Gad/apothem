@@ -4,7 +4,7 @@ Codebase isolation (notebook scope).
 
 Scope. Triggered on every NotebookEdit. Covers the project's own notebooks only: a target outside the project root or inside the project's gitignored Apothem working tree (`.apothem/`) is skipped.
 
-Action. Apply the codebase-isolation scan to the new cell content regardless of cell type — code cells, markdown cells, and existing execution-output cells are all artifacts visible outside the Apothem meta-config locations. Reject plan-internal terminology leaking into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>` (for example `TM-10`, `CM-7`, `CP-20`), phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative.
+Action. Apply the codebase-isolation scan to the new cell content regardless of cell type — code cells, markdown cells, and existing execution-output cells are all artifacts visible outside the Apothem meta-config locations. Reject plan-internal terminology leaking into a product artifact: bracketed task/mandate identifiers of the shape `<1-3 uppercase letters>-<number>`, phase-campaign names (`Phase-B`, `AD-1`), plan-suite folder names, and internal launch/cleanup narrative.
 
 On hit: STOP. Rewrite the cell in natural domain language. Re-issue the NotebookEdit. Output cells produced by subsequent execution are not scanned at write time but must be cleared before commit if they contain plan-term leaks.
 

@@ -3,13 +3,14 @@
 # Per rules/agent-capability-discipline.md §1 / §3 / §7. The kimi_code
 # harness (Kimi Code CLI, Moonshot) reads project-root AGENTS.md as its
 # agent-instructions surface and keeps project configuration under
-# <project>/.kimi-code/. Apothem writes the AGENTS.md managed block plus an
-# Apothem support tree under <project>/.kimi-code/.apothem/support/ for non-native
-# Markdown cohorts (rules, commands, skills, agents, templates). MCP is the
-# recognized operator-owned surface at <project>/.kimi-code/mcp.json; Apothem
-# names it but defers authoring entries. The vendor docs are pinned at
-# https://moonshotai.github.io/kimi-code/en/ (snapshot-date 2026-10-03); the
-# model FAMILY is vendor-pinned, never adapter-authored.
+# <project>/.kimi-code/. Apothem writes the AGENTS.md managed block, installs
+# skills and command skills at the native <project>/.kimi-code/skills/, and keeps
+# an Apothem support tree under <project>/.kimi-code/.apothem/support/ for the
+# cohorts it does not install natively (rules, agents, templates, hooks). MCP is
+# the recognized operator-owned surface at <project>/.kimi-code/mcp.json; Apothem
+# names it but defers authoring entries. The vendor docs are pinned in
+# STANDARD-CONVENTION-PIN.md (snapshot-date 2026-10-24); the model FAMILY is
+# vendor-pinned, never adapter-authored.
 
 mcp_servers:
   - project-scope-.kimi-code/mcp.json-operator-owned
@@ -20,7 +21,7 @@ custom_command_support: "yes"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "AGENTS.md plus <project>/.kimi-code/.apothem/support/{hooks,rules,commands,skills,agents,templates}"
+layered_context_surface: "AGENTS.md plus <project>/.kimi-code/skills/ (skills and command skills) and <project>/.kimi-code/.apothem/support/{hooks,rules,agents,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"

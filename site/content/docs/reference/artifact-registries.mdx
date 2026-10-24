@@ -8,7 +8,11 @@ description: "Complete enumeration of Apothem ecosystem artifacts: commands, rul
 
 ## 1. Commands
 
-Forty-five commands are registered from `src/apothem/commands/*.md` (non-recursive) — the full, always-current per-command reference is the generated [Commands reference](https://apothem.ahmedgad.com/docs/reference/commands/), and the thirteen-stage `/research` pipeline (`/research-ideate` through `/research-disseminate`) plus the `/audit` and `/fortress` wrapped-workflow orchestrators are enumerated there in full. Every command is a first-class registered file; the `/plan` orchestrator only chains the already-first-class plan stages and carries no stage logic of its own, so there is still no monolithic dispatcher and no subcommand grouping. The non-plan, non-research audit and elevation commands:
+Forty-five commands are registered from `src/apothem/commands/*.md` (non-recursive) — the full, always-current per-command reference is the generated [Commands reference](https://apothem.ahmedgad.com/docs/reference/commands/), and the thirteen-stage `/research` pipeline (`/research-ideate` through `/research-disseminate`) plus the `/audit` and `/fortress` wrapped-workflow orchestrators are enumerated there in full. Every command is a first-class registered file; the `/plan` orchestrator only chains the already-first-class plan stages and carries no stage logic of its own, so there is still no monolithic dispatcher and no subcommand grouping.
+
+Thirty-five commands are model-invocable (`disable-model-invocation: false`): the model may run one when a request matches its description. Ten are operator-invoked only: `/freshify`, `/github-deploy-fresh`, `/github-deploy-next`, `/release-readiness`, `/elevate`, `/fortress`, `/workflow`, `/plan-execute`, `/research-experiment`, and `/research-publish`. The per-command flag is recorded in `src/apothem/commands/README.md`.
+
+The non-plan, non-research audit and elevation commands:
 
 | Command | File | Description |
 | ------- | ---- | ----------- |
@@ -107,9 +111,11 @@ assistant when the supported events fire live as Markdown context files under
 `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
 `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
 `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
-`stop.md`. Each routed context file is loaded by the dispatcher when its event fires
+`skill-index.md`, `stop.md`. Each routed context file is loaded by the dispatcher when its event fires
 and its context argument is registered in `settings.json`. `pretooluse-conformity.md`
 ships as an available variant without a current `settings.json` routing entry.
+`skill-index.md` is generated from the skill and command catalog and read by the
+session-start bootstrap, not routed through `settings.json`.
 `pretooluse-dependency-guard.md` is routed on the Write and Edit matchers, and
 `pretooluse-eval-guard.md` on the Write, Edit, and `Bash|PowerShell` matchers.
 
@@ -141,31 +147,33 @@ hook events, timeouts, and status messages land in that file atomically.
 
 Reusable skills live under `src/apothem/skills/`, one folder per skill.
 
-| Skill | Path | User-Invocable | Purpose |
-| ----- | ---- | -------------- | ------- |
-| Decision Matrix | `src/apothem/skills/decision-matrix/` | Yes | Weighted, evidence-cited choice between options with a sensitivity check |
-| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Yes | Changelog-reviewed, pinned, gate-verified dependency upgrades |
-| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Yes | Disciplined engineering loops — structured debugging, test-first red-green-refactor, vertical-slice decomposition, requirement-to-issue breakdown |
-| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Yes | Author → validate → render → export pipeline for declarative diagrams and data visualizations (SVG / PNG / PDF) |
-| Document Authoring | `src/apothem/skills/document-authoring/` | Yes | Approval-gated long-form document authoring (outline → draft → review) with verified citations and a deterministic typeset compile |
-| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Yes | Blind audit of the Apothem configuration tree |
-| Eval Harness | `src/apothem/skills/eval-harness/` | Yes | Reproducible language-model evaluation harnesses with explicit pass criteria |
-| Incident Runbook | `src/apothem/skills/incident-runbook/` | Yes | Runbook authoring as Trigger → Diagnosis → Action → Verification → Rollback |
-| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Yes | Issue to fix with evidence at each stage: drafts, sizing, a failing-test checkpoint, the fix |
-| Knowledge Wiki | `src/apothem/skills/knowledge-wiki/` | Yes | Index-first Markdown knowledge base with lint, drift and hub analysis |
-| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Yes | Fanned-out, cross-verified, cited research reports |
-| Plan Suite | `src/apothem/skills/plan-suite/` | No | Master template consumed by the `/plan` pipeline stages |
-| Projectify | `src/apothem/skills/projectify/` | Yes | Chat-app Project elevation — the Description / Instruction / knowledge-Files deliverables to SOTA conventions within a measurable per-platform context budget |
-| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Yes | Eval-validated structured prompt design |
-| Refactor Extract | `src/apothem/skills/refactor-extract/` | Yes | Behavior-preserving extraction refactors |
-| Secret Rotation | `src/apothem/skills/secret-rotation/` | Yes | Safe retirement and replacement of exposed credentials |
-| Source Synthesis | `src/apothem/skills/source-synthesis/` | Yes | Reconciles a fixed source set into one cited synthesis |
-| Research Suite | `src/apothem/skills/research-suite/` | No | Canonical research-suite surface — the ten rigor mandates (R1–R10), the thirteen-stage research lifecycle, and the Principal-Investigator Framework; resolved by path from the `/research` pipeline stages |
-| Surgical Guard | `src/apothem/skills/surgical-guard/` | Yes | Minimal-diff anchor-bounded editing paired with a reactive, diff-based post-edit quality guard |
-| Test Authoring | `src/apothem/skills/test-authoring/` | Yes | Behavior-first test authoring with Arrange-Act-Assert discipline |
-| UI Design | `src/apothem/skills/ui-design/` | Yes | Interface design and refinement to a craft floor with a `DESIGN.md` context |
-| Vuln Triage | `src/apothem/skills/vuln-triage/` | Yes | Severity-classifies security advisories and routes remediation |
-| Workflow | `src/apothem/skills/workflow/` | Yes | General-purpose multi-agent workflow harnessing with adversarial refute-by-default verification and disclosed beyond-mission remediation |
+| Skill | Path | User-Invocable | Model-Invocable | Purpose |
+| ----- | ---- | -------------- | --------------- | ------- |
+| Decision Matrix | `src/apothem/skills/decision-matrix/` | Yes | Yes | Weighted, evidence-cited choice between options with a sensitivity check |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Yes | No | Changelog-reviewed, pinned, gate-verified dependency upgrades |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Yes | Yes | Disciplined engineering loops — structured debugging, test-first red-green-refactor, vertical-slice decomposition, requirement-to-issue breakdown |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Yes | Yes | Author → validate → render → export pipeline for declarative diagrams and data visualizations (SVG / PNG / PDF) |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Yes | Yes | Approval-gated long-form document authoring (outline → draft → review) with verified citations and a deterministic typeset compile |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Yes | Yes | Blind audit of the Apothem configuration tree |
+| Eval Harness | `src/apothem/skills/eval-harness/` | Yes | Yes | Reproducible language-model evaluation harnesses with explicit pass criteria |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | Yes | Yes | Runbook authoring as Trigger → Diagnosis → Action → Verification → Rollback |
+| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Yes | No | Issue to fix with evidence at each stage: drafts, sizing, a failing-test checkpoint, the fix |
+| Knowledge Wiki | `src/apothem/skills/knowledge-wiki/` | Yes | Yes | Index-first Markdown knowledge base with lint, drift and hub analysis |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Yes | Yes | Fanned-out, cross-verified, cited research reports |
+| Plan Suite | `src/apothem/skills/plan-suite/` | No | No | Master template consumed by the `/plan` pipeline stages |
+| Projectify | `src/apothem/skills/projectify/` | Yes | Yes | Chat-app Project elevation — the Description / Instruction / knowledge-Files deliverables to SOTA conventions within a measurable per-platform context budget |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Yes | Yes | Eval-validated structured prompt design |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | Yes | Yes | Behavior-preserving extraction refactors |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | Yes | No | Safe retirement and replacement of exposed credentials |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | Yes | Yes | Reconciles a fixed source set into one cited synthesis |
+| Research Suite | `src/apothem/skills/research-suite/` | No | No | Canonical research-suite surface — the ten rigor mandates (R1–R10), the thirteen-stage research lifecycle, and the Principal-Investigator Framework; resolved by path from the `/research` pipeline stages |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | Yes | Yes | Minimal-diff anchor-bounded editing paired with a reactive, diff-based post-edit quality guard |
+| Test Authoring | `src/apothem/skills/test-authoring/` | Yes | Yes | Behavior-first test authoring with Arrange-Act-Assert discipline |
+| UI Design | `src/apothem/skills/ui-design/` | Yes | Yes | Interface design and refinement to a craft floor with a `DESIGN.md` context |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | Yes | Yes | Severity-classifies security advisories and routes remediation |
+| Workflow | `src/apothem/skills/workflow/` | Yes | No | General-purpose multi-agent workflow harnessing with adversarial refute-by-default verification and disclosed beyond-mission remediation |
+
+A skill with `disable-model-invocation: true` runs only when the operator invokes it by name. Seventeen skills are model-invocable. Four are manual because they change state outside the working tree or depend on the operator choosing the moment: Dependency Upgrade, Secret Rotation, Workflow, and Issue Lifecycle. The two suite skills are reference-only templates read by path. The session-start skill index lists the model-invocable and manual names by domain.
 
 > **Convention.** Each row's **Path** is a folder; the entry point is the `SKILL.md` file inside it — e.g. `src/apothem/skills/plan-suite/SKILL.md` — per the folder-with-`SKILL.md` skill convention declared in the project source layout.
 

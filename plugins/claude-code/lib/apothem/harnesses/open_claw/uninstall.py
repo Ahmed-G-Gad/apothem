@@ -10,11 +10,15 @@ from apothem.harnesses.open_claw.materializer import materialize_native_config
 _HARNESS_NAME: str = "open_claw"
 
 # The native ``openclaw.json`` is rendered by the materializer rather than the
-# manifest, so it is cleaned surgically: only Apothem's keys are stripped from
-# the parsed operator JSON — operator-added keys survive — and the file is
-# deleted only when nothing operator-authored remains. The pre-mutation file is
-# copied into the Apothem backup root; no whole-file ``.bak`` sibling is left
-# beside the operator's file. The manifest support subtree is then cleaned
-# child-by-child by the shared driver. No profile-derived namespace is owned
-# wholesale here, so ``apothem_keys`` stays at the driver default (empty).
+# manifest, so it is cleaned surgically: only the entries the install ledger
+# records as Apothem's (the skills directory it added to ``skills.load.extraDirs``
+# and any ``skills`` / ``load`` / ``extraDirs`` container it created) are
+# stripped from the parsed operator JSON — operator-added keys and the
+# operator's own ``extraDirs`` entries survive — and the file is deleted only
+# when Apothem created it and nothing operator-authored remains. The
+# pre-mutation file is copied into the Apothem backup root; no whole-file
+# ``.bak`` sibling is left beside the operator's file. The manifest support
+# subtree is then cleaned child-by-child by the shared driver. No profile-derived
+# namespace is owned wholesale here, so ``apothem_keys`` stays at the driver
+# default (empty).
 uninstall = make_native_config_uninstall(_HARNESS_NAME, materialize_native_config)

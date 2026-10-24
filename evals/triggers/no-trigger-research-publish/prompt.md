@@ -1,6 +1,6 @@
 ---
 description: A near-miss request that research-publish must not pick up.
-tags: [no-trigger, 'class:command', 'component:research-publish']
+tags: [no-trigger, 'class:command', 'component:research-publish', user-invoked-only]
 expected_outcome: Claude does not invoke research-publish.
 max_turns: 3
 timeout_seconds: 180

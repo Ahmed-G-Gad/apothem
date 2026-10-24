@@ -2,9 +2,9 @@
 name: "code-review"
 version: "0.1.0"
 updated: "2026-10-24"
-description: "Operator-driven per-file code-quality review pass. Walks every source file under src/, scripts/, and tools/ in a deployed repository and emits per-file findings covering readability, maintainability, idiom-conformance, naming, complexity, magic-numbers, and comment-quality per the four code-craft rules (Python, shell, Markdown, universal-delegation) and the ten quality dimensions. Output lands at the consuming suite's _inputs/code-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. Distinct from `/code-audit` (cross-file forensic, repository-corpus scope) — `/code-review` is the per-file craft surface; not for plan-suite prose audits (use `/plan-review`) or remediation authoring (the command is read-only and never writes source)."
+description: "Reviews source files one at a time for readability, naming, complexity, idiom fit and comment quality, and reports severity-ranked findings without editing. Use when the user asks to 'review the code', 'check code quality', or 'review these files'. Not for cross-file issues (code-audit)."
 argument-hint: "[path/to/repo/] [--focus FILE_OR_DIR] [--dry-run]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---

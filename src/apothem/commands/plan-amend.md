@@ -1,8 +1,8 @@
 ---
 name: "plan-amend"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream artifacts (spec, master-plan, phases, notes), preserves the PLAN-NOTES.md decision ledger as authoritative and append-only, and routes every ambiguity through the structured-inquiry channel rather than inventing scope, identity, or decisions. The re-entrant `/plan` stage that revisits a converged-or-in-progress suite at any point in the spec → generate → review → execute chain."
+updated: "2026-10-24"
+description: "Changes an existing plan suite without losing resolved decisions, re-deriving only the affected spec, phases and notes. Use when the user asks to 'amend the plan', 'add a phase to the plan' or 'revert a plan change'. Needs an existing suite; to create one use plan-generate."
 argument-hint: "[amend|extend|refine|revert|weave] [suite-path] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"

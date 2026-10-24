@@ -1,5 +1,5 @@
 ---
-description: "Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. Walks every Markdown page under the host docs source (Apothem: site/content/docs/) plus README, CONTRIBUTING, CHANGELOG, ADRs, and RFCs, then emits per-page findings covering prose clarity, sentence-level justification, precision-over-politeness, active-voice construction, hedge-elimination, link-integrity, code-block language tags, Mermaid verified metadata, citation completeness, and public-API coverage. Output lands at the consuming suite's _inputs/docs-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
+description: "Reviews documentation pages for prose clarity, broken links, code-block tags, citations and public-API coverage, reporting severity-ranked findings per page. Use when the user asks to 'review the docs', 'check documentation quality', or 'find broken doc links'. Does not rewrite pages."
 ---
 
 # /docs-review — Per-Page Documentation Review

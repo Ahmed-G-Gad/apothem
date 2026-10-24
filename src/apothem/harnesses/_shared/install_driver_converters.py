@@ -16,6 +16,7 @@ from apothem.lib.frontmatter import (
     field_value_in_text,
     split_frontmatter,
 )
+from apothem.lib.qwen_skill_frontmatter import translate_allowed_tools
 
 from .install_driver_layout import (
     REFERENCE_NOTE_HEADING,
@@ -150,12 +151,16 @@ def _native_skill_emission(
       folded under ``metadata`` (:func:`fold_apothem_metadata`).
     - ``codex``: ``agents/openai.yaml`` disabling implicit invocation for a
       skill whose source sets ``disable-model-invocation: true``.
+    - ``qwen_code``: the ``allowed-tools`` string as Qwen Code's ``allowedTools``
+      list (:func:`translate_allowed_tools`).
     """
     if harness_name == "claude_code":
         renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
         return fold_apothem_metadata(renamed), {}
     if harness_name == "codex" and _source_disables_model_invocation(skill_text):
         return skill_text, {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
+    if harness_name == "qwen_code":
+        return translate_allowed_tools(skill_text), {}
     return skill_text, {}
 
 
@@ -286,23 +291,27 @@ def _agent_is_read_only(source_path: Path) -> bool:
 def _codex_agent_text(source_path: Path) -> str:
     """Convert a Markdown agent definition into Codex's TOML agent format.
 
-    Codex custom agents take ``name``, ``description`` and
-    ``developer_instructions`` plus any ``config.toml`` key; omitted keys
-    inherit from the parent session
-    (https://developers.openai.com/codex/subagents, retrieved 2026-10-02). A
-    read-only agent gets ``sandbox_mode = "read-only"``, Codex's native write
-    restriction. Model and reasoning effort are left to inherit. Codex has no
-    tool allowlist or turn-limit key, so ``tools`` and ``maxTurns`` do not map
-    (declared in the codex ``conversion_losses``).
+    Codex custom agents require ``name``, ``description`` and
+    ``developer_instructions``; the keys a file may override are the model
+    settings, five ``features.*`` keys that can only be set to false
+    (``shell_tool``, ``apps``, ``plugins``, ``memories`` and
+    ``request_permissions_tool``) and the ``skills.config``,
+    ``skills.bundled.enabled`` and ``skills.include_instructions`` keys. Sandbox
+    mode, approval policy, model provider and MCP servers belong to the parent
+    session, and a custom agent file does not override them
+    (https://learn.chatgpt.com/docs/agent-configuration/subagents, retrieved
+    2026-10-24), so none is emitted. A read-only agent carries its limit in
+    ``developer_instructions`` (the agent body); the sandbox that enforces it
+    is the Codex session's own. Model and reasoning effort are left to inherit.
+    Codex has no tool allowlist or turn-limit key, so ``tools`` and
+    ``maxTurns`` do not map (declared in the codex ``conversion_losses``).
     """
     name = _agent_name(source_path)
     description = _agent_description(source_path)
     body = _agent_body(source_path).strip()
-    sandbox = 'sandbox_mode = "read-only"\n' if _agent_is_read_only(source_path) else ""
     return (
         f"name = {_toml_string(name)}\n"
         f"description = {_toml_string(description)}\n"
-        f"{sandbox}"
         "developer_instructions = "
         f"{_toml_multiline_string(body)}\n"
     )

@@ -1,12 +1,12 @@
 ---
 name: "plan-generate"
-description: "Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five Cognitive Filters, decomposes into acyclic phases, and emits PREAMBLE/MASTER-PLAN/PROGRESS/PLAN-NOTES plus per-phase PHASE.md files gated by the fifteen-bar pre-emission sweep. Mid-chain `/plan` stage between `/plan-spec` and `/plan-review`."
+description: "Generates a full plan suite (master plan, progress log, decision notes, per-phase files) from a written spec or raw prose. Use when the user asks to 'generate the plan suite', 'turn this spec into a phased plan', or 'break this project into phases'. Not for refining prose (plan-spec)."
 argument-hint: "[path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

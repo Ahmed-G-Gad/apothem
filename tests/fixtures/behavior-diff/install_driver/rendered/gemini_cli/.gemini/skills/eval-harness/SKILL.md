@@ -2,11 +2,11 @@
 name: "eval-harness"
 version: "0.1.0"
 updated: "2026-10-24"
-description: "Build and run a reproducible LLM evaluation harness — matched when the operator asks to 'build an eval', 'measure the model', set up an 'evaluation harness', 'score outputs', benchmark a prompt or model variant, regression-test generation quality, or compare candidate models on a labeled task. Defines four artifacts: a versioned labeled dataset, a scorer (exact-match / rubric / LLM-judge) with an explicit pass criterion, a candidate runner, and a metrics report with pass-rate, a Wilson confidence interval, per-category breakdowns, and regressions against a prior run. Every run stamps the dataset version, scorer, candidate, and seed, so identical inputs return an identical verdict. Harness- and model-agnostic: drives any provider through its native invocation surface. NOT for fine-tuning or training pipelines, authoring the prompt under test, live-monitoring dashboards, one-shot un-versioned benchmarks, or scoring against an undefined pass criterion. User-invocable directly."
+description: "Build a reproducible evaluation harness for a prompt or model: versioned labeled dataset, scorer, runner and a report with pass rate, interval and regressions. Use when the user asks to 'build an eval' or 'compare models on a labeled task'. One campaign: eval; rubric scoring: prompt-evaluator."
 archetype: "ai-template"
 userInvocable: true
 argument-hint: "[--dataset PATH] [--scorer NAME]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 ---
 
@@ -20,7 +20,7 @@ Reproducibility is the load-bearing discipline. Every run records four reproduci
 
 ## Detection Signal
 
-Triggers when the operator asks to "build an eval", "measure the model", set up an "evaluation harness", "score outputs", benchmark a prompt or model variant, regression-test generation quality, or compare two candidate models on a labeled task. The signal is the demand to *measure* a candidate against labeled ground truth under a stated pass bar — not to author the prompt, tune weights, or watch production traffic.
+Triggers when the operator asks to "build an eval", "measure the model", set up an "evaluation harness", regression-test generation quality, or compare two candidate models on a labeled task. Scoring outputs that already exist routes to the prompt-evaluator agent, and a single evaluation campaign to the eval command. The signal is the demand to *measure* a candidate against labeled ground truth under a stated pass bar — not to author the prompt, tune weights, or watch production traffic.
 
 ## Non-Goals
 

@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-Post-compaction Blind Bootstrap (CM-24 §6.2). Restore working state from durable files; conversation context is now compressed.
+Post-compaction Blind Bootstrap. Restore working state from durable files; conversation context is now compressed.
 
 Read sequence — execute IN ORDER:
 
