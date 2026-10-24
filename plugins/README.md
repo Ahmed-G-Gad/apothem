@@ -8,7 +8,7 @@ catalog in [`src/apothem/`](../src/apothem/). Edit the source, not these trees.
 
 | Directory | Host | Manifest | Assembly |
 |-----------|------|----------|----------|
-| [`apothem/`](apothem/) | Codex | `.codex-plugin/plugin.json` | Hand-authored. The Codex plugin schema carries `skills` only, so the directory is a thin bootstrap: one skill plus its manifest. |
+| [`apothem/`](apothem/) | Codex | `plugin.json` (root), with a `.codex-plugin/plugin.json` compatibility fallback | Hand-authored. Codex plugins can bundle skills, an `mcp.json`, hooks, and assets, and Codex documents no custom-agents component for plugins; this directory is a thin bootstrap of one skill plus its manifests. |
 | [`claude-code/`](claude-code/) | Claude Code, Claude Cowork | `.claude-plugin/plugin.json` | **Generated.** Run `python scripts/dev/assemble_plugin_tree.py`; never edit by hand. |
 
 ## Why `claude-code/` is committed rather than built at release

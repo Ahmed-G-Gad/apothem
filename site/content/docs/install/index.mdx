@@ -353,8 +353,11 @@ codex plugin add apothem@apothem
 ```
 
 Like the channel-5 and channel-6 extensions, this is a **bootstrap** that shells
-out to the engine. Materialize the full harness by running the install through
-it:
+out to the engine. The plugin bundles one entry skill; its manifest is a root
+`plugin.json`, and the
+[plugin host's harness page](/docs/harnesses/codex#codex-plugin) describes the
+layout and what the plugin leaves to the engine. Materialize the full harness by
+running the install through it:
 
 ```bash title="Materialize the full harness"
 npx @ahmed-g-gad/apothem install --harness codex

@@ -28,7 +28,7 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 | gemini_cli | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` | Markdown context plus TOML commands and Markdown skills/agents | `src/apothem/harnesses/gemini_cli/` |
 | github_copilot | `.github/copilot-instructions.md` | Markdown prose; Copilot instructions schema | `src/apothem/harnesses/github_copilot/` |
 | hermes | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | YAML native config plus support cohorts | `src/apothem/harnesses/hermes/` |
-| kimi_code | `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/` | Markdown project instruction surface plus support cohorts | `src/apothem/harnesses/kimi_code/` |
+| kimi_code | `<project>/AGENTS.md`, `<project>/.kimi-code/skills/` plus `<project>/.kimi-code/.apothem/support/` | Markdown project instruction surface plus native skills and support cohorts | `src/apothem/harnesses/kimi_code/` |
 | kiro | `<project>/.kiro/steering/apothem-rules.md` | Markdown steering-directory file; Kiro steering schema | `src/apothem/harnesses/kiro/` |
 | open_claw | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | JSON native config plus support cohorts | `src/apothem/harnesses/open_claw/` |
 | opencode | `~/.config/opencode/opencode.json` plus native commands, skills, and agents | JSON native config plus Markdown cohorts | `src/apothem/harnesses/opencode/` |
@@ -61,7 +61,7 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 | github_copilot | Materializes Markdown prose rather than structured config; no JSON schema |
 | cursor | No materializer; project-scope rules-only adapter writes a single `<project>/.cursor/rules/apothem-rules.mdc` via one `sentinel_merge` and authors no other cohorts |
 | hermes | Materializes `config.yaml` and keeps unsupported cohorts under `~/.hermes/.apothem/support/` |
-| kimi_code | No materializer; project-scope adapter writes the governance surface into `<project>/AGENTS.md` as a `sentinel_merge` managed block and keeps the non-native cohorts under `<project>/.kimi-code/.apothem/support/`; does not author `<project>/.kimi-code/mcp.json` |
+| kimi_code | No materializer; project-scope adapter writes the governance surface into `<project>/AGENTS.md` as a `sentinel_merge` managed block, installs skills and command skills at the native `<project>/.kimi-code/skills/`, and keeps the other cohorts under `<project>/.kimi-code/.apothem/support/`; does not author `<project>/.kimi-code/mcp.json` |
 | open_claw | Materializes `openclaw.json` and keeps unsupported cohorts under `~/.openclaw/.apothem/support/` |
 | opencode | Materializes `opencode.json` while also writing native commands, skills, and agents under `~/.config/opencode/` |
 | qwen_code | Materializes `settings.json` plus `QWEN.md` and writes native command, skill, and agent cohorts under `~/.qwen/` |

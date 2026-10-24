@@ -240,14 +240,14 @@
       "target": "<ROOT>/.kimi-code/.apothem/support/rules"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "native_skills",
       "source": "skills",
-      "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+      "target": "<ROOT>/.kimi-code/skills"
     },
     {
       "mode": "command_skills",
       "source": "commands",
-      "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+      "target": "<ROOT>/.kimi-code/skills"
     },
     {
       "mode": "merge_tree_entries",
