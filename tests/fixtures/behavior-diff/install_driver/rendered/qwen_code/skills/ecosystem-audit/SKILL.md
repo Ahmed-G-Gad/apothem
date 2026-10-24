@@ -1,12 +1,12 @@
 ---
 name: "ecosystem-audit"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Blind audit of the apothem ecosystem — matched when the user asks to 'double check', 'audit', 'verify ecosystem', 'sweep', 'validate ecosystem', 'review configuration', 'check the apothem tree', or any phrasing requesting a comprehensive validation of the apothem configuration tree as a whole. Five-phase cadence (census → parallel cross-reference audit → synthesis → report → optional --fix) detects drift, staleness, orphans, dangling references, conflicting directives, frontmatter invalidity, registry-vs-disk count mismatches, and secret exposure. Findings classify FIX / ENHANCE / CONSIDER / DEFER; only FIX auto-applies under --fix, and only after a per-file destructive-op confirmation — ENHANCE / CONSIDER / DEFER surface for operator decision via the structured-inquiry channel. User-invocable directly; also dispatchable from /plan-execute discovery contexts."
+updated: "2026-10-24"
+description: "Audit the apothem configuration tree as a whole for drift, orphans, dangling references and invalid frontmatter. Use when the user asks to 'audit the ecosystem', 'validate the apothem tree' or 'sweep for drift'. Report-only unless --fix is passed. Changed artifacts only: convention-auditor."
 archetype: "audit-template"
 userInvocable: true
 argument-hint: "[--focus area] [--fix]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowedTools:
   - "Read"
   - "Glob"
@@ -27,7 +27,7 @@ Execute a blind, fresh audit of the apothem ecosystem — verifying cross-refere
 
 ## Detection Signal
 
-The user requests "double check", "audit", "verify ecosystem", "sweep", "validate ecosystem", "review configuration", or "check the apothem tree" — any phrasing requesting a comprehensive validation of the apothem configuration tree as a whole.
+The user requests "double check", "audit", "verify ecosystem", "sweep", "validate ecosystem", or "check the apothem tree" — any phrasing requesting a comprehensive validation of the apothem configuration tree as a whole.
 
 ## Non-Goals
 

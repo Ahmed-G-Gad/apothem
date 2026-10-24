@@ -1,5 +1,5 @@
 ---
-description: "Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. Six transformation phases (Discovery & Extraction · Meticulous Consideration · Potency Mapping · Preservation Verification · Expertise Application · Question-Resolution Sweep) governed by four operational disciplines (D1 Meticulous Consideration · D2 EXTREME Potency · D3 STRICT Preservation · D4 Extensive Expertise) under the four-discipline operational invariant (six conditions; failure on any blocks emission). Every questionable surfaces via the structured-inquiry channel per ten resolution disciplines D1–D10 across six mandatory gates G0–G5; silent defaulting is forbidden. Emits a `_spec/spec.md` at the suite folder + Handoff Manifest (unconditionally — even on standalone invocation). The `--quick` flag bypasses Forge elicitation and writes a single project-local lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+description: "Turns free-form prose, notes or rough requirements into a spec-grade _spec/spec.md that keeps the author's wording and settles open questions by inquiry. Use when the user asks to 'turn these notes into a spec', 'refine these requirements' or 'prepare this for planning'. Research: research-spec."
 ---
 
 # /plan-spec — Prose-to-Spec Lifecycle Command
@@ -30,9 +30,9 @@ The Forge runs under four operational disciplines and emits five appendices inli
 
 **Pre-emission gate.** G4 (Phase 4 Preservation Verification) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_spec/spec.md` before promotion from `_inputs/forge.md`. The G5 Handoff Manifest carries the gate attestation block; failure on any bar blocks promotion until resolved.
 
-### Inquiry Cadence (D4)
+### Inquiry Cadence
 
-This command operates at **maximal structured-inquiry saturation** per D4 (Q-022). Every architectural decision, option-set ratification, authority-data inquiry, contradiction-surfacing event, potency-pairing choice, and expertise-axis attestation routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment option-annotation body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation; treat the input prose as a newbie sketch — surface every gap rather than silently inferring. **Question-fatigue-optimization is FORBIDDEN** per the §4.8.8 D8 anti-pattern catalog. The DURING cadence runs throughout Phases 1–6 at gate points G0–G5; the END-of-command synthesis question fires per D6 just before G5 Handoff Manifest emission (see `End-of-Command Synthesis (D6)` at the workflow tail).
+This command operates at **maximal structured-inquiry saturation**. Every architectural decision, option-set ratification, authority-data inquiry, contradiction-surfacing event, potency-pairing choice, and expertise-axis attestation routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment option-annotation body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation; treat the input prose as a newbie sketch — surface every gap rather than silently inferring. **Question-fatigue-optimization is FORBIDDEN** per the D8 Anti-Patterns discipline. The DURING cadence runs throughout Phases 1–6 at gate points G0–G5; the END-of-command synthesis question fires just before G5 Handoff Manifest emission (see `End-of-Command Synthesis` at the workflow tail).
 
 ---
 
@@ -65,7 +65,7 @@ When uncertain about identity / scope / preference / security / naming / infrast
 | `path/to/prose-source` | Path or inline content | Yes | The free-form prose, raw notes, requirements document, or ad-hoc request to refine. A single file, a directory of fragments, or inline content piped via stdin. |
 | `--suite-name <kebab-case>` | Flag + value | No | The plan-suite folder name. If omitted, surface via the structured-inquiry channel at Phase 1 before any forge write. |
 | `--refine-existing` | Flag | No | When the suite folder already carries a `_spec/spec.md`, treat the existing spec as the starting point and apply iterative refinement; otherwise the run starts from `_inputs/forge.md` and promotes to `_spec/spec.md` at G4. |
-| `--standalone` | Flag | No | Mark the invocation as standalone (no downstream `/plan-generate` consumer). The Handoff Manifest still emits with `downstream: none (standalone invocation)` per §4.8.6. |
+| `--standalone` | Flag | No | Mark the invocation as standalone (no downstream `/plan-generate` consumer). The Handoff Manifest still emits with `downstream: none (standalone invocation)`; the manifest shape is `src/apothem/schemas/handoff-manifest.yaml`. |
 | `--quick <slug>` | Flag + value | No | Bypass Forge elicitation entirely; write a single lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`. Mutually exclusive with `--refine-existing` and the six-phase Forge workflow. See [Mode: `--quick`](#mode---quick-lightweight-plan-local-write). |
 | `--tag <tag>` | Flag + value | No | Repeatable. Adds a tag to the lightweight plan file's frontmatter `tags:` array. Meaningful only with `--quick`; ignored in Forge mode. |
 
@@ -95,9 +95,9 @@ When uncertain about identity / scope / preference / security / naming / infrast
      recommendation: acceptable
      default-pointer: `Let me cd first` — cancel is fully reversible.
 2. **Refuse global-ecosystem paths.** If the resolved project root is any harness config root (e.g., `~/.claude/` on the claude_code harness) or any other global-ecosystem location (`~/.config/`, `/etc/`, vendored language-runtime trees), halt with an explicit refusal — `--quick` writes are project-local by design; global locations require explicit operator action through a separate path (`/plan-generate` for plan-suite work; direct file authoring for global-config work).
-3. **Ensure `<project-root>/.apothem/plans/` exists.** Create the directory if absent. Verify `<project-root>/.gitignore` carries the canonical snippet from spec §2.6 (`.apothem/plans/` ignore plus a header comment naming the rationale); append the snippet with a header comment if absent.
-4. **Compose the destination filename per spec §3.2.** The pattern is `<YYYY-MM-DD>--<kebab-slug>.md` — `YYYY-MM-DD` is today's UTC date and `<kebab-slug>` is the operator-supplied slug, validated as kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`).
-5. **Write the plan file with frontmatter per spec §3.3.** Required fields: `name` (the slug), `created` (ISO-8601 timestamp), `project` (resolved project-root absolute path), `status` (`draft`), `tags` (array from `--tag` invocations; empty array if none). Validate the frontmatter inline against the §3.3 enumeration (the JSON Schema at `src/apothem/schemas/plan.schema.json` is a forward-reference at this phase; inline-spec validation is authoritative until the schema lands).
+3. **Ensure `<project-root>/.apothem/plans/` exists.** Create the directory if absent. Verify `<project-root>/.gitignore` carries the canonical snippet (`.apothem/plans/` ignore plus a header comment naming the rationale); append the snippet with a header comment if absent.
+4. **Compose the destination filename.** The pattern is `<YYYY-MM-DD>--<kebab-slug>.md` — `YYYY-MM-DD` is today's UTC date and `<kebab-slug>` is the operator-supplied slug, validated as kebab-case (`^[a-z0-9]+(-[a-z0-9]+)*$`).
+5. **Write the plan file with frontmatter.** Required fields: `name` (the slug), `created` (ISO-8601 timestamp), `project` (resolved project-root absolute path), `status` (`draft`), `tags` (array from `--tag` invocations; empty array if none). Validate the frontmatter inline against this field list (the JSON Schema at `src/apothem/schemas/plan.schema.json` is a forward-reference at this phase; inline validation against this field list is authoritative until the schema lands).
 6. **Banner-exempt.** Do NOT inject the authorship banner — plan files are exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`.
 7. **Print metadata-only output.** Emit four lines: absolute destination path, resolved project root, chosen filename, one-line confirmation. Do NOT echo the plan body, Forge appendices, or any pipeline state — `--quick` is a single-shot write.
 
@@ -122,9 +122,9 @@ Read the prose source in full. For MASSIVE prose (>50K tokens), chunk via parall
 
 Double-read the prose. Triple-extract — directive / intention / rationale — at every clause. Adjacent-domain scan: where the prose touches domain X, scan adjacent domains Y · Z for inherited assumptions or contradictions. Second-order consequence enumeration: for every requirement, enumerate what it IMPLIES for downstream artifacts the prose does not name. Persona / register / voice inference: surface the prose's implicit audience and voice register.
 
-**Contradiction surfacing — structured inquiry mandatory.** Every contradiction or tension between prose clauses surfaces via the structured-inquiry channel at G3 (Pre-amendment). Silent resolution is FORBIDDEN per §4.8.5 D1.
+**Contradiction surfacing — structured inquiry mandatory.** Every contradiction or tension between prose clauses surfaces via the structured-inquiry channel at G3 (Pre-amendment). Silent resolution is FORBIDDEN per the D1 Questionable Identification discipline.
 
-**Consideration Log deliverable.** Every consideration item lands in the Consideration Log appendix (Appendix A schema). Gate ◇ — an empty / skeletal / sham Consideration Log blocks emission as P0 per §4.8.3 D1.
+**Consideration Log deliverable.** Every consideration item lands in the Consideration Log appendix (Appendix A schema). Gate ◇ — an empty / skeletal / sham Consideration Log blocks emission as P0 per the D1 Meticulous Consideration discipline.
 
 ### Phase 3 — Potency Mapping (D2)
 
@@ -136,11 +136,11 @@ Every preserved prose element pairs with its potent operational form. The pairin
 | Flow / sequence | Mermaid diagram — `flowchart` (control-flow), `sequenceDiagram` (interaction-flow), `stateDiagram-v2` (state machine) |
 | Decision / choice | Annotated structured-inquiry option set per `rules/interactive-questions.md` §3 three-segment body |
 | Ordered execution | Sprint apparatus — Sprint Goal + DoR + DoD + Sprint Review + Retrospective + Velocity Log entry |
-| Cross-reference | Canonical bidirectional binding per `_spec/spec.md` §0.j (Drives → · Satisfies → · Established by ↑ · Gated by ← · Cross-bound with ↔) |
+| Cross-reference | Canonical bidirectional binding per `rules/bidirectional-binding.md` (Drives → · Satisfies → · Established by ↑ · Gated by ← · Cross-bound with ↔) |
 | Definitive statement | Airtight input-class coverage — closed-set enumeration with explicit-N/A attestation on the residue |
-| Authoritative datum | §0.e inquiry surfacing with a `<USER-CONFIRM:kind=...>` placeholder until operator-supplied |
+| Authoritative datum | Inquiry surfacing per `rules/authority-inquiry.md`, with a `<USER-CONFIRM:kind=...>` placeholder until operator-supplied |
 
-**Potency Map deliverable.** Every preserved element + its paired potent form in the Potency Map appendix (Appendix B schema). Missing potent-form pairings = `**P1**` block per §4.8.3 D2.
+**Potency Map deliverable.** Every preserved element + its paired potent form in the Potency Map appendix (Appendix B schema). Missing potent-form pairings = `**P1**` block per the D2 EXTREME Potency discipline.
 
 ### Phase 4 — Preservation Verification (D3) — Three Levels
 
@@ -156,7 +156,7 @@ Every preserved prose element pairs with its potent operational form. The pairin
 
 Every transformation attests which of the seven axes applied: Domain · Adjacent-domain · Meta-engineering · Operational · Process · Scholarly-technical-literature · Second-order-systems-thinking. Inline markers `**[Expertise amendment — axis: X — rationale: ...]**` at every amended locus.
 
-**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axes block emission as `**P1**` per §4.8.3 D4.
+**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axes block emission as `**P1**` per the D4 Extensive Expertise discipline.
 
 ### Phase 6 — Question-Resolution Sweep (Ten Disciplines D1–D10) — Mandatory Gates G0–G5
 
@@ -177,14 +177,14 @@ The ten disciplines govern every structured-inquiry invocation across the six ma
 - **D6 Command-Specific Instantiation.** This command realizes the binding by emitting the appendix at G5.
 - **D7 Handoff Manifest Specification.** YAML-fronted; schema-enforced; emitted at G5 (command exit). Required fields: `command`, `repository`, `mission`, `created_at` (ISO-8601), `invocation_sequence`, `downstream` (target command or `none (standalone invocation)`), `p0-unresolved: 0`, `p1-unresolved: 0`, `placeholders: []`, `appendices`. Downstream refuses to proceed if the manifest is missing, malformed, or violates the P0/P1 invariant. A falsified manifest = P0 integrity failure.
 - **D8 Anti-Patterns.** Twelve forbidden patterns: silent defaulting · silent inference · silent placeholder-filling · silent fabrication · silent probably-what-user-meant · silent deferral-to-next · silent option-narrowing · silent question-suppression · silent assumption-cascade · silent out-of-scope absorption · silent persona-substitution · silent answer-pre-selection. Each is a discipline failure.
-- **D9 Bidirectional Binding** of the Resolution Mandate per `_spec/spec.md` §0.j.
+- **D9 Bidirectional Binding** of the Resolution Mandate per `rules/bidirectional-binding.md`.
 - **D10 Resolution Invariant.** Every questionable / ambiguity / under-specification / implicit assumption / contradiction / tension / unresolved option / authority-datum gap / expertise-envelope limit MUST be definitively resolved via the structured-inquiry channel before the command exits and before any downstream command consumes its output.
 
 **Question-Resolution Audit deliverable.** Per Appendix E schema; every row corresponds to an actual structured-inquiry call.
 
-### End-of-Command Synthesis (D6)
+### End-of-Command Synthesis
 
-Just before G5 Handoff Manifest emission, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before G5 Handoff Manifest emission, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Spec phase complete. Are there any suggested improvements, ambiguities, contradictions to surface before handoff?`
 - `header:` `End synthesis`
@@ -257,9 +257,9 @@ Where an installed copy holds this command as a skill directory (a `SKILL.md` pl
 2. **Phase enumeration.** `rg --no-heading -nP '^### Phase [1-6] —' commands/plan-spec.md` returns 6 hits (one per transformation phase).
 3. **Discipline enumeration.** `rg --no-heading -nP '^- \*\*D[1-9]0?' commands/plan-spec.md` returns at least 14 hits (D1–D4 operational + D1–D10 structured-inquiry disciplines).
 4. **Gate enumeration.** `rg --no-heading -nP '\*\*G[0-5]\*\*' commands/plan-spec.md` returns 6 hits (G0–G5).
-5. **Self-application attestation.** `/plan-spec --self-application-attestation` emits a PASS attestation per the §4.8.4 four-discipline invariant; the attestation lists each of the six conditions with a PASS verdict.
-6. **Standalone-invocation attestation.** `/plan-spec --standalone <prose-path>` emits the Handoff Manifest with `downstream: none (standalone invocation)` per §4.8.6; no silent terminal-ness.
-7. **Work-root naming attestation.** The Manifest's `repository` + `mission` fields are non-empty per the §1.5 INQ-WORKROOT-SCHEME ratification.
+5. **Self-application attestation.** `/plan-spec --self-application-attestation` emits a PASS attestation per the four-discipline invariant; the attestation lists each of the six conditions with a PASS verdict.
+6. **Standalone-invocation attestation.** `/plan-spec --standalone <prose-path>` emits the Handoff Manifest with `downstream: none (standalone invocation)`; no silent terminal-ness.
+7. **Work-root naming attestation.** The Manifest's `repository` + `mission` fields are non-empty.
 
 ---
 
@@ -302,17 +302,17 @@ $ /plan-spec --refine-existing <project-root>/.apothem/plans/database-migration-
 
 ## Self-Application Attestation
 
-`/plan-spec --self-application-attestation` runs the verification recipe (§I.6 above) against this command file and emits a PASS/FAIL verdict per condition. The attestation is the canonical reflexive self-check per §0.d recursive self-application; failure on any condition surfaces as a `**P1**` block.
+`/plan-spec --self-application-attestation` runs the verification recipe (§I.6 above) against this command file and emits a PASS/FAIL verdict per condition. The attestation is the canonical reflexive self-check (recursive self-application); failure on any condition surfaces as a `**P1**` block.
 
 ---
 
 ## Mandates (§I.0.a–§I.0.o restated, scoped to the prose→spec domain)
 
-This command's restatement of `_spec/spec.md` §0.a–§0.o, scoped to the prose-to-spec transformation domain. Each mandate is atomically installed on the command:
+This command's restatement of the fifteen mandates (M1–M15, `rules/pre-emission-gate.md`), scoped to the prose-to-spec transformation domain. Each mandate is atomically installed on the command:
 
-- **§I.0.a Co-equal mandates** — every §0.x is co-equal; no implicit priority ordering.
+- **§I.0.a Co-equal mandates** — every mandate is co-equal; no implicit priority ordering.
 - **§I.0.b Decomposition** — the six transformation phases are the canonical decomposition; sub-sprint decomposition is admissible per Phase 1 establishment.
-- **§I.0.c Ten dimensional gates** — the §0.d fifteen-bar self-check applies recursively at G4.
+- **§I.0.c Ten dimensional gates** — the fifteen-bar pre-emission self-check (`rules/pre-emission-gate.md`) applies recursively at G4.
 - **§I.0.d Self-application** — this command is itself subject to the verification recipe (§I.6).
 - **§I.0.e Authority before invention** — no prose datum is fabricated; gaps surface as `<USER-CONFIRM:kind=...>` placeholders per D4 Deferral Discipline.
 - **§I.0.f Expertise** — D4 Seven Axes of Breadth applied with attestation.
@@ -331,7 +331,7 @@ This command's restatement of `_spec/spec.md` §0.a–§0.o, scoped to the prose
 ## Critical Rules
 
 - **NEVER silently default.** Every questionable surfaces via the structured-inquiry channel; the twelve D8 anti-patterns are forbidden.
-- **NEVER suppress questions to reduce user burden.** Question-fatigue-optimization is not a legitimate optimization per §4.8.8.
+- **NEVER suppress questions to reduce user burden.** Question-fatigue-optimization is not a legitimate optimization per the D8 Anti-Patterns discipline.
 - **NEVER emit `_spec/spec.md` without the five appendices inline.** Consideration Log + Potency Map + Preservation Audit + Expertise-Gap Log + Question-Resolution Audit are mandatory.
 - **NEVER duplicate ceremony for its own sake.** The Forge produces one authoritative spec and one Handoff Manifest; downstream evidence and bulky reports belong to `_outputs/` or later command reports, not repeated inside the spec.
 - **NEVER skip the G5 Handoff Manifest.** Even on standalone invocation, the Manifest emits with `downstream: none (standalone invocation)`.
@@ -346,7 +346,7 @@ Invoke `/plan-generate` to consume the ratified `_spec/spec.md` and materialize 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● `commands/plan-generate.md` (the canonical downstream consumer; `/plan-generate` consumes the promoted `_spec/spec.md`). ● `{suite}/_spec/spec.md` (the principal artifact). ● `{suite}/_inputs/handoff-manifest.yml` (the G5 Handoff Manifest). ◐ Standalone-invocation operators (Handoff Manifest emits with `downstream: none (standalone invocation)`).
-- **Satisfies →** ● `_spec/spec.md` §4.8 Appendix I (this command's canonical specification). ● D-16 (`/plan-spec` installation as Wave 18 deliverable). ● D-17 anti-waterfall decision (every operation is a disciplined sprint). ● `rules/interactive-questions.md` §1 canonical-channel obligation (every questionable routes through the structured-inquiry channel). ● `rules/context-management.md` §2.6.1 forge → spec lifecycle.
-- **Established by ↑** ● `_spec/spec.md` §4.8.1–§4.8.9 (the canonical specification). ● The `src/apothem/commands/` cohort (this command joins it as the upstream entry to the `/plan` pipeline). ● D-16 + D-17 (the ratified locked decisions).
+- **Satisfies →** ● This command's own specification (the Appendix I sections above). ● The single-sprint posture: every operation is a disciplined sprint, never a waterfall stage. ● `rules/interactive-questions.md` §1 canonical-channel obligation (every questionable routes through the structured-inquiry channel). ● `rules/context-management.md` §2.6.1 forge → spec lifecycle.
+- **Established by ↑** ● This command file (the canonical specification of the prose-to-spec transformation). ● The `src/apothem/commands/` cohort (this command joins it as the upstream entry to the `/plan` pipeline). ● `rules/agile-sprints.md` (the single-sprint posture).
 - **Gated by ←** ● Operator invocation with a prose source. ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/context-management.md` §2.6.1 (suite-locality invariant for `_inputs/`, `_outputs/`, and `_spec/` directories).
 - **Cross-bound with ↔** ↔ `commands/plan-generate.md` (Forge → Generate handoff; `/plan-generate` consumes spec.md and produces the plan suite). ↔ `commands/plan-execute.md` (Generate → Execute handoff; spec.md fidelity preserved through the pipeline). ↔ `commands/plan-review.md` (Forge fidelity is reviewable via the Preservation Audit appendix). ↔ `rules/interactive-questions.md` (every structured-inquiry call obeys the canonical-channel rule). ↔ `rules/context-management.md` §2.6.1 (forge → spec lifecycle compliance).

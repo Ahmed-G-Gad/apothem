@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-# apothem design system
+# Apothem design system
 
 The single source of truth for the apothem brand: the mark, the palette, the
 type scale, the spacing rhythm, and the elevation set. Machine-readable token
@@ -45,35 +45,49 @@ monogram stays deliberately minimal — at tab size the inscribed circle and
 source-node would clutter the 16 px silhouette, so it carries only the hexagon
 and its emerald apothem.
 
+The mark takes its slate and emerald colors from the token ramps below, so a
+surface can be checked against the tokens directly. On light surfaces the
+hexagon and center node are `slate-700`, the five quiet apothems `slate-400`
+(70 % opacity), the inscribed circle and termini `slate-500`, and the emerald
+apothem runs `emerald-700` to `emerald-500` with `emerald-600` end nodes. On
+dark surfaces the hexagon and center node are `slate-300`, the quiet apothems
+and termini `slate-500` (85 % opacity), the inscribed circle `slate-400`, and
+the emerald apothem runs `emerald-600` to `emerald-300` with `emerald-400` end
+nodes.
+
 ### Asset coverage
 
-Every brand file, its variant role, and its refresh disposition. Editable SVG
+Every brand file, its variant role, and how it is produced. Editable SVG
 sources live under `src/`; the runtime SVGs, raster sets, and social PNGs are
 regenerated from them by `scripts/dev/rebuild-assets-resvg.py` (see
 [`README.md`](README.md)).
 
-| Asset | Variant role | Disposition |
+| Asset | Variant role | Produced by |
 |-------|--------------|-------------|
-| `src/logo.svg` → `logo.svg`, `logo.png`, `logo-16…1024.png` | Primary mark, light (includes the `logo-192.png` / `logo-512.png` `purpose: any` manifest icons) | Refreshed to the apothem-hexagon mark |
-| `src/logo-dark.svg` → `logo-dark.svg`, `logo-dark-16…1024.png` | Primary mark, dark | Refreshed |
-| `src/logo-animated.svg` → `logo-animated.svg` | Animated mark (apothem draws in; reduced-motion-safe) | Refreshed |
-| `src/icon-maskable.svg` → `logo-maskable-192.png`, `logo-maskable-512.png` | Maskable PWA icons (`purpose: maskable`), full-bleed dark tile | Refreshed |
-| `logo-wordmark.svg` | Horizontal lockup: mark + wordmark + tagline, light | Refreshed |
-| `logo-wordmark-dark.svg` | Horizontal lockup, dark | Refreshed |
-| `favicon.svg` → `favicon.ico`, `favicon-16/32.png` | Compact tab monogram (filled hexagon) | Refreshed for 16 px legibility |
-| `src/apple-touch.svg` → `apple-touch-icon-120…180.png` | Apple touch-icon set, dark tile | Regenerated from the `src/apple-touch.svg` master |
-| `github-avatar.svg` | 420 px org/repo avatar on a dark tile | Refreshed |
-| `src/og-banner.svg` → `og-banner-1200x630.png` | Open Graph share card, dark | Refreshed |
-| `src/twitter-card.svg` → `twitter-card.png` | Twitter/X share card, dark | Refreshed |
-| `social-preview.svg` | GitHub social-image / README preview, light | Refreshed |
+| `src/logo.svg` → `logo.svg`, `logo.png`, `logo-16…1024.png`, `../vscode-extension/icon.png` | Primary mark, light (includes the `logo-192.png` / `logo-512.png` `purpose: any` manifest icons and the VS Code extension icon) | Generator |
+| `src/logo-dark.svg` → `logo-dark.svg`, `logo-dark-16…1024.png` | Primary mark, dark | Generator |
+| `src/logo-animated.svg` → `logo-animated.svg` | Animated mark for dark surfaces (apothem draws in; reduced-motion-safe) | Generator |
+| `src/logo-animated-light.svg` → `logo-animated-light.svg` | Animated mark for light surfaces; the site hero swaps the two animated files by theme | Generator |
+| `src/icon-maskable.svg` → `logo-maskable-192.png`, `logo-maskable-512.png` | Maskable PWA icons (`purpose: maskable`), full-bleed dark tile | Generator |
+| `logo-wordmark.svg` | Horizontal lockup: mark + wordmark + tagline, light | Hand-authored |
+| `logo-wordmark-dark.svg` | Horizontal lockup, dark | Hand-authored |
+| `favicon.svg` → `favicon.ico` (16, 32, 48 px), `favicon-16/32.png` | Compact tab monogram (filled hexagon) | Hand-authored master; generator renders the ICO and PNGs |
+| `src/apple-touch.svg` → `apple-touch-icon-120…180.png` | Apple touch-icon set, dark tile | Generator |
+| `github-avatar.svg` | 420 px org/repo avatar on a dark tile | Hand-authored |
+| `src/og-banner.svg` → `og-banner-1200x630.png` | Open Graph share card, dark | Generator |
+| `src/twitter-card.svg` → `twitter-card.png` | Twitter/X share card, dark | Generator |
+| `social-preview.svg` | GitHub social-image / README preview, light | Hand-authored |
+
+The tagline carried by the lockups and share cards is `one profile, every
+harness`.
 
 ## Color
 
 Two ramps carry the brand — a cool **slate** neutral and an **emerald** accent —
 plus three semantic hues. Every step is named `--apothem-color-{ramp}-{step}`.
 The brand anchors (`slate-900 #0f172a`, `slate-50 #f8fafc`,
-`emerald-500 #10b981`, `emerald-400 #34d399`) are preserved from the prior
-identity; the ramps fill in around them.
+`emerald-500 #10b981`, `emerald-400 #34d399`) are the fixed points of the two
+ramps; the other steps fill in around them.
 
 ### Slate (neutral)
 
@@ -132,17 +146,17 @@ system pairs by design clears its floor:
 
 | Foreground | Background | Ratio | Role | AA |
 |------------|-----------|------:|------|----|
-| `slate-50` | `slate-900` | 16.9:1 | body text, dark | ✓ text |
+| `slate-50` | `slate-900` | 17.1:1 | body text, dark | ✓ text |
 | `slate-300` | `slate-900` | 11.0:1 | muted text, dark | ✓ text |
 | `slate-400` | `slate-900` | 6.9:1 | subtle text, dark | ✓ text |
 | `emerald-400` | `slate-900` | 9.3:1 | accent/link, dark | ✓ text |
-| `slate-900` | `slate-50` | 16.9:1 | body text, light | ✓ text |
+| `slate-900` | `slate-50` | 17.1:1 | body text, light | ✓ text |
 | `slate-600` | `slate-50` | 7.7:1 | muted text, light | ✓ text |
 | `slate-500` | `slate-50` | 4.5:1 | subtle text, light | ✓ text |
 | `emerald-700` | `slate-50` | 5.2:1 | accent/link, light | ✓ text |
 | `emerald-600` | `slate-50` | 3.6:1 | accent graphic, light | ✓ UI |
 
-`emerald-500` on white is ~2.4:1 — used only as a graphic on **dark** surfaces,
+`emerald-500` on white is ~2.5:1 (2.54:1) — used only as a graphic on **dark** surfaces,
 never as text or as a graphic on light. That is why the light accent graphic is
 `emerald-600` and the light accent text is `emerald-700`.
 

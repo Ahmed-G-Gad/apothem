@@ -1,10 +1,10 @@
 ---
 name: "research-publish"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability statement, the cover letter, ethics and conflict-of-interest declarations (R6), open-access and license selection, the data/code Zenodo deposit, the registered-report Stage-2 path where one was preregistered, and a submission checklist gating every venue requirement. The venue-and-submission stage of the /research pipeline; its successor is `/research-disseminate`. Triggered as 'format the paper for the venue and build the submission package', 'write the cover letter and data-availability statement', 'set up the preprint and reserve a DOI', 'run the submission checklist before I submit', or the pipeline-chained hand-off from /research-review. Emits the venue-formatted package, a preprint/archival plan, and _outputs/publication-record.md. The operator submits; the stage stops at a ready package, never auto-submits."
+updated: "2026-10-24"
+description: "Builds the venue submission package for a reviewed paper: template formatting, cover letter, data and code availability statement, ethics and conflict declarations, license, archival deposit plan, and a submission checklist. Runs only when the user invokes it, because it prepares a submission. Stops at a ready package; the user submits."
 argument-hint: "[--suite-name NAME] [--override] [--venue NAME] [--template PATH] [--preprint SERVER]"
-disable-model-invocation: false
+disable-model-invocation: true
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---

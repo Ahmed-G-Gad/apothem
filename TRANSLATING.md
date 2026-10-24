@@ -3,7 +3,8 @@
 # Translating Apothem
 
 Apothem's documentation ships in twelve languages. English is the source of
-truth; every other locale is a translation that tracks it. This guide explains
+truth; every other locale is a translation that tracks it. Most non-English
+pages are machine-seeded and not yet human-reviewed. This guide explains
 how to claim a locale, translate, and get a translation reviewed and published.
 
 ## Supported locales
@@ -66,15 +67,21 @@ Before translating, fill in your locale's glossary and follow it:
 - Code, CLI commands, flags, file paths, and config keys are **never
   translated** — only the prose around them.
 
-## Review and publication gate
+## Review and publication
 
 - Translations land via GitHub pull request. Tag your locale's reviewer cohort.
-- A locale publishes when **at least 80%** of its pages have a completed human
-  review on top of any machine-seeded draft. Below that threshold the locale
-  stays in draft and continues to serve the English fallback.
+- All twelve locales are served. Machine-seeded pages ship before a human has
+  reviewed them, and each carries `machineTranslated: true` in its frontmatter
+  until a reviewer clears it. The flag is review-tracking metadata only; the
+  rendered page does not display it.
+- A page a locale has not translated is served from the English source, so
+  English is the fallback for every missing page.
+- **At least 80%** of a locale's pages with a completed human review is the
+  review target for that locale. It is a goal that guides review effort, not a
+  publish gate: nothing in the build blocks a locale below it.
 - Machine translation (DeepL for structure, a polish pass for tone and
-  technical vocabulary) may seed a draft, but **no page publishes without human
-  review** — machine output is a starting point, never the shipped text.
+  technical vocabulary) seeds drafts. A reviewer reads the page against the
+  English source, corrects it, and removes the `machineTranslated` flag.
 
 ## Right-to-left locales
 

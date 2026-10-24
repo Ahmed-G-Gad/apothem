@@ -1,8 +1,8 @@
 ---
 name: "research-paper"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, limitations, conclusion, and references — with every citation verified to resolve to a real source (R4: no phantom citations). The manuscript-assembly stage of the /research pipeline. Triggered as 'write up the results into a paper draft', 'assemble the manuscript from the synthesis and analysis', 'turn the analysis into a paper with verified references', 'build the references section and confirm every citation resolves', or the pipeline-chained hand-off from /research-analysis. Consumes _inputs/synthesis.md, _inputs/study-design.md, and _outputs/analysis.md and emits the paper deliverable at a host-natural location (paper/) with the nine canonical sections. The fact-checker verifies every reference refute-by-default: a citation stays only after it resolves to a real, retrievable source (permalink, DOI, or commit pin); a phantom citation never lands."
+updated: "2026-10-24"
+description: "Assembles a paper draft from the synthesis, study design, and analysis, with every citation checked to resolve. Use when the user asks to 'write up the results as a paper', 'assemble the manuscript' or 'build the references section'. Not for critique (research-review) or theses (document-authoring)."
 argument-hint: "[--suite-name NAME] [--override] [--venue STYLE] [--anonymized]"
 disable-model-invocation: false
 portability: "universal"

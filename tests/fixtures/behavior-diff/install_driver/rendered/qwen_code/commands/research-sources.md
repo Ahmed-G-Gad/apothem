@@ -1,5 +1,5 @@
 ---
-description: "Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. Decomposes the ratified research spec into orthogonal sub-queries, dispatches parallel discovery via the research-scout agent and the multi-source-research skill, deduplicates, ranks by authority/recency/relevance, screens against the spec's inclusion/exclusion criteria, and extracts each surviving source with full provenance. Use when a research mission has a finalized spec and needs its evidence base: 'collect the sources for this question', 'gather the primary literature', 'build the source ledger', 'find and screen the references before synthesis', 'survey and extract the evidence base'. The fact-checker confirms every citation resolves. Emits `sources/<id>.md` per-source extractions plus `_inputs/source-ledger.md` (ranked, screened, deduplicated, citation-indexed). Discovery and extraction only — synthesis and the SOTA/gap map route to /research-synthesis."
+description: "Collects and screens the literature for a ratified research spec: deduplication, ranking and extraction with provenance. Use when the user asks to 'collect the sources', 'build the source ledger' or 'screen the literature for the spec'. No spec yet: multi-source-research. Does not synthesize."
 ---
 
 # /research-sources — Systematic Source Collection

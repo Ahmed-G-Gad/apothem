@@ -82,7 +82,9 @@ top-level `.github/README.md` would, and none exists.
   never blocks a merge. The other gates, including pip-audit, npm audit, the
   license audit, and gitleaks, run in both states.
 - **Least privilege.** Each workflow declares a `contents: read` baseline at the
-  workflow scope; per-job overrides escalate a scope (`security-events: write`,
+  workflow scope, with one exception: `channel-smoke.yml` declares
+  `permissions: {}` at the top level and grants `contents: read` on its jobs
+  (see its header). Per-job overrides escalate a scope (`security-events: write`,
   `id-token: write`, `issues: write`, `pages: write`) only where a step needs
   it. No job uses write-all.
 - **Runner hardening.** Every job's first step is `step-security/harden-runner`;
@@ -91,10 +93,11 @@ top-level `.github/README.md` would, and none exists.
   explicit allowlist, and the rest run `audit`. `zizmor.yml` and
   `license-audit.yml` stay on `audit` because their endpoint sets are not
   stable enough to allowlist without false-failing the job.
-- **Concurrency.** Each workflow declares a `concurrency` group keyed on the ref;
-  release and publish workflows set `cancel-in-progress: false` so a
-  publication run is never cancelled mid-flight, while gate and scan workflows
-  cancel superseded runs.
+- **Concurrency.** Each workflow except the reusable `reusable-python-setup.yml`
+  declares a `concurrency` group keyed on the ref; the reusable workflow
+  declares none and runs inside its caller's group. Release and publish
+  workflows set `cancel-in-progress: false` so a publication run is never
+  cancelled mid-flight, while gate and scan workflows cancel superseded runs.
 - **Pip pin.** Workflows that install pip carry `env.PIP_PIN_VERSION` set to the
   single canonical value; `scripts/dev/check_pip_pin_drift.py` fails the build if
   any workflow's pin diverges.

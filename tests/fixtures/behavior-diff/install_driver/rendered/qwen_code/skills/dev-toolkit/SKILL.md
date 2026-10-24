@@ -1,12 +1,12 @@
 ---
 name: "dev-toolkit"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Engineering-discipline toolkit — matched when the operator asks to 'diagnose a bug', 'debug systematically', 'do TDD / write a failing test first', 'break this into vertical slices', 'turn this into a PRD / issues', 'decompose this work', or otherwise needs a disciplined software-engineering loop rather than an ad-hoc fix. Sequences four named, gated, composable loops — structured debugging (reproduce → minimize → hypothesize → instrument → fix root cause), test-first red-green-refactor (red observed before green), vertical-slice decomposition (independently-shippable testable units), and requirement-to-issue breakdown (goal → testable requirement set → tracked issues + ADR) — selected by --mode or by the request. Cross-references (never duplicates) sibling owners: orchestration → /workflow, diagrams → diagram-authoring, minimal-diff guarding → surgical-guard. Harness-agnostic; deterministic output; drives the host's discovered toolchain."
+updated: "2026-10-24"
+description: "Run a disciplined engineering loop: reproduce-first debugging, test-first red-green-refactor, vertical slices, or a requirement split into issues. Use for 'diagnose a bug', 'do TDD', 'break this into vertical slices' or 'turn this into issues'. Not for one-line edits or multi-agent orchestration."
 archetype: "engineering-template"
 userInvocable: true
 argument-hint: "[task or defect] [--mode diagnose|tdd|slice|decompose]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowedTools:
   - "Read"
   - "Glob"

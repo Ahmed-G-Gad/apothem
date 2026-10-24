@@ -1,10 +1,10 @@
 ---
 name: "security-audit"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). Six audit phases (Input Ingest · Secrets + Permissions Sweep · Input-Validation + Injection-Surface Walk · Deserialization + Path-Traversal + RCE Audit · Dependency-CVE + CodeQL Sweep · Findings Emission + Validation Gate) cover secrets-management, input-validation, shell-injection surfaces, SQL-injection surfaces, deserialization safety, path-traversal, dependency CVEs via pip-audit and safety, CodeQL findings disposition, and permission-scope analysis. Emits a severity-ranked findings artifact at the consuming suite's _inputs/security-audit-findings.md with concrete-driver rationale and recommended remediation per finding."
+updated: "2026-10-24"
+description: "Audits a repository's security posture: secrets, injection, unsafe deserialization, path traversal, vulnerable dependencies. Use when the user asks to 'run a security audit', 'check this repo for vulnerabilities' or 'look for leaked secrets'. Writes findings. One named CVE goes to vuln-triage."
 argument-hint: "[path/to/repo/] [--focus CATEGORY] [--dry-run]"
-disable-model-invocation: true
+disable-model-invocation: false
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---

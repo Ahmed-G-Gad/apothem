@@ -52,8 +52,11 @@ harness:
 
 ```bash
 apothem update --harness claude-code
-apothem update --harness cursor
+apothem update --harness cursor --project /path/to/project
 ```
+
+A project-scope harness needs `--project` on update, as in the second line;
+a user-scope harness does not.
 
 ## Rule validation
 

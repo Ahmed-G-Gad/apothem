@@ -1,12 +1,12 @@
 ---
 name: "plan-spec"
-description: "Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. Six transformation phases (Discovery & Extraction · Meticulous Consideration · Potency Mapping · Preservation Verification · Expertise Application · Question-Resolution Sweep) governed by four operational disciplines (D1 Meticulous Consideration · D2 EXTREME Potency · D3 STRICT Preservation · D4 Extensive Expertise) under the four-discipline operational invariant (six conditions; failure on any blocks emission). Every questionable surfaces via the structured-inquiry channel per ten resolution disciplines D1–D10 across six mandatory gates G0–G5; silent defaulting is forbidden. Emits a `_spec/spec.md` at the suite folder + Handoff Manifest (unconditionally — even on standalone invocation). The `--quick` flag bypasses Forge elicitation and writes a single project-local lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+description: "Turns free-form prose, notes or rough requirements into a spec-grade _spec/spec.md that keeps the author's wording and settles open questions by inquiry. Use when the user asks to 'turn these notes into a spec', 'refine these requirements' or 'prepare this for planning'. Research: research-spec."
 argument-hint: "[path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -31,7 +31,7 @@ The Forge runs under four operational disciplines and emits five appendices inli
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — Initial; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — Initial; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence.
 
 ---
 
@@ -48,7 +48,7 @@ The Forge runs under four operational disciplines and emits five appendices inli
 | `path/to/prose-source` | Path or inline content | Yes | The free-form prose, raw notes, requirements document, or ad-hoc request to refine. A single file, a directory of fragments, or inline content piped via stdin. |
 | `--suite-name <kebab-case>` | Flag + value | No | The plan-suite folder name. If omitted, surface via the structured-inquiry channel at Phase 1 before any forge write. |
 | `--refine-existing` | Flag | No | When the suite folder already carries a `_spec/spec.md`, treat the existing spec as the starting point and apply iterative refinement; otherwise the run starts from `_inputs/forge.md` and promotes to `_spec/spec.md` at G4. |
-| `--standalone` | Flag | No | Mark the invocation as standalone (no downstream `/plan-generate` consumer). The Handoff Manifest still emits with `downstream: none (standalone invocation)` per §4.8.6. |
+| `--standalone` | Flag | No | Mark the invocation as standalone (no downstream `/plan-generate` consumer). The Handoff Manifest still emits with `downstream: none (standalone invocation)`; the manifest shape is `src/apothem/schemas/handoff-manifest.yaml`. |
 | `--quick <slug>` | Flag + value | No | Bypass Forge elicitation entirely; write a single lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`. Mutually exclusive with `--refine-existing` and the six-phase Forge workflow. See [Mode: `--quick`](#mode---quick-lightweight-plan-local-write). |
 | `--tag <tag>` | Flag + value | No | Repeatable. Adds a tag to the lightweight plan file's frontmatter `tags:` array. Meaningful only with `--quick`; ignored in Forge mode. |
 
@@ -87,15 +87,15 @@ Read the prose source in full. For MASSIVE prose (>50K tokens), chunk via parall
 
 Every transformation attests which of the seven axes applied: Domain · Adjacent-domain · Meta-engineering · Operational · Process · Scholarly-technical-literature · Second-order-systems-thinking. Inline markers `**[Expertise amendment — axis: X — rationale: ...]**` at every amended locus.
 
-**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axes block emission as `**P1**` per §4.8.3 D4.
+**Expertise-Gap Log deliverable.** Every applicable axis surfaces in the Expertise-Gap Log appendix (Appendix D schema). Gate ◇ — under-applied axes block emission as `**P1**` per the D4 Extensive Expertise discipline.
 
 ### Phase 6 — Question-Resolution Sweep (Ten Disciplines D1–D10) — Mandatory Gates G0–G5
 
 > Moved to `references/step-06-question-resolution-sweep-ten.md`. MUST read it in full before executing this step.
 
-### End-of-Command Synthesis (D6)
+### End-of-Command Synthesis
 
-> Moved to `references/step-07-end-of-command-synthesis-d6.md`. MUST read it in full before executing this step.
+> Moved to `references/step-07-end-of-command-synthesis.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -150,9 +150,9 @@ Where an installed copy holds this command as a skill directory (a `SKILL.md` pl
 2. **Phase enumeration.** `rg --no-heading -nP '^### Phase [1-6] —' commands/plan-spec.md` returns 6 hits (one per transformation phase).
 3. **Discipline enumeration.** `rg --no-heading -nP '^- \*\*D[1-9]0?' commands/plan-spec.md` returns at least 14 hits (D1–D4 operational + D1–D10 structured-inquiry disciplines).
 4. **Gate enumeration.** `rg --no-heading -nP '\*\*G[0-5]\*\*' commands/plan-spec.md` returns 6 hits (G0–G5).
-5. **Self-application attestation.** `/plan-spec --self-application-attestation` emits a PASS attestation per the §4.8.4 four-discipline invariant; the attestation lists each of the six conditions with a PASS verdict.
-6. **Standalone-invocation attestation.** `/plan-spec --standalone <prose-path>` emits the Handoff Manifest with `downstream: none (standalone invocation)` per §4.8.6; no silent terminal-ness.
-7. **Work-root naming attestation.** The Manifest's `repository` + `mission` fields are non-empty per the §1.5 INQ-WORKROOT-SCHEME ratification.
+5. **Self-application attestation.** `/plan-spec --self-application-attestation` emits a PASS attestation per the four-discipline invariant; the attestation lists each of the six conditions with a PASS verdict.
+6. **Standalone-invocation attestation.** `/plan-spec --standalone <prose-path>` emits the Handoff Manifest with `downstream: none (standalone invocation)`; no silent terminal-ness.
+7. **Work-root naming attestation.** The Manifest's `repository` + `mission` fields are non-empty.
 
 ---
 
@@ -164,17 +164,17 @@ Where an installed copy holds this command as a skill directory (a `SKILL.md` pl
 
 ## Self-Application Attestation
 
-`/plan-spec --self-application-attestation` runs the verification recipe (§I.6 above) against this command file and emits a PASS/FAIL verdict per condition. The attestation is the canonical reflexive self-check per §0.d recursive self-application; failure on any condition surfaces as a `**P1**` block.
+`/plan-spec --self-application-attestation` runs the verification recipe (§I.6 above) against this command file and emits a PASS/FAIL verdict per condition. The attestation is the canonical reflexive self-check (recursive self-application); failure on any condition surfaces as a `**P1**` block.
 
 ---
 
 ## Mandates (§I.0.a–§I.0.o restated, scoped to the prose→spec domain)
 
-This command's restatement of `_spec/spec.md` §0.a–§0.o, scoped to the prose-to-spec transformation domain. Each mandate is atomically installed on the command:
+This command's restatement of the fifteen mandates (M1–M15, `rules/pre-emission-gate.md`), scoped to the prose-to-spec transformation domain. Each mandate is atomically installed on the command:
 
-- **§I.0.a Co-equal mandates** — every §0.x is co-equal; no implicit priority ordering.
+- **§I.0.a Co-equal mandates** — every mandate is co-equal; no implicit priority ordering.
 - **§I.0.b Decomposition** — the six transformation phases are the canonical decomposition; sub-sprint decomposition is admissible per Phase 1 establishment.
-- **§I.0.c Ten dimensional gates** — the §0.d fifteen-bar self-check applies recursively at G4.
+- **§I.0.c Ten dimensional gates** — the fifteen-bar pre-emission self-check (`rules/pre-emission-gate.md`) applies recursively at G4.
 - **§I.0.d Self-application** — this command is itself subject to the verification recipe (§I.6).
 - **§I.0.e Authority before invention** — no prose datum is fabricated; gaps surface as `<USER-CONFIRM:kind=...>` placeholders per D4 Deferral Discipline.
 - **§I.0.f Expertise** — D4 Seven Axes of Breadth applied with attestation.
@@ -193,7 +193,7 @@ This command's restatement of `_spec/spec.md` §0.a–§0.o, scoped to the prose
 ## Critical Rules
 
 - **NEVER silently default.** Every questionable surfaces via the structured-inquiry channel; the twelve D8 anti-patterns are forbidden.
-- **NEVER suppress questions to reduce user burden.** Question-fatigue-optimization is not a legitimate optimization per §4.8.8.
+- **NEVER suppress questions to reduce user burden.** Question-fatigue-optimization is not a legitimate optimization per the D8 Anti-Patterns discipline.
 - **NEVER emit `_spec/spec.md` without the five appendices inline.** Consideration Log + Potency Map + Preservation Audit + Expertise-Gap Log + Question-Resolution Audit are mandatory.
 - **NEVER duplicate ceremony for its own sake.** The Forge produces one authoritative spec and one Handoff Manifest; downstream evidence and bulky reports belong to `_outputs/` or later command reports, not repeated inside the spec.
 - **NEVER skip the G5 Handoff Manifest.** Even on standalone invocation, the Manifest emits with `downstream: none (standalone invocation)`.

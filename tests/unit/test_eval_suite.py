@@ -48,7 +48,14 @@ import sync_eval_rule_cases as rule_sync  # noqa: E402
 # Commands that stay user-invoked only by maintainer decision: the model
 # must not start them on its own, whatever their frontmatter says today.
 _USER_INVOKED_BY_DECISION = frozenset(
-    {"freshify", "github-deploy-fresh", "github-deploy-next"}
+    {
+        "freshify",
+        "github-deploy-fresh",
+        "github-deploy-next",
+        "plan-execute",
+        "research-experiment",
+        "research-publish",
+    }
 )
 
 # The eleven dimensions /audit dispatches (commands/audit.md).
@@ -254,7 +261,7 @@ def test_user_invoked_commands_have_no_auto_trigger_cases() -> None:
 
 def test_trigger_suite_size() -> None:
     trigger_kinds = ("trigger", "no-trigger", "no-auto-trigger")
-    assert sum(len(_by_kind(kind)) for kind in trigger_kinds) >= 64
+    assert sum(len(_by_kind(kind)) for kind in trigger_kinds) >= 142
 
 
 def test_trigger_graders_name_their_component() -> None:

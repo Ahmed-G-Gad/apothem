@@ -47,9 +47,9 @@ whether the adapter renders a native config via a materializer.
 
 Notes on the matrix:
 
-- **claude-code** is the reference adapter. It carries native PreToolUse,
-  PostToolUse, Stop, and SessionStart hooks and ships vendor settings
-  templates. It writes one sentinel-delimited managed block into
+- **claude-code** is the adapter with the widest native surface. It carries
+  native PreToolUse, PostToolUse, Stop, and SessionStart hooks and ships vendor
+  settings templates. It writes one sentinel-delimited managed block into
   `CLAUDE.md` and leaves operator prose outside the sentinels unchanged.
 - **codex** installs native lifecycle hooks through `hooks.json`, converts
   agents to TOML, wraps command prompts as Codex skills, and leaves
@@ -116,10 +116,14 @@ the CLI against a harness:
 
 - `apothem install --harness <H>` propagates the manifest subset for `<H>`
   and, for Class II-A / II-B adapters, renders the harness-native config.
-- `apothem verify --harness <H>` checks the installed config against what
-  the current profile would produce and reports drift.
-- `apothem doctor` reports per-harness status across every registered
-  adapter — installed / absent / drifted.
+- `apothem verify --harness <H>` checks that the managed files exist and
+  parse. With `--profile PATH` it also checks them against what that profile
+  would produce and fails on drift.
+- `apothem status` reports whether each harness is installed and whether it
+  has drifted from the current shared profile.
+- `apothem doctor` reports per-harness health across every registered
+  adapter: `ok`, `not_installed`, `needs_project`, `verify_failed`,
+  `hook_failed`, or `error`.
 
 See the [CLI reference](/docs/cli-reference) for full command surfaces.
 

@@ -1,12 +1,12 @@
 ---
 name: "plan-design"
-description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axes-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
+description: "Writes the architectural design for a reviewed plan suite at _inputs/design.md: components, interfaces, decisions and diagrams. Use for 'design the architecture for this plan' or 'write the design doc for the suite'. Runs after plan-review, only for suites with architecture-bearing surfaces."
 argument-hint: "[path/to/plan-suite/] [--refine-existing] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -34,7 +34,7 @@ Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — conditional mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Applicability gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — conditional mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Applicability gate; Inquiry Cadence.
 
 ---
 

@@ -97,14 +97,23 @@ def test_zero_dropped_gates_across_the_seven_stages() -> None:
             )
 
 
+# Stages that change files run only when the user invokes them; the model may
+# start the others on its own.
+_MANUAL_STAGES = frozenset({"execute"})
+
+
 def test_all_seven_stages_present_and_dispatchable() -> None:
     """Every stage is a first-class, independently invocable command."""
     for stage in _EXPECTED_STAGE_GATES:
         body = _stage_text(stage)
-        # Frontmatter declares the invocable command name and keeps invocation on.
+        # Frontmatter declares the invocable command name; no stage is hidden.
         assert f'name: "plan-{stage}"' in body, (
             f"stage '{stage}' does not declare its command name"
         )
-        assert "disable-model-invocation: true" not in body, (
-            f"stage '{stage}' must remain invocable"
+        assert "user-invocable: false" not in body, (
+            f"stage '{stage}' must remain user-invocable"
+        )
+        manual = "disable-model-invocation: true" in body
+        assert manual is (stage in _MANUAL_STAGES), (
+            f"stage '{stage}' has the wrong model-invocation setting"
         )

@@ -2,9 +2,9 @@
 name: "plan-execute"
 version: "0.1.0"
 updated: "2026-10-24"
-description: "Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and review scorecards, implements every task with per-task commits, runs quality gates, and emits the phase `REPORT.md` before transitioning to the next phase (granular or continuous) — all under conformity checking, the fifteen-bar pre-emission gate, and a per-file destructive-op floor. The terminal `/plan` stage that turns a reviewed suite into landed, verified work."
+description: "Use to implement one phase of a reviewed plan suite: reads the phase file and progress notes, verifies prerequisites and review scorecards, implements each task with per-task commits, runs quality gates, and writes the phase report. Runs only when the user invokes it, because it changes code and commits."
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
-disable-model-invocation: false
+disable-model-invocation: true
 portability: "universal"
 allowed-tools: "Read, Glob, Grep"
 ---
@@ -351,7 +351,7 @@ Per `CLAUDE.md` Section 7.6 (including CM-22 §4: ecosystem gap detection). SHAR
 
 ### Step 10: Continuous Execution Transition (CM-16)
 
-**10A — Granular Amendment Loop (D5 / Q-021):** Consumed at every phase boundary AND every sub-phase boundary. Read the persisted `**Execution mode (this session):**` value from the PROGRESS.md Resumption Contract (set at Step 1A). Skip the amendment-loop question — and proceed silently to the compaction + next-phase-dispatch logic below — when mode is `continuous` OR when the `--no-pause` invocation flag is set (wrapper-driven). Skip at parent-phase boundaries only when mode is `granular-sub-phase-only`. Skip at sub-phase boundaries only when mode is `granular-phase-only`. In every other combination, fire the structured inquiry below and iterate until the operator selects Continue (per D5 verbatim: `again and again until user select to end the phase/sub-phase`):
+**10A — Granular Amendment Loop:** Consumed at every phase boundary AND every sub-phase boundary. Read the persisted `**Execution mode (this session):**` value from the PROGRESS.md Resumption Contract (set at Step 1A). Skip the amendment-loop question — and proceed silently to the compaction + next-phase-dispatch logic below — when mode is `continuous` OR when the `--no-pause` invocation flag is set (wrapper-driven). Skip at parent-phase boundaries only when mode is `granular-sub-phase-only`. Skip at sub-phase boundaries only when mode is `granular-phase-only`. In every other combination, fire the structured inquiry below and iterate until the operator selects Continue (repeat until the operator ends the phase or sub-phase: `again and again until user select to end the phase/sub-phase`):
 
 - `question:` `Phase <NN-topic> sub-phase <NNL-subtopic> complete; amendments before continuing?` (omit the sub-phase clause at parent-phase boundaries)
 - `header:` `Phase amend`
@@ -359,7 +359,7 @@ Per `CLAUDE.md` Section 7.6 (including CM-22 §4: ecosystem gap detection). SHAR
 - Option `Continue (Recommended)`:
   - `rationale:` Phase verification PASS; advance to the next phase or sub-phase per the dependency graph.
   - `recommendation:` recommended — cites class 6 observed-state: phase Verification section completed clean and the per-phase commit-task mapping is satisfied at PUBLIC_LAUNCH.
-  - `default-pointer:` no-default: user decision required (the boundary gate is the operator's per-phase control point; silent advance bypasses the granular pause Q-021 ratifies).
+  - `default-pointer:` no-default: user decision required (the boundary gate is the operator's per-phase control point; silent advance bypasses the granular pause).
 - Option `Amend`:
   - `rationale:` Operator surfaces an amendment to the just-completed phase's outputs; the agent loops back to apply the amendment, re-runs verification, then re-fires the boundary question (looping until the operator selects Continue).
   - `recommendation:` acceptable

@@ -514,6 +514,160 @@ class TestBuildContext:
         assert "Injected by the project." not in context
 
 
+class TestSkillIndex:
+    """The generated skill index reaches SessionStart context only when it exists.
+
+    The index file is a build-time artefact the bootstrap reads, never scans for.
+    A tree without it, or a harness other than Claude Code, gets the unchanged
+    context; under the plugin a manual skill keeps its ``/apothem:`` namespace,
+    and under the engine install the namespace is dropped.
+    """
+
+    _INDEX = (
+        "<!-- SPDX-License-Identifier: MIT -->\n\n"
+        "Skills by task. /apothem:name = manual, run only on request.\n"
+        "Planning (plans): plan, /apothem:plan-execute (one phase)\n\n"
+        "## Bindings (§0.j five-direction)\n\n- **Drives →** x\n"
+    )
+
+    @staticmethod
+    def _tree(tmp_path: Path, text: str | None) -> Path:
+        installed = tmp_path / "installed"
+        messages = installed / "hooks" / "messages"
+        messages.mkdir(parents=True)
+        if text is not None:
+            (messages / "skill-index.md").write_text(text, encoding="utf-8")
+        return installed
+
+    @staticmethod
+    def _claude_env(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, plugin: bool
+    ) -> None:
+        monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+        monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
+        if plugin:
+            (tmp_path / "plugin").mkdir(exist_ok=True)
+            monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(tmp_path / "plugin"))
+
+    def test_plugin_posture_emits_namespaced_index(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = self._tree(tmp_path, self._INDEX)
+        self._claude_env(monkeypatch, tmp_path, plugin=True)
+
+        context = ssb.build_context(installed, {"source": "startup"}, tmp_path)
+
+        assert "Skill index:" in context
+        assert "/apothem:plan-execute (one phase)" in context
+        assert "invoked as apothem:<name>" in context
+        assert "SPDX" not in context
+        assert "Bindings" not in context
+
+    def test_engine_posture_drops_the_plugin_namespace(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = self._tree(tmp_path, self._INDEX)
+        self._claude_env(monkeypatch, tmp_path, plugin=False)
+
+        context = ssb.build_context(installed, {"source": "startup"}, tmp_path)
+
+        assert "Skill index:" in context
+        assert "/plan-execute (one phase)" in context
+        assert "/apothem:" not in context
+        assert "apothem:<name>" not in context
+
+    def test_absent_index_file_leaves_context_unchanged(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = self._tree(tmp_path, None)
+        self._claude_env(monkeypatch, tmp_path, plugin=True)
+
+        context = ssb.build_context(installed, {"source": "startup"}, tmp_path)
+
+        assert "Skill index:" not in context
+        assert ssb.read_skill_index(installed) == []
+
+    def test_other_harness_does_not_get_the_claude_index(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = self._tree(tmp_path, self._INDEX)
+        monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+        monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+        monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
+
+        assert ssb.read_skill_index(installed) == []
+
+    def test_qwen_code_does_not_get_the_claude_index(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Qwen Code exports CLAUDE_PROJECT_DIR to every hook for compatibility
+        # and runs this bootstrap from its own support tree.
+        support = tmp_path / ".qwen" / ".apothem" / "support"
+        messages = support / "hooks" / "messages"
+        messages.mkdir(parents=True)
+        (messages / "skill-index.md").write_text(self._INDEX, encoding="utf-8")
+        monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+        monkeypatch.setenv("QWEN_PROJECT_DIR", str(tmp_path))
+        monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / ".claude-config"))
+
+        assert ssb.read_skill_index(support) == []
+
+    def test_default_engine_install_is_detected_by_its_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = tmp_path / ".claude" / "apothem"
+        messages = installed / "hooks" / "messages"
+        messages.mkdir(parents=True)
+        (messages / "skill-index.md").write_text(self._INDEX, encoding="utf-8")
+        for name in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PROJECT_DIR", "CLAUDE_CONFIG_DIR"):
+            monkeypatch.delenv(name, raising=False)
+
+        assert any("/plan-execute" in line for line in ssb.read_skill_index(installed))
+
+    def test_engine_posture_rewrites_the_shipped_index(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Against the real generated file: every manual name loses the plugin
+        # namespace, and no namespaced text survives.
+        src_root = Path(ssb.__file__).resolve().parents[1]
+        monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+        monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(src_root))
+
+        lines = ssb.read_skill_index(src_root)
+
+        assert lines
+        assert not any("apothem:" in line for line in lines)
+        assert any("/plan-execute" in line for line in lines)
+
+    def test_manual_prefix_matches_the_generator(self) -> None:
+        from apothem.lib import skill_index as si
+
+        assert ssb._INDEX_MANUAL_PREFIX == si.MANUAL_PREFIX
+
+    def test_index_precedes_memory_and_plan_blocks(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = self._tree(tmp_path, self._INDEX)
+        self._claude_env(monkeypatch, tmp_path, plugin=True)
+
+        context = ssb.build_context(installed, {"source": "startup"}, tmp_path)
+
+        assert context.index("Skill index:") < context.index("Plan summary:")
+
+    def test_shipped_index_reaches_a_real_tree_context(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        shipped = _HOOKS_DIR.parent
+        self._claude_env(monkeypatch, tmp_path, plugin=True)
+
+        context = ssb.build_context(shipped, {"source": "startup"}, tmp_path)
+
+        assert "Skill index:" in context
+        assert "/apothem:fortress" in context
+
+
 class TestMain:
     """Process-level entry point behaviour.
 

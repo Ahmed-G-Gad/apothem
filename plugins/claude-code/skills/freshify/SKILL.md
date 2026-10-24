@@ -1,12 +1,12 @@
 ---
 name: "freshify"
-description: "Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. Purges caches and stale artifacts, removes legacy/obsolete narrative and back-references, normalizes file / folder naming to the host's ratified convention, drives every surface to maximal naturalness and coherence (no backward-compatibility / staleness / process-refinement narrative anywhere), enforces a current-version-only facade with a concise current-version changelog, and drives the host's discovered quality gates to green. In-place freshening is the default; every destructive step (cache purge, version-control-history rewrite, artifact deletion, file / folder rename, stale-run-trace removal) is confirmation-gated through the structured-inquiry channel. Carries zero host- or forge-specific vocabulary; every surface is discovered via rules/host-discovery.md, never named."
+description: "Use when a repository must be made fresh and release-clean: purges caches and stale artifacts, removes legacy narrative and back-references, normalizes file and folder names, keeps a current-version-only changelog, and drives quality gates green. Forge-agnostic. Runs only when the user invokes it; every destructive step is confirmation-gated."
 argument-hint: "[path/to/repo/] [--purge-caches] [--rewrite-history] [--normalize-naming] [--strict]"
 disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 

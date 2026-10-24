@@ -116,8 +116,11 @@ def test_other_harnesses_emit_what_they_always_did(harness: str, name: str) -> N
     assert "SKILL.md" in new
     assert b"## Bindings" in new["SKILL.md"]
     assert not any(name.startswith("references/") for name in new)
-    if harness == "codex" and name == "a11y-audit":
-        assert "agents/openai.yaml" in new
+    # Codex reads a manual skill's policy from a sidecar; a model-invocable
+    # one has none.
+    if harness == "codex":
+        manual = name in {"plan-execute", "elevate"}
+        assert ("agents/openai.yaml" in new) is manual
 
 
 def test_the_cap_holds_for_every_command_with_a_120_character_note() -> None:

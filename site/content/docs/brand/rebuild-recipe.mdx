@@ -11,7 +11,7 @@ It is the authoritative update path for brand iterations.
 
 Run the rebuild recipe when:
 
-- The master SVG (`assets/src/logo.svg` or `assets/src/logo-dark.svg`) changes.
+- A master SVG (`assets/src/logo.svg`, `assets/src/logo-dark.svg`, `assets/src/logo-animated.svg` or `assets/src/logo-animated-light.svg`) changes.
 - The compact favicon master (`assets/favicon.svg`) changes.
 - A social-card master (`assets/src/og-banner.svg` or `assets/src/twitter-card.svg`) changes.
 - A new raster size is needed.
@@ -59,7 +59,8 @@ python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
 ## Verification
 
 A successful run regenerates the light and dark mark rasters, favicon PNG/ICO
-set, Apple touch icons, OG/Twitter images, and mirrors the web-served subset —
+set (the ICO embeds 16, 32 and 48 px layers), Apple touch icons, the VS Code
+extension icon (`vscode-extension/icon.png`), OG/Twitter images, and mirrors the web-served subset —
 including the hero logo sources the site references — into `site/public/`.
 After generation, run the site build and inspect the Home page, browser tab
 favicon, and social-card PNGs before publishing.

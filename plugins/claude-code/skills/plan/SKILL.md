@@ -1,12 +1,12 @@
 ---
 name: "plan"
-description: "The plan-suite pipeline wrapped as one dynamic multi-agent workflow. A single call drives a planning mission from raw prose to executed phases by dispatching the first-class stages — plan-spec → plan-generate → plan-review → plan-design (conditional, architecture-bearing suites) → plan-execute — as workflow phases under named Handoff-Manifest return contracts, routing every stage hand-off through a refute-by-default adversarial verification pass before the next stage consumes it, and emitting a deterministic result with a single recommended next move. Stage logic stays first-class in commands/plan-*.md; the knowledge surface stays the plan-suite skill; this command adds only the workflow harness (independent critique, return contracts, determinism). Multi-agent dispatch and continuous chaining are opt-in / confirmation-gated, never default-on."
+description: "Runs the planning pipeline (spec, generate, review, design) with independent verification, confirming at each hand-off; execute stays a manual step the operator runs. Use when the user asks to 'plan this end to end' or 'run the full plan pipeline'. For one stage, use that stage's command."
 argument-hint: "[<<mission>> | suite path] [--autonomous] [--max-rounds N] [--verify-panel N] [--from spec|generate|review|design|execute]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -76,7 +76,7 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 
 1. **Frame** — Read the mission, extract intent, resolve entry-point and scope ambiguity via inquiry, state the planning outcome, and record the beyond-mission grant's scope. Raw mission → entry at `plan-spec`; existing suite → resume stage from manifests / PROGRESS.md / `--from`.
 2. **Decompose the pipeline** — Map the mission onto the stage chain `plan-spec → plan-generate → plan-review → plan-design (conditional) → plan-execute`. Each stage is a workflow work-item whose return contract is its Handoff Manifest. Mark `plan-design` conditional on the architecture-bearing flag carried in the generation / review hand-off.
-3. **Dispatch stages (opt-in gated)** — Dispatch each stage in dependency order via its first-class `/plan-<stage>` command, each resuming from the prior stage's manifest. Under `--autonomous`, continue across boundaries; otherwise present the next-stage plan and confirm. Per `rules/agent-orchestration.md`, a stage may itself fan out its own internal agent teams.
+3. **Dispatch stages (opt-in gated)** — Dispatch each stage in dependency order via its first-class `/plan-<stage>` command, each resuming from the prior stage's manifest. Under `--autonomous`, continue across boundaries; otherwise present the next-stage plan and confirm. Per `rules/agent-orchestration.md`, a stage may itself fan out its own internal agent teams. `plan-execute` runs only when the operator invokes it, so the run hands that stage to the operator and does not start it itself.
 4. **Verify each hand-off (refute-by-default)** — Before a downstream stage consumes an upstream manifest, run N refute-by-default critics over the hand-off across distinct lenses (spec-fidelity, internal consistency, gate-attestation presence, cross-stage non-contradiction). The hand-off survives only on a non-refute majority. A failed Sequence Gate or a refuted hand-off halts and surfaces — never silently proceeds.
 5. **Remediate** — Apply surviving findings at their root (re-invoke the owning stage to fix; never patch the manifest). Each stage gets at most `--max-rounds` remediation rounds (default 3); a hand-off still refuted at the cap halts the run as BLOCKED with the residual findings and their owning stages, per `rules/planning-techniques.md` §1. Remediate disclosed beyond-mission defects. Integrate in the main loop.
 6. **Synthesize & self-check** — When `plan-execute` reaches the final phase and emits `COMPLETION.md`, synthesize the run in a single pass, release raw stage output, run the workflow's fifteen-bar gate over the result surface, record the attestation, and emit the single recommended next move.
@@ -88,10 +88,10 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 | Discipline | Rule | Enforcement point |
 | ---------- | ---- | ----------------- |
 | Pipeline ordering | The stage commands' Sequence Gates | Dispatch downstream only when each upstream manifest + gate attestation is present. |
-| First-class stages preserved | `_spec/spec.md` §WS-B R-B2 | The orchestrator never reimplements a stage; stage behavior is unchanged. |
+| First-class stages preserved | Each stage's own command file (`commands/plan-spec.md` through `commands/plan-execute.md`) | The orchestrator never reimplements a stage; stage behavior is unchanged. |
 | Adversarial verification | `rules/agent-orchestration-patterns.md` §Quality patterns | Phase 4 refute-by-default panel gates every stage hand-off. |
 | Opt-in autonomy | `rules/agnostic-posture.md` + `rules/context-management.md` §4A | Continuous chaining engages only under `--autonomous`; default halts at each boundary. |
-| Cross-stage non-contradiction | R-B6 + `conformity/plan_next_step_consistency_grep.py` | Output paths registered per stage; a contradiction is a finding. |
+| Cross-stage non-contradiction | Per-stage output-path registration + `conformity/plan_next_step_consistency_grep.py` | Output paths registered per stage; a contradiction is a finding. |
 | Disclosure | `rules/disclosure-ledger.md` | Every beyond-mission amendment disclosed with cited rationale. |
 | Determinism | `rules/determinism.md` | Result-surface shape byte-stable; `(Recommended)` markers; terminal next move. |
 | Pre-emission gate | `rules/pre-emission-gate.md` | Each stage runs its own gate; the workflow runs the fifteen bars over the synthesized result. |

@@ -1,4 +1,4 @@
-description = "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axes-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
+description = "Writes the architectural design for a reviewed plan suite at _inputs/design.md: components, interfaces, decisions and diagrams. Use for 'design the architecture for this plan' or 'write the design doc for the suite'. Runs after plan-review, only for suites with architecture-bearing surfaces."
 
 prompt = """
 # /plan-design — Produce the Architectural-Design Artifact
@@ -34,9 +34,9 @@ Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation
 
 **Applicability gate.** Before Phase 0, classify the suite as architecture-bearing or non-architecture-bearing. Architecture-bearing surfaces include component boundaries, source layout, public interfaces, protocols, schemas, configuration contracts, cross-component data flow, release topology, security boundaries, performance/concurrency posture, observability contracts, and adapter behavior. If none are present, STOP without emitting `_inputs/design.md`; record that `/plan-design` is not applicable and hand off to `/plan-execute`. The skip is a positive classification, not a failure.
 
-### Inquiry Cadence (D4)
+### Inquiry Cadence
 
-This command operates at **maximal structured-inquiry saturation** per D4. Every architectural-decomposition decision, interface-contract ratification, binding-edge closure, diagram-provenance choice, and gate-bar `n/a (with reason)` marking routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation. **Question-fatigue-optimization is FORBIDDEN** per `rules/interactive-questions.md` §4.8.8 D8 anti-pattern catalog.
+This command operates at **maximal structured-inquiry saturation**. Every architectural-decomposition decision, interface-contract ratification, binding-edge closure, diagram-provenance choice, and gate-bar `n/a (with reason)` marking routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation. **Question-fatigue-optimization is FORBIDDEN** per the Anti-Patterns section of `rules/interactive-questions.md`.
 
 ---
 

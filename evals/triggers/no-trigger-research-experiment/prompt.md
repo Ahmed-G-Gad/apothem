@@ -1,6 +1,6 @@
 ---
 description: A near-miss request that research-experiment must not pick up.
-tags: [no-trigger, 'class:command', 'component:research-experiment']
+tags: [no-trigger, 'class:command', 'component:research-experiment', user-invoked-only]
 expected_outcome: Claude does not invoke research-experiment.
 max_turns: 3
 timeout_seconds: 180

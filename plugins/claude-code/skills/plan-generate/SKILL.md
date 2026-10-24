@@ -1,12 +1,12 @@
 ---
 name: "plan-generate"
-description: "Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five Cognitive Filters, decomposes into acyclic phases, and emits PREAMBLE/MASTER-PLAN/PROGRESS/PLAN-NOTES plus per-phase PHASE.md files gated by the fifteen-bar pre-emission sweep. Mid-chain `/plan` stage between `/plan-spec` and `/plan-review`."
+description: "Generates a full plan suite (master plan, progress log, decision notes, per-phase files) from a written spec or raw prose. Use when the user asks to 'generate the plan suite', 'turn this spec into a phased plan', or 'break this project into phases'. Not for refining prose (plan-spec)."
 argument-hint: "[path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   portability: "universal"
 ---
 
@@ -34,7 +34,7 @@ Execute the `/plan-generate` skill. Ingest prose, generate a complete plan suite
 
 ## Pipeline Contract
 
-> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4).
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position — mid-chain; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence.
 
 ---
 
@@ -117,9 +117,9 @@ Deploy a parallel Generation Team (CM-25A — each agent creates one phase folde
 
 Per CLAUDE.md Section 7.6 (including CM-22 §4: ecosystem gap detection). SHARED+: mandatory evaluation; create / evolve when the detection trigger is met (CM-22 §2). PERSONAL_USE: on corrections. EXPLORING: optional.
 
-### Step 8.5: End-of-Command Synthesis (D6)
+### Step 8.5: End-of-Command Synthesis
 
-Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry per D6 (Q-022) with the spec §7.4 form. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
+Just before Step 9 user-approval per template TM-20, fire ONE structured inquiry in the form below. The invocation MUST satisfy `rules/interactive-questions.md` §2 (canonical schema) + §3 (three-segment body) + §4.1 (closed recommendation taxonomy) + the H4/H6 invariants from `rules/interactive-questions-sweep-matchers.md` (every option carries all three body segments; the `(Recommended)` label postfix bidirectionally binds the body `recommendation: recommended` value):
 
 - `question:` `Plan-suite generation complete. Are there any suggested improvements, ambiguities, contradictions to surface before approval?`
 - `header:` `End synthesis`

@@ -31,6 +31,13 @@ The profile is a single YAML document. Its top-level keys:
 - `harnesses` — per-harness overrides keyed by harness id.
 - `exclude_harnesses` — harness ids skipped by batch (`--harness all`)
   commands.
+- `mcp_servers` — MCP server definitions keyed by server name.
+- `workspace` — where Apothem keeps its shared working directory
+  (`directory_name`, `scope`).
+- `schema_version` — optional profile-schema version; a profile without it is
+  read as version 1.
+
+Every field is listed in [Profile fields](/docs/reference/profile-fields).
 
 ## Steps
 

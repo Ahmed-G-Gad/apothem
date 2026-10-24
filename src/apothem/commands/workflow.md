@@ -1,8 +1,8 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "General-purpose workflow-harnessing command. Entry form '/workflow <<mission>>'. Drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to an EXTREMELY-CRITIQUE refute-by-default verification pass before it survives, is granted to identify and remediate issues beyond the literal mission (each disclosed per the change ledger), self-augments from current authoritative SOTA sources rather than memory alone, and emits deterministic output with a single recommended next move. Multi-agent dispatch and auto-execution are opt-in / confirmation-gated, never default-on."
+updated: "2026-10-24"
+description: "Use to run a non-trivial mission as an independent multi-agent workflow: parallel subagents under named return contracts, refute-by-default verification of every finding, disclosed beyond-mission fixes and one recommended next step. Runs only when the user invokes it as '/workflow <mission>'; dispatch is confirmation-gated."
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
 portability: "universal"

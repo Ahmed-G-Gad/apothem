@@ -2,11 +2,11 @@
 name: "test-authoring"
 version: "0.1.0"
 updated: "2026-10-24"
-description: "Behavior-first test authoring with strict Arrange-Act-Assert discipline — matched when the developer asks to 'write tests', 'add coverage', 'add a test for', 'test this function', 'cover this module', 'write a failing test', 'increase coverage', or otherwise requests new test cases that assert observable behavior of a unit under test. Discovers the unit's behavior contract (input domains, return shapes, side effects, raised exceptions, edge boundaries such as empty/null/zero/max/Unicode/off-by-one), writes failing AAA assertions first, covers the happy path, edge boundaries, and failure modes (pinning any named bug with a regression test), and reports remaining coverage gaps. Authors tests only — never edits the implementation, runs the suite, computes coverage, edits coverage config, or mocks the unit under test (mocks only at owned boundaries). Fixing a failing test by editing the implementation, scaffolding a project, or running an existing suite is NOT a match."
+description: "Writes new behavior-first tests in Arrange-Act-Assert form, failing assertions first, covering happy path, edge boundaries and failures, when the user asks to 'write tests' or 'test this function'. Authors tests only. Whole-repo suite: test-suite; running tests: test-runner."
 archetype: "authoring-template"
 userInvocable: true
 argument-hint: "[--focus PATH] [--framework NAME]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowedTools:
   - "Read"
   - "Glob"
@@ -21,7 +21,7 @@ Author behavior-first test cases for a named unit under test. Every emitted test
 
 ## Detection Signal
 
-The developer asks to "write tests", "add coverage", "add a test for", "test this function", "cover this module", "write a failing test", or "increase coverage" — any phrasing that requests new test cases asserting observable behavior against a unit under test.
+The developer asks to "write tests", "add a test for", "test this function", "cover this module", "write a failing test", or "increase coverage" — any phrasing that requests new test cases asserting observable behavior against a unit under test.
 
 **Falsifiable counter-signal.** A request to fix a failing test by editing the implementation, scaffold a project, or run an existing suite is NOT a match — those route to the implementation, project-setup, and test-execution surfaces respectively.
 

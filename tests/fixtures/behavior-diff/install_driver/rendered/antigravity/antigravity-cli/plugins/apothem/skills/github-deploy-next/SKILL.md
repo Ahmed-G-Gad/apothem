@@ -1,8 +1,8 @@
 ---
 name: "github-deploy-next"
 version: "0.1.0"
-updated: "2026-10-02"
-description: "Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull requests, resolution of the issues the release addresses, a SemVer version bump derived from the Conventional Commits change set, a Keep-a-Changelog roll of [Unreleased] into the new version section, an annotated and signed tag published to the host's release surface, and concise current-version release notes — preserving the current-version-only release facade and the signed-release supply-chain posture where the host ratifies signing. The merge and publish steps are confirmation-gated through the structured-inquiry channel; read-only preview stages proceed without a gate."
+updated: "2026-10-24"
+description: "Use to run the next release cycle on a GitHub repository: merge ready pull requests, resolve the issues the release addresses, derive the SemVer bump from commits, roll the changelog, and publish a signed tag with release notes. For the first release use github-deploy-fresh. Runs only when the user invokes it; merge and publish are confirmed."
 argument-hint: "[path/to/repo/] [--bump major|minor|patch] [--strict]"
 disable-model-invocation: true
 portability: "universal"
