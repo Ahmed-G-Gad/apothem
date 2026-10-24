@@ -1,13 +1,14 @@
 ---
 name: "test-authoring"
-version: "0.1.0"
-updated: "2026-10-24"
 description: "Behavior-first test authoring with strict Arrange-Act-Assert discipline — matched when the developer asks to 'write tests', 'add coverage', 'add a test for', 'test this function', 'cover this module', 'write a failing test', 'increase coverage', or otherwise requests new test cases that assert observable behavior of a unit under test. Discovers the unit's behavior contract (input domains, return shapes, side effects, raised exceptions, edge boundaries such as empty/null/zero/max/Unicode/off-by-one), writes failing AAA assertions first, covers the happy path, edge boundaries, and failure modes (pinning any named bug with a regression test), and reports remaining coverage gaps. Authors tests only — never edits the implementation, runs the suite, computes coverage, edits coverage config, or mocks the unit under test (mocks only at owned boundaries). Fixing a failing test by editing the implementation, scaffolding a project, or running an existing suite is NOT a match."
-archetype: "authoring-template"
 user-invocable: true
 argument-hint: "[--focus PATH] [--framework NAME]"
 disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-24"
+  archetype: "authoring-template"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

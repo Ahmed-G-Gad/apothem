@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+## Pipeline Contract
+
+**Pipeline position.** **Stage 6 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the synthesized gap and the theoretical framework and emits the plan-of-record the design stage operationalizes into a frozen study design. SOTA framing: the [COS Preregistration](https://www.cos.io/initiatives/prereg) standard, the [Analysis Function Theory of Change Toolkit](https://analysisfunction.civilservice.gov.uk/policy-store/the-analysis-function-theory-of-change-toolkit/) SMART-aims discipline, and the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) pathways-to-impact framing.
+
+**Handoff Manifest.**
+
+- **Consumed.** `{suite}/_inputs/synthesis.md` (the SOTA map + explicit gap statement from `/research-synthesis`) and `{suite}/_inputs/theory.md` (the theoretical framework + impact-pathway anchor from `/research-theory`). The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block.
+- **Emitted.** `{suite}/_inputs/proposal.md` — the SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register, the impact pathway, the preregistration plan, and the EQUATOR reporting-guideline pre-selection. The manifest's `invocation_sequence` increments, `downstream` names `/research-design`, and the attestation records R5 / R9 / R10 / R6 coverage.
+
+**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when an aim's achievability rests on a resource the suite has not recorded, when the preregistration registry is unnamed, when the field-appropriate EQUATOR guideline admits more than one choice, or when the ethics feasibility requires a fact the operator alone holds. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. Scope-direction, security (data-handling feasibility), and preregistration-registry inquiries block emission until answered.
+
+**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/proposal.md` before the manifest update. The gate attestation block is recorded inside the emitted proposal. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.

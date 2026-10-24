@@ -1,12 +1,13 @@
 ---
 name: "plan-status"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the task / phase / artifact dimensions, with a `--verbose` health-grade and spot-check pass. The read-only `/plan` pipeline stage that surveys a suite at any point between `/plan-generate` and `/plan-execute` without mutating a single byte."
 argument-hint: "[path/to/plan-suite/] [--verbose]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /plan-status — Show Plan Progress
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -31,35 +34,13 @@ Execute `/plan-status`. Read the suite's tracking files and present a comprehens
 
 ## Pipeline Contract
 
-**Pipeline position.** **Standalone-ratified, read-only — orthogonal to the canonical sequence.** The canonical sequence is `/plan-spec → /plan-generate → /plan-review → /plan-design (CONDITIONAL — architecture-bearing suites only) → /plan-execute`; this command is invocable read-only at any point in it (including between `/plan-design` and `/plan-execute`). It emits no artifacts — it reads the suite's tracking files and presents a report directly to the operator. It is therefore exempt from the remaining contract elements:
-
-- **Handoff Manifest schema.** N/A — no manifest is consumed or emitted; the command is a read-only reporter outside the pipeline's hand-off chain.
-- **Pre-flight inquiry set.** N/A — no authoritative-data emission; the command reports on whatever tracking-file state exists at invocation and surfaces gaps as findings within its prose, not as structured-inquiry invocations.
-- **Pre-emission gate.** N/A — no artifact emission means the fifteen-bar gate has no surface to gate. The read-only invariant is itself the conformity guarantee.
-
-The exemption is anchored in the specification's §3.5 opening clause "every slash-command that emits artifacts into the host project declares" — no emission ⇒ no contract surface beyond this pipeline-position declaration.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror, spelled out inline so this command honors them without relying on cross-reference alone. This command is read-only by mission; the stanzas adapt accordingly.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (a read-only health-check of an existing plan suite). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md` (canonical channel; three-segment option annotation; never free-form prose as primary input). REFUSE any request that would require a write — reach for `/plan-execute` or `/plan-review` instead. When a tracking file is malformed or missing required sections, surface the gap as a finding within the prose output rather than synthesizing or repairing it — repair belongs to the writeful commands.
-
-### Output Surface
-
-This command emits NO files — its output is prose written to the operator's terminal / output stream. No `<project-root>/.apothem/plans/` updates, no updates to any harness's config root, no host-project file mutations of any kind. The `--verbose` health-grade emission is prose-only; the spot-check evidence cited in the report points to existing files (markdown links, line ranges, commit SHAs) without creating, modifying, or deleting any. The read-only invariant is the conformity guarantee per the §Pipeline Contract pre-emission-gate exemption.
-
-### File-Authoring Contract
-
-Writes nothing. The injector at `scripts/inject-header.{sh,py}` is never invoked from this command's surface. The contract applies to any orchestrator that materializes this command's findings into files — that orchestrator routes the new file (audit report, dashboard markdown, status.json) through the injector per the canonical authorship-header policy and lands it at a non-plan-internal path under the host's documentation tree.
-
-### Structured Inquiry on Ambiguity
-
-The dominant mode is non-interactive (read tracking files, emit prose). When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or when a tracking file is malformed in a way that admits multiple plausible interpretations — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3 (rationale / recommendation / default-pointer). Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data — when a field is absent or contradicts across files, the report names the absence / contradiction explicitly and points to the writeful commands as the resolution path.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -212,14 +193,6 @@ All mandates are in effect with read-only scope reductions (CM-13 and CM-16 not 
 ## Recommended Next Step
 
 **Resume the pipeline per the Resumption Contract** — invoke `/plan-execute` at the stage PROGRESS.md records as NEXT (when the report shows a ready phase with no blockers), or `/plan-review` (when the report surfaces a review-gate prerequisite). `/plan-status` is read-only, so the next move is operator-determined by the report's surfaced phase status, blockers, and next-action field.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every read-only progress assessment across active plan suites (the report renders status without writes). ● The `--verbose` health-grade emission with spot-check results. ◐ The `/plan-execute` final-phase handoff at Step 10 (the recommended invocation for pipeline-closeout health assessment).
-- **Satisfies →** ● the commands registry row "/plan-status".
-- **Established by ↑** ● the `/plan` pipeline. ● the commands registry.
-- **Gated by ←** ● The presence of a plan suite (PROGRESS.md is the primary read source).
-- **Cross-bound with ↔** ↔ `commands/plan-execute.md` (final-phase handoff invokes `/plan-status --verbose` at Step 10). ↔ `commands/plan-generate.md` (generate produces the suite this status report reads). ↔ `commands/plan-review.md` (review and status both read the suite without overwriting it).
 
 ## Installed Reference Paths
 

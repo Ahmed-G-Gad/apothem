@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+## Pipeline Contract
+
+**Pipeline position.** **Stage 13 of 13 — terminal.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the publication record and emits the dissemination-and-impact record; it has no downstream command — the operator performs the public dissemination actions. SOTA framing: the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) theory-of-change impact pathways with monitoring and evaluation, and the FAIR data principles per Wilkinson et al. (2016), *Scientific Data*, [doi:10.1038/sdata.2016.18](https://www.nature.com/articles/sdata201618).
+
+**Handoff Manifest.**
+
+- **Consumed.** `{suite}/_outputs/publication-record.md` (the submission package manifest, the reserved DOI, the archival/DOI plan, and the submission-checklist outcome from `/research-publish`). The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block and the publication record's `ready` verdict.
+- **Emitted.** `{suite}/_outputs/dissemination-plan.md` — the preprint announcement, the public-artifact plan, the FAIR archival deposit record, the altmetrics and impact-tracking plan, the rebuttal / revision loop, and the registered-report stage-2 path. The manifest's `invocation_sequence` increments, `downstream` names `operator dissemination (terminal)`, and the attestation records the per-identifier resolution outcomes (R8) and the per-artifact claim-match outcomes (R4).
+
+**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the archival repository is unnamed and undiscoverable from the suite context, when the preprint server differs from the one the publish stage planned, when an impact-tracking authority requires an account the operator alone holds, or when the data carries an access restriction whose basis the suite has not recorded. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. The archival-repository naming and the data/code-availability basis are required-category inquiries that block emission until answered — these are never invented (R6, R8).
+
+**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_outputs/dissemination-plan.md` before the manifest closure. The gate attestation block is recorded inside the dissemination plan. Failure on any bar blocks the plan from the `ready` verdict until resolved per the iterate-on-failure protocol at the gate rule's §3.

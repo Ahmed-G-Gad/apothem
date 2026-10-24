@@ -1,17 +1,20 @@
 ---
 name: "research-synthesis"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the /research pipeline. Triggered as 'map the SOTA', 'synthesize the sources into a gap statement', 'what does the literature say and where is the hole', 'build the literature matrix', or the pipeline-chained hand-off from /research-sources. Consumes the suite's _inputs/source-ledger.md plus the per-source extractions under sources/ and emits _inputs/synthesis.md carrying the SOTA map, the dimension-by-source literature matrix, the contested-findings ledger, and the one-sentence gap statement the study addresses. Every load-bearing claim is adversarially verified refute-by-default by the fact-checker agent before it earns a place in the map; the source-synthesis skill drives the reconciliation."
 argument-hint: "[--suite-name NAME] [--override] [--matrix-dimensions DIM,DIM,...]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /research-synthesis — SOTA Map & Gap Analysis
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -29,38 +32,13 @@ The stage runs as a single disciplined sprint: one authoritative synthesis artif
 
 ## Pipeline Contract
 
-**Pipeline position.** **Stage 5 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the source corpus the discovery stage assembled and emits the synthesis the proposal stage builds on before the design stage operationalizes it into testable predictions.
-
-**Handoff Manifest.**
-
-- **Consumed.** `{suite}/_inputs/source-ledger.md` (the ranked, screened, dedup'd source index from `/research-sources`) plus the per-source extractions under `{suite}/sources/<id>.md`. The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block.
-- **Emitted.** `{suite}/_inputs/synthesis.md` — the SOTA map, the literature matrix, the GRADE-style certainty-of-evidence ratings, the consolidated theoretical model, the contested-findings ledger, and the explicit one-sentence gap statement. The manifest's `invocation_sequence` increments, `downstream` names `/research-proposal`, and the verification attestation records the per-claim refute-by-default outcomes.
-
-**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the comparison dimensions for the literature matrix are underspecified, when two sources contest a load-bearing finding with comparable authority, or when the gap statement admits more than one defensible framing. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. Scope-direction and naming-of-the-gap inquiries block emission until answered.
-
-**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/synthesis.md` before the manifest update. The gate attestation block is recorded inside the emitted synthesis. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror. Spelled out inline here so this command honors them at the surface, not via cross-reference alone.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing a SOTA map, a literature matrix, and an explicit gap statement from the collected source corpus). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE running synthesis when the source ledger is empty or the predecessor Sequence Gate is unsatisfied — route back to `/research-sources` first. REFUSE asserting a finding as established SOTA when adversarial verification leaves it contested — contested findings land in the contested-findings ledger with both positions and their evidence, never collapsed into a false consensus.
-
-### Output Surface
-
-The synthesis artifact lands at `{suite}/_inputs/synthesis.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the synthesis outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location.
-
-### File-Authoring Contract
-
-The synthesis artifact is header-exempt per the `.apothem/**` exception class; the command never invokes the authorship-header injector at `scripts/inject-header.{sh,py}` on its own emissions. Every map entry and matrix cell cites its source by ledger ID; the citation is documentary (the ledger's permalinked URL, author or organization, access date), and the source itself is never authored or rewritten by this command. Exemptions are enumerated at `src/apothem/schemas/header-exceptions.txt`.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about the literature-matrix comparison dimensions, the resolution of a contested finding, the operative scope of the gap statement, or whether a borderline claim is corroborated or contested, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Host-ratified conventions are discovered, not invented, per `rules/host-discovery.md`. Free-form prose questions as primary input are forbidden. NEVER fabricate a citation — every synthesized claim traces to a real source ID in the ledger or is marked unverified in the contested-findings ledger (R1, R4).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -98,7 +76,7 @@ When uncertain about the literature-matrix comparison dimensions, the resolution
 
 ### Phase 1 — Ingest the Source Corpus
 
-Read `{suite}/_inputs/source-ledger.md` in full and every per-source extraction under `{suite}/sources/<id>.md` per the locate-before-read discipline at `rules/large-file-reading.md`. Build the claim inventory: every load-bearing finding the corpus asserts, keyed by source ID, with its citation anchor (permalinked URL, author or organization, access date) carried forward from the ledger. Cluster the claims by topic so recurring findings across independent sources surface. When synthesis must re-open a source the extraction does not fully carry and that source is paywalled, login-gated, purchase-only, or otherwise unreachable after the fetch attempt, do NOT silently anchor the map on a lower-trust accessible substitute — trust outranks reachability per `rules/source-accessibility.md`. STOP and request the full source content from the operator through the structured-inquiry channel; a claim left resting on an unreachable trusted source routes to the contested-findings ledger as `unverified`, never collapsed into the map. Record the source-trust decision (which source, its trust tier, whether the trusted source was reachable, why a substitute was used) in the synthesis disclosure ledger per `rules/disclosure-ledger.md`. Externalise the claim inventory to `{suite}/_inputs/synthesis-claims.md` (free-form `{kebab-case-topic}.md` per the scratch convention at `rules/context-management-scratch.md` §1) when the corpus exceeds what a single pass holds.
+> Moved to `references/step-01-ingest-the-source-corpus.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — Build the Literature Matrix
 
@@ -106,29 +84,11 @@ Lay every source against shared comparison dimensions. When `--matrix-dimensions
 
 ### Phase 3 — Adversarial Verification (refute-by-default)
 
-Route every load-bearing claim destined for the SOTA map through `agents/fact-checker.md` adversarial verification. The fact-checker treats each claim as false until ≥2 independent sources force otherwise, seeks the strongest counter-evidence first (Filter 3 Inversion Press), and assigns a cited verdict per claim:
-
-| Verdict | Condition | Destination |
-| ------- | --------- | ----------- |
-| `corroborated` | Two or more independent sources agree; no surviving counter-evidence. | Anchors the SOTA map. |
-| `contested` | Sources disagree; both positions carry evidence. | Contested-findings ledger (both positions + evidence). |
-| `unverified` | No independent corroboration. | Contested-findings ledger. |
-
-A claim defaults to contested-or-unverified when evidence is insufficient, never a charitable `corroborated`. Only `corroborated` claims anchor the SOTA map (R1, R3). Dispatch the verification as an Audit Team per `rules/agent-orchestration.md` when the claim count justifies parallel fan-out (3+ independent claims); each agent returns a pass/fail verdict plus cited evidence under the 200-token audit return contract.
+> Moved to `references/step-03-adversarial-verification-refute-by.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Synthesize the SOTA Map, Rate Certainty, Consolidate the Theory & State the Gap
 
-Drive the reconciliation through the `skills/source-synthesis/SKILL.md` procedure: the skill reads the corroborated claim set, reconciles agreements and contradictions across sources, and produces a cited synthesis that separates consensus from contested ground. Compose the SOTA map — the current best-understood state of the field along each matrix dimension, with every map assertion citing the source IDs that corroborate it.
-
-**Rate certainty of evidence (GRADE-style).** For each body of evidence the SOTA map asserts, assign a **GRADE-style certainty rating** — `high` / `moderate` / `low` / `very-low` — down-rated for risk of bias (carried from the source ledger's R9 assessments), inconsistency, indirectness, imprecision, and publication bias, and up-rated for large effect, dose-response, or confounding-that-would-reduce-the-effect, per the reporting-guideline catalog at <https://www.equator-network.org/reporting-guidelines/>. The rating is a documentary field on each map assertion; a high-certainty claim and a low-certainty claim are never presented as equally established.
-
-**Consolidate the theoretical model (R10).** Reconcile the theoretical frameworks the sources operationalize into a single **consolidated theoretical model** — the constructs, the relationships among them, and the framework boundaries the prior work converges on — building on the grounding `/research-theory` developed. The consolidated model is the conceptual surface the gap statement and the downstream proposal both trace back to; a contested construct lands in the contested-findings ledger, never collapsed into a false theoretical consensus.
-
-**Reconcile against sibling corpora (cross-corpus coherence).** Before any SOTA-map assertion, consolidated-model claim, or the gap statement is finalized, reconcile its terminology, findings, and recommendations against related sibling corpora and the prior work the corpus itself cites. A terminology or finding conflict with a sibling corpus MUST route to the contested-findings ledger with both positions and their evidence — never silently harmonized into a false cross-corpus consensus (R1).
-
-**Test the gap for a distinct, parsimonious contribution.** The gap MUST resolve to a contribution that is **distinct** — not already closed by an existing corroborated claim or comparator in the literature matrix — and **parsimonious** — the minimal-yet-effective set of claimed-novel elements, each substantial and separable, never a bundle whose parts collapse into one under examination. A gap that duplicates a corroborated claim is re-framed rather than restated; the downstream advance gate re-checks this shape per `skills/research-suite/references/advancement-gate.md` (R3).
-
-Then state the **explicit gap**: the one-sentence claim of what the prior work leaves open — the hole the study addresses — derived from the matrix's coverage gaps, the low-certainty regions of the GRADE ratings, the consolidated theoretical model's open relationships, and the contested-findings ledger, definitive per `rules/definitiveness.md` (no hedging vocabulary; the gap is a binding claim, not a probabilistic forecast). Emit `{suite}/_inputs/synthesis.md` with the canonical sections enumerated in `## Output`. Apply incremental generation per `rules/large-file-generation.md` when the synthesis exceeds 500 lines.
+> Moved to `references/step-04-synthesize-the-sota-map-rate-certainty.md`. MUST read it in full before executing this step.
 
 ### Phase 5 — Validation Gate
 
@@ -170,47 +130,13 @@ The `synthesis.md` carries these canonical sections: `## §1 Scope & Corpus` (th
 
 ## Example — Standard synthesis run
 
-```text
-$ /research-synthesis --suite-name transformer-efficiency-survey --matrix-dimensions method,dataset,metric,assumption
-
-[Gate] source-ledger.md + sources/ present; predecessor attestation clean. Proceed.
-[Phase 1] Ingested 40 extractions. Claim inventory: 86 load-bearing claims keyed by source ID; clustered into 9 topics.
-[Phase 2] Matrix built: 40 rows × 4 dimensions. 17 cells marked '—' (explicit coverage gaps).
-[Phase 3] fact-checker Audit Team (4 agents) over 86 claims: 61 corroborated, 18 contested, 7 unverified.
-[Phase 4] source-synthesis reconciled the 61 corroborated claims into the SOTA map. Gap statement: "Prior work characterizes attention-sparsity speedups on dense GPUs but leaves the latency profile under memory-bound edge accelerators uncharacterized."
-[Phase 5] Fifteen-bar gate PASS; M5 zero phantom citations (86/86 resolve); M8 gap statement hedge-free.
-[Phase 5] synthesis.md emitted; Handoff Manifest updated; downstream: /research-design.
-```
+> Moved to `references/examples.md`. SHOULD read it before composing the final output.
 
 ---
 
 ## Decision Tree
 
-```mermaid
-%%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
-%% provenance: commands/research-synthesis.md §Workflow %%
-%% cross-reference: agents/fact-checker.md, skills/source-synthesis/SKILL.md, commands/research-sources.md, commands/research-design.md %%
-flowchart TD
-    Start[/research-synthesis invoked] --> Gate0{Sequence Gate: source-ledger.md + sources/ present?}
-    Gate0 -->|no| Blocked[Halt: 'Blocked: run /research-sources first']
-    Gate0 -->|yes| Ingest[Phase 1 ingest corpus · build claim inventory · cluster by topic]
-    Ingest --> Q1{Matrix dimensions supplied?}
-    Q1 -->|no| DimInquiry[Phase 2 derive dimensions · ratify via structured inquiry]
-    Q1 -->|yes| Matrix[Phase 2 build source-by-dimension literature matrix]
-    DimInquiry --> Matrix
-    Matrix --> Verify[Phase 3 fact-checker refute-by-default per claim]
-    Verify --> Outcome{Claim verdict}
-    Outcome -->|corroborated| Map[Phase 4 anchor SOTA map · source-synthesis skill]
-    Outcome -->|contested| Ledger[Record both positions in contested-findings ledger]
-    Outcome -->|unverified| Ledger
-    Map --> Gap[Phase 4 state explicit gap from matrix coverage gaps]
-    Ledger --> Gap
-    Gap --> GateN{Phase 5 fifteen-bar gate passes?}
-    GateN -->|no| Revise[Revise per failing bar's action]
-    Revise --> GateN
-    GateN -->|yes| Emit[Emit _inputs/synthesis.md · update Handoff Manifest]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -230,14 +156,6 @@ flowchart TD
 ## Recommended Next Step
 
 Invoke `/research-proposal` to turn the SOTA map, the consolidated theoretical model, and the explicit gap statement into a fundable research proposal before the study is operationalized into a design; `/research-proposal` is the canonical pipeline successor that consumes `_inputs/synthesis.md` alongside the research spec.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● `commands/research-proposal.md` (the canonical downstream consumer; `/research-proposal` consumes the SOTA map + consolidated theoretical model + gap statement). ● `{suite}/_inputs/synthesis.md` (the principal artifact). ● `{suite}/_inputs/handoff-manifest.yml` (the updated Handoff Manifest). ● `agents/fact-checker.md` (Phase 3 adversarial verification dispatch). ● `skills/source-synthesis/SKILL.md` (Phase 4 reconciliation procedure). ● The fifteen-bar pre-emission gate at Phase 5.
-- **Satisfies →** ● The research-pipeline Stage 5 synthesis slot per the design contract. ● `rules/interactive-questions.md` §1 canonical channel obligation (every contested-finding resolution routes through the structured-inquiry channel). ● `rules/ten-dimension-check.md` (the scholarly-referencing dimension gating every citation; R1 + R4; the GRADE certainty rating ↔ R9).
-- **Established by ↑** ● The research-pipeline design contract (the per-stage table that ratifies this stage's consumed/emitted boundary). ● `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the axes-of-attention frame). ● `commands/research-sources.md` (the predecessor whose source corpus this stage consumes). ● `commands/research-theory.md` (the upstream theoretical grounding the consolidated model builds on; R10).
-- **Gated by ←** ● The Sequence Gate (`/research-sources` outputs present + clean attestation, or `--override` with rationale). ● Operator invocation with an active research suite. ● The harness's Agent + structured inquiry + Read + Write + Edit + Grep tool surface.
-- **Cross-bound with ↔** ↔ `commands/research-sources.md` (predecessor; source corpus → synthesis hand-off). ↔ `commands/research-proposal.md` (successor; synthesis → proposal hand-off). ↔ `commands/research-theory.md` (the upstream grounding the consolidated theoretical model builds on; R10). ↔ `agents/fact-checker.md` (refute-by-default verification; this stage routes every load-bearing claim through it). ↔ `skills/source-synthesis/SKILL.md` (the cited-reconciliation procedure this stage drives). ↔ `rules/cognitive-identity.md` (the five filters and seven-axes taxonomy). ↔ `rules/authority-inquiry.md` (every dimension and gap-framing ambiguity routes through the canonical channel). ↔ `rules/interactive-questions.md` (the three-segment option-annotation schema). ↔ `rules/definitiveness.md` (the gap statement meets the no-hedging floor). ↔ `rules/pre-emission-gate.md` (fifteen-bar validation at Phase 5). ↔ `rules/agent-orchestration.md` (the Audit Team fan-out discipline for Phase 3).
 
 ## Installed Reference Paths
 

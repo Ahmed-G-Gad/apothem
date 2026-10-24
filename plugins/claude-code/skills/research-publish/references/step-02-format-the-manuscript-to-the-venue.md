@@ -1,0 +1,11 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 2 — Format the Manuscript to the Venue Template
+
+Render the reviewed paper into the venue's template **without altering a single claim** — the content is frozen at the review boundary; this phase moves it into the venue's structure: apply the section ordering, enforce the page/word limit, set the bibliography to the venue's style, and reformat every figure and table to the venue's requirements.
+
+- **Anonymize where double-blind.** Strip author names, affiliations, acknowledgements, funding lines, self-identifying citations, and the identity of the system or tool under study from the manuscript body — the system is described in ordinary domain usage (what it does and how it behaves) without naming the product, tool, or system — routing the held-out strings to the separately-submitted metadata per the venue's rule (R6, `skills/research-suite/references/blinding-and-disclosure.md`).
+- **Stage the de-anonymization payload.** The held-out author, institution, funding, and system/tool identity is the designated **de-anonymization payload** — the exact string set the manuscript withholds now and restores at the camera-ready / post-acceptance stage the venue's staged-disclosure policy designates, never earlier. Record the payload in the package attestation as the single authoritative restore set (this honors the paper stage's `--anonymized` attestation) so the designated later stage restores every placeholder from one place (R6, `skills/research-suite/references/blinding-and-disclosure.md`).
+- **Re-verify every citation.** Each reference in the formatted manuscript resolves to a real, permalinked or DOI-pinned source — re-check each against the paper stage's verified bibliography and flag any that fails. An unresolvable citation **blocks the package**; it is never silently dropped or left dangling (R4).
+
+Discover and honor the host's ratified document toolchain (manuscript format, bibliography manager, figure pipeline) per `rules/host-discovery.md`; the formatted output builds clean under the host's document build. Apply incremental generation per `rules/large-file-generation.md` when the manuscript exceeds the size band.

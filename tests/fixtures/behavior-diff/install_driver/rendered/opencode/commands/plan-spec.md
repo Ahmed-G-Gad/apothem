@@ -251,6 +251,8 @@ The invariant is checked at G4 (Pre-emission); failure on any condition holds th
 
 ## Verification Recipe (per §I.6)
 
+Where an installed copy holds this command as a skill directory (a `SKILL.md` plus `references/` files), run each `rg` below against that directory instead of `commands/plan-spec.md`, and count a step heading once even though it appears in both `SKILL.md` and its step file.
+
 1. **Frontmatter.** `rg --no-heading -nP '^name: "plan-spec"$' commands/plan-spec.md` returns 1 hit; `rg --no-heading -nP '^description: .+$' commands/plan-spec.md` returns 1 hit with a non-empty description.
 2. **Phase enumeration.** `rg --no-heading -nP '^### Phase [1-6] —' commands/plan-spec.md` returns 6 hits (one per transformation phase).
 3. **Discipline enumeration.** `rg --no-heading -nP '^- \*\*D[1-9]0?' commands/plan-spec.md` returns at least 14 hits (D1–D4 operational + D1–D10 structured-inquiry disciplines).

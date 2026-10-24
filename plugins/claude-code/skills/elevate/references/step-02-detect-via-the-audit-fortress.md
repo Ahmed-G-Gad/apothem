@@ -1,0 +1,3 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+2. **Detect via the audit fortress.** Dispatch `/audit --dimensions <scope>` per `commands/audit.md` (or scope it to the technically-auditable subset of `--dimensions`); consume its synthesized, deduplicated, severity-triaged, already-refute-by-default-verified findings as the technically-auditable portion of the nuance inventory. The detect logic and its finding-verification are `/audit`'s — `/elevate` reuses, never reimplements, them. This is the redundancy-suppression core: code, architecture, docs, security, dependency, supply-chain, threat-model, performance, accessibility, and developer-experience nuances are detected here, not re-critiqued in stanza 3.

@@ -1,12 +1,13 @@
 ---
 name: "plan"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "The plan-suite pipeline wrapped as one dynamic multi-agent workflow. A single call drives a planning mission from raw prose to executed phases by dispatching the first-class stages — plan-spec → plan-generate → plan-review → plan-design (conditional, architecture-bearing suites) → plan-execute — as workflow phases under named Handoff-Manifest return contracts, routing every stage hand-off through a refute-by-default adversarial verification pass before the next stage consumes it, and emitting a deterministic result with a single recommended next move. Stage logic stays first-class in commands/plan-*.md; the knowledge surface stays the plan-suite skill; this command adds only the workflow harness (independent critique, return contracts, determinism). Multi-agent dispatch and continuous chaining are opt-in / confirmation-gated, never default-on."
 argument-hint: "[<<mission>> | suite path] [--autonomous] [--max-rounds N] [--verify-panel N] [--from spec|generate|review|design|execute]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /plan — The Plan Pipeline as a Wrapped Dynamic Workflow
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -37,37 +40,13 @@ The deep workflow procedure lives in the `workflow` skill (`skills/workflow/SKIL
 
 ## Pipeline Contract
 
-**Pipeline position.** Wrapped-workflow meta-orchestrator over the whole `/plan` pipeline — the canonical single-call entry. It consumes a planning mission (raw prose or an existing suite path) and drives the stage chain to completion through the workflow harness. It emits no artifact of its own beyond the chain's outputs (the suite, its reports, its `COMPLETION.md`) plus the workflow's deterministic result surface and run trace.
-
-**Consumed.** The operator's mission or suite path; the `--autonomous` opt-in; the `--verify-panel N` budget; the optional `--from <stage>` resume point. At each stage transition, the upstream stage's **Handoff Manifest** at `{suite}/_inputs/handoff-manifest.yml` is the named return contract the next phase consumes.
-
-**Emitted.** The chain's own artifacts (owned by each stage command), plus the workflow's deterministic result surface: the planning outcome; the per-stage verified hand-offs with evidence; the disclosure ledger of any beyond-mission remediation; the fifteen-bar gate attestation; the per-run workflow trace (stages run, manifest hand-offs, verification verdicts, halt/continue decisions); and the single recommended next move.
-
-**Pre-flight inquiry set.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the mission or entry point is underspecified — fresh mission vs. resume, which suite, which resume stage, scope direction, identity, public-surface naming, security posture. Required-category inquiries block dispatch until answered; the `--autonomous` opt-in is itself confirmed before continuous chaining engages.
-
-**Pre-emission gate.** Each stage command runs its own fifteen-bar gate per `rules/pre-emission-gate.md`. This command does not duplicate a stage's gate — it verifies each stage's gate attestation is present in its manifest before dispatching downstream, and runs the workflow's own fifteen-bar gate over the final synthesized result.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Consumed; Emitted; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE an unbounded remediation loop — the `--max-rounds` cap and its BLOCKED retreat are mandatory per `rules/planning-techniques.md` §1. REFUSE to author or reimplement any stage's logic — the orchestrator only dispatches first-class stage commands; stage behavior lives in `commands/plan-*.md`. REFUSE to dispatch past a stage whose Sequence Gate fails (a missing or failing upstream manifest) — surface the failed gate and halt. REFUSE continuous chaining without the `--autonomous` opt-in. REFUSE silent reconciliation of contradictory verification verdicts at a hand-off — surface both with evidence. Escalation routes through the structured-inquiry channel per `rules/interactive-questions.md`.
-
-### Output Surface
-
-Stage artifacts land where their stage commands place them (inside the active suite per the suite-locality invariant at `rules/context-management.md` §2.6.1); the workflow trace lands in PROGRESS.md / PLAN-NOTES.md or `{suite}/_outputs/`. Per `rules/operational-mandates.md` CM-7, no plan-internal scaffolding leaks into codebase artifacts. NEVER write a plan artifact to a global plans directory under any harness's config root from a downstream-project context.
-
-### File-Authoring Contract
-
-The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands honor the authorship-header contract via `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`); the workflow trace is a plan-suite artifact, header-exempt under the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`.
-
-### Structured Inquiry on Ambiguity
-
-When the mission, entry point, resume stage, suite identity, or whether to dispatch the CONDITIONAL `plan-design` stage (architecture-bearing suites only) is ambiguous, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. NEVER fabricate a suite path, a mission, or a stage decision. Every destructive operation routes per-file through the canonical destructive-op option sets at `rules/interactive-questions.md` §6.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -128,50 +107,13 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 
 ## Decision Tree
 
-```mermaid
-%% verified: 2026-06-16 %%
-%% provenance: commands/plan.md §Workflow %%
-%% cross-reference: commands/workflow.md, commands/plan.md, commands/plan-spec.md, plan-generate.md, plan-review.md, plan-design.md, plan-execute.md, skills/workflow/SKILL.md, skills/plan-suite/SKILL.md %%
-flowchart TD
-    Start[/plan invoked/] --> Frame{Mission + entry point unambiguous?}
-    Frame -->|no| Inquiry[Frame: structured-inquiry scope + entry set]
-    Inquiry --> Frame
-    Frame -->|raw mission| Spec[entry = plan-spec]
-    Frame -->|existing suite| Resume[resume stage from manifests / --from]
-    Spec --> Decompose[Decompose pipeline into staged work-items + manifest return contracts]
-    Resume --> Decompose
-    Decompose --> OptIn{--autonomous set?}
-    OptIn -->|no| Plan[Present next-stage plan · confirm]
-    OptIn -->|yes| Dispatch[Dispatch /plan-stage · resume from upstream manifest]
-    Plan --> Dispatch
-    Dispatch --> Cond{stage = plan-design AND not architecture-bearing?}
-    Cond -->|yes| Skip[skip plan-design]
-    Cond -->|no| RunStage[stage runs · emits manifest + gate attestation]
-    Skip --> Verify
-    RunStage --> Verify[Refute-by-default critics over the hand-off]
-    Verify --> Survive{Non-refute majority AND Sequence Gate passes?}
-    Survive -->|no| Halt[Halt · surface failed gate / refuted hand-off · remediate at owning stage]
-    Halt --> Dispatch
-    Survive -->|yes| More{more stages?}
-    More -->|yes| Decompose
-    More -->|no| Synth[plan-execute final phase → COMPLETION.md · synthesize · workflow fifteen-bar gate]
-    Synth --> Emit[Emit deterministic result + recommended next move]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
 ## Recommended Next Step
 
 **Invoke `/plan <mission>`** for a fresh planning mission — the wrapped workflow starts at `/plan-spec` and drives to executed phases — or `/plan <project-root>/.apothem/plans/{suite}/` to resume an existing suite from its first incomplete stage. Review each stage hand-off's verification, then pass `--autonomous` to chain continuously once the decomposition and return contracts read correctly. The halt-at-boundary mode is the safe default; autonomy is the explicit opt-in. Once `/plan-execute` lands the suite's phases, the executed work flows into `/fortress` for hardening — the plan → harden → ship operating loop that closes at the release gate.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/plan-spec.md`, `commands/plan-generate.md`, `commands/plan-review.md`, `commands/plan-design.md`, `commands/plan-execute.md` (the stages it dispatches as workflow phases). The per-stage Handoff Manifests it consumes as return contracts. The adversarial-verify panel at each hand-off (Phase 4). The workflow's fifteen-bar gate over the synthesized result (Phase 6). The disclosure ledger for every beyond-mission amendment.
-- **Driven by ←** The operator's mission / suite path + `--autonomous` / `--verify-panel` / `--from` flags. The structured-inquiry entry + scope resolutions from the Frame phase. The architecture-bearing flag that gates the conditional `plan-design` dispatch.
-- **Satisfies →** The directive that `/plan` drives the plan pipeline as a single wrapped dynamic workflow (no separate `*-workflow` command). The `commands/README.md` command catalog's Plan-pipeline row for `/plan` (the registry entry that ratifies this command's place in the slash-command catalog). The deterministic-output contract at `rules/determinism.md`. Preserves R-B2 (first-class stages) and R-B5 (opt-in chaining).
-- **Established by ↑** `commands/workflow.md` (the general wrapped-workflow pattern this specializes). `rules/agent-orchestration.md` (the team patterns + adversarial-verify). `rules/agnostic-posture.md` (the opt-in default-off frame). `skills/plan-suite/SKILL.md` (the planning knowledge surface).
-- **Gated by ←** A statable mission or resolvable suite path. Each stage's Sequence Gate (dispatch only when the upstream manifest + gate attestation is present). The operator's `--autonomous` opt-in for continuous chaining. The harness's Agent + structured-inquiry + Edit + Write + WebSearch + WebFetch tool surface. The destructive-op floor for irreversible / outward-facing steps.
-- **Cross-bound with ↔** `commands/workflow.md` (the general wrapped-workflow sibling). `commands/plan-spec.md` + `commands/plan-generate.md` + `commands/plan-review.md` + `commands/plan-design.md` + `commands/plan-execute.md` (the dispatched stages). `commands/fortress.md` (the downstream hardening pipeline — the executed phases flow into `/fortress` for the plan → harden → ship operating loop). `skills/workflow/SKILL.md` (the workflow procedure) + `skills/plan-suite/SKILL.md` (the planning knowledge surface). `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (orchestration + adversarial-verify). `rules/agnostic-posture.md` (opt-in autonomy). `rules/context-management.md` §4A (continuous-execution boundary). `rules/disclosure-ledger.md` (amendment disclosure). `rules/determinism.md` (deterministic result). `conformity/plan_next_step_consistency_grep.py` (cross-stage non-contradiction).
 
 ## Installed Reference Paths
 

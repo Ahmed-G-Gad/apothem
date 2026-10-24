@@ -61,9 +61,10 @@ def test_claude_code_install_translates_user_invocable(tmp_path: Path) -> None:
 def test_claude_code_reinstall_is_unchanged(tmp_path: Path) -> None:
     install_driver.run_install("claude_code", harness_root=tmp_path)
     run = install_driver.run_install("claude_code", harness_root=tmp_path)
-    skill_results = [r for r in run.results if r.operation == "native_skills"]
-    assert skill_results
-    assert {r.outcome for r in skill_results} == {"unchanged"}
+    for operation in ("native_skills", "command_skills"):
+        skill_results = [r for r in run.results if r.operation == operation]
+        assert skill_results, operation
+        assert {r.outcome for r in skill_results} == {"unchanged"}, operation
 
 
 def test_plugin_tree_translates_user_invocable(tmp_path: Path) -> None:

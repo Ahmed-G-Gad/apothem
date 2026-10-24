@@ -3,9 +3,11 @@
 """A skill and a command sharing a name resolve to the same body everywhere.
 
 Some names ship both as a command (``commands/<name>.md``) and as a skill
-(``skills/<name>/SKILL.md``). The Claude Code plugin ships both, and Claude
-Code resolves a skill and a command that share a name to the skill
-(https://code.claude.com/docs/en/skills.md#resolve-skills-that-share-a-name).
+(``skills/<name>/SKILL.md``). The Claude Code plugin ships each command as a
+skill too, so a shared name keeps its native skill in the one
+``skills/<name>/`` slot (Claude Code resolves a skill and a command that share
+a name to the skill:
+https://code.claude.com/docs/en/skills.md#resolve-skills-that-share-a-name).
 An engine install that converts commands into skills writes both into one
 ``skills/<name>/`` slot, so it must keep the skill there too. These tests fail
 on any shared name whose engine-installed body differs from the body the plugin
@@ -77,8 +79,9 @@ def claude_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
 def test_engine_and_plugin_resolve_the_same_body(
     name: str, plugin_root: Path, claude_root: Path
 ) -> None:
-    # The plugin ships both members; the skill is the one Claude Code runs.
-    assert (plugin_root / "commands" / f"{name}.md").is_file()
+    # The plugin ships the command as a skill, and a shared name keeps its
+    # native skill: there is no commands/ folder for the command to shadow it.
+    assert not (plugin_root / "commands").exists()
     plugin_body = (plugin_root / "skills" / name / "SKILL.md").read_text("utf-8")
     engine_body = (claude_root / "skills" / name / "SKILL.md").read_text("utf-8")
     assert engine_body == plugin_body

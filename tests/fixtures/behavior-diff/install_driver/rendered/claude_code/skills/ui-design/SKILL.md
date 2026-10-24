@@ -1,13 +1,14 @@
 ---
 name: "ui-design"
-version: "0.1.0"
-updated: "2026-10-24"
 description: "Design or refine a user interface to a craft floor. Matched when the user asks to 'design a page', 'build a landing page, dashboard or form', 'improve this UI', 'make it look better', or 'pick a palette and type scale'. Classifies the surface, applies ranked rules, keeps DESIGN.md current."
-archetype: "authoring-template"
 user-invocable: true
 argument-hint: "[surface or page] [--variance conventional|balanced|distinctive] [--motion none|subtle|expressive] [--density airy|comfortable|compact]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, WebSearch"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-24"
+  archetype: "authoring-template"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

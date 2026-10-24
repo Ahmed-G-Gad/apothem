@@ -50,6 +50,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Claude Code receives commands as skills that survive compaction.** The
+  plugin and the engine install now ship each command as a skill: a
+  `SKILL.md` of at most about 5,000 tokens with the procedure the model
+  needs every time, plus `references/` files for the pipeline contract,
+  standing stanzas, decision tree and, for the longest commands, individual
+  workflow steps, each behind a pointer that says when to read it. Claude
+  Code keeps only the first 5,000 tokens of a skill after compaction, so the
+  later steps of long commands such as `/apothem:plan-execute` were lost
+  before. Commands are still invoked as `/apothem:<name>`; other harnesses
+  are unchanged. Extra frontmatter keys now sit under `metadata`.
 - **Hooks run one dispatcher per tool call, not one per guard.** On every
   surface (the Claude Code plugin and engine install, Codex, Qwen Code) each
   event and matcher now has one dispatcher entry that lists every guard it

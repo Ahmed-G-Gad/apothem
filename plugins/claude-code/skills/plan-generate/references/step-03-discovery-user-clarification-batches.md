@@ -1,0 +1,15 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Step 3: Discovery — User Clarification Batches
+
+Deploy a Research Team (CM-25A) for parallel discovery. Externalize decisions to PLAN-NOTES.md continuously (CM-24B). Apply the cognitive filters and ideation techniques per seriousness scaling (cognitive identity rule, Section 2). Apply Preamble §10.2 Strategic Decision-Making for significant architectural decisions. **Every clarification question routes through the structured-inquiry channel** — group related decisions into thematic batches (up to 4 questions per invocation per the tool schema); the implicit Other option is the free-text escape when the decision space is open-ended (CM-2 + `rules/interactive-questions.md`).
+
+**3.1 — Clarify the Core.** Real problem, context, prior attempts, real users, the one thing that makes everything easier, blind spots, constraints, fears, communication style. Deploy the **Obvious Purge** (Filter 1) on the stated problem — what is the obvious framing everyone would adopt? Discard it. Probe for the deeper structure.
+
+**3.2 — Root Causes and Risks.** [OVERHAUL] diagnose failures. Reusable patterns. Hidden assumptions. Top 3 failure risks. Constraining beliefs. Deploy the **Living Systems Lens** — if this project were a living organism, what evolutionary pressure created it? What would kill it? Deploy the **Historical Saboteur** — how was the same problem solved in a radically different era? What did they understand that we have forgotten? Retrieve that lost knowledge and re-weaponize it. Deploy the **Villain Frame** — who would HATE this idea and why? Design specifically to amplify that hatred; what does it reveal about this project's structural vulnerabilities?
+
+**3.3 — Evaluate Options.** Map all outcomes. Risk-reward lens. The one critical question before committing. Deploy the **Domain Exile** (Filter 2) — reframe the core problem through at least one foreign discipline. Apply the **Constraint Paradox** — what extreme constraint would paradoxically produce a superior solution? Apply the **Combinatorial Explosion** (Filter 4) — force a synthesis between the core problem and a concept from a distant domain; what emergent framing results?
+
+**3.4 — Separate Scope.** Must-have vs. add-later (YAGNI). Fastest path to first result. Biggest mistake. What is being overthought. Week-by-week roadmap. Deploy the **Second-Order Narrative** — what will this project change about how people think, feel, relate, or organize beyond its first-order utility? Apply the **Aesthetic Demand** (Filter 5) — does the problem framing itself have conceptual elegance, or is it merely functional? Deploy the **100-Year Zoom** — from a century forward, what would historians say was the obvious scope decision people in this moment were too close to see?
+
+**3.5 — Resolve Ambiguities.** Continue until ALL are captured. If the user declines further questions, document AGENT-INFERRED decisions. Apply the **Inversion Press** (Filter 3) to at least three core assumptions — invert each and evaluate whether the inversion reveals a stronger design direction.

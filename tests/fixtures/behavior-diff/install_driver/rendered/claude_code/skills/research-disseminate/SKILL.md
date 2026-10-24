@@ -1,17 +1,20 @@
 ---
 name: "research-disseminate"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer rebuttal / revision loop, and the registered-report stage-2 path — the terminal stage of the /research pipeline. Triggered as 'plan the dissemination and impact', 'announce the preprint and build the public artifacts', 'archive the data and code to a FAIR repository', 'set up altmetrics tracking', 'draft the reviewer rebuttal', or the pipeline-chained hand-off from /research-publish. Consumes _outputs/publication-record.md and emits _outputs/dissemination-plan.md carrying the preprint announcement, the public-artifact plan (talk / poster / blog), the FAIR archival deposit record (R8), the altmetrics and impact-tracking plan (R10), the rebuttal / revision loop, and the registered-report stage-2 path. The operator performs the public actions; the stage stops at a ready plan, never auto-publishes."
 argument-hint: "[--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /research-disseminate — Dissemination & Impact
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -37,38 +40,13 @@ Read the publication record in full. Compose the preprint announcement (the prep
 
 ## Pipeline Contract
 
-**Pipeline position.** **Stage 13 of 13 — terminal.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the publication record and emits the dissemination-and-impact record; it has no downstream command — the operator performs the public dissemination actions. SOTA framing: the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) theory-of-change impact pathways with monitoring and evaluation, and the FAIR data principles per Wilkinson et al. (2016), *Scientific Data*, [doi:10.1038/sdata.2016.18](https://www.nature.com/articles/sdata201618).
-
-**Handoff Manifest.**
-
-- **Consumed.** `{suite}/_outputs/publication-record.md` (the submission package manifest, the reserved DOI, the archival/DOI plan, and the submission-checklist outcome from `/research-publish`). The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block and the publication record's `ready` verdict.
-- **Emitted.** `{suite}/_outputs/dissemination-plan.md` — the preprint announcement, the public-artifact plan, the FAIR archival deposit record, the altmetrics and impact-tracking plan, the rebuttal / revision loop, and the registered-report stage-2 path. The manifest's `invocation_sequence` increments, `downstream` names `operator dissemination (terminal)`, and the attestation records the per-identifier resolution outcomes (R8) and the per-artifact claim-match outcomes (R4).
-
-**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the archival repository is unnamed and undiscoverable from the suite context, when the preprint server differs from the one the publish stage planned, when an impact-tracking authority requires an account the operator alone holds, or when the data carries an access restriction whose basis the suite has not recorded. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. The archival-repository naming and the data/code-availability basis are required-category inquiries that block emission until answered — these are never invented (R6, R8).
-
-**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_outputs/dissemination-plan.md` before the manifest closure. The gate attestation block is recorded inside the dissemination plan. Failure on any bar blocks the plan from the `ready` verdict until resolved per the iterate-on-failure protocol at the gate rule's §3.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror. Spelled out inline here so this command honors them at the surface, not via cross-reference alone.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (planning the preprint announcement, the public artifacts, the FAIR archival deposit, the impact tracking, the rebuttal / revision loop, and the registered-report stage-2 path from the publication record). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE planning dissemination when the publication record is absent or the predecessor Sequence Gate is unsatisfied — route back to `/research-publish` first. REFUSE altering any scientific claim during dissemination: a public artifact restates the published paper, it never edits a result or invents a new conclusion. REFUSE fabricating an archival identifier, an accession, or an impact metric — a DOI, a repository accession, or an altmetric figure the deposit has not minted surfaces as a required inquiry and blocks the plan line, never ships as an invented value (R8, R10). REFUSE performing the public actions on the operator's behalf — the stage produces a ready plan and stops; the operator posts the preprint, deposits the archive, and publishes the artifacts.
-
-### Output Surface
-
-The dissemination-and-impact record lands at `{suite}/_outputs/dissemination-plan.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on the dissemination plan. Host-natural public-artifact source files (a blog draft, a talk script, a poster source) honor the host's document conventions per `rules/host-discovery.md`. NEVER write the plan outside the suite folder or its discovered host-natural deliverable locations; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location.
-
-### File-Authoring Contract
-
-The dissemination plan is header-exempt per the `.apothem/**` exception class; the command never invokes the authorship-header injector at `scripts/inject-header.{sh,py}` on its own `_outputs/` emissions. Public-artifact documents authored at the host-natural location are subject to the host's discovered file-header, document-format, and code-craft conventions per `rules/host-discovery.md`, `rules/code-craft-markdown.md`, and `rules/code-craft-python.md` (or the host's per-language sibling). Every plan line traces to its source: the preprint announcement to the publish stage's reserved DOI, the archival deposit to the actual data and code locations the experiment and analysis stages recorded (R2, R8), the impact-tracking plan to the proposal's impact pathway (R10). Exemptions are enumerated at `src/apothem/schemas/header-exceptions.txt`.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about the archival repository, the preprint server, the data/code-availability basis, an impact-tracking authority, or a public-artifact venue, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Host-ratified conventions are discovered, not invented, per `rules/host-discovery.md`. Free-form prose questions as primary input are forbidden. NEVER fabricate an authoritative datum — an archival accession, a persistent identifier, an altmetric figure, or a repository name is discovered from the suite or inquired from the operator, never guessed (R8, R10, and the authority-before-invention floor at `rules/authority-inquiry.md`).
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -99,48 +77,23 @@ When uncertain about the archival repository, the preprint server, the data/code
 
 ### Phase 1 — Ingest the Publication Record & Preprint Plan
 
-**Read the publication record first.** Open `{suite}/_outputs/publication-record.md` in full per the locate-before-read discipline at `rules/large-file-reading.md`: confirm the `ready` verdict, and carry forward the reserved DOI, the archival/DOI plan, and the data/code-availability statement. Compose the **preprint announcement**: the preprint server (`--preprint`, the publication record's plan, or the Phase 1 inquiry), the timing relative to acceptance, and the reserved DOI.
-
-**Run the staged-disclosure timing check on the announcement (R6).** The target venue's anonymity/preprint policy governs whether the preprint MAY carry author, institution, and system identity yet, per `skills/research-suite/references/blinding-and-disclosure.md`. Where the policy is still double-blind at preprint time, the announcement MUST carry anonymized natural-domain language — author, institution, and system identity held out of the body per the CM-7 reflex extended to author/institution/system — and MUST reserve full disclosure for the designated stage. Full author, institution, and system disclosure is restored only at the designated post-acceptance (camera-ready) stage, never earlier; the held-out identity is the designated de-anonymization payload recorded in the attestation, never discarded.
-
-Build the **dissemination-requirement inventory** — every public artifact, every archival deposit, every impact-tracking surface the operator will execute — and externalise it to `{suite}/_inputs/dissemination-requirements.md` (a free-form `{kebab-case-topic}.md` scratch file per `rules/context-management-scratch.md` §1).
+> Moved to `references/step-01-ingest-the-publication-record-preprint.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — FAIR Archival Deposit & Public Artifacts (R8)
 
-Author the **FAIR archival deposit record** (R8): the data and code deposited to a citable repository (`--archive`, or the Phase 2 inquiry) — Findable (a persistent identifier), Accessible (the access terms, with any restriction and its basis stated, never elided), Interoperable, and Reusable — traced to the actual data and code locations the experiment and analysis stages recorded (R2). The persistent identifier is a real, resolvable accession the deposit mints, never a fabricated string (R8). Plan the **public artifacts** — talk, poster, blog — each restating the paper's claims without altering or inventing them; each public claim traces to a claim the published paper makes. Per `rules/operational-mandates.md` CM-7, the public artifacts carry natural domain language with zero research-suite-internal references. **Before transforming the paper into any of these formats, confirm the title, the author list, and the abstract with the operator** through the structured-inquiry channel, showing the exact text to be used; a format never carries a title, author line, or abstract the operator has not confirmed, and a confirmed change is recorded in the plan's disclosure ledger.
-
-**Extend CM-7 to author, institution, and system anonymization where dissemination precedes de-anonymization (R6).** Beyond suppressing suite-internal references, where the dissemination timing precedes de-anonymization — a preprint issued under a still-active double-blind policy — the public artifacts MUST hold author, institution, and system identity out of the body per `skills/research-suite/references/blinding-and-disclosure.md`, extending the CM-7 natural-domain-language reflex from suite-internal names to author, institution, funding, and the identity of the system under study. Full author-plus-institution-plus-system disclosure is reserved for the designated post-acceptance stage; the held-out identity is the designated de-anonymization payload recorded in the attestation, restored at the camera-ready / post-acceptance stage and NEVER earlier.
-
-**Scale the deposit to a reproducibility-evidence package (R8, R2, N17).** The FAIR deposit is the durable citable reproducibility-evidence package that scaffolds the deliverable: the deposited data, code, pinned or containerized environment, seeds, hardware log, compute-utilization manifest, and per-instance and summary-statistics outputs, traced to the actual experiment and analysis locations (R2). The package's scope is scaled to the target-venue ambition — where the ambition is unspecified, it surfaces as a required inquiry per `rules/authority-inquiry.md` and is never invented (USER-CONFIRM: target-venue ambition).
+> Moved to `references/step-02-fair-archival-deposit-public-artifacts.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Altmetrics, Impact Tracking & the Revision Loop (R10)
 
-Plan **altmetrics and impact tracking** (R10): how the study's reach (downloads, citations, mentions) and impact (the outcomes the proposal's impact pathway named) are measured over time, traced to the impact pathway per the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) monitoring-and-evaluation framing. Plan the **reviewer rebuttal / revision loop**: when the venue or a co-author returns revisions, the loop routes the revised paper back through `/research-review` to re-verify rigor, then re-invokes `/research-publish` to rebuild the package. Plan the **registered-report stage-2 path** where the design supports it: the stage-2 submission of the completed results against the stage-1 in-principle acceptance.
-
-**Support the rebuttal in two modes.** *Draft mode:* given the reviewers' comments, number each comment, then draft one response per comment that quotes the comment, states the action taken (changed, clarified, declined), and points to the revised locus; a declined comment carries its reason and evidence, and no response claims a change the revision does not contain. *Verify mode:* given the revised manuscript and the response, re-read each comment against the revised locus and mark it `answered`, `partly-answered`, or `not-answered`, with the text that supports the mark. A comment marked below `answered` returns to the operator through the structured-inquiry channel before the response is called ready. Both modes keep comment numbering identical to the venue's, and neither alters a result or claim; a response that would need new evidence routes back to `/research-review`.
+> Moved to `references/step-03-altmetrics-impact-tracking-the-revision.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Adversarial Verification & Readiness Checklist
 
-**Verify the plan refute-by-default** across two surfaces through `agents/fact-checker.md`:
-
-- **Archival-identifier resolution** — every persistent identifier (the reserved DOI, the archival accession) is treated as unresolved until it dereferences to a real deposit; any phantom or unresolvable identifier is flagged and blocks the plan line (R8).
-- **Public-artifact claim match** — every claim in every public artifact is re-checked against the published paper; a claim the paper does not make is flagged as an invented or overstated claim and blocks the artifact (R4).
-
-Dispatch the verification as an **Audit Team** per `rules/agent-orchestration.md` when 3+ independent identifier clusters or artifact drafts justify parallel fan-out; each agent returns a pass/fail verdict plus resolution evidence under the 200-token audit return contract.
-
-**Then run the dissemination-readiness checklist.** Every dissemination requirement — the preprint announcement, each public artifact, the FAIR deposit, the impact-tracking plan, the revision loop, the registered-report path — is a checklist line with a `met` / `unmet` verdict and the evidence for `met`. A single `unmet` line holds the plan at `not-ready`; only an all-`met` checklist earns the `ready` verdict.
+> Moved to `references/step-04-adversarial-verification-readiness.md`. MUST read it in full before executing this step.
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the dissemination plan; the bars that bite hardest at this stage:
-
-- **M5 authority** — zero fabricated identifiers; every DOI, archival accession, and impact metric traces to a real deposit or operator-supplied data, with no unfilled authority-inquiry placeholder remaining (R8, R10).
-- **M8 definitiveness** — the public artifacts and the impact-tracking plan carry no hedging; the FAIR deposit record is definitive about where artifacts live and under what terms.
-- **M9 visual leverage** — the dissemination-readiness checklist renders as a requirement × verdict table and the impact-tracking plan as an impact-pathway diagram, each carrying the metadata header per `rules/visual-leverage.md`.
-- **M14 systemicity** — the dissemination plan declares its upstream (the publication record), downstream (`operator dissemination` — terminal), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` identifier-and-claim pass + the readiness checklist).
-- **M15 production-readiness** — the dissemination plan is complete in the same emission; no "I'll add the FAIR deposit later".
-
-Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the dissemination plan and close the Handoff Manifest with `downstream: operator dissemination (terminal)`. Apply incremental generation per `rules/large-file-generation.md` when the dissemination plan exceeds 500 lines.
+> Moved to `references/step-05-validation-gate.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -166,46 +119,13 @@ Iterate on failure per the gate rule's §3 until every bar passes or its three-r
 
 ## Output
 
-| Artifact | Path | Purpose |
-| -------- | ---- | ------- |
-| Dissemination plan | `{suite}/_outputs/dissemination-plan.md` | The dissemination-and-impact record: preprint announcement + public-artifact plan + FAIR archival deposit record + altmetrics/impact-tracking plan + rebuttal/revision loop + registered-report stage-2 path + the readiness-checklist outcome, ready for the operator to execute. |
-| Public artifacts | host-natural (a blog draft, a talk script, a poster source) | Optional artifact drafts authored at the host-natural location, each restating the paper's claims. |
-| Dissemination-requirement inventory | `{suite}/_inputs/dissemination-requirements.md` | Optional Phase 1 working file (the public-artifact, archival, and impact-tracking requirement list). |
-| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Closed at Phase 5 with `downstream: operator dissemination (terminal)`, the per-identifier and per-claim verification attestation, and the readiness-checklist outcome. |
-
-The `dissemination-plan.md` carries these canonical sections: `## §1 Publication Recap & Preprint Announcement` (the `ready` package recap, the reserved DOI, the preprint server and timing); `## §2 FAIR Archival Deposit` (the repository, the persistent identifier, the access terms and any restriction basis; R8); `## §3 Public Artifacts` (the talk / poster / blog plan, each claim traced to the paper); `## §4 Altmetrics & Impact Tracking` (the reach-and-impact measurement plan traced to the impact pathway; R10); `## §5 Rebuttal / Revision Loop & Registered-Report Path` (the route back through `/research-review` and the stage-2 path); `## §6 Identifier-Integrity Report` (the Phase 4 per-identifier resolution outcomes; R8); `## §7 Dissemination-Readiness Checklist` (the requirement × verdict table; the `ready` / `not-ready` verdict); `## §8 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 
 ## Decision Tree
 
-```mermaid
-%%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-16 %%
-%% provenance: commands/research-disseminate.md §Workflow %%
-%% cross-reference: commands/research-publish.md (predecessor), agents/fact-checker.md, skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle, rules/authority-inquiry.md %%
-flowchart TD
-    Start[/research-disseminate invoked] --> Gate0{Sequence Gate: publication-record.md present · package ready?}
-    Gate0 -->|no| Blocked[Halt: 'Blocked: run /research-publish first']
-    Gate0 -->|yes| Ingest[Phase 1 read publication record · compose preprint announcement]
-    Ingest --> Archive{Archival repository resolved?}
-    Archive -->|no| AskArch[structured inquiry: name the FAIR repository · block until resolved]
-    AskArch --> Deposit[Phase 2 FAIR archival deposit · public artifacts]
-    Archive -->|yes| Deposit
-    Deposit --> Claim{Every public-artifact claim matches the paper?}
-    Claim -->|no| Block1[Invented/overstated claim blocks the artifact · re-derive from paper]
-    Block1 --> Track[Phase 3 altmetrics/impact tracking · revision loop · registered-report path]
-    Claim -->|yes| Track
-    Track --> Verify[Phase 4 fact-checker re-dereferences identifiers + re-checks claims]
-    Verify --> Checklist[Phase 4 run dissemination-readiness checklist]
-    Checklist --> Ready{Every checklist line met?}
-    Ready -->|no| Hold[Hold plan at not-ready · resolve unmet lines]
-    Hold --> Checklist
-    Ready -->|yes| GateN{Phase 5 fifteen-bar gate passes?}
-    GateN -->|no| Revise[Revise per failing bar's action]
-    Revise --> GateN
-    GateN -->|yes| Emit[Emit _outputs/dissemination-plan.md · close Handoff Manifest · hand off to operator]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -228,14 +148,6 @@ flowchart TD
 ## Recommended Next Step
 
 Execute the dissemination plan yourself — post the preprint, deposit the data and code to the FAIR archive, and publish the public artifacts — this stage is terminal and produces a ready plan but never disseminates on your behalf; when the venue or a co-author returns revisions, re-run `/research-review` against the revised paper to re-verify rigor, then re-invoke `/research-publish` to rebuild the package before re-invoking `/research-disseminate`.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● The operator's dissemination action (terminal hand-off; this stage produces a ready plan and stops). ● `{suite}/_outputs/dissemination-plan.md` (the principal deliverable). ● The FAIR archival deposit record carrying the persistent identifier. ● `{suite}/_inputs/handoff-manifest.yml` (the closed Handoff Manifest). ● `agents/fact-checker.md` (Phase 4 identifier-resolution + claim-match dispatch). ● The fifteen-bar pre-emission gate at Phase 5.
-- **Satisfies →** ● The research-pipeline Stage 13 dissemination-and-impact slot (the terminal stage). ● `rules/interactive-questions.md` §1 canonical-channel obligation (every archive/preprint/impact ambiguity routes through the structured-inquiry channel). ● `rules/authority-inquiry.md` (archival-repository naming + data-availability basis are required-category inquiries that block emission; R6, R8). ● `skills/research-suite/SKILL.md` §Thirteen-Stage Research Lifecycle (the `/research-disseminate` terminal row) and the R8 / R10 mandates.
-- **Established by ↑** ● `skills/research-suite/SKILL.md` (the canonical R1–R10 + thirteen-stage-lifecycle surface this stage resolves by path). ● `commands/research-publish.md` (the predecessor whose publication record this stage consumes). ● The dissemination-and-impact framings ([NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) impact pathways with M&E; the FAIR data principles per Wilkinson et al., 2016, [doi:10.1038/sdata.2016.18](https://www.nature.com/articles/sdata201618)).
-- **Gated by ←** ● The Sequence Gate (`/research-publish` output present + `ready` package + clean attestation, or `--override` with rationale). ● Operator invocation with an active research suite. ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/pre-emission-gate.md` (the fifteen-bar gate runs before the manifest closes).
-- **Cross-bound with ↔** ↔ `commands/research-publish.md` (predecessor; publication record → dissemination-and-impact hand-off). ↔ `commands/research-review.md` (the rebuttal / revision loop routes the revised paper back through `/research-review`). ↔ `commands/research-proposal.md` (the impact pathway this stage's tracking plan traces to; R10). ↔ `commands/research.md` (the `/research` wrapper dispatches this stage as its terminal workflow phase). ↔ `skills/research-suite/SKILL.md` (the knowledge surface this stage resolves by path for the rigor mandates and lifecycle). ↔ `agents/fact-checker.md` (refute-by-default identifier resolution + claim match; this stage routes the plan through it). ↔ `rules/cognitive-identity.md` (the Principal-Investigator + Cognitive-Insurgent dissemination lens; the five filters). ↔ `rules/authority-inquiry.md` (archival-repository, data-availability, and impact-tracking facts are required-category; R6, R8). ↔ `rules/visual-leverage.md` (the readiness checklist, impact-tracking diagram, and Decision Tree carry provenance + verified + cross-reference headers). ↔ `rules/production-ready-prs.md` (the dissemination plan is complete in the same emission; M15). ↔ `rules/pre-emission-gate.md` (fifteen-bar validation at Phase 5).
 
 ## Installed Reference Paths
 

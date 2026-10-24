@@ -1,17 +1,20 @@
 ---
 name: "research-sources"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. Decomposes the ratified research spec into orthogonal sub-queries, dispatches parallel discovery via the research-scout agent and the multi-source-research skill, deduplicates, ranks by authority/recency/relevance, screens against the spec's inclusion/exclusion criteria, and extracts each surviving source with full provenance. Use when a research mission has a finalized spec and needs its evidence base: 'collect the sources for this question', 'gather the primary literature', 'build the source ledger', 'find and screen the references before synthesis', 'survey and extract the evidence base'. The fact-checker confirms every citation resolves. Emits `sources/<id>.md` per-source extractions plus `_inputs/source-ledger.md` (ranked, screened, deduplicated, citation-indexed). Discovery and extraction only — synthesis and the SOTA/gap map route to /research-synthesis."
 argument-hint: "[suite-path] [--max-sources N] [--override] [--standalone]"
 disable-model-invocation: false
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
 # /research-sources — Systematic Source Collection
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -25,38 +28,13 @@ You operate as a Principal Investigator running a systematic literature search: 
 
 ## Pipeline Contract
 
-**Pipeline position.** **Stage 4 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This command consumes the theoretical grounding and the spec's screening contract and emits the qualified evidence base the synthesis stage maps.
-
-**Handoff Manifest.**
-
-- **Consumed.** `{suite}/_spec/research-spec.md` (the ratified research spec: aims-and-objectives hierarchy, falsifiable hypotheses, scope, inclusion/exclusion criteria, success metrics, glossary) plus the theoretical grounding `/research-theory` produced (which frames the evidence the search prioritizes). The upstream `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` records `/research-theory` as the producing stage; this command refuses to proceed when the manifest is absent, malformed, or carries unresolved P0/P1 markers.
-- **Emitted.** `{suite}/sources/<id>.md` (one provenance-bearing extraction per surviving source) plus `{suite}/_inputs/source-ledger.md` (the ranked, screened, deduplicated ledger with a citation index and a dedup record). The Handoff Manifest is amended at stage exit with the emitted paths, the screened-in vs. screened-out counts, the dedup-collapse count, and the R1/R4 attestation block. `/research-synthesis` consumes both surfaces.
-
-**Pre-flight inquiry set.** Phase 1 emits the pre-flight inquiry set — the source-budget ceiling (`--max-sources`) surfaces when neither the flag nor a spec-declared ceiling fixes it; every inclusion/exclusion criterion the spec leaves under-specified surfaces as a screening-criterion confirmation placeholder per `rules/interactive-questions.md` (canonical channel; three-segment option annotation). A spec gap that blocks screening blocks emission until resolved.
-
-**Pre-emission gate.** Phase 5 runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `source-ledger.md` and the per-source extractions before stage exit. The Handoff Manifest carries the gate attestation block; failure on any bar holds emission until resolved. The R4 citation-integrity check (every citation resolves) is a **hard bar** — a phantom citation blocks emission.
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror. Spelled out here so this command honors them inline, not by cross-reference alone.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (assemble, dedup, rank, screen, and extract the source base for a spec-bearing research suite). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md` (canonical channel; three-segment option annotation; never free-form prose as primary input). Synthesis, claim combination, and the SOTA/gap map are out of scope — they route to `/research-synthesis`. When discovery surfaces a candidate that defeats the spec's scope boundary, halt and surface the boundary instead of silently widening the search.
-
-### Output Surface
-
-This command emits `{suite}/sources/<id>.md` (per-source extractions) and `{suite}/_inputs/source-ledger.md` (the ranked, screened ledger) per the suite-locality invariant at `rules/context-management.md` §2.6.1. Discovery scratch (raw candidate dumps, dedup working notes) lands at `{suite}/_inputs/notes.md` and is deleted or distilled at stage exit. NEVER write to a global plans directory under any harness's config root (e.g., `~/.claude/.plans/` for the claude_code harness) and NEVER write to any other global-ecosystem location (`~/.config/`, `/etc/`, vendored language-runtime trees). Raw fetched source bodies that exceed the extraction surface are not committed; the extraction record carries the permalink, the access date, and the extracted load-bearing content.
-
-### File-Authoring Contract
-
-Research-suite state files under `{suite}/` (the source ledger, the per-source extractions, the discovery scratch) are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on these emissions. When this command incidentally authors a non-state file at a host-natural location, that file is subject to the canonical header discipline. The contract is explicit: this command never injects banners on suite-state emissions; all banner-applicable files are out of its emission surface.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about scope direction / screening criteria / source-budget ceiling / authority-ranking weights — or about any branch-point, inclusion decision, or judgment call that materially affects which sources survive — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3 (rationale / recommendation / default-pointer). Free-form prose questions as primary input are forbidden. NEVER fabricate a source, a URL, a DOI, an author, or a publication date (R1, R4); a candidate whose provenance cannot be verified is screened out and recorded as unverifiable, never invented into legitimacy.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -105,37 +83,19 @@ Emit the pre-flight inquiry set: the source-budget ceiling when unfixed, and a s
 
 ### Phase 2 — Parallel Discovery Dispatch
 
-Dispatch discovery in parallel — one `research-scout` agent per sub-query facet — per the Research Team pattern at `rules/agent-orchestration.md` §1 (full-parallel, single-message dispatch, structured-summary return contract). Each `research-scout` invocation fans its facet through `WebSearch`/`WebFetch` for external sources and `Read`/`Glob`/`Grep` for any in-repo corpus, returning a deduplicated ranked candidate list per facet; `research-scout` discovers and ranks only — it never fabricates a URL and never synthesizes (per its return contract at `agents/research-scout.md`). Order each scout's search as tiers, stopping a tier only when it stops yielding new candidates: (1) the scholarly index tools the host exposes, when it exposes any, queried by DOI, arXiv identifier, or title; (2) the in-repo corpus and any operator-supplied library; (3) general web search. A candidate found only in tier 3 is re-queried against tier 1 for a canonical identifier before it is ranked. Where a facet needs per-source fetch-and-extract within the same pass, the `multi-source-research` skill (`skills/multi-source-research/SKILL.md`) drives the fanned fetch/extract loop.
-
-Collect every facet's returns in a single pass; release the raw agent output after extracting the candidate list per `rules/agent-orchestration.md` §4 (return-contract enforcement). Honor the post-wave compaction trigger per `rules/context-management.md` §3 after the discovery wave.
+> Moved to `references/step-02-parallel-discovery-dispatch.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Dedup, Rank, Screen
 
-**Deduplicate.** Collapse candidates that resolve to the same source across facets (same DOI, same canonical URL, same archival ID; a preprint and its published version are the same source — record both identifiers, keep the published version as canonical). Every collapse lands in the dedup record with both identifiers and the collapse reason.
-
-**Rank.** Score each surviving candidate on three axes:
-
-- **Authority** — primary/peer-reviewed/official/archival outranks secondary; a named, attributable author/organization outranks anonymous; a permalinked/DOI/commit-pinned reference outranks a mutable one (R1, R4).
-- **Recency** — within the spec's temporal scope, newer outranks older; a superseded source is recorded with its successor.
-- **Relevance** — direct evidence for a spec hypothesis outranks tangential mention; the relevance score names which hypothesis or sub-query the source bears on.
-
-**Screen via a PRISMA-style flow.** Apply the spec's inclusion/exclusion criteria uniformly to the ranked set through the four-stage **PRISMA** screening flow — **identification** (raw candidate count across all facets), **screening** (title/abstract pass against the inclusion criteria), **eligibility** (full-text pass against the exclusion criteria), **included** (survivors retained) — per the EQUATOR/PRISMA reporting guideline at <https://www.equator-network.org/reporting-guidelines/prisma/>. Each stage records its in/out counts so the flow reconstructs as a PRISMA-style diagram in the ledger; every screened-out candidate lands with the specific criterion and the stage it failed at. Screening is auditable, never a silent drop. Apply the `--max-sources` ceiling after the `included` stage, retaining the highest-ranked survivors.
-
-**Assess per-source risk of bias (R9).** For every `included` source, record a **risk-of-bias assessment** against a domain-appropriate instrument (the per-design tool the venue or the field ratifies — e.g., the Cochrane RoB classes for trials, a checklist-based judgment for observational or computational work). Each source carries a per-domain low/some-concerns/high judgment with the locus that justifies it; the assessment is a documentary field the synthesis stage weights, never a silent rank adjustment here.
+> Moved to `references/step-03-dedup-rank-screen.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Per-Source Extraction with Provenance
 
-For every screened-in source, author `{suite}/sources/<id>.md` carrying: the canonical citation (permalink/DOI/commit-pin), the access date (R4, for mutable sources), the author/organization attribution, the source's load-bearing claims extracted verbatim or faithfully paraphrased with locus, the source's stated method/scope (to support downstream reproducibility assessment per R2), and a provenance line naming the discovery facet and the discovering scout. Organize the load-bearing content as one **focus block** per spec hypothesis or sub-query the source bears on, each with a `basis` field naming what the block rests on: `full-text`, `abstract-only`, `operator-supplied`, or `secondary-description`. A block with a `basis` weaker than `full-text` is marked as such so synthesis weights it accordingly; it is never presented as read in full. Folklore or unverifiable claims a source carries are marked as such and never extracted as load-bearing.
-
-When a screened-in source is paywalled, login-gated, purchase-only, or otherwise inaccessible after the fetch attempt, do NOT silently screen it out for a lower-trust accessible substitute — trust outranks reachability per `rules/source-accessibility.md`. STOP and request the full source content from the operator through the structured-inquiry channel; extract from the operator-supplied content. Track every such source on an **acquisition worklist** held as a section of `source-ledger.md`: one row per source with its identifier, its status (`fetched`, `open-access-available`, `manual-retrieval`, `operator-supplied`, `unreachable`), and the date of the last attempt. Fetch each open-access source directly; list the rest, with the identifier and the access route to try, for the operator to retrieve manually. On a re-run, reconcile the worklist before discovery: re-attempt open rows, move rows the operator has since supplied to `operator-supplied`, and carry every unresolved row forward. A worklist row never disappears without a status change recorded beside it. Only after the operator interview is exhausted may the source be screened out as unreachable, with the source-trust decision (which source, its trust tier, whether the trusted source was reachable, why it was screened out) recorded in the source ledger's disclosure surface per `rules/disclosure-ledger.md`.
-
-Dispatch `fact-checker` (`agents/fact-checker.md`) adversarially across the extracted set: every citation resolves to a real, reachable source (R4); a citation that fails to resolve is a phantom citation — the source is screened out and the failure is recorded. The `fact-checker` pass is refute-by-default — it confirms reachability and attribution, not the truth of the source's claims (claim verification against independent sources is `/research-synthesis`'s remit).
+> Moved to `references/step-04-per-source-extraction-with-provenance.md`. MUST read it in full before executing this step.
 
 ### Phase 4b — Comparator / Baseline Provenance Ledger
 
-**The executed comparison set is a first-class, provenance-bearing extraction class — not merely cited literature (R1, R4).** Alongside the per-source extractions, populate the comparator/baseline provenance ledger per `skills/research-suite/references/comparator-provenance.md`. Enumerate the nearest-recent state-of-the-art comparator across each method family the field itself recognizes; a family the field treats as current that is omitted MUST record the omission and its rationale. Each comparator carries provenance fields: the canonical citation (permalink/DOI/commit-pin), the access date, the author or organization, the originating method family, the version/config the study would run, and a reachability verdict.
-
-Bind the comparator set to the existing `fact-checker` adversarial pass: each comparator citation MUST resolve refute-by-default before the comparator earns a place in the load-bearing set. A comparator whose source cannot be confirmed is marked `cannot-confirm`; one whose artifact cannot be retrieved is marked `cannot-fetch`. A marked comparator is disclosed in the ledger and excluded from every load-bearing (headline) claim until the marker resolves — and NEVER fabricated, approximated from memory, or invented into legitimacy. The comparator ledger co-lands with the source ledger so a single retrievable record carries both the cited literature and the executed baselines; the set is fixed downstream at `/research-design`, and this stage records the provenance track it depends on.
+> Moved to `references/step-05-comparator-baseline-provenance-ledger.md`. MUST read it in full before executing this step.
 
 ### Phase 5 — Ledger Emission & Pre-Emission Gate
 
@@ -175,65 +135,13 @@ R3 (falsifiability), R5 (preregistration), R7 (statistical rigor), R8 (open-scie
 
 ## Decision Tree
 
-```mermaid
-%%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
-%% provenance: src/apothem/commands/research-sources.md §Workflow — Five Phases %%
-%% cross-reference: skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle %%
-flowchart TD
-    Start[/research-sources invoked] --> Gate{/research-theory grounding + ratified spec present?}
-    Gate -->|no AND no --override| Blocked[Emit 'Blocked: run /research-theory first.' · halt]
-    Gate -->|no AND --override| Audit[Write Gate-Override audit row · proceed un-spec-screened]
-    Gate -->|yes| P1[Phase 1 · ingest spec · decompose into orthogonal sub-queries]
-    Audit --> P1
-    P1 --> Inq{Screening criteria + source budget fixed?}
-    Inq -->|no| Surface[Surface USER-CONFIRM placeholders via structured inquiry · block on required gaps]
-    Inq -->|yes| P2[Phase 2 · parallel research-scout dispatch · one agent per facet]
-    Surface --> P2
-    P2 --> P3[Phase 3 · dedup · rank by authority/recency/relevance · screen against criteria]
-    P3 --> Cap{Screened-in count over --max-sources?}
-    Cap -->|yes| Trim[Retain highest-ranked survivors · record trimmed candidates]
-    Cap -->|no| P4
-    Trim --> P4[Phase 4 · extract each source with provenance · fact-checker resolves every citation]
-    P4 --> Phantom{Any phantom citation?}
-    Phantom -->|yes| Drop[Screen out the source · record the resolution failure]
-    Phantom -->|no| P5
-    Drop --> P5[Phase 5 · compose source-ledger.md · run fifteen-bar pre-emission gate]
-    P5 --> GatePass{Gate passes · R4 citation-integrity hard bar?}
-    GatePass -->|no| Fix[Revise per failing bar · re-run gate]
-    GatePass -->|yes| Emit[Amend Handoff Manifest · downstream /research-synthesis]
-    Fix --> P5
-    Emit --> Done[Evidence base ready for synthesis]
-```
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
 ## Examples
 
-### Example 1 — Standard collection run
-
-```text
-$ /research-sources <project-root>/.apothem/plans/transformer-efficiency-survey
-
-[Phase 1] Reading ratified research-spec.md. 4 falsifiable hypotheses; inclusion criteria: peer-reviewed OR arXiv-with-code, 2020+, English. Decomposed into 6 orthogonal sub-queries.
-[Phase 1] Source budget unfixed; structured inquiry fired — operator set --max-sources 40.
-[Phase 2] Dispatched 6 research-scout agents (one per facet). 213 raw candidates returned.
-[Phase 3] Dedup — 213 candidates collapsed to 147 distinct sources (38 preprint/published pairs, 28 cross-facet duplicates). Ranked. Screened: 91 pass inclusion criteria, 56 screened out (recorded with failed criterion).
-[Phase 3] --max-sources 40 applied — top 40 by composite score retained; 51 trimmed candidates recorded.
-[Phase 4] Extracted 40 sources to sources/<id>.md. fact-checker resolved every citation; 2 dead DOIs found → screened out → re-extracted next-ranked candidates.
-[Phase 5] source-ledger.md composed; fifteen-bar gate PASS; R4 citation-integrity hard bar PASS (40/40 resolve).
-[Phase 5] Handoff Manifest amended; downstream: /research-synthesis.
-```
-
-### Example 2 — Gate-closed
-
-```text
-$ /research-sources <project-root>/.apothem/plans/new-question
-
-Blocked: run /research-theory first.
-Absent artifact: <project-root>/.apothem/plans/new-question/_inputs/theory.md.
-No theoretical grounding — the search strategy is ungrounded. Run /research-theory to produce the conceptual framework, or pass --override with a rationale to collect un-grounded.
-```
+> Moved to `references/examples.md`. SHOULD read it before composing the final output.
 
 ---
 
@@ -265,14 +173,6 @@ No theoretical grounding — the search strategy is ungrounded. Run /research-th
 ## Recommended Next Step
 
 Invoke `/research-synthesis` to consume the ranked, screened `source-ledger.md` and the per-source extractions and build the SOTA map, literature matrix, and the explicit gap statement; `/research-synthesis` is the canonical pipeline successor per the Sources → Synthesis handoff.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● `commands/research-synthesis.md` (the canonical downstream consumer; `/research-synthesis` consumes the emitted `source-ledger.md` and `sources/`). ● `{suite}/_inputs/source-ledger.md` (the principal artifact). ● `{suite}/sources/<id>.md` (the per-source extraction records). ● `{suite}/_inputs/handoff-manifest.yml` (the stage-exit Handoff Manifest). ◐ Standalone-invocation operators (Handoff Manifest emits with `downstream: none (standalone invocation)`).
-- **Satisfies →** ● The research-suite rigor floor R1/R2/R4/R6 at the collection stage. ● `rules/interactive-questions.md` §1 canonical-channel obligation (every screening and budget decision routes through the structured-inquiry channel). ● `rules/agent-orchestration.md` §1 Research Team pattern (parallel discovery dispatch under return contracts).
-- **Established by ↑** ● `commands/research-theory.md` (the upstream producer of the theoretical grounding this stage consumes via the Sequence Gate, alongside the ratified spec). ● `agents/research-scout.md` (the discovery-and-ranking agent this stage dispatches). ● `skills/multi-source-research/SKILL.md` (the fetch-and-extract harness this stage drives). ● `agents/fact-checker.md` (the adversarial citation-resolution pass).
-- **Gated by ←** ● The Sequence Gate (`/research-theory` grounding + ratified `_spec/research-spec.md` precondition; `--override` audited bypass). ● Operator invocation with a suite path. ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/context-management.md` §2.6.1 (suite-locality invariant for `_inputs/`, `sources/`, and `_spec/`).
-- **Cross-bound with ↔** ↔ `commands/research-theory.md` (Theory → Sources handoff; the theoretical grounding frames the evidence priorities, the spec is the screening contract). ↔ `commands/research-synthesis.md` (Sources → Synthesis handoff; the evidence base feeds the SOTA/gap map). ↔ `agents/research-scout.md` (discovery dispatch). ↔ `skills/multi-source-research/SKILL.md` (per-source extraction). ↔ `agents/fact-checker.md` (citation-resolution gate). ↔ `rules/agent-orchestration.md` (Research Team parallel dispatch). ↔ `rules/visual-leverage.md` (the Decision Tree carries provenance/verified/cross-reference headers). ↔ `rules/ten-dimension-check.md` (dim 9 scholarly referencing ↔ R4 citation integrity; the PRISMA/risk-of-bias screening ↔ R9 reporting-guideline conformance).
 
 ## Installed Reference Paths
 

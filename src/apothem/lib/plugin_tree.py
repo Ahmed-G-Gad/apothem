@@ -4,7 +4,7 @@
 
 This module materializes the canonical ``.claude-plugin`` distribution unit:
 a self-contained bundle of the apothem engine plus its catalog (skills,
-agents, commands, rules, hooks) that runs directly from the assembled tree —
+agents, rules, hooks; the commands ship as skills) that runs directly from the assembled tree —
 the engine and its vendored dependencies import in place, and no package
 installation occurs at any point.
 
@@ -18,7 +18,8 @@ The layout contract produced is::
     <plugin_root>/lib/apothem/            (verbatim engine copy)
     <plugin_root>/lib/apothem_lib.py      (re-export shim)
     <plugin_root>/lib/apothem/_vendor/    (vendored deps, or empty .keep)
-    <plugin_root>/skills|agents|commands|hooks|rules|output-styles/  (catalog copies)
+    <plugin_root>/skills|agents|hooks|rules|output-styles/  (catalog copies)
+    <plugin_root>/skills/<command>/SKILL.md + references/  (split commands)
 """
 
 from __future__ import annotations
@@ -103,10 +104,18 @@ _COPY_IGNORE: Final[tuple[str, ...]] = (
 _CATALOG_DIRS: Final[tuple[str, ...]] = (
     "skills",
     "agents",
-    "commands",
     "rules",
     "output-styles",
 )
+
+#: Source-relative directory of the slash-command definitions. The plugin does
+#: not ship it as ``commands/``: each command becomes a skill directory under
+#: ``skills/`` (see :func:`_emit_command_skills`), the form Claude Code
+#: recommends for new plugin components and the only one that can carry
+#: ``references/`` files (https://code.claude.com/docs/en/skills, retrieved
+#: 2026-10-24). A plugin skill is invoked as ``/apothem:<name>``, as the
+#: command was.
+_COMMANDS_DIR: Final[str] = "commands"
 
 #: Source-relative location of the hook message catalog.
 _HOOK_MESSAGES_REL: Final[Path] = Path("hooks") / "messages"
@@ -343,6 +352,9 @@ def build_plugin_manifest(
     declared as explicit file paths so the documentation files beside them
     are never registered as components; skills are declared as the skills
     directory (each immediate child carries a ``SKILL.md`` entry point).
+    The assembled tree (``catalog_prefix == "./"``) declares no ``commands``:
+    it ships each command as a skill, so only the nested layout, whose source
+    commands stay in place, lists them.
     Rules and hook message contexts are engine cohorts consumed by the
     apothem materializers, not plugin components, so they carry no manifest
     field. Output styles carry none either: the assembled tree ships them in
@@ -370,9 +382,8 @@ def build_plugin_manifest(
             ``*.md``, so no Claude command loads from it — suppresses the
             note while the explicit nested ``commands`` paths stay
             authoritative. Set ``True`` only when ``catalog_prefix`` is
-            nested (the repository-root manifest); the assembled tree's
-            commands already point into its own ``./commands/`` and need no
-            extra entry.
+            nested (the repository-root manifest); the assembled tree has no
+            ``commands`` array.
 
     Returns:
         A manifest dict validating against ``plugin.schema.json``.
@@ -407,6 +418,10 @@ def build_plugin_manifest(
         "skills": [f"{catalog_prefix}skills/"],
         "hooks": f"./{engine_root_rel}/hooks/hooks.json",
     }
+    if catalog_prefix == "./":
+        # The assembled tree ships its commands as skills and has no
+        # ``commands/`` folder; the nested layout keeps its source commands.
+        del manifest["commands"]
     _validate_manifest(manifest)
     return manifest
 
@@ -590,6 +605,34 @@ def _translate_catalog_skills(skills_dir: Path) -> None:
             skill_md.write_text(translated, encoding="utf-8", newline="\n")
 
 
+def _emit_command_skills(commands_dir: Path, skills_dir: Path) -> None:
+    """Write each source command as a skill directory under *skills_dir*.
+
+    The files are those of the claude_code install's ``command_skills`` mode
+    (:func:`claude_code_command_skill_files`) without the ``## Installed
+    Reference Paths`` note, which names a per-install root: a ``SKILL.md`` plus
+    its ``references/`` files. A command whose name is already a native skill
+    (``projectify``, ``workflow``) keeps that skill, as the install does.
+    Files are written with ``\\n`` newlines so the committed tree stays
+    byte-identical across platforms.
+    """
+    from apothem.harnesses._shared.install_driver_converters import (
+        claude_code_command_skill_files,
+    )
+
+    for command in sorted(commands_dir.glob("*.md")):
+        if command.name in _CATALOG_DOC_FILES:
+            continue
+        skill_dir = skills_dir / command.stem
+        if (skill_dir / "SKILL.md").exists():
+            continue
+        files = claude_code_command_skill_files(command.read_text(encoding="utf-8"))
+        for name, text in sorted(files.items()):
+            target = skill_dir / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8", newline="\n")
+
+
 def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     """Materialize the canonical plugin source tree at ``dest_root``.
 
@@ -654,7 +697,7 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     #    reproduce. Copied files are unaffected — they carry source bytes.
     (lib_dir / "apothem_lib.py").write_text(_SHIM_BODY, encoding="utf-8", newline="\n")
 
-    # 4. Catalog dirs: skills/agents/commands/rules/output-styles copied to plugin root.
+    # 4. Catalog dirs: skills/agents/rules/output-styles copied to plugin root.
     #    The catalog directories become harness DISCOVERY directories at the
     #    plugin root, where every top-level entry is interpreted as a component.
     #    ``build_plugin_manifest`` already omits the directory READMEs from the
@@ -683,6 +726,17 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     #     does. Only the plugin-root catalog changes; the lib/apothem engine
     #     copy keeps the source form.
     _translate_catalog_skills(dest_root / "skills")
+
+    # 4c. Commands: shipped as skills (SKILL.md plus references/), not copied
+    #     to a plugin-root commands/ folder. Runs after 4b so a command that
+    #     shares a name with a native skill is detected and skipped.
+    commands_src = src_root / _COMMANDS_DIR
+    if not commands_src.is_dir():
+        raise PluginAssemblyError(f"required catalog directory missing: {commands_src}")
+    commands_dest = dest_root / _COMMANDS_DIR
+    if commands_dest.exists():
+        shutil.rmtree(commands_dest)
+    _emit_command_skills(commands_src, dest_root / "skills")
 
     # 5. Hook message catalog: hooks/messages copied to plugin-root hooks/.
     hooks_src = src_root / _HOOK_MESSAGES_REL

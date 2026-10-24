@@ -1,12 +1,13 @@
 ---
 name: "perf-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Audits a deployed repository against the per-class performance budgets at `rules/performance-discipline.md` §1 — hook-handler runtime (10s/30s/60s tiers), verify-ecosystem composite (30s) and per-check (5s), conformity-gate per-dispatch (1s), test-suite full (60s) and per-module (10s), agent-spawn (60s), and the shell sub-budgets at §1.1 (bootstrap.sh 500ms, bootstrap.ps1 1500ms, find-python 200ms, shellcheck 5s, Invoke-ScriptAnalyzer 10s, ruff 5s). Drives the four benchmark drivers under `src/apothem/benchmarks/`, identifies hot paths via USE (Utilization · Saturation · Errors) decomposition, classifies findings mechanically by exceedance — HIGH (>100%) / MEDIUM (25-100%) / LOW (≤25%) — and emits the report at the consuming suite's _inputs/perf-audit-findings.md. Measurement-only; never fabricates a budget or a measurement. Invoke with a repository path, or --focus CLASS to re-measure one class post-remediation."
 argument-hint: "[path/to/repo/] [--focus CLASS] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /perf-audit — Per-Class Performance-Budget Audit
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; the q
 
 ## Pipeline Contract
 
-**Pipeline position.** Terminal review-fortress command at the performance slot. It consumes the deployed repository plus the benchmark-suite outputs and emits the per-class audit report for downstream consumers and the operator's release-readiness sign-off. It modifies no source.
-
-**Audit-fortress sequence.** Position **4 of 11**. **Upstream:** `/security-audit`. **Downstream:** `/architecture-review`. Canonical sequence: `/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`.
-
-**Handoff Manifest.**
-
-- **Consumed.** The deployed source tree (`hooks/`, `tools/`, `tests/`, `agents/`, `hooks/lib/` shell stubs), the four benchmark drivers under `src/apothem/benchmarks/` (`bench_hooks.py`, `bench_validate_ecosystem.py`, `bench_tests.py`, `bench_agents.py`), and the per-class budget table at `rules/performance-discipline.md` §1.
-- **Emitted.** The audit report at `_inputs/perf-audit-findings.md` carrying per-class measurements, exceedance deltas, USE-method hot-path identification, severity-classified findings, and a remediation backlog ratified for the fortress-phase consumer.
-
-**Pre-flight inquiry.** Phase 1 surfaces every budget-override candidate (operator amendments per `rules/performance-discipline.md` §4) through the structured-inquiry channel (`rules/authority-inquiry.md`). Phase 2 surfaces every host-environment ambiguity (Python interpreter selection, shell availability, parallel-worker count) through the canonical channel with the three-segment annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 4 runs the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the candidate report; the attestation block is recorded inside it and surfaced in the audit handoff; any bar failure blocks promotion until resolved per the iterate-on-failure protocol (`rules/pre-emission-gate.md` §3).
-
-### Inquiry Cadence (D4)
-
-Operate at **maximal structured-inquiry saturation**. Every budget-override candidate, benchmark-driver invocation parameter, USE-axis classification choice (utilization vs saturation vs errors), severity-boundary edge case (a measurement landing at exactly 25% or 100%), and gate-bar `n/a (with reason)` marking routes through the canonical channel (`rules/interactive-questions.md` §1) — free-form prose questions as primary input are forbidden. Every invocation carries the three-segment body per §3; every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed state). Up to four questions batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence; Handoff Manifest; Pre-flight inquiry; Pre-emission gate; Inquiry Cadence (D4); Question-fatigue-optimization is FORBIDDEN.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task exceeding this command's mission (auditing a deployed repository against the per-class budgets and emitting the findings report). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit against a repository whose `src/apothem/benchmarks/` directory is absent — surface the gap as an inquiry (the drivers are prerequisite evidence; missing drivers route to the gap-closure path at `rules/persistent-conventions-vigilance.md` §4 Ecosystem Gap Detection). REFUSE remediation authoring — this command identifies, classifies, and emits findings; remediation lands at a downstream change-set per the `rules/production-ready-prs.md` same-change-set discipline.
-
-### Output Surface
-
-The report lands at the consuming suite's `_inputs/perf-audit-findings.md` per the suite-locality invariant (`rules/context-management.md` §2.6.1). Plan-internal files are header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`, so `scripts/inject-header.{sh,py}` is NOT invoked. NEVER write outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location; NEVER mutate the deployed source tree (measurements happen via the benchmark drivers, never via source edits).
-
-### File-Authoring Contract
-
-The report is header-exempt per the `.apothem/**` class; the command never invokes the authorship-header injector on its emissions. Every deployed-repo path reference (e.g. `src/apothem/benchmarks/bench_hooks.py`) is documentary; the artifact remains unmodified.
-
-### Structured Inquiry on Ambiguity
-
-Route through the structured-inquiry channel with the three-segment annotation (`rules/interactive-questions.md` §3) on any uncertainty in identity / scope / preference / security / naming / infrastructure / version data, or any branch-point that materially affects the audit. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data. NEVER invent a budget the rule does not declare; NEVER guess a benchmark-driver invocation form; NEVER classify a finding's severity without the measured exceedance percentage in hand.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -172,7 +144,7 @@ Apply incremental generation (`rules/large-file-generation.md`) past 500 lines.
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's parameter-table row specifies its deltas — `tools-probed:` per-class benchmark drivers under `src/apothem/benchmarks/` · USE-method hot-path identifier · `borderline-classes:` operator-override ratification (per-class budget amendments) · `focus-semantics:` `--focus CLASS` scopes to a single performance class (hooks · validate-ecosystem · tests · agents · shell) · `pipeline-tail-handoff:` audit complete · handoff to remediation.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -187,15 +159,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/architecture-review` to advance the audit-fortress sequence — the canonical successor per the 11-command audit-fortress sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/architecture-review.md` (audit-fortress next-step). The consuming suite's performance-review slot. The four benchmark drivers under `src/apothem/benchmarks/` (every audit invocation drives them). The `memory/expertise-gap-log.md` ledger (HIGH-severity findings route here per `rules/performance-discipline.md` §2). The remediation change-set that consumes the findings backlog (governed by the `rules/production-ready-prs.md` same-change-set discipline).
-- **Driven by ←** `commands/security-audit.md` (audit-fortress upstream).
-- **Satisfies →** The consuming suite's audit-fortress catalog and performance-review slot. The Performance axis at `rules/cognitive-identity.md` §1. `rules/performance-discipline.md` (the path-filtered doctrine this command operationalizes). The `commands/README.md` command catalog's Audit/review-passes row for `/perf-audit`.
-- **Established by ↑** USE method (Brendan Gregg — `https://www.brendangregg.com/usemethod.html`; the systems-performance decomposition framework cited in Phase 3). Core Web Vitals (Google web.dev — LCP/INP/CLS; the user-perceived-latency reference for the Phase 3 hook-handler tier mapping). RAIL model (Google web.dev — Response/Animation/Idle/Load; the conceptual framing for the 10s/30s/60s budget tiers). `rules/performance-discipline.md` §1 per-class budget table (the authoritative catalog). `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy (the Performance axis this command closes).
-- **Gated by ←** The deployed repository's mandatory file presence (`hooks/`, `src/apothem/benchmarks/`, `tests/`, `hooks/lib/bootstrap.{sh,ps1}`). The four benchmark drivers. The harness's Agent + structured-inquiry + Bash + Read + Write tool surface. The `rules/performance-discipline.md` §1 budget table's authoritative status (this command never invents budgets).
-- **Cross-bound with ↔** `commands/plan-review.md` (sibling forensic-audit command — `/plan-review` audits plan suites, `/perf-audit` audits deployed repositories). `commands/plan-execute.md` (the remediation change-sets that consume this command's findings). `rules/performance-discipline.md` (the authoritative budget catalog; this command is its auditing arm). `rules/cognitive-identity.md` (Performance axis of the seven-axes taxonomy). `rules/agent-orchestration.md` (Quality-Team deployment at Phase 2). `rules/option-annotation.md` (every finding's severity rationale cites a concrete-driver class). `rules/authority-inquiry.md` (every budget-override candidate routes through the canonical channel). `rules/pre-emission-gate.md` (Phase 4 fifteen-bar validation). `rules/large-file-generation.md` (incremental generation past 500 lines). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home).
 
 ## Installed Reference Paths
 

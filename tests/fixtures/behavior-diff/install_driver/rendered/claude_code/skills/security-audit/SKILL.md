@@ -1,12 +1,13 @@
 ---
 name: "security-audit"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). Six audit phases (Input Ingest · Secrets + Permissions Sweep · Input-Validation + Injection-Surface Walk · Deserialization + Path-Traversal + RCE Audit · Dependency-CVE + CodeQL Sweep · Findings Emission + Validation Gate) cover secrets-management, input-validation, shell-injection surfaces, SQL-injection surfaces, deserialization safety, path-traversal, dependency CVEs via pip-audit and safety, CodeQL findings disposition, and permission-scope analysis. Emits a severity-ranked findings artifact at the consuming suite's _inputs/security-audit-findings.md with concrete-driver rationale and recommended remediation per finding."
 argument-hint: "[path/to/repo/] [--focus CATEGORY] [--dry-run]"
 disable-model-invocation: true
-portability: "universal"
 allowed-tools: "Read, Glob, Grep"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-02"
+  portability: "universal"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -14,6 +15,8 @@ allowed-tools: "Read, Glob, Grep"
 # /security-audit — Security Posture Audit (OWASP ASVS + Top 10 + CWE Top 25)
 
 ---
+
+> **Reference files.** This skill's reference files sit in the `references/` directory next to this SKILL.md (`${CLAUDE_SKILL_DIR}/references/`). Each *Moved to* pointer below names one of them and says when to read it. A context compaction discards file content you read earlier: after one, you MUST re-read the reference files that govern your current step.
 
 ## Role
 
@@ -33,44 +36,13 @@ Execute `/security-audit`: ingest the host repository, apply six audit phases ag
 
 ## Pipeline Contract
 
-**Pipeline position.** **Terminal review-fortress command.** This command consumes the deployed repository at its current HEAD and emits the security-audit findings artifact downstream operators consume during fortress triage. It does not feed a further `/plan` stage; its output is the ratified record of the security posture at audit time.
-
-**Audit-fortress sequence position.** **Upstream:** `/code-audit`. **Downstream:** `/perf-audit`. Position 3 of 11 in the canonical audit-fortress linear sequence (`/code-review → /code-audit → /security-audit → /perf-audit → /architecture-review → /ux-review → /a11y-audit → /docs-review → /dependency-audit → /supply-chain-audit → /threat-model-audit`).
-
-**Handoff Manifest.**
-
-- **Consumed.** The consuming suite's `_inputs/handoff-manifest.yml` per the schema at `src/apothem/schemas/handoff-manifest.yaml` when invoked from a plan-suite context. The manifest names the repository path, the audit scope (full / focused via `--focus`), and any prior audit's findings artifact for delta comparison.
-- **Emitted.** The same manifest augmented with the findings-artifact path (`_inputs/security-audit-findings.md`), the per-category severity counts (HIGH / MEDIUM / LOW), the OWASP ASVS coverage attestation, the CWE Top 25 coverage attestation, and the Phase 5 validation-gate attestation block.
-
-**Pre-flight inquiry set.** Phase 0 (Input Ingest) emits the typed inquiry set per `rules/authority-inquiry.md`. Every authority-bearing audit decision — secrets-rotation cadence, accepted-risks list, trusted-action allowlist, MCP-server auth endpoint specifics, false-positive triage outcomes — surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
-
-**Pre-emission gate.** Phase 5 (Findings Emission + Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate findings artifact before promotion. The gate attestation block is recorded inside the emitted findings artifact and surfaced in the Handoff Manifest. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
-
-### Inquiry Cadence (D4)
-
-This command operates at **maximal structured-inquiry saturation**. Every HIGH/MEDIUM-boundary classification, every accepted-risk ratification, every false-positive disposition, every dependency-CVE waiver, every CodeQL triage, and every gate-bar `n/a (with reason)` marking routes through the canonical channel per `rules/interactive-questions.md` §1 (free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions may batch per invocation. **Question-fatigue-optimization is FORBIDDEN.**
+> Moved to `references/pipeline-contract.md`. MUST read it before the first step, after any context compaction, and before the final step or any handoff. Covers: Pipeline position; Audit-fortress sequence position; Handoff Manifest; Pre-flight inquiry set; Pre-emission gate; Inquiry Cadence (D4); Question-fatigue-optimization is FORBIDDEN.
 
 ---
 
 ## Foundational Stanzas
 
-The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
-
-### Refusal & Escalation
-
-REFUSE any task whose scope exceeds this command's stated mission (producing the security-audit findings artifact for a host repository). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel. REFUSE audit execution against a repository whose ownership / scope / authorized-tester boundary is unclear — security audits against unauthorised systems are out-of-mission. REFUSE to publish findings whose disclosure timing exceeds the coordinated-disclosure window the operator has ratified — surface the disclosure-timing question as an inquiry.
-
-### Output Surface
-
-The findings artifact lands at the consuming suite's `_inputs/security-audit-findings.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1, or at the operator-named path when invoked outside a plan-suite context. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the findings artifact outside the operator-ratified output surface; NEVER commit secret-bearing evidence (raw token values, private-key bodies) into the artifact — redact per `rules/code-craft-python.md` §4.1 secret-hygiene discipline.
-
-### File-Authoring Contract
-
-The findings artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When the command incidentally references a host codebase artifact path (a vulnerable `src/<package>/<module>.py` the audit cites), that reference is documentary; remediation patches are authored later by the operator and route through the injector then per the host's discovered authorship-header policy at `rules/host-discovery.md`.
-
-### Structured Inquiry on Ambiguity
-
-When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or about any branch-point or judgment call that materially affects the audit outcome — route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data. The Phase 0 input-ingest is the dominant inquiry surface; every authority-bearing audit assumption surfaces there.
+> Moved to `references/foundational-stanzas.md`. MUST read it before the first step and after any context compaction; it binds every step. Covers: Refusal & Escalation; Output Surface; File-Authoring Contract; Structured Inquiry on Ambiguity.
 
 ---
 
@@ -133,26 +105,11 @@ Read the host repository's surface in full. Deploy a Research Team (CM-25A) for 
 
 ### Phase 4 — Dependency-CVE + CodeQL Sweep
 
-**Python CVE sweep.** Run `pip-audit --strict --desc` against the resolved environment (or `pip-audit --requirement requirements.txt` against the manifest when no environment exists); cross-validate with `safety check --full-report` and `osv-scanner --lockfile=poetry.lock`. Per finding, record the CVE ID, affected package + version, fixed version, CVSS score, vulnerability class (RCE / DoS / Info-Disclosure / Auth-Bypass), and upgrade-path complexity (drop-in patch / minor bump / major bump with breaking changes). Severity floor: **HIGH** for CVSS ≥ 7.0 OR public exploit availability; **MEDIUM** for CVSS 4.0–6.9; **LOW** for CVSS < 4.0 OR operator-ratified accepted-risk per `rules/authority-inquiry.md`.
-
-**JavaScript / Node sweep.** When `package.json` is present, run `npm audit --json` and `npm audit --audit-level=moderate`; cross-validate with `snyk test --severity-threshold=medium` when the host has Snyk configured per host-discovery.
-
-**CodeQL disposition.** When the host's CI runs CodeQL, fetch the most recent run's SARIF report and triage each finding against the categories above — record the disposition (true-positive scheduled for remediation / false-positive with evidence / accepted-risk with operator ratification). When CodeQL is not configured, emit a **HIGH** finding recommending CodeQL workflow installation per OWASP ASVS V14 (Configuration) and CWE-1357 (Reliance on Insufficiently Trustworthy Component).
-
-**Advisory disposition delegates to `skills/vuln-triage`.** Each dependency-CVE and CodeQL true-positive finding routes through the vuln-triage skill's seven-field disposition (severity band + affected-surface map + reachability verdict + remediation route from the closed set `{patch, upgrade, mitigate, accept}`); the command records the routed band per finding and does not re-publish CVSS or re-solve the dependency graph. The `accept` route is a security ratification — when the host has not ratified an accepted-risk threshold, it blocks on inquiry per the skill's contract.
+> Moved to `references/step-05-dependency-cve-codeql-sweep.md`. MUST read it in full before executing this step.
 
 ### Phase 5 — Findings Emission + Validation Gate
 
-Emit the consuming suite's `_inputs/security-audit-findings.md` with the canonical sections:
-
-1. **`## §1 Audit Metadata`** — HEAD commit SHA, ISO-8601 timestamp, scope (full / `--focus` value), tool-versions table (`pip-audit` · `safety` · `bandit` · `semgrep` · `gitleaks` · `trufflehog` · CodeQL).
-2. **`## §2 Executive Summary`** — per-severity counts (HIGH / MEDIUM / LOW) per category + the top-three findings ordered by exploitability × impact.
-3. **`## §3..§N` Per-Category Findings** — one section per audited category (Secrets · Permissions · Input-Validation · Shell-Injection · SQL-Injection · Deserialization · Path-Traversal · RCE · Dependency-CVE · CodeQL). Each finding carries identifier (`SF-<N>`) · severity · CWE mapping · OWASP ASVS / Top 10 mapping · file:line-range + commit SHA · observed pattern · recommended remediation · concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1.
-4. **`## §Coverage Attestation`** — explicit attestation against OWASP ASVS v4.0.3+ chapters, OWASP Top 10 (2021) categories, and CWE Top 25 (2024) weaknesses; uncovered chapters / categories / weaknesses named with rationale.
-5. **`## §Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
-6. **`## §Bindings (§0.j five-direction)`** — the artifact's outward bindings.
-
-Apply incremental generation per `rules/large-file-generation.md` above 500 lines. Run the fifteen-bar gate per `rules/pre-emission-gate.md` (canonical per-bar table at `rules/pre-emission-gate-bars.md` §1). Security-tier deltas: **M5** (every finding cites a verified file:line + commit SHA; no fabrication; secret evidence redacted); **M7** (every severity-boundary, accepted-risk, and false-positive call carries `**Recommended**` + concrete-driver rationale). Iterate on bar failure per §3 until every bar passes or its three-round cap returns BLOCKED, then emit the attestation block.
+> Moved to `references/step-06-findings-emission-validation-gate.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -170,7 +127,7 @@ Apply incremental generation per `rules/large-file-generation.md` above 500 line
 
 ## Decision Tree
 
-The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §Audit-Fortress Phase Skeleton; this command's row in the parameter table (`tools-probed:` secrets sweep · injection-surface walk · deserialization / path-traversal / RCE detectors · CodeQL · CVE feeds · `borderline-classes:` false-positive vs. accepted-risk triage · `focus-semantics:` `--focus` restricts to a single category (secrets / permissions / input-validation / injection / deserialization / RCE / CVE) · `pipeline-tail-handoff:` Audit handoff to operator / fortress-phase triage) specifies its deltas.
+> Moved to `references/decision-tree.md`. SHOULD read it when a branch, gate failure, or state transition is unclear.
 
 ---
 
@@ -185,15 +142,6 @@ The audit-fortress phase skeleton lives at `skills/ecosystem-audit/SKILL.md` §A
 ## Recommended Next Step
 
 Invoke `/perf-audit` to advance the audit-fortress sequence; `/perf-audit` is the canonical successor per the 11-command audit-fortress canonical sequence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** `commands/perf-audit.md` (audit-fortress next-step). The `agents/security-scanner.md` dispatch (Phases 1–3 invoke its read-only coarse-scan first-pass). The `skills/secret-rotation` routing (each live-credential finding routes its remediation there) and the `skills/vuln-triage` routing (each CVE / CodeQL finding routes its disposition there). Security fortress triage at every host repository's hardening campaign (the findings artifact is the canonical input to remediation prioritization). The operator's remediation patches (each finding's `recommended remediation` field drives the patch's scope). The Handoff Manifest's per-severity attestation that downstream operators consume during release-readiness review.
-- **Driven by ←** `commands/code-audit.md` (audit-fortress upstream).
-- **Satisfies →** The audit-fortress command catalog's security slot. The `commands/README.md` command catalog's Audit/review-passes row for `/security-audit` (the registry entry that ratifies this command's place in the slash-command catalog). The seven-axes-of-breadth Security axis at `rules/cognitive-identity.md` §1 (this command operationalizes the Security axis as a binding audit property).
-- **Established by ↑** OWASP Application Security Verification Standard (ASVS) v4.0.3+ — the canonical verification catalog. OWASP Top 10 (2021) — the canonical web-application risk catalog. CWE Top 25 (2024) Most Dangerous Software Weaknesses — the canonical weakness-class catalog. `rules/cognitive-identity.md` §1 seven-axes-of-breadth taxonomy.
-- **Gated by ←** The host repository's git working-tree presence at a ratified HEAD commit. Operator authorization to audit the system-under-test (no audits against unauthorised systems). The harness's Agent + structured inquiry + Bash + Read + Write tool surface. The availability of `pip-audit` + `safety` + `bandit` + `semgrep` + `gitleaks` + `trufflehog` on the audit host.
-- **Cross-bound with ↔** `commands/supply-chain-audit.md` (sibling fortress-phase command — supply-chain provenance audit shares the dependency-CVE surface this command audits). `commands/threat-model-audit.md` (sibling fortress-phase command — threat-model audit provides the attack-tree context this command's findings prioritize against). `commands/dependency-audit.md` (sibling fortress-phase command — dependency-licensing + version-pinning audit overlaps with this command's Phase 4 dependency-CVE sweep). `rules/cognitive-identity.md` (seven-axes Security axis drives the audit posture). `rules/authority-inquiry.md` (every authority-bearing audit decision routes through the canonical channel). `rules/option-annotation.md` (every severity ratification cites a concrete-driver class). `rules/pre-emission-gate.md` (Phase 5 fifteen-bar validation). `rules/production-ready-prs-surfaces.md` §2 (supply-chain posture preservation is the upstream policy this command's Phase 1 permission-scope analysis enforces). `skills/ecosystem-audit/SKILL.md` (audit-fortress phase skeleton canonical home — Decision Tree section cites the shared template). `agents/security-scanner.md` (owns the read-only five-class coarse-scan first-pass Phases 1–3 dispatch; the command deepens its findings into the OWASP/CWE-attested artifact). `skills/secret-rotation/SKILL.md` (owns the revoke-before-re-issue rotation each Phase 1 live-credential finding routes its remediation to). `skills/vuln-triage/SKILL.md` (owns the seven-field CVE / advisory disposition each Phase 4 dependency-CVE and CodeQL finding routes through).
 
 ## Installed Reference Paths
 

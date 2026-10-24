@@ -1,13 +1,14 @@
 ---
 name: "decision-matrix"
-version: "0.1.0"
-updated: "2026-10-24"
 description: "Choose between two or more options with a weighted, evidence-cited matrix. Matched when the user asks to 'compare these options', 'help me choose between', 'weigh the trade-offs', or 'which one should we pick'. Eliminates dealbreakers first, tests whether the winner flips under weight changes, names a runner-up and a first step. Never invents weights."
-archetype: "research-template"
 user-invocable: true
 argument-hint: "[decision question]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, WebSearch"
+metadata:
+  version: "0.1.0"
+  updated: "2026-10-24"
+  archetype: "research-template"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
