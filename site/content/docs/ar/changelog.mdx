@@ -93,6 +93,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`make lint` also runs `mypy`.** The target now matches the lint gate the
   docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
 
+### Removed
+
+- **Funding links.** `.github/FUNDING.yml` and the `Funding` URL in
+  `pyproject.toml` are gone; the project takes no sponsorship.
+
 ### Fixed
 
 - **The plans guard no longer fires on the project's own plans tree.** It
@@ -124,10 +129,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   as they are served, broken links are fixed, and internal decision ids no
   longer appear in shipped commands, rules or templates.
 
-### Removed
+### Security
 
-- **Funding links.** `.github/FUNDING.yml` and the `Funding` URL in
-  `pyproject.toml` are gone; the project takes no sponsorship.
+- **Release build tooling updated for two advisories.** The hash-locked build
+  environment moves to `certifi` 2026.10.19 (PYSEC-2026-4320, a distrusted
+  root certificate) and `setuptools` 84.1.0 (GHSA-xmj3-9gf7-h52w, a
+  legacy wheel-install path), and `build-system.requires` pins the same
+  `setuptools`. Neither advisory reaches an Apothem install: the setuptools
+  path is reached only through the deprecated `setup_requires` mechanism,
+  which Apothem does not use, and the build environment's `certifi` is not
+  shipped.
 
 ## [1.2.2] - 2026-10-20
 

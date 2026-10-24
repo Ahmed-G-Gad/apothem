@@ -9,7 +9,7 @@
 # isolated build fetch whatever PyPI served (the 1.1.0 wheel says setuptools
 # 84.0.0 while the toolchain pinned 83.0.0). tests/scripts/test_normalize_sdist.py
 # holds the two pins together.
-requires      = ["setuptools==83.0.0"]
+requires      = ["setuptools==84.1.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
