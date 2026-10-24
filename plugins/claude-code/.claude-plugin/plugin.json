@@ -68,9 +68,11 @@
     "./commands/workflow.md"
   ],
   "agents": [
+    "./agents/citation-auditor.md",
     "./agents/codebase-explorer.md",
     "./agents/convention-auditor.md",
     "./agents/dependency-auditor.md",
+    "./agents/design-critic.md",
     "./agents/fact-checker.md",
     "./agents/mcp-builder.md",
     "./agents/memory-auditor.md",

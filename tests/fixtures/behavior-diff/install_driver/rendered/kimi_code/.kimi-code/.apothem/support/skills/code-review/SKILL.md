@@ -1,7 +1,7 @@
 ---
 name: "code-review"
 version: "0.1.0"
-updated: "2026-10-02"
+updated: "2026-10-24"
 description: "Operator-driven per-file code-quality review pass. Walks every source file under src/, scripts/, and tools/ in a deployed repository and emits per-file findings covering readability, maintainability, idiom-conformance, naming, complexity, magic-numbers, and comment-quality per the four code-craft rules (Python, shell, Markdown, universal-delegation) and the ten quality dimensions. Output lands at the consuming suite's _inputs/code-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. Distinct from `/code-audit` (cross-file forensic, repository-corpus scope) — `/code-review` is the per-file craft surface; not for plan-suite prose audits (use `/plan-review`) or remediation authoring (the command is read-only and never writes source)."
 argument-hint: "[path/to/repo/] [--focus FILE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
@@ -109,6 +109,10 @@ Apply the per-language code-craft rule to each file, then the ten-dimension chec
 | `*.md` | `rules/code-craft-markdown.md` | purpose-driven structure · sentence-level justification · precision over politeness · active voice · hedge-elimination · heading-hierarchy · code-block language tags |
 | other | `rules/code-craft-conventions.md` | host-discovery + sibling-convergence + the M13.1–M13.11 universal floor |
 
+Review deletions as well as additions. When the walk is narrowed by `--focus` to a change-set, read what was removed (dropped validations, deleted tests, widened or removed error handling, retired files and their remaining callers) with the same care as what was added; a removal that leaves a caller, doc or test orphaned is a finding.
+
+Zero findings for a file, or for the whole tree, is a valid result. Do not stretch a LOW to fill a quiet file; record the file as walked with no findings.
+
 Across every file, apply `rules/ten-dimension-check.md` (rigor · coherence · configurability · readability · orphanism · structurality · architecture · naming · scholarly referencing · examples-tests-docs). Each dimension failure is a finding candidate.
 
 **Guard-class taxonomy — delegates to `skills/surgical-guard`.** The clean-code / test / docs failure-mode taxonomy the per-file walk surfaces is owned by `skills/surgical-guard` Stage 2 (the reactive guard): clean-code (swallowed / catch-all errors, hardcoded success returns, hallucinated APIs, premature abstraction, silent contract changes) · test (mock-boundary violations, duplicate bodies, hollow assertions, missing coverage of the changed behavior) · docs (hallucinated symbols, broken samples, docs-vs-code drift). The skill's canonical home for that taxonomy is not re-enumerated here; the per-file walk applies it as the finding-class lens while the code-craft rules ground each finding's rule clause. `surgical-guard` guards a *diff* before it lands; `/code-review` audits a *deployed tree* into a read-only findings artifact — the two share the taxonomy, not the surface.
@@ -116,6 +120,8 @@ Across every file, apply `rules/ten-dimension-check.md` (rigor · coherence · c
 **Externalise** per-file finding drafts at the suite's `_inputs/code-review-per-file/` (one file per source file reviewed), each enumerating raw findings with `file:line` citations before triage.
 
 ### Phase 2 — Per-Finding Triage
+
+Before severity is assigned, re-read each draft against its cited `file:line` and drop any that the source does not support. Keep a dropped-draft ledger (`Draft ID` · `File:Line` · reason dropped) so the filtering stays auditable. A second reviewer run on the same model that repeats a finding adds coverage, not independent confirmation; confirm a contested finding with a different lens (a grep for callers, a test run, a rule clause) rather than another read.
 
 Assign each drafted finding a severity from the closed taxonomy `{HIGH, MEDIUM, LOW}` with concrete-driver rationale per `rules/interactive-questions-canonical-shapes.md` §3.2.1:
 
@@ -135,8 +141,9 @@ Emit the suite's `_inputs/code-review-findings.md` with the following canonical 
 2. **`## §2 ... §N` Per-File Findings** — one section per source file carrying findings. Each finding records: `Finding ID` (e.g., `CR-001`) · `File:Line` · `Severity` · `Rule clause` (cite the specific code-craft rule subsection or ten-dimension dimension number) · `Axes` (the seven-axes attestation) · `Rationale` (concrete-driver class) · `Remediation pointer` (the rule clause that names the canonical fix, never the fix itself).
 3. **`## §Findings Index`** — table indexed by Finding ID with columns `File:Line` · `Severity` · `Axes` · `Rule clause`. Indexed by severity descending.
 4. **`## §Severity Distribution`** — count table per severity per axis, plus the per-language file count for context.
-5. **`## §Validation Gate Outcome`** — the Phase 4 fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
-6. **`## §Bindings (§0.j five-direction)`** — the artifact's own outward bindings to upstream (the deployed repository) and downstream (remediation surfaces).
+5. **`## §Dropped Drafts`** — the dropped-draft ledger from Phase 2; an empty ledger is stated as such.
+6. **`## §Validation Gate Outcome`** — the Phase 4 fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
+7. **`## §Bindings (§0.j five-direction)`** — the artifact's own outward bindings to upstream (the deployed repository) and downstream (remediation surfaces).
 
 Apply incremental generation per `rules/large-file-generation.md` when the artifact exceeds 500 lines. Plan the section structure before authoring; emit the first section via Write; append subsequent sections via Edit; verify transition coherence at every boundary.
 
@@ -157,7 +164,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 ## Critical Rules
 
 - **NEVER author remediation.** The command's surface is diagnostic; remediation routes through `/plan-execute` or operator-initiated edits.
-- **NEVER fabricate findings.** Every finding cites a concrete `file:line` and a concrete rule clause.
+- **NEVER fabricate findings.** Every finding cites a concrete `file:line` and a concrete rule clause; no findings is a valid result, so never pad a review to look productive.
 - **NEVER use vague-rationale phrases as the sole justification for a severity assignment.** Cite a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1.
 - **NEVER modify source.** The command is read-only against the repository; only the findings artifact is written.
 - **NEVER assume.** Invoke the structured-inquiry channel for any ambiguity in scope, severity, or axis attestation per the canonical channel.
