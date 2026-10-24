@@ -275,6 +275,8 @@ If a gate fails: diagnose, fix, re-run (up to 2 cycles — one cycle is one pass
 
 **Commit fixes immediately (CM-13B).**
 
+**Gate evidence.** A gate claim is valid only with three items recorded beside it in the phase `REPORT.md` and `PROGRESS.md`: the command that ran, its output (exit status plus the summary lines), and the SHA of HEAD when it ran. A claim missing any of the three is unverified, whatever it says. A gate result goes stale the moment HEAD moves past its recorded SHA, whether through a fix commit, an amend, or a rebase, and a stale result is re-run before anything relies on it, in particular after the Step 6.9 commit gate and before the phase is marked COMPLETE, when the recorded SHA must equal HEAD. Gate state is never edited by hand: no flipping a status, no rewriting a SHA, no pasting output from another run. The only way to change recorded gate state is to run the gate again and record that run.
+
 ### Step 5: Maintenance
 
 Deploy a Documentation Team (CM-25A) for parallel updates — one agent per file, non-overlapping (CM-25E).
@@ -328,6 +330,8 @@ If this is the final phase: generate `COMPLETION.md` per seriousness level (EXPL
 - Critical files for the next phase (ordered list — the blind-bootstrap manifest).
 - Watch items, blockers.
 
+Keep the hand-off receipt, meaning this Resumption Contract plus the Output Registry summary, within about 15 lines. Detail belongs in the phase `REPORT.md`; the receipt links to it. A receipt that grows past that size is a sign the next phase will start by re-reading history instead of acting on the contract.
+
 **8.3 — Progress Tracker:** Mark the phase COMPLETE (or BLOCKED if unresolvable issues surfaced in Step 6), update counts, set next steps. If BLOCKED: record the blocker, the blocking task/verification, and what must be resolved. If the phase contains sub-phases, verify all sub-phase tracker rows are COMPLETE before marking the parent phase COMPLETE. If any sub-phase is BLOCKED, mark the parent phase BLOCKED with a reference to the blocked sub-phase.
 
 **8.4 — Phase Report Cross-Reference:** Ensure the phase report (Step 7) path (`phases/NN-kebab-topic/REPORT.md`) is referenced in the Phase Tracker's Report column.
@@ -374,6 +378,7 @@ If any context-health signal from `rules/context-management.md` §1 or any regre
 - **NEVER assume.** Invoke the structured-inquiry channel for any ambiguity (canonical channel per `rules/interactive-questions.md`).
 - **NEVER embed plan-internal references** in codebase deliverables or development artifacts — enforce the CM-7 forbidden-terms and protected-artifacts lists (`CLAUDE.md` CM-7).
 - **NEVER mark complete** without all verifications passing.
+- **NEVER claim a gate** without its command, output, and the SHA it ran on; **NEVER trust** a gate result recorded before HEAD moved; **NEVER edit** recorded gate state by hand.
 - **NEVER skip** quality gates. On a **code-bearing** phase, also never skip developer-guide updates or the dependency audit (scope per seriousness); a **non-code** phase has neither, so those two are not applicable (Step 5 skips them).
 - **NEVER defer commits** on a code-bearing phase — per-task at SHARED+, per-phase at PERSONAL_USE. End-of-phase commit gate (CM-13C). A non-code phase carries no commit obligation beyond committing any version-controlled artifacts the host tracks (Step 6.9).
 - **NEVER exceed scope** — log out-of-scope needs in PLAN-NOTES.md.

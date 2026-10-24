@@ -99,7 +99,7 @@ Emit the pre-flight inquiry set: the source-budget ceiling when unfixed, and a s
 
 ### Phase 5 — Ledger Emission & Pre-Emission Gate
 
-Compose `{suite}/_inputs/source-ledger.md`: the ranked screened-in table (id, citation, authority/recency/relevance scores, the hypothesis/sub-query each bears on), the screened-out record (candidate, failed criterion), the dedup record (collapsed identifiers, reason), the citation index (every `sources/<id>.md` ↔ its canonical citation), and the R1/R4 attestation block. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md`; the R4 citation-integrity bar is hard — a phantom citation blocks emission. Amend the Handoff Manifest with the emitted paths, the screened-in/screened-out/dedup counts, and the attestation. Emit the manifest with `downstream: /research-synthesis` (or `downstream: none (standalone invocation)` under `--standalone`).
+Compose `{suite}/_inputs/source-ledger.md`: the ranked screened-in table (id, citation, authority/recency/relevance scores, the hypothesis/sub-query each bears on), the screened-out record (candidate, failed criterion), the dedup record (collapsed identifiers, reason), the citation index (every `sources/<id>.md` ↔ its canonical citation), the acquisition worklist, and the R1/R4 attestation block. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md`; the R4 citation-integrity bar is hard — a phantom citation blocks emission. Amend the Handoff Manifest with the emitted paths, the screened-in/screened-out/dedup counts, and the attestation. Emit the manifest with `downstream: /research-synthesis` (or `downstream: none (standalone invocation)` under `--standalone`).
 
 ---
 
@@ -127,7 +127,7 @@ R3 (falsifiability), R5 (preregistration), R7 (statistical rigor), R8 (open-scie
 | Artifact | Path | Purpose |
 | -------- | ---- | ------- |
 | Per-source extraction | `{suite}/sources/<id>.md` | One provenance-bearing record per screened-in source: citation, access date, attribution, load-bearing claims, stated method/scope, discovery provenance. |
-| Source ledger | `{suite}/_inputs/source-ledger.md` | The ranked screened-in table, the screened-out record, the dedup record, the citation index, the comparator/baseline provenance track (each comparator's citation, method family, implementation status, version/config, and `cannot-confirm`/`cannot-fetch` verdict), and the R1/R4 attestation block. |
+| Source ledger | `{suite}/_inputs/source-ledger.md` | The ranked screened-in table, the screened-out record, the dedup record, the citation index, the comparator/baseline provenance track (each comparator's citation, method family, implementation status, version/config, and `cannot-confirm`/`cannot-fetch` verdict), the acquisition worklist, and the R1/R4 attestation block. |
 | Discovery scratch | `{suite}/_inputs/notes.md` | Sub-query decomposition and ratified screening contract; deleted or distilled at stage exit per the forge lifecycle. |
 | Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Amended at stage exit with emitted paths, screened-in/out/dedup counts, and the gate attestation; `downstream: /research-synthesis`. |
 
@@ -165,6 +165,7 @@ R3 (falsifiability), R5 (preregistration), R7 (statistical rigor), R8 (open-scie
 - **NEVER synthesize.** This stage collects and qualifies; the SOTA map, the literature matrix, and the gap statement are `/research-synthesis`'s remit.
 - **NEVER emit a ledger with an unresolved citation.** The R4 citation-integrity bar is hard; a phantom citation blocks emission.
 - **NEVER fabricate a comparator or baseline.** A comparator whose source cannot be confirmed or whose artifact cannot be fetched is marked `cannot-confirm`/`cannot-fetch` and excluded from the load-bearing set — never invented, approximated from memory, or promoted (R1, R4).
+- **NEVER drop an inaccessible source silently.** It stays on the acquisition worklist with a status until it is fetched, supplied, or screened out with a recorded reason.
 - **NEVER proceed without the ratified spec** unless `--override` supplies an audited rationale; the spec is the screening contract.
 
 ---

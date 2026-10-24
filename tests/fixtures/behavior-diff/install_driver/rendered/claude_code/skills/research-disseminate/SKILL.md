@@ -135,6 +135,7 @@ Read the publication record in full. Compose the preprint announcement (the prep
 - **NEVER alter a claim while disseminating.** The science is frozen at the publish boundary; a public artifact restates the paper, it never invents a new conclusion.
 - **NEVER fabricate an archival identifier.** Every persistent identifier and accession is a real, resolvable deposit; Phase 4 re-dereferences each one; an unresolvable identifier blocks the plan line (R8).
 - **NEVER fabricate an impact metric.** An altmetric figure is recorded from a real tracking surface or planned as a future measurement, never invented (R10).
+- **NEVER draft a rebuttal response that claims a change the revision lacks**, and never mark a comment `answered` without citing the revised text.
 - **NEVER ship a public claim the paper does not make.** Every public-artifact claim is re-checked against the published paper; an invented or overstated claim blocks the artifact (R4).
 - **NEVER de-anonymize a preprint issued under a still-active double-blind policy.** Author, institution, and system identity are held out of the body until the designated post-acceptance stage; full disclosure is reserved for that stage and the held-out identity is recorded as the de-anonymization payload, never restored earlier (R6).
 - **NEVER omit the FAIR deposit's access terms.** The data/code-availability access basis is stated, with any restriction and its basis declared, never elided (R6, R8).

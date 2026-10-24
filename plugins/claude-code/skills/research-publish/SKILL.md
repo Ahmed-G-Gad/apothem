@@ -136,6 +136,7 @@ The stage runs as one disciplined sprint: a single venue-formatted package at th
 - **NEVER fabricate a DOI.** The reserved DOI is a real, resolvable identifier minted through the archival authority, never a placeholder string (R4, R6).
 - **NEVER omit a required declaration.** A nil ethics or conflict-of-interest statement is declared explicitly when accurate, never silently dropped (R6).
 - **NEVER call a package ready with an unmet checklist line.** Only an all-`met` submission checklist earns the `ready` verdict; a single `unmet` line holds the package at `not-ready`.
+- **NEVER call a package ready on the strength of its inputs.** The produced archive is retrieved, its contents and checksums are verified against the manifest, and the outcome is recorded before the `ready` verdict.
 - **NEVER submit on the operator's behalf.** The stage produces a ready package and stops; the operator performs the submission.
 - **NEVER skip the validation gate.** All fifteen bars pass before the publication record is emitted and the Handoff Manifest closes.
 

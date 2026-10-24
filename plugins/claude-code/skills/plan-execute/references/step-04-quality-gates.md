@@ -21,3 +21,5 @@ If a gate fails: diagnose, fix, re-run (up to 2 cycles — one cycle is one pass
 `multiSelect: false`.
 
 **Commit fixes immediately (CM-13B).**
+
+**Gate evidence.** A gate claim is valid only with three items recorded beside it in the phase `REPORT.md` and `PROGRESS.md`: the command that ran, its output (exit status plus the summary lines), and the SHA of HEAD when it ran. A claim missing any of the three is unverified, whatever it says. A gate result goes stale the moment HEAD moves past its recorded SHA, whether through a fix commit, an amend, or a rebase, and a stale result is re-run before anything relies on it, in particular after the Step 6.9 commit gate and before the phase is marked COMPLETE, when the recorded SHA must equal HEAD. Gate state is never edited by hand: no flipping a status, no rewriting a SHA, no pasting output from another run. The only way to change recorded gate state is to run the gate again and record that run.

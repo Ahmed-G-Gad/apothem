@@ -21,9 +21,11 @@
   "documentationUrl": "https://apothem.ahmedgad.com/docs",
   "supportUrl": "https://github.com/ahmed-g-gad/apothem/issues",
   "agents": [
+    "./agents/citation-auditor.md",
     "./agents/codebase-explorer.md",
     "./agents/convention-auditor.md",
     "./agents/dependency-auditor.md",
+    "./agents/design-critic.md",
     "./agents/fact-checker.md",
     "./agents/mcp-builder.md",
     "./agents/memory-auditor.md",

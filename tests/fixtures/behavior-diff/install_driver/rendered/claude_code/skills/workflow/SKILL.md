@@ -7,7 +7,7 @@ disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep, Agent, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   archetype: "orchestration-template"
 ---
 
@@ -91,6 +91,10 @@ Every load-bearing finding faces an independent refute-by-default verification p
 - A finding survives only on a non-refute majority; a majority-refute kills it.
 - Where a finding can fail in more than one way, give each critic a distinct lens (correctness / security / reproducibility / regression), not N identical refuters.
 - Contradictory verdicts surface to the operator with evidence — never silently reconciled.
+- Tell every reviewer and critic in its brief that returning no findings (or failing to refute) is a valid, expected result. A brief that demands output makes reviewers invent flaws.
+- Point reviewers at what was removed as well as what was added: deleted lines, files, tests, validations and error handling are reviewed with the same care as new code.
+- Treat a non-refute majority as a filter, not proof. Critics built on the same model share blind spots, so their agreement counts as coverage, not independent confirmation. Raise confidence by varying the lens, the evidence source or the tool (a test run, a grep, a reproduction), not by adding more identical votes.
+- Keep a verifier ledger: every finding dropped during verification is listed with the critic lens and the reason, so a reader can audit what the filter removed.
 
 ### 5. Remediate (mission + disclosed beyond-mission)
 
@@ -120,7 +124,8 @@ Autonomy is opt-in, never the shipped default, per `rules/agnostic-posture.md`. 
 A deterministic result surface:
 
 - The **mission outcome** (testable against the framing at step 1).
-- The **surviving (verified) findings** with evidence.
+- The **surviving (verified) findings** with evidence, or an explicit statement that none survived.
+- The **verifier ledger**: each dropped finding and why it was dropped.
 - The **disclosure ledger** of every beyond-mission amendment.
 - The **fifteen-bar gate attestation** per `rules/pre-emission-gate.md`.
 - A single `## Recommended Next Step`.

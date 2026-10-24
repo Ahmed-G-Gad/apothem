@@ -30,7 +30,7 @@ The deep workflow procedure is the `workflow` skill (`skills/workflow/SKILL.md`)
 
 **Consumed.** The operator's target path; the `--dimensions` scope; the `--autonomous` opt-in; the `--verify-panel N` budget. Each dispatched audit consumes the deployed repository surface its own contract defines.
 
-**Emitted.** The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`), plus the workflow's deterministic result surface: the synthesized severity-triaged findings report (deduplicated across dimensions), the per-dimension verified-findings sets with evidence, the fifteen-bar gate attestation, the per-run workflow trace (dimensions run, verification verdicts, dedup decisions), and the single recommended next move (route HIGH findings to remediation).
+**Emitted.** The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`), plus the workflow's deterministic result surface: the synthesized severity-triaged findings report (deduplicated across dimensions), the per-dimension verified-findings sets with evidence, the fifteen-bar gate attestation, the verifier ledger (every dropped finding with its reason), the per-run workflow trace (dimensions run, verification verdicts, dedup decisions), and the single recommended next move (route HIGH findings to remediation).
 
 **Pre-flight inquiry.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the target or dimension set is underspecified — which repository, which dimensions, scope direction. The `--autonomous` opt-in is itself confirmed before continuous parallel dispatch engages.
 
@@ -85,10 +85,10 @@ The workflow self-augments from current authoritative sources, not training memo
 
 1. **Frame** — read the audit mission, resolve the target repository and dimension set (via inquiry where ambiguous), state the audit outcome (a synthesized severity-triaged findings report), and record the report-only boundary.
 2. **Decompose the fortress** — map the mission onto the scoped dimensions from the eleven-command set (`code-review`, `code-audit`, `architecture-review`, `docs-review`, `security-audit`, `dependency-audit`, `supply-chain-audit`, `threat-model-audit`, `perf-audit`, `a11y-audit`, `ux-review`); each dimension is an independent workflow work-item whose return contract is its severity-triaged findings artifact. The dimensions are largely independent, so they fan out in parallel (a Quality Team per `rules/agent-orchestration.md` §1), not in a chain.
-3. **Dispatch dimensions (opt-in gated)** — dispatch each scoped audit via its first-class command, in parallel under `--autonomous`; otherwise present the dimension plan and confirm. Per `rules/agent-orchestration.md`, each audit may itself fan out its own internal agent team.
-4. **EXTREMELY-CRITIQUE verify each finding** — before a finding survives into the report, run N refute-by-default critics over it across distinct lenses (is-it-real · is-it-in-scope · does-the-evidence-hold · is-the-severity-right); a finding survives only on a non-refute majority; a refuted finding is dropped with its refutation recorded.
+3. **Dispatch dimensions (opt-in gated)** — dispatch each scoped audit via its first-class command, in parallel under `--autonomous`; otherwise present the dimension plan and confirm. Per `rules/agent-orchestration.md`, each audit may itself fan out its own internal agent team. State in every dispatch brief that a dimension with no findings is a valid result, and that removed code, files, tests and checks are in scope alongside added ones.
+4. **EXTREMELY-CRITIQUE verify each finding** — before a finding survives into the report, run N refute-by-default critics over it across distinct lenses (is-it-real · is-it-in-scope · does-the-evidence-hold · is-the-severity-right); a finding survives only on a non-refute majority; a refuted finding is dropped and entered in the verifier ledger with its lens and reason. Critics on the same model agree for shared reasons, so their agreement is coverage, not independent confirmation: vary the lens or the evidence source rather than raising the panel size.
 5. **Synthesize** — deduplicate surviving findings across dimensions (a single root cause flagged by two dimensions collapses to one finding citing both), severity-triage (HIGH/MEDIUM/LOW), and route each to its remediation target. The synthesis is the report's unique value over per-dimension concatenation.
-6. **Self-check & emit** — run the workflow's fifteen-bar gate over the synthesized report, record the attestation, release raw per-dimension output, and emit the single recommended next move (route HIGH findings to remediation; re-run after fixes).
+6. **Self-check & emit** — run the workflow's fifteen-bar gate over the synthesized report, record the attestation, release raw per-dimension output, and emit the single recommended next move (route HIGH findings to remediation; re-run after fixes). An empty report is a valid outcome and is emitted as such, never padded.
 
 ---
 
@@ -98,7 +98,7 @@ The workflow self-augments from current authoritative sources, not training memo
 | ---------- | ---- | ----------------- |
 | Report-only | this command's Report-Only Boundary (R-A2) | `/audit` surfaces + routes findings; it never edits source. |
 | First-class audits preserved | the per-dimension audit commands | The orchestrator never reimplements an audit; audit behavior is unchanged. |
-| Adversarial verification | `rules/agent-orchestration-patterns.md` §Quality patterns | The Phase 4 refute-by-default panel gates every surviving finding. |
+| Adversarial verification | `rules/agent-orchestration-patterns.md` §Quality patterns | The Phase 4 refute-by-default panel gates every surviving finding; each dropped finding is entered in the verifier ledger. |
 | Opt-in dispatch | `rules/agnostic-posture.md` | Continuous parallel dispatch engages only under `--autonomous`; default presents the plan and confirms. |
 | Dedup over concatenation | `rules/canonical-layout-reporting-tiers.md` §1.2 | Phase 5 synthesizes + deduplicates rather than concatenating per-dimension reports. |
 | Disclosure | `rules/disclosure-ledger.md` | Every routed finding carries a concrete-driver rationale + remediation target. |
@@ -110,7 +110,7 @@ The workflow self-augments from current authoritative sources, not training memo
 ## Output
 
 - The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`).
-- A deterministic result surface: the synthesized, deduplicated, severity-triaged findings report (at `{suite}/_outputs/audit-report-<date>.md`) + per-dimension verified-findings sets + gate attestation + workflow run trace + single recommended next move.
+- A deterministic result surface: the synthesized, deduplicated, severity-triaged findings report (at `{suite}/_outputs/audit-report-<date>.md`) + per-dimension verified-findings sets + verifier ledger + gate attestation + workflow run trace + single recommended next move.
 
 ---
 

@@ -7,7 +7,7 @@ disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-02"
+  updated: "2026-10-24"
   archetype: "ai-template"
 ---
 
@@ -44,7 +44,8 @@ This skill carries a deliberately narrow surface. It is NOT:
    State the pass criterion explicitly: a case passes iff the scorer's verdict meets the named threshold. A scorer requested without a pass criterion is REFUSED per the Refusal & Escalation stanza — an eval without a threshold measures nothing.
 3. **Run candidates over the dataset.** Invoke the candidate over every case, recording the raw output, the case identifier, and the run seed. Re-running the same dataset and seed over the same candidate returns identical raw outputs where the candidate is deterministic; any non-determinism is recorded with the sampling parameters (temperature, top-p, seed) that drive it.
 4. **Aggregate metrics.** Compute pass-rate over the full dataset, the per-category pass-rate breakdown, and the passing/failing case counts per category. Aggregation is deterministic — identical raw outputs under an identical scorer return identical metrics.
-5. **Report with confidence and regressions.** Emit the metrics report naming pass-rate with its Wilson-score confidence interval (at the host's ratified level; default 95%), the per-category breakdown, and — when a prior run's report is supplied — the **regression list** (cases that passed in the prior run and fail in this one) and the **improvement list** (the inverse).
+5. **Prove the check can fail.** Add a control case the candidate is known to get wrong, such as a deliberately wrong expected label or an output that violates the rubric, and expect the scorer to fail it. Run it with the dataset and confirm it fails. A control that passes means the scorer, the pass criterion, or the wiring cannot reject anything, so no pass-rate from that run is reported until the cause is fixed. Keep the control in the dataset under its own category so the breakdown shows it.
+6. **Report with confidence and regressions.** Emit the metrics report naming pass-rate with its Wilson-score confidence interval (at the host's ratified level; default 95%), the per-category breakdown, and — when a prior run's report is supplied — the **regression list** (cases that passed in the prior run and fail in this one) and the **improvement list** (the inverse).
 
 ## Return Contract
 
@@ -52,9 +53,9 @@ The harness returns three artifacts:
 
 - **Dataset** — the versioned labeled-case set at the host's ratified location, carrying a version stamp and a case count.
 - **Scorer** — the scorer definition (class · criteria · pass threshold · judge pin where applicable) as a re-runnable specification.
-- **Metrics report** — pass-rate with its Wilson confidence interval, the per-category breakdown, and the regression/improvement lists against any supplied prior report.
+- **Metrics report** — pass-rate with its Wilson confidence interval, the per-category breakdown, the control-case result (expected fail, observed fail), and the regression/improvement lists against any supplied prior report.
 
-The report is reproducible: a reader re-running the recorded dataset version and scorer over the recorded candidate and seed reaches the same metrics. A report omitting the confidence interval, or presenting a sub-floor dataset's pass-rate without the coverage caveat, is non-conformant.
+The report is reproducible: a reader re-running the recorded dataset version and scorer over the recorded candidate and seed reaches the same metrics. A report omitting the confidence interval or the control-case result, or presenting a sub-floor dataset's pass-rate without the coverage caveat, is non-conformant.
 
 ## Foundational Stanzas
 

@@ -19,8 +19,46 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **Four skills.** `knowledge-wiki` grows an index-first Markdown knowledge
+  base from project sources (each source page records what was actually read,
+  relations carry a confidence, and lint, drift and hub reports keep it
+  honest); `decision-matrix` chooses between options with weighted,
+  evidence-cited scores, dealbreakers first and a check that the winner
+  survives weight changes; `issue-lifecycle` takes an issue from a
+  duplicate-checked draft through sizing and a marked failing-test checkpoint
+  to a fix (you run it; it never files on its own); `ui-design` designs and
+  refines interfaces to a craft floor with a `DESIGN.md` project context.
+- **Two read-only subagents.** `citation-auditor` verifies references and
+  whether each cited source says what it is cited for; `design-critic` reviews
+  an interface with heuristic scoring and measured accessibility evidence kept
+  apart, and says so when the evidence could not be gathered.
+- **Two path-scoped rules.** `authoritative-referencing-provenance` asks
+  research files to label how each claim's evidence was read and keep a
+  search record; `code-craft-ui` carries the interface craft floor onto UI
+  source files.
+- **Sharper research, review and planning stages.** Source pages record their
+  basis and an acquisition worklist; papers get an approved argument sketch
+  before prose; reviews run a constructive then an adversarial pass and can
+  pre-screen against a venue profile; rebuttals can be checked against the
+  revision; a published archive is downloaded and verified. Audits and code
+  review accept "no findings", review deletions too, and keep a ledger of
+  findings dropped in verification. Plan execution ties each gate to the
+  commit it ran on, and tests and evals include a control that must fail.
+
 ### Changed
 
+- **Claude Code receives commands as skills that survive compaction.** The
+  plugin and the engine install now ship each command as a skill: a
+  `SKILL.md` of at most about 5,000 tokens with the procedure the model
+  needs every time, plus `references/` files for the pipeline contract,
+  standing stanzas, decision tree and, for the longest commands, individual
+  workflow steps, each behind a pointer that says when to read it. Claude
+  Code keeps only the first 5,000 tokens of a skill after compaction, so the
+  later steps of long commands such as `/apothem:plan-execute` were lost
+  before. Commands are still invoked as `/apothem:<name>`; other harnesses
+  are unchanged. Extra frontmatter keys now sit under `metadata`.
 - **Hooks run one dispatcher per tool call, not one per guard.** On every
   surface (the Claude Code plugin and engine install, Codex, Qwen Code) each
   event and matcher now has one dispatcher entry that lists every guard it

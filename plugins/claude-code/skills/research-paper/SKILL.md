@@ -143,6 +143,7 @@ The manuscript carries these canonical sections: `Structured Abstract` (the gap,
 - **NEVER claim a fragile result as confirmed.** Only `confirmed` results from `_outputs/analysis.md` anchor the paper's claims; fragile and null results are reported in the limitations section with the perturbation that breaks them (R3).
 - **NEVER report a bare p-value.** Every reported effect carries its effect size and confidence interval, carried from the analysis (R7).
 - **NEVER invent an author, affiliation, or contact.** Authorship traces to operator-supplied identity through the structured-inquiry channel; the ethics, COI, and data/code-availability declarations are present (R6).
+- **NEVER write prose ahead of an approved argument sketch**, and never fill a related-work gap with a citation the ledger does not hold; mark it `[citation needed]`.
 - **NEVER pad the manuscript with template prose.** Every section is freshly derived from its inputs per the clean-room Writing Protocol; a removable sentence does not exist.
 - **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-review` may consume the manuscript.
 

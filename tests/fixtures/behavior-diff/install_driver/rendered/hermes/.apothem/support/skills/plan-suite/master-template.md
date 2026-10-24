@@ -557,6 +557,8 @@ depends-on: [XX, YY]
 
 ## Tasks
 
+> Write each acceptance criterion as one testable statement. Either form is valid; pick the one that reads most plainly for the behavior. **Given-When-Then** suits a scenario with set-up. **EARS** suits a standing requirement: `When <trigger>, the system shall <response>` for event-driven behavior; `While <state>, the system shall <response>` for state-driven behavior; `If <unwanted condition>, the system shall <response>` for failure handling. Rewrite any criterion that names no observable result.
+
 ### NN.1 — [Task Title]
 [Detailed description: files to create/modify, logic, patterns, edge cases, acceptance criteria.]
 

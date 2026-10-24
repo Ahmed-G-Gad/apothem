@@ -26,6 +26,10 @@ Skill definitions — reusable, detectable techniques the harness loads on deman
 | [`diagram-authoring/`](diagram-authoring/) | Diagram authoring and rendering — one author → validate → render → export pipeline covering declarative diagrams (flowchart / sequence / state / class / ER / gantt) and data-driven visualizations, exporting to SVG / PNG / PDF via a headless renderer. | User-invocable. |
 | [`document-authoring/`](document-authoring/) | Long-form structured-document authoring — an approval-gated outline → draft → review pipeline with verified citations (every reference resolves to a real source) and a deterministic compile pipeline routing engine / bibliography / index passes by detected source features. | User-invocable. |
 | [`dev-toolkit/`](dev-toolkit/) | Engineering-discipline toolkit — sequences the core loops (structured debugging, test-first red-green-refactor, vertical-slice decomposition, requirement-to-issue breakdown) into one composable, gated procedure; cross-references sibling capabilities (does not duplicate them). | User-invocable. |
+| [`knowledge-wiki/`](knowledge-wiki/) | Index-first Markdown knowledge base grown from project sources — focus-driven source pages with their reading basis, typed relations with confidence, deterministic lint, change-triggered drift report, and hub analysis. | Model-invocable and user-invocable. |
+| [`decision-matrix/`](decision-matrix/) | Weighted, evidence-cited choice between options — dealbreakers first, a sensitivity check on the weights, a runner-up, and the cheapest reversible first step. | Model-invocable and user-invocable. |
+| [`issue-lifecycle/`](issue-lifecycle/) | Issue to fix with evidence at each stage — duplicate-checked issue drafts, read-only sizing, a marked failing-test checkpoint, and an ours-or-dependency fix decision. | User-invocable only (it drafts outward-facing issues). |
+| [`ui-design/`](ui-design/) | Interface design and refinement to a craft floor — surface classification, ranked rule categories, adjustable variance / motion / density, a `DESIGN.md` project context, and a pre-delivery checklist. | Model-invocable and user-invocable. |
 | [`surgical-guard/`](surgical-guard/) | Surgical-edit + reactive-guard — pairs a minimal-diff, anchor-bounded editing discipline with a post-edit diff-based quality guard (clean-code / test / docs checks with progressive rule loading); feeds the `surgical-manipulation` mandate. | User-invocable. |
 
 ## What a skill is
@@ -86,6 +90,19 @@ selectively.
 | `document-authoring/SKILL.md` | The document-authoring skill's entry point and procedure. |
 | `dev-toolkit/SKILL.md` | The dev-toolkit skill's entry point and procedure. |
 | `surgical-guard/SKILL.md` | The surgical-guard skill's entry point and procedure. |
+| `knowledge-wiki/SKILL.md` | The knowledge-wiki skill's entry point and procedure. |
+| `knowledge-wiki/references/page-templates.md` | Page templates for sources, entities, syntheses, the index and the log. |
+| `knowledge-wiki/references/lint-catalog.md` | The deterministic lint checks and how each is detected. |
+| `knowledge-wiki/references/drift-and-hubs.md` | The drift fingerprint and the hub and bridge analysis. |
+| `decision-matrix/SKILL.md` | The decision-matrix skill's entry point and procedure. |
+| `decision-matrix/references/scoring-and-sensitivity.md` | Scoring rules, totals and the weight-sensitivity check. |
+| `issue-lifecycle/SKILL.md` | The issue-lifecycle skill's entry point and procedure. |
+| `issue-lifecycle/references/stage-details.md` | Per-stage detail for create, size, reproduce and fix. |
+| `ui-design/SKILL.md` | The ui-design skill's entry point and procedure. |
+| `ui-design/references/surface-classes.md` | The four surface classes and the priorities each sets. |
+| `ui-design/references/rule-catalog.md` | The ranked rule categories with the conflict-priority table. |
+| `ui-design/references/design-md-template.md` | The `DESIGN.md` project design-context template. |
+| `ui-design/references/pre-delivery-checklist.md` | The checklist run before a UI is called done. |
 
 ## Operating in this folder
 

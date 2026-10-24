@@ -6,7 +6,7 @@
 
 **Consumed.** The operator's target path; the `--dimensions` scope; the `--autonomous` opt-in; the `--verify-panel N` budget. Each dispatched audit consumes the deployed repository surface its own contract defines.
 
-**Emitted.** The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`), plus the workflow's deterministic result surface: the synthesized severity-triaged findings report (deduplicated across dimensions), the per-dimension verified-findings sets with evidence, the fifteen-bar gate attestation, the per-run workflow trace (dimensions run, verification verdicts, dedup decisions), and the single recommended next move (route HIGH findings to remediation).
+**Emitted.** The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`), plus the workflow's deterministic result surface: the synthesized severity-triaged findings report (deduplicated across dimensions), the per-dimension verified-findings sets with evidence, the fifteen-bar gate attestation, the verifier ledger (every dropped finding with its reason), the per-run workflow trace (dimensions run, verification verdicts, dedup decisions), and the single recommended next move (route HIGH findings to remediation).
 
 **Pre-flight inquiry.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the target or dimension set is underspecified — which repository, which dimensions, scope direction. The `--autonomous` opt-in is itself confirmed before continuous parallel dispatch engages.
 
