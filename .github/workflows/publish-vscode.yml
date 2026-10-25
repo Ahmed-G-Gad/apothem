@@ -91,6 +91,10 @@ jobs:
       # vsce and its whole dependency tree are pinned by version and integrity
       # hash in .github/vsce/package-lock.json, the lockfile release.yml uses,
       # and --ignore-scripts runs no dependency install script. Bump it there.
+      # Its package.json overrides @azure/msal-node to 7.1.1, which fixes
+      # GHSA-xcx6-jx8p-x3h5: @azure/identity 4.14 still pins msal-node ^6.
+      # Publishing uses VSCE_PAT and never reaches the affected Entra ID flow.
+      # Drop the override once @azure/identity requires msal-node 7.1 or later.
       - name: Install vsce from its lockfile
         run: npm ci --prefix ../vsce-tool/.github/vsce --ignore-scripts --no-audit --no-fund
       - name: Package .vsix
