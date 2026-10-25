@@ -24,11 +24,15 @@ it with Apothem.
 ## What Apothem manages
 
 The codebuddy adapter renders the shared rules into a dedicated
-`<project>/.codebuddy/rules/apothem-rules.md` file and writes nothing else. Your
-`CODEBUDDY.md` memory file, your `.codebuddy/settings.json` permissions and MCP
-servers, and any other rules files you author stay entirely operator-owned — the
-adapter recognises those surfaces but never edits them. Every change to the
-shared rules re-renders the file on the next `apothem update`.
+`<project>/.codebuddy/rules/apothem-rules.md` file. It also writes two folders
+in your home directory that every project shares: the skills, and the commands
+wrapped as skills, go to `~/.codebuddy/skills/`, and the rules and templates
+those skills cite go to `~/.config/apothem/rules/` and
+`~/.config/apothem/templates/`. Your `CODEBUDDY.md` memory file, your
+`.codebuddy/settings.json` permissions and MCP servers, and any other rules files
+you author stay entirely operator-owned — the adapter recognises those surfaces
+but never edits them. Every change to the shared rules re-renders the rules file
+on the next `apothem update`.
 
 ## Migration path
 

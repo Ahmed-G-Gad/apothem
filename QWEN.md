@@ -7,8 +7,8 @@ authors one shared profile — rules, skills, subagents, slash-commands,
 hooks, output-styles, statuslines, templates, conformity validators,
 schemas, per-harness instruction templates, and the Claude Code
 settings template — and
-materializes that whole synced unit into each tool's
-native configuration directory through per-harness adapters. One source of
+materializes it into each tool's native configuration through per-harness
+adapters, giving each tool the primitives it can load. One source of
 truth, seventeen destinations, no hand-maintained drift.
 
 ## Using Apothem from Qwen Code
@@ -26,9 +26,10 @@ npx @ahmed-g-gad/apothem@1.2.2 uninstall --harness qwen-code
 `install` materializes the profile into Qwen Code's user-global configuration
 under `~/.qwen/` — the `QWEN.md` context file, `settings.json`, and the
 `commands`, `skills`, and `agents` directories; pass `--harness all` to sync
-every supported tool at once. `verify` reports drift as structured JSON. Every
-install backs up existing targets first and is reversed cleanly by the matching
-`uninstall`.
+every supported tool at once. `verify` checks that the managed files are
+present and valid; add `--profile PATH` to report drift from the profile and
+`--json` for structured JSON. Every install backs up existing targets first and
+is reversed cleanly by the matching `uninstall`.
 
 ## Engineering disciplines in force
 

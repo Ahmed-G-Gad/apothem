@@ -1,7 +1,7 @@
 {
   "name": "@ahmed-g-gad/apothem",
   "version": "1.2.2",
-  "description": "Host-agnostic AI-harness configuration manager: one shared profile materializes native configs for seventeen AI assistant harnesses, syncing rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers behind a conformity governance gate and signed releases.",
+  "description": "Host-agnostic AI-harness configuration manager: one shared profile materializes native configs for seventeen AI assistant harnesses, syncing rules, slash-commands, skills, hooks, output-styles, settings, and schemas, plus MCP server definitions projected into Hermes, OpenCode, and Qwen Code, behind a conformity governance gate and signed releases.",
   "keywords": [
     "agent",
     "agnostic",

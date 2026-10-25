@@ -6,12 +6,14 @@ description: "Slash-command definitions implementing the plan-suite pipeline plu
 
 Slash-command definitions live as flat `.md` files under `src/apothem/commands/`. The
 canonical set is headed by the architecture-aware plan-suite pipeline, which ships
-as seven first-class commands — one per stage, each invocable directly as
-`/plan-<stage>`. There is no monolithic dispatcher; every stage is its own
-registered command file at `src/apothem/commands/plan-<stage>.md`.
+as eight first-class stage commands, each invocable directly as `/plan-<stage>`,
+plus `/plan`, the orchestrator that drives the stage chain end to end. Every stage
+is its own registered command file at `src/apothem/commands/plan-<stage>.md`, and
+`/plan` reimplements none of them.
 
 | Invocation | Command file | Description |
 |------------|--------------|-------------|
+| `/plan` | `src/apothem/commands/plan.md` | Run the spec, generate, review and design stages as one verified workflow, confirming at each hand-off; execute stays a manual step |
 | `/plan-spec` | `src/apothem/commands/plan-spec.md` | Refine unstructured content into spec-grade prose |
 | `/plan-generate` | `src/apothem/commands/plan-generate.md` | Materialize a plan suite from prose / requirements |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Forensic audit with scorecards |

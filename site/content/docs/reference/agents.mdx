@@ -48,7 +48,8 @@ maxTurns: <integer>
 ```
 
 `tools` is optional. A helper that omits it inherits every tool the session has,
-connected MCP tools included, and `disallowedTools` carries its limit.
+connected MCP tools included, and `disallowedTools` carries its limit. All
+fourteen shipped helpers list `tools`.
 
 ## Connected MCP servers
 
@@ -58,21 +59,29 @@ MCP tool to that list only when the entry names the server, as in
 and nowhere else. Server names belong to the person who connects them, so a
 shipped helper cannot name them.
 
-`citation-auditor` and `research-scout` need whatever scholarly index the
-session has connected: literature search, reference lookup, citation context.
-They omit `tools` and deny the tools that write files, run commands, start other
-helpers, or publish: `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Bash`,
-`PowerShell`, `Monitor`, `Agent`, `Artifact`, and the task-list tools. Their
-instructions pick a connected index by what it does, never by name, and fall
-back to web fetch when none is connected.
+`citation-auditor` and `research-scout` look up scholarly sources. Each ships
+`tools: Read, Glob, Grep, WebSearch, WebFetch` and denies the tools that write
+files, run commands, start other helpers, or publish: `Write`, `Edit`,
+`MultiEdit`, `NotebookEdit`, `Bash`, `PowerShell`, `Monitor`, `Agent`,
+`Artifact`, and the task-list tools. With no profile setting, neither reaches an
+MCP tool, and both look sources up through web search and web fetch.
 
-The limit on connected tools is an instruction, not a gate. An inherited tool
-from a mail, storage, or commerce server is still reachable, so the helpers'
-instructions restrict connected tools to search, look-up, read, verify, and
-resolve calls, and the session's permission prompts remain the control on
-anything else. To hold a helper to named servers, keep a local copy that lists
-`tools` with `mcp__<server>__*` entries, or with single tool names for a
-read-only subset of a server.
+To give one of them a connected scholarly index, name the server in the
+profile's `agent_mcp_servers` key, which maps an agent name to server names. The
+Claude Code engine install (`apothem install`) then appends one
+`mcp__<server>__*` entry per named server to that agent's `tools` line, and
+changes no other agent. The entry admits every tool of that server, including
+any that writes, so name only a server you trust for lookups: the helpers'
+instructions limit them to search, look-up, read, verify, and resolve calls, but
+the harness enforces only the names the `tools` line lists. A name for an agent
+that does not exist, or that has no explicit `tools` line, is reported and
+skipped.
+
+Other harnesses ignore the key. The Claude Code plugin tree is assembled without
+a profile and keeps the plain list, so a plugin user defines a user-level agent
+under `~/.claude/agents/` instead. The profile syntax, the server-name rules, and
+that workaround are on
+[Give a helper access to MCP servers](/docs/reference/mcp#give-a-helper-access-to-mcp-servers).
 
 ## Per-harness conversion
 
@@ -84,7 +93,7 @@ limit natively, states it in the helper's instructions, or drops the read-only l
 
 | Harness | Tool limit | Turn limit | Model and effort |
 | --- | --- | --- | --- |
-| Claude Code | `tools` / `disallowedTools` as written; with no `tools`, every tool is inherited, MCP included | `maxTurns` | inherited (not set) |
+| Claude Code | `tools` / `disallowedTools` as written, plus any `mcp__<server>__*` entries the profile's `agent_mcp_servers` key adds to a listed `tools` line; with no `tools`, every tool is inherited, MCP included | `maxTurns` | inherited (not set) |
 | Codex | none emitted; the helper's instructions state it, and the parent session's sandbox governs writes | not available | inherited (not set) |
 | Gemini CLI | `tools` allowlist of Gemini tool names; with no `tools`, the allowlist the denials imply plus `mcp_*` | `max_turns` | inherited (not set) |
 | Qwen Code | `tools` / `disallowedTools` in Qwen tool names; with no `tools`, no list is emitted, so MCP tools are inherited and the denials apply | not mapped | `model: inherit` |

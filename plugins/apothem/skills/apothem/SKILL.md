@@ -9,8 +9,9 @@ description: Install and manage the Apothem shared profile across AI assistant h
 
 Apothem is a host-agnostic AI-harness configuration manager: one
 shared profile — rules, skills, hooks, slash-command pipelines, and MCP
-servers — materialized into each tool's native configuration through
-per-harness adapters.
+server definitions — materialized into each tool's native configuration
+through per-harness adapters, each harness receiving the primitives it can
+load. Native MCP configuration is written for Hermes, OpenCode, and Qwen Code.
 
 ## Managing the profile
 
@@ -18,7 +19,7 @@ Run the engine through the npm shim (needs Node.js, and Python 3.10+ with
 the `click` and `rich` packages, on the `PATH`):
 
 - `npx @ahmed-g-gad/apothem@1.2.2 install --harness codex` — materialize the profile into Codex.
-- `npx @ahmed-g-gad/apothem@1.2.2 verify --harness codex` — report drift as structured JSON.
+- `npx @ahmed-g-gad/apothem@1.2.2 verify --harness codex` — check the install (add `--profile PATH` to report drift, `--json` for structured JSON).
 - `npx @ahmed-g-gad/apothem@1.2.2 update --harness codex` — refresh to the current profile.
 - `npx @ahmed-g-gad/apothem@1.2.2 uninstall --harness codex` — reverse the install cleanly.
 

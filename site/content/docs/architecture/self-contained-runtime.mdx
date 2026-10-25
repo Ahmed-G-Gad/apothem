@@ -105,8 +105,8 @@ and documentation site the runtime never imports, for two deliberate reasons:
 the engine **materializes its cohorts** — rules, skills, commands, and
 templates — directly from the tree into each harness, so the tree is the live
 source of truth rather than only a runtime; and the `.git` directory stays in
-place so `apothem update` fast-forwards the existing clone instead of
-re-downloading.
+place so `apothem update` checks out the release tag in the existing clone
+instead of re-downloading.
 
 This run-from-source layout is the same pattern tools like `nvm`, `pyenv`, and
 `oh-my-zsh` use — a few megabytes of source plus history, removable in one step

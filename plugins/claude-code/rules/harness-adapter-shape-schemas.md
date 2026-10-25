@@ -22,7 +22,7 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 | Harness | Canonical config filename(s) | Schema form | Adapter sub-package |
 |---|---|---|---|
 | antigravity | `~/.gemini/GEMINI.md` plus `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` | Markdown global context plus JSON plugin metadata | `src/apothem/harnesses/antigravity/` |
-| claude_code | `settings.json` (+ `CLAUDE.md` operator-owned) | JSON; Claude Code settings schema | `src/apothem/harnesses/claude_code/` |
+| claude_code | `settings.json` (+ one managed block in `CLAUDE.md`; the rest of it operator-owned) | JSON; Claude Code settings schema | `src/apothem/harnesses/claude_code/` |
 | codebuddy | `<project>/.codebuddy/rules/apothem-rules.md` | Markdown rules-directory file; CodeBuddy rules schema | `src/apothem/harnesses/codebuddy/` |
 | codex | `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/` | Markdown, JSON hooks, TOML custom agents, shared skills; OpenAI Codex schema | `src/apothem/harnesses/codex/` |
 | cursor | `<project>/.cursor/rules/apothem-rules.mdc` | Markdown + YAML frontmatter; Cursor rules schema | `src/apothem/harnesses/cursor/` |
@@ -56,7 +56,7 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 | Harness | Declared divergence |
 |---|---|
 | antigravity | No materializer; installs global `GEMINI.md` plus an Antigravity CLI plugin under `~/.gemini/antigravity-cli/plugins/apothem/`; hook support material is not active hook wiring |
-| claude_code | No materializer; propagates raw templates plus convention dirs; does not manage `CLAUDE.md` |
+| claude_code | No materializer; propagates raw templates plus convention dirs; writes one sentinel-delimited managed block into `CLAUDE.md` and preserves everything outside it |
 | codex | No materializer; propagates AGENTS.md, hooks.json, converted TOML agents, and shared skills; does not overwrite `config.toml` |
 | gemini_cli | No materializer; project-scope adapter writes `<project>/GEMINI.md` and converts commands into Gemini TOML files |
 | github_copilot | Materializes Markdown prose rather than structured config, no JSON schema; installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/` |

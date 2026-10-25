@@ -98,7 +98,10 @@ Both also carry the Apothem-only frontmatter keys (`version`, `updated`,
 `archetype`, `portability`) under a trailing `metadata:` map of quoted strings,
 in that fixed order. Claude Code ignores unknown top-level keys, and the open
 skill format keeps client-specific extras in `metadata`. The source files do
-not change, and every other harness receives the keys at the top level as before.
+not change. The user-level skill folders (`~/.agents/skills/`,
+`~/.codebuddy/skills/`, `~/.kiro/skills/`, and `~/.trae/skills/`) use the same
+`metadata` form, so installs that share a folder never rewrite each other's
+files. Every other harness receives the keys at the top level as before.
 
 ### Rules and what loads at launch
 

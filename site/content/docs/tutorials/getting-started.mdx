@@ -59,8 +59,8 @@ The installer performs these steps:
    `APOTHEM_AUTO_INSTALL_DEPS=1` to install without a prompt, since a piped run
    cannot prompt.
 2. **Source placement.** The bundled tree is cloned into `~/.apothem` (override
-   with the `APOTHEM_HOME` environment variable). A re-run fast-forwards the
-   existing clone instead of duplicating it.
+   with the `APOTHEM_HOME` environment variable). A re-run checks out the
+   release tag in the existing clone instead of duplicating it.
 3. **Profile bootstrap.** If you have no profile yet, the installer copies the
    example profile to `~/.config/apothem/profile.yaml`, installs and verifies
    Claude Code from it in the same run, and warns that the identity fields are

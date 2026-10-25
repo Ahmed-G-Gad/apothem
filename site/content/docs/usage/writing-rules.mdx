@@ -74,6 +74,15 @@ a user-scope harness does not.
 
 ## Rule validation
 
+Run the frontmatter validator against the rule file you wrote. From an Apothem
+checkout, `PYTHONPATH=src` makes the package importable; after a script install,
+use `PYTHONPATH="$HOME/.apothem/src"` in its place.
+
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
 ```
+
+A per-write check such as `frontmatter-grep` takes the file to check, or
+`--stdin` to read the content from standard input; with neither it waits for
+input on standard input. A standalone check takes a root directory instead, as in
+`--check naming-grep .`.
