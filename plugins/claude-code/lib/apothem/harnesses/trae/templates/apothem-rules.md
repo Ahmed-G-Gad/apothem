@@ -13,10 +13,11 @@ This file is materialised by `apothem install --harness trae --project <path>` a
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Trae, the surface manifests as this Always Apply rule file:
 
-- **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
-- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Trae does not auto-discover them as separate surfaces.
+- **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
+- **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.trae/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
+- **Agents and hooks** — Apothem's sub-agent definitions and hook helpers are not installed by the Trae adapter.
 - **MCP** — Trae's tool-server surface (`.trae/mcp.json`) is operator-authored, not apothem-managed.
-- **Skills directory** — Trae's skill surface (`.trae/skills/`) is operator-authored, not apothem-managed.
+- **Project skills directory** — Trae's project skill surface (`.trae/skills/`) is operator-authored, not apothem-managed.
 
 ## Engineering disciplines in force
 
@@ -34,4 +35,4 @@ Apothem's foundational mandates apply uniformly across every harness, including 
 
 ## Refreshing the file
 
-Re-run `apothem install --harness trae --project <this-project-root>` to refresh the Apothem managed block in this file with the latest template. The install folds Apothem's content into a sentinel-delimited managed block and preserves any operator prose outside the sentinels verbatim; it is idempotent. `apothem uninstall --harness trae --project <this-project-root>` strips the managed block (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/trae/`) first. `apothem verify --harness trae --project <this-project-root>` checks the file is present and non-empty.
+Re-run `apothem install --harness trae --project <this-project-root>` to refresh the Apothem managed block in this file with the latest template. The install folds Apothem's content into a sentinel-delimited managed block and preserves any operator prose outside the sentinels verbatim; it is idempotent. `apothem uninstall --harness trae --project <this-project-root>` strips the managed block (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/trae/`) first. `apothem verify --harness trae --project <this-project-root>` checks the file is present and non-empty, and that every Apothem skill folder is in place. The skills and support folders in your user home are shared by every Apothem install that uses them, so `apothem uninstall` removes them only when no other install still lists them.

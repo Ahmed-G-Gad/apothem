@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import functools
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,9 +44,14 @@ from .install_driver_pathsafety import (
 from .install_driver_planvalidation import (
     _generated_targets_for_entry,
     _projected_profile_body,
+    user_level_entry_ok,
 )
-from .install_driver_removal import _surgical_remove_from_target
+from .install_driver_removal import (
+    _remove_unlisted_anchors,
+    _surgical_remove_from_target,
+)
 from .install_driver_retention import apply_retention
+from .install_driver_shared import UserLevelGate, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
@@ -101,7 +107,9 @@ def verify_install(
     config targets are additionally parsed — a corrupt config reads as
     not-installed. *native_config* (the adapter's dynamically-rendered config
     file, which is not a manifest entry) is checked the same way when supplied.
-    Returns False on the first unsatisfied target.
+    A user-level entry passes when its folders are in place whichever harness
+    wrote them (see :func:`user_level_entry_ok`). Returns False on the first
+    unsatisfied target.
     """
     rules = install_driver.load_rules(harness_name)
     if native_config is not None:
@@ -117,6 +125,16 @@ def verify_install(
             if not target.is_file() or target.stat().st_size <= 0:
                 return False
             if not _native_config_parses(target):
+                return False
+        elif entry.user_level:
+            if not user_level_entry_ok(
+                entry,
+                rules,
+                root=_root_for(harness_root, project_root),
+                harness_root=harness_root,
+                project_root=project_root,
+                harness_name=harness_name,
+            ):
                 return False
         elif entry.mode == "replace_tree":
             if not target.is_dir():
@@ -449,6 +467,7 @@ def _remove_data_home(
     )
 
 
+@locked_for_harness
 @backup_session()
 def run_uninstall(
     harness_name: str,
@@ -511,8 +530,32 @@ def run_uninstall(
     )
     handled: set[str] = set()
     results: list[MaterializationResult] = []
+    gate = UserLevelGate.build(
+        rules,
+        harness_name=harness_name,
+        root=root,
+        harness_root=harness_root,
+        project_root=project_root,
+    )
+    if record is not None:
+        blocked = gate.ledger_blocked(target.path for target in record.targets)
+        if blocked is not None:
+            return [blocked]
 
     for entry in rules.install:
+        if entry.user_level:
+            # Record-driven and shared: a target another install still lists is
+            # kept; the rest is removed within the home (see UserLevelGate).
+            results.extend(
+                gate.release(
+                    entry,
+                    record,
+                    functools.partial(
+                        _replace_path, install_root=root, harness_name=harness_name
+                    ),
+                )
+            )
+            continue
         if entry.mode in {"write_text", "sentinel_merge"}:
             target = resolve_target(
                 entry.target,
@@ -556,25 +599,15 @@ def run_uninstall(
                 results.append(removal)
             handled.add(_path_text(target))
 
-    # Recorded sentinel anchors not covered by a current manifest entry: the
-    # bolt-on profile anchors (claude-code ``CLAUDE.md``, the single-file adapters'
-    # profile rule) and any sentinel entry removed from the manifest after install.
-    # The managed block self-delimits, so it strips without the template.
-    if record is not None:
-        for recorded in record.targets:
-            if recorded.path in handled or recorded.mode != "sentinel_merge":
-                continue
-            removal = _surgical_remove_from_target(
-                Path(recorded.path),
-                "",
-                mode="sentinel_merge",
-                install_root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root,
-            )
-            if removal is not None:
-                results.append(removal)
-            handled.add(recorded.path)
+    results.extend(
+        _remove_unlisted_anchors(
+            record,
+            handled,
+            root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+    )
 
     # Back up and remove the shared data home (memory / contexts / learning) only
     # when this is the last harness referencing it; plans/ is always retained.
@@ -593,12 +626,9 @@ def run_uninstall(
     # now that their contents are gone — only the empty ones, deepest first, so
     # a directory still holding operator content or another harness's data
     # stays.
-    results.extend(
-        remove_created_dirs(
-            {Path(path) for install in active for path in install.created_dirs},
-            allowed_root=allowed_root,
-        )
-    )
+    created = {Path(path) for install in active for path in install.created_dirs}
+    results.extend(remove_created_dirs(created, allowed_root=allowed_root))
+    results.extend(gate.tidy(created))
 
     # Append an uninstall marker referencing the install pass it reversed —
     # only when every removal succeeded. On any error the install record

@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
+- Snapshot date: 2026-10-24
+- Snapshot note (skills): the adapter now installs skills and command skills at CodeBuddy's own `~/.codebuddy/skills/` and the rules and templates corpus at `~/.config/apothem/`. The CodeBuddy skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codebuddy/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The IDE Rules page was re-read on 2026-10-03; the CLI memory, MCP, and hooks pages were read on 2026-10-02. No vendor-native UI claim is made here.
@@ -26,10 +27,19 @@
   `~/.codebuddy/.mcp.json` for user scope; the first existing file in each
   scope wins. Operator-owned; the adapter names the surface and authors no
   entries.
-- The vendor also documents CLI skills, sub-agents, slash commands, hooks, and
-  plugins. The adapter delivers only the project rules file and authors none of
-  them: a deliberate rules-only posture, not a claim that the surfaces are
-  absent.
+- Skills: project skills live in `.codebuddy/skills/` and user skills in
+  `~/.codebuddy/skills/`, each a subdirectory with a `SKILL.md`. The skills page
+  documents the frontmatter keys `name`, `description`, `agent`, `model`,
+  `hooks`, `disable-model-invocation`, `user-invocable`, `allowed-tools`
+  (comma-separated), and `context`; it does not mention `.agents/skills/`. The
+  adapter writes Apothem's skills, plus its commands wrapped as skills, to
+  `~/.codebuddy/skills/`, and not to the cross-tool folder. The page lists no
+  `metadata` or `argument-hint` key. TODO(clarify): probe CodeBuddy with the
+  shared emission's `metadata` map and `argument-hint`; if it rejects either,
+  emit this folder without it (the only per-destination variant, chosen by
+  folder).
+- The vendor also documents sub-agents, slash commands, hooks, and plugins. The
+  adapter authors none of them.
 
 ## Vendor Sources
 
@@ -37,6 +47,7 @@ Retrieved 2026-10-03 unless marked.
 
 - <https://www.codebuddy.ai/docs/ide/Rules> (project rules)
 - <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02)
+- <https://www.codebuddy.ai/docs/cli/skills> (skills; retrieved 2026-10-24)
 - <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
 - <https://www.codebuddy.ai/docs/cli/hooks> (hooks and sub-agent events; retrieved 2026-10-02)
 
@@ -65,16 +76,18 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 CodeBuddy exposes **no vendor plugin or extension install surface** that Apothem
-ships. The adapter is project-scope rules-only: it writes a single merged rules
-file at `<project>/.codebuddy/rules/apothem-rules.md` and authors no other
-cohort. There is no standalone-installable bundle; every artifact requires the
+ships. The adapter writes a merged rules file at
+`<project>/.codebuddy/rules/apothem-rules.md`, the skills at
+`~/.codebuddy/skills/`, and the rules and templates corpus at
+`~/.config/apothem/`, and authors no other cohort. There is no standalone-installable bundle; every artifact requires the
 full `apothem install --harness codebuddy --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.codebuddy/rules/` directory. Nothing persists before that run. |
-| Commands / Skills / Agents | No — deliberate rules-only posture | CodeBuddy DOES document CLI Skills / Sub-Agents / Slash Commands / Plugins, but the adapter authors none of them (preserve-first rules-only delivery); these cohorts are not materialized for this harness by design. |
+| Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.codebuddy/skills/`. Nothing persists before that run. |
+| Agents | No — adapter scope | CodeBuddy documents sub-agents, slash commands, and plugins; the adapter authors none of them. |
 | Hooks / MCP / Tools / Settings | No — operator-owned | `.mcp.json` (MCP servers), `.codebuddy/settings.json`, and `CODEBUDDY.md` memory are operator-owned; the adapter authors no entries. |
 
 CodeBuddy documents a plugin surface, but Apothem ships no CodeBuddy plugin, so
-the merged rules file via `apothem install` is the sole persistence surface.
+the files `apothem install` writes are the sole persistence surface.

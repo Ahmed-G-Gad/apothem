@@ -17,6 +17,7 @@ hand-maintaining that config against managing it with apothem.
 | Author rules | Hand-write each file under `.windsurf/rules/` | Rendered from the shared corpus |
 | Keep one rule format | Hand-pick between `.windsurf/rules/` and a single `.windsurfrules` file | The adapter writes only `.devin/rules/` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Share reusable skills and commands | Hand-copy each skill folder into `~/.agents/skills/` and keep the copies current | Written to `~/.agents/skills/` by the adapter, one copy for every project, and refreshed on `apothem update` |
 | Verify the config is correct | Manual inspection | `apothem verify --harness windsurf --project <path>` |
 
 ## What Apothem manages

@@ -16,12 +16,14 @@ from apothem.lib.frontmatter import (
     field_value_in_text,
     split_frontmatter,
 )
+from apothem.lib.propagation import SHARED_EMISSION
 from apothem.lib.qwen_skill_frontmatter import translate_allowed_tools
 
 from .install_driver_layout import (
     REFERENCE_NOTE_HEADING,
     harness_layout,
     reference_note,
+    shared_reference_note,
 )
 
 
@@ -73,8 +75,12 @@ def _installed_reference_note(harness_name: str, install_root: Path) -> str:
     The note names, for each cited corpus directory the harness installs
     (``rules/``, ``templates/``, ``schemas/``, ``hooks/``, ``conformity/``),
     the directory its manifest entry targets under *install_root*, so every
-    path it names is one the install writes.
+    path it names is one the install writes. The shared emission
+    (:data:`SHARED_EMISSION`) names the user-level corpus folders instead, the
+    same text for every writer (:func:`shared_reference_note`).
     """
+    if harness_name == SHARED_EMISSION:
+        return shared_reference_note()
     return reference_note(harness_layout(harness_name, install_root))
 
 
@@ -153,7 +159,22 @@ def _native_skill_emission(
       skill whose source sets ``disable-model-invocation: true``.
     - ``qwen_code``: the ``allowed-tools`` string as Qwen Code's ``allowedTools``
       list (:func:`translate_allowed_tools`).
+    - :data:`SHARED_EMISSION`, for the skill folders in the user home that
+      several installs write: the Claude Code key names and metadata fold (the
+      standard ``metadata`` map keeps the Apothem-only keys), and the Codex
+      policy sidecar for a skill that disables model invocation, because Codex
+      reads the folder whether or not the Codex adapter is installed. The
+      sidecar is inert for every other reader. The text is the same whichever
+      harness writes it (``SHARED_TOPLEVEL_KEYS`` lists the keys it leaves).
     """
+    if harness_name == SHARED_EMISSION:
+        renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
+        sidecars = (
+            {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
+            if _source_disables_model_invocation(skill_text)
+            else {}
+        )
+        return fold_apothem_metadata(renamed), sidecars
     if harness_name == "claude_code":
         renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
         return fold_apothem_metadata(renamed), {}

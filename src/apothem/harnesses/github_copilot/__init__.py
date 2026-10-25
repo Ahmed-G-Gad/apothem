@@ -9,6 +9,12 @@ https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instruction
 User-scope is unavailable — Copilot's user-level settings live in IDE
 state (VS Code / JetBrains UI), not a file path the harness can write.
 
+Ahead of the project file the install also writes the user-level folders: the
+skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
+templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the
+user home, not in the project, and every Apothem install that names one writes
+the same bytes; the install ledger decides which uninstall removes it.
+
 The adapter opts into the project-scope contract via
 ``requires_project = True``; the CLI rejects an install / update /
 uninstall / verify invocation that omits ``--project <path>``. Delegates

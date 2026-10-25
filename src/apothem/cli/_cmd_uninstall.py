@@ -34,6 +34,33 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._user_level_report import (
+    is_project_scope,
+    preview_uninstall,
+    uninstall_advisories,
+)
+
+
+def _retention_advisories(
+    harness_id: str,
+    adapter: object,
+    project_root: Path | None,
+    output_path: Path,
+) -> list[dict[str, object]]:
+    """Return the retained and released advisories for uninstalling *adapter*.
+
+    Empty when the harness writes no user-home folder or has no install record.
+    The ledger root is the project for a project-scope adapter and the harness
+    folder for a user-scope one. A report that cannot be built never blocks the
+    uninstall.
+    """
+    root = project_root if is_project_scope(adapter) else output_path.parent
+    if root is None:
+        return []
+    try:
+        return uninstall_advisories(harness_id, preview_uninstall(harness_id, root))
+    except (OSError, ValueError):
+        return []
 
 
 def _uninstall_impl(
@@ -75,6 +102,7 @@ def _uninstall_impl(
         return
 
     results: list[dict[str, object]] = []
+    warnings: list[dict[str, object]] = []
     last_output_path: Path | None = None
     errored = False
     removed_any = False
@@ -107,6 +135,12 @@ def _uninstall_impl(
                     f"Remove {harness_id} configuration at {output_path}?",
                     abort=True,
                 )
+            # What the uninstall keeps in the user home because another install
+            # still uses it is read from the ledger before the install's own
+            # record is replaced.
+            retention = _retention_advisories(
+                harness_id, adapter, project_root, output_path
+            )
             _invoke_with_project(adapter.uninstall, project=project_root)
         except click.Abort:
             raise
@@ -130,8 +164,13 @@ def _uninstall_impl(
                 "message": "managed files removed",
             }
         )
+        warnings.extend(retention)
         if fmt != "json":
             con.print(f"[green]✓[/] Uninstalled [cyan]{harness_id}[/]")
+            for advisory in retention:
+                con.print(
+                    f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}"
+                )
 
     exit_code = 0
     if errored:
@@ -148,7 +187,7 @@ def _uninstall_impl(
                 project_root=project_root,
                 files_written=[],
                 results=results,
-                warnings=[],
+                warnings=warnings,
                 output_path=last_output_path if len(adapters) == 1 else None,
             )
         )

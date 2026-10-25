@@ -21,6 +21,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
 from apothem.lib.install_advisories import (
     mcp_profile_advisories,
+    owner_of_record,
     shared_root_advisories,
 )
 
@@ -115,12 +116,42 @@ def test_reader_install_names_the_owner_when_apothem_content_is_present(
     tmp_path: Path,
 ) -> None:
     _skill(tmp_path, "workflow")  # an Apothem skill name
-    advisories = shared_root_advisories("cursor", home=tmp_path, project=None)
+    advisories = shared_root_advisories("gemini-cli", home=tmp_path, project=None)
     reader = [a for a in advisories if a["role"] == "reader"]
     assert len(reader) == 1
     message = str(reader[0]["message"])
     assert "~/.agents/skills/" in message
-    assert "Codex" in message
+    # Nothing says which install wrote the content, so the note does not guess.
+    assert message.endswith("holds Apothem content from an Apothem install.")
+
+
+@pytest.mark.parametrize("public_id", ["cursor", "github-copilot", "windsurf", "zed"])
+def test_a_co_installer_gets_a_holder_note_whether_or_not_the_folder_has_content(
+    tmp_path: Path, public_id: str
+) -> None:
+    # The four write the same ~/.agents/skills/ Codex does; their own install is
+    # what fills it, so the note says the folder stays until the last install
+    # that uses it is uninstalled, and never blames the Codex install.
+    for populated in (False, True):
+        if populated:
+            _skill(tmp_path, "workflow")
+        advisories = shared_root_advisories(public_id, home=tmp_path, project=None)
+        holder = [a for a in advisories if a["role"] == "holder"]
+        assert len(holder) == 1
+        message = str(holder[0]["message"])
+        assert message.startswith("~/.agents/skills/ is shared: ")
+        assert "Codex" in message
+        assert get_harness_entry(public_id).display_name not in message
+        assert message.endswith(
+            "It stays until the last Apothem install that uses it is uninstalled."
+        )
+        assert [a for a in advisories if a["role"] == "reader"] == []
+
+
+def test_the_rules_and_templates_corpus_raises_no_advisory(tmp_path: Path) -> None:
+    for public_id in ("codex", "cursor", "kiro"):
+        advisories = shared_root_advisories(public_id, home=tmp_path, project=None)
+        assert not any("apothem" in str(a["path"]) for a in advisories)
 
 
 def test_qwen_code_install_names_codex_when_apothem_skills_are_present(
@@ -132,7 +163,7 @@ def test_qwen_code_install_names_codex_when_apothem_skills_are_present(
     assert len(reader) == 1
     assert str(reader[0]["message"]) == (
         "Qwen Code also loads ~/.agents/skills/, which holds Apothem content "
-        "from the Codex install."
+        "from an Apothem install."
     )
 
 
@@ -145,27 +176,79 @@ def test_reader_note_carries_the_condition_the_reader_loads_the_root_under(
     assert len(reader) == 1
     assert str(reader[0]["message"]) == (
         "Open-Claw (only under its default state directory) also loads "
-        "~/.agents/skills/, which holds Apothem content from the Codex install."
+        "~/.agents/skills/, which holds Apothem content from an Apothem install."
     )
 
 
 @pytest.mark.parametrize(
-    ("folder", "filename", "owner"),
+    ("folder", "filename", "owner", "owner_name"),
     [
-        (".claude/agents", "test-runner.md", "Claude Code"),
-        (".codex/agents", "test-runner.toml", "Codex"),
+        (".claude/agents", "test-runner.md", "claude-code", "Claude Code"),
+        (".codex/agents", "test-runner.toml", "codex", "Codex"),
     ],
 )
-def test_cursor_install_names_the_owner_when_apothem_agents_are_present(
-    tmp_path: Path, folder: str, filename: str, owner: str
+def test_cursor_install_names_the_owner_of_record_when_apothem_agents_are_present(
+    tmp_path: Path, folder: str, filename: str, owner: str, owner_name: str
 ) -> None:
     _agent_file(tmp_path / folder, filename)  # an Apothem agent name
-    advisories = shared_root_advisories("cursor", home=tmp_path, project=None)
+    advisories = shared_root_advisories(
+        "cursor", home=tmp_path, project=None, holders=lambda _path: [owner]
+    )
     reader = [a for a in advisories if a["role"] == "reader"]
     assert len(reader) == 1
     message = str(reader[0]["message"])
     assert f"~/{folder}/" in message
-    assert f"from the {owner} install" in message
+    assert f"from the {owner_name} install" in message
+    assert reader[0]["owner_of_record"] == owner
+    assert reader[0]["holders"] == [owner]
+
+
+def test_the_owner_of_record_is_the_registered_owner_while_it_holds_the_folder() -> (
+    None
+):
+    assert owner_of_record(_AGENTS_SKILLS, ["cursor", "codex", "zed"]) == "codex"
+
+
+def test_the_owner_of_record_is_the_oldest_holder_once_the_owner_is_gone() -> None:
+    assert owner_of_record(_AGENTS_SKILLS, ["zed", "cursor"]) == "zed"
+    assert owner_of_record(_AGENTS_SKILLS, []) is None
+
+
+def test_a_reader_note_names_the_install_that_holds_the_folder_not_the_registered_owner(
+    tmp_path: Path,
+) -> None:
+    _skill(tmp_path, "workflow")
+    advisories = shared_root_advisories(
+        "qwen-code", home=tmp_path, project=None, holders=lambda _path: ["cursor"]
+    )
+    reader = [a for a in advisories if a["role"] == "reader"]
+    assert len(reader) == 1
+    assert str(reader[0]["message"]) == (
+        "Qwen Code also loads ~/.agents/skills/, which holds Apothem content "
+        "from the Cursor install."
+    )
+    assert reader[0]["owner"] == "codex"
+    assert reader[0]["owner_of_record"] == "cursor"
+
+
+def test_holder_and_owner_notes_name_the_installs_using_the_folder(
+    tmp_path: Path,
+) -> None:
+    def holders(_path: Path) -> list[str]:
+        return ["codex", "cursor"]
+
+    for public_id, role in (("cursor", "holder"), ("codex", "owner")):
+        advisories = shared_root_advisories(
+            public_id, home=tmp_path, project=None, holders=holders
+        )
+        note = next(
+            a
+            for a in advisories
+            if a["role"] == role and str(a["message"]).startswith("~/.agents/skills/")
+        )
+        assert str(note["message"]).endswith("Installs using it now: Codex, Cursor.")
+        assert note["holders"] == ["codex", "cursor"]
+        assert note["owner_of_record"] == "codex"
 
 
 def test_reader_install_is_silent_for_agent_files_apothem_does_not_write(
@@ -188,13 +271,20 @@ def test_project_anchor_reader_needs_the_managed_block(tmp_path: Path) -> None:
     project.mkdir()
     agents = project / "AGENTS.md"
     agents.write_text("# Team instructions\n", encoding="utf-8")
-    assert shared_root_advisories("zed", home=tmp_path, project=project) == []
+
+    def reader_notes() -> list[dict[str, object]]:
+        found = shared_root_advisories(
+            "zed", home=tmp_path, project=project, holders=lambda _path: ["kimi-code"]
+        )
+        return [a for a in found if a["role"] == "reader"]
+
+    assert reader_notes() == []
 
     agents.write_text(
         "<!-- BEGIN APOTHEM MANAGED BLOCK -->\nx\n<!-- END APOTHEM MANAGED BLOCK -->\n",
         encoding="utf-8",
     )
-    advisories = shared_root_advisories("zed", home=tmp_path, project=project)
+    advisories = reader_notes()
     assert len(advisories) == 1
     assert "Kimi Code" in str(advisories[0]["message"])
 

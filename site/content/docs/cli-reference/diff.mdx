@@ -33,6 +33,10 @@ is projected into (such as `CLAUDE.md`), and the shared data stores under
 re-install then writes nothing and takes no new backup. `install --dry-run`
 shows the same plan.
 
+For the adapters that write skills to your home directory, the plan lists those
+folders with their home paths, ahead of the project files, and a skill folder
+that Apothem did not write appears as a `skill_conflict` warning.
+
 For operator-owned targets — files that carry both your own content and an
 Apothem-managed block — the diff shows the exact lines that would change. For
 other targets, the planned action and preview status are summarized.

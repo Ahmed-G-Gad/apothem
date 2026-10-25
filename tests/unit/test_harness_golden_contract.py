@@ -16,6 +16,7 @@ from apothem.lib.harness_registry import (
     HarnessRegistryEntry,
     load_adapter_class,
 )
+from apothem.lib.propagation import user_home
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _GOLDEN_PLANS = _REPO_ROOT / "tests" / "fixtures" / "harness-golden-plans.json"
@@ -39,12 +40,20 @@ def _normalize_plan(
         plan = install_driver.build_plan(entry.package_key, harness_root=harness_root)
         root = harness_root.resolve(strict=False).as_posix()
 
+    # A ``${USER_HOME}`` target resolves to the (isolated) user home, which
+    # the fixture spells <HOME>.
+    home = user_home().resolve(strict=False).as_posix()
     normalized: list[dict[str, str]] = []
     for item in plan:
         source = item["source"].replace("\\", "/")
         if _SOURCE_MARKER in source:
             source = source.split(_SOURCE_MARKER, 1)[1]
-        target = item["target"].replace("\\", "/").replace(root, "<ROOT>")
+        target = (
+            item["target"]
+            .replace("\\", "/")
+            .replace(root, "<ROOT>")
+            .replace(home, "<HOME>")
+        )
         normalized.append(
             {
                 "mode": item["mode"],

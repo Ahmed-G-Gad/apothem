@@ -45,6 +45,7 @@ from .install_driver_pathsafety import (
     _validate_target_path,
     _within_allowed_root,
 )
+from .install_driver_shared import UserLevelGate, entry_write_root, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
@@ -82,7 +83,8 @@ def capture_missing_dirs(
     *extra* paths the adapter writes outside the manifest (a native config, a
     profile document) and the allowed-write boundary itself; only paths inside
     that boundary and not present yet are returned. After the pass, the ones that now exist are the
-    directories it created.
+    directories it created. A user-level target is bounded by the user home, so
+    the directories on the way to it (``~/.agents``) are covered too.
     """
     boundary = _allowed_write_root(harness_root, project_root)
     root = _root_for(harness_root, project_root)
@@ -91,7 +93,9 @@ def capture_missing_dirs(
         target = resolve_target(
             entry.target, harness_root=harness_root, project_root=project_root
         )
-        candidates.extend(_chain(target, boundary))
+        candidates.extend(
+            _chain(target, entry_write_root(entry, harness_root, project_root))
+        )
     home = resolve_install_data_home(root, profile=profile)
     for directory in (home.root, home.plans, home.memory, home.contexts, home.learning):
         candidates.extend(_chain(directory, boundary))
@@ -210,6 +214,7 @@ def _remove_created(
     )
 
 
+@locked_for_harness
 @backup_session()
 def rollback_install(
     record: LedgerRecord,
@@ -223,26 +228,53 @@ def rollback_install(
     See the module docstring for the order and rules. A record written before
     per-target outcomes were recorded can only have its backups restored: the
     files it created are not known, so they stay.
+
+    A target in a user-level folder (``~/.agents/skills/``) is reversed within
+    the home, and only when no other install still lists it: a ``created`` flag
+    alone is not enough, because a later install may have claimed the target.
+    A target this install only found in place goes too when an install that has
+    let go of it created it (:meth:`UserLevelGate.inherited`), so rolling back
+    every holder does not strand the folder. An unreadable ledger stops the
+    rollback before anything changes.
+    The rollback holds the user-level lock (see ``shared_scope``).
     """
     root = _root_for(harness_root, project_root)
     allowed_root = _allowed_write_root(harness_root, project_root)
+    gate = UserLevelGate.for_harness(
+        harness_name, root=root, harness_root=harness_root, project_root=project_root
+    )
+    blocked = gate.ledger_blocked(target.path for target in record.targets)
+    if blocked is not None:
+        return [blocked]
     results: list[MaterializationResult] = []
     for recorded in reversed(record.targets):
         result: MaterializationResult | None = None
-        if recorded.backup_ref:
-            result = _restore_target(
-                recorded,
-                root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root,
-            )
-        elif recorded.outcome == "created":
-            result = _remove_created(
-                Path(recorded.path),
-                root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root,
-            )
+        shared = gate.covers(recorded.path)
+        target_root = gate.boundary if shared else allowed_root
+        if shared:
+            result = gate.retained(recorded.path)
+            if result is not None:
+                results.append(result)
+                continue
+        with gate.scope_for(recorded.path):
+            if recorded.backup_ref:
+                result = _restore_target(
+                    recorded,
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=target_root,
+                )
+            elif recorded.outcome == "created" or (
+                shared
+                and recorded.outcome == "unchanged"
+                and gate.inherited(recorded.path, record)
+            ):
+                result = _remove_created(
+                    Path(recorded.path),
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=target_root,
+                )
         if result is not None:
             results.append(result)
     created = {Path(path) for path in record.created_dirs}
@@ -256,4 +288,5 @@ def rollback_install(
         if removal is not None and removal.outcome != "unchanged":
             results.append(removal)
     results.extend(remove_created_dirs(created, allowed_root=allowed_root))
+    results.extend(gate.tidy(created))
     return results

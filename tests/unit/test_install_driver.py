@@ -19,7 +19,7 @@ import pytest
 from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN, merge_managed_block
 from apothem.lib.harness_registry import HARNESS_REGISTRY
-from apothem.lib.propagation import HarnessRules, InstallEntry
+from apothem.lib.propagation import HarnessRules, InstallEntry, user_home
 
 
 def _symlink_or_skip(target: Path, link: Path, *, target_is_directory: bool) -> None:
@@ -1070,7 +1070,8 @@ def test_codex_command_skill_note_points_hooks_to_codex_root(
         encoding="utf-8"
     )
     assert f"`hooks/<path>` is `{(tmp_path / '.codex' / 'hooks').as_posix()}/" in text
-    support = tmp_path / ".config" / "apothem"
+    # The corpus is installed in the user home, whatever the Codex root is.
+    support = user_home() / ".config" / "apothem"
     assert f"`rules/<path>` is `{(support / 'rules').as_posix()}/" in text
     assert f"`templates/<path>` is `{(support / 'templates').as_posix()}/" in text
     assert "schemas/" not in text  # codex installs no schemas

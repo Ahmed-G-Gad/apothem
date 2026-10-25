@@ -18,7 +18,45 @@ apothem install --harness codebuddy --project /path/to/project
 The adapter writes one project-scope rules file from the shared Apothem
 rules and governance surface.
 
-**Files written:** `<project>/.codebuddy/rules/apothem-rules.md`
+It also writes Apothem's skills, and the rules and templates they cite, to
+your user home, before it touches the project (see
+[Files outside the project](#files-outside-the-project)).
+
+**Files written:**
+
+- `<project>/.codebuddy/rules/apothem-rules.md`, the rules file.
+- `~/.codebuddy/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
+- `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
+
+## Files outside the project
+
+The install also writes Apothem's skills to your user home, before it changes
+anything in the project:
+
+| Folder | What Apothem writes there |
+| --- | --- |
+| `~/.codebuddy/skills/` | One folder with a `SKILL.md` for each Apothem skill, and one for each Apothem command (a command becomes a skill of the same name). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | The rules and templates that the skills and the rules file refer to. |
+
+These folders are shared. They are not private to the project:
+
+- Every project you install `codebuddy` into uses the same copy of `~/.codebuddy/skills/`, and the install writes the same files into it each time. CodeBuddy is the only tool that reads that folder. The rules and templates under `~/.config/apothem/` are written by the other tools' installs as well, with the same files.
+- `--project` chooses the rules file to write and which project the
+  install belongs to. It does not change where the skills go.
+- The install adds no skill or rule file to your repository. The project
+  gets the rules file, plus the `.apothem/` data folder every project install
+  creates.
+- The home folders are written first. If that fails, for example because a
+  folder in the path is a link that leaves your home directory (a link that
+  stays inside it is followed) or cannot be written, the install stops
+  with the error before anything in the project changes.
+- A skill folder with an Apothem skill's name that Apothem did not write is
+  left alone, and the install prints a warning that names it. Rename or move
+  it, then run `apothem update`. `apothem verify` fails while that name is held.
+- The files add up to a few megabytes.
+
+The install prints a note that names the folders it writes outside `--project`,
+and `--dry-run` lists them.
 
 ## Profile-to-native-config mapping
 
@@ -41,13 +79,22 @@ adapter writes a dedicated `apothem-rules.md` file that co-exists with any
 rules files the operator authors in the same directory. The `CODEBUDDY.md`
 project memory file, `.codebuddy/settings.json`, and the project `.mcp.json`
 (MCP servers) are operator-owned; Apothem does not write them. CodeBuddy also
-documents skills, commands, sub-agents, and hooks; the adapter writes none of
-them and references the disciplines inside the rules file instead. When a
+documents commands, sub-agents, and hooks; the adapter writes none of them
+and references the disciplines inside the rules file instead. It does write
+skills, and Apothem's commands as skills, to your user folder (see
+[Files outside the project](#files-outside-the-project)). When a
 project has no `CODEBUDDY.md`, CodeBuddy Code reads `AGENTS.md` as project
 memory, so an `AGENTS.md` another adapter writes reaches CodeBuddy as well. The vendor surface conventions the
 adapter relies on are pinned at
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, snapshotted
 against the live CodeBuddy documentation.
+
+CodeBuddy documents `~/.codebuddy/skills/` for user skills and does not mention
+`~/.agents/skills/`, so the install writes the CodeBuddy folder and not the
+cross-tool one. That folder is read by CodeBuddy alone. Its skills page lists
+`disable-model-invocation`, `user-invocable`, and `allowed-tools`, and lists no
+`metadata` or `argument-hint` key; Apothem has not confirmed that CodeBuddy
+accepts them.
 
 ## Verification
 
@@ -59,7 +106,11 @@ The verify command confirms that:
 
 1. The native config exists at the expected path.
 2. The managed rules file is present and non-empty.
-3. The adapter-specific verification routine reports success.
+3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
+   install wrote it, and no skill folder with an Apothem name belongs to
+   something Apothem did not write. A failed check names the missing or
+   foreign folders.
+4. The adapter-specific verification routine reports success.
 
 ## Updating
 
@@ -70,6 +121,9 @@ apothem update --harness codebuddy --project /path/to/project
 Re-derives the project rules file from the current shared profile state.
 `install` and `update` are idempotent — re-running overwrites the managed
 file with the latest rendered content.
+
+The update also rewrites any skill folder whose files differ from the current ones.
+If you installed with an earlier release that wrote no skills, the update adds them.
 
 ## Uninstalling
 
@@ -83,6 +137,14 @@ a timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and the Apothem engine are
 unaffected.
 
+The uninstall also removes the skill folders it wrote in `~/.codebuddy/skills/` and the
+rules and templates in `~/.config/apothem/`, but only when no other Apothem
+install still uses them. Another project, or another tool that shares the
+folder, may. In that case the uninstall keeps the folders, prints which install
+uses them, and the last uninstall removes them. Files you added to those
+folders stay, and a folder left empty is removed. Each
+folder is backed up under `~/.apothem/backups/` before it is removed.
+
 ## Conformity gate
 
 ```bash
@@ -95,6 +157,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness codebuddy --project /path/to/project` |
 | Verification failed | Run `apothem update --harness codebuddy --project /path/to/project`, then verify again |
+| `apothem verify` names a missing skill folder | Run `apothem install --harness codebuddy --project /path/to/project`; it restores the folder |
+| An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
+| An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness codebuddy --project /path/to/project` |
 
 ## Configuration knobs

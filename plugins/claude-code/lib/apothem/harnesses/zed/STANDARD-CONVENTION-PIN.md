@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
+- Snapshot date: 2026-10-24
+- Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`.
 - Adapter source: `src/apothem/harnesses/zed/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 - canonical-filename: `.rules`
@@ -34,12 +35,20 @@
   names the surface and authors no entries.
 - Skills: Zed loads skills only from `~/.agents/skills/` (global) and
   `<worktree>/.agents/skills/` (project), flat layout, with no custom search
-  paths. The Zed adapter writes no skills (registry `unsupported`, by design);
-  because `~/.agents/skills/` is Codex's shared root, a Codex install's skills
-  reach Zed.
+  paths. The Zed adapter writes Apothem's skills, plus its commands wrapped as
+  skills, to `~/.agents/skills/`, the one user-level copy shared with Codex,
+  Cursor, GitHub Copilot, and Windsurf. Only project-local skills are gated on a
+  trusted worktree; the docs tie no such gate to the global folder. One reading
+  reported a size cap on the skill catalog that this pin did not confirm.
+  TODO(clarify): the vendor docs do not say how Zed treats a `SKILL.md`
+  frontmatter key it does not list, and whether a skill that disables model
+  invocation counts toward the catalog cap mentioned above. The shared
+  emission sets `user-invocable`, `disable-model-invocation`, `allowed-tools`,
+  `argument-hint`, and a `metadata` map; probe Zed with the full set before a
+  release and, if it rejects extras, change `SHARED_TOPLEVEL_KEYS` in
+  `install_driver_shared.py`.
 - The vendor documents threads, agent profiles, and external agents as
-  separate surfaces; the adapter authors none of them (deliberate rules-only
-  posture).
+  separate surfaces; the adapter authors none of them.
 
 ## Vendor Sources
 
@@ -47,7 +56,7 @@ Retrieved 2026-10-03 unless marked.
 
 - <https://zed.dev/docs/ai/instructions> (instruction files and priority)
 - <https://zed.dev/docs/ai/mcp> (`context_servers`)
-- <https://zed.dev/docs/ai/skills> (skill locations; retrieved 2026-10-02)
+- <https://zed.dev/docs/ai/skills> (skill locations; retrieved 2026-10-24, the folder the adapter writes)
 
 ## Discovery Targets
 
@@ -74,18 +83,19 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 Zed exposes **no vendor plugin or extension install surface** that Apothem ships
-for its instruction surface. The adapter is project-scope rules-only: it writes a
-single flat merged file at `<project>/.rules` (backing up any pre-existing
-`.rules` first) and authors no other cohort. There is no standalone-installable
+for its instruction surface. The adapter writes a flat merged file at
+`<project>/.rules` (backing up any pre-existing `.rules` first), the skills at
+`~/.agents/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
+and authors no other cohort. There is no standalone-installable
 bundle; every artifact requires the full
 `apothem install --harness zed --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (flat `.rules`) | No — requires `apothem install` | The merged `.rules` file (carrying the embedded behavioral mandates) is written only by the engine to the project root. Nothing persists before that run. |
-| Commands / Agents | No — adapter scope | Zed documents threads, agent profiles, and external agents; the adapter authors none of them. |
-| Skills | No — adapter scope | Zed loads skills from `~/.agents/skills/` and `.agents/skills/`; the Zed adapter writes none, though a Codex install's skills in `~/.agents/skills/` reach Zed. |
+| Agents | No — adapter scope | Zed documents threads, agent profiles, and external agents; the adapter authors none of them. |
+| Skills and commands | No — requires `apothem install` | Zed loads skills from `~/.agents/skills/` and `.agents/skills/`; the engine writes Apothem's skills and wrapped commands to `~/.agents/skills/`, one copy shared with every other tool that reads it. Nothing persists before that run. |
 | Hooks / MCP / Settings | No — operator-owned | `context_servers` in `.zed/settings.json` (MCP) is operator-owned; the adapter authors no entries. |
 
-Apothem ships no Zed extension, so the merged `.rules` file via
-`apothem install` is the sole persistence surface.
+Apothem ships no Zed extension, so the files `apothem install` writes are the
+sole persistence surface.

@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
+- Snapshot date: 2026-10-24
+- Snapshot note (skills): the adapter now installs skills and command skills at Trae's own `~/.trae/skills/` and the rules and templates corpus at `~/.config/apothem/`. The skills claims were read on 2026-10-24 from the English page through a text-extraction proxy (the page does not render without a browser) and from the Chinese-edition page directly.
 - Snapshot note: the docs site renders its text in the browser, so a plain text extractor sees no body, and its `llms.txt` and `.md` variants redirect to a landing page. The rules page's text ships as document JSON inside the page HTML; the rules claims below were read from that text on 2026-10-03. The skills, agents, and MCP claims carry over from the 2026-06-25 reading. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/trae/`
 - Evidence level: rules page text read 2026-10-03; skills, agents, and MCP pages last read 2026-06-25 (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
@@ -32,17 +33,33 @@
   shared capability matrix were set accordingly.
 - Workspace rules are a `.trae/rules/*.md` directory of Markdown files, not a
   single file; `layered_context_surface` matches.
-- As read 2026-06-25, the vendor documents skills (`.trae/skills/` plus the cross-tool
-  `.agents/skills/`, with `.trae/skills/` winning name collisions), Agents
-  (`docs.trae.ai/ide/agent`), `AGENTS.md`, and MCP (`.trae/mcp.json`, three
-  transport types). The adapter delivers only the project rules file and
-  authors none of those cohorts: a deliberate rules-only posture, not a claim
-  the surfaces are absent.
+- Skills (re-read 2026-10-24): project skills live in `.trae/skills/` and
+  global skills in `~/.trae/skills/` (`%userprofile%/.trae/skills` on Windows),
+  each defined by a `SKILL.md`. The cross-tool `.agents/skills/` folder is read
+  only after the setting `Enable .agents Skills Directory` is switched on, and
+  `.trae/skills/` wins a name collision; the English page documents
+  `~/.agents/skills/` nowhere. The adapter therefore writes Apothem's skills,
+  plus its commands wrapped as skills, to `~/.trae/skills/` and not to the
+  cross-tool folder.
+  TODO(clarify): the vendor docs do not say how Trae treats a `SKILL.md`
+  frontmatter key it does not list. The shared emission sets `user-invocable`,
+  `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
+  `metadata` map; probe Trae with the full set before a release and, if it
+  rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
+- TODO(clarify): the Chinese edition (TRAE CN) documents `~/.trae-cn/skills/`,
+  and its 2026-06-04 changelog entry (v3.3.63) says the CN and international
+  global skill directories are compatible. The changelog was read through a
+  summary, not directly. Until a probe on a CN install settles it, the adapter
+  writes `~/.trae/skills/` only.
+- The vendor also documents Agents (`docs.trae.ai/ide/agent`), `AGENTS.md`, and
+  MCP (`.trae/mcp.json`, three transport types). The adapter authors none of
+  those. The project `.trae/skills/` folder stays operator-owned.
 
 ## Vendor Sources
 
 - <https://docs.trae.ai/ide/rules> (rules directories, activation, nesting;
   retrieved 2026-10-03)
+- <https://docs.trae.ai/ide/skills> (skills; retrieved 2026-10-24, the folder the adapter writes)
 - <https://docs.trae.ai/ide/agent> (agents; retrieved 2026-06-25)
 
 ## Discovery Targets
@@ -73,18 +90,20 @@
 ## Plugin-alone Persistence
 
 Trae exposes **no vendor plugin or extension install surface** that Apothem
-ships. The adapter is project-scope rules-only: it writes a single merged rules
-file at `<project>/.trae/rules/apothem-rules.md` (alongside, never clobbering,
-the operator's other project rules or the `~/.trae/user_rules` global rules)
-and authors no other cohort.
+ships. The adapter writes a merged rules file at
+`<project>/.trae/rules/apothem-rules.md` (alongside, never clobbering, the
+operator's other project rules or the `~/.trae/user_rules` global rules), the
+skills at `~/.trae/skills/`, and the rules and templates corpus at
+`~/.config/apothem/`, and authors no other cohort.
 There is no standalone-installable bundle; every artifact requires the full
 `apothem install --harness trae --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.trae/rules/` directory. Nothing persists before that run. |
-| Commands / Skills / Agents | No — deliberate rules-only posture | Trae documents skills (`.trae/skills/` + `.agents/skills/`) and Agents (`docs.trae.ai/ide/agent`), but the adapter authors none of them (preserve-first rules-only delivery); these cohorts are not materialized for this harness by design. |
+| Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.trae/skills/`. Nothing persists before that run. |
+| Agents | No — adapter scope | Trae documents Agents (`docs.trae.ai/ide/agent`); the adapter authors none of them. |
 | Hooks / MCP / Settings | No — operator-owned | `.trae/mcp.json` (MCP) is operator-owned; the adapter authors no entries. |
 
-Apothem ships no Trae plugin or extension, so the merged rules file via
-`apothem install` is the sole persistence surface.
+Apothem ships no Trae plugin or extension, so the files `apothem install` writes
+are the sole persistence surface.

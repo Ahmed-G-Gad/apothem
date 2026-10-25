@@ -11,7 +11,7 @@ from __future__ import annotations
 import contextlib
 import os
 import shutil
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
@@ -22,6 +22,7 @@ from .install_driver_pathsafety import (
     _validate_target_path,
 )
 from .install_driver_types import (
+    STAGING_SUFFIX,
     IgnoreFn,
     MaterializationOutcome,
     MaterializationResult,
@@ -29,6 +30,11 @@ from .install_driver_types import (
     _is_excluded_path,
     _result,
 )
+
+#: Decides whether a user-level skill folder must be left alone: called with the
+#: folder and whether it already holds exactly what would be written, it returns
+#: the result that explains why, or ``None`` to go ahead (``SkillGuard.check``).
+SkillFolderGuard = Callable[[Path, bool], MaterializationResult | None]
 
 
 def _iter_relative_files(root: Path, ignore: IgnoreFn | None) -> list[Path]:
@@ -302,12 +308,18 @@ def _write_generated_directory(
     source: Path,
     allowed_root: Path,
     ignore: IgnoreFn | None = None,
+    staged: bool = False,
 ) -> MaterializationResult:
     """Replace or create a generated directory holding exactly *files*.
 
     The multi-file form of :func:`_write_single_file_directory`: an unchanged
     directory is left alone; otherwise the old one is backed up and removed,
     and every file is written through the safe-write primitive.
+
+    With *staged* the files are written into a hidden sibling folder first and
+    the finished folder is renamed into place, so a failed or interrupted write
+    never leaves a half-written folder under the final name (a shared folder
+    that an interrupted write left partial would read as someone else's).
     """
     target_error = _validate_target_path(
         directory,
@@ -323,6 +335,16 @@ def _write_generated_directory(
             directory,
             "generated directory already matches",
             source=source,
+        )
+    if staged:
+        return _write_staged_directory(
+            directory,
+            files,
+            root=root,
+            harness_name=harness_name,
+            operation=operation,
+            source=source,
+            allowed_root=allowed_root,
         )
     removed = _replace_path(
         directory,
@@ -346,6 +368,67 @@ def _write_generated_directory(
         )
         if write_result.outcome == "error":
             return write_result
+    return _result(
+        "updated" if removed else "created",
+        operation,
+        directory,
+        "wrote generated directory",
+        source=source,
+        backup_path=Path(removed.backup_path)
+        if removed and removed.backup_path
+        else None,
+    )
+
+
+def _write_staged_directory(
+    directory: Path,
+    files: dict[str, bytes],
+    *,
+    root: Path,
+    harness_name: str,
+    operation: str,
+    source: Path,
+    allowed_root: Path,
+) -> MaterializationResult:
+    """Write *files* beside *directory*, then swap the finished folder into place."""
+    stage = directory.with_name(f".{directory.name}{STAGING_SUFFIX}")
+    shutil.rmtree(stage, onerror=_handle_rm_error)
+    try:
+        for name in sorted(files):
+            written = write_bytes_safely(
+                stage / name,
+                files[name],
+                install_root=root,
+                harness_name=harness_name,
+                operation=operation,
+                source=source,
+                allowed_root=allowed_root,
+            )
+            if written.outcome == "error":
+                return written
+        removed = _replace_path(
+            directory,
+            install_root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+        if removed is not None and removed.outcome == "error":
+            return removed
+        try:
+            stage.replace(directory)
+        except OSError as exc:
+            return _result(
+                "error",
+                operation,
+                directory,
+                f"could not move the finished folder into place: {exc}",
+                source=source,
+                backup_path=Path(removed.backup_path)
+                if removed and removed.backup_path
+                else None,
+            )
+    finally:
+        shutil.rmtree(stage, onerror=_handle_rm_error)
     return _result(
         "updated" if removed else "created",
         operation,
@@ -468,8 +551,13 @@ def preview_native_skills(
     ignore: IgnoreFn | None,
     exclude: list[str] | None,
     harness_name: str,
+    guard: SkillFolderGuard | None = None,
 ) -> list[MaterializationOutcome]:
-    """Classify each child a ``native_skills`` install would write, no writes."""
+    """Classify each child a ``native_skills`` install would write, no writes.
+
+    A *guard* that objects to a folder keeps it out of the changes: the install
+    would leave that folder alone.
+    """
     outcomes: list[MaterializationOutcome] = []
     for source_path in _skill_children(src, ignore, exclude):
         target = dst / source_path.name
@@ -478,6 +566,9 @@ def preview_native_skills(
                 source_path, harness_name=harness_name, ignore=ignore
             )
             matches = _generated_directory_matches(target, files, ignore)
+            if guard is not None and guard(target, matches) is not None:
+                outcomes.append("unchanged")
+                continue
         elif source_path.is_file():
             matches = target.is_file() and (
                 target.read_bytes() == source_path.read_bytes()

@@ -18,6 +18,7 @@ from apothem.lib.claude_skill_split import (
     SplitSkill,
 )
 from apothem.lib.frontmatter import split_frontmatter
+from apothem.lib.propagation import user_home
 
 _PKG = Path(__file__).resolve().parents[2] / "src" / "apothem"
 _COMMANDS = sorted(p for p in (_PKG / "commands").glob("*.md") if p.name != "README.md")
@@ -244,6 +245,6 @@ def test_uninstall_removes_the_skill_directories(tmp_path: Path) -> None:
 def test_other_harness_installs_write_no_references(tmp_path: Path) -> None:
     root = tmp_path / ".codex"
     install_driver.run_install("codex", harness_root=root)
-    skills = tmp_path / ".agents" / "skills"
+    skills = user_home() / ".agents" / "skills"
     assert (skills / "plan-execute" / "SKILL.md").is_file()
     assert not list(skills.glob("*/references/step-*.md"))

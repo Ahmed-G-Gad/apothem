@@ -60,6 +60,11 @@ _INSTALL_ENTRY_MODES: tuple[str, ...] = (
     "antigravity_agents",
 )
 
+#: Suffix of the sibling folder a user-level skill folder is staged in before it
+#: is renamed into place. A hidden name with no ``SKILL.md`` inside: no tool
+#: reads it as a skill, and the next write of the same skill replaces it.
+STAGING_SUFFIX: Final[str] = ".apothem-staging"
+
 #: Plain-language verb phrase for each operation kind. Preview surfaces (the
 #: ``diff`` command, any future dry-run preview) render these instead of the
 #: internal snake_case identifier so an operator reads an action, not a token.

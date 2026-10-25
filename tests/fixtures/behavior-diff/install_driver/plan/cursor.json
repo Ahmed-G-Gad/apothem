@@ -1,5 +1,25 @@
 [
   {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/rules",
+    "target": "<HOME>/.config/apothem/rules"
+  },
+  {
+    "mode": "native_skills",
+    "source": "<APOTHEM_SRC>/skills",
+    "target": "<HOME>/.agents/skills"
+  },
+  {
+    "mode": "command_skills",
+    "source": "<APOTHEM_SRC>/commands",
+    "target": "<HOME>/.agents/skills"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/templates",
+    "target": "<HOME>/.config/apothem/templates"
+  },
+  {
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/cursor/templates/apothem-rules.mdc",
     "target": "<ROOT>/.cursor/rules/apothem-rules.mdc"

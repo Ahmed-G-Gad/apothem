@@ -46,6 +46,7 @@ from .install_driver_planvalidation import (
     _validate_install_plan,
     make_ignore,
 )
+from .install_driver_shared import entry_scope
 from .install_driver_treeops import (
     sweep_stale,
 )
@@ -382,16 +383,17 @@ def run_install(
                 )
             )
             for entry in rules.install:
-                entry_results = install_driver._dispatch_install_entry(
-                    entry,
-                    ignore,
-                    rules,
-                    harness_root=harness_root,
-                    project_root=project_root,
-                    harness_name=harness_name,
-                    authorize=authorize,
-                    profile_body=profile_body,
-                )
+                with entry_scope(entry, harness_root, project_root):
+                    entry_results = install_driver._dispatch_install_entry(
+                        entry,
+                        ignore,
+                        rules,
+                        harness_root=harness_root,
+                        project_root=project_root,
+                        harness_name=harness_name,
+                        authorize=authorize,
+                        profile_body=profile_body,
+                    )
                 results.extend(entry_results)
                 entry_errors = [
                     result for result in entry_results if result.outcome == "error"

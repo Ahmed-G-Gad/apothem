@@ -358,16 +358,23 @@ def _rollback_harness(
     target_results: list[MaterializationResult] = install_driver.rollback_install(
         record, harness_name=entry.package_key, **root_kwargs
     )
-    install_ledger.append_record(
-        LedgerRecord.create(
-            harness=entry.package_key,
-            root=install_root,
-            kind="rollback",
-            targets=install_driver.backup_ledger_targets(target_results),
-            install_id=record.install_id,
+    # A rollback stopped because the ledger of the shared user-level folders
+    # could not be read changed nothing, so the install stays recorded and the
+    # command can be run again once the ledger is repaired.
+    if not any(
+        item.outcome == "error" and item.operation == "shared_retained"
+        for item in target_results
+    ):
+        install_ledger.append_record(
+            LedgerRecord.create(
+                harness=entry.package_key,
+                root=install_root,
+                kind="rollback",
+                targets=install_driver.backup_ledger_targets(target_results),
+                install_id=record.install_id,
+            )
         )
-    )
-    install_driver.apply_retention(entry.package_key)
+        install_driver.apply_retention(entry.package_key)
     _record_rollback_results(run, tally, harness_id, record, target_results)
     return True
 

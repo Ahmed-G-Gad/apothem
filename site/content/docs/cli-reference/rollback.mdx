@@ -29,6 +29,16 @@ first, it:
   install created, unless another installed harness still uses them;
 - removes the directories the install created, once they are empty.
 
+A file or folder in your home directory that other installs also use (a skills
+folder, or `~/.config/apothem/`) is treated like the shared data stores:
+rollback keeps it while another install still lists it, and restores or removes
+it only for the last install that uses it. A folder this install found already
+in place (a second tool installed after the first) goes with the last install
+that uses it when an install that has since let go of it created it, so rolling
+back every tool leaves nothing behind. When an install's record that could use
+the folder cannot be read, rollback stops with an error before it changes
+anything and writes no `rollback` record; repair the record and run it again.
+
 Everything rollback removes or replaces is first copied into the Apothem backup
 root (`~/.apothem/backups/`), so a rollback can itself be undone by hand.
 Rollback then appends a `rollback` record to the harness ledger. Rolling back an

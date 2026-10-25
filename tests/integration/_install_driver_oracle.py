@@ -10,21 +10,27 @@ and machines. The committed golden corpus at
 so any future change that alters rendered output / dispatch / ledger behavior is
 caught. The underscore prefix keeps pytest from collecting this helper as tests.
 
-HOME isolation: ``BACKUP_ROOT``, the ledger ``STATE_ROOT``, and the data-home
-base are all redirected into per-adapter scratch, so a capture never touches the
-operator's real ``~/.claude`` / ``~/.codex`` / ``~/.apothem`` / ``$HOME``.
+HOME isolation: ``BACKUP_ROOT``, the ledger ``STATE_ROOT``, the data-home
+base and the user home (``propagation.USER_HOME``, where the ``${USER_HOME}``
+manifest targets such as ``~/.agents/skills`` resolve) are all redirected into
+per-adapter scratch, so a capture never touches the operator's real
+``~/.claude`` / ``~/.codex`` / ``~/.agents`` / ``~/.apothem`` / ``$HOME``. The
+scratch home is tokenized ``<HOME>``, and each real install also records which
+files it wrote there (paths only, ``home/<adapter>.json``).
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import shutil
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared import install_driver
-from apothem.lib import install_ledger
+from apothem.lib import install_ledger, propagation
 from apothem.lib.harness_registry import HARNESS_REGISTRY
 
 from ._oracle_norm import (
@@ -64,6 +70,7 @@ SAMPLE_PROFILE: dict[str, Any] = {
 # oracle keeps its own token; the rest of the normalization constants are the
 # byte-identical primitives shared with the CLI oracle.
 TOK_BACKUP_TS = "<BACKUP_TS>"
+TOK_HOME = "<HOME>"
 
 ALL_ADAPTERS: list[str] = [entry.package_key for entry in HARNESS_REGISTRY]
 
@@ -90,15 +97,33 @@ def _path_variants(path: Path) -> set[str]:
     }
 
 
-def _normalize_text(text: str, *, root: Path, outer: Path | None = None) -> str:
+@contextlib.contextmanager
+def _isolated_user_home(scratch: Path) -> Iterator[Path]:
+    """Point ``${USER_HOME}`` at ``<scratch>/home`` for the duration of a capture."""
+    home = scratch / "home"
+    home.mkdir(parents=True, exist_ok=True)
+    saved = propagation.USER_HOME
+    propagation.USER_HOME = home
+    try:
+        yield home
+    finally:
+        propagation.USER_HOME = saved
+
+
+def _normalize_text(
+    text: str, *, root: Path, outer: Path | None = None, home: Path | None = None
+) -> str:
     # The scratch install root AND the apothem package source root (embedded in
     # plan `source` fields) are both machine-specific absolute paths; neutralize
     # both so a Windows capture and a Linux capture are byte-identical. *outer*
     # is the private scratch directory holding the install root: a layout whose
     # manifest targets reach above the harness root (`${HARNESS_ROOT}/../`)
     # names paths under it, which read as `<ROOT>/..`. Only a directory created
-    # for the capture is passed, never a shared temp root.
+    # for the capture is passed, never a shared temp root. *home* is the scratch
+    # user home (``<outer>/home``), replaced before *outer* so it reads `<HOME>`.
     replacements = [(TOK_ROOT, _path_variants(root))]
+    if home is not None:
+        replacements.append((TOK_HOME, _path_variants(home)))
     if outer is not None:
         replacements.append((f"{TOK_ROOT}/..", _path_variants(outer)))
     replacements.append((TOK_SRC, _path_variants(install_driver.APOTHEM_SRC)))
@@ -109,11 +134,19 @@ def _normalize_text(text: str, *, root: Path, outer: Path | None = None) -> str:
     text = _ISO_TS_RE.sub(TOK_TIMESTAMP, text)
     text = _TS_RE.sub(TOK_BACKUP_TS, text)
     text = _ULID_RE.sub(TOK_INSTALL_ID, text)
-    return collapse_token_paths(text, "ROOT|APOTHEM_SRC")
+    return collapse_token_paths(text, "HOME|ROOT|APOTHEM_SRC")
 
 
-def _normalize_obj(obj: Any, *, root: Path, outer: Path | None = None) -> Any:  # noqa: ANN401  # Any: recurses over arbitrary JSON-like structures (build_plan / to_dict output)
-    return normalize_obj(obj, lambda s: _normalize_text(s, root=root, outer=outer))
+def _normalize_obj(
+    obj: Any,  # noqa: ANN401  # Any: recurses over arbitrary JSON-like structures (build_plan / to_dict output)
+    *,
+    root: Path,
+    outer: Path | None = None,
+    home: Path | None = None,
+) -> Any:  # noqa: ANN401  # Any: mirrors the recursed structure's element type
+    return normalize_obj(
+        obj, lambda s: _normalize_text(s, root=root, outer=outer, home=home)
+    )
 
 
 def _ledger_target_key(target: dict[str, Any]) -> tuple[str, str]:
@@ -153,7 +186,7 @@ def _dump_json(obj: Any, dest: Path) -> None:  # noqa: ANN401  # Any: serializes
 
 
 def _snapshot_rendered_tree(
-    root: Path, dest_dir: Path, *, outer: Path | None = None
+    root: Path, dest_dir: Path, *, outer: Path | None = None, home: Path | None = None
 ) -> None:
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
         rel = path.relative_to(root)
@@ -174,17 +207,25 @@ def _snapshot_rendered_tree(
         except UnicodeDecodeError:
             dest.write_bytes(raw)
             continue
-        normalized = tokenize_python_bin(_normalize_text(text, root=root, outer=outer))
+        normalized = tokenize_python_bin(
+            _normalize_text(text, root=root, outer=outer, home=home)
+        )
         dest.write_text(normalized, encoding="utf-8", newline="\n")
 
 
 def _capture_plan(name: str, out_root: Path) -> None:
-    root = Path(tempfile.mkdtemp(prefix=f"dx1-plan-{name}-"))
+    scratch = Path(tempfile.mkdtemp(prefix=f"dx1-plan-{name}-"))
+    root = scratch / "install"
+    root.mkdir()
     try:
-        plan = install_driver.build_plan(name, **_scope_kwarg(name, root))
-        _dump_json(_normalize_obj(plan, root=root), out_root / "plan" / f"{name}.json")
+        with _isolated_user_home(scratch) as home:
+            plan = install_driver.build_plan(name, **_scope_kwarg(name, root))
+        _dump_json(
+            _normalize_obj(plan, root=root, home=home),
+            out_root / "plan" / f"{name}.json",
+        )
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def _capture_dryrun(name: str, out_root: Path) -> None:
@@ -195,12 +236,13 @@ def _capture_dryrun(name: str, out_root: Path) -> None:
     root = scratch / "install"
     root.mkdir()
     try:
-        run = install_driver.run_install(
-            name, dry_run=True, profile=SAMPLE_PROFILE, **_scope_kwarg(name, root)
-        )
+        with _isolated_user_home(scratch) as home:
+            run = install_driver.run_install(
+                name, dry_run=True, profile=SAMPLE_PROFILE, **_scope_kwarg(name, root)
+            )
         results = [result.to_dict() for result in run.results]
         _dump_json(
-            _normalize_obj(results, root=root, outer=scratch),
+            _normalize_obj(results, root=root, outer=scratch, home=home),
             out_root / "dryrun" / f"{name}.json",
         )
     finally:
@@ -219,15 +261,26 @@ def _capture_real_install(name: str, out_root: Path) -> None:
     try:
         install_driver.BACKUP_ROOT = backup_root
         install_ledger.STATE_ROOT = ledger_state
-        run = install_driver.run_install(
-            name, profile=SAMPLE_PROFILE, **_scope_kwarg(name, install_root)
-        )
-        install_driver.finalize_install(run, root=install_root)
+        with _isolated_user_home(scratch) as home:
+            run = install_driver.run_install(
+                name, profile=SAMPLE_PROFILE, **_scope_kwarg(name, install_root)
+            )
+            install_driver.finalize_install(run, root=install_root)
 
         rendered_dir = out_root / "rendered" / name
         if rendered_dir.exists():
             shutil.rmtree(rendered_dir)
-        _snapshot_rendered_tree(install_root, rendered_dir, outer=scratch)
+        _snapshot_rendered_tree(install_root, rendered_dir, outer=scratch, home=home)
+        # Which files the install wrote in the user home (paths only: the bytes
+        # are the source's, and the rendered tree above pins the emission).
+        _dump_json(
+            sorted(
+                path.relative_to(home).as_posix()
+                for path in home.rglob("*")
+                if path.is_file()
+            ),
+            out_root / "home" / f"{name}.json",
+        )
 
         ledger_lines: list[str] = []
         if ledger_state.exists():
@@ -236,7 +289,9 @@ def _capture_real_install(name: str, out_root: Path) -> None:
                     for line in ledger_file.read_text(encoding="utf-8").splitlines():
                         if not line.strip():
                             continue
-                        norm = _normalize_obj(json.loads(line), root=install_root)
+                        norm = _normalize_obj(
+                            json.loads(line), root=install_root, home=home
+                        )
                         norm = _sort_ledger_targets(
                             _normalize_obj(norm, root=backup_root)
                         )
@@ -256,13 +311,14 @@ def _capture_real_install(name: str, out_root: Path) -> None:
             "dry_run": run.dry_run,
             "changed": run.changed,
             "files_written": sorted(
-                _normalize_text(p, root=install_root) for p in run.files_written
+                _normalize_text(p, root=install_root, home=home)
+                for p in run.files_written
             ),
             "warnings": len(run.warnings),
             "counts": run.counts,
         }
         _dump_json(
-            _normalize_obj(envelope, root=install_root),
+            _normalize_obj(envelope, root=install_root, home=home),
             out_root / "envelope" / f"{name}.json",
         )
     finally:

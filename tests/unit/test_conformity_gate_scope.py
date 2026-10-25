@@ -24,6 +24,9 @@ def _clear_scope_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure no ambient scope env var pollutes the per-test resolution."""
     monkeypatch.delenv(gate.SCOPE_ENV_VAR, raising=False)
     monkeypatch.delenv("CODEX_HOME", raising=False)
+    # The default Claude scope is read from the home when the gate is imported;
+    # follow this test's isolated home.
+    monkeypatch.setattr(gate, "_DEFAULT_CLAUDE_SCOPE", Path.home() / ".claude")
 
 
 def test_resolve_scope_defaults_to_harness_root() -> None:

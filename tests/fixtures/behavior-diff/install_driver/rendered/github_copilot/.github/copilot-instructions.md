@@ -36,7 +36,7 @@ Configured MCP servers (materialized into the harnesses with a native MCP config
 
 Apothem wrote this block with `apothem install --harness github-copilot`. It lands at `<project>/.github/copilot-instructions.md`, the repository-wide custom instructions file (<https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions>), which Copilot applies to requests made in this repository, including chat, the cloud agent, and code review. Other coding tools can read the same file, so this block carries project-wide guidance only and names no single tool as its reader. GitHub notes that shorter instruction files are more likely to be processed in full, so the shared-profile section, when the profile sets one, comes first in this block.
 
-This install writes this one file: no Apothem rule, skill, command, or agent file is installed beside it, so the disciplines below are the Apothem rule text in force in this project.
+This install writes this one file in the project. Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/` in your user home, one copy for every project and for every tool that reads that folder, and its full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them). Surfaces that run outside this machine, such as the cloud agent and code review on GitHub, do not see those folders, so the disciplines below are the Apothem rule text in force there.
 
 ## Engineering disciplines in force
 
@@ -58,5 +58,16 @@ When the operator's request conflicts with an apothem rule, the rule wins; surfa
 
 ## Maintaining this block
 
-Text outside the Apothem managed block is operator-owned and survives every re-install. Re-run `apothem install --harness github-copilot --project <this-project-root>` to refresh the block; the operation is idempotent. `apothem uninstall --harness github-copilot --project <this-project-root>` removes the block, backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/github_copilot/`) first, and removes the file only when nothing but the block remained. `apothem verify --harness github-copilot --project <this-project-root>` checks that the file is present and non-empty.
+Text outside the Apothem managed block is operator-owned and survives every re-install. Re-run `apothem install --harness github-copilot --project <this-project-root>` to refresh the block; the operation is idempotent. `apothem uninstall --harness github-copilot --project <this-project-root>` removes the block, backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/github_copilot/`) first, and removes the file only when nothing but the block remained. `apothem verify --harness github-copilot --project <this-project-root>` checks that the file is present and non-empty, and that every Apothem skill folder is in place. The skills and support folders in your user home are shared by every Apothem install that uses them, so `apothem uninstall` removes them only when no other install still lists them.
+
+## Apothem support files
+
+Apothem's support root is `~/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, and `templates/...`. Resolve each citation against the installed directory for its first segment:
+
+- `rules/<path>` is `~/.config/apothem/rules/<path>`
+- `templates/<path>` is `~/.config/apothem/templates/<path>`
+
+Start with the rule index at `~/.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
+
+A cited path whose first segment is not listed here is not installed.
 <!-- END APOTHEM MANAGED BLOCK -->

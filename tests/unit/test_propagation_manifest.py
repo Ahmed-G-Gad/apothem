@@ -408,5 +408,11 @@ def test_profile_position_rejects_unknown_values() -> None:
 
 
 def test_github_copilot_anchor_puts_the_profile_first() -> None:
-    (entry,) = propagation.load_manifest()["github_copilot"].install
+    # The user-level skills and corpus entries come first; the anchor is the one
+    # sentinel_merge entry.
+    (entry,) = (
+        e
+        for e in propagation.load_manifest()["github_copilot"].install
+        if e.mode == "sentinel_merge"
+    )
     assert entry.profile_position == "first"

@@ -47,6 +47,12 @@ from apothem.cli._helpers import (
     _write_profile_text_safely,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._user_level_report import (
+    is_project_scope,
+    ledger_holders,
+    shared_folders,
+    user_level_write_advisory,
+)
 from apothem.harnesses._shared.install_driver import (
     MaterializationError,
     MaterializationResult,
@@ -59,6 +65,7 @@ from apothem.lib.install_advisories import (
     shared_root_advisories,
 )
 from apothem.lib.profile import ProfileValidationError, validate_profile
+from apothem.lib.propagation import user_home
 
 
 @dataclass(frozen=True)
@@ -322,9 +329,12 @@ def _disclose_blast_radius(
     An ``all`` install fans out into mixed scopes: project-scope adapters write
     under --project, but user-scope adapters write under the operator's real
     home directory, a surprise worth disclosing before any byte is written.
-    The grouped preview prints in plain mode; when the selection writes
-    outside the supplied project root, an interactive confirmation guards the
-    home-rooted writes. --yes, a non-interactive context, --dry-run, and
+    The grouped preview prints in plain mode. Besides the project files and the
+    home-rooted adapters it lists the shared user-home folders the project-scope
+    adapters write (skills and the rules and templates they cite), because those
+    land outside the project root too. When the selection writes outside the
+    supplied project root, an interactive confirmation guards the home-rooted
+    writes. --yes, a non-interactive context, --dry-run, and
     --format json each bypass the prompt (dry-run and json still print/return
     the preview data without mutating). Single-named installs and update are
     out of scope.
@@ -332,8 +342,14 @@ def _disclose_blast_radius(
     if not (run.is_batch and run.verb_present == "install" and run.fmt != "json"):
         return
     within, outside = _partition_blast_radius(inputs.adapters, inputs.project_root)
-    _render_blast_radius(run.con, within, outside, inputs.project_root)
-    if not run.dry_run and outside and not assume_yes and _pkg._stdin_is_interactive():
+    shared = shared_folders(inputs.adapters)
+    _render_blast_radius(run.con, within, outside, inputs.project_root, shared)
+    if (
+        not run.dry_run
+        and (outside or shared)
+        and not assume_yes
+        and _pkg._stdin_is_interactive()
+    ):
         click.confirm("Proceed and write these files?", abort=True)
 
 
@@ -446,9 +462,21 @@ def _materialize_harness(
     totals.warnings.extend(_warning_dicts(harness_id, materialization))
     # Shared-root advisories: a path this harness writes that other
     # harnesses also load, or a path it loads that already holds another
-    # install's Apothem content. Advisory only; the install is unchanged.
-    shared_advisories = shared_root_advisories(
-        harness_id, home=Path.home(), project=project_root
+    # install's Apothem content, named from the installs the ledger says hold
+    # it. A project-scope install also says which user-home folders it writes
+    # outside --project. Advisory only; the install is unchanged.
+    shared_advisories: list[dict[str, object]] = []
+    if is_project_scope(adapter):
+        write_advisory = user_level_write_advisory(harness_id)
+        if write_advisory is not None:
+            shared_advisories.append(write_advisory)
+    shared_advisories.extend(
+        shared_root_advisories(
+            harness_id,
+            home=user_home(),
+            project=project_root,
+            holders=ledger_holders(),
+        )
     )
     totals.warnings.extend(shared_advisories)
     if run.fmt != "json":

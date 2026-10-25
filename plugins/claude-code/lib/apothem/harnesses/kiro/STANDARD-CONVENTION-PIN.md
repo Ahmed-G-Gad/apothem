@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
+- Snapshot date: 2026-10-24
+- Snapshot note (skills): the adapter now installs skills and command skills at Kiro's own `~/.kiro/skills/` and the rules and templates corpus at `~/.config/apothem/`. The Kiro skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `kiro.dev/docs` (steering, MCP configuration, skills, hooks). Steering inclusion modes (`always`, `fileMatch` with `fileMatchPattern`, `manual`, `auto`), `AGENTS.md` support (workspace root and `~/.kiro/steering/`), MCP at `.kiro/settings/mcp.json` and `~/.kiro/settings/mcp.json`, and agent files in `.kiro/agents` are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/kiro/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
@@ -27,10 +28,20 @@
 - MCP: `.kiro/settings/mcp.json` (workspace) and `~/.kiro/settings/mcp.json`
   (user), plus an agent's own `mcpServers` field. Operator-owned; the adapter
   names the surface and authors no entries.
-- The vendor documents specs (`.kiro/specs/`), agent hooks, Agent Skills,
-  custom agents (`.kiro/agents` and the Kiro CLI), and Kiro powers. The adapter
-  delivers only the project steering file and authors none of those: a
-  deliberate rules-only posture, not a claim that the surfaces are absent.
+- Skills: workspace skills live in `.kiro/skills/` and global skills in
+  `~/.kiro/skills/`, each a folder with a required `SKILL.md`; a workspace skill
+  wins over a global one. The skills page does not mention `.agents/skills/`. The
+  adapter writes Apothem's skills, plus its commands wrapped as skills, to
+  `~/.kiro/skills/`, and not to the cross-tool folder. Custom agents load skills
+  only through a `skill://` resource, so the skills reach the default agent.
+  TODO(clarify): the vendor docs do not say how Kiro treats a `SKILL.md`
+  frontmatter key it does not list. The shared emission sets `user-invocable`,
+  `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
+  `metadata` map; probe Kiro with the full set before a release and, if it
+  rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
+- The vendor documents specs (`.kiro/specs/`), agent hooks, custom agents
+  (`.kiro/agents` and the Kiro CLI), and Kiro powers. The adapter authors none of
+  those.
 
 ## Vendor Sources
 
@@ -39,7 +50,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://kiro.dev/docs/steering/> (steering and `AGENTS.md`)
 - <https://kiro.dev/docs/mcp/> (MCP overview)
 - <https://kiro.dev/docs/mcp/configuration/> (`mcp.json` locations, `.kiro/agents`)
-- <https://kiro.dev/docs/skills/> (skills; retrieved 2026-10-02)
+- <https://kiro.dev/docs/skills/> (skills; retrieved 2026-10-24)
 - <https://kiro.dev/docs/hooks/> (hooks; retrieved 2026-10-02)
 
 ## Discovery Targets
@@ -67,8 +78,9 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 Kiro exposes **no vendor plugin or extension install surface** that Apothem
-ships. The adapter is project-scope rules-only: it writes a single merged
-steering file at `<project>/.kiro/steering/apothem-rules.md` (`inclusion: always`)
+ships. The adapter writes a merged steering file at
+`<project>/.kiro/steering/apothem-rules.md` (`inclusion: always`), the skills at
+`~/.kiro/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
 and authors no other cohort. There is no standalone-installable bundle; every
 artifact requires the full `apothem install --harness kiro --project <path>`
 engine run.
@@ -76,8 +88,9 @@ engine run.
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (steering-as-text) | No — requires `apothem install` | The merged `apothem-rules.md` steering file (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.kiro/steering/` directory. Nothing persists before that run. |
-| Commands / Skills / Agents | No — deliberate rules-only posture | Kiro documents specs (`.kiro/specs/`), agent hooks, Agent Skills, and custom agents (`.kiro/agents`, Kiro CLI), but the adapter authors none of them (preserve-first rules-only delivery); these cohorts are not materialized for this harness by design. |
+| Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.kiro/skills/`. Nothing persists before that run. |
+| Agents | No — adapter scope | Kiro documents specs (`.kiro/specs/`), agent hooks, and custom agents (`.kiro/agents`, Kiro CLI); the adapter authors none of them. |
 | Hooks / MCP / Settings | No — operator-owned | `.kiro/settings/mcp.json` (MCP) and the foundation steering files are operator-owned; the adapter authors no entries. |
 
 Kiro documents installable powers, but Apothem ships no Kiro power, so the
-merged steering file via `apothem install` is the sole persistence surface.
+files `apothem install` writes are the sole persistence surface.

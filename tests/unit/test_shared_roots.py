@@ -10,8 +10,10 @@ read by Antigravity, the Copilot CLI and Zed as well as Gemini CLI; and
 Antigravity. An Apothem block written there must not tell every one of those
 tools that it is one particular harness.
 
-The registry records each such path once, with the single adapter that writes
-it (its owner) and the harnesses whose vendor docs load it (its readers).
+The registry records each such path once, with the adapter it belongs to (its
+owner), the other adapters that write the same bytes to it (its co-installers),
+and the harnesses whose vendor docs only load it (its readers). A user-level
+folder several installs write is counted through the install ledger.
 """
 
 from __future__ import annotations
@@ -113,16 +115,30 @@ def test_shared_root_owner_writes_it_and_readers_are_registered(
 ) -> None:
     path = _normalized(root.path)
     assert root.owner in SUPPORTED_HARNESS_IDS
-    assert _written_paths().get(path) == [root.owner], (path, root.owner)
+    # The owner and the co-installers are exactly the adapters that write it.
+    assert sorted(_written_paths().get(path, [])) == sorted(
+        [root.owner, *root.co_installers]
+    ), (path, root.owner)
+    assert root.owner not in root.co_installers
+    assert set(root.co_installers) <= set(SUPPORTED_HARNESS_IDS)
+    assert list(root.co_installers) == sorted(root.co_installers)
+    assert root.kind in {"load", "support"}
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", root.retrieved)
+    if root.kind == "support":
+        # A folder only Apothem's own files cite: nothing else loads it.
+        assert root.co_installers, path
+        assert not root.readers, path
+        assert not root.evidence, path
+        return
     assert root.readers, path
     assert root.owner not in root.readers
     assert set(root.readers) <= set(SUPPORTED_HARNESS_IDS)
+    assert set(root.readers).isdisjoint(root.co_installers)
     assert list(root.readers) == sorted(root.readers)
     assert set(root.reader_conditions) <= set(root.readers)
     assert all(condition.strip() for condition in root.reader_conditions.values())
     assert root.evidence
     assert all(url.startswith("https://") for url in root.evidence)
-    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", root.retrieved)
 
 
 def test_paths_written_by_more_than_one_harness_declare_an_owner() -> None:
@@ -159,17 +175,70 @@ def test_private_instruction_targets_are_real_registry_targets() -> None:
 def test_codex_owns_the_shared_agents_skills_root() -> None:
     root = _DECLARED["~/.agents/skills"]
     assert root.owner == "codex"
+    # Cursor, GitHub Copilot, Windsurf and Zed write the same copy Codex does;
+    # the ledger decides which install removes it. The rest only load it.
+    assert root.co_installers == ("cursor", "github-copilot", "windsurf", "zed")
     assert {
-        "cursor",
         "gemini-cli",
-        "github-copilot",
         "kimi-code",
         "open-claw",
         "opencode",
         "qwen-code",
+    } == set(root.readers)
+
+
+def test_agents_skills_root_writers_are_the_manifest_entries_for_it() -> None:
+    # The registry and the manifest agree on who writes the shared folder: every
+    # harness whose manifest has a user-level entry for it is the owner or a
+    # co-installer, and no other harness is.
+    from apothem.lib.propagation import load_manifest
+
+    writers = {
+        public_id
+        for entry in HARNESS_REGISTRY
+        for public_id in [entry.public_id]
+        if any(
+            install.user_level
+            and install.target.rstrip("/") == "${USER_HOME}/.agents/skills"
+            for install in load_manifest()[entry.package_key].install
+        )
+    }
+    root = _DECLARED["~/.agents/skills"]
+    assert writers == {root.owner, *root.co_installers}
+
+
+def test_support_roots_are_written_by_codex_and_the_seven_rules_adapters() -> None:
+    expected = {
+        "codex",
+        "codebuddy",
+        "cursor",
+        "github-copilot",
+        "kiro",
+        "trae",
         "windsurf",
         "zed",
-    } == set(root.readers)
+    }
+    for name in ("rules", "templates"):
+        root = _DECLARED[f"~/.config/apothem/{name}"]
+        assert root.kind == "support"
+        assert {root.owner, *root.co_installers} == expected
+
+
+@pytest.mark.parametrize(
+    ("public_id", "folder"),
+    [
+        ("codebuddy", "~/.codebuddy/skills"),
+        ("kiro", "~/.kiro/skills"),
+        ("trae", "~/.trae/skills"),
+    ],
+)
+def test_own_skill_folders_are_registered_and_not_shared(
+    public_id: str, folder: str
+) -> None:
+    # CodeBuddy, Kiro and Trae document their own user folder and not
+    # ~/.agents/skills, so each writes its own folder and no other adapter does.
+    assert _written_paths()[folder] == [public_id]
+    assert folder not in _DECLARED
 
 
 def test_agents_skills_root_lists_no_tool_the_vendor_docs_leave_open() -> None:

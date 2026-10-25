@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against `docs.github.com/en/copilot`. Corrections: Copilot has user-defined commands (prompt files in `.github/prompts/*.prompt.md`, run as `/name` in Copilot Chat) and repository agent files (`.github/agents/*.agent.md`), and MCP can be configured in a custom agent profile as well as in repository settings, the IDE, and the Copilot CLI. Code review reads instructions from the pull request's head branch and no longer documents a fixed character cap. Previous 2026-06-25.
+- Snapshot date: 2026-10-24
+- Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`. Refreshed against `docs.github.com/en/copilot`. Corrections: Copilot has user-defined commands (prompt files in `.github/prompts/*.prompt.md`, run as `/name` in Copilot Chat) and repository agent files (`.github/agents/*.agent.md`), and MCP can be configured in a custom agent profile as well as in repository settings, the IDE, and the Copilot CLI. Code review reads instructions from the pull request's head branch and no longer documents a fixed character cap. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/github_copilot/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 
@@ -25,8 +25,19 @@
 - Commands and agents: prompt files (`.github/prompts/*.prompt.md`) run as
   `/name` slash commands in Copilot Chat in VS Code, and custom agents are
   `.github/agents/*.agent.md` profiles. Skills (`.github/skills/<name>/SKILL.md`),
-  hooks, and CLI plugins are also documented. The adapter authors none of them
-  (deliberate instructions-only posture).
+  hooks, and CLI plugins are also documented. The adapter authors no prompt
+  file, agent profile, hook, or plugin.
+- Skills: the agent-skills page lists `~/.agents/skills/` among the personal
+  skill locations, so the adapter writes Apothem's skills, plus its commands
+  wrapped as skills, to that one user-level copy shared with Codex, Cursor,
+  Windsurf, and Zed. The folder is on the machine: the cloud agent and code review
+  on GitHub run elsewhere and do not see it (the repository's own `.github/skills/`
+  is what they read), so the instructions block carries the disciplines in full.
+  TODO(clarify): the vendor docs do not say how Copilot treats a `SKILL.md`
+  frontmatter key it does not list. The shared emission sets `user-invocable`,
+  `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
+  `metadata` map; probe Copilot with the full set before a release and, if it
+  rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
 - MCP: configured in repository settings for the cloud agent, in IDE
   configuration, in the Copilot CLI, or in a custom agent profile. The adapter
   authors no entries, so `capabilities.yml` `mcp_servers` stays `[]`.
@@ -54,7 +65,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions> (instruction files)
 - <https://docs.github.com/en/copilot/tutorials/customize-code-review> (code review and instruction length)
 - <https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions> (Copilot CLI instructions)
-- <https://docs.github.com/en/copilot/concepts/agents/about-agent-skills> (skills)
+- <https://docs.github.com/en/copilot/concepts/agents/about-agent-skills> (skills; the folder the adapter writes, retrieved 2026-10-24)
 - <https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file> (prompt files; retrieved 2026-10-02)
 - <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/create-custom-agents> (agent profiles)
 
@@ -84,18 +95,19 @@ Retrieved 2026-10-03 unless marked.
 
 GitHub Copilot documents skills (`.github/skills/<name>/SKILL.md`), hooks
 (`.github/hooks/*.json`), and CLI plugins (`plugin.json`), but **Apothem ships no
-Copilot plugin bundle** — the adapter is project-scope instructions-only, writing
-a single merged file at `<project>/.github/copilot-instructions.md` and authoring
-no other cohort. There is no Apothem-distributable standalone bundle; every
+Copilot plugin bundle** — the adapter writes a merged file at
+`<project>/.github/copilot-instructions.md`, the skills at `~/.agents/skills/`, and
+the rules and templates corpus at `~/.config/apothem/`, and authors no other cohort. There is no Apothem-distributable standalone bundle; every
 artifact requires the full
 `apothem install --harness github-copilot --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (instructions-as-text) | No — requires `apothem install` | The merged `copilot-instructions.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.github/` directory. Nothing persists before that run. |
-| Commands / Skills / Agents / Hooks | No — Apothem ships no bundle | Copilot's `plugin.json`, prompt files (`.github/prompts/`), agent profiles (`.github/agents/`), skills (`.github/skills/`), and hooks accept these cohorts, but Apothem authors none of them; the instructions-only posture is deliberate. |
+| Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run, and GitHub-hosted surfaces do not read it. |
+| Agents / Hooks | No — Apothem ships no bundle | Copilot's `plugin.json`, prompt files (`.github/prompts/`), agent profiles (`.github/agents/`), and hooks accept these cohorts, but Apothem authors none of them. |
 | MCP / Settings | No — operator-owned | MCP lives in repository settings, IDE configuration, the Copilot CLI, or a custom agent profile; the adapter authors no entries (`mcp_servers` stays `[]`). |
 
 Platform note: the vendor plugin surface exists; the Apothem-distributable
-plugin bundle does not. The merged instructions file via `apothem install` is the
-sole persistence surface.
+plugin bundle does not. The files `apothem install` writes are the sole
+persistence surface.

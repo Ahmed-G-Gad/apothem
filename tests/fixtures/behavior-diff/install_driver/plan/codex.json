@@ -17,17 +17,17 @@
   {
     "mode": "merge_tree_entries",
     "source": "<APOTHEM_SRC>/rules",
-    "target": "<ROOT>/../.config/apothem/rules"
+    "target": "<HOME>/.config/apothem/rules"
   },
   {
     "mode": "native_skills",
     "source": "<APOTHEM_SRC>/skills",
-    "target": "<ROOT>/../.agents/skills"
+    "target": "<HOME>/.agents/skills"
   },
   {
     "mode": "command_skills",
     "source": "<APOTHEM_SRC>/commands",
-    "target": "<ROOT>/../.agents/skills"
+    "target": "<HOME>/.agents/skills"
   },
   {
     "mode": "codex_agents",
@@ -37,6 +37,6 @@
   {
     "mode": "merge_tree_entries",
     "source": "<APOTHEM_SRC>/templates",
-    "target": "<ROOT>/../.config/apothem/templates"
+    "target": "<HOME>/.config/apothem/templates"
   }
 ]

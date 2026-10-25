@@ -19,6 +19,7 @@ import pytest
 import yaml
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib.propagation import user_home
 
 _PKG = Path(__file__).resolve().parents[2] / "src" / "apothem"
 _LIMIT = 1024
@@ -44,7 +45,7 @@ def test_emitted_skill_descriptions_fit(tmp_path: Path) -> None:
     # The codex install is the widest skill emission: every skill plus every
     # command, under the home's .agents/skills/.
     install_driver.run_install("codex", harness_root=tmp_path / ".codex")
-    skills = sorted((tmp_path / ".agents" / "skills").glob("*/SKILL.md"))
+    skills = sorted((user_home() / ".agents" / "skills").glob("*/SKILL.md"))
     assert len(skills) >= 60
     over = {
         p.parent.name: n

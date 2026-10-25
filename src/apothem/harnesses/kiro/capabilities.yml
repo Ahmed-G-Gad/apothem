@@ -6,8 +6,10 @@
 # recognizes them but does not author entries. The vendor documents a
 # command-like surface via Agent Skills (kiro.dev/docs/skills) and CLI
 # custom agents, named below under custom_command_support; the adapter
-# delivers a single project steering file under .kiro/steering/ and does
-# not author command/skill/spec/hook cohorts (deliberate rules-only posture).
+# delivers a project steering file under .kiro/steering/, installs skills and
+# command skills at Kiro's user-level ~/.kiro/skills/ and the rules and
+# templates corpus at ~/.config/apothem/, and does not author spec/hook
+# cohorts.
 
 mcp_servers:
   - workspace-scope-.kiro/settings/mcp.json
@@ -19,7 +21,7 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".kiro/steering/*.md directory"
+layered_context_surface: ".kiro/steering/*.md directory plus ~/.kiro/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -36,3 +38,20 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/apothem-rules.md"
 agent_memory_surface: "kiro-steering-persistent-context"
+
+# Commands ship as skills in ~/.kiro/skills/ with the shared skill emission, so the
+# bytes are the same whichever adapter writes the folder: version, updated and
+# portability fold under the standard `metadata` map, and the other source keys
+# stay top-level. Kiro's docs list name and description; how it
+# treats the keys it does not list is the open question recorded in
+# STANDARD-CONVENTION-PIN.md.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "native:metadata.version"
+    updated: "native:metadata.updated"
+    portability: "native:metadata.portability"

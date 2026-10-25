@@ -10,19 +10,21 @@
 # inside a rules directory. A new `.rules` hides the lower-priority files, so
 # the install warns when one of them holds operator text.
 # The adapter writes that flat `.rules` file, backing up any pre-existing
-# `.rules` before replace, and does not dispatch sub-agents or author
-# workflow/skill/hook cohorts.
+# `.rules` before replace, installs skills and command skills at the shared
+# user-level ~/.agents/skills/ and the rules and templates corpus at
+# ~/.config/apothem/, and does not dispatch sub-agents or author
+# workflow/hook cohorts.
 
 mcp_servers:
   - project-scope-.zed/settings.json#context_servers
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
 sub_agent_dispatch: false
-custom_command_support: "no"
+custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "project-root .rules flat file (no rules directory)"
+layered_context_surface: "project-root .rules flat file (no rules directory) plus ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -39,3 +41,20 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/apothem-rules.md"
 agent_memory_surface: "n/a"
+
+# Commands ship as skills in ~/.agents/skills/ with the shared skill emission, so the
+# bytes are the same whichever adapter writes the folder: version, updated and
+# portability fold under the standard `metadata` map, and the other source keys
+# stay top-level. Zed's docs list name and description; how it
+# treats the keys it does not list is the open question recorded in
+# STANDARD-CONVENTION-PIN.md.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "native:metadata.version"
+    updated: "native:metadata.updated"
+    portability: "native:metadata.portability"

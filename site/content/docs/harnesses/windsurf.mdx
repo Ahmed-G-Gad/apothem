@@ -21,7 +21,45 @@ apothem install --harness windsurf --project /path/to/project
 The adapter writes one project-scope Windsurf rules file from the shared
 Apothem rules and governance surface.
 
-**Files written:** `<project>/.devin/rules/apothem-rules.md`
+It also writes Apothem's skills, and the rules and templates they cite, to
+your user home, before it touches the project (see
+[Files outside the project](#files-outside-the-project)).
+
+**Files written:**
+
+- `<project>/.devin/rules/apothem-rules.md`, the rules file.
+- `~/.agents/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
+- `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
+
+## Files outside the project
+
+The install also writes Apothem's skills to your user home, before it changes
+anything in the project:
+
+| Folder | What Apothem writes there |
+| --- | --- |
+| `~/.agents/skills/` | One folder with a `SKILL.md` for each Apothem skill, and one for each Apothem command (a command becomes a skill of the same name). |
+| `~/.config/apothem/rules/`, `~/.config/apothem/templates/` | The rules and templates that the skills and the rules file refer to. |
+
+These folders are shared. They are not private to the project:
+
+- Every project you install `windsurf` into, and every other Apothem install that names the folder, uses the same copy and writes the same files, so the order you install in does not matter. Several other tools read `~/.agents/skills/` too; the [harness registry](/docs/reference/harness-registry#shared-roots) lists them.
+- `--project` chooses the rules file to write and which project the
+  install belongs to. It does not change where the skills go.
+- The install adds no skill or rule file to your repository. The project
+  gets the rules file, plus the `.apothem/` data folder every project install
+  creates.
+- The home folders are written first. If that fails, for example because a
+  folder in the path is a link that leaves your home directory (a link that
+  stays inside it is followed) or cannot be written, the install stops
+  with the error before anything in the project changes.
+- A skill folder with an Apothem skill's name that Apothem did not write is
+  left alone, and the install prints a warning that names it. Rename or move
+  it, then run `apothem update`. `apothem verify` fails while that name is held.
+- The files add up to a few megabytes.
+
+The install prints a note that names the folders it writes outside `--project`,
+and `--dry-run` lists them.
 
 ## Profile-to-native-config mapping
 
@@ -42,6 +80,14 @@ backward-compat fallback). Workflows and machine-local memories are
 operator-owned; Apothem does not write them. The single-file `.windsurfrules`
 form is intentionally not written.
 
+Devin Desktop (Windsurf) discovers `~/.agents/skills/`, so the skills the
+install writes appear without further setup. It can also list the same names
+from `~/.claude/skills/` when its Claude Code config import is on; its
+documentation does not state the default. Apothem has not confirmed how
+Windsurf treats a `SKILL.md` header key it does not list; the skills carry
+`user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
+and a `metadata` map.
+
 ## Verification
 
 ```bash
@@ -54,7 +100,11 @@ The verify command confirms that:
 2. Each managed target exists; managed files are non-empty, and JSON or YAML
    configs parse. Add `--profile PATH` to also confirm that the installed files
    match that profile.
-3. The adapter-specific verification routine reports success.
+3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
+   install wrote it, and no skill folder with an Apothem name belongs to
+   something Apothem did not write. A failed check names the missing or
+   foreign folders.
+4. The adapter-specific verification routine reports success.
 
 ## Updating
 
@@ -63,6 +113,9 @@ apothem update --harness windsurf --project /path/to/project
 ```
 
 Re-derives the project rules file from the current shared profile state.
+
+The update also rewrites any skill folder whose files differ from the current ones.
+If you installed with an earlier release that wrote no skills, the update adds them.
 
 ## Uninstalling
 
@@ -77,6 +130,14 @@ timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and Apothem engine are
 unaffected.
 
+The uninstall also removes the skill folders it wrote in `~/.agents/skills/` and the
+rules and templates in `~/.config/apothem/`, but only when no other Apothem
+install still uses them. Another project, or another tool that shares the
+folder, may. In that case the uninstall keeps the folders, prints which install
+uses them, and the last uninstall removes them. Files you added to those
+folders stay, and a folder left empty is removed. Each
+folder is backed up under `~/.apothem/backups/` before it is removed.
+
 ## Conformity gate
 
 ```bash
@@ -89,6 +150,9 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness windsurf --project /path/to/project` |
 | Verification failed | Run `apothem update --harness windsurf --project /path/to/project`, then verify again |
+| `apothem verify` names a missing skill folder | Run `apothem install --harness windsurf --project /path/to/project`; it restores the folder |
+| An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
+| An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |
 | Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness windsurf --project /path/to/project` |
 
 ## Configuration knobs

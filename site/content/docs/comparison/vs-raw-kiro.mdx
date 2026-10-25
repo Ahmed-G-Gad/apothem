@@ -16,6 +16,7 @@ against managing it with Apothem.
 | Author steering rules | Hand-write each file under `.kiro/steering/` | Rendered from the shared corpus |
 | Keep foundation files untouched | Remember not to overwrite `product.md` / `tech.md` / `structure.md` | The adapter writes only `apothem-rules.md` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Share reusable skills and commands | Hand-copy each skill folder into `~/.kiro/skills/` and keep the copies current | Written to `~/.kiro/skills/` by the adapter, one copy for every project, and refreshed on `apothem update` |
 | Verify the config is correct | Manual inspection | `apothem verify --harness kiro --project <path>` |
 
 ## What Apothem manages

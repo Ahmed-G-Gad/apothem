@@ -54,6 +54,11 @@ HOME_ROOTED = frozenset(
         "qwen-code",
     }
 )
+#: The project-scope adapters that also write skills and the rules and templates
+#: they cite into the user home (shared folders, listed apart in the preview).
+SHARED_FOLDER_WRITERS = frozenset(
+    {"cursor", "github-copilot", "windsurf", "zed", "codebuddy", "kiro", "trae"}
+)
 _PROFILE = "identity:\n  name: Test User\nseriousness: PERSONAL_USE\n"
 _TARGET_RE = re.compile(r"^\s+(?P<id>[a-z0-9-]+)\s+->")
 
@@ -77,10 +82,9 @@ def install_env(
     return profile, project, home
 
 
-def _parse_preview_groups(output: str) -> tuple[set[str], set[str]]:
-    """Return (project-rooted ids, home-rooted ids) parsed from the preview."""
-    project_ids: set[str] = set()
-    home_ids: set[str] = set()
+def _parse_groups(output: str) -> dict[str, list[str]]:
+    """Return the ids listed under each preview heading, in order."""
+    groups: dict[str, list[str]] = {"project": [], "home": [], "shared": []}
     section: str | None = None
     for line in output.splitlines():
         if "Under the project root" in line:
@@ -89,14 +93,19 @@ def _parse_preview_groups(output: str) -> tuple[set[str], set[str]]:
         if "Under your home directory" in line:
             section = "home"
             continue
-        match = _TARGET_RE.match(line)
-        if not match:
+        if "Shared folders under your home directory" in line:
+            section = "shared"
             continue
-        if section == "project":
-            project_ids.add(match["id"])
-        elif section == "home":
-            home_ids.add(match["id"])
-    return project_ids, home_ids
+        match = _TARGET_RE.match(line)
+        if match and section is not None:
+            groups[section].append(match["id"])
+    return groups
+
+
+def _parse_preview_groups(output: str) -> tuple[set[str], set[str]]:
+    """Return (project-rooted ids, home-rooted ids) parsed from the preview."""
+    groups = _parse_groups(output)
+    return set(groups["project"]), set(groups["home"])
 
 
 def test_preview_partitions_home_and_project_targets(
@@ -126,6 +135,11 @@ def test_preview_partitions_home_and_project_targets(
     # The two groups are disjoint and cover all seventeen adapters.
     assert project_ids & home_ids == set()
     assert len(project_ids | home_ids) == 17
+    # The shared user-home folders the project-scope adapters write are listed
+    # apart, once per folder: skills, plus the rules and templates they cite.
+    shared = _parse_groups(result.output)["shared"]
+    assert set(shared) == set(SHARED_FOLDER_WRITERS)
+    assert all(shared.count(harness_id) == 3 for harness_id in SHARED_FOLDER_WRITERS)
 
 
 def test_declined_confirmation_writes_zero_files(
@@ -245,6 +259,7 @@ def test_dry_run_shows_preview_and_writes_nothing(
     project_ids, home_ids = _parse_preview_groups(result.output)
     assert home_ids == set(HOME_ROOTED)
     assert project_ids == set(PROJECT_ROOTED)
+    assert set(_parse_groups(result.output)["shared"]) == set(SHARED_FOLDER_WRITERS)
     # Nothing mutated under either root.
     assert [p for p in project.rglob("*") if p.is_file()] == []
     assert not (home / ".claude" / "settings.json").exists()

@@ -44,18 +44,66 @@ is reported as a `warnings` entry with `"operation": "profile_created"`.
 under the supplied `--project` root, while user-scope adapters write under your
 home directory — outside that root. Before the install writes any file, the command
 prints the concrete targets grouped under two headings: those inside the project
-root and those under your home directory. The one exception is `--clean`: its
-clean-slate step runs before this preview and writes a backup and removes prior
-targets, as described below.
+root and those under your home directory. A third heading lists the shared
+folders in your home directory that the project-scope adapters write, outside
+`--project`: the skills folder and `~/.config/apothem/` (see
+[Folders in your home directory](#folders-in-your-home-directory)). The one
+exception is `--clean`: its clean-slate step runs before this preview and writes
+a backup and removes prior targets, as described below.
 
-When the selection writes outside the project root, an interactive confirmation
-guards the home-rooted writes. `--yes`, a non-interactive shell (no TTY),
+When the selection writes outside the project root, whether to a home-rooted
+adapter's folder or to a shared folder, an interactive confirmation guards the
+home-rooted writes. `--yes`, a non-interactive shell (no TTY),
 `--dry-run`, and `--format json` each proceed without prompting. Only `--dry-run`
 writes nothing; `--format json` skips the preview and the confirmation prompt but
 still performs the writes. Declining the home-directory prompt aborts before the install writes. With
 `--clean`, the clean-slate step runs first under its own per-target confirmation:
 it writes a backup under `~/.apothem/backups` and removes the targets it confirms.
 Those removals and the backup stay in place when the install prompt is declined.
+
+## Folders in your home directory
+
+Seven project-scope adapters write Apothem's skills, and the rules and
+templates the skills cite, to folders in your user home:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- `--project` selects the rules file and the project the install belongs to. It
+  does not change where the skills go: an install with `--project A` and one
+  with `--project B` write the same folders.
+- Every install that names a folder writes the same files. A second install
+  finds them and reports `unchanged`, and the order you install in does not
+  matter.
+- The home folders are written before anything in the project. If a write there
+  fails, the adapter's install stops with the error and the project is
+  unchanged. The error names the path in the way, for example a file called
+  `~/.agents` where the folder belongs.
+- Each skill folder is written to a hidden `.<name>.apothem-staging` folder
+  beside it and renamed into place when complete, so a failed or interrupted
+  write never leaves a half-written skill folder under its final name. Run the
+  install again to finish; it replaces a leftover staging folder.
+- A symbolic link at or above one of these folders, as dotfile managers create
+  for `~/.config` or `~/.agents`, is followed when it leads to somewhere inside
+  your home directory. A link that leaves your home directory stops the install
+  with `target escapes the allowed materialization root`, and so does a link
+  inside a skill folder.
+- The install adds no skill or rule file to your repository. The project gets
+  the adapter's rules file, plus the `.apothem/` data folder every project
+  install creates.
+- A skill folder that has an Apothem skill's name and that Apothem did not write
+  is skipped. The install prints a `Warning:` line and the `--format json`
+  envelope carries a `warnings` entry with `"outcome": "warning"` and
+  `"operation": "skill_conflict"` that names the folder. Rename or move the
+  folder, then run [`update`](/docs/cli-reference/update).
+- Every such install, update, and dry run prints a `Note:` that names the
+  folders it writes outside `--project`. In the JSON envelope it is a `warnings`
+  entry with `"operation": "user_level_write"` and a `paths` list.
 
 ## Capability notes
 
@@ -74,11 +122,16 @@ changes what the install writes. When an install writes a shared root, a path
 other tools also load (for example the skills folder `~/.agents/skills/`),
 the note names those tools, and puts a tool that loads the path only under a
 condition in parentheses, for example `Open-Claw (only under its default state
-directory)`. When an install targets a tool that
-already loads Apothem content from another install's shared root, the note
-names that install. In the `--format json` envelope each advisory is a
-`warnings` entry with `"outcome": "advisory"` and
-`"operation": "shared_root"`.
+directory)`. An install that writes a folder other installs write too (the
+`holder` role) says the folder stays until the last Apothem install that uses
+it is uninstalled, and names the installs that use it now. When an install
+targets a tool that already loads Apothem content from another install's shared
+root, the note names the install that placed it: the registered owner while it
+still uses the folder, otherwise the oldest install that does. In the
+`--format json` envelope each advisory is a `warnings` entry with
+`"outcome": "advisory"` and `"operation": "shared_root"`; its `role` is `owner`,
+`holder`, or `reader`, `holders` lists the installs using the folder, and
+`owner_of_record` names the owner of record.
 
 The profile's MCP servers get three advisories, each naming the profile field:
 

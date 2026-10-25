@@ -156,6 +156,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   every raster from its source.
 - **`make lint` also runs `mypy`.** The target now matches the lint gate the
   docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
+- **Cursor, GitHub Copilot, Windsurf, Zed, CodeBuddy, Kiro and Trae get
+  Apothem's skills and rules.** Installing any of them writes the skills, and
+  each command as a skill, once to `~/.agents/skills/` (which Cursor, Copilot,
+  Windsurf, Zed and Codex read) or to the tool's own folder
+  (`~/.codebuddy/skills/`, `~/.kiro/skills/`, `~/.trae/skills/`), and the
+  rules and templates they cite to `~/.config/apothem/`. A project still gets
+  only its one rules file, which names those folders. Every install writes
+  the same files; uninstall keeps a folder while another install still uses
+  it and says which one. A write failure in your home stops that adapter's
+  install before the project changes, a skill folder of yours with an
+  Apothem skill's name is skipped with a warning, and folders are staged and
+  renamed into place so an interrupted install leaves nothing half-written.
+  Codex's skills now always go to `$HOME/.agents/skills`, even when
+  `CODEX_HOME` points elsewhere. Trae's China edition, each tool's handling
+  of unknown skill keys, and Zed's skill-count limit are not yet confirmed.
 
 ### Removed
 

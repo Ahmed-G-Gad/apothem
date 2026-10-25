@@ -43,13 +43,13 @@ user-scope bootstrap, converted agents, skills, and support cohorts.
 
 ## Apothem support files
 
-Apothem's support root is `<ROOT>/../.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
+Apothem's support root is `<HOME>/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
 
-- `rules/<path>` is `<ROOT>/../.config/apothem/rules/<path>`
-- `templates/<path>` is `<ROOT>/../.config/apothem/templates/<path>`
+- `rules/<path>` is `<HOME>/.config/apothem/rules/<path>`
+- `templates/<path>` is `<HOME>/.config/apothem/templates/<path>`
 - `hooks/<path>` is `<ROOT>/hooks/<path>`
 
-Start with the rule index at `<ROOT>/../.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
+Start with the rule index at `<HOME>/.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
 
 A cited path whose first segment is not listed here is not installed.
 

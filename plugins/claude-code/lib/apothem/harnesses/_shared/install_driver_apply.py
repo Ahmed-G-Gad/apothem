@@ -34,11 +34,15 @@ from .install_driver_merge import (
 )
 from .install_driver_pathsafety import (
     _allowed_write_root,
+    _prepare_target_directory,
     _root_for,
     _validate_target_path,
 )
+from .install_driver_shared import emission_name, entry_write_root
+from .install_driver_skillguard import SkillGuard
 from .install_driver_treeops import (
     _directory_contents_equal,
+    _generated_directory_matches,
     _native_skill_dir_files,
     _skill_children,
     _write_generated_directory,
@@ -146,7 +150,11 @@ def apply_merge_tree_entries(
     project_root: Path | None = None,
     harness_name: str = "manual",
 ) -> list[MaterializationResult]:
-    """Merge a source directory by replacing only its direct child entries."""
+    """Merge a source directory by replacing only its direct child entries.
+
+    A user-level target is written as it is in the source: content tokens are
+    not rendered, so the bytes cannot depend on which harness writes them.
+    """
     src = resolve_source(entry.source)
     dst = resolve_target(
         entry.target, harness_root=harness_root, project_root=project_root
@@ -161,15 +169,12 @@ def apply_merge_tree_entries(
                 source=src,
             )
         ]
-    allowed_root = _allowed_write_root(harness_root, project_root)
-    target_error = _validate_target_path(
-        dst,
-        allowed_root=allowed_root,
-        operation="merge_tree_entries",
+    allowed_root = entry_write_root(entry, harness_root, project_root)
+    target_error = _prepare_target_directory(
+        dst, allowed_root=allowed_root, operation="merge_tree_entries"
     )
     if target_error is not None:
         return [target_error]
-    dst.mkdir(parents=True, exist_ok=True)
     root = _root_for(harness_root, project_root)
     results: list[MaterializationResult] = []
     for source_path in sorted(src.iterdir()):
@@ -217,7 +222,7 @@ def apply_merge_tree_entries(
             )
         elif source_path.is_file():
             data = source_path.read_bytes()
-            if b"${" in data:
+            if b"${" in data and not entry.user_level:
                 # Render install-time path tokens in text entries (e.g. the
                 # statusline command pointing at its installed render script).
                 with contextlib.suppress(UnicodeDecodeError):
@@ -268,34 +273,40 @@ def apply_command_skills(
                 source=src,
             )
         ]
-    allowed_root = _allowed_write_root(harness_root, project_root)
-    target_error = _validate_target_path(
-        dst,
-        allowed_root=allowed_root,
-        operation="command_skills",
+    allowed_root = entry_write_root(entry, harness_root, project_root)
+    target_error = _prepare_target_directory(
+        dst, allowed_root=allowed_root, operation="command_skills"
     )
     if target_error is not None:
         return [target_error]
-    dst.mkdir(parents=True, exist_ok=True)
     root = _root_for(harness_root, project_root)
+    guard = SkillGuard.load().check if entry.user_level else None
     results: list[MaterializationResult] = []
     for source_path in sorted(src.glob("*.md")):
         if source_path.name in _COHORT_DOC_FILES or source_path.stem in skip:
             continue
         skill_dir = dst / source_path.stem
+        files = _command_skill_files(
+            source_path,
+            harness_name=emission_name(entry, harness_name),
+            install_root=root,
+        )
+        conflict = (
+            guard(skill_dir, _generated_directory_matches(skill_dir, files))
+            if guard is not None
+            else None
+        )
         results.append(
-            _write_generated_directory(
+            conflict
+            or _write_generated_directory(
                 skill_dir,
-                _command_skill_files(
-                    source_path,
-                    harness_name=harness_name,
-                    install_root=root,
-                ),
+                files,
                 root=root,
                 harness_name=harness_name,
                 operation="command_skills",
                 source=source_path,
                 allowed_root=allowed_root,
+                staged=entry.user_level,
             )
         )
     return results
@@ -332,23 +343,32 @@ def apply_native_skills(
                 source=src,
             )
         ]
-    allowed_root = _allowed_write_root(harness_root, project_root)
-    target_error = _validate_target_path(
+    allowed_root = entry_write_root(entry, harness_root, project_root)
+    target_error = _prepare_target_directory(
         dst, allowed_root=allowed_root, operation="native_skills"
     )
     if target_error is not None:
         return [target_error]
-    dst.mkdir(parents=True, exist_ok=True)
     root = _root_for(harness_root, project_root)
+    guard = SkillGuard.load().check if entry.user_level else None
     results: list[MaterializationResult] = []
     for source_path in _skill_children(src, ignore, exclude):
         if source_path.is_dir():
             files = _native_skill_dir_files(
-                source_path, harness_name=harness_name, ignore=ignore
+                source_path,
+                harness_name=emission_name(entry, harness_name),
+                ignore=ignore,
+            )
+            skill_dir = dst / source_path.name
+            conflict = (
+                guard(skill_dir, _generated_directory_matches(skill_dir, files, ignore))
+                if guard is not None
+                else None
             )
             results.append(
-                _write_generated_directory(
-                    dst / source_path.name,
+                conflict
+                or _write_generated_directory(
+                    skill_dir,
                     files,
                     root=root,
                     harness_name=harness_name,
@@ -356,6 +376,7 @@ def apply_native_skills(
                     source=source_path,
                     allowed_root=allowed_root,
                     ignore=ignore,
+                    staged=entry.user_level,
                 )
             )
         elif source_path.is_file():

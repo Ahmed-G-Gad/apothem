@@ -81,16 +81,25 @@ class HarnessRegistryEntry:
 
 @dataclass(frozen=True)
 class SharedRoot:
-    """An install target that harnesses other than its writer also load.
+    """An install target that more than one registered adapter writes or loads.
 
-    Each shared root has exactly one owner: the registered adapter that writes
-    ``path``. ``readers`` are the other registered harnesses whose vendor docs
-    load ``path`` by default (an opt-in load is not listed), and ``evidence``
-    holds those vendor pages, retrieved on ``retrieved``. ``path`` uses the
-    registry ``target_paths`` notation (``~/`` for the user home,
-    ``<project>/`` for the project root). ``reader_conditions`` maps a reader to
-    the condition under which it loads ``path``, for a reader that does not load
-    it unconditionally; the install advisories repeat that condition.
+    Each shared root has one registered owner: the adapter the vendor-documented
+    path belongs to. ``co_installers`` are the other registered adapters that
+    write the same bytes to ``path`` (a user-level folder several installs
+    share); the install ledger counts the installs that hold it, and an uninstall
+    removes it only when no install still lists it, so the owner of record is
+    whichever install holds it. ``readers`` are the registered harnesses that
+    only load ``path`` (their vendor docs load it by default; an opt-in load is
+    not listed), and ``evidence`` holds those vendor pages, retrieved on
+    ``retrieved``. ``path`` uses the registry ``target_paths`` notation (``~/``
+    for the user home, ``<project>/`` for the project root).
+    ``reader_conditions`` maps a reader to the condition under which it loads
+    ``path``, for a reader that does not load it unconditionally; the install
+    advisories repeat that condition.
+
+    ``kind`` is ``"load"`` for a path a tool loads (skills, agents, instruction
+    files) and ``"support"`` for a folder of reference files that only Apothem's
+    own skills and anchors cite, which has no readers.
     """
 
     path: str
@@ -99,6 +108,8 @@ class SharedRoot:
     evidence: tuple[str, ...]
     retrieved: str
     reader_conditions: Mapping[str, str] = field(default_factory=dict)
+    co_installers: tuple[str, ...] = ()
+    kind: str = "load"
 
 
 def _matrix(**values: CapabilityStatus) -> Mapping[str, CapabilityStatus]:
@@ -277,7 +288,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.cursor:CursorAdapter",
         scope="project",
         output_format="mdc",
-        target_paths=("<project>/.cursor/rules/apothem-rules.mdc",),
+        target_paths=(
+            "<project>/.cursor/rules/apothem-rules.mdc",
+            "~/.agents/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/cursor.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-cursor.mdx",
         capabilities_path="src/apothem/harnesses/cursor/capabilities.yml",
@@ -286,12 +301,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.cursor",
         template_sources=("harnesses/cursor/templates/apothem-rules.mdc",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -302,18 +317,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The Cursor adapter delivers the project rules surface "
-            "only; Apothem does not author a Cursor command cohort.",
-            skills="The Cursor adapter delivers the project rules surface "
-            "only; Apothem does not author a Cursor skill cohort.",
-            hooks="The Cursor adapter delivers the project rules surface "
-            "only; Apothem does not author a Cursor hook cohort.",
-            agents="The Cursor adapter delivers the project rules surface "
-            "only; Apothem does not author a Cursor agent cohort.",
+            hooks="The Cursor adapter does not author a Cursor hook cohort; it delivers the rules file and the skills.",
+            agents="The Cursor adapter does not author a Cursor agent cohort.",
             statuslines="No Cursor statusline file surface is pinned.",
             output_styles="No Cursor output-style file surface is pinned.",
-            sub_agent_dispatch="The Cursor adapter delivers the project rules "
-            "surface only; Apothem does not dispatch sub-agents through Cursor.",
+            sub_agent_dispatch="Apothem does not dispatch sub-agents through Cursor.",
             agent_memory="No Cursor durable memory file surface is adapter-owned.",
         ),
     ),
@@ -366,7 +374,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.github_copilot:GitHubCopilotAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.github/copilot-instructions.md",),
+        target_paths=(
+            "<project>/.github/copilot-instructions.md",
+            "~/.agents/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/github-copilot.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-github-copilot.mdx",
         capabilities_path="src/apothem/harnesses/github_copilot/capabilities.yml",
@@ -379,12 +391,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "harnesses/github_copilot/templates/copilot-instructions.md",
         ),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="unsupported",
@@ -394,12 +406,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
-            commands="Copilot runs prompt files (.github/prompts/*.prompt.md) as slash commands; the adapter delivers the repo-wide instructions file only and Apothem does not author prompt files.",
-            skills="The Copilot adapter delivers the repo-wide instructions "
-            "surface only; Apothem does not author a Copilot skill cohort.",
-            hooks="The Copilot adapter delivers the repo-wide instructions "
-            "surface only; Apothem does not author a Copilot hook cohort.",
-            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); the adapter delivers the repo-wide instructions file only and Apothem does not author agent profiles.",
+            hooks="The Copilot adapter does not author a Copilot hook cohort; it delivers the rules file and the skills.",
+            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); Apothem does not author agent profiles.",
             statuslines="No Copilot statusline file surface is pinned.",
             output_styles="No Copilot output-style file surface is pinned.",
             mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
@@ -617,7 +625,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.windsurf:WindsurfAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.devin/rules/apothem-rules.md",),
+        target_paths=(
+            "<project>/.devin/rules/apothem-rules.md",
+            "~/.agents/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/windsurf.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-windsurf.mdx",
         capabilities_path="src/apothem/harnesses/windsurf/capabilities.yml",
@@ -626,12 +638,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.windsurf",
         template_sources=("harnesses/windsurf/templates/apothem-rules.md",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -642,16 +654,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The Windsurf adapter delivers the project rules surface "
-            "only; Apothem does not author a Windsurf workflow cohort.",
-            skills="The Windsurf adapter delivers the project rules surface "
-            "only; Apothem does not author a Windsurf skill cohort.",
-            hooks="The Windsurf adapter delivers the project rules surface "
-            "only; Apothem does not author a Windsurf hook cohort.",
-            agents="Devin documents subagents (docs.devin.ai/cli/subagents); the Windsurf adapter delivers the project rules file only and Apothem does not author Devin subagents.",
+            hooks="The Windsurf adapter does not author a Windsurf hook cohort; it delivers the rules file and the skills.",
+            agents="Devin documents subagents (docs.devin.ai/cli/subagents); Apothem does not author Devin subagents.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
-            sub_agent_dispatch="The Windsurf adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Devin Desktop.",
+            sub_agent_dispatch="Apothem does not dispatch sub-agents through Devin Desktop.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",
         ),
     ),
@@ -662,7 +669,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.codebuddy:CodeBuddyAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.codebuddy/rules/apothem-rules.md",),
+        target_paths=(
+            "<project>/.codebuddy/rules/apothem-rules.md",
+            "~/.codebuddy/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/codebuddy.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-codebuddy.mdx",
         capabilities_path="src/apothem/harnesses/codebuddy/capabilities.yml",
@@ -673,12 +684,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.codebuddy",
         template_sources=("harnesses/codebuddy/templates/apothem-rules.md",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -689,19 +700,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The CodeBuddy adapter delivers the project rules surface "
-            "only; Apothem does not author a CodeBuddy command cohort.",
-            skills="The CodeBuddy adapter delivers the project rules surface "
-            "only; Apothem does not author a CodeBuddy skill cohort.",
-            hooks="The CodeBuddy adapter delivers the project rules surface "
-            "only; Apothem does not author a CodeBuddy hook cohort.",
-            agents="The CodeBuddy adapter delivers the project rules surface "
-            "only; Apothem does not author a CodeBuddy sub-agent cohort.",
+            hooks="The CodeBuddy adapter does not author a CodeBuddy hook cohort; it delivers the rules file and the skills.",
+            agents="The CodeBuddy adapter does not author a CodeBuddy sub-agent cohort.",
             statuslines="No CodeBuddy statusline file surface is pinned.",
             output_styles="No CodeBuddy output-style file surface is pinned.",
             sub_agent_dispatch="CodeBuddy Code documents sub-agents; the "
-            "CodeBuddy adapter delivers the project rules file only and Apothem "
-            "does not dispatch sub-agents through CodeBuddy.",
+            "CodeBuddy adapter does not dispatch sub-agents through CodeBuddy.",
         ),
     ),
     HarnessRegistryEntry(
@@ -711,7 +715,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.kiro:KiroAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.kiro/steering/apothem-rules.md",),
+        target_paths=(
+            "<project>/.kiro/steering/apothem-rules.md",
+            "~/.kiro/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/kiro.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-kiro.mdx",
         capabilities_path="src/apothem/harnesses/kiro/capabilities.yml",
@@ -720,12 +728,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.kiro",
         template_sources=("harnesses/kiro/templates/apothem-rules.md",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -736,19 +744,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The Kiro adapter delivers the project steering surface "
-            "only; Apothem does not author a Kiro command cohort.",
-            skills="The Kiro adapter delivers the project steering surface "
-            "only; Apothem does not author a Kiro skill cohort.",
-            hooks="The Kiro adapter delivers the project steering surface "
-            "only; Apothem does not author a Kiro agent-hook cohort.",
-            agents="The Kiro adapter delivers steering rules only; Apothem "
-            "does not author a Kiro sub-agent cohort.",
+            hooks="The Kiro adapter does not author a Kiro hook cohort; it delivers the rules file and the skills.",
+            agents="The Kiro adapter does not author a Kiro sub-agent cohort.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
             sub_agent_dispatch="Kiro documents custom agents (.kiro/agents and "
-            "the Kiro CLI); the Kiro adapter delivers steering rules only and "
-            "Apothem does not dispatch sub-agents through Kiro.",
+            "the Kiro CLI); Apothem does not dispatch sub-agents through Kiro.",
         ),
     ),
     HarnessRegistryEntry(
@@ -758,7 +759,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.trae:TraeAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.trae/rules/apothem-rules.md",),
+        target_paths=(
+            "<project>/.trae/rules/apothem-rules.md",
+            "~/.trae/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/trae.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-trae.mdx",
         capabilities_path="src/apothem/harnesses/trae/capabilities.yml",
@@ -767,12 +772,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.trae",
         template_sources=("harnesses/trae/templates/apothem-rules.md",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -783,16 +788,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The Trae adapter delivers the project rules surface "
-            "only; Apothem does not author a Trae command cohort.",
-            skills="The Trae adapter delivers the project rules surface "
-            "only; Apothem does not author a Trae skill cohort.",
-            hooks="The Trae adapter delivers the project rules surface "
-            "only; Apothem does not author a Trae hook cohort.",
-            agents="Trae documents custom Agents (docs.trae.ai/ide/agent); the Trae adapter delivers the project rules file only and Apothem does not author Trae agents.",
+            hooks="The Trae adapter does not author a Trae hook cohort; it delivers the rules file and the skills.",
+            agents="Trae documents custom Agents (docs.trae.ai/ide/agent); Apothem does not author Trae agents.",
             statuslines="No Trae statusline file surface is pinned.",
             output_styles="No Trae output-style file surface is pinned.",
-            sub_agent_dispatch="The Trae adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Trae.",
+            sub_agent_dispatch="Apothem does not dispatch sub-agents through Trae.",
             agent_memory="No Trae adapter-owned agent-memory surface is documented.",
         ),
     ),
@@ -803,7 +803,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         entry_point="apothem.harnesses.zed:ZedAdapter",
         scope="project",
         output_format="markdown",
-        target_paths=("<project>/.rules",),
+        target_paths=(
+            "<project>/.rules",
+            "~/.agents/skills/",
+            "~/.config/apothem/{rules,templates}/",
+        ),
         docs_path="site/content/docs/harnesses/zed.mdx",
         comparison_docs_path="site/content/docs/comparison/vs-raw-zed.mdx",
         capabilities_path="src/apothem/harnesses/zed/capabilities.yml",
@@ -812,12 +816,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.zed",
         template_sources=("harnesses/zed/templates/apothem-rules.md",),
         capability_status=_matrix(
-            commands="unsupported",
-            skills="unsupported",
+            commands="converted",
+            skills="native",
             hooks="unsupported",
             agents="unsupported",
             rules="native",
-            templates="not-applicable",
+            templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
@@ -828,16 +832,11 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            commands="The Zed adapter delivers the project rules surface "
-            "only; Apothem does not author a Zed command cohort.",
-            skills="The Zed adapter delivers the project rules surface "
-            "only; Apothem does not author a Zed skill cohort.",
-            hooks="The Zed adapter delivers the project rules surface "
-            "only; Apothem does not author a Zed hook cohort.",
-            agents="The Zed adapter delivers the project rules file only; Apothem does not author Zed agent profiles or external agents.",
+            hooks="The Zed adapter does not author a Zed hook cohort; it delivers the rules file and the skills.",
+            agents="Apothem does not author Zed agent profiles or external agents.",
             statuslines="No Zed statusline file surface is pinned.",
             output_styles="No Zed output-style file surface is pinned.",
-            sub_agent_dispatch="The Zed adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Zed.",
+            sub_agent_dispatch="Apothem does not dispatch sub-agents through Zed.",
             agent_memory="Zed agent memory is session-local and not adapter-owned.",
         ),
     ),
@@ -890,12 +889,16 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 )
 
 
-# Paths that more than one harness loads. One owner per shared root: the owner
-# is the only adapter that writes the path, and every other harness that loads
-# it is a reader. Installing the owner places Apothem content in front of every
-# reader, and uninstalling the owner removes it from every reader, so the
-# install advisories name the readers. Evidence retrieved 2026-10-02, except
-# ~/.agents/skills/ and the two agents roots, which were read on 2026-10-24.
+# Paths that more than one harness writes or loads. One registered owner per
+# shared root: the adapter the path belongs to. A user-level folder that several
+# adapters write with the same bytes lists the others as co_installers (the
+# install ledger counts the installs that hold it, so an uninstall removes it
+# only when no install still lists it); every other harness that only loads it
+# is a reader. Installing a writer places Apothem content in front of every
+# reader, and removing the last install that holds the folder removes it from
+# every reader, so the install advisories name the readers. Evidence retrieved
+# 2026-10-02, except ~/.agents/skills/ and the two agents roots, which were read
+# on 2026-10-24.
 #
 # A reader is listed only where the vendor docs show a default load of that exact
 # path. These gaps are open, so the tools they name are not readers yet:
@@ -912,20 +915,27 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # ~/.claude/agents/ is not an open gap: VS Code lists it for its Anthropic Claude
 # harness, not for the Local harness Copilot uses, so Copilot is not a reader. A
 # VS Code page that names it for the Local harness would add Copilot.
+# The adapters that write the user-level rules and templates corpus besides Codex.
+SUPPORT_CO_INSTALLERS: tuple[str, ...] = (
+    "codebuddy",
+    "cursor",
+    "github-copilot",
+    "kiro",
+    "trae",
+    "windsurf",
+    "zed",
+)
 SHARED_ROOTS: tuple[SharedRoot, ...] = (
     SharedRoot(
         path="~/.agents/skills/",
         owner="codex",
+        co_installers=("cursor", "github-copilot", "windsurf", "zed"),
         readers=(
-            "cursor",
             "gemini-cli",
-            "github-copilot",
             "kimi-code",
             "open-claw",
             "opencode",
             "qwen-code",
-            "windsurf",
-            "zed",
         ),
         evidence=(
             "https://learn.chatgpt.com/docs/build-skills",
@@ -944,6 +954,27 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         # directory; with OPENCLAW_STATE_DIR pointing elsewhere it skips home
         # scoped roots such as this one.
         reader_conditions={"open-claw": "only under its default state directory"},
+    ),
+    # The rules and templates corpus the skills and the project anchors cite. Codex
+    # writes it, and so do the seven rules-file adapters, with the same bytes. No
+    # other tool loads these folders, so there are no readers and no vendor pages.
+    SharedRoot(
+        path="~/.config/apothem/rules/",
+        owner="codex",
+        co_installers=SUPPORT_CO_INSTALLERS,
+        readers=(),
+        evidence=(),
+        retrieved="2026-10-24",
+        kind="support",
+    ),
+    SharedRoot(
+        path="~/.config/apothem/templates/",
+        owner="codex",
+        co_installers=SUPPORT_CO_INSTALLERS,
+        readers=(),
+        evidence=(),
+        retrieved="2026-10-24",
+        kind="support",
     ),
     SharedRoot(
         path="~/.claude/skills/",

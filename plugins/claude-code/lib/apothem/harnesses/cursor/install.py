@@ -11,13 +11,16 @@ multi-file project rules surface.
 
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``cursor`` key
-(a single ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc``) and applied by the
+(a ``sentinel_merge`` operation targeting
+``${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc``, preceded by the user-level entries that
+install the skills in ``~/.agents/skills/`` and the rules and templates corpus in
+``~/.config/apothem/``) and applied by the
 shared driver at ``apothem.harnesses._shared.install_driver``. The
 ``${PROJECT_ROOT}`` placeholder is substituted with the operator-supplied
 ``--project <path>`` value the CLI threads through; absence of
 ``--project`` is rejected upstream at ``apothem.cli._materialize`` via the
-``requires_project`` opt-in.
+``requires_project`` opt-in. The ``${USER_HOME}`` placeholder is the user home, and
+the folders under it are shared with every other install that names them.
 """
 
 from __future__ import annotations

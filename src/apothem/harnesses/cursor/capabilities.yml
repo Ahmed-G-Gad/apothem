@@ -3,9 +3,11 @@
 # Per rules/agent-capability-discipline.md §1 / §3 / §7 and the matrix
 # companion §3. Cursor ratifies MCP via ~/.cursor/mcp.json (user-scope)
 # plus project-level .cursor/mcp.json; rules surface as MDC files under
-# .cursor/rules/. The adapter delivers a single project rules file and
-# does not dispatch sub-agents or author command/skill/hook cohorts;
-# the Cursor plugin mechanism that could host those is operator-driven.
+# .cursor/rules/. The adapter delivers a project rules file, installs skills
+# and command skills at the shared user-level ~/.agents/skills/ and the rules
+# and templates corpus at ~/.config/apothem/, and does not dispatch
+# sub-agents or author agent/hook cohorts; the Cursor plugin mechanism that
+# could host those is operator-driven.
 
 mcp_servers:
   - user-scope-~/.cursor/mcp.json
@@ -13,11 +15,11 @@ mcp_servers:
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
 sub_agent_dispatch: false
-custom_command_support: "no"
+custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".cursor/rules MDC files"
+layered_context_surface: ".cursor/rules MDC files plus ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -36,3 +38,20 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/apothem-rules.mdc"
 agent_memory_surface: "n/a"
+
+# Commands ship as skills in ~/.agents/skills/ with the shared skill emission, so the
+# bytes are the same whichever adapter writes the folder: version, updated and
+# portability fold under the standard `metadata` map, and the other source keys
+# stay top-level. Cursor's docs list name and description; how it
+# treats the keys it does not list is the open question recorded in
+# STANDARD-CONVENTION-PIN.md.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "native:metadata.version"
+    updated: "native:metadata.updated"
+    portability: "native:metadata.portability"

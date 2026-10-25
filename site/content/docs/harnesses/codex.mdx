@@ -77,9 +77,23 @@ Apothem has not established which release that is, and it writes no
 `~/.agents/skills/` is a shared root that Codex owns: nine other supported
 tools load it too (the [harness registry](/docs/reference/harness-registry)
 lists them), so the Apothem skills a Codex install writes there appear in those
-tools as well, and a Codex uninstall removes them from those tools. The install
-prints a note that names those tools. `~/.codex/agents/` is a second shared
-root: another supported tool lists that folder as a compatibility location (the
+tools as well. Four of those tools also write the folder themselves when you install
+them (the registry lists them as co-installers), with the same files a Codex
+install writes, so the skills are there on a machine that has no Codex install.
+The same holds for the rules and templates in `~/.config/apothem/`, which seven
+project-scope adapters write too. The
+folder is always in your user home, whatever `CODEX_HOME` is: Codex reads
+`$HOME/.agents/skills`, so a `CODEX_HOME` other than `~/.codex` moves the Codex
+files but not the skills. Every Apothem install that uses the folder writes the
+same files there, and the install records which installs use it, so the order
+you install in does not matter. A Codex uninstall removes the skills only when
+no other Apothem install still uses them; otherwise it keeps them and says which
+installs do (see [Uninstalling](#uninstalling)). The registered owner is the tool
+the vendor documents the path for. The install that placed the files is whichever
+one still uses them, and the install note names it. A skill folder that Apothem
+did not write and that has the same name as an Apothem skill is left alone, with
+a warning that names it. The install prints a note that names those tools.
+`~/.codex/agents/` is a second shared root: another supported tool lists that folder as a compatibility location (the
 registry names it), and its docs do not say whether it reads the TOML files a
 `Codex` install writes there.
 
@@ -135,6 +149,14 @@ apothem update --harness codex
 
 Refreshes the Codex bootstrap, converted agents, skills, and support cohorts.
 
+The skill folders in `~/.agents/skills/` are written in one form that every
+Apothem install of that folder shares: the `SKILL.md` header keys `version`,
+`updated`, `archetype`, and `portability` sit under a `metadata` map, and
+`userInvocable` is written `user-invocable`. The first update after upgrading
+rewrites the folders a Codex install wrote earlier into that form, and backs up
+each folder it changes. `apothem rollback --harness codex` restores
+them.
+
 ## Uninstalling
 
 ```bash
@@ -144,10 +166,15 @@ apothem uninstall --harness codex
 Removes the Apothem block from `~/.codex/AGENTS.md` and keeps any text outside
 it, and removes Apothem's entries from `~/.codex/hooks.json` and keeps yours.
 Also removes the Apothem files in `~/.codex/hooks/`, `~/.codex/agents/`,
-`~/.agents/skills/`, and `~/.config/apothem/{rules,templates}/`; other files in
-those folders stay. Skills removed from `~/.agents/skills/` disappear from the
-other tools that load it too (see [Compatibility notes](#compatibility-notes)).
-Each file is backed up under `~/.apothem/backups/` before it is changed or
+`~/.agents/skills/`, and `~/.config/apothem/{rules,templates}/`, unless another
+Apothem install still uses them (the uninstall keeps those and lists them);
+other files in those folders stay. Skills removed from `~/.agents/skills/`
+disappear from the other tools that load it too (see
+[Compatibility notes](#compatibility-notes)). If you set `CODEX_HOME` to a
+folder other than `~/.codex` and installed with an earlier release, copies that
+release wrote beside that folder (`<CODEX_HOME>/../.agents/skills/` and
+`<CODEX_HOME>/../.config/apothem/`) are not removed; delete them by hand. Each
+file is backed up under `~/.apothem/backups/` before it is changed or
 removed. The shared profile YAML and Apothem engine are unaffected.
 
 ## Conformity gate

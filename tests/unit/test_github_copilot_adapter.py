@@ -103,11 +103,13 @@ def test_capabilities_mcp_is_service_state_not_repo_file() -> None:
     assert capabilities["mcp_servers"] == []
 
 
-def test_capabilities_instructions_only_delivery() -> None:
-    # The adapter delivers the repo-wide instructions anchor only; no
-    # repo-config sub-agent dispatch is authored.
+def test_capabilities_instructions_and_skills_delivery() -> None:
+    # The adapter delivers the repo-wide instructions anchor and installs the
+    # commands as skills in the shared user-level folder; no repo-config
+    # sub-agent dispatch is authored.
     capabilities = _capabilities()
     assert capabilities["sub_agent_dispatch"] is False
+    assert capabilities["custom_command_support"] == "skills"
 
 
 def test_profile_block_comes_first_in_the_managed_block(

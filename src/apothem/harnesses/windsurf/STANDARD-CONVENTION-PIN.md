@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
+- Snapshot date: 2026-10-24
+- Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`.
 - Adapter source: `src/apothem/harnesses/windsurf/`
 - Evidence level: vendor-doc pinned (living docs at `docs.devin.ai`; no-immutable-source exception). No vendor-native UI claim is made here.
 
@@ -28,7 +29,17 @@
   `~/.config/devin/skills/` globally. Devin Desktop also discovers
   `.agents/skills/` and `~/.agents/skills/`, so a Codex install's skills reach it.
   This settles the earlier open question: skills follow the same
-  `.devin/`-over-`.windsurf/` order as rules.
+  `.devin/`-over-`.windsurf/` order as rules. The adapter writes Apothem's
+  skills, plus its commands wrapped as skills, to `~/.agents/skills/`, the one
+  user-level copy shared with Codex, Cursor, GitHub Copilot, and Zed, and not to
+  the Windsurf-specific folders. Windsurf may also list the same names from
+  `~/.claude/skills/` when its Claude Code config import is on (the default is
+  not stated).
+  TODO(clarify): the vendor docs do not say how Windsurf treats a `SKILL.md`
+  frontmatter key it does not list. The shared emission sets `user-invocable`,
+  `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
+  `metadata` map; probe Windsurf with the full set before a release and, if it
+  rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
 - Hooks (resolved): `hooks.json` at `.devin/hooks.json` in the workspace (the
   legacy `.windsurf/hooks.json` is used only when the `.devin` file is absent or
   defines no hooks), `~/.codeium/windsurf/hooks.json` for the user, and
@@ -41,8 +52,8 @@
   Operator-owned; the adapter authors no entries.
 - Memories: auto-generated memories apply to the legacy Cascade agent only and
   stay on the machine; the Devin Local agent does not persist memories.
-- The adapter delivers only the project rules file and authors none of the
-  skills, workflows, hooks, or subagents (deliberate rules-only posture).
+- The adapter delivers the project rules file and the shared skills folder
+  above. It authors no workflow, hook, or subagent.
 - Open question (review by 2026-12-31): the Devin CLI imports other tools'
   rules by default (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and
   `~/.claude/CLAUDE.md`). If Devin Desktop's Local agent applies the same
@@ -65,7 +76,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://docs.devin.ai/desktop/cascade/web-search> (web search)
 - <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules)
 - <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports)
-- <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-02)
+- <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-24, the folder the adapter writes)
 - <https://docs.devin.ai/desktop/cascade/hooks.md> (hooks; retrieved 2026-10-02)
 
 ## Discovery Targets
@@ -93,19 +104,21 @@ Retrieved 2026-10-03 unless marked.
 ## Plugin-alone Persistence
 
 Windsurf (Devin Desktop) exposes **no vendor plugin or extension install surface**
-that Apothem ships. The adapter is project-scope rules-only: it writes a single
-merged rules file at `<project>/.devin/rules/apothem-rules.md` (the preferred
-surface; `.windsurf/rules/` is the backward-compat fallback) and authors no other
-cohort. There is no standalone-installable bundle; every artifact requires the
+that Apothem ships. The adapter writes a merged rules file at
+`<project>/.devin/rules/apothem-rules.md` (the preferred surface;
+`.windsurf/rules/` is the backward-compat fallback), the skills at
+`~/.agents/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
+and authors no other cohort. There is no standalone-installable bundle; every artifact requires the
 full `apothem install --harness windsurf --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the preferred `.devin/rules/` directory (`.windsurf/rules/` backward-compat fallback). Nothing persists before that run. |
-| Commands / Skills / Agents | No — deliberate rules-only posture | The vendor documents skills (`.devin/skills/`), workflows (`.windsurf/workflows/`), and subagents; the adapter authors none of them. |
+| Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run. |
+| Agents | No — adapter scope | The vendor documents workflows (`.windsurf/workflows/`) and subagents; the adapter authors neither. |
 | Hooks / MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and `hooks.json` (hooks) are operator-owned; the adapter authors no entries. |
 
 The Devin CLI documents plugins and team marketplaces, but Apothem ships no
 Devin plugin, so a
-plugin-alone story does not exist — the merged rules file via `apothem install`
-is the sole persistence surface.
+plugin-alone story does not exist — the files `apothem install` writes are the
+sole persistence surface.
