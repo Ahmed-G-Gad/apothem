@@ -12,6 +12,7 @@
 | `_helpers.py` | Shared constants, the structured CLI-error type, the adapter protocol + load helpers, profile read/write, lifecycle-envelope builders, harness selection, project-root resolution, `AliasedGroup`, and the drift/plan helpers. |
 | `_epilogs.py` | The per-subcommand `--help` epilog strings. |
 | `_materialize.py` | The shared install/update materialization orchestrators (`_materialize`, `_dry_run_materialization`). |
+| `_user_level_report.py` | What the shared user-home folders mean for CLI output: the folders a project-scope install writes outside `--project` (the install note and the batch preview), which installs use a folder now and its owner of record, what an uninstall keeps because another install still uses it, and why `verify` failed for a user-home folder. Reads the install ledger and the manifest; writes nothing. |
 | `_group.py` | Group plumbing that loads without the materialization stack: the root group that imports each command module on first use (with the static command summaries the root `--help` renders), the usage-error contract (exit 64, JSON error envelope), context settings, and UTF-8 stdio setup. |
 | `_common_flags.py` | Shared Click options plus the console factory used across CLI commands. |
 | `_json_formatter.py` | JSON-output helper for the CLI (machine-readable command output). |

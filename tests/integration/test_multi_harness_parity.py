@@ -288,7 +288,9 @@ def test_uninstall_leaves_no_apothem_file_residue(
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", tmp_path / "backups")
     monkeypatch.setattr(install_ledger, "STATE_ROOT", tmp_path / "ledger-state")
 
-    # Snapshot files under the root that the install will write into.
+    # Snapshot files under the root that the install will write into, and under
+    # the (isolated) user home.
+    home_files_before = _file_set(Path.home())
     if _is_project_scope(adapter):
         root = tmp_path / "project"
         root.mkdir()
@@ -326,6 +328,13 @@ def test_uninstall_leaves_no_apothem_file_residue(
     )
     assert not home.learning.exists(), (
         f"{adapter.name}: shared learning store survived uninstall: {home.learning}"
+    )
+    # The user home is isolated per test, and some manifest targets sit in it
+    # whatever the install root is (``~/.agents/skills``, ``~/.config/apothem``).
+    # The last uninstall leaves no file there either.
+    home_residue = sorted(_file_set(Path.home()) - home_files_before)
+    assert home_residue == [], (
+        f"{adapter.name}: user-home file residue after uninstall: {home_residue}"
     )
 
 

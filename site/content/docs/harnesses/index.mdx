@@ -78,12 +78,39 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md
-         +-- windsurf       --> <project>/.devin/rules/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
+
+## Skills in your user home
+
+Seven project-scope adapters write one file into your project, and they also
+write Apothem's skills, and the rules and templates the skills cite, to folders
+in your user home:
+
+```text
+cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)
+codebuddy                               ->  ~/.codebuddy/skills/
+kiro                                    ->  ~/.kiro/skills/
+trae                                    ->  ~/.trae/skills/
+all seven                               ->  ~/.config/apothem/rules/ and templates/ (codex uses them too)
+```
+
+- Every install that names a folder writes the same files, so the order you
+  install in does not matter, and one copy serves every project.
+- An install writes the home folders first. If that fails, it stops before it
+  changes the project, and it adds no skill or rule file to your repository.
+- An uninstall removes a shared folder only when no other Apothem install still
+  uses it, and says which install keeps it.
+- A skill folder with an Apothem skill's name that Apothem did not write is left
+  alone, with a warning.
+
+Each harness page lists its folders. The
+[harness registry](/docs/reference/harness-registry#shared-roots) shows which
+tools share which folder.
 
 See [Harness adapter abstraction](/docs/architecture/harness-adapter-abstraction)
 for the protocol specification.

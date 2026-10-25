@@ -29,19 +29,19 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 | `claude_code` | `~/.claude/settings.json`, `~/.claude/{agents,rules,skills,statuslines,output-styles}/`, plus `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` | Native Claude Code adapter; command prompts are wrapped as skills. |
 | `antigravity` | `~/.gemini/GEMINI.md` plus `~/.gemini/antigravity-cli/plugins/apothem/` | Antigravity CLI plugin adapter (no materializer). |
 | `codex` | `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Native Codex adapter; does not write `config.toml`. |
-| `cursor` | `<project>/.cursor/rules/apothem-rules.mdc` | Project-scope manifest adapter. |
+| `cursor` | `<project>/.cursor/rules/apothem-rules.mdc`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in the shared user-level folder. |
 | `gemini_cli` | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` and `<project>/.gemini/.apothem/support/` | Project-scope manifest adapter with TOML command conversion. |
-| `github_copilot` | `<project>/.github/copilot-instructions.md` | Project-scope manifest adapter. |
+| `github_copilot` | `<project>/.github/copilot-instructions.md`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in the shared user-level folder. |
 | `hermes` | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | Materializer (native MCP via `mcp_servers`; support skills listed under `skills.external_dirs`); support cohorts under `~/.hermes/.apothem/support/`. |
 | `kimi_code` | `<project>/AGENTS.md`, `<project>/.kimi-code/skills/`, plus `<project>/.kimi-code/.apothem/support/` | Project-scope manifest adapter; native skills (commands wrapped as skills); native agent memory. |
 | `open_claw` | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | Materializer (support skills listed under `skills.load.extraDirs`; no allowlist or MCP keys authored); support cohorts under `~/.openclaw/.apothem/support/`. |
 | `opencode` | `~/.config/opencode/opencode.json`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native commands, skills, and agents. |
 | `qwen_code` | `~/.qwen/settings.json`, `~/.qwen/QWEN.md`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native hooks, commands, skills, agents, context anchor, and support cohorts. |
-| `windsurf` | `<project>/.devin/rules/apothem-rules.md` | Project-scope manifest adapter (Devin Desktop preferred surface; `.windsurf/rules/` fallback). |
-| `codebuddy` | `<project>/.codebuddy/rules/apothem-rules.md` | Project-scope manifest adapter. |
-| `kiro` | `<project>/.kiro/steering/apothem-rules.md` | Project-scope manifest adapter. |
-| `trae` | `<project>/.trae/rules/apothem-rules.md` | Project-scope manifest adapter. |
-| `zed` | `<project>/.rules` | Project-scope manifest adapter; flat project-root file. |
+| `windsurf` | `<project>/.devin/rules/apothem-rules.md`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter (Devin Desktop preferred surface; `.windsurf/rules/` fallback); skills (commands wrapped as skills) in the shared user-level folder. |
+| `codebuddy` | `<project>/.codebuddy/rules/apothem-rules.md`, `~/.codebuddy/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in CodeBuddy's own user-level folder. |
+| `kiro` | `<project>/.kiro/steering/apothem-rules.md`, `~/.kiro/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in Kiro's own user-level folder. |
+| `trae` | `<project>/.trae/rules/apothem-rules.md`, `~/.trae/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in Trae's own user-level folder. |
+| `zed` | `<project>/.rules`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; flat project-root file; skills (commands wrapped as skills) in the shared user-level folder. |
 | `glm` | `<project>/.apothem/providers/glm.toml` | Project-scope provider adapter (GLM / Z.ai model backend; TOML config only). |
 
 ## Conventions
@@ -54,6 +54,7 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 - Existing matching targets are backed up before replacement. Shared discovery directories are merged child-by-child so unrelated operator-authored entries survive Apothem updates, and unchanged generated content is left untouched.
 - The `claude_code` adapter deliberately does **not** manage the operator-owned memory file at the harness root; governance reaches that harness through the propagated `rules/` tree and the `SessionStart` hook, never by rewriting the operator's memory.
 - The `codex` adapter resolves the harness home through the `CODEX_HOME` environment variable, defaulting to the user-scope root when the variable is unset.
+- A manifest target spelled `${USER_HOME}/...` is a user-level folder: it sits in the user home whatever the install root is. `codex` and the seven rules-file adapters (`cursor`, `github_copilot`, `windsurf`, `zed`, `codebuddy`, `kiro`, `trae`) write their skills and the rules and templates corpus there, ahead of the project file, so a failure writing the home aborts the install before the project changes. Every install that names a folder writes the same bytes, and the install ledger counts the installs that hold it: an uninstall removes a folder only when no other install still lists it.
 
 ## Related
 

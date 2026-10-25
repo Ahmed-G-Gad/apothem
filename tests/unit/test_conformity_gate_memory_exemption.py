@@ -71,10 +71,13 @@ def gate() -> ModuleType:
 
 
 @pytest.fixture(autouse=True)
-def _clear_scope_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _clear_scope_env(gate: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure no ambient scope env var pollutes the default-scope resolution."""
     monkeypatch.delenv("APOTHEM_CONFORMITY_SCOPE", raising=False)
     monkeypatch.delenv("CODEX_HOME", raising=False)
+    # The default Claude scope is read from the home when the gate is loaded;
+    # follow this test's isolated home.
+    monkeypatch.setattr(gate, "_DEFAULT_CLAUDE_SCOPE", Path.home() / ".claude")
 
 
 def _run_hook(

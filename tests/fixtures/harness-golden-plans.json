@@ -117,17 +117,17 @@
     {
       "mode": "merge_tree_entries",
       "source": "rules",
-      "target": "<ROOT>/../.config/apothem/rules"
+      "target": "<HOME>/.config/apothem/rules"
     },
     {
       "mode": "native_skills",
       "source": "skills",
-      "target": "<ROOT>/../.agents/skills"
+      "target": "<HOME>/.agents/skills"
     },
     {
       "mode": "command_skills",
       "source": "commands",
-      "target": "<ROOT>/../.agents/skills"
+      "target": "<HOME>/.agents/skills"
     },
     {
       "mode": "codex_agents",
@@ -137,10 +137,30 @@
     {
       "mode": "merge_tree_entries",
       "source": "templates",
-      "target": "<ROOT>/../.config/apothem/templates"
+      "target": "<HOME>/.config/apothem/templates"
     }
   ],
   "cursor": [
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
     {
       "mode": "sentinel_merge",
       "source": "harnesses/cursor/templates/apothem-rules.mdc",
@@ -185,6 +205,26 @@
     }
   ],
   "github-copilot": [
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
     {
       "mode": "sentinel_merge",
       "source": "harnesses/github_copilot/templates/copilot-instructions.md",
@@ -363,12 +403,52 @@
   ],
   "windsurf": [
     {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
+    {
       "mode": "sentinel_merge",
       "source": "harnesses/windsurf/templates/apothem-rules.md",
       "target": "<ROOT>/.devin/rules/apothem-rules.md"
     }
   ],
   "codebuddy": [
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.codebuddy/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.codebuddy/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
     {
       "mode": "sentinel_merge",
       "source": "harnesses/codebuddy/templates/apothem-rules.md",
@@ -377,6 +457,26 @@
   ],
   "kiro": [
     {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.kiro/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.kiro/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
+    {
       "mode": "sentinel_merge",
       "source": "harnesses/kiro/templates/apothem-rules.md",
       "target": "<ROOT>/.kiro/steering/apothem-rules.md"
@@ -384,12 +484,52 @@
   ],
   "trae": [
     {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.trae/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.trae/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
+    {
       "mode": "sentinel_merge",
       "source": "harnesses/trae/templates/apothem-rules.md",
       "target": "<ROOT>/.trae/rules/apothem-rules.md"
     }
   ],
   "zed": [
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<HOME>/.config/apothem/rules"
+    },
+    {
+      "mode": "native_skills",
+      "source": "skills",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<HOME>/.agents/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<HOME>/.config/apothem/templates"
+    },
     {
       "mode": "sentinel_merge",
       "source": "harnesses/zed/templates/apothem-rules.md",

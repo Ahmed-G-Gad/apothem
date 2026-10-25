@@ -22,7 +22,11 @@ import pytest
 
 import apothem
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver_converters import claude_code_skill_text
+from apothem.harnesses._shared.install_driver_converters import (
+    _native_skill_emission,
+    claude_code_skill_text,
+)
+from apothem.harnesses._shared.install_driver_shared import SHARED_EMISSION
 from apothem.lib.plugin_tree import assemble_plugin_tree
 from apothem.lib.propagation import load_manifest, resolve_target
 
@@ -110,7 +114,14 @@ def test_every_folding_install_keeps_the_skill(harness: str, tmp_path: Path) -> 
     for name in _SHARED_NAMES:
         installed = (skills_dir / name / "SKILL.md").read_text(encoding="utf-8")
         source = (_SRC / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
-        expected = (
-            claude_code_skill_text(source) if harness == "claude_code" else source
-        )
+        if harness == "claude_code":
+            expected = claude_code_skill_text(source)
+        elif any(
+            entry.mode == "command_skills" and entry.user_level
+            for entry in rules.install
+        ):
+            # The folder in the user home is one copy for every writer.
+            expected = _native_skill_emission(SHARED_EMISSION, source)[0]
+        else:
+            expected = source
         assert installed == expected, (harness, name)

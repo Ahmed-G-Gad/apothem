@@ -176,6 +176,11 @@ def test_json_warning_count_identical_with_and_without_verbose(
     assert note_total == capability_total
 
 
+def _is_folder_note(line: str) -> bool:
+    """Return True for a note about the shared user-home folders, not a capability."""
+    return "is shared:" in line or "also writes outside --project" in line
+
+
 def test_single_harness_plain_groups_verbose_expands(
     runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -210,7 +215,16 @@ def test_single_harness_plain_groups_verbose_expands(
     plain_proj = tmp_path / "plain"
     plain_proj.mkdir()
     plain = run(plain_proj)
-    plain_notes = [line for line in plain.splitlines() if line.startswith("Note:")]
+    # Cursor writes the shared ~/.agents/skills/, so every install also carries
+    # a note about that folder and one naming the folders it writes outside
+    # --project; the capability summary is the other one.
+    shared = [line for line in plain.splitlines() if "is shared:" in line]
+    assert len(shared) == 1
+    plain_notes = [
+        line
+        for line in plain.splitlines()
+        if line.startswith("Note:") and not _is_folder_note(line)
+    ]
     assert len(plain_notes) == 1
     assert _NOTE_RE.match(plain_notes[0]) is not None
     assert "Warning:" not in plain
@@ -223,4 +237,8 @@ def test_single_harness_plain_groups_verbose_expands(
     ]
     grouped_count = int(_NOTE_RE.match(plain_notes[0])["count"])  # type: ignore[index]
     assert len(verbose_warnings) == grouped_count
-    assert "Note:" not in verbose
+    assert [
+        line
+        for line in verbose.splitlines()
+        if line.startswith("Note:") and not _is_folder_note(line)
+    ] == []

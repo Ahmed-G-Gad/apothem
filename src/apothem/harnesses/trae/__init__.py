@@ -9,8 +9,14 @@ https://docs.trae.ai/ide/rules. The file opens with ``alwaysApply: true``
 frontmatter (Trae's Always Apply mode). Other project rule files and the
 global ``~/.trae/user_rules`` are never clobbered: Apothem writes only its own
 ``apothem-rules.md`` file. Trae's MCP surface
-(``.trae/mcp.json``) and skill surface (``.trae/skills/``) are operator-owned
-and out of apothem's adapter scope.
+(``.trae/mcp.json``) and the project skill surface (``.trae/skills/``) are
+operator-owned and out of apothem's adapter scope.
+
+Ahead of the project file the install also writes the user-level folders: the
+skills and the commands wrapped as skills in ``~/.trae/skills/``, and the rules and
+templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the
+user home, not in the project, and every Apothem install that names one writes
+the same bytes; the install ledger decides which uninstall removes it.
 
 The adapter opts into the project-scope contract via
 ``requires_project = True``; the CLI rejects an install / update /

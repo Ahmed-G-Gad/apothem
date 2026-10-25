@@ -33,7 +33,7 @@ harnesses:
     config_format: mdc
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -41,7 +41,9 @@ harnesses:
     notes: >-
       Project rules via <project>/.cursor/rules/apothem-rules.mdc. Cursor has
       no documented file-based user-global rules surface; the legacy
-      .cursorrules path is intentionally excluded.
+      .cursorrules path is intentionally excluded. Skills and commands (as
+      skills) go to the shared user-level ~/.agents/skills/, and the rules and
+      templates corpus to ~/.config/apothem/.
 
   - name: gemini-cli
     display: Gemini CLI
@@ -63,7 +65,7 @@ harnesses:
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -71,7 +73,9 @@ harnesses:
     notes: >-
       Project instructions via <project>/.github/copilot-instructions.md.
       GitHub Copilot user-level settings live in IDE state, not an adapter-owned
-      user-global file.
+      user-global file. Skills and commands (as skills) go to the shared
+      user-level ~/.agents/skills/, and the rules and templates corpus to
+      ~/.config/apothem/; GitHub-hosted surfaces do not read those folders.
 
   - name: codex
     display: Codex
@@ -93,7 +97,7 @@ harnesses:
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -102,7 +106,9 @@ harnesses:
       Project rules via <project>/.devin/rules/apothem-rules.md (the preferred
       surface after the Devin Desktop rebrand; .windsurf/rules/ is the
       backward-compat fallback). Workflows and machine-local memories are
-      operator-owned; legacy .windsurfrules is intentionally excluded.
+      operator-owned; legacy .windsurfrules is intentionally excluded. Skills
+      and commands (as skills) go to the shared user-level ~/.agents/skills/,
+      and the rules and templates corpus to ~/.config/apothem/.
 
   - name: opencode
     display: OpenCode
@@ -208,7 +214,7 @@ harnesses:
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -217,14 +223,16 @@ harnesses:
       Project rules via <project>/.codebuddy/rules/apothem-rules.md, a
       dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file,
       .codebuddy/settings.json, and the project .mcp.json (MCP servers) are
-      operator-owned.
+      operator-owned. Skills and commands (as skills) go to the user-level
+      ~/.codebuddy/skills/, and the rules and templates corpus to
+      ~/.config/apothem/.
 
   - name: kiro
     display: Kiro
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -232,14 +240,16 @@ harnesses:
     notes: >-
       Project steering via <project>/.kiro/steering/apothem-rules.md
       (inclusion: always). Kiro foundation files (product.md, tech.md,
-      structure.md) and specs are operator-owned.
+      structure.md) and specs are operator-owned. Skills and commands (as
+      skills) go to the user-level ~/.kiro/skills/, and the rules and
+      templates corpus to ~/.config/apothem/.
 
   - name: trae
     display: Trae
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -247,14 +257,16 @@ harnesses:
     notes: >-
       Project rules via <project>/.trae/rules/apothem-rules.md, alongside the
       operator-owned project_rules.md and user_rules.md anchors. The
-      .trae/mcp.json and .trae/skills/ surfaces are operator-owned.
+      project .trae/mcp.json and .trae/skills/ surfaces are operator-owned.
+      Skills and commands (as skills) go to the user-level ~/.trae/skills/,
+      and the rules and templates corpus to ~/.config/apothem/.
 
   - name: zed
     display: Zed
     config_format: markdown
     supports_hooks: false
     supports_agents: false
-    supports_skills: false
+    supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
     supports_statuslines: false
@@ -262,7 +274,9 @@ harnesses:
     notes: >-
       Project agent-instructions via the flat <project>/.rules file (no rules
       directory). Global ~/.config/zed/AGENTS.md and .zed/settings.json MCP
-      context_servers are operator-owned.
+      context_servers are operator-owned. Skills and commands (as skills) go
+      to the shared user-level ~/.agents/skills/, and the rules and templates
+      corpus to ~/.config/apothem/.
 
   - name: glm
     display: GLM (Z.ai)
@@ -295,11 +309,15 @@ asset_classes:
     description: "Behavioral rules (.md) from src/apothem/rules/."
     compatible_harnesses:
       - claude-code        # full: rules injected into ~/.claude/ tree
-      - cursor             # partial: distilled into project .cursor/rules/
+      - cursor             # partial: distilled into project .cursor/rules/; full files in ~/.config/apothem/rules/
       - gemini-cli         # partial: support cohort referenced by <project>/GEMINI.md
-      - github-copilot     # partial: distilled into copilot-instructions.md
+      - github-copilot     # partial: distilled into copilot-instructions.md; full files in ~/.config/apothem/rules/
       - codex              # partial: distilled into ~/.codex/AGENTS.md
-      - windsurf           # partial: distilled into project .devin/rules/ (preferred; .windsurf/rules/ fallback)
+      - windsurf           # partial: distilled into project .devin/rules/ (preferred; .windsurf/rules/ fallback); full files in ~/.config/apothem/rules/
+      - zed                # partial: distilled into project .rules; full files in ~/.config/apothem/rules/
+      - codebuddy          # partial: distilled into project .codebuddy/rules/; full files in ~/.config/apothem/rules/
+      - kiro               # partial: distilled into project .kiro/steering/; full files in ~/.config/apothem/rules/
+      - trae               # partial: distilled into project .trae/rules/; full files in ~/.config/apothem/rules/
       - opencode           # partial: support cohort referenced by opencode.json
       - antigravity        # partial: distilled into GEMINI.md plus plugin rules
       - open-claw          # partial: support cohort referenced by installed skills
@@ -358,16 +376,30 @@ asset_classes:
     compatible_harnesses:
       - claude-code
       - antigravity
+      - codebuddy
       - codex
+      - cursor
       - gemini-cli
+      - github-copilot
       - hermes
+      - kiro
       - open-claw
       - opencode
       - qwen-code
+      - trae
+      - windsurf
+      - zed
     materialisation_strategy:
       claude-code: "copy to ~/.claude/skills/"
       antigravity: "copy to ~/.gemini/antigravity-cli/plugins/apothem/skills/"
       codex: "copy to ~/.agents/skills/"
+      cursor: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
+      github-copilot: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
+      windsurf: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
+      zed: "copy to ~/.agents/skills/ (one shared copy; the install ledger counts the installs that hold it)"
+      codebuddy: "copy to ~/.codebuddy/skills/"
+      kiro: "copy to ~/.kiro/skills/"
+      trae: "copy to ~/.trae/skills/"
       gemini-cli: "copy to <project>/.gemini/skills/"
       hermes: "copy to ~/.hermes/.apothem/support/skills/ (support subtree; listed under skills.external_dirs in config.yaml; skills.config stays operator-owned)"
       open-claw: "copy to ~/.openclaw/.apothem/support/skills/ (support subtree; listed under skills.load.extraDirs in openclaw.json; agents.defaults.skills stays operator-owned)"
@@ -380,16 +412,30 @@ asset_classes:
     compatible_harnesses:
       - claude-code
       - antigravity
+      - codebuddy
       - codex
+      - cursor
       - gemini-cli
+      - github-copilot
       - hermes
+      - kiro
       - open-claw
       - opencode
       - qwen-code
+      - trae
+      - windsurf
+      - zed
     materialisation_strategy:
       claude-code: "wrap as ~/.claude/skills/<command>/SKILL.md"
       antigravity: "wrap as ~/.gemini/antigravity-cli/plugins/apothem/skills/<command>/SKILL.md"
       codex: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      cursor: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      github-copilot: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      windsurf: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      zed: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      codebuddy: "wrap as ~/.codebuddy/skills/<command>/SKILL.md"
+      kiro: "wrap as ~/.kiro/skills/<command>/SKILL.md"
+      trae: "wrap as ~/.trae/skills/<command>/SKILL.md"
       gemini-cli: "convert to <project>/.gemini/commands/*.toml"
       hermes: "wrap as ~/.hermes/.apothem/support/skills/<command>/SKILL.md"
       open-claw: "wrap as ~/.openclaw/.apothem/support/skills/<command>/SKILL.md"
@@ -418,14 +464,29 @@ asset_classes:
     compatible_harnesses:
       - claude-code
       - antigravity
+      - codebuddy
       - codex
+      - cursor
       - gemini-cli
+      - github-copilot
       - hermes
+      - kiro
       - open-claw
       - opencode
       - qwen-code
+      - trae
+      - windsurf
+      - zed
     materialisation_strategy:
       claude-code: "support cohort under ~/.claude/.apothem/support/templates/"
+      codex: "support cohort under ~/.config/apothem/templates/"
+      cursor: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      github-copilot: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      windsurf: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      zed: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      codebuddy: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      kiro: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
+      trae: "support cohort under ~/.config/apothem/templates/ (one shared copy; the install ledger counts the installs that hold it)"
       antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/"
       default: "support cohort under apothem/templates/"
 

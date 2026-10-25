@@ -21,6 +21,16 @@ and valid. With `--profile` the check additionally requires **profile
 fidelity**, so a present-but-drifted install fails verify, answering "is THIS
 profile faithfully installed?" rather than merely "does it exist?".
 
+For an adapter that writes skills to your home directory, verify also checks
+that every skill folder it expects exists with a `SKILL.md`, whichever install
+wrote it, so a machine where only one of the tools that share a folder is installed verifies. It fails when a
+folder is missing, and when a folder with an Apothem skill's name belongs to
+something Apothem did not write. A failed row says which: in plain mode a
+`Note:` line follows it, and in the JSON row a `user_level` object lists
+`missing` and `unlisted` paths and a `message`. Run
+[`install`](/docs/cli-reference/install) to restore a missing folder; rename or
+move a foreign one, then run [`update`](/docs/cli-reference/update).
+
 A `--harness all` sweep honors the profile's `exclude_harnesses` — the same
 exclusions the `install`/`update` batch applied — so verify never reports a
 deliberately excluded harness as missing. The exclusions come from

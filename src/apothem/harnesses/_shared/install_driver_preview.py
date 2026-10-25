@@ -55,6 +55,38 @@ def prospective_result(
     )
 
 
+def prospective_file_outcome(target: Path, content: bytes) -> MaterializationOutcome:
+    """Classify the no-write outcome of writing *content* to *target*.
+
+    Mirrors the create / update / no-op decision
+    :func:`install_driver_backup.write_bytes_safely` makes at write time —
+    absent target → ``created``; on-disk bytes equal → ``unchanged``; on-disk
+    bytes differ → ``updated`` — without touching the filesystem.
+    """
+    if not target.exists():
+        return "created"
+    try:
+        return "unchanged" if target.read_bytes() == content else "updated"
+    except OSError:
+        # An unreadable existing target would be backed up and overwritten.
+        return "updated"
+
+
+def aggregate_dir_outcome(
+    child_outcomes: list[MaterializationOutcome], *, target_dir: Path
+) -> MaterializationOutcome:
+    """Fold a directory entry's per-child outcomes into one entry outcome.
+
+    Every child unchanged (or an empty source directory) → the whole entry is
+    ``unchanged``. Otherwise the entry reports ``created`` when its target
+    directory does not yet exist (a fresh install) and ``updated`` when it
+    exists but its contents would change.
+    """
+    if not child_outcomes or all(outcome == "unchanged" for outcome in child_outcomes):
+        return "unchanged"
+    return "created" if not target_dir.exists() else "updated"
+
+
 def preview_data_surfaces(
     root: Path, *, profile: dict[str, Any] | None
 ) -> list[MaterializationResult]:

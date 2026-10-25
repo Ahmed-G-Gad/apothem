@@ -83,6 +83,13 @@ def test_behavior_diff_real_install_representative(tmp_path: Path) -> None:
         ) == canon.canon_render((GOLDEN / "envelope" / f"{name}.json").read_bytes()), (
             f"envelope/{name} drift"
         )
+        # The files the install wrote in the (scratch) user home: a harness
+        # with a ``${USER_HOME}`` target writes its skills and corpus there.
+        assert canon.canon_render(
+            (out / "home" / f"{name}.json").read_bytes()
+        ) == canon.canon_render((GOLDEN / "home" / f"{name}.json").read_bytes()), (
+            f"home/{name} drift"
+        )
 
 
 @pytest.mark.parametrize("name", oracle.ALL_ADAPTERS)

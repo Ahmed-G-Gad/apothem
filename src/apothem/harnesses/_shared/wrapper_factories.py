@@ -32,6 +32,7 @@ from apothem.lib.profile import (
 
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
+from .install_driver_shared import shared_scope
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
@@ -226,16 +227,19 @@ def make_user_scope_install(harness_name: str) -> _UserScopeInstall:
                 profile=profile,
                 dry_run=True,
             )
-        missing = install_driver.capture_missing_dirs(
-            harness_name, harness_root=output_path.parent, profile=profile
-        )
-        return install_driver.finalize_install(
-            install_driver.run_install(
+        # One lock from the first user-level write to the ledger record (a
+        # no-op for a harness with no user-level entry).
+        with shared_scope(harness_name):
+            missing = install_driver.capture_missing_dirs(
                 harness_name, harness_root=output_path.parent, profile=profile
-            ),
-            root=output_path.parent,
-            missing_before=missing,
-        )
+            )
+            return install_driver.finalize_install(
+                install_driver.run_install(
+                    harness_name, harness_root=output_path.parent, profile=profile
+                ),
+                root=output_path.parent,
+                missing_before=missing,
+            )
 
     install.__doc__ = _INSTALL_DOC
     return install
@@ -386,16 +390,19 @@ def make_project_scope_install(
             return install_driver.run_install(
                 harness_name, project_root=project, profile=profile, dry_run=True
             )
-        missing = install_driver.capture_missing_dirs(
-            harness_name, project_root=project, profile=profile
-        )
-        return install_driver.finalize_install(
-            install_driver.run_install(
+        # One lock from the first user-level write to the ledger record (a
+        # no-op for a harness with no user-level entry).
+        with shared_scope(harness_name):
+            missing = install_driver.capture_missing_dirs(
                 harness_name, project_root=project, profile=profile
-            ),
-            root=project,
-            missing_before=missing,
-        )
+            )
+            return install_driver.finalize_install(
+                install_driver.run_install(
+                    harness_name, project_root=project, profile=profile
+                ),
+                root=project,
+                missing_before=missing,
+            )
 
     install.__doc__ = _INSTALL_DOC_PROJECT
     return install
@@ -624,8 +631,16 @@ def make_native_config_install(
             run, root=output_path.parent, missing_before=missing
         )
 
-    install.__doc__ = _INSTALL_DOC_NATIVE
-    return install
+    def locked_install(
+        output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
+    ) -> MaterializationRun:
+        if dry_run:
+            return install(output_path, profile, dry_run=True)
+        with shared_scope(harness_name):
+            return install(output_path, profile)
+
+    locked_install.__doc__ = _INSTALL_DOC_NATIVE
+    return locked_install
 
 
 def make_project_scope_adapter(

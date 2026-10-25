@@ -29,6 +29,7 @@ from apothem.lib.harness_registry import (
     HarnessRegistryEntry,
     load_adapter_class,
 )
+from apothem.lib.propagation import user_home
 
 _SRC = Path(apothem.__file__).resolve().parent
 
@@ -51,6 +52,9 @@ _BULLET = re.compile(r"^- `([a-z]+)/<path>` is `(.+)/<path>`$", re.MULTILINE)
 
 #: Model-facing files an install writes (rules, skills, commands, agents).
 _BODY_SUFFIXES = frozenset({".md", ".mdc", ".toml"})
+
+#: Zed's instruction file has no suffix.
+_SUFFIXLESS_ANCHOR = ".rules"
 
 
 def _has_layout(entry: HarnessRegistryEntry) -> bool:
@@ -85,7 +89,7 @@ def _bodies(tmp_path: Path) -> list[Path]:
         path
         for path in sorted(tmp_path.rglob("*"))
         if path.is_file()
-        and path.suffix in _BODY_SUFFIXES
+        and (path.suffix in _BODY_SUFFIXES or path.name == _SUFFIXLESS_ANCHOR)
         and "state" not in path.relative_to(tmp_path).parts
     ]
 
@@ -102,11 +106,26 @@ def _announcement(bodies: list[Path]) -> tuple[Path, str]:
 
 
 def _announced_dirs(section: str, project: Path) -> dict[str, Path]:
+    """Map each announced prefix to its directory.
+
+    An absolute path is itself, ``~/...`` is the user home (a user-level folder),
+    and any other path is relative to the project root.
+    """
     mapping: dict[str, Path] = {}
     for prefix, shown in _BULLET.findall(section):
+        if shown.startswith("~/"):
+            mapping[prefix] = user_home() / shown[2:]
+            continue
         path = Path(shown)
         mapping[prefix] = path if path.is_absolute() else project / path
     return mapping
+
+
+def _installs_directory(entry: HarnessRegistryEntry, prefix: str) -> bool:
+    """Return True when the manifest places the ``<prefix>/`` cohort in a folder
+    that keeps each file's relative path (the folders a citation can resolve to)."""
+    layout = harness_layout(entry.package_key, Path("/root"))
+    return prefix in {name for name, _ in layout.dirs}
 
 
 def _citations(bodies: list[Path], anchor: Path) -> list[str]:
@@ -127,7 +146,14 @@ def test_install_announces_only_installed_directories(
     _anchor, section = _announcement(_bodies(tmp_path))
 
     mapping = _announced_dirs(section, project)
-    assert {"rules", "templates", "hooks"} <= set(mapping)
+    # Every corpus directory the manifest installs is announced, and only those.
+    installed = {
+        prefix
+        for prefix in ("rules", "templates", "hooks")
+        if _installs_directory(entry, prefix)
+    }
+    assert {"rules", "templates"} <= installed
+    assert installed <= set(mapping)
     missing = {
         prefix: str(path) for prefix, path in mapping.items() if not path.is_dir()
     }
@@ -147,10 +173,16 @@ def test_citations_resolve_against_the_announced_directories(
     anchor, section = _announcement(bodies)
     mapping = _announced_dirs(section, project)
 
+    # A citation into a directory the install does not place is not installed
+    # (the announcement says so); the seven rules-file adapters place the rules
+    # and templates in the user home and no hooks.
+    for prefix in _MEASURED:
+        assert (prefix in mapping) == _installs_directory(entry, prefix), prefix
     measured = [
         citation
         for citation in _citations(bodies, anchor)
         if citation.split("/", 1)[0] in _MEASURED
+        and citation.split("/", 1)[0] in mapping
         # An illustrative example (``rules/A.md``) names no corpus file.
         and (_SRC / citation).is_file()
     ]

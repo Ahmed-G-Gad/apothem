@@ -39,6 +39,51 @@ root, the command copies each store into the Apothem backup root
 (`~/.apothem/backups/`) first, then removes it with everything in it.
 Anything you keep in `plans/` is never removed.
 
+## Shared folders in your home directory
+
+Several installs can use one folder in your home directory: the skills folder
+(`~/.agents/skills/`, or `~/.codebuddy/skills/`, `~/.kiro/skills/`, or
+`~/.trae/skills/`) and `~/.config/apothem/rules/` and
+`~/.config/apothem/templates/`. The [install](/docs/cli-reference/install#folders-in-your-home-directory)
+page lists which adapter writes which. Apothem records which installs use each folder,
+and an uninstall follows one rule: it removes a folder only when no other
+Apothem install still uses it.
+
+- Uninstalling one tool keeps the skills while another install still uses
+  them, and says so. One tool installed in two projects counts as two installs,
+  so uninstalling it from project A keeps the folders while project B still
+  uses them. The last uninstall removes them (see the second example below).
+- Only what the install's own record lists is removed. An install made before
+  the folders were managed has no such record, so uninstalling it removes
+  nothing in your home. Files you added to the folders stay, and so does a
+  folder that has an Apothem skill's name and that Apothem did not write.
+- An install whose project folder no longer exists is ignored, so a deleted
+  project does not keep the folders for good. The note names it.
+- If the record of an install that could use the folders cannot be read, the
+  uninstall stops with an error before it removes anything, and the install
+  stays recorded. Repair or move the unreadable record, then run the command
+  again. A damaged record of a tool that never writes these folders is ignored.
+- When the last use goes, the folders left empty are removed
+  too. Each folder is backed up under `~/.apothem/backups/` before it is
+  removed.
+
+Each uninstall prints one `Note:` per folder, for example `Note: <harness> -
+~/.agents/skills/ was kept: still used by <harness> (/path/to/project)`, or
+`was removed: no other Apothem install uses it`. In the `--format json` envelope each
+note is a `warnings` entry with `"outcome": "advisory"`,
+`"operation": "shared_root"`, and `"role"` set to `retained` or `released`. It
+carries `path`, `holders` (the installs that keep the folder), `stale` (ignored
+installs), and `kept` and `total` (the recorded entries kept and the entries the
+install listed).
+
+If a folder stays because of an install you cannot find, the note names it.
+When the project folder was deleted, the install is ignored and the folder goes
+with the next uninstall. When the project exists but you removed the Apothem
+block from its rules file by hand, `uninstall` reports the harness as not
+installed and does not release its claim; run `install` for that harness and
+project, then `uninstall`, to release it. `apothem verify` shows whether a
+folder is still complete.
+
 A `--harness all` removal is deliberately exhaustive: it covers every
 registered harness, including any the profile's `exclude_harnesses` skips
 during install — cleanup reaches state a previously broader install may have
@@ -103,6 +148,15 @@ apothem uninstall --harness claude-code --yes
 apothem uninstall --harness cursor --project . --yes
 apothem uninstall --harness all --project . --yes
 apothem uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+A shared skills folder stays until the last install that uses it goes:
+
+```bash
+apothem install --harness codex
+apothem install --harness cursor --project A
+apothem uninstall --harness codex --yes                  # keeps ~/.agents/skills/, the cursor install uses it
+apothem uninstall --harness cursor --project A --yes     # removes it: no install uses it now
 ```
 
 ## Exit codes

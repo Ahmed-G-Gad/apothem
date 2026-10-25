@@ -14,12 +14,16 @@ for those.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 import yaml
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_converters import _native_skill_emission
+from apothem.harnesses._shared.install_driver_shared import SHARED_EMISSION
+from apothem.lib import propagation
 from apothem.lib.frontmatter import field_value
 
 _PKG = Path(__file__).resolve().parents[2] / "src" / "apothem"
@@ -41,10 +45,14 @@ def _user_only(path: Path) -> bool:
 
 
 @pytest.fixture(scope="module")
-def codex_home(tmp_path_factory: pytest.TempPathFactory) -> Path:
+def codex_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
+    # The skills go to the user home, not beside the Codex root. A module-scoped
+    # fixture runs before the per-test home isolation, so it pins its own home.
     home = tmp_path_factory.mktemp("home")
-    install_driver.run_install("codex", harness_root=home / ".codex")
-    return home
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(propagation, "USER_HOME", home)
+        install_driver.run_install("codex", harness_root=home / ".codex")
+        yield home
 
 
 def test_policy_file_written_exactly_for_user_only_sources(codex_home: Path) -> None:
@@ -63,10 +71,15 @@ def test_policy_file_disables_implicit_invocation(codex_home: Path) -> None:
         assert data == {"policy": {"allow_implicit_invocation": False}}, policy
 
 
-def test_skill_md_is_unchanged_for_codex(codex_home: Path) -> None:
+def test_skill_md_is_the_shared_emission(codex_home: Path) -> None:
+    # The folder is read by many tools, so Codex writes the same bytes any other
+    # adapter would (see install_driver_shared.SHARED_EMISSION).
     source = _PKG / "skills" / "plan-suite" / "SKILL.md"
     emitted = codex_home / ".agents" / "skills" / "plan-suite" / "SKILL.md"
-    assert emitted.read_bytes() == source.read_bytes()
+    expected, _sidecars = _native_skill_emission(
+        SHARED_EMISSION, source.read_text(encoding="utf-8")
+    )
+    assert emitted.read_text(encoding="utf-8") == expected
 
 
 def test_reinstall_and_dry_run_report_unchanged(tmp_path: Path) -> None:
@@ -83,6 +96,10 @@ def test_reinstall_and_dry_run_report_unchanged(tmp_path: Path) -> None:
 
 def test_uninstall_removes_policy_files(tmp_path: Path) -> None:
     root = tmp_path / ".codex"
-    install_driver.run_install("codex", harness_root=root)
+    install_driver.finalize_install(
+        install_driver.run_install("codex", harness_root=root), root=root
+    )
+    skills = propagation.user_home() / ".agents" / "skills"
+    assert list(skills.glob("*/agents/openai.yaml"))
     install_driver.run_uninstall("codex", harness_root=root)
-    assert not list((tmp_path / ".agents" / "skills").glob("*/agents/openai.yaml"))
+    assert not list(skills.glob("*/agents/openai.yaml"))

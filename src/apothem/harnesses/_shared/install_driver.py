@@ -183,6 +183,9 @@ from .install_driver_planvalidation import (
     _validate_ownership_class as _validate_ownership_class,
 )
 from .install_driver_planvalidation import _validate_source as _validate_source
+from .install_driver_planvalidation import (
+    generated_targets_for_entry as generated_targets_for_entry,
+)
 from .install_driver_planvalidation import load_rules as load_rules
 from .install_driver_planvalidation import make_ignore as make_ignore
 from .install_driver_removal import _drop_owned_top_keys as _drop_owned_top_keys

@@ -257,11 +257,18 @@ def _render_blast_radius(
     within: list[tuple[str, Path]],
     outside: list[tuple[str, Path]],
     project_root: Path | None,
+    shared: list[tuple[str, Path]] | None = None,
 ) -> None:
-    """Print the pre-write disclosure: targets grouped by project vs home root."""
+    """Print the pre-write disclosure: targets grouped by project vs home root.
+
+    *shared* lists the user-home folders the project-scope adapters write
+    (skills and the rules and templates they cite). They are shown as their own
+    group because several projects and tools use one copy of each folder.
+    """
+    shared = shared or []
     total = len(within) + len(outside)
     con.print(f"[bold]Apothem will write {total} configuration file(s):[/]")
-    width = max((len(hid) for hid, _ in [*within, *outside]), default=0)
+    width = max((len(hid) for hid, _ in [*within, *outside, *shared]), default=0)
     if within:
         con.print(f"  [cyan]Under the project root[/] ({escape(str(project_root))}):")
         for harness_id, target in within:
@@ -270,6 +277,13 @@ def _render_blast_radius(
         con.print("  [yellow]Under your home directory[/] (outside --project):")
         for harness_id, target in outside:
             con.print(f"    {harness_id.ljust(width)}  -> {escape(str(target))}")
+    if shared:
+        con.print(
+            "  [yellow]Shared folders under your home directory[/] "
+            "(outside --project; one copy serves every project and tool that uses it):"
+        )
+        for harness_id, folder in shared:
+            con.print(f"    {harness_id.ljust(width)}  -> {escape(str(folder))}")
 
 
 _PLACEHOLDER_IDENTITY: dict[str, str] = {

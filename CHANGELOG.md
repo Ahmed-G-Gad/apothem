@@ -136,6 +136,36 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   every raster from its source.
 - **`make lint` also runs `mypy`.** The target now matches the lint gate the
   docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
+- **Cursor, GitHub Copilot, Windsurf, Zed, CodeBuddy, Kiro and Trae get
+  Apothem's skills and rules from one shared copy in your home directory.**
+  Installing any of them now writes Apothem's skills, and each command as a
+  skill, to `~/.agents/skills/` (Cursor, GitHub Copilot, Windsurf, Zed and
+  Codex share it) or to the tool's own folder (`~/.codebuddy/skills/`,
+  `~/.kiro/skills/`, `~/.trae/skills/`), and the rules and templates they cite
+  to `~/.config/apothem/`, where Codex already keeps them. No skill or rule
+  files are written into your repositories: a project still gets only the one
+  rules file, which now names those folders, and the `.apothem/` data folder. Every install that uses a folder writes the same files, so the order
+  you install in does not matter, and one copy serves every project. Uninstall
+  keeps a shared folder while another Apothem install still uses it, says which
+  install does, and removes it with the last one; an install in a project that
+  no longer exists is ignored. A write failure in your home stops that
+  adapter's install before anything in the project changes, and a skill folder
+  of yours with an Apothem skill's name is skipped with a warning instead of
+  replaced. Install, update and dry run name the folders written outside
+  `--project`, the batch preview lists them, and `verify` says which folder is
+  missing or not Apothem's. Codex writes the same files to the same folders, so
+  its skills change form once on the next update (backed up) and always go to
+  `$HOME/.agents/skills`, even when `CODEX_HOME` points elsewhere. Each skill
+  folder is written beside its final place and renamed into it, so an
+  interrupted install leaves no half-written folder for the next run to mistake
+  for yours. A symbolic link from a dotfile manager at `~/.agents` or
+  `~/.config` is followed when it stays inside your home directory, and a file
+  where a folder belongs stops the install with a message naming the path. If a
+  record of an install that could use these folders is unreadable, uninstall and
+  rollback stop before changing anything, and rolling back every install that
+  uses a folder leaves none of it behind. Trae's China
+  edition (`~/.trae-cn/skills/`), unknown-key handling in each tool, and Zed's
+  skill catalog limit are not yet confirmed.
 
 ### Removed
 

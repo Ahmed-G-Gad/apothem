@@ -17,7 +17,7 @@ import pytest
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver_layout import REFERENCE_NOTE_HEADING
-from apothem.lib.propagation import load_manifest, resolve_target
+from apothem.lib.propagation import load_manifest, resolve_target, user_home
 
 #: A backticked span of the note.
 _SPAN = re.compile(r"`([^`]+)`")
@@ -36,9 +36,17 @@ def _named_paths(section: str, root: Path) -> list[Path]:
     for span in _SPAN.findall(section):
         if _CITATION.match(span) or "..." in span:
             continue
-        shown = Path(span.removesuffix("/<path>"))
-        paths.append(shown if shown.is_absolute() else root / shown)
+        paths.append(_location(span.removesuffix("/<path>"), root))
     return paths
+
+
+def _location(shown: str, root: Path) -> Path:
+    """Return the directory a note shows: ``~/...`` is the user home, a relative
+    path is relative to *root*, an absolute path is itself."""
+    if shown.startswith("~/"):
+        return user_home() / shown[2:]
+    path = Path(shown)
+    return path if path.is_absolute() else root / path
 
 
 _COMMAND_SKILL_HARNESSES = sorted(
@@ -132,9 +140,15 @@ def test_note_bullets_resolve_real_corpus_files(harness: str, tmp_path: Path) ->
         if REFERENCE_NOTE_HEADING in (text := skill_md.read_text(encoding="utf-8"))
     )
     bullets = _BULLET.findall(note.split(REFERENCE_NOTE_HEADING, 1)[1])
-    assert {prefix for prefix, _ in bullets} >= {"rules", "templates", "hooks"}
+    # The skills folder in the user home is one copy for every writer, so its
+    # note names only the user-level corpus folders every writer installs.
+    shared = any(
+        entry.mode == "command_skills" and entry.user_level for entry in rules.install
+    )
+    wanted = {"rules", "templates"} if shared else {"rules", "templates", "hooks"}
+    assert {prefix for prefix, _ in bullets} >= wanted
     for prefix, shown in bullets:
-        base = Path(shown) if Path(shown).is_absolute() else root / shown
+        base = _location(shown, root)
         citation = _sample_citation(prefix)
         resolved = base / citation.split("/", 1)[1]
         assert resolved.is_file(), (harness, citation, resolved)

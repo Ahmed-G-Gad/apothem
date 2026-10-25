@@ -43,8 +43,23 @@ from .install_driver_pathsafety import (
     _normalized,
     _validate_target_path,
 )
-from .install_driver_preview import DRY_RUN_MESSAGE, preview_data_surfaces
+from .install_driver_preview import (
+    DRY_RUN_MESSAGE,
+    preview_data_surfaces,
+)
+from .install_driver_preview import aggregate_dir_outcome as _aggregate_dir_outcome
+from .install_driver_preview import (
+    prospective_file_outcome as _prospective_file_outcome,
+)
+from .install_driver_shared import (
+    SKILL_MODES,
+    check_resolved_target,
+    emission_name,
+    entry_write_root,
+)
+from .install_driver_skillguard import SkillGuard, user_level_folders_ok
 from .install_driver_treeops import (
+    SkillFolderGuard,
     _directory_contents_equal,
     _generated_directory_matches,
     preview_native_skills,
@@ -162,6 +177,11 @@ def _generated_targets_for_entry(
     return []
 
 
+#: Public name of :func:`_generated_targets_for_entry` for callers outside the
+#: driver (the user-level report lists the folders an entry should hold).
+generated_targets_for_entry = _generated_targets_for_entry
+
+
 def _validate_ownership_class(
     entry: InstallEntry, target: Path
 ) -> MaterializationResult | None:
@@ -246,12 +266,16 @@ def _validate_install_plan(
         if ownership_error is not None:
             errors.append(ownership_error)
             continue
+        placeholder_error = check_resolved_target(entry, target)
+        if placeholder_error is not None:
+            errors.append(placeholder_error)
+            continue
         source_error = _validate_source(entry, resolve_source(entry.source))
         if source_error is not None:
             errors.append(source_error)
         target_error = _validate_target_path(
             target,
-            allowed_root=allowed_root,
+            allowed_root=entry_write_root(entry, harness_root, project_root),
             operation=entry.mode,
         )
         if target_error is not None:
@@ -298,38 +322,6 @@ _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
 }
 
 
-def _prospective_file_outcome(target: Path, content: bytes) -> MaterializationOutcome:
-    """Classify the no-write outcome of writing *content* to *target*.
-
-    Mirrors the create / update / no-op decision
-    :func:`install_driver_backup.write_bytes_safely` makes at write time —
-    absent target → ``created``; on-disk bytes equal → ``unchanged``; on-disk
-    bytes differ → ``updated`` — without touching the filesystem.
-    """
-    if not target.exists():
-        return "created"
-    try:
-        return "unchanged" if target.read_bytes() == content else "updated"
-    except OSError:
-        # An unreadable existing target would be backed up and overwritten.
-        return "updated"
-
-
-def _aggregate_dir_outcome(
-    child_outcomes: list[MaterializationOutcome], *, target_dir: Path
-) -> MaterializationOutcome:
-    """Fold a directory entry's per-child outcomes into one entry outcome.
-
-    Every child unchanged (or an empty source directory) → the whole entry is
-    ``unchanged``. Otherwise the entry reports ``created`` when its target
-    directory does not yet exist (a fresh install) and ``updated`` when it
-    exists but its contents would change.
-    """
-    if not child_outcomes or all(outcome == "unchanged" for outcome in child_outcomes):
-        return "unchanged"
-    return "created" if not target_dir.exists() else "updated"
-
-
 def _prospective_merge_tree_outcomes(
     *,
     src: Path,
@@ -338,12 +330,13 @@ def _prospective_merge_tree_outcomes(
     exclude: list[str],
     harness_root: Path | None,
     project_root: Path | None,
+    render_tokens: bool = True,
 ) -> list[MaterializationOutcome]:
     """Classify each child of a ``merge_tree_entries`` entry without writing.
 
     Mirrors the merge-tree apply: excluded and ignored children are skipped, a
     child directory compares by contents, and a child file compares by its
-    token-rendered bytes.
+    token-rendered bytes (its own bytes, for a user-level target).
     """
     outcomes: list[MaterializationOutcome] = []
     for source_path in sorted(src.iterdir()):
@@ -359,7 +352,7 @@ def _prospective_merge_tree_outcomes(
                 outcomes.append("updated" if target.exists() else "created")
         elif source_path.is_file():
             data = source_path.read_bytes()
-            if b"${" in data:
+            if render_tokens and b"${" in data:
                 with contextlib.suppress(UnicodeDecodeError):
                     data = render_content_tokens(
                         data.decode("utf-8"),
@@ -377,18 +370,21 @@ def _prospective_markdown_child_outcome(
     dst: Path,
     root: Path,
     harness_name: str,
+    guard: SkillFolderGuard | None = None,
 ) -> MaterializationOutcome | None:
     """Classify one markdown source child of a per-file directory mode.
 
     Returns ``None`` for a mode with no per-file conversion, which contributes
-    no child outcome.
+    no child outcome. A *guard* that objects to a command-skill folder keeps it
+    out of the changes: the install would leave that folder alone.
     """
     if mode == "command_skills":
         skill_dir = dst / source_path.stem
         files = _command_skill_files(
             source_path, harness_name=harness_name, install_root=root
         )
-        if _generated_directory_matches(skill_dir, files):
+        matches = _generated_directory_matches(skill_dir, files)
+        if matches or (guard is not None and guard(skill_dir, matches) is not None):
             return "unchanged"
         return "updated" if skill_dir.exists() else "created"
     if mode == "codex_agents":
@@ -427,6 +423,7 @@ def _prospective_child_outcomes(
     project_root: Path | None,
     harness_name: str,
     skip: frozenset[str] = frozenset(),
+    guard: SkillFolderGuard | None = None,
 ) -> list[MaterializationOutcome]:
     """Classify each child of a per-file directory mode without writing.
 
@@ -434,11 +431,18 @@ def _prospective_child_outcomes(
     :mod:`install_driver_apply` — the same source enumeration, the same
     cohort-doc exclusion, the same native-text conversion — so the no-write
     classification tracks what the real install would decide. *skip* names
-    the commands a same-named skill shadows (``command_skills`` only).
+    the commands a same-named skill shadows (``command_skills`` only), and
+    *guard* the user-level skill folders the install would leave alone.
     """
+    emission = emission_name(entry, harness_name)
     if entry.mode == "native_skills":
         return preview_native_skills(
-            src=src, dst=dst, ignore=ignore, exclude=exclude, harness_name=harness_name
+            src=src,
+            dst=dst,
+            ignore=ignore,
+            exclude=exclude,
+            harness_name=emission,
+            guard=guard,
         )
     if entry.mode == "merge_tree_entries":
         return _prospective_merge_tree_outcomes(
@@ -448,6 +452,7 @@ def _prospective_child_outcomes(
             exclude=exclude,
             harness_root=harness_root,
             project_root=project_root,
+            render_tokens=not entry.user_level,
         )
     outcomes: list[MaterializationOutcome] = []
     for source_path in sorted(src.glob("*.md")):
@@ -456,7 +461,12 @@ def _prospective_child_outcomes(
         if entry.mode == "command_skills" and source_path.stem in skip:
             continue
         outcome = _prospective_markdown_child_outcome(
-            entry.mode, source_path, dst=dst, root=root, harness_name=harness_name
+            entry.mode,
+            source_path,
+            dst=dst,
+            root=root,
+            harness_name=emission,
+            guard=guard,
         )
         if outcome is not None:
             outcomes.append(outcome)
@@ -475,6 +485,7 @@ def _prospective_entry_outcome(
     project_root: Path | None,
     harness_name: str,
     skip: frozenset[str] = frozenset(),
+    guard: SkillFolderGuard | None = None,
 ) -> MaterializationOutcome:
     """Classify an Apothem-owned ``write_text`` or any tree entry, no writes.
 
@@ -509,9 +520,57 @@ def _prospective_entry_outcome(
             project_root=project_root,
             harness_name=harness_name,
             skip=skip,
+            guard=guard,
         ),
         target_dir=target,
     )
+
+
+def user_level_entry_ok(
+    entry: InstallEntry,
+    rules: HarnessRules,
+    *,
+    root: Path,
+    harness_root: Path | None,
+    project_root: Path | None,
+    harness_name: str,
+) -> bool:
+    """Return True when a user-level *entry*'s folders are all in place and Apothem's.
+
+    Every folder must exist (a skill folder with a ``SKILL.md``), whichever
+    harness wrote it. A skill folder that differs from what would be written and
+    that no install record lists belongs to someone else, so it fails: the name
+    is held. A folder an install lists but whose bytes differ (an older engine
+    wrote it) passes; ``update`` rewrites it. An unreadable ledger skips the
+    second test.
+    """
+    folders = _generated_targets_for_entry(
+        entry,
+        harness_root=harness_root,
+        project_root=project_root,
+        exclude=rules.exclude,
+    )
+    if not user_level_folders_ok(entry, folders):
+        return False
+    if entry.mode not in SKILL_MODES:
+        return True
+    guard = SkillGuard.load()
+    _prospective_child_outcomes(
+        entry,
+        src=resolve_source(entry.source),
+        dst=resolve_target(
+            entry.target, harness_root=harness_root, project_root=project_root
+        ),
+        ignore=make_ignore(rules.exclude, rules.per_directory_filters),
+        exclude=rules.exclude,
+        root=root,
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+        skip=skills_sharing_command_target(entry, rules),
+        guard=guard.check,
+    )
+    return not guard.readable or not guard.conflicts
 
 
 def _dry_run_results(
@@ -558,6 +617,7 @@ def _dry_run_results(
         )
         src = resolve_source(entry.source)
         detail: dict[str, str] = {"ownership_class": entry.ownership_class}
+        conflicts: list[MaterializationResult] = []
         outcome: MaterializationOutcome
         message = _DRY_RUN_MESSAGE
         operator_owned_write = entry.mode == "sentinel_merge" or (
@@ -586,6 +646,7 @@ def _dry_run_results(
                     if preview.gate_required:
                         detail["destructive_gate"] = "required"
         else:
+            skill_guard = SkillGuard.load() if entry.user_level else None
             outcome = _prospective_entry_outcome(
                 entry,
                 target=target,
@@ -597,13 +658,17 @@ def _dry_run_results(
                 project_root=project_root,
                 harness_name=harness_name,
                 skip=skills_sharing_command_target(entry, rules),
+                guard=skill_guard.check if skill_guard is not None else None,
             )
+            if skill_guard is not None:
+                conflicts = skill_guard.conflicts
         results.append(
             _with_detail(
                 _result(outcome, entry.mode, target, message, source=src),
                 detail,
             )
         )
+        results.extend(conflicts)
     results.extend(preview_data_surfaces(root, profile=profile))
     return results
 
