@@ -16,7 +16,7 @@ from apothem.lib.frontmatter import (
     field_value_in_text,
     split_frontmatter,
 )
-from apothem.lib.gemini_agent_mcp import with_mcp_entries
+from apothem.lib.gemini_agent_mcp import denied_servers, with_mcp_entries
 from apothem.lib.propagation import SHARED_EMISSION
 from apothem.lib.qwen_skill_frontmatter import translate_allowed_tools
 
@@ -414,7 +414,8 @@ def _gemini_agent_text(source_path: Path) -> str:
     )
     tools = _gemini_tool_names(source_path)
     if tools is not None:
-        tools = with_mcp_entries(source_path.stem, tools)
+        denied = denied_servers(_agent_scalar_list(source_path, "disallowedTools"))
+        tools = with_mcp_entries(source_path.stem, tools, denied)
         frontmatter += _yaml_list("tools", tools) if tools else "tools: []\n"
     max_turns = (field_value(source_path, "maxTurns") or "").strip()
     if max_turns.isdigit():

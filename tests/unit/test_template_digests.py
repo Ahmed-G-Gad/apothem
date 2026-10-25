@@ -51,6 +51,9 @@ _LATEST_RELEASE_DIGESTS = {
 #: an earlier text when the latest release ships the current one.
 _GLM_EARLIER_RELEASE = "v1.2.2"
 _GLM_EARLIER_DIGEST = "12b32d3e8dfb53d85b8ac702e6d335a6617a140bf66015cc2f18a7a4a302fc10"
+_GLM_EARLIER_FIXTURE = (
+    _REPO_ROOT / "tests" / "fixtures" / "templates" / "glm-v1.2.2.toml"
+)
 
 _DIGEST_A = "a" * 64
 _DIGEST_B = "b" * 64
@@ -108,14 +111,19 @@ def _text_at_tag(tag: str, source: str) -> str | None:
 
 
 def _require_release_tags() -> list[str]:
-    """Return the release tags, skipping where the checkout carries none.
+    """Return the release tags, skipping only where the checkout carries none.
 
     A CI checkout is shallow and has no tags; the hardcoded latest-release
-    record still guards there.
+    record still guards there. Where tags are present, a pinned release that
+    is not among them is a stale or mistyped pin, so the test fails.
     """
     tags = _release_tags()
-    if _LATEST_RELEASE not in tags:
-        pytest.skip(f"release tag {_LATEST_RELEASE} is not in this checkout")
+    if not tags:
+        pytest.skip("this checkout carries no release tags")
+    assert _LATEST_RELEASE in tags, (
+        f"_LATEST_RELEASE names {_LATEST_RELEASE}, which is not a tag here; "
+        "fix the pin or run git fetch --tags"
+    )
     return tags
 
 
@@ -236,7 +244,9 @@ def test_earlier_template_copy_is_deleted_when_apothem_created_it() -> None:
     assert remainder is None
 
 
-def test_earlier_template_copy_is_deleted_without_a_record() -> None:
+def test_earlier_template_copy_is_kept_without_a_record() -> None:
+    # No record means nothing shows Apothem wrote the earlier copy: the root
+    # was never installed, was already uninstalled, or lost its ledger.
     old = "name = 0\n"
     assert (
         _plain_file_remainder(
@@ -245,8 +255,28 @@ def test_earlier_template_copy_is_deleted_without_a_record() -> None:
             earlier_digests=(propagation.text_digest(old),),
             recorded=None,
         )
+        == old
+    )
+
+
+def test_earlier_template_copy_is_deleted_with_a_legacy_record() -> None:
+    # Ledger records before v1.2.0 carry no created flag; they still show
+    # Apothem installed here, so an unedited earlier copy goes.
+    old = "name = 0\n"
+    assert (
+        _plain_file_remainder(
+            old,
+            "name = 1\n",
+            earlier_digests=(propagation.text_digest(old),),
+            recorded=_target(created=None),
+        )
         is None
     )
+
+
+def test_current_template_copy_is_deleted_without_a_record() -> None:
+    text = "name = 1\n"
+    assert _plain_file_remainder(text, text, earlier_digests=(), recorded=None) is None
 
 
 def test_earlier_template_copy_the_operator_placed_is_kept() -> None:
@@ -306,10 +336,12 @@ def _glm_entry() -> propagation.InstallEntry:
 
 
 def _glm_earlier_text() -> str:
-    """Return glm.toml as the last release with a different template shipped it."""
-    _require_release_tags()
-    old = _text_at_tag(_GLM_EARLIER_RELEASE, _glm_entry().source)
-    assert old is not None
+    """Return glm.toml as the last release with a different template shipped it.
+
+    It is read from a committed copy so the uninstall tests run in a checkout
+    without tags; a git-backed test below checks the copy against the tag.
+    """
+    old = _GLM_EARLIER_FIXTURE.read_text(encoding="utf-8")
     assert propagation.text_digest(old) == _GLM_EARLIER_DIGEST
     assert old != _glm_current_text()
     return old
@@ -356,6 +388,46 @@ def test_glm_uninstall_keeps_an_earlier_copy_the_operator_placed(
     adapter = GlmAdapter()
 
     adapter.install({}, project=project)
+    adapter.uninstall(project=project)
+
+    assert provider.read_text(encoding="utf-8") == old
+
+
+def test_glm_earlier_fixture_matches_the_tag() -> None:
+    _require_release_tags()
+    shipped = _text_at_tag(_GLM_EARLIER_RELEASE, _glm_entry().source)
+    assert shipped == _glm_earlier_text()
+
+
+def test_glm_uninstall_keeps_an_earlier_copy_without_an_install_record(
+    tmp_path: Path,
+) -> None:
+    # A root Apothem never installed: nothing shows Apothem wrote this copy.
+    old = _glm_earlier_text()
+    project = tmp_path / "project"
+    provider = _glm_provider(project)
+    provider.parent.mkdir(parents=True)
+    provider.write_text(old, encoding="utf-8", newline="\n")
+
+    GlmAdapter().uninstall(project=project)
+
+    assert provider.read_text(encoding="utf-8") == old
+
+
+def test_glm_second_uninstall_keeps_an_earlier_copy_the_operator_placed(
+    tmp_path: Path,
+) -> None:
+    # The first uninstall keeps the operator's file and closes the record, so
+    # a second one runs without a record and must keep it too.
+    old = _glm_earlier_text()
+    project = tmp_path / "project"
+    provider = _glm_provider(project)
+    provider.parent.mkdir(parents=True)
+    provider.write_text(old, encoding="utf-8", newline="\n")
+    adapter = GlmAdapter()
+
+    adapter.install({}, project=project)
+    adapter.uninstall(project=project)
     adapter.uninstall(project=project)
 
     assert provider.read_text(encoding="utf-8") == old

@@ -15,10 +15,15 @@ allowlist and nothing else:
 
 * An agent the profile does not list is rendered byte-identical to the plain
   conversion, so with no setting no agent gains an MCP tool.
-* A server name Gemini CLI cannot address (anything but letters, digits and
-  ``-``) is skipped and reported, never rewritten into a different server's name.
+* A server name outside letters, digits and ``-`` is skipped and reported, never
+  rewritten into a different server's name. Gemini CLI forbids only ``_``;
+  Apothem also leaves out ``:`` and ``.``, which its docs neither allow nor
+  forbid.
 * An agent whose Gemini list is absent or already carries ``mcp_*`` reaches every
   MCP server already; such a grant is left out and reported.
+* A server the source agent's own ``disallowedTools`` names stays denied, as it
+  does on Claude Code, where a denial wins over a grant; Gemini CLI has no deny
+  list, so that server gets no entry, and the install reports it.
 * The entries come from the source's own tool grant, never from a rendered file,
   so a re-install adds nothing and the result is stable.
 
@@ -38,13 +43,12 @@ from typing import Final
 
 from apothem.lib.claude_agent_mcp import normalize_grants
 
-#: A server name Gemini CLI can address with ``mcp_<server>_*``: letters, digits
-#: and ``-``. An underscore would move the point where the policy parser splits
-#: ``mcp_<server>_<tool>``; the docs name no other character as safe, so no other
-#: character is written.
-GEMINI_SERVER_NAME: Final[re.Pattern[str]] = re.compile(
-    r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"
-)
+#: A server name Apothem writes as ``mcp_<server>_*``: letters, digits and ``-``,
+#: in any order (the profile check already makes the first and last character a
+#: letter or digit). An underscore would move the point where the policy parser
+#: splits ``mcp_<server>_<tool>``; the docs name no other character as safe, so
+#: no other character is written.
+GEMINI_SERVER_NAME: Final[re.Pattern[str]] = re.compile(r"[A-Za-z0-9-]+")
 
 #: Gemini's wildcard for every tool of every connected MCP server.
 ALL_MCP_WILDCARD: Final[str] = "mcp_*"
@@ -83,16 +87,44 @@ def gemini_agent_mcp_grants(raw: object) -> Iterator[None]:
         _GRANTS.reset(token)
 
 
-def with_mcp_entries(agent: str, tools: list[str]) -> list[str]:
+def denied_servers(denials: Iterable[str]) -> frozenset[str] | None:
+    """Return the MCP servers a source deny list names, or ``None`` for all.
+
+    *denials* is the source agent's ``disallowedTools`` in Claude Code's form.
+    ``mcp`` or ``mcp__*`` denies every server. ``mcp__<server>`` or any
+    ``mcp__<server>__<tool>`` denies that server whole: a Gemini wildcard
+    cannot leave out a single tool.
+    """
+    servers: set[str] = set()
+    for raw in denials:
+        entry = raw.split("(", 1)[0].strip()
+        lowered = entry.lower()
+        if lowered == "mcp":
+            return None
+        if not lowered.startswith("mcp__"):
+            continue
+        server = entry[len("mcp__") :].split("__", 1)[0]
+        if server in ("", "*"):
+            return None
+        servers.add(server)
+    return frozenset(servers)
+
+
+def with_mcp_entries(
+    agent: str, tools: list[str], denied: frozenset[str] | None = frozenset()
+) -> list[str]:
     """Return *tools* with *agent*'s granted ``mcp_<server>_*`` entries appended.
 
     *tools* is the agent's explicit Gemini allowlist. It comes back unchanged
-    when the active grants do not list *agent* or it already carries ``mcp_*``.
+    when the active grants do not list *agent*, it already carries ``mcp_*``, or
+    the source denies every MCP server (*denied* is ``None``). A server in
+    *denied* gets no entry.
     """
     servers = (_GRANTS.get() or {}).get(agent)
-    if not servers or ALL_MCP_WILDCARD in tools:
+    if not servers or denied is None or ALL_MCP_WILDCARD in tools:
         return tools
-    return [*tools, *(e for e in tool_entries(servers) if e not in tools)]
+    allowed = [s for s in servers if s not in denied]
+    return [*tools, *(e for e in tool_entries(allowed) if e not in tools)]
 
 
 def unaddressable_servers(servers: Iterable[str]) -> list[str]:

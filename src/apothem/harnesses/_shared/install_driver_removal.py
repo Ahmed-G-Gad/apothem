@@ -291,10 +291,18 @@ def _plain_file_remainder(
     whose digest (see :func:`apothem.lib.propagation.text_digest`) is one an
     earlier release shipped (*earlier_digests*). Anything else is the
     operator's and stays whole.
+
+    An earlier release's copy needs an install record that does not say the
+    operator placed it: with no record (never installed here, already
+    uninstalled, or a lost ledger) nothing shows Apothem wrote that copy, so it
+    stays. An exact copy of the current template is still deleted without a
+    record, as before.
     """
     if recorded is not None and recorded.created is False:
         return existing
-    if existing == template_text or text_digest(existing) in earlier_digests:
+    if existing == template_text:
+        return None
+    if recorded is not None and text_digest(existing) in earlier_digests:
         return None
     return existing
 

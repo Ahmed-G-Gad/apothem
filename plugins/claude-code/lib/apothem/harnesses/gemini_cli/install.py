@@ -37,7 +37,10 @@ from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared.install_driver import MaterializationRun
-from apothem.harnesses._shared.install_driver_converters import _gemini_tool_names
+from apothem.harnesses._shared.install_driver_converters import (
+    _agent_scalar_list,
+    _gemini_tool_names,
+)
 from apothem.harnesses._shared.install_driver_types import _result, resolve_source
 from apothem.harnesses._shared.wrapper_factories import (
     make_project_scope_install,
@@ -46,6 +49,7 @@ from apothem.harnesses._shared.wrapper_factories import (
 from apothem.lib.claude_agent_mcp import normalize_grants
 from apothem.lib.gemini_agent_mcp import (
     ALL_MCP_WILDCARD,
+    denied_servers,
     gemini_agent_mcp_grants,
     unaddressable_servers,
 )
@@ -68,8 +72,9 @@ def grant_problems(agents_dir: Path, raw: object) -> list[str]:
     """Return one message per grant that cannot take effect, for the install report.
 
     A grant names an agent that does not exist, an agent that already reaches
-    every MCP server (no ``tools`` list, or one carrying ``mcp_*``), or a server
-    name Gemini CLI cannot address with ``mcp_<server>_*``.
+    every MCP server (no ``tools`` list, or one carrying ``mcp_*``), a server the
+    agent's own ``disallowedTools`` denies, or a server name Apothem does not
+    write as ``mcp_<server>_*``.
     """
     problems: list[str] = []
     for agent, servers in normalize_grants(raw).items():
@@ -83,11 +88,17 @@ def grant_problems(agents_dir: Path, raw: object) -> list[str]:
                 f"agent '{agent}' already reaches every MCP server on Gemini CLI, "
                 "so its agent_mcp_servers entry is ignored"
             )
+        denied = denied_servers(_agent_scalar_list(path, "disallowedTools"))
+        for name in sorted(set(servers) if denied is None else set(servers) & denied):
+            problems.append(
+                f"agent '{agent}' denies MCP server '{name}' in its own tool "
+                "list, and the denial wins, so no grant is written on Gemini CLI"
+            )
         for name in unaddressable_servers(servers):
             problems.append(
-                f"agent '{agent}': MCP server '{name}' cannot be addressed on "
-                "Gemini CLI (a server name there holds letters, digits and '-' "
-                "only); skipped"
+                f"agent '{agent}': MCP server '{name}' skipped on Gemini CLI: "
+                "Apothem writes a grant there only for a name of letters, digits "
+                "and '-' (Gemini CLI forbids '_' in server names)"
             )
     return problems
 

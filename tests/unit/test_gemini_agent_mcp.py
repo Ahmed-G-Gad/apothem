@@ -187,7 +187,7 @@ def test_a_name_gemini_cannot_address_is_never_rendered(name: str) -> None:
         assert conv._gemini_agent_text(scout) == plain
 
 
-@pytest.mark.parametrize("name", ["scholar", "a-b", "S2", "x-1-y"])
+@pytest.mark.parametrize("name", ["scholar", "a-b", "S2", "x-1-y", "my--server"])
 def test_addressable_names(name: str) -> None:
     assert gmcp.is_addressable(name)
 
@@ -355,3 +355,61 @@ def test_the_source_agents_name_no_mcp_tool() -> None:
     for name in _MCP_AGENTS:
         source = _AGENTS / f"{name}.md"
         assert "mcp_" not in (field_value(source, "tools") or "")
+
+
+# ---- a source denial wins over a grant ---------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("denials", "expected"),
+    [
+        ([], frozenset()),
+        (["Write", "Bash"], frozenset()),
+        (["mcp__scholar__*"], frozenset({"scholar"})),
+        (["mcp__scholar"], frozenset({"scholar"})),
+        (["mcp__scholar__search_works"], frozenset({"scholar"})),
+        (["mcp__a-b__*", "mcp__c__x"], frozenset({"a-b", "c"})),
+        (["mcp"], None),
+        (["mcp__*"], None),
+    ],
+)
+def test_denied_servers_reads_claude_deny_entries(
+    denials: list[str], expected: frozenset[str] | None
+) -> None:
+    assert gmcp.denied_servers(denials) == expected
+
+
+def _agent_with_denials(tmp_path: Path, denials: str) -> Path:
+    path = tmp_path / "research-scout.md"
+    path.write_text(
+        "---\nname: research-scout\ndescription: Finds sources.\n"
+        'tools: "Read, WebFetch"\n'
+        f'disallowedTools: "{denials}"\n---\n\nBody.\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    return path
+
+
+def test_a_denied_server_gets_no_entry(tmp_path: Path) -> None:
+    path = _agent_with_denials(tmp_path, "Write, mcp__scholar__*")
+    with gmcp.gemini_agent_mcp_grants({"research-scout": ["scholar", "papers"]}):
+        tools = _tools(conv._gemini_agent_text(path))
+    assert "mcp_papers_*" in tools
+    assert "mcp_scholar_*" not in tools
+
+
+def test_a_source_denying_every_server_gets_no_entry(tmp_path: Path) -> None:
+    path = _agent_with_denials(tmp_path, "mcp")
+    plain = conv._gemini_agent_text(path)
+    with gmcp.gemini_agent_mcp_grants({"research-scout": ["scholar"]}):
+        assert conv._gemini_agent_text(path) == plain
+
+
+def test_a_denied_grant_is_reported(tmp_path: Path) -> None:
+    _agent_with_denials(tmp_path, "mcp__scholar__*")
+    problems = gemini_install.grant_problems(
+        tmp_path, {"research-scout": ["scholar", "papers"]}
+    )
+    assert any("denies MCP server 'scholar'" in p for p in problems)
+    assert not any("'papers'" in p for p in problems)

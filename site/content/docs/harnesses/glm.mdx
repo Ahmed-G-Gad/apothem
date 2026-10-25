@@ -111,9 +111,11 @@ apothem uninstall --harness glm --project /path/to/project
 
 Removes the provider file only when Apothem created it and it is still an
 unedited template, backing it up under the Apothem backup root first. An
-unedited file written by an earlier release counts: the manifest records the
-digest of each template the project has shipped. A file you created or edited is
-left in place. The shared profile YAML and the Apothem engine are unaffected.
+unedited file written by an earlier release counts when Apothem's install record
+for the project shows it wrote the file: the manifest records the digest of each
+template the project has shipped. Without an install record, only an exact copy
+of the current template is removed. A file you created or edited is left in
+place. The shared profile YAML and the Apothem engine are unaffected.
 
 ## Conformity gate
 

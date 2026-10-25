@@ -84,11 +84,14 @@ The grant applies to the engine install (`apothem install`) on `Claude Code` and
 server to the listed agent's `tools` allowlist, for example `mcp_your-scholarly-server_*`,
 and changes no other agent or line. `Gemini CLI` names every MCP tool
 `mcp_{serverName}_{toolName}` and reads the server from the text up to the first
-underscore after `mcp_`, so a server name there holds letters, digits and `-` only.
-A name with an underscore, colon or period is valid for `Claude Code` but is skipped
-for `Gemini CLI` and reported, never rewritten into another name. An agent that
+underscore after `mcp_`, so a server name with an underscore cannot be addressed
+there. Apothem writes a `Gemini CLI` grant only for a name of letters, digits and
+`-`: a name with an underscore, colon or period is valid for `Claude Code` but is
+skipped for `Gemini CLI` and reported, never rewritten into another name. An agent that
 already reaches every MCP server (no `tools` list, or one that holds `mcp_*`) is
-left unchanged and reported. The Gemini grant reads the shared `agent_mcp_servers`
+left unchanged and reported. `Gemini CLI` has no deny list, so a server the agent's
+own `disallowedTools` names gets no entry and is reported: the denial wins, as it
+does on `Claude Code`. The Gemini grant reads the shared `agent_mcp_servers`
 lists and the `harnesses.gemini-cli` override, not the `harnesses.claude-code`
 one. Other harnesses ignore the key: `Qwen Code` documents no per-server entry for
 `tools`; `OpenCode` controls tools through permissions; `Codex` and `Antigravity`
