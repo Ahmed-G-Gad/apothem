@@ -1,8 +1,8 @@
 ---
 name: "clean-room-generation"
 description: "Clean-room generation methodology for every output — code, prose, plans, artifacts: each is a fresh derivation from an understood specification (independently re-derivable from its inputs), never a memorized template nor a cosmetic edit of existing content. Routes CM-4 search outcomes into the Writing vs. Re-Writing protocols and gates every re-write on quality elevation against a named deficiency. Implements CM-5 / CM-7 / CM-21."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
+alwaysApply: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -48,7 +48,7 @@ Full protocols — §2 Writing, §3 Re-Writing, §4 Code Generation, §5 Prose a
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Implements CM-5 (Best Solution), CM-7 (Coherent Product), CM-21 (Creative Quality). Canonical specification for generation methodology, re-writing discipline, and output originality.
+Applies at every seriousness level, scaling per the table above. Implements CM-5 (Best Solution), CM-7 (Coherent Product), CM-21 (Creative Quality). Canonical specification for generation methodology, re-writing discipline, and output originality.
 
 ## Bindings (§0.j five-direction)
 

@@ -23,6 +23,16 @@ binds the folder into the same graph. The section is located outside fenced
 code, and each direction is looked up as a bullet label inside the section,
 so a fenced example or a direction named in the body prose does not count.
 
+Shipped form. The Claude Code install writes its rule copies and its
+command-skill copies without the ``## Bindings`` section, which is
+maintainer-only text that would otherwise load into every session. In an
+installed tree (a flat root that holds the Apothem support subtree
+``.apothem/support``) an absent section on a ``rules/*.md`` or
+``skills/**/SKILL.md`` copy is therefore the shipped form and is not a finding;
+a section that is present must still carry every direction. The source corpus
+(a checkout, or a flat ``src/apothem`` content root with no support subtree)
+keeps the full requirement.
+
 Posture — blocking. The corpus ships with every section present, so a finding
 fails the validator and ``gate --all --strict`` exits non-zero on it. The
 developer-script check ``scripts/dev/validate_ecosystem.py --check
@@ -55,6 +65,15 @@ RULE_ANCHOR: Final[str] = (
 # convention directories under ``src/apothem``; an installed harness tree
 # keeps them at its root.
 _CONTENT_SUBTREES: Final[tuple[tuple[str, ...], ...]] = (("src", "apothem"), ())
+
+# An installed harness tree holds the Apothem support subtree beside its
+# convention directories (``<root>/.apothem/support``); a source corpus never
+# does. The marker tells a flat installed root from a flat ``src/apothem``.
+_INSTALL_MARKER: Final[tuple[str, ...]] = (".apothem", "support")
+
+# Strata whose installed copies the Claude Code install writes without the
+# Bindings section (rule copies and command skills; see the module docstring).
+_SHIPPED_WITHOUT_BINDINGS: Final[frozenset[str]] = frozenset({"rules", "skills"})
 
 # The direction labels each stratum requires, in canonical order. Hook messages
 # are directional outputs of hook events, so Satisfies and Gated by collapse.
@@ -103,6 +122,15 @@ def _content_root(root: Path) -> Path | None:
         if any((candidate / name).is_dir() for name in ("rules", "commands", "agents")):
             return candidate
     return None
+
+
+def _is_installed_tree(root: Path, content: Path) -> bool:
+    """Return True when *content* is the flat root of an installed harness tree.
+
+    The checkout layout is never an installed tree, whatever sits beside it, so
+    the source-corpus requirement cannot be relaxed by a stray directory.
+    """
+    return content == root and root.joinpath(*_INSTALL_MARKER).is_dir()
 
 
 def _targets(content: Path) -> list[tuple[Path, tuple[str, ...]]]:
@@ -161,11 +189,13 @@ def check(root: Path) -> RootGrepResult:
     Post-conditions: ``result.inspected`` counts the artifacts examined (0 when
     no stratum exists under *root*); ``result.passed`` is True iff every
     examined artifact carries its stratum's required directions inside a
-    ``## Bindings`` section.
+    ``## Bindings`` section. In an installed tree a rule or skill copy with no
+    section at all is the shipped form and passes (see the module docstring).
     """
     content = _content_root(root)
     if content is None:
         return RootGrepResult(grep=GREP_NAME, root=str(root), passed=True)
+    installed = _is_installed_tree(root, content)
     findings: list[Finding] = []
     targets = _targets(content)
     for path, required in targets:
@@ -179,6 +209,8 @@ def check(root: Path) -> RootGrepResult:
             continue
         labels = _section_labels(text)
         if labels is None:
+            if installed and rel.split("/", 1)[0] in _SHIPPED_WITHOUT_BINDINGS:
+                continue
             findings.append(
                 Finding(
                     path=rel,

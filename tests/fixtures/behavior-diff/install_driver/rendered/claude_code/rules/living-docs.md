@@ -87,14 +87,6 @@ Every living-docs outcome is recorded in the disclosure ledger per `rules/disclo
 
 A PR adding a CLI flag with no change to `reference/cli.md`. A new harness adapter merged without a registry-reference regeneration or a how-to page. A renamed profile field whose documented name still shows the old identifier. An installer env var added to `scripts/installer/` with no mention in the install how-to. A hand-edit to a source-generated reference page (overwritten on the next regeneration). A "docs update coming in a follow-up PR" note on a surface-changing diff. A green local build with a CI docs-reference-sync drift-gate failure (the committed reference page is stale against the source of truth).
 
-## Bindings (§0.j five-direction)
-
-- **Drives →** The same-change-set docs update on every documented-public-surface change under this rule's `pathFilter`. The regeneration of source-generated reference pages via `node site/scripts/update-reference-inventory.mjs`. The CI docs-reference-sync / stale-doc drift gate that diffs regenerated pages against committed pages.
-- **Satisfies →** The living-documentation mandate (documented surfaces never drift ahead of their pages). The documentation analogue of the production-ready same-change-set discipline.
-- **Established by ↑** The production-ready same-change-set discipline at `rules/production-ready-prs.md` (this rule projects that discipline onto the documentation surface). The source-generated reference-inventory generator at `site/scripts/update-reference-inventory.mjs`.
-- **Gated by ←** The `pathFilter` (documented public source surfaces + the docs tree only; internal-only surfaces are exempt). The trivial-scope threshold (edits that do not alter a documented surface's behavior, signature, or default are exempt). The CI docs-reference-sync drift gate's clean-tree diff baseline.
-- **Cross-bound with ↔** `rules/production-ready-prs.md` (the production-ready same-change-set discipline this rule is the documentation analogue of). `rules/production-ready-prs-surfaces.md` (§6.6 carries the mechanical README structure for the newcomer-self-sufficiency limb of §5's two-reader-class definition of done). `rules/systemic-participation.md` (a documented surface and its page are reciprocal participants; the page is the surface's downstream consumer; its reachability discipline is distinct from the agent-locatability limb of the two-reader-class definition of done). `rules/recommend-next-step.md` (terminal-surface forward-move discipline this rule's tail honors). `rules/propagation.md` (the full reference-graph propagation mandate this docs-tier rule is one participant of).
-
 ## Recommended Next Step
 
 **Run `node site/scripts/update-reference-inventory.mjs`** after any change to a CLI command, harness adapter, or profile field, then commit the regenerated reference pages alongside the source change so the CI docs-reference-sync drift gate stays green, per `rules/recommend-next-step.md`.

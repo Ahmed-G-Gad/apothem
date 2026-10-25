@@ -1,8 +1,18 @@
 ---
 name: "authoritative-referencing"
 description: "Every claim, argument, hypothesis, and asserted fact cites an authoritative, official, current source — the scattered referencing discipline (ten-dimension dim 9, sota named-exemplar, disclosure-ledger rationale, output-style citations) consolidated by reference; folklore and 'industry standard' appeals are non-conformant."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/docs/**, **/site/**, **/README.md, **/research/**, **/manuscript/**, **/paper/**, **/literature/**, **/*.bib, **/*.tex"
+alwaysApply: false
+paths:
+  - "**/docs/**"
+  - "**/site/**"
+  - "**/README.md"
+  - "**/research/**"
+  - "**/manuscript/**"
+  - "**/paper/**"
+  - "**/literature/**"
+  - "**/*.bib"
+  - "**/*.tex"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -18,6 +28,8 @@ Make the referencing bar one standing mandate, not a discipline scattered across
 ### 1. Every claim carries a source
 
 A claim, argument, hypothesis, or asserted fact of meaningful scope MUST cite its source: an official specification, vendor documentation, a primary standard (RFC / ISO / W3C), peer-reviewed work, a named currently-shipping project, or the host's own ratified source of truth at file:line. An assertion with no citable source MUST be surfaced as an open question, never stated as settled.
+
+(Companion Sub-Rule Anchor) See `rules/authoritative-referencing-quotation.md` for how much of a cited source may be reproduced — paraphrase by default with attribution, quote sparingly and briefly, and give no legal or fair-use opinion.
 
 ### 2. Authoritative, official, current
 
@@ -45,16 +57,8 @@ Reach for a live source when a fact may have shifted since training or its curre
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Referencing is checked as dimension 9 of the pre-emission gate's ten-dimension bar (`rules/ten-dimension-check.md`); this rule is its outward-projected standing mandate, not a second matcher.
+Applies at every seriousness level, scaling per the table above. Referencing is checked as dimension 9 of the pre-emission gate's ten-dimension bar (`rules/ten-dimension-check.md`); this rule is its outward-projected standing mandate, not a second matcher.
 
 ## Failure tells
 
 (Companion Sub-Rule Anchor) See `rules/authoritative-referencing-homes.md` §3 for the enumeration — no-citable-source claim, folklore authority, aggregator over primary owner, superseded edition cited as current, SOTA citation with no named exemplar.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every claim / argument / hypothesis / fact emission across every ecosystem surface; the citable-source requirement each carries before it is stated as settled.
-- **Satisfies →** The standing-mandate end-state that no claim rests on folklore; the consolidation of the scattered referencing discipline into one cited home.
-- **Established by ↑** The operator's standing-mandate set (the authoritative-referencing mandate — cite authoritative / official / current sources).
-- **Gated by ←** `rules/source-accessibility.md` (the source-trust ranking and reachability decide WHICH source is cited); the meaningful-scope threshold (trivial edits cite only load-bearing claims).
-- **Cross-bound with ↔** `rules/authoritative-referencing-homes.md` (path-filtered companion carrying the §3 per-surface referencing-home list, the §Seriousness-Scaling table, and the §Failure-tells enumeration); `rules/authoritative-referencing-quotation.md` (path-filtered companion — the quotation-ceiling / paraphrase-default reproduction form bounding *how much* of a cited source is reproduced); ↔ `rules/authoritative-referencing-provenance.md` (path-filtered companion for research artifacts — the access / status labels and search record showing how far a cited source was examined); `rules/ten-dimension-check.md` (dimension 9 Scholarly / technical referencing — the per-artifact check this mandate outward-projects); `rules/sota-elevation.md` (§2 named-exemplar discipline — the no-"industry-standard" citation bar); `rules/disclosure-ledger.md` (M2 — the rationale-citation bar every ledger marker meets); `rules/source-accessibility.md` (the trust-outranks-accessibility ranking feeding obligation 2). ↔ `rules/source-accessibility-scaling-tells.md` (the trust-outranks-accessibility ranking decides which source the referencing mandate cites — the scaling calibrates how strictly).

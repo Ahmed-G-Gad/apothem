@@ -1,8 +1,18 @@
 ---
 name: "source-accessibility"
 description: "Source trust outranks source accessibility — reach a trusted but inaccessible source via browser then operator interview; never prefer an untrusted-but-free source over a trusted-but-inaccessible one; record the source-trust decision in the ledger."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/docs/**, **/site/**, **/README.md, **/research/**, **/manuscript/**, **/paper/**, **/literature/**, **/*.bib, **/*.tex"
+alwaysApply: false
+paths:
+  - "**/docs/**"
+  - "**/site/**"
+  - "**/README.md"
+  - "**/research/**"
+  - "**/manuscript/**"
+  - "**/paper/**"
+  - "**/literature/**"
+  - "**/*.bib"
+  - "**/*.tex"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -38,16 +48,8 @@ Every source-selection decision of meaningful scope MUST record, in the change l
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Source selection is a discrete behavior that precedes any claim the artifact rests on; the ranking and escalation apply before the claim is committed.
+Applies at every seriousness level, scaling per the table above. Source selection is a discrete behavior that precedes any claim the artifact rests on; the ranking and escalation apply before the claim is committed.
 
 ## Failure tells
 
 (Companion Sub-Rule Anchor) See `rules/source-accessibility-scaling-tells.md` §Failure-tells for the enumeration — low-trust page over gated doc, no-browser-attempt justification, forum-sourced version pin or security claim, unrecorded trust downgrade.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every source-selection decision behind a claim, a convention adoption, an API-contract reading, or a version pin across every ecosystem surface; the provenance each lower-trust-sourced claim must carry.
-- **Satisfies →** The standing-mandate end-state that authority, not convenience, decides which source a claim rests on.
-- **Established by ↑** The operator's standing-mandate set (the inaccessible-source mandate — trust outranks reachability).
-- **Gated by ←** The host's browser / fetch capability surface — declared per-harness in `capabilities.yml` `web_fetch` per `rules/agent-capability-discipline-matrix.md` §1A — and the operator-interview channel (the two reachability paths the escalation depends on).
-- **Cross-bound with ↔** `rules/source-accessibility-scaling-tells.md` (path-filtered companion carrying the §Seriousness-Scaling table and the §Failure-tells enumeration); `rules/authority-inquiry.md` (M5 — the operator-interview channel this rule escalates to when a trusted source is credential-gated is owned there); `rules/ten-dimension-check.md` (dimension 9 Scholarly / technical referencing — source-trust selection is the upstream behavior that referencing dimension verifies); `rules/disclosure-ledger.md` (M2 — the source-trust decision is recorded as a ledger entry); `rules/authoritative-referencing.md` (the trust-outranks-accessibility ranking decides WHICH source that referencing mandate cites). ↔ `rules/agent-capability-discipline-matrix.md` (the §1A `web_fetch` column is the backing dimension for that rule's step-1 browser/fetch escalation; reciprocal of its `Gated by ←` web-fetch citation). ↔ `rules/authoritative-referencing-quotation.md` (source-trust ranking decides which source is cited; this companion bounds how much of it is reproduced).

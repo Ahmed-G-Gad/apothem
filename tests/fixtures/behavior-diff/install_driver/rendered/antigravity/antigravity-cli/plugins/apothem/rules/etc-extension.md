@@ -1,6 +1,7 @@
 ---
-trigger: always_on
+trigger: glob
 description: "Enumerations are seeds, not ceilings — every 'etc.', 'e.g.', 'such as', 'like', 'including', and '…' is a directive to extend the set comprehensively from intent; only an enumeration explicitly marked closed is exhaustive."
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -40,7 +41,7 @@ Every applied extension beyond the literally-listed members MUST be disclosed as
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Reading an open-set enumeration is a discrete pre-emission behavior: extend-or-honor-closure before the artifact leaves the agent's hands.
+Applies at every seriousness level, scaling per the table above. Reading an open-set enumeration is a discrete pre-emission behavior: extend-or-honor-closure before the artifact leaves the agent's hands.
 
 ## Failure tells
 

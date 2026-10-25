@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 
 """always-on-budget-grep: body-budget conformity matcher for always-on rules.
+Pointed at a rules directory it also holds the loaded always-on set and the rule
+index to byte ceilings.
 
 Why this enforcement exists. Always-on rules load into every session's
 context as standing directives; aggregate body length is a multiplier on
@@ -38,8 +40,19 @@ The excluded regions are most of the always-on text, so the budget count
 alone understates the standing context cost. Every finding therefore also
 reports the frontmatter-stripped body as loaded (``loaded_bytes`` in UTF-8,
 ``loaded_chars``, ``loaded_words``), and the report sums them over the
-always-on rules under ``always-on-loaded``. This is a measurement, not a
-verdict: it never changes ``passed``.
+always-on rules under ``always-on-loaded``. The per-finding figures are a
+measurement and never change ``passed``; the aggregate ceiling below does.
+
+Aggregate ceiling. The always-on set is small by decision: four core rules
+plus the rule index. Its loaded size is therefore held to a byte ceiling
+(``MAX_ALWAYS_ON_LOADED_BYTES``), and the index file to its own
+(``MAX_INDEX_LOADED_BYTES``). Both apply when the matcher is pointed at the
+shipped rules directory itself: an installed tree also holds the operator's own
+rule files, which this ceiling does not govern. The report names the aggregate
+ceiling under ``always-on-ceiling-bytes``; directory mode returns FAIL when the
+aggregate or the index file is over its ceiling. The per-write ``check()`` entry
+sees one file, so it enforces the body budget only; the byte ceilings are held
+by the unit test over the shipped corpus.
 
 Verdict matrix.
   pass — the rule is not always-on (alwaysApply false OR pathFilter
@@ -51,6 +64,9 @@ Verdict matrix.
          the rule must be decomposed into a path-filtered companion
          sub-rule with the parent body retaining only load-bearing
          anchors plus the `(Companion Sub-Rule Anchor)` pointer.
+  FAIL — directory mode only: the loaded always-on set exceeds
+         MAX_ALWAYS_ON_LOADED_BYTES, or the rule index exceeds
+         MAX_INDEX_LOADED_BYTES.
 
 Invocation. The matcher accepts either a single rule path on argv, a
 directory (recurses over `*.md`), or `--stdin` reading the
@@ -87,6 +103,18 @@ MAX_SUBSTANTIVE_WORDS: Final[int] = 500
 MAX_SUBSTANTIVE_TOKENS: Final[int] = MAX_SUBSTANTIVE_WORDS
 WARN_BAND_THRESHOLD: Final[int] = 450
 COUNT_UNIT: Final[str] = "whitespace-separated words"
+
+# Aggregate byte ceilings over the frontmatter-stripped source text, the
+# ``## Bindings`` section included: the text the ``opencode`` and
+# ``antigravity`` adapters load. The ``claude_code`` adapter writes each rule
+# without that section and loads less.
+# The always-on set is the four core rules plus the rule index: 32,893 B of
+# core text plus an index of about 3.3 KB, with headroom for one revision of
+# either. Raising a ceiling is a decision, not a drift fix (see
+# rules/token-budget-discipline.md, "Aggregate Ceiling").
+MAX_ALWAYS_ON_LOADED_BYTES: Final[int] = 40_250
+MAX_INDEX_LOADED_BYTES: Final[int] = 5_250
+INDEX_RULE_STEM: Final[str] = "apothem-rule-index"
 
 # ---------------------------------------------------------------------------
 # Region-exclusion markers
@@ -126,10 +154,12 @@ class GrepResult:
         """Return this report as a two-space-indented JSON string.
 
         Post-conditions: the payload carries ``{grep, passed, count-unit,
-        max-substantive-words, warn-band-threshold, always-on-loaded,
-        findings}``; ``always-on-loaded`` sums the loaded size of the
-        always-on findings (``{rules, bytes, chars, words}``) and each finding
-        is flattened through ``dataclasses.asdict``.
+        max-substantive-words, warn-band-threshold, always-on-ceiling-bytes,
+        always-on-loaded, findings}``; ``always-on-loaded`` sums the loaded
+        size of the always-on findings (``{rules, bytes, chars, words}``),
+        ``always-on-ceiling-bytes`` is the byte ceiling that sum is held to in
+        directory mode, and each finding is flattened through
+        ``dataclasses.asdict``.
         """
         always_on = [f for f in self.findings if f.always_on]
         payload = {
@@ -138,6 +168,7 @@ class GrepResult:
             "count-unit": COUNT_UNIT,
             "max-substantive-words": MAX_SUBSTANTIVE_WORDS,
             "warn-band-threshold": WARN_BAND_THRESHOLD,
+            "always-on-ceiling-bytes": MAX_ALWAYS_ON_LOADED_BYTES,
             "always-on-loaded": {
                 "rules": len(always_on),
                 "bytes": sum(f.loaded_bytes for f in always_on),
@@ -342,6 +373,23 @@ def discover_rule_files(target: Path) -> list[Path]:
     raise FileNotFoundError(f"target does not exist: {target}")
 
 
+def over_byte_ceiling(findings: list[Finding], *, single_file: bool = False) -> bool:
+    """Return True when the loaded always-on set or the index file is too big.
+
+    The aggregate ceiling is meaningful only over a whole rules directory, so a
+    single-file run never trips it. The index ceiling applies to the index file
+    wherever it appears in *findings*.
+    """
+    index_over = any(
+        Path(f.path).stem == INDEX_RULE_STEM and f.loaded_bytes > MAX_INDEX_LOADED_BYTES
+        for f in findings
+    )
+    if single_file:
+        return index_over
+    total = sum(f.loaded_bytes for f in findings if f.always_on)
+    return index_over or total > MAX_ALWAYS_ON_LOADED_BYTES
+
+
 def _read_stdin_finding() -> Finding:
     """Measure a rule body read from stdin as one finding."""
     return _finding(sys.stdin.read(), "<stdin>")
@@ -392,7 +440,8 @@ def _main(argv: list[str]) -> int:
     failed = [f for f in findings if f.over_budget]
     result = GrepResult(
         grep=GREP_NAME,
-        passed=not failed,
+        passed=not failed
+        and not over_byte_ceiling(findings, single_file=target.is_file()),
         findings=findings,
     )
     print(result.to_json())

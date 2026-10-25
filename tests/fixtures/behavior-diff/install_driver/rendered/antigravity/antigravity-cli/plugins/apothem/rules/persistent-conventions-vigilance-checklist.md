@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Path-filtered companion sub-rule carrying the Convention Awareness checklist (§1) and the Ecosystem Gap Detection artifact-class triggers (§4) for the parent `persistent-conventions-vigilance.md` rule; demand-loaded on touches of governed-core surfaces."
-globs: "**/CLAUDE.md, **/rules/**, **/skills/**, **/commands/**, **/agents/**, **/hooks/**, **/settings.json"
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/CLAUDE.md, **/rules/**, **/skills/**, **/commands/**, **/agents/**, *
 
 ## Purpose
 
-Carry the full Convention Awareness checklist and the full Ecosystem Gap Detection artifact-class trigger catalog that the parent rule `rules/persistent-conventions-vigilance.md` declares at its §1 and §4 anchors. This companion is path-filtered: it loads when the assistant edits any governed-core surface (CLAUDE.md, rules/, skills/, commands/, agents/, hooks/, settings.json) so the parent rule's always-on payload stays lean while preserving full checklist fidelity at the demand-load surface. The parent remains the canonical home for the standing directives, Proactive Evolution, Ecosystem Coherence, Anti-Patterns, and Seriousness Scaling; this companion carries the §1 checklist and the §4 trigger catalog.
+Carry the full Convention Awareness checklist and the full Ecosystem Gap Detection artifact-class trigger catalog that the parent rule `rules/persistent-conventions-vigilance.md` declares at its §1 and §4 anchors. This companion is path-filtered: it loads when the assistant edits any governed-core surface (CLAUDE.md, AGENTS.md, rules/, skills/, commands/, agents/, hooks/, output-styles/) so the parent rule's payload stays lean while preserving full checklist fidelity at the demand-load surface. The parent remains the canonical home for the standing directives, Proactive Evolution, Ecosystem Coherence, Anti-Patterns, and Seriousness Scaling; this companion carries the §1 checklist and the §4 trigger catalog.
 
 ## Obligations
 
@@ -49,5 +49,5 @@ Path-filtered (the eight glob patterns in this rule's `pathFilter` field), alway
 - **Drives →** ● Every governed-core surface touch's pre-flight convention check (§1 checklist applied per artifact class). ● Every gap-detection sweep's artifact-class routing (§2 trigger catalog maps recurrence patterns to agent / hook / rule / plugin / config / skill / command classes).
 - **Satisfies →** ● CM-22 (rule-delegated companion sub-rule). ● `rules/persistent-conventions-vigilance.md` §1 + §4 anchors (the parent rule's pointers to this companion's full checklist and trigger catalog).
 - **Established by ↑** ● `rules/persistent-conventions-vigilance.md` §1 + §4 (parent-rule anchors). ● CM-22.
-- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on governed-core surface touches. ● `rules/persistent-conventions-vigilance.md` always-on baseline (parent rule's §1 + §4 anchors must be live for the companion to demand-load coherently).
+- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on governed-core surface touches. ● `rules/persistent-conventions-vigilance.md` baseline (parent rule's §1 + §4 anchors must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/persistent-conventions-vigilance.md` (parent rule; §1 + §4 anchors bind this companion). ↔ `rules/auto-memory.md` (memory feeds gap-detection; gap-detection writes to memory per the parent's §2 evolution cycle). ↔ `rules/operational-mandates.md` (CM-6 self-improvement triggers gap-detection routing through §2 here).

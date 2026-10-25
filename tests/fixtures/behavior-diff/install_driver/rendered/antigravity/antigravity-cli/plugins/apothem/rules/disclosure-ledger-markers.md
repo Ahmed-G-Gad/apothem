@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Path-filtered companion rule carrying the full marker-class enumeration, ledger-completeness detail, rationale-specificity detail, and failure-tells body declared at the parent `disclosure-ledger.md` rule's anchor; demand-loaded on disclosure-bearing artifact touches."
-globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**, **/.github/**"
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/age
 
 ## Purpose
 
-Specify the marker-class enumeration, ledger-completeness detail, rationale-specificity detail, and failure-tells body that the parent rule `rules/disclosure-ledger.md` anchors. This companion is path-filtered: it loads when the assistant edits any artifact that may carry a disclosure ledger (Markdown, rule, command, skill, agent, doc, or CI surface), keeping the parent's always-on payload lean while preserving full marker fidelity at the demand-load surface. The parent rule remains the canonical home for the M2 standing directive, the marker-class one-line list, the §2 ledger-placement paragraph, and the parent-side bindings; this companion carries the full marker-class bodies and the failure-catalog.
+Specify the marker-class enumeration, ledger-completeness detail, rationale-specificity detail, and failure-tells body that the parent rule `rules/disclosure-ledger.md` anchors. This companion is path-filtered: it loads when the assistant edits any artifact that may carry a disclosure ledger (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files), keeping the parent's payload lean while preserving full marker fidelity at the demand-load surface. The parent rule remains the canonical home for the M2 standing directive, the marker-class one-line list, the §2 ledger-placement paragraph, and the parent-side bindings; this companion carries the full marker-class bodies and the failure-catalog.
 
 ## Obligations
 
@@ -53,5 +53,5 @@ Path-filtered (the eight glob patterns in this rule's `pathFilter` field), alway
 - **Drives →** ● Every disclosure-ledger emission across every host-project artifact (the seven marker classes are the complete vocabulary). ● Every commit body, PR description, response prose, and phase rollup report's Disclosure Surface section. ● The completeness invariant at every change hand-off (§2 — every amendment / extension / refinement / deferral / default enumerated). ◐ The pre-emission gate's M2 row at `rules/pre-emission-gate.md`.
 - **Satisfies →** ● the fifteen-mandate registry row **M2 — Editorial Discipline** (companion-tier). ● `rules/disclosure-ledger.md` parent-rule anchor (the parent's pointer to this companion's full marker-class bodies and failure catalog).
 - **Established by ↑** ● `rules/disclosure-ledger.md` (parent-rule anchor). ● the fifteen-mandate registry (ratifies M2).
-- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on disclosure-bearing artifact touches. ● `rules/disclosure-ledger.md` always-on baseline (parent rule must be live for the anchor to surface).
+- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on disclosure-bearing artifact touches. ● `rules/disclosure-ledger.md` baseline (parent rule must be live for the anchor to surface).
 - **Cross-bound with ↔** ↔ `rules/disclosure-ledger.md` (parent rule; the anchor binds this companion). ↔ `rules/host-discovery.md` (M1 — `[Discovery — …]` markers). ↔ `rules/authority-inquiry.md` (M5 — `[Inquiry — …]` and `[Default — …]` markers). ↔ `rules/expertise-posture.md` (M6 — `[Amendment]` / `[Extension]` / `[Refinement]` markers driven by expertise). ↔ `rules/ten-dimension-check.md` (M3 — rationale citations meet dimension 9). ↔ `rules/pre-emission-gate.md` (M4 — `amendments-disclosed` array population).

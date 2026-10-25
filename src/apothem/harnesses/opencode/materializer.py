@@ -6,9 +6,10 @@ OpenCode combines every file its ``instructions`` list resolves to into every
 session (https://opencode.ai/docs/rules/, retrieved 2026-10-03). The list
 therefore names the profile document (the operator's identity and
 preferences, and where Apothem's support files are installed) and only the
-rules whose source frontmatter sets ``alwaysApply: true``; the path-scoped
-rules stay installed under the support tree, where a rule, skill or command
-that needs one reads it on demand.
+rules whose source frontmatter sets ``alwaysApply: true``: the core rules and
+the rule index. OpenCode scopes no rule by path, so every other rule stays
+installed under the support tree and is read on demand: the index names each
+rule and when to read it, and a skill or command that needs one cites it.
 
 An entry starting with ``~/`` is expanded against the home directory, and an
 absolute entry is matched as a glob on its final segment, so an explicit file
@@ -40,6 +41,42 @@ _HOME_ANCHORED_ROOT: Final[str] = f"~/{CONFIG_DIR}"
 #: The single ``instructions`` entry earlier releases wrote: a glob that made
 #: OpenCode load every installed rule, path-scoped ones included, at launch.
 LEGACY_RULES_GLOB: Final[str] = "~/.config/opencode/.apothem/support/rules/*.md"
+
+#: Rules that earlier releases listed in ``instructions`` by explicit path
+#: because their source set ``alwaysApply: true``, and that now load on demand
+#: through the rule index. The name list is fixed: the frontmatter no longer
+#: says which rules these were.
+_DEMOTED_RULES: Final[tuple[str, ...]] = (
+    "agent-orchestration",
+    "agile-sprints",
+    "authoritative-referencing",
+    "auto-memory",
+    "canonical-layout",
+    "clean-room-generation",
+    "cognitive-identity",
+    "definitiveness",
+    "disclosure-ledger",
+    "etc-extension",
+    "expertise-posture",
+    "freshness-facade",
+    "host-discovery",
+    "interactive-questions",
+    "multi-agent-workflow",
+    "operational-mandates",
+    "option-annotation",
+    "persistent-conventions-vigilance",
+    "pre-emission-gate",
+    "production-ready-prs",
+    "source-accessibility",
+    "systemic-participation",
+    "ten-dimension-check",
+    "tool-use-discipline",
+)
+
+#: The ``instructions`` entries those releases wrote for :data:`_DEMOTED_RULES`.
+RETIRED_ALWAYS_ON_RULES: Final[tuple[str, ...]] = tuple(
+    f"{LEGACY_RULES_GLOB.removesuffix('*.md')}{name}.md" for name in _DEMOTED_RULES
+)
 
 
 def always_on_rule_instructions() -> list[str]:
@@ -111,9 +148,16 @@ def materialize_native_config(profile: dict[str, Any]) -> str:
 def retired_entries(profile: dict[str, Any]) -> tuple[OwnedEntry, ...]:
     """Return what earlier releases wrote that this release no longer writes.
 
-    Earlier releases listed :data:`LEGACY_RULES_GLOB` in ``instructions``. An
-    install, update or uninstall over such a config removes that entry; the
-    operator's own ``instructions`` entries are kept.
+    Earlier releases listed :data:`LEGACY_RULES_GLOB` in ``instructions``, and
+    later ones listed every ``alwaysApply`` rule by path, among them the
+    :data:`RETIRED_ALWAYS_ON_RULES` this release leaves to the rule index. An
+    install, update or uninstall over such a config removes those entries; the
+    operator's own ``instructions`` entries are kept. A config whose install
+    record predates ownership recording cannot tell the retired paths from an
+    operator's own, so this list is what removes them.
     """
-    del profile  # the retired entry does not depend on the profile
-    return (OwnedEntry(("instructions",), "item", LEGACY_RULES_GLOB),)
+    del profile  # the retired entries do not depend on the profile
+    return tuple(
+        OwnedEntry(("instructions",), "item", entry)
+        for entry in (LEGACY_RULES_GLOB, *RETIRED_ALWAYS_ON_RULES)
+    )

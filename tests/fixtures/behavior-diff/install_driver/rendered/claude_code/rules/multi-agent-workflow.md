@@ -1,8 +1,14 @@
 ---
 name: "multi-agent-workflow"
 description: "Independent-critique, open-loop, dynamic multi-agent execution is an available, specified capability — opt-in and default-off under the agnostic posture, never imposed on a clean install; the orchestration mechanics are owned by agent-orchestration."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/agents/**/*.md, **/commands/workflow*.md, **/skills/workflow/**, **/*workflow*.md, **/*multi-agent*.md"
+alwaysApply: false
+paths:
+  - "**/agents/**/*.md"
+  - "**/commands/workflow*.md"
+  - "**/skills/workflow/**"
+  - "**/*workflow*.md"
+  - "**/*multi-agent*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -34,11 +40,3 @@ Opt-in at every seriousness level; never always-on. The seriousness table (compa
 ## Failure tells
 
 A multi-agent workflow auto-invoked on a clean install with no operator opt-in; this rule read as mandating agent teams (it declares availability, not obligation); a hardcoded model tier or effort preset attached to the capability; the orchestration mechanics (team patterns, launch protocol, return contracts) re-specified here instead of referenced from `rules/agent-orchestration.md`.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** The discoverability of the independent-critique / open-loop / dynamic multi-agent path; the recommendation strength (never the default state) the seriousness table assigns once an operator opts in.
-- **Satisfies →** The standing-mandate end-state that the multi-agent capability is specified and reachable without ever being imposed on a clean install.
-- **Established by ↑** The operator's standing-mandate set (the multi-agent-workflow mandate — capability available and specified, activation opt-in).
-- **Gated by ←** `rules/agnostic-posture.md` §1 (default-off precedence) and §4 (end-user-invoked model / effort) — the agnostic posture controls activation and on any apparent conflict.
-- **Cross-bound with ↔** `rules/multi-agent-workflow-shape.md` (path-filtered companion carrying the §1 capability-shape enumeration, the §2 model / effort agnosticism detail, the §3 synthesis-quality prose, and the §Seriousness-Scaling table; the parent §1 / §3 anchors bind this companion); `rules/agnostic-posture.md` (§1 default-off precedence governs this capability's activation; §4 end-user-invoked preference governs its model / effort agnosticism — the agnostic posture controls on any apparent conflict); `rules/agent-orchestration.md` (the team-pattern catalog, launch protocol, return contracts, and isolation discipline this capability runs through are owned there; this rule references, never duplicates, them); `rules/operational-mandates.md` (CM-1 critical evaluation governs the deploy/skip decision this capability is invoked under; CM-17/CM-25 establish the agent orchestration it runs through); `rules/tool-use-discipline.md` (§1 open-loop verifiable-exit discipline this rule declares for multi-agent waves is stated at the ordinary-tool tier there). ↔ `rules/tool-use-discipline-failure-tells.md` (§1 open-loop verifiable-exit — the no-verifiable-exit and fixed-count-stop tells are its violations below the multi-agent threshold).

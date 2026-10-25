@@ -1,8 +1,8 @@
 ---
 name: "freshness-facade"
 description: "Shipped public surfaces carry no AI-disclosure, backward/legacy/obsolete/retired/deprecated, placeholder/TBD/coming-soon, or fix/refinement narrative — a current-version-only facade; the freshness-token-grep matcher gives the closed token-class list mechanical teeth on README plus site copy."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/README.md, **/CHANGELOG.md, **/site/**, **/docs/**"
+alwaysApply: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -49,7 +49,7 @@ The shipped facade **MUST** present the in-force version only, with a concise cu
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
+Applies at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
 
 ## Failure tells
 

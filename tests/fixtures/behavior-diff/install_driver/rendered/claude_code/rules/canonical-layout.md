@@ -1,8 +1,17 @@
 ---
 name: "canonical-layout"
 description: "Non-trivial multi-step work emits two-tier reporting (per-sub-phase report + phase-level rollup that aggregates rather than concatenates) and lays generated outputs at the host's discovered canonical layout with reciprocal producer / consumer cross-references and provenance. Orphan outputs (generated artifacts with no consumer / no index entry / no producer attribution) are structural failures."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/.apothem/plans/**, **/.plans/**, **/phases/**, **/REPORT.md, **/PHASE.md, **/MASTER-PLAN.md, **/PROGRESS.md, **/migrations/**"
+alwaysApply: false
+paths:
+  - "**/.apothem/plans/**"
+  - "**/.plans/**"
+  - "**/phases/**"
+  - "**/REPORT.md"
+  - "**/PHASE.md"
+  - "**/MASTER-PLAN.md"
+  - "**/PROGRESS.md"
+  - "**/migrations/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -50,11 +59,3 @@ Every layout / reporting emission lands in the disclosure ledger per `rules/disc
 ## Failure tells
 
 Flat `report1.md` / `report2.md` at ad-hoc paths. A rollup that merely concatenates sub-phase report links instead of aggregating. Cross-phase synthesis buried inside one phase folder. Missing producer attribution. Tests at the project root; docs inlined into README; a CI workflow with no CONTRIBUTING entry. Heterogeneous rollups. A stale producer report claiming a vanished consumer. An emission with no `orphan-output-grep` clearance recorded.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every non-trivial multi-step work surface in every host project (the two-tier reporting discipline + canonical-layout discipline are the output-shape floor). ● The `orphan-output-grep` mechanical matcher at `conformity/orphan_output_grep.py` — operationalizes the §3 orphan-prevention invariant. ● Every multi-phase plan's `phases/NN-topic/{REPORT.md, NNL-subtopic/}` shape. ● Every multi-artifact agent return format. ● The pre-emission gate's row 12 enforcement per `rules/pre-emission-gate.md`.
-- **Satisfies →** ● the fifteen-mandate registry row **M12 — Phase Reporting & Canonical Layout**. ● the Pre-Emission Gate row 12 (M12 phase-layout check).
-- **Established by ↑** ● the fifteen-mandate registry (ratifies M12). ● the Pre-Emission Gate row 12. ● The plan-suite's existing two-tier convention at `<project-root>/.apothem/plans/*/phases/NN-topic/{PHASE.md, REPORT.md}` — this rule canonicalizes the existing practice and extends it to host-project work.
-- **Gated by ←** ● The trivial-threshold (trivial-scope work bypasses the two-tier requirement). ● `CLAUDE.md` always-loaded preamble. ● `rules/host-discovery.md` (the layout's "canonical" is host-discovered; this rule's §2 delegates the exact form to M1 discovery).
-- **Cross-bound with ↔** ↔ `rules/canonical-layout-reporting-tiers.md` (path-filtered companion sub-rule carrying the operational depth for §1 two-tier reporting, §2.1 numeric-prefix discipline, §3 orphan-output prevention, §4 reciprocal cross-references, §5 surface imposition, and §6 M11 ↔ M12 correspondence). ↔ `rules/agile-sprints.md` (M11 — the §6 M11 ↔ M12 correspondence is the operational form binding the two rules; sprint apparatus and layout surface are mutually reinforcing). ↔ `rules/bidirectional-binding.md` (M10 — reciprocal producer / consumer cross-references at §4 operationalize M10 reciprocity at the artifact layer). ↔ `rules/host-discovery.md` (M1 — canonical layout's exact form is host-discovered). ↔ `rules/visual-leverage.md` (M9 — diagrams of phase / sub-phase structure live at the canonical layout per §2). ↔ `rules/pre-emission-gate.md` (M4 — bar 12 of the gate enforces this rule's two-tier + canonical-layout + orphan-prevention invariants). ↔ `rules/disclosure-ledger.md` (M2 — output / report / orphan-resolution emissions are recorded in the ledger). ↔ `rules/recommend-next-step.md` (M12 — the Recommended Next Step block is the reporting tier's forward-move surface). ↔ `rules/harness-adapter-shape.md` (M12 — adapter sub-packages and STANDARD-CONVENTION-PIN.md sit at the canonical layout per the §1 directory shape). ↔ `rules/propagation.md` (orphan prevention is one tier of the same-change-set reference-graph sync). ↔ `rules/agile-sprints-elements.md` (M12 — phase / sub-phase reporting is the layout-tier surface for sprint outputs; the M11 ↔ M12 correspondence is mutual). ↔ `rules/expertise-posture-elements.md` (M11 + M12 — the architectural-rework rung of the calibration ladder routes here). ↔ `rules/harness-adapter-shape-schemas.md` (M12 — adapter sub-packages + PIN files at the canonical layout). ↔ `rules/pre-emission-gate-bars.md` (this rule is among the M-rules named in the gate's "Failure → action" column; the bar-level catalog cross-binds each). ↔ `rules/systemic-participation.md` (M12 — orphan-prevention discipline at §3 of that rule extends here from multi-step work outputs to all newly-introduced components). ↔ `rules/systemic-participation-relations.md` (M12 — orphan-prevention discipline at §3 of that rule extends through this companion's §4 to all newly-introduced components).

@@ -50,6 +50,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Claude Code sessions start with about 6K tokens of rules, not about
+  58K.** Four rules stay loaded in every session (agnostic posture,
+  authority and inquiry, session closure, context management), with a short
+  rule index that names every other rule and when to read it. The other 24
+  rules that loaded at launch now load when a matching file is read or
+  edited, or when a skill that cites them runs. Installed rule copies leave
+  out their `## Bindings` cross-references, which stay in the source, and a
+  plugin-only session is told to read the same four rules first.
 - **Read-only skills and commands are model-invocable; side effects stay
   manual.** 35 audit, review, planning, research and authoring commands and
   skills can now be chosen by the model when a request matches them. Commands

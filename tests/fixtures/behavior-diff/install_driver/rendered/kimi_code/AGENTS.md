@@ -38,6 +38,8 @@ Apothem's support root is `.kimi-code/.apothem/support/` in this project. Apothe
 - `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
 - `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`
 
+Start with the rule index at `.kimi-code/.apothem/support/rules/apothem-rule-index.md`: it names every rule and when to read it.
+
 A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile

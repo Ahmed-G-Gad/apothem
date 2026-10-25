@@ -1,8 +1,17 @@
 ---
 name: "etc-extension"
 description: "Enumerations are seeds, not ceilings — every 'etc.', 'e.g.', 'such as', 'like', 'including', and '…' is a directive to extend the set comprehensively from intent; only an enumeration explicitly marked closed is exhaustive."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
+alwaysApply: false
+paths:
+  - "**/CLAUDE.md"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -42,16 +51,8 @@ Every applied extension beyond the literally-listed members MUST be disclosed as
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Reading an open-set enumeration is a discrete pre-emission behavior: extend-or-honor-closure before the artifact leaves the agent's hands.
+Applies at every seriousness level, scaling per the table above. Reading an open-set enumeration is a discrete pre-emission behavior: extend-or-honor-closure before the artifact leaves the agent's hands.
 
 ## Failure tells
 
 An open-set enumeration acted on as the complete set (the listed three handled, the implied fourth and fifth dropped). An extension applied silently with no `[Extension]` ledger marker. A closed-set enumeration widened past its declared boundary. "Did exactly the listed items" offered as conformance where the marker directed extension.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every reading of an open-ended enumeration across every rule, command, skill, and request the ecosystem acts on; the comprehensiveness the artifact's coverage must reach before emission.
-- **Satisfies →** The standing-mandate end-state that no open-set enumeration is silently treated as a ceiling.
-- **Established by ↑** The operator's standing-mandate set (the "etc." extension mandate — enumerations are seeds, not ceilings).
-- **Gated by ←** The closed-set carve-out (an explicitly-declared closed boundary suspends the extension obligation for that enumeration).
-- **Cross-bound with ↔** `rules/ten-dimension-check.md` (dimension 6 Comprehensiveness — the extension obligation is the input behavior that dimension verifies at emission); `rules/disclosure-ledger.md` (M2 — every applied extension is recorded as an `[Extension]` marker).

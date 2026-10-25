@@ -28,7 +28,10 @@ adapters.
 
 A Markdown file under src/apothem/rules/ that is loaded on every interaction (always-on) or
 only when editing files under a specific path (path-filtered). Rules codify how the
-harness should behave.
+harness should behave. Four rules are always-on: `agnostic-posture`, `authority-inquiry`,
+`session-closure` and `context-management`. The rule index, `apothem-rule-index`, loads with
+them and names every other rule and when to read it. A harness that does not scope rules by
+path loads none of the others, so the index is how a session finds them.
 
 ## Hook
 

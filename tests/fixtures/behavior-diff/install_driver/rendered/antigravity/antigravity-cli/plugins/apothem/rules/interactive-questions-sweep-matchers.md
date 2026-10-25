@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Path-filtered companion rule carrying the canonical-channel sweep matcher specifications (H1–H7); demand-loaded when the parent `interactive-questions.md` rule's §8 anchor surfaces."
-globs: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/CLAUDE.md, **/settings.json"
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*
 
 ## Purpose
 
-Specify the executable matcher catalog for the canonical-channel compliance gate declared at the parent rule's `rules/interactive-questions.md` §8 anchor. This companion is path-filtered: it loads when the assistant edits any of the governed-core surfaces the matchers sweep, keeping the parent's always-on payload lean while preserving full matcher fidelity at the demand-load surface. The parent rule remains the canonical home for the canonical-channel obligation, the three-segment option-annotation schema, the recommendation taxonomy, the harness fallback, the per-file destructive-op confirmation, and the default-pointer convention; this companion carries the H1–H7 sweep matcher catalog.
+Specify the executable matcher catalog for the canonical-channel compliance gate declared at the parent rule's `rules/interactive-questions.md` §8 anchor. This companion is path-filtered: it loads when the assistant edits any of the governed-core surfaces the matchers sweep, keeping the parent's payload lean while preserving full matcher fidelity at the demand-load surface. The parent rule remains the canonical home for the canonical-channel obligation, the three-segment option-annotation schema, the recommendation taxonomy, the harness fallback, the per-file destructive-op confirmation, and the default-pointer convention; this companion carries the H1–H7 sweep matcher catalog.
 
 ## Obligations
 
@@ -179,5 +179,5 @@ Path-filtered (the eight glob patterns in this rule's `pathFilter` field), alway
 - **Drives →** ● The H1–H7 heuristic sweep across the governed-core surface classes (commands, rules, skills, agents, hooks, `settings.json`, `CLAUDE.md`). ● The interactive-channel compliance gate's pass/fail verdict (§5 Gate Admission). ● The `scripts/dev/validate_ecosystem.py --check option-annotation` subcommand (the H4–H7 annotation-compliance matchers operationalize here). ◐ The semantic blind re-audit in the diagnostic phase (the gate's downstream-enforcement arm).
 - **Satisfies →** ● CM-2 extension (rule-delegated companion sub-rule). ● the rules registry row "Interactive Questions Sweep Matchers". ● `rules/interactive-questions.md` §8 anchor (the parent rule's pointer to this companion's full executable matcher catalog).
 - **Established by ↑** ● `rules/interactive-questions.md` §8 (parent-rule anchor). ● CM-2 extension. ● Option Annotation Discipline (the mandate the H4–H7 matchers enforce).
-- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on governed-core surface touches. ● `rules/interactive-questions.md` always-on baseline (parent rule must be live for the §8 anchor to surface).
+- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on governed-core surface touches. ● `rules/interactive-questions.md` baseline (parent rule must be live for the §8 anchor to surface).
 - **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (parent rule; §8 anchor binds this companion). ↔ `scripts/dev/validate_ecosystem.py` (the `--check option-annotation` subcommand operationalizes the H4–H7 matchers; this rule specifies the matchers' executable semantics). ↔ `rules/operational-mandates.md` (CM-2 zero-assumptions's structured-inquiry surface delegates to the parent rule, which delegates the matcher catalog here). ↔ `rules/interactive-questions-canonical-shapes.md` (sibling companion; H4–H7 matcher catalog enforces this companion's annotation-schema and destructive-op invariants). ↔ `rules/interactive-questions-detail.md` (sibling companions carrying the schema worked-examples and the H1–H7 matcher catalog). ↔ `rules/option-annotation.md` (the H4–H7 annotation-compliance heuristics enforce this rule's prose-and-document scope at the pre-emission gate).

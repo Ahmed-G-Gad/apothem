@@ -155,11 +155,3 @@ commit-sha + snapshot-date in the same change-set and emit a
 Per-harness pins differ on `vendor-doc-url`, `commit-sha`, `snapshot-date`, `canonical-filename`, and `canonical-schema` only; the template shape is invariant across the cohort.
 
 **Stale-pin findings.** A pin whose `snapshot-date` is older than 90 days against current vendor reality surfaces as a finding at the next adapter-touch boundary. The finding routes to a pin-refresh change-set per the §6 refresh cadence.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every per-harness discovery walk; every adapter sub-package's convergence-vs-divergence declaration; every per-harness pre-emission gate adaptation; every 7-column test matrix; every cross-harness hoist decision; every per-harness STANDARD CONVENTION PIN authoring + refresh.
-- **Satisfies →** `rules/harness-adapter-shape.md` §§1–6 Companion Sub-Rule Anchors; per-harness adapter discipline; adapter-test matrix discipline; STANDARD CONVENTION PIN freshness; capability-coverage test matrix shape.
-- **Established by ↑** `rules/harness-adapter-shape.md` (parent-rule anchor) and the adapter cohort's standard pin discipline.
-- **Gated by ←** The path-filter (`**/src/apothem/harnesses/**`, `**/_inputs/harness-*`) — this companion demand-loads only on adapter sub-package or per-harness scratch touches. `rules/harness-adapter-shape.md` always-on baseline.
-- **Cross-bound with ↔** `rules/harness-adapter-shape.md` (parent rule; §§1–6 anchors bind this companion). `rules/host-discovery.md` (M1 — per-harness discovery walks). `rules/host-discovery-manifests.md` (M1 detail — discovery-record provenance schema underwrites the §6 PIN). `rules/systemic-participation.md` + `rules/systemic-participation-relations.md` (M14 — convergence-vs-divergence at §2). `rules/canonical-layout.md` (M12 — adapter sub-packages + PIN files at the canonical layout). `rules/disclosure-ledger.md` (M2 — every discovery, pin refresh, declared divergence recorded). `rules/agent-capability-discipline.md` (co-resident PIN discipline mirror).

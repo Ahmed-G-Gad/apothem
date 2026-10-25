@@ -1,22 +1,17 @@
 ---
 name: "cognitive-identity-techniques"
 description: "Path-filtered companion to `rules/cognitive-identity.md` carrying the detailed bodies of the five cognitive filters, the six ideation techniques (with detection signals and decision tree), the language-standards forbidden-phrase / required-quality / structural-format catalogs, and the five philosophical principles. Demand-loaded on substantive-output authoring surfaces."
-pathFilter: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.rs, **/*.go, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**"
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 alwaysApply: false
 paths:
-  - "**/*.md"
-  - "**/*.py"
-  - "**/*.sh"
-  - "**/*.ps1"
-  - "**/*.ts"
-  - "**/*.js"
-  - "**/*.rs"
-  - "**/*.go"
   - "**/CLAUDE.md"
-  - "**/rules/**"
-  - "**/skills/**"
-  - "**/agents/**"
-  - "**/commands/**"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -25,7 +20,7 @@ paths:
 
 ## Purpose
 
-Specify the operational depth of the cognitive-identity discipline declared at the parent rule's `rules/cognitive-identity.md` §2–§5 anchors. This companion is path-filtered: it loads when the assistant authors any substantive-output surface (Markdown artifacts, source files in the principal language families, ecosystem rule / skill / agent / command surfaces), keeping the parent's always-on payload lean while preserving full technique fidelity at the demand-load surface. The parent rule remains the canonical home for the Core Identity declaration (§1) and the high-level filter / technique enumeration; this companion carries the detailed filter bodies, ideation-technique bodies, language standards, and philosophical principles.
+Specify the operational depth of the cognitive-identity discipline declared at the parent rule's `rules/cognitive-identity.md` §2–§5 anchors. This companion is path-filtered: it loads when the assistant authors any substantive-output surface (CLAUDE.md, AGENTS.md, and ecosystem rule / skill / agent / command / hook / output-style surfaces), keeping the parent's payload lean while preserving full technique fidelity at the demand-load surface. The parent rule remains the canonical home for the Core Identity declaration (§1) and the high-level filter / technique enumeration; this companion carries the detailed filter bodies, ideation-technique bodies, language standards, and philosophical principles.
 
 ## Obligations
 
@@ -183,12 +178,4 @@ The detection signals are the trigger conditions documented at the top of §2. A
 
 ## Enforcement
 
-Path-filtered (the glob list in this rule's `pathFilter` field — Markdown / source-language / ecosystem-rule / skill / agent / command surfaces), demand-loaded companion to `rules/cognitive-identity.md` §2–§5. The parent rule carries the Core Identity declaration (§1), the seven-axes-of-breadth taxonomy, the high-level filter / technique enumeration, and the seriousness-scaling table; this companion carries the detailed filter bodies, ideation-technique bodies + decision tree, language standards, and philosophical principles. Together they constitute the canonical specification for cognitive identity and creative architecture per CM-21.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every substantive output's filter-sequence application (the §1 detailed filter bodies operate the cognitive cadence). ● Every ideation-technique selection on detected problem signal (the §2 six techniques + decision tree). ● Every language-standards check on emitted prose (the §3 forbidden / required / structural-format catalogs). ● Every philosophical-principle invocation in re-framing surfaces (the §4 five principles).
-- **Satisfies →** ● CM-21 Creative Quality (rule-delegated companion sub-rule). ● the rules registry row for the cognitive-identity-techniques companion. ● `rules/cognitive-identity.md` §2–§5 anchors (the parent rule's pointers to this companion's full bodies).
-- **Established by ↑** ● `rules/cognitive-identity.md` §2–§5 (parent-rule anchors). ● `rules/cognitive-identity.md`. ● CM-21 inline anchor.
-- **Gated by ←** ● The path-filter (substantive-output surfaces — Markdown / source-language / ecosystem-artifact directories) — this rule demand-loads only on matching artifact touches. ● `rules/cognitive-identity.md` always-on baseline (parent rule's §2–§5 anchors must be live for the companion to demand-load coherently).
-- **Cross-bound with ↔** ↔ `rules/cognitive-identity.md` (parent rule; §2–§5 anchors bind this companion). ↔ `rules/clean-room-generation.md` (Filter 5 aesthetic-demand ↔ §3.4 quality elevation mandate; both implement CM-21's facets). ↔ `rules/planning-techniques.md` (the nine planning techniques are the planning facet of CM-21; §1 Filter 2-4 ↔ ideation-techniques here ↔ planning-techniques there). ↔ `rules/operational-mandates.md` (CM-1 critical evaluation gates every Filter 1 candidate before §1 fires). ↔ `rules/sota-elevation-exemplars.md` (Filter 5 aesthetic-demand binding at §4).
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field — CLAUDE.md / AGENTS.md / ecosystem rule / skill / agent / command / hook / output-style surfaces), demand-loaded companion to `rules/cognitive-identity.md` §2–§5. The parent rule carries the Core Identity declaration (§1), the seven-axes-of-breadth taxonomy, the high-level filter / technique enumeration, and the seriousness-scaling table; this companion carries the detailed filter bodies, ideation-technique bodies + decision tree, language standards, and philosophical principles. Together they constitute the canonical specification for cognitive identity and creative architecture per CM-21.

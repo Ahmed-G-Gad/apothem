@@ -73,11 +73,3 @@ Agentic vocabulary (AI / agent / sub-agent / MCP / tool-surface / harness names)
 ## Failure tells
 
 Profile declares unsupported capability without §8 refusal. Sub-agent widens universal-deny without divergence record. Skill projected into one harness, silently omitted from another despite vendor support. Capability-coverage column blank. User-facing surface leaks agentic vocabulary outside in-scope boundary.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Adapter capability declarations co-resident with STANDARD CONVENTION PIN; materializer vendor-support probes; adapter capability-coverage attestation; the matcher `conformity/agent_capability_grep.py`.
-- **Satisfies →** The cross-harness agentic-discipline baseline; `rules/harness-adapter-shape.md` §4 capability-coverage matrix; `rules/harness-adapter-shape.md` §6 STANDARD CONVENTION PIN discipline.
-- **Established by ↑** `rules/harness-adapter-shape.md` §4 and §6; `CLAUDE.md` Harness Adapter Pattern section.
-- **Gated by ←** This rule's own pathFilter (`**/src/apothem/harnesses/**, **/_inputs/cross-harness-agent-capability-matrix.md, **/.mcp.json, **/mcp.json`) gates its demand-load, co-triggering with the matrix companion; `rules/plain-language.md` boundary.
-- **Cross-bound with ↔** `rules/agent-capability-discipline-matrix.md` (companion §1 / §3 / §7); `rules/harness-adapter-shape.md` (PIN §6); `rules/plain-language.md`; `rules/systemic-participation.md` (M14); `rules/agent-orchestration.md` (CM-17 / CM-25); `rules/interactive-questions.md` (§6); `conformity/agent_capability_grep.py`. ↔ `rules/harness-adapter-shape-schemas.md` (co-resident PIN discipline mirror).

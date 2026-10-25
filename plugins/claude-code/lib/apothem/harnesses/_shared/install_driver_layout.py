@@ -47,6 +47,11 @@ REFERENCE_NOTE_HEADING: Final[str] = "## Installed Reference Paths"
 #: Heading of the announcement an instruction anchor carries.
 ANNOUNCEMENT_HEADING: Final[str] = "## Apothem support files"
 
+#: The rule that names every other rule and when to read it. The announcement
+#: points at it when the install places it, so a harness that loads no rule
+#: files at launch still reaches the whole rule set.
+RULE_INDEX_CITATION: Final[str] = "rules/apothem-rule-index.md"
+
 
 @dataclass(frozen=True)
 class CorpusLayout:
@@ -179,15 +184,40 @@ def _example_citations(layout: CorpusLayout) -> str:
     return ", ".join(forms[:-1]) + f", and {forms[-1]}"
 
 
+def _rule_index_shipped() -> bool:
+    """Return True when the rules the install copies include the rule index.
+
+    Read from the package's own ``rules/`` directory, the source of every rules
+    install, so the announcement never points at a file the install does not
+    write. Imported at call time for the reason :func:`_load_rules` is.
+    """
+    from apothem.harnesses._shared import install_driver
+
+    return (install_driver.APOTHEM_SRC / RULE_INDEX_CITATION).is_file()
+
+
+def _rule_index_line(layout: CorpusLayout) -> str:
+    """Return the sentence that points at the installed rule index, or ``""``."""
+    index = layout.resolve(RULE_INDEX_CITATION)
+    if index is None or not _rule_index_shipped():
+        return ""
+    return (
+        f"Start with the rule index at `{layout.display(index)}`: it names "
+        "every rule and when to read it."
+    )
+
+
 def support_announcement(layout: CorpusLayout) -> str:
     """Return the anchor section that names the installed support files.
 
     Harness-neutral: anchors that several tools load carry it unchanged. Empty
-    when the install places no cited corpus directory.
+    when the install places no cited corpus directory. When the install places
+    the rule index, one sentence points at it.
     """
     root = layout.support_root
     if root is None:
         return ""
+    index_line = _rule_index_line(layout)
     where = (
         f"`{layout.display(root)}/` in this project"
         if layout.base is not None
@@ -204,6 +234,7 @@ def support_announcement(layout: CorpusLayout) -> str:
         "",
         *layout.path_lines(),
         "",
+        *([index_line, ""] if index_line else []),
         "A cited path whose first segment is not listed here is not installed.",
     ]
     return "\n".join(lines)

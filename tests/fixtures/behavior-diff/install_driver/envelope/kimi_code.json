@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 195,
+    "created": 196,
     "error": 0,
     "skipped": 0,
     "unchanged": 7,
@@ -46,6 +46,7 @@
     "<ROOT>/.kimi-code/.apothem/support/rules/agile-sprints.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/agnostic-posture-checklist.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/agnostic-posture.md",
+    "<ROOT>/.kimi-code/.apothem/support/rules/apothem-rule-index.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/authoritative-referencing-homes.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/authoritative-referencing-provenance.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/authoritative-referencing-quotation.md",

@@ -135,6 +135,78 @@ def test_direction_outside_the_section_does_not_count(repo: Path) -> None:
     assert [f.path for f in result.findings] == ["rules/prose-label.md"]
 
 
+# --- The shipped form of an installed tree --------------------------------
+#
+# The Claude Code install writes its rule copies and command-skill copies
+# without the Bindings section. An installed tree is a flat root that also holds
+# the Apothem support subtree; a source corpus never does.
+
+
+@pytest.fixture
+def installed(tmp_path: Path) -> Path:
+    """An installed tree: the strata at its root beside ``.apothem/support``."""
+    _corpus(tmp_path)
+    (tmp_path / ".apothem" / "support").mkdir(parents=True)
+    return tmp_path
+
+
+def test_installed_rule_and_skill_copies_may_omit_the_section(
+    installed: Path,
+) -> None:
+    _write(installed / "rules" / "shipped-rule.md", "")
+    _write(installed / "skills" / "shipped-command" / "SKILL.md", "")
+    result = b5.check(installed)
+    assert result.passed, [f.detail for f in result.findings]
+    assert result.inspected == 7
+
+
+def test_an_installed_copy_that_keeps_a_section_must_complete_it(
+    installed: Path,
+) -> None:
+    partial = _FULL.replace("- **Gated by ←** the activation condition.\n", "")
+    _write(installed / "rules" / "partial.md", partial)
+    _write(installed / "skills" / "partial-skill" / "SKILL.md", partial)
+    result = b5.check(installed)
+    assert sorted(f.path for f in result.findings) == [
+        "rules/partial.md",
+        "skills/partial-skill/SKILL.md",
+    ]
+    assert all(f.missing == ["Gated by ←"] for f in result.findings)
+
+
+def test_installed_agents_and_commands_keep_the_requirement(installed: Path) -> None:
+    """Only the rule and skill copies are written without the section."""
+    _write(installed / "agents" / "bare-agent.md", "")
+    _write(installed / "commands" / "bare-command.md", "")
+    result = b5.check(installed)
+    assert sorted(f.path for f in result.findings) == [
+        "agents/bare-agent.md",
+        "commands/bare-command.md",
+    ]
+
+
+def test_a_flat_tree_without_the_support_subtree_is_a_source_corpus(
+    tmp_path: Path,
+) -> None:
+    """``--content-root src/apothem`` is flat too; it keeps the full requirement."""
+    _corpus(tmp_path)
+    _write(tmp_path / "rules" / "bare-rule.md", "")
+    _write(tmp_path / "skills" / "bare-skill" / "SKILL.md", "")
+    result = b5.check(tmp_path)
+    assert sorted(f.path for f in result.findings) == [
+        "rules/bare-rule.md",
+        "skills/bare-skill/SKILL.md",
+    ]
+
+
+def test_a_checkout_never_relaxes_even_beside_a_support_subtree(repo: Path) -> None:
+    """The relaxation is for the flat installed root, not for ``src/apothem``."""
+    (repo / ".apothem" / "support").mkdir(parents=True)
+    _write(repo / "src" / "apothem" / "rules" / "bare-rule.md", "")
+    result = b5.check(repo)
+    assert [f.path for f in result.findings] == ["rules/bare-rule.md"]
+
+
 def test_empty_root_inspects_nothing(tmp_path: Path) -> None:
     result = b5.check(tmp_path)
     assert result.inspected == 0

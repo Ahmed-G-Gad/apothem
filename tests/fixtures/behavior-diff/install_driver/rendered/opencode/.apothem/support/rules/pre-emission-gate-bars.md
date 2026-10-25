@@ -1,7 +1,7 @@
 ---
 name: "pre-emission-gate-bars"
 description: "Path-filtered companion rule carrying the full Fifteen-Bars table (M1–M15 detailed Check + Failure→action columns), the Attestation Schema YAML block, and the iteration-on-failure protocol declared at the parent `pre-emission-gate.md` rule's anchor; demand-loaded when the assistant edits any artifact whose emission triggers the fifteen-bar gate."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 alwaysApply: false
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: false
 
 ## Purpose
 
-Carry the executable detail of the fifteen-bar pre-emission gate the parent `rules/pre-emission-gate.md` anchors: the per-bar Check + Failure→action table, the Attestation Schema YAML block, and the iteration-on-failure protocol. Path-filtered — loads on any artifact-emission surface (Markdown, CLAUDE.md, rules, commands, skills, agents, docs) — so the parent's always-on payload stays lean while full bar-level fidelity lives at the demand-load surface. The parent retains the standing directive, the one-line bar list, the disclosure-surface paragraph, and the failure tells.
+Carry the executable detail of the fifteen-bar pre-emission gate the parent `rules/pre-emission-gate.md` anchors: the per-bar Check + Failure→action table, the Attestation Schema YAML block, and the iteration-on-failure protocol. Path-filtered — loads on any artifact-emission surface (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files) — so the parent's payload stays lean while full bar-level fidelity lives at the demand-load surface. The parent retains the standing directive, the one-line bar list, the disclosure-surface paragraph, and the failure tells.
 
 ## Obligations
 
@@ -75,12 +75,12 @@ A single bar failure blocks emission. Revise the artifact per the failing bar's 
 
 ## Enforcement
 
-Path-filtered (the seven glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/pre-emission-gate.md`. The parent carries the standing directive, one-line bar list, disclosure-surface paragraph, and failure tells; this companion carries the bar-level table, the attestation YAML schema, and the iteration-on-failure protocol.
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/pre-emission-gate.md`. The parent carries the standing directive, one-line bar list, disclosure-surface paragraph, and failure tells; this companion carries the bar-level table, the attestation YAML schema, and the iteration-on-failure protocol.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● The per-bar Check + Failure→action enforcement on every emitted artifact under the path-filter. ● The attestation YAML schema's appearance in every artifact's working trace. ● The iteration-on-failure protocol's revise-and-re-run loop, capped at three rounds with a BLOCKED retreat.
 - **Satisfies →** ● the fifteen-mandate registry row **M4 — Self-application** (companion-sub-rule materialization). ● the Pre-Emission Gate Attestation Schema. ● `rules/pre-emission-gate.md` anchor (the parent rule's pointer to this companion's full bar-level catalog).
 - **Established by ↑** ● `rules/pre-emission-gate.md` (parent-rule anchor). ● the Pre-Emission Gate. ● the Pre-Emission Gate Attestation Schema.
-- **Gated by ←** ● The path-filter (seven glob patterns) — this rule demand-loads only on emission-surface touches. ● `rules/pre-emission-gate.md` always-on baseline (parent rule's anchor must be live for the companion to demand-load coherently).
+- **Gated by ←** ● The path-filter (eight glob patterns) — this rule demand-loads only on emission-surface touches. ● `rules/pre-emission-gate.md` baseline (parent rule's anchor must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/pre-emission-gate.md` (parent rule; anchor binds this companion). ↔ Every M-rule named in the gate's "Failure → action" column (`rules/host-discovery.md`, `rules/disclosure-ledger.md`, `rules/ten-dimension-check.md`, `rules/authority-inquiry.md`, `rules/expertise-posture.md`, `rules/option-annotation.md`, `rules/definitiveness.md`, `rules/visual-leverage.md`, `rules/bidirectional-binding.md`, `rules/agile-sprints.md`, `rules/canonical-layout.md`, `rules/code-craft-python.md` and sibling per-language code-craft rules, `rules/systemic-participation.md`, `rules/production-ready-prs.md`).

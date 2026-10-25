@@ -73,11 +73,3 @@ The rewrite is **inapplicable** (a no-op; the artifact passes the gate as-is) to
 ## Enforcement
 
 Always-on at every seriousness level, scaling per the table above. Canonical specification for the token-efficiency rewrite protocol; pairs with `rules/token-budget-discipline.md` (sizing) and `rules/clean-room-generation.md` §3 (re-writing).
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every token-efficiency rewrite across `rules/`, `commands/`, `skills/`, `agents/`, `docs/`; the mechanical matcher at `conformity/token_efficiency_grep.py`; the L3 anchor-diff zero-drift verification at every rewrite emission; the L2-preservation attestation at every rewrite's gate row.
-- **Satisfies →** The token-efficiency rewrite directive; `CLAUDE.md` rules-registry row "Token-Efficiency Rewrite"; the ecosystem's always-on token-efficiency posture.
-- **Established by ↑** The operator-ratified token-efficiency mandate and the precedent re-writing protocol at `rules/clean-room-generation.md` §3.
-- **Gated by ←** The `pathFilter` authored-content globs (demand-loaded on rules / commands / skills / agents / docs edits); the PreToolUse Write/Edit hook entries that wire `conformity/token_efficiency_grep.py`.
-- **Cross-bound with ↔** `rules/clean-room-generation.md` §3 (re-writing protocol; this rule is the token-efficiency specialisation of §3 with L2 / L3 tiers made explicit); `rules/token-budget-discipline.md` (sizing pair — that rule caps; this rule rewrites to fit the cap); `rules/large-file-generation.md` (CM-23 write-side incremental-append budget protocol; this rule complements at the read-side / always-on rewrite tier); `rules/pre-emission-gate.md` (bar inspection of L3 anchor-diff zero-drift and L2-preservation attestation); `rules/bidirectional-binding.md` §2 (L3 anchor loss is a half-edge failure on the same axis); `rules/definitiveness.md` (M8 — closed-enumeration exhaustiveness is L2 invariant); `rules/token-efficiency-rewrite-protocol.md` (path-filtered companion carrying the full protocol, L1 elimination classes, worked examples); `conformity/token_efficiency_grep.py` (the mechanical matcher).

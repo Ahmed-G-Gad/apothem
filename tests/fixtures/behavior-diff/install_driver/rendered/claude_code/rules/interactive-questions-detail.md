@@ -17,7 +17,7 @@ paths:
 
 ## Purpose
 
-Carry the demand-load detail for the always-on parent `rules/interactive-questions.md`: the authoring-discipline procedure and the anti-pattern catalog. Loads on path match when a surface authors structured-inquiry invocations, so the detail pays its context cost only where questions are written.
+Carry the demand-load detail for the parent `rules/interactive-questions.md`: the authoring-discipline procedure and the anti-pattern catalog. Loads on path match when a surface authors structured-inquiry invocations, so the detail pays its context cost only where questions are written.
 
 ## Authoring Discipline
 
@@ -37,11 +37,3 @@ Author every invocation in five ordered steps:
 - **DON'T** name a default on a destructive question — **BECAUSE** it makes the irreversible action the easy path; destructive ops are universally `no-default`.
 - **DON'T** put `(Recommended)` on more than one option in a single-select question, or on a non-`recommended` body — **BECAUSE** the label↔body bind is bidirectional and a stray postfix corrupts the signal.
 - **DON'T** fall back to prose silently when structured inquiry is available — **BECAUSE** the degradation MUST be logged with the conversation marker and a ledger row.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** The authoring review every structured-inquiry invocation passes before emission; the anti-pattern checks the parent §8 sweep matchers operationalize.
-- **Satisfies →** The demand-load detail tier for the parent `interactive-questions.md` authoring discipline and anti-pattern catalog.
-- **Established by ↑** `rules/interactive-questions.md` (the always-on parent this companion carries detail for, per the parent / companion-sub-rule pattern).
-- **Gated by ←** The `pathFilter` glob (demand-loads only when a question-authoring surface is touched).
-- **Cross-bound with ↔** `rules/interactive-questions.md` (parent — §9 Authoring Discipline and the Anti-Patterns catalog were moved here under the companion-sub-rule pattern); `rules/interactive-questions-canonical-shapes.md` and `rules/interactive-questions-sweep-matchers.md` (sibling companions carrying the schema worked-examples and the H1–H7 matcher catalog). ↔ `rules/option-annotation-form.md` (choice-overload bound, authoring discipline).

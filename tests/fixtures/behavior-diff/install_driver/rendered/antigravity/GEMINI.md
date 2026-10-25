@@ -50,6 +50,8 @@ Apothem's support root is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/suppo
 - `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
 - `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`
 
+Start with the rule index at `<ROOT>/antigravity-cli/plugins/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
+
 A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile

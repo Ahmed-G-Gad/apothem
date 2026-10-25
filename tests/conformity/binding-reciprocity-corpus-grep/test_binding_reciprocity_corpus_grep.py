@@ -175,6 +175,25 @@ def test_fenced_example_bindings_block_is_not_the_real_section(tmp_path: Path) -
     assert result.passed, [f.detail for f in result.findings]
 
 
+def test_installed_copies_without_bindings_have_no_edge_to_check(
+    tmp_path: Path,
+) -> None:
+    # The Claude Code install writes rule copies without the Bindings section.
+    # Such a tree has no ↔ citation to leave half-open: the walk passes, and it
+    # still inspects every rule file, so the empty-scope failure does not fire.
+    _write_corpus(
+        tmp_path,
+        {
+            "alpha": "# Rule: Alpha\n\nBody prose.\n",
+            "beta": "# Rule: Beta\n\nBody prose.\n",
+        },
+    )
+    result = check(tmp_path)
+    assert result.passed
+    assert result.inspected == 2
+    assert _main(["prog", str(tmp_path)]) == EXIT_PASS
+
+
 def test_missing_corpus_passes(tmp_path: Path) -> None:
     # No rules tree under root — nothing to walk, a clean pass.
     result = check(tmp_path)

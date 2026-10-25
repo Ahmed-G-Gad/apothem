@@ -1,8 +1,17 @@
 ---
 name: "tool-use-discipline"
 description: "Ordinary tool use runs as a disciplined loop: independent tool calls go in one turn, never sequentially; the agent works an observe → decide → act cadence; the loop iterates until a verifiable exit condition is met, never a fixed count. Generalizes the agent-tier single-message parallel-launch discipline down to every tool call. Harness-agnostic; advisory under the agnostic posture."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
+alwaysApply: false
+paths:
+  - "**/CLAUDE.md"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -34,14 +43,6 @@ The loop continues until a **verifiable exit condition** is true — a gate pass
 ## Failure tells
 
 (Companion Sub-Rule Anchor) See `rules/tool-use-discipline-failure-tells.md` §Failure-tells for the five failure-shape diagnostics — sequential-where-parallel (§1), act-without-observe (§2), no-verifiable-exit (§3), fixed-count-stop (§3), and false-sequencing (§1).
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every ordinary tool-call batch (independent calls issued together per §1). ● Every agent working cadence (the observe → decide → act loop per §2). ● Every loop's exit decision (verifiable condition, never fixed count, per §3).
-- **Satisfies →** ● The tool-tier generalization of the single-message parallel-launch discipline. ● The named canonical agent-loop vocabulary the ecosystem references.
-- **Established by ↑** ● `rules/agent-orchestration.md` §3 (the agent-tier single-message parallel-launch invariant this rule generalizes down to ordinary tool calls). ● `rules/multi-agent-workflow.md` §1 (the open-loop verifiable-exit discipline this rule states at the tool tier).
-- **Gated by ←** ● `CLAUDE.md` always-loaded preamble. ● `rules/agnostic-posture.md` §2 (this rule is advisory, not a blocking gate).
-- **Cross-bound with ↔** ↔ `rules/tool-use-discipline-failure-tells.md` (path-filtered companion carrying the §Failure-tells enumeration — the five failure-shape diagnostics for §1 / §2 / §3). ↔ `rules/agent-orchestration.md` (§3 single-message parallel-launch — this rule is its ordinary-tool-tier generalization; the team-tier mechanics are owned there). ↔ `rules/context-management.md` (§7.2 demand-loading and §8 bounded-retry-with-retreat — the observe step preserves context budget and the loop's retreat path is owned there). ↔ `rules/large-file-reading.md` (locate-before-read is the observe-step discipline at the file tier). ↔ `rules/multi-agent-workflow.md` (§1 open-loop verifiable-exit — this rule states the same exit discipline at the tool tier, below the multi-agent threshold). ↔ `rules/multi-agent-workflow-shape.md` (§1 open-loop verifiable-exit discipline — the open-loop-dynamics property of the capability shape is the agent-tier expression of the ordinary-tool-tier loop stated there).
 
 ## Recommended Next Step
 

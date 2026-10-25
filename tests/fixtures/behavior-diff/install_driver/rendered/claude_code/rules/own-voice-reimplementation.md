@@ -80,14 +80,6 @@ Every reimplementation outcome is recorded in the disclosure ledger per `rules/d
 
 A block of code or copy carried verbatim from a reference platform. A reimplementation that restates the reference's feature in fresh words but reuses its structure, naming, or data shape (paraphrase, not reauthoring). A reference brand, slug, or author name leaking into a shipped in-scope surface. A harness-documentation pin whose `snapshot-date` exceeds 90 days cited as current. A design token (palette / type / logo) sampled from a reference site rather than authored originally. A config convention reproduced from a reference platform's config file rather than derived from the harness's own documentation. A silently reconstructed §6 placeholder under a renamed heading.
 
-## Bindings (§0.j five-direction)
-
-- **Drives →** The per-phase zero-leak Definition-of-Done gate (`reference-token-grep`) that every later phase's exit gate runs. The mechanical matcher at `conformity/reference_token_grep.py`. Every reauthored in-scope authored surface under this rule's `pathFilter`.
-- **Satisfies →** The own-voice reimplementation mandate (zero verbatim inheritance, mandatory elevation, harness-doc alignment). The product-artifact boundary that keeps shipped surfaces free of reference branding.
-- **Established by ↑** The no-copy reimplementation directive. The harness convention-pin discipline at `src/apothem/harnesses/<name>/STANDARD-CONVENTION-PIN.md`.
-- **Gated by ←** The `pathFilter` (in-scope authored surfaces only; non-derived surfaces are exempt). The `reference-token-grep` zero-hit baseline at every phase boundary.
-- **Cross-bound with ↔** `rules/plain-language.md` (sibling user-facing-vocabulary sweep on the same shipped surfaces). `rules/agnostic-posture.md` (host-agnostic posture; reimplementations derive conventions from each harness's own documentation, not from a single reference). `rules/recommend-next-step.md` (terminal-surface forward-move discipline this rule's tail honors).
-
 ## Recommended Next Step
 
 **Proceed to Phase 00D — the `rules/` → `skills/` investigation** to map which reimplementation disciplines belong in path-filtered rules versus detectable-technique skills, per `rules/recommend-next-step.md`.

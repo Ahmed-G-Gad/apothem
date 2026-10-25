@@ -195,7 +195,10 @@ Document the reason in the artifact's first section.
 
 ### Always-On
 
-Rule applies everywhere.
+Rule applies everywhere. Five rules are always-on: `agnostic-posture`,
+`authority-inquiry`, `session-closure`, `context-management`, and the rule
+index (`apothem-rule-index`). The set is small because every always-on rule
+costs context in every session.
 
 ```yaml
 pathFilter: ""
@@ -310,14 +313,20 @@ Use the schema from `site/content/docs/reference/artifact-schema.mdx` § Schema:
 
 Rules carry only these four fields — no `version` / `updated` / `scope` / `portability` / `implements`.
 
+A new rule is path-filtered. A new always-on rule needs the core list and the
+byte ceilings raised in the same change: the list in
+`tests/unit/test_always_on_core.py` and the ceilings in
+`conformity/always_on_budget_grep.py`. A companion rule
+(`<parent>-<aspect>`) takes its parent's `pathFilter`, or a narrower one.
+
 Example:
 
 ```yaml
 ---
 name: "my-new-rule"
 description: "Brief one-liner"
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/*.py"
+alwaysApply: false
 ---
 ```
 
@@ -330,7 +339,10 @@ Add a row to the table for the rule's family in the Rule families section of
 | `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Pick the family table whose concern matches the rule.
+Pick the family table whose concern matches the rule. Also name the rule in
+the line of `src/apothem/rules/apothem-rule-index.md` for the situation that
+calls for it; `tests/unit/test_always_on_core.py` fails when a rule is missing
+from the index.
 
 ### 5. Append to CHANGELOG.md
 
@@ -710,12 +722,12 @@ glm             Nothing: GLM is a model backend and loads no instruction files.
 The suite under `evals/` measures behaviour rather than form: 142 trigger cases
 (each model-invocable command, skill and subagent fires on a request in its domain
 and stays quiet on a near miss, and six user-invoked-only commands do not start on their own), 32 outcome cases (one per plan stage,
-research stage and audit dimension) and 6 rule-effect pairs (an always-on
+research stage and audit dimension) and 6 rule-effect pairs (a sampled
 rule's text on and off). The cases are plain data validated for free by
 `python -m pytest tests/unit/test_eval_suite.py`; running them is billed and
 manual. See [Run the behavioural evals](/docs/how-to/evals) for the `Evals`
-workflow, a local run and how to add a case. After editing an always-on rule
-that has a pair, run `python scripts/dev/sync_eval_rule_cases.py`.
+workflow, a local run and how to add a case. After editing a rule that has a
+pair, run `python scripts/dev/sync_eval_rule_cases.py`.
 
 ### Benchmarks
 
@@ -735,6 +747,10 @@ The always-on budget check (`always-on-budget-grep`) counts whitespace-separated
 words with the Bindings section and companion pointer lines excluded. Its JSON
 report also carries `always-on-loaded`: the bytes, characters and words of the
 frontmatter-stripped bodies a harness loads, summed over the always-on rules.
+Pointed at the shipped rules directory, the check also fails when that sum
+exceeds a byte ceiling (reported as `always-on-ceiling-bytes`) or the rule index
+exceeds its own. Claude Code loads its rule copies without the Bindings section,
+so its loaded size is smaller than the figure this check reports.
 
 ## Ecosystem Audit: Running Validation
 
