@@ -12,6 +12,7 @@ from pathlib import Path
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+from apothem.lib.propagation import user_home
 
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -21,6 +22,7 @@ from .install_driver_pathsafety import (
     _within_allowed_root,
 )
 from .install_driver_retention import apply_retention
+from .install_driver_shared import HOME_BACKUP_SEGMENT, home_backup_relative
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
@@ -148,7 +150,15 @@ def _backup_relative_path(target: Path, boundary_root: Path) -> Path:
     :func:`restore_backup` can rebuild the original absolute path from the same
     boundary. The basename fallback only fires for a target genuinely outside the
     boundary (a defect the write path already refuses).
+
+    A user-level target backed up while the install's own boundary is not the
+    home is keyed ``__home__/<home-relative path>`` (see
+    :func:`install_driver_shared.home_namespace`), so it never shares a key with
+    a project file of the same relative path.
     """
+    home_relative = home_backup_relative(target, boundary_root)
+    if home_relative is not None:
+        return home_relative
     try:
         return target.resolve().relative_to(boundary_root.resolve())
     except ValueError:
@@ -544,6 +554,14 @@ def restore_backup(
     is a deliberate scope limit — config trees Apothem backs up are file sets,
     not empty-directory structures.
 
+    A file under the set's ``__home__/`` directory was taken from the user home
+    by an install whose own boundary was not the home (a project-scope install
+    writing ``~/.agents/skills/``). It is restored to the home, whatever
+    *project_root* is: a project may hold a ``.agents/skills/`` of its own, and
+    a restore must never write there. Nothing in the CLI calls this function
+    today (rollback restores each recorded ``backup_ref`` directly); a caller
+    that adds one must pass the root the original install used.
+
     Raises:
         ValueError: When neither *harness_root* nor *project_root* is supplied.
     """
@@ -566,7 +584,14 @@ def restore_backup(
             # the second-granular timestamp slug, not the record being rolled
             # back. Skip it so the rollback restores only its own targets.
             continue
-        dest = allowed_root / backup_file.relative_to(backup_set)
+        relative = backup_file.relative_to(backup_set)
+        dest_root = allowed_root
+        if relative.parts[0] == HOME_BACKUP_SEGMENT:
+            # A file taken from the user home while the install's boundary was
+            # not the home: it goes back to the home, never into the project.
+            dest_root = _normalized(user_home())
+            relative = Path(*relative.parts[1:])
+        dest = dest_root / relative
         try:
             data = backup_file.read_bytes()
         except OSError as exc:  # pragma: no cover - defensive
@@ -588,7 +613,7 @@ def restore_backup(
                 harness_name=harness_name,
                 operation="restore_backup",
                 source=backup_file,
-                allowed_root=allowed_root,
+                allowed_root=dest_root,
             )
         )
     if not results:

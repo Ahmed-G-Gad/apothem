@@ -59,18 +59,18 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 | claude_code | No materializer; propagates raw templates plus convention dirs; does not manage `CLAUDE.md` |
 | codex | No materializer; propagates AGENTS.md, hooks.json, converted TOML agents, and shared skills; does not overwrite `config.toml` |
 | gemini_cli | No materializer; project-scope adapter writes `<project>/GEMINI.md` and converts commands into Gemini TOML files |
-| github_copilot | Materializes Markdown prose rather than structured config; no JSON schema |
-| cursor | No materializer; project-scope rules-only adapter writes a single `<project>/.cursor/rules/apothem-rules.mdc` via one `sentinel_merge` and authors no other cohorts |
+| github_copilot | Materializes Markdown prose rather than structured config, no JSON schema; installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/` |
+| cursor | No materializer; project-scope adapter writes `<project>/.cursor/rules/apothem-rules.mdc` via one `sentinel_merge`, installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
 | hermes | Materializes `config.yaml` and keeps unsupported cohorts under `~/.hermes/.apothem/support/` |
 | kimi_code | No materializer; project-scope adapter writes the governance surface into `<project>/AGENTS.md` as a `sentinel_merge` managed block, installs skills and command skills at the native `<project>/.kimi-code/skills/`, and keeps the other cohorts under `<project>/.kimi-code/.apothem/support/`; does not author `<project>/.kimi-code/mcp.json` |
 | open_claw | Materializes `openclaw.json` and keeps unsupported cohorts under `~/.openclaw/.apothem/support/` |
 | opencode | Materializes `opencode.json` while also writing native commands, skills, and agents under `~/.config/opencode/` |
 | qwen_code | Materializes `settings.json` plus `QWEN.md` and writes native command, skill, and agent cohorts under `~/.qwen/` |
-| windsurf | No materializer; project-scope rules-only adapter writes a single `<project>/.devin/rules/apothem-rules.md` (the preferred Devin Desktop surface; `.windsurf/rules/` is the backward-compat fallback) via one `sentinel_merge` and authors no other cohorts |
-| codebuddy | No materializer; project-scope rules-only adapter writes `<project>/.codebuddy/rules/apothem-rules.md` and authors no other cohorts |
-| kiro | No materializer; project-scope rules-only adapter writes `<project>/.kiro/steering/apothem-rules.md` and authors no other cohorts |
-| trae | No materializer; project-scope rules-only adapter writes `<project>/.trae/rules/apothem-rules.md` alongside the vendor `project_rules.md` / `user_rules.md` anchors without clobbering them |
-| zed | No materializer; project-scope rules-only adapter writes the project-root `<project>/.rules` file and authors no other cohorts |
+| windsurf | No materializer; project-scope adapter writes `<project>/.devin/rules/apothem-rules.md` (the preferred Devin Desktop surface; `.windsurf/rules/` is the backward-compat fallback) via one `sentinel_merge`, installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
+| codebuddy | No materializer; project-scope adapter writes `<project>/.codebuddy/rules/apothem-rules.md`, installs skills and command skills in the user-level `~/.codebuddy/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
+| kiro | No materializer; project-scope adapter writes `<project>/.kiro/steering/apothem-rules.md`, installs skills and command skills in the user-level `~/.kiro/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
+| trae | No materializer; project-scope adapter writes `<project>/.trae/rules/apothem-rules.md` alongside the vendor `project_rules.md` / `user_rules.md` anchors without clobbering them, and installs skills and command skills in the user-level `~/.trae/skills/` and the rules and templates corpus in `~/.config/apothem/` |
+| zed | No materializer; project-scope adapter writes the project-root `<project>/.rules` file, installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
 | glm | No rules/skills/commands cohort; backend-provider adapter writes a single `<project>/.apothem/providers/glm.toml` configuring GLM (Z.ai) as an Anthropic/OpenAI-compatible model backend, and authors no governance surface |
 
 Undeclared divergences are silo-class findings per `rules/systemic-participation.md` M14.

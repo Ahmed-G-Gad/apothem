@@ -35,11 +35,3 @@ Record adapter discovery, pin refreshes, and sibling divergences in `rules/discl
 ## Failure tells
 
 A missing pin, a stale pin, a branch-pointed vendor reference, an undeclared divergence, a missing canonical action module, duplicate cross-adapter logic, or an incomplete 7-column matrix.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** Every adapter sub-package authoring / modification / retirement under `src/apothem/harnesses/`. Every per-harness STANDARD CONVENTION PIN refresh. Cross-harness redundancy sweeps.
-- **Satisfies →** Per-harness adapter discipline, adapter-test matrix discipline, STANDARD CONVENTION PIN freshness, and the capability-coverage test matrix shape.
-- **Established by ↑** `CLAUDE.md` Harness Adapter Pattern section and the adapter cohort's standard pin discipline.
-- **Gated by ←** This rule's own pathFilter (`**/src/apothem/harnesses/**, **/_inputs/harness-*`) gates its demand-load, co-triggering with the companion's identical pathFilter for the per-harness schemas.
-- **Cross-bound with ↔** `rules/harness-adapter-shape-schemas.md` (path-filtered companion carrying per-harness schema bodies + pin templates + 7-column matrix template + convergence-vs-divergence table). `rules/host-discovery.md` (M1 — per-harness discovery is the M1 walk for adapter conventions; §4 discovery-record provenance schema underwrites the PIN schema at §6). `rules/systemic-participation.md` (M14 — sibling-convention convergence at §2 is the M14 silo-prevention surface for adapters). `rules/canonical-layout.md` (M12 — adapter sub-packages and STANDARD-CONVENTION-PIN.md sit at the canonical layout per the §1 directory shape). `rules/disclosure-ledger.md` (M2 — every discovery, pin refresh, and declared divergence is recorded in the ledger). `rules/agent-capability-discipline.md` (co-resident PIN discipline — the STANDARD CONVENTION PIN at §6 mirrors the agent-capability PIN pattern for cross-cohort consistency). ↔ `rules/agent-capability-discipline-matrix.md` (co-resident STANDARD CONVENTION PIN discipline at §6; per-cell evidence chain anchors to the same pin).

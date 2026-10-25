@@ -10,18 +10,20 @@ from pathlib import Path
 from typing import Final
 
 from apothem.lib.claude_skill_frontmatter import fold_apothem_metadata
-from apothem.lib.claude_skill_split import split_command_skill
+from apothem.lib.claude_skill_split import split_command_skill, without_bindings
 from apothem.lib.frontmatter import (
     field_value,
     field_value_in_text,
     split_frontmatter,
 )
+from apothem.lib.propagation import SHARED_EMISSION
 from apothem.lib.qwen_skill_frontmatter import translate_allowed_tools
 
 from .install_driver_layout import (
     REFERENCE_NOTE_HEADING,
     harness_layout,
     reference_note,
+    shared_reference_note,
 )
 
 
@@ -73,8 +75,12 @@ def _installed_reference_note(harness_name: str, install_root: Path) -> str:
     The note names, for each cited corpus directory the harness installs
     (``rules/``, ``templates/``, ``schemas/``, ``hooks/``, ``conformity/``),
     the directory its manifest entry targets under *install_root*, so every
-    path it names is one the install writes.
+    path it names is one the install writes. The shared emission
+    (:data:`SHARED_EMISSION`) names the user-level corpus folders instead, the
+    same text for every writer (:func:`shared_reference_note`).
     """
+    if harness_name == SHARED_EMISSION:
+        return shared_reference_note()
     return reference_note(harness_layout(harness_name, install_root))
 
 
@@ -153,7 +159,22 @@ def _native_skill_emission(
       skill whose source sets ``disable-model-invocation: true``.
     - ``qwen_code``: the ``allowed-tools`` string as Qwen Code's ``allowedTools``
       list (:func:`translate_allowed_tools`).
+    - :data:`SHARED_EMISSION`, for the skill folders in the user home that
+      several installs write: the Claude Code key names and metadata fold (the
+      standard ``metadata`` map keeps the Apothem-only keys), and the Codex
+      policy sidecar for a skill that disables model invocation, because Codex
+      reads the folder whether or not the Codex adapter is installed. The
+      sidecar is inert for every other reader. The text is the same whichever
+      harness writes it (``SHARED_TOPLEVEL_KEYS`` lists the keys it leaves).
     """
+    if harness_name == SHARED_EMISSION:
+        renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
+        sidecars = (
+            {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
+            if _source_disables_model_invocation(skill_text)
+            else {}
+        )
+        return fold_apothem_metadata(renamed), sidecars
     if harness_name == "claude_code":
         renamed = _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES)
         return fold_apothem_metadata(renamed), {}
@@ -571,19 +592,32 @@ def _native_markdown_command_text(source_path: Path) -> str:
 
 
 def _claude_rule_text(source_path: Path) -> str:
-    """Render a rule for ``~/.claude/rules/`` with Claude Code's native scoping.
+    """Render a rule for ``~/.claude/rules/`` the way Claude Code reads it.
+
+    The copy differs from the source in two ways.
 
     Claude Code loads every rule file at launch unless its frontmatter carries
     ``paths:``, the only rule field it reads
     (https://code.claude.com/docs/en/memory, retrieved 2026-10-02). The corpus
     marks a path-scoped rule with the harness-neutral ``pathFilter`` key, a
     comma-separated glob list, so this adds the equivalent ``paths:`` list just
-    before the closing delimiter. An always-on rule (empty ``pathFilter``) is
-    returned unchanged, and the body is never touched.
+    before the closing delimiter.
+
+    The closing ``## Bindings`` section is dropped, as it is from a command
+    skill (:func:`without_bindings`): it holds reciprocal pointers for
+    maintainers and the conformity gate, not instructions, and an always-on rule
+    pays for it in every session. Every other section is kept, including one
+    that follows Bindings. The source keeps the section, and the other harnesses
+    keep it in their copies.
     """
     text = source_path.read_text(encoding="utf-8")
+    if split_frontmatter(text) is None:
+        return text
+    stripped = without_bindings(text)
+    if stripped != text:
+        text = stripped.rstrip("\n") + "\n"
     path_filter = (field_value(source_path, "pathFilter") or "").strip()
-    if not path_filter or not text.startswith("---\n"):
+    if not path_filter:
         return text
     end = text.find("\n---\n", 4)
     if end < 0:

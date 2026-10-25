@@ -39,6 +39,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Claude Code sessions start with about 6K tokens of rules, not about
+  58K.** Four rules stay loaded in every session (agnostic posture,
+  authority and inquiry, session closure, context management), with a short
+  rule index that names every other rule and when to read it. The other 24
+  rules that loaded at launch now load when a matching file is read or
+  edited, or when a skill that cites them runs. Installed rule copies leave
+  out their `## Bindings` cross-references, which stay in the source, and a
+  plugin-only session is told to read the same four rules first.
 - **Read-only skills and commands are model-invocable; side effects stay
   manual.** 35 audit, review, planning, research and authoring commands and
   skills can now be chosen by the model when a request matches them. Commands
@@ -137,35 +145,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **`make lint` also runs `mypy`.** The target now matches the lint gate the
   docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
 - **Cursor, GitHub Copilot, Windsurf, Zed, CodeBuddy, Kiro and Trae get
-  Apothem's skills and rules from one shared copy in your home directory.**
-  Installing any of them now writes Apothem's skills, and each command as a
-  skill, to `~/.agents/skills/` (Cursor, GitHub Copilot, Windsurf, Zed and
-  Codex share it) or to the tool's own folder (`~/.codebuddy/skills/`,
-  `~/.kiro/skills/`, `~/.trae/skills/`), and the rules and templates they cite
-  to `~/.config/apothem/`, where Codex already keeps them. No skill or rule
-  files are written into your repositories: a project still gets only the one
-  rules file, which now names those folders, and the `.apothem/` data folder. Every install that uses a folder writes the same files, so the order
-  you install in does not matter, and one copy serves every project. Uninstall
-  keeps a shared folder while another Apothem install still uses it, says which
-  install does, and removes it with the last one; an install in a project that
-  no longer exists is ignored. A write failure in your home stops that
-  adapter's install before anything in the project changes, and a skill folder
-  of yours with an Apothem skill's name is skipped with a warning instead of
-  replaced. Install, update and dry run name the folders written outside
-  `--project`, the batch preview lists them, and `verify` says which folder is
-  missing or not Apothem's. Codex writes the same files to the same folders, so
-  its skills change form once on the next update (backed up) and always go to
-  `$HOME/.agents/skills`, even when `CODEX_HOME` points elsewhere. Each skill
-  folder is written beside its final place and renamed into it, so an
-  interrupted install leaves no half-written folder for the next run to mistake
-  for yours. A symbolic link from a dotfile manager at `~/.agents` or
-  `~/.config` is followed when it stays inside your home directory, and a file
-  where a folder belongs stops the install with a message naming the path. If a
-  record of an install that could use these folders is unreadable, uninstall and
-  rollback stop before changing anything, and rolling back every install that
-  uses a folder leaves none of it behind. Trae's China
-  edition (`~/.trae-cn/skills/`), unknown-key handling in each tool, and Zed's
-  skill catalog limit are not yet confirmed.
+  Apothem's skills and rules.** Installing any of them writes the skills, and
+  each command as a skill, once to `~/.agents/skills/` (which Cursor, Copilot,
+  Windsurf, Zed and Codex read) or to the tool's own folder
+  (`~/.codebuddy/skills/`, `~/.kiro/skills/`, `~/.trae/skills/`), and the
+  rules and templates they cite to `~/.config/apothem/`. A project still gets
+  only its one rules file, which names those folders. Every install writes
+  the same files; uninstall keeps a folder while another install still uses
+  it and says which one. A write failure in your home stops that adapter's
+  install before the project changes, a skill folder of yours with an
+  Apothem skill's name is skipped with a warning, and folders are staged and
+  renamed into place so an interrupted install leaves nothing half-written.
+  Codex's skills now always go to `$HOME/.agents/skills`, even when
+  `CODEX_HOME` points elsewhere. Trae's China edition, each tool's handling
+  of unknown skill keys, and Zed's skill-count limit are not yet confirmed.
 
 ### Removed
 
@@ -174,6 +167,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The question guard names questions from one and reads "destructive" as
+  the rule does.** Its findings said `[Q2]` for the third question; they now
+  count from one. A recommended option is flagged as destructive for the
+  operations the questions rule lists (delete, overwrite, revert uncommitted
+  work and their synonyms) and for dropping a table or database, not for
+  words like "retire" or "drop it from the copies".
 - **The GLM adapter describes Z.ai's own coding tool.** Z.ai ships ZCode, an
   agentic development environment; the docs and the `glm.toml` template no
   longer say it ships none, and say this adapter configures GLM only as a

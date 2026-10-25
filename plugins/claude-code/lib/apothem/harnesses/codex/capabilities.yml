@@ -38,7 +38,9 @@ agent_memory_surface: "AGENTS.md hierarchy"
 # What each source frontmatter key becomes in a converted cohort (see
 # tests/unit/test_conversion_losses.py for the value vocabulary). Codex reads
 # only name and description from SKILL.md; implicit invocation is controlled by
-# agents/openai.yaml. Custom agents have no tool allowlist or turn limit, and
+# agents/openai.yaml. The skills are the shared emission (the same bytes whichever
+# adapter writes ~/.agents/skills/): version, updated and portability fold under
+# the standard `metadata` map. Custom agents have no tool allowlist or turn limit, and
 # the parent session owns the sandbox (an agent file cannot override it), so the
 # tool grant and maxTurns are dropped; a read-only agent's body states the limit.
 conversion_losses:
@@ -48,9 +50,9 @@ conversion_losses:
     argument-hint: "ignored"
     disable-model-invocation: "sidecar:agents/openai.yaml#policy.allow_implicit_invocation"
     allowed-tools: "ignored"
-    version: "ignored"
-    updated: "ignored"
-    portability: "ignored"
+    version: "native:metadata.version"
+    updated: "native:metadata.updated"
+    portability: "native:metadata.portability"
   agents:
     name: "native:name"
     description: "native:description"

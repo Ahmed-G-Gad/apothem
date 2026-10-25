@@ -125,6 +125,41 @@ class TestWellFormednessFindings:
         )
         assert "recommended-on-destructive" in _kinds(result)
 
+    @pytest.mark.parametrize(
+        "label",
+        [
+            "Drop the table (Recommended)",
+            "drop all collections (Recommended)",
+            "Force-push the branch (Recommended)",
+            "Revert uncommitted work (Recommended)",
+        ],
+    )
+    def test_data_destroying_labels_are_findings(self, label: str) -> None:
+        result = aqv.validate_payload(_payload(_question(label, "Keep")))
+        assert "recommended-on-destructive" in _kinds(result)
+
+    @pytest.mark.parametrize(
+        "label",
+        [
+            "Drop from installed copies (Recommended)",
+            "Retire the plugin (Recommended)",
+            "Drop it from the copies (Recommended)",
+            "Dropdown menu (Recommended)",
+        ],
+    )
+    def test_labels_outside_the_rule_are_not_destructive(self, label: str) -> None:
+        result = aqv.validate_payload(_payload(_question(label, "Keep")))
+        assert "recommended-on-destructive" not in _kinds(result)
+
+    def test_findings_number_questions_from_one(self) -> None:
+        payload = _payload(
+            _question("Accept (Recommended)", "Reject"),
+            _question("Delete file (Recommended)", "Keep"),
+        )
+        text = aqv._format_findings(aqv.validate_payload(payload).findings)
+        assert "[Q2] recommended-on-destructive" in text
+        assert "[Q0]" not in text
+
     def test_extra_internal_space_is_not_canonical(self) -> None:
         # "( Recommended )" is a non-canonical tail form, not the canonical
         # " (Recommended)" postfix.

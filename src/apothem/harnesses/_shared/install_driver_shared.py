@@ -41,6 +41,7 @@ from apothem.lib.harness_registry import (
 )
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import (
+    SHARED_EMISSION,
     HarnessRules,
     InstallEntry,
     resolve_target,
@@ -67,10 +68,8 @@ from .install_driver_types import (
     _result,
 )
 
-#: The emission identity every user-level skill folder is rendered with,
-#: whichever harness writes it. It is passed to the emission calls only;
-#: backups, results and the ledger keep the real harness name.
-SHARED_EMISSION: Final[str] = "shared_skills"
+#: ``SHARED_EMISSION`` (the shared emission identity) is defined in
+#: :mod:`apothem.lib.propagation` and re-exported here.
 
 #: The top-level ``SKILL.md`` keys the shared emission leaves. The set is the
 #: standard core (``name``, ``description``, ``allowed-tools``, ``metadata``)

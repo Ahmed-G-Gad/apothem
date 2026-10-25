@@ -1,6 +1,7 @@
 ---
-trigger: always_on
+trigger: glob
 description: "Adhere to the harness ecosystem's conventions and proactively evolve its artifacts — per-artifact-class convention awareness (naming, layout, frontmatter shape), the five-step proactive-evolution cycle (detect → search → act → validate → retire), bidirectional cross-reference coherence, and ecosystem gap detection that surfaces a missing rule / skill / command / hook before it is needed. Implements CM-22."
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -48,12 +49,12 @@ Beyond refining existing artifacts (§2), the agent MUST identify when the ecosy
 
 ## Enforcement
 
-Always-on at every seriousness level, scaling per the table above. Implements CM-22. Canonical specification for ecosystem conventions and artifact lifecycle.
+Applies at every seriousness level, scaling per the table above. Implements CM-22. Canonical specification for ecosystem conventions and artifact lifecycle.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every non-trivial ecosystem action's pre-flight convention check (§1 Convention Awareness). ● Every artifact-evolution decision (§2 Proactive Evolution — refine vs. create heuristic). ● Every gap-detection sweep (§4 Ecosystem Gap Detection — agent / hook / rule / plugin / config / skill / command classes). ● Every CHANGELOG / CLAUDE.md registry update on artifact lifecycle events. ◐ Cross-reference accuracy enforcement on every artifact change at SHARED+.
 - **Satisfies →** ● CM-22 (Conventions Vigilance — rule-delegated mandate). ● the rules registry row "Conventions Vigilance". ● `rules/persistent-conventions-vigilance.md` (the five-step Detect / Search / Act / Validate / Retire cycle).
 - **Established by ↑** ● CM-22. ● `rules/persistent-conventions-vigilance.md`. ● the hooks pipeline timeout-value canonical block (this rule's §1 cites the canonical column for hook-timeout values).
-- **Gated by ←** ● `CLAUDE.md` always-loaded preamble. ● `rules/operational-mandates.md` (CM-6 self-improvement gates artifact-evolution triggers).
+- **Gated by ←** ● This rule's `pathFilter` and `rules/apothem-rule-index.md` (the loading surfaces). ● `rules/operational-mandates.md` (CM-6 self-improvement gates artifact-evolution triggers).
 - **Cross-bound with ↔** ↔ `rules/persistent-conventions-vigilance-checklist.md` (path-filtered companion sub-rule carrying the §1 Convention Awareness checklist and the §4 Ecosystem Gap Detection artifact-class triggers). ↔ `rules/operational-mandates.md` (CM-6 self-improvement triggers artifact evolution; CM-22 specifies the lifecycle here). ↔ `rules/auto-memory.md` (memory feeds gap-detection per §4; gap-detection writes to memory per the §2 evolution cycle). ↔ `rules/context-management.md` (§2.5 phase-exit delegates artifact-evolution evaluation to this rule's §2 + §4). ↔ the artifact registries Registries (the canonical registry surface this rule maintains). ↔ `rules/dynamism.md` (sibling discipline; dynamism is a ratified ecosystem convention whose new surfaces feed §4 Ecosystem Gap Detection). ↔ `rules/sota-elevation.md` (sibling discipline; SOTA-gap detection feeds §4 ecosystem-gap-detection). ↔ `rules/auto-memory-topic-files.md` (memory feeds gap-detection per §4 of the conventions rule; gap-detection writes to memory). ↔ `rules/clean-room-generation.md` (clean-room generation produces ecosystem-coherent artifacts; convention vigilance maintains ecosystem coherence). ↔ `rules/code-craft-conventions.md` (CM-22 §4 — recurrence-driven gap detection signals new per-language-sibling-rule candidates). ↔ `rules/context-management-protocol.md` (CM-22 owns the artifact-evolution evaluation that §1.5 delegates). ↔ `rules/sota-elevation-exemplars.md` (gap-detection surface). ↔ `rules/systemic-participation.md` (CM-22 — the inward-axis analog M14 cross-maps to; CM-22 governs internal artifact lifecycle, M14 governs external systemic participation; both apply where both apply). ↔ `rules/token-budget-discipline.md` (the demand-load companion-sub-rule pattern is itself a gap-closure).

@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Path-filtered companion sub-rule carrying the verbatim per-dimension bodies (rigor / coherence / configurability / readability / orphanism / structurality / architecture / naming / scholarly referencing / examples-tests-docs) and per-dimension failure tells declared at the parent `ten-dimension-check.md` rule's anchor; demand-loaded on artifact-emission surfaces."
-globs: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/CLAUDE.md, **/rules/**, **/comma
 
 ## Purpose
 
-Carry the verbatim per-dimension bodies and per-dimension failure tells the parent rule `rules/ten-dimension-check.md` anchors. Path-filtered: loads on any artifact-emission surface (Markdown, Python, shell, PowerShell under the rules / commands / skills / agents / docs trees and the root `CLAUDE.md`). The parent owns the M3 standing directive, the multiplicative-failure clause, the trivial-work abbreviated check, the self-check-at-emission paragraph, the cross-cutting failure tells, and the disclosure surface; this companion owns the ten per-dimension bodies below.
+Carry the verbatim per-dimension bodies and per-dimension failure tells the parent rule `rules/ten-dimension-check.md` anchors. Path-filtered: loads on the governed-core authoring surfaces (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files). The parent owns the M3 standing directive, the multiplicative-failure clause, the trivial-work abbreviated check, the self-check-at-emission paragraph, the cross-cutting failure tells, and the disclosure surface; this companion owns the ten per-dimension bodies below.
 
 ## Obligations
 
@@ -40,12 +40,12 @@ Every artifact MUST pass each of the ten dimensions individually before emission
 
 ## Enforcement
 
-Path-filtered (the glob list in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/ten-dimension-check.md`: the parent owns the M3 standing directive, multiplicative-failure clause, trivial-work abbreviated check, self-check-at-emission paragraph, cross-cutting failure tells, and disclosure surface; this companion owns the ten per-dimension bodies and their failure tells.
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/ten-dimension-check.md`: the parent owns the M3 standing directive, multiplicative-failure clause, trivial-work abbreviated check, self-check-at-emission paragraph, cross-cutting failure tells, and disclosure surface; this companion owns the ten per-dimension bodies and their failure tells.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every artifact-emission surface's per-dimension self-check (the ten verbatim per-dimension bodies enumerated above are the dimension-by-dimension specification the gate's bar 3 inspects). ● Every per-dimension failure-tell match at the pre-emission gate. ◐ The dimension-by-dimension marking on the gate attestation.
 - **Satisfies →** ● the fifteen-mandate registry row **M3 — Ten Quality Dimensions** (per-dimension specification surface). ● `rules/ten-dimension-check.md` anchor (parent rule's pointer to this companion's full per-dimension fidelity).
 - **Established by ↑** ● `rules/ten-dimension-check.md` (parent-rule anchor). ● the fifteen-mandate registry (ratifies M3). ● the Pre-Emission Gate row 3.
-- **Gated by ←** ● The path-filter (the glob list in this rule's frontmatter) — this rule demand-loads only on artifact-emission-surface touches. ● `rules/ten-dimension-check.md` always-on baseline (parent rule's anchor must be live for the companion to demand-load coherently).
+- **Gated by ←** ● The path-filter (the eight glob patterns in this rule's frontmatter) — this rule demand-loads only on artifact-emission-surface touches. ● `rules/ten-dimension-check.md` baseline (parent rule's anchor must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/ten-dimension-check.md` (parent rule; anchor binds this companion). ↔ `rules/pre-emission-gate.md` (M4 — bar 3 of the fifteen-bar gate inspects each of the ten verbatim per-dimension bodies enumerated here). ↔ `rules/code-craft-python.md` + `rules/code-craft-shell.md` + `rules/code-craft-markdown.md` + `rules/code-craft-conventions.md` (per-language code-craft rules apply dimensions 4, 7, 8, 10 with language-specific failure tells). ↔ `rules/disclosure-ledger.md` (M2 — deferred dimensions surface as deferrals per the parent rule's disclosure surface).

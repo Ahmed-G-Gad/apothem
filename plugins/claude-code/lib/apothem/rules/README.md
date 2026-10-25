@@ -8,12 +8,18 @@ Behavioral instruction rules — flat `.md` files, each a self-contained directi
 
 Every rule is one of two kinds, declared in frontmatter:
 
-- **Always-on** — `alwaysApply: true` with an empty `pathFilter:`. Loaded into every session. To keep the always-on tier lean, each always-on body is capped at 500 substantive tokens per `token-budget-discipline.md`.
-- **Path-filtered (companion)** — `alwaysApply: false` with a `pathFilter:` glob list. Demand-loaded only when the agent touches a matching artifact.
+- **Always-on** — `alwaysApply: true` with an empty `pathFilter:`. Loaded into every session. The always-on set is exactly five files: the four core rules `agnostic-posture.md`, `authority-inquiry.md`, `session-closure.md` and `context-management.md`, plus `apothem-rule-index.md`. Each always-on body is capped at 500 substantive tokens, and the whole set at a byte ceiling, per `token-budget-discipline.md`.
+- **Path-filtered** — `alwaysApply: false` with a non-empty `pathFilter:` glob list. Every other rule, companions included. A harness that scopes rules by path loads it when the agent reads or edits a matching file; any harness can reach it through `apothem-rule-index.md`, which names every rule and the situation that calls for it.
+
+`alwaysApply` is true exactly when `pathFilter` is empty; `scripts/dev/validate_ecosystem.py` fails a rule that breaks the pairing. Promoting a rule to always-on edits the core list and the ceilings in `tests/unit/test_always_on_core.py` in the same change-set.
+
+## The rule index
+
+`apothem-rule-index.md` is the one always-on file that is not a behavioral rule: it lists every parent rule under the situation that calls for it, and says how a scoped rule loads (path match, a step that cites it as its procedure, or a read the agent makes itself). A rule with no path match is still reachable because the index names it. `tests/unit/test_always_on_core.py` fails when a parent rule is missing from the index or the index names a rule that does not exist, so adding a rule means adding its name to the index in the same change-set. Companions are not listed: each is opened from the anchor line in its parent. The file name is reserved. An install overwrites a same-named operator file after backing it up, so do not use it for your own rule.
 
 ## The parent / companion-sub-rule pattern
 
-When an always-on rule's content exceeds the token ceiling, it decomposes along a path-filtered seam: the **parent** rule retains the standing directive plus a one-line summary and a `(Companion Sub-Rule Anchor)` pointer; the **companion** sibling — named `<parent>-<aspect>.md`, path-filtered — carries the operational depth (catalogs, worked examples, executable matchers, full tables). The companion demand-loads only when relevant, so detail pays its context cost only where it applies. Pairs are reciprocally cited in each rule's `## Bindings` block.
+When a parent rule's content exceeds the token ceiling, it decomposes along a path-filtered seam: the **parent** rule retains the standing directive plus a one-line summary and a `(Companion Sub-Rule Anchor)` pointer; the **companion** sibling — named `<parent>-<aspect>.md`, path-filtered — carries the operational depth (catalogs, worked examples, executable matchers, full tables). The companion demand-loads only when relevant, so detail pays its context cost only where it applies. A companion's `pathFilter` MUST NOT reach a file its parent's does not: the companion never loads without the parent. Pairs are reciprocally cited in each rule's `## Bindings` block.
 
 ## The `## Bindings` five-direction section
 
@@ -89,7 +95,8 @@ Every rule closes with a `## Bindings (§0.j five-direction)` section declaring 
 | `auto-memory.md` · `auto-memory-topic-files.md` | Auto-memory lifecycle — topic files, MEMORY.md index, promotion ledger. |
 | `persistent-conventions-vigilance.md` · `persistent-conventions-vigilance-checklist.md` | Ecosystem-convention adherence and proactive artifact evolution (CM-22). |
 | `large-file-generation.md` | Large file generation via incremental appends (CM-23). |
-| `token-budget-discipline.md` | The 500-token ceiling on always-on rule bodies. |
+| `apothem-rule-index.md` | The always-on rule index — names the four core rules, says how every other rule loads, and groups every rule by the situation that calls for it. |
+| `token-budget-discipline.md` | The 500-token ceiling on always-on rule bodies and the byte ceiling on the always-on set. |
 | `large-file-reading.md` | Size-aware file reading — pre-read assessment, locate-before-read, structural traversal, segmentation; the read-side analogue of `large-file-generation.md`. |
 | `token-efficiency-rewrite.md` · `token-efficiency-rewrite-protocol.md` | Token-efficiency as a rewrite discipline — preserve L2 semantic content + L3 structural anchors, discard L1 scaffolding; pairs with `token-budget-discipline.md` (caps) to fit the always-on ceiling. |
 
@@ -115,10 +122,10 @@ Every rule closes with a `## Bindings (§0.j five-direction)` section declaring 
 ## Operating in this folder
 
 - **File shape.** YAML frontmatter (`name`, `description`, `pathFilter`, `alwaysApply`) → the single-line SPDX license header (HTML-comment form) → the obligations body → a closing `## Bindings (§0.j five-direction)` section. The frontmatter `description` field MUST be populated; the PreToolUse frontmatter check rejects an empty one.
-- **Token budget.** An always-on body (`alwaysApply: true`, empty `pathFilter`) is capped at 500 substantive tokens per `token-budget-discipline.md`; over-budget content decomposes into a path-filtered companion rather than inflating the parent.
+- **Token budget.** An always-on body (`alwaysApply: true`, empty `pathFilter`) is capped at 500 substantive tokens per `token-budget-discipline.md`, and the always-on set at a byte ceiling; over-budget content decomposes into a path-filtered companion rather than inflating the parent.
 - **Reciprocal bindings.** Every `## Bindings` cross-reference has a matching back-pointer at the cited peer; half-edges fail the bindings-reciprocity gate.
 - **Harness-neutral prose.** This folder is swept by the agnosticism and reference-token matchers. Name a harness only by its catalog slug — one entry among the registered set — never by a privileging brand phrase, and pre-set no model or effort preference.
-- **Adding a rule:** author the file with the shape above, add its row to the registry table above, and wire it into the rule graph via its `## Bindings` section; decide always-on vs companion by the token budget. **Splitting an over-budget always-on rule:** move depth to a `<parent>-<aspect>.md` companion, leave the `(Companion Sub-Rule Anchor)` pointer in the parent, and make both `## Bindings` blocks cite each other.
+- **Adding a rule:** author the file with the shape above, with `alwaysApply: false` and a `pathFilter` that matches only the files the rule governs (a bare `**` scopes nothing, so the `claude_code` harness loads the rule at launch like an always-on one, and a source-wide glob loads it in nearly every session); add its row to the registry table above, name it in `apothem-rule-index.md` under the situation that calls for it, and wire it into the rule graph via its `## Bindings` section. A rule joins the always-on set only by an explicit edit to the core list and ceilings, never by default. **Splitting an over-budget always-on rule:** move depth to a `<parent>-<aspect>.md` companion, leave the `(Companion Sub-Rule Anchor)` pointer in the parent, and make both `## Bindings` blocks cite each other.
 - Validate every change with `python -m apothem.conformity.gate --all .` (frontmatter, token-budget, bindings-reciprocity, agnosticism, reference-token matchers) and `python -m pytest`.
 
 ## Bindings (§0.j five-direction)

@@ -13,8 +13,9 @@ This file is materialised by `apothem install --harness windsurf --project <path
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Windsurf, the surface manifests as this `always_on` rule file:
 
-- **Rules** — engineering rules applied on every interaction (`trigger: always_on`). This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
-- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Windsurf does not auto-discover them as separate surfaces.
+- **Rules** — engineering rules applied on every interaction (`trigger: always_on`). This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
+- **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
+- **Agents and hooks** — Apothem's sub-agent definitions and hook helpers are not installed by the Windsurf adapter.
 - **Workflows** — Windsurf's slash-command surface (`.windsurf/workflows/`) is operator-authored, not apothem-managed.
 - **Memories** — Windsurf's memory surface (`~/.codeium/windsurf/memories/`) is machine-local, not apothem-managed.
 
@@ -34,4 +35,4 @@ Apothem's foundational mandates apply uniformly across every harness, including 
 
 ## Refreshing the file
 
-Re-run `apothem install --harness windsurf --project <this-project-root>` to refresh the Apothem managed block in this file with the latest template. The install folds Apothem's content into a sentinel-delimited managed block and preserves any operator prose outside the sentinels verbatim; it is idempotent. `apothem uninstall --harness windsurf --project <this-project-root>` strips the managed block (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/windsurf/`) first. `apothem verify --harness windsurf --project <this-project-root>` checks the file is present and non-empty.
+Re-run `apothem install --harness windsurf --project <this-project-root>` to refresh the Apothem managed block in this file with the latest template. The install folds Apothem's content into a sentinel-delimited managed block and preserves any operator prose outside the sentinels verbatim; it is idempotent. `apothem uninstall --harness windsurf --project <this-project-root>` strips the managed block (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/windsurf/`) first. `apothem verify --harness windsurf --project <this-project-root>` checks the file is present and non-empty, and that every Apothem skill folder is in place. The skills and support folders in your user home are shared by every Apothem install that uses them, so `apothem uninstall` removes them only when no other install still lists them.

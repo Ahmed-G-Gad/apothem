@@ -1,7 +1,7 @@
 ---
 trigger: glob
-description: "Path-filtered companion rule carrying the full Writing Protocol (§2), Re-Writing Protocol (§3), Code Generation (§4), Prose and Documentation (§5), Plan and Artifact Generation (§6), Decision Tree, and Anti-Patterns specifications anchored at the parent `rules/clean-room-generation.md` rule's pointer sections; demand-loaded when the assistant edits any code, prose, plan, or artifact surface."
-globs: "**/src/**, **/lib/**, **/tools/**, **/scripts/**, **/tests/**, **/docs/**, **/*.py, **/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**"
+description: "Path-filtered companion rule carrying the full Writing Protocol (§2), Re-Writing Protocol (§3), Code Generation (§4), Prose and Documentation (§5), Plan and Artifact Generation (§6), Decision Tree, and Anti-Patterns specifications anchored at the parent `rules/clean-room-generation.md` rule's pointer sections; demand-loaded when the assistant edits a governed-core authoring surface (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files)."
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/src/**, **/lib/**, **/tools/**, **/scripts/**, **/tests/**, **/docs/*
 
 ## Purpose
 
-Carry the full executable protocols for clean-room generation that `rules/clean-room-generation.md` pointer sections declare. Path-filtered: loads on any code, prose, plan, or artifact surface. The parent owns the Clean-Room Invariant (§1) and the CM-4 four-outcome routing (§1.1); this companion owns the Writing Protocol (§2), Re-Writing Protocol (§3), Code Generation (§4), Prose and Documentation (§5), Plan and Artifact Generation (§6), the CM-4 Decision Tree, and the Anti-Patterns.
+Carry the full executable protocols for clean-room generation that `rules/clean-room-generation.md` pointer sections declare. Path-filtered: loads on the governed-core authoring surfaces (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files). The parent owns the Clean-Room Invariant (§1) and the CM-4 four-outcome routing (§1.1); this companion owns the Writing Protocol (§2), Re-Writing Protocol (§3), Code Generation (§4), Prose and Documentation (§5), Plan and Artifact Generation (§6), the CM-4 Decision Tree, and the Anti-Patterns.
 
 ## Obligations
 
@@ -112,12 +112,12 @@ flowchart TD
 
 ## Enforcement
 
-Path-filtered (the glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/clean-room-generation.md`: the parent owns the Clean-Room Invariant (§1) and CM-4 four-outcome routing (§1.1) at the always-on tier; this companion owns §2 Writing, §3 Re-Writing, §4 Code Generation, §5 Prose and Documentation, §6 Plan and Artifact Generation, the Decision Tree, and the Anti-Patterns.
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/clean-room-generation.md`: the parent owns the Clean-Room Invariant (§1) and CM-4 four-outcome routing (§1.1) at the parent tier; this companion owns §2 Writing, §3 Re-Writing, §4 Code Generation, §5 Prose and Documentation, §6 Plan and Artifact Generation, the Decision Tree, and the Anti-Patterns.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every code, prose, plan, and artifact emission across the path-filter scope (the §2 Writing Protocol + §3 Re-Writing Protocol are the generation-method floor when in scope). ● Every refactor-class touch (§3 quality-elevation mandate gates the re-write). ● Every plan-suite emission (§6 fresh-derivation discipline). ◐ The Decision Tree's CM-4 four-outcome materialization.
 - **Satisfies →** ● CM-5 / CM-7 / CM-21 (rule-delegated mandates; this companion is the path-filtered protocol subset). ● the rules registry row "Clean-Room Generation" (companion sub-rule). ● `rules/clean-room-generation.md` pointer sections (the parent rule's anchors to this companion's full specification).
 - **Established by ↑** ● `rules/clean-room-generation.md` (parent-rule anchors). ● CM-5 + CM-7 + CM-21 inline definitions. ● `rules/cognitive-identity.md`.
-- **Gated by ←** ● The path-filter — this rule demand-loads only on code, prose, plan, or artifact-surface touches. ● `rules/clean-room-generation.md` always-on baseline (parent rule's Clean-Room Invariant and CM-4 routing must be live for the companion to demand-load coherently).
+- **Gated by ←** ● The path-filter — this rule demand-loads only on governed-core authoring-surface touches. ● `rules/clean-room-generation.md` baseline (parent rule's Clean-Room Invariant and CM-4 routing must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/clean-room-generation.md` (parent rule; pointer sections bind this companion). ↔ `rules/cognitive-identity.md` (Filter 5 aesthetic-demand ↔ §3.4 quality elevation; both implement CM-21's facets). ↔ `rules/operational-mandates.md` (CM-4 search-before-implement gates the Decision Tree's entry; CM-5/CM-7 inline definitions). ↔ `rules/planning-techniques.md` (third co-implementer of CM-21; planning-technique facet there, generation-methodology facet here).

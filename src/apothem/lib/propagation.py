@@ -84,6 +84,13 @@ _USER_LEVEL_SKILL_MODES: Final[dict[str, str]] = {
 }
 _USER_LEVEL_SUPPORT_MODE: Final[str] = "merge_tree_entries"
 
+#: The emission identity every user-level skill folder is rendered with,
+#: whichever harness writes it. It is passed to the emission calls only;
+#: backups, results and the ledger keep the real harness name. It lives in
+#: this leaf module so the converters can name it without importing the
+#: install driver.
+SHARED_EMISSION: Final[str] = "shared_skills"
+
 _USER_HOME_TOKEN: Final[str] = "${USER_HOME}"  # noqa: S105  # a template token, not a secret
 _USER_LEVEL_TARGET = re.compile(r"\$\{USER_HOME\}/(?P<prefix>[^$\\]+?)/?")
 

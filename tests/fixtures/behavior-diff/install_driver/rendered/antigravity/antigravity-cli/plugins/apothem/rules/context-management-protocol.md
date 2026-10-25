@@ -126,13 +126,13 @@ The foundational inter-session protocol. Every phase must be executable by a fre
 3. **Target phase file** (`phases/NN-topic/PHASE.md`) → what needs to be done (scope, tasks, inputs, outputs, verification).
 4. **PREAMBLE.md** → project conventions, standards, architecture. Skip if convention anchors in Resumption Contract are sufficient.
 5. **Prior phase report** (if exists) → what just happened, deviations, watch items.
-6. **Rules** (always-on) → behavioral directives.
+6. **Rules** — the core rules and the rule index (`rules/apothem-rule-index.md`) reload on their own; re-read any path-scoped rule still in force → behavioral directives.
 
 **Ad-hoc sessions (no plan suite):**
 
 1. **Memory files** (MEMORY.md + referenced topic files) — already read as preamble above.
 2. **Active files** referenced in the user's request or prior conversation.
-3. **Rules** (always-on) — auto-loaded by the runtime; need not be explicitly re-read.
+3. **Rules** — the core rules and the rule index reload on their own and need not be re-read; re-read any path-scoped rule you are applying (the index names which rule fits which situation).
 
 **5.3 — Output Validation Gate:** Before executing any phase, verify every declared Input from the phase file exists in the Phase Output Registry as verified. Missing inputs = STOP. Inform user which prerequisite outputs are absent.
 

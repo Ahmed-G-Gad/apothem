@@ -77,12 +77,3 @@ Findings surface at the pre-emission gate per `rules/pre-emission-gate.md`.
 ## Failure tells
 
 An option set rendering no `(Recommended)` marker where one option dominates. A recommended marker with no concrete-driver rationale. A command or skill surface ending mid-section with no next-step block. A surface whose structural signature drifts between identical reads with no declared non-determinism source. A terminal surface that stops silently rather than naming the single best next action.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** every command and skill surface's output shape · the `(Recommended)` marker on every rendered option set · the terminal next-step block on every terminal surface · the mechanical harness `conformity/determinism_grep.py`.
-- **Driven by ←** the option-annotation and recommend-next-step conventions this rule consolidates · the pre-emission gate that consumes the harness verdict.
-- **Gated by ←** The frontmatter `pathFilter` (commands, skills, rules, output-styles, statuslines): the rule loads when an output-shaping surface is authored or modified. `conformity/determinism_grep.py` (the mechanical harness that checks the expected-output structure under `gate --all`).
-- **Satisfies →** the strictly-expected-output-structure end state · the advisory posture (findings plus a forward move, never a silent stop).
-- **Established by ↑** `rules/option-annotation.md` · `rules/recommend-next-step.md` · `rules/definitiveness.md` (the determinism virtue).
-- **Cross-bound with ↔** `rules/option-annotation.md` · `rules/recommend-next-step.md` · `rules/interactive-questions-canonical-shapes.md` · `rules/definitiveness.md` · `rules/pre-emission-gate.md`. ↔ `rules/agent-capability-discipline-matrix.md` (↔ reciprocal of the peer's Cross-bound citation).

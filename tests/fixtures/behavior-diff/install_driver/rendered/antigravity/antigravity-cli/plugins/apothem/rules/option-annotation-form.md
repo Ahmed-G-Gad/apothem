@@ -1,7 +1,7 @@
 ---
 trigger: glob
 description: "Path-filtered companion rule carrying the prose-and-document annotation form, rationale-specificity citations, cross-channel consistency invariant, cardinality bounds, and failure-tells enumeration declared at the parent `option-annotation.md` rule's anchor lines; demand-loaded on prose-and-document artifact touches."
-globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**, **/ADR/**, **/rfcs/**"
+globs: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -10,7 +10,7 @@ globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/age
 
 ## Purpose
 
-Specify the executable details of the prose-and-document option-annotation discipline declared at the parent `rules/option-annotation.md`. This companion is path-filtered: it loads when the assistant edits any prose-and-document artifact (Markdown files, rules, commands, skills, agents, docs, ADRs, RFCs), keeping the parent's always-on payload lean while preserving full form fidelity at the demand-load surface. The parent rule remains the canonical home for the M7 standing directive and channel-routing summary; this companion carries the prose-and-document form, rationale specificity, cross-channel consistency, cardinality bounds, and failure tells.
+Specify the executable details of the prose-and-document option-annotation discipline declared at the parent `rules/option-annotation.md`. This companion is path-filtered: it loads when the assistant edits any prose-and-document artifact (CLAUDE.md, AGENTS.md, and rule, command, skill, agent, hook, and output-style Markdown files), keeping the parent's payload lean while preserving full form fidelity at the demand-load surface. The parent rule remains the canonical home for the M7 standing directive and channel-routing summary; this companion carries the prose-and-document form, rationale specificity, cross-channel consistency, cardinality bounds, and failure tells.
 
 ## Obligations
 
@@ -48,12 +48,12 @@ Floor: two options (a single option is a notification, not a question). Ceiling:
 
 ## Enforcement
 
-Path-filtered (the nine glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/option-annotation.md`. The parent rule carries the M7 standing directive and channel-routing summary; this companion carries the prose-and-document form, rationale specificity, cross-channel consistency, cardinality bounds, and failure tells.
+Path-filtered (the eight glob patterns in this rule's `pathFilter` field), always-on at every seriousness level when in scope. Demand-loaded companion to `rules/option-annotation.md`. The parent rule carries the M7 standing directive and channel-routing summary; this companion carries the prose-and-document form, rationale specificity, cross-channel consistency, cardinality bounds, and failure tells.
 
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every prose-and-document option set's annotation shape (the §1 form is the floor). ● The rationale-specificity check at every `Rationale:` line (§2 cites the concrete-driver taxonomy and the vague-rationale forbid list). ● The cardinality check at every option set (§4 floor of 2 / ceiling of 4). ◐ The cross-channel consistency check between structured-inquiry records and prose surfaces (§3).
 - **Satisfies →** ● the fifteen-mandate registry row **M7 — Option Annotation** (the prose-and-document subset). ● `rules/option-annotation.md` companion-anchor lines (the parent rule's pointers to this companion's full specification).
 - **Established by ↑** ● `rules/option-annotation.md` (parent-rule anchor). ● the fifteen-mandate registry row M7.
-- **Gated by ←** ● The path-filter (the nine glob patterns) — this rule demand-loads only on prose-and-document artifact touches. ● `rules/option-annotation.md` always-on baseline (parent rule's anchor must be live for the companion to demand-load coherently).
+- **Gated by ←** ● The path-filter (the eight glob patterns) — this rule demand-loads only on prose-and-document artifact touches. ● `rules/option-annotation.md` baseline (parent rule's anchor must be live for the companion to demand-load coherently).
 - **Cross-bound with ↔** ↔ `rules/option-annotation.md` (parent rule; companion-anchor lines bind this companion). ↔ `rules/interactive-questions-canonical-shapes.md` (§2.1 per-invocation cardinality, §3.2.2 vague-rationale forbid list). ↔ `rules/interactive-questions-detail.md` (choice-overload bound, authoring discipline). ↔ `rules/ten-dimension-check.md` (M3 dimension 9 scholarly / technical referencing — rationale specificity meets it). ↔ `rules/authority-inquiry.md` (M5 — zero-recommended option sets route through the inquiry surface). ↔ `rules/disclosure-ledger.md` (M2 — annotation outcomes recorded in the ledger).

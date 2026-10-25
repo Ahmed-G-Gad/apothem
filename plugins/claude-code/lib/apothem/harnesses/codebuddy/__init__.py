@@ -11,6 +11,12 @@ the operator's own rules files are never clobbered. The ``CODEBUDDY.md``
 memory file and ``.codebuddy/settings.json`` permissions/MCP surface are
 operator-owned and out of apothem's adapter scope.
 
+Ahead of the project file the install also writes the user-level folders: the
+skills and the commands wrapped as skills in ``~/.codebuddy/skills/``, and the rules and
+templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the
+user home, not in the project, and every Apothem install that names one writes
+the same bytes; the install ledger decides which uninstall removes it.
+
 The adapter opts into the project-scope contract via
 ``requires_project = True``; the CLI rejects an install / update /
 uninstall / verify invocation that omits ``--project <path>``. Delegates

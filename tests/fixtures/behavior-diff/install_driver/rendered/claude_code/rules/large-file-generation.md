@@ -107,11 +107,3 @@ flowchart TD
 ## Enforcement
 
 Path-filtered (`**/.apothem/plans/**`, `**/.plans/**`, `**/*.md`, `**/docs/**`), scaling per the table above. Implements CM-23. Canonical specification for large file generation via incremental appends.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every large file emission across plan suites and docs (§1 Pre-Generation Assessment routes by size band; §2 Incremental Generation Protocol governs the writes). ● Every Phase Report emission exceeding the medium-band threshold (§2.3 subsequent-appends operationalizes the CM-23B incremental protocol). ● Every CHANGELOG / docs-site / massive-spec authoring session above the 1500-line threshold. ◐ Compaction triggers at the 500-line emission threshold (cross-bound with CM-19 in `rules/context-management.md` §3).
-- **Satisfies →** ● CM-23 (Large File Generation — rule-delegated mandate). ● the rules registry row "Large File Generation".
-- **Established by ↑** ● CM-23. ● the artifact directories (.apothem/plans/, .plans/, docs/, *.md class declarations).
-- **Gated by ←** ● The path-filter (`**/.apothem/plans/**`, `**/.plans/**`, `**/*.md`, `**/docs/**`) — this rule activates only on matching artifact touches. ● `rules/clean-room-generation.md` §2 Writing Protocol baseline (every artifact passes through the Writing Protocol before size-driven branching).
-- **Cross-bound with ↔** ↔ `rules/context-management.md` (CM-19 compaction discipline triggers at the 500-line emission threshold per §3 of that rule). ↔ `rules/clean-room-generation.md` (§2 Writing Protocol governs *what* to write; this rule governs *how* to safely write it when the size exceeds the single-write band). ↔ `commands/plan-execute.md` Step 7 (Phase Report emission cites CM-23A pre-generation size assessment). ↔ `rules/token-efficiency-rewrite.md` (CM-23 write-side incremental-append budget protocol; token-efficiency-rewrite complements at the read-side / always-on rewrite tier). ↔ `rules/large-file-reading.md` (sibling read-side rule with matching size-bands and segmentation logic). ↔ `rules/code-craft-markdown.md` (CM-23 — long-Markdown incremental-generation protocol). ↔ `rules/operational-mandates.md` (CM-23 large-file protocol lives there). ↔ `rules/token-budget-discipline.md` (sibling write-side budget protocol; this rule extends to read-side / always-on-tier sizing).

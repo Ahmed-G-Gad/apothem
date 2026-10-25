@@ -12,6 +12,14 @@ install target that harnesses other than its writer also load. Installing the
 owner of a shared root puts Apothem content in front of every reader, so
 :func:`shared_root_advisories` names the readers. Installing a reader while the
 shared root already holds Apothem content says which install placed it there.
+A co-installer writes the same folder as the owner; its advisory (role
+``holder``) names the other tools that load it and says the folder stays until
+the last install that uses it is uninstalled. The registered owner is a label
+for the vendor-documented path. The install that placed the content on a given
+machine is the *owner of record*: the registered owner while it still holds the
+folder, else the oldest install that does (:func:`owner_of_record`). The caller
+passes the installs that hold each folder, read from the install ledger, and the
+advisories name those instead of assuming the registered owner wrote the folder.
 
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
@@ -23,7 +31,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -107,8 +115,35 @@ def _qualified(root: SharedRoot, reader: str) -> str:
     return f"{name} ({condition})" if condition else name
 
 
+def owner_of_record(root: SharedRoot, holders: Sequence[str]) -> str | None:
+    """Return the install that counts as *root*'s owner on this machine.
+
+    *holders* are the public ids of the installs that hold *root* now, oldest
+    first. The registered owner counts while it holds the folder; otherwise the
+    oldest holder does. ``None`` when no install is known to hold it. Nothing is
+    transferred when the registered owner is uninstalled: the label moves, the
+    files stay.
+    """
+    if root.owner in holders:
+        return root.owner
+    return holders[0] if holders else None
+
+
+def _holders_sentence(holders: Sequence[str]) -> str:
+    """Return the sentence naming the installs that hold a folder now, or ``""``."""
+    if not holders:
+        return ""
+    names = ", ".join(_display_name(holder) for holder in holders)
+    return f" Installs using it now: {names}."
+
+
 def _entry(
-    public_id: str, root: SharedRoot, resolved: Path, role: str, message: str
+    public_id: str,
+    root: SharedRoot,
+    resolved: Path,
+    role: str,
+    message: str,
+    holders: Sequence[str] = (),
 ) -> dict[str, object]:
     return {
         "harness": public_id,
@@ -117,47 +152,103 @@ def _entry(
         "role": role,
         "path": str(resolved),
         "owner": root.owner,
-        "readers": list(root.readers),
+        "owner_of_record": owner_of_record(root, holders),
+        "holders": list(holders),
+        "readers": sorted({*root.readers, *root.co_installers}),
         "message": message,
     }
 
 
 def shared_root_advisories(
-    public_id: str, *, home: Path, project: Path | None
+    public_id: str,
+    *,
+    home: Path,
+    project: Path | None,
+    holders: Callable[[Path], Sequence[str]] | None = None,
 ) -> list[dict[str, object]]:
     """Return the shared-root advisories for installing *public_id*.
 
     For each shared root *public_id* owns, one ``owner`` advisory names every
-    reader, with the condition a reader loads the root under when the registry
-    records one. For each shared root *public_id* reads that already holds
-    Apothem content (an Apothem skill folder or agent file in a skills or agents
-    root, or the Apothem managed block in an instruction file), one ``reader``
-    advisory names the owner whose install placed it there. Project roots are
-    skipped when *project* is ``None``. Reads the filesystem; writes nothing.
+    tool that loads it, with the condition a reader loads the root under when the
+    registry records one. For each shared root *public_id* co-installs, one
+    ``holder`` advisory names the other tools that load it. For each shared root
+    *public_id* only reads that already holds Apothem content (an Apothem skill
+    folder or agent file in a skills or agents root, or the Apothem managed block
+    in an instruction file), one ``reader`` advisory names the install that
+    placed it there. Project roots are skipped when *project* is ``None``.
+
+    *holders* maps a resolved root path to the public ids of the installs that
+    hold it now, oldest first, read from the install ledger. With it the
+    advisories name the installs using the folder and the owner of record
+    (:func:`owner_of_record`); without it they say only what the registry knows.
+    Reads the filesystem; writes nothing.
     """
     advisories: list[dict[str, object]] = []
     for root in SHARED_ROOTS:
-        if public_id != root.owner and public_id not in root.readers:
+        if root.kind == "support":
+            continue
+        # Every tool besides the owner that loads the folder: the readers, and
+        # the co-installers that write the same copy.
+        loaders = tuple(sorted({*root.readers, *root.co_installers}))
+        if public_id != root.owner and public_id not in loaders:
             continue
         resolved = _resolve(root.path, home=home, project=project)
         if resolved is None:
             continue
+        held = tuple(holders(resolved)) if holders is not None else ()
         if public_id == root.owner:
-            readers = ", ".join(_qualified(root, reader) for reader in root.readers)
-            single = len(root.readers) == 1
+            readers = ", ".join(_qualified(root, reader) for reader in loaders)
+            single = len(loaders) == 1
+            if root.co_installers:
+                # Several installs write this folder, so removing the owner's
+                # install does not remove it while another install holds it.
+                tail = (
+                    "It stays until the last Apothem install that uses it is "
+                    "uninstalled."
+                )
+            else:
+                tail = (
+                    f"Installing or uninstalling {_display_name(root.owner)} "
+                    f"changes what {'that tool loads' if single else 'those tools load'}."
+                )
             message = (
                 f"{root.path} is shared: {readers} also "
-                f"{'loads' if single else 'load'} it. Installing or uninstalling "
-                f"{_display_name(root.owner)} changes what "
-                f"{'that tool loads' if single else 'those tools load'}."
+                f"{'loads' if single else 'load'} it. {tail}"
+                f"{_holders_sentence(held) if root.co_installers else ''}"
             )
-            advisories.append(_entry(public_id, root, resolved, "owner", message))
+            advisories.append(_entry(public_id, root, resolved, "owner", message, held))
+        elif public_id in root.co_installers:
+            # This install writes the folder too: it holds the folder until it is
+            # uninstalled, and the folder stays while any other install holds it.
+            others = ", ".join(
+                _qualified(root, other)
+                for other in sorted(
+                    {root.owner, *loaders} - {public_id},
+                    key=lambda name: _display_name(name),
+                )
+            )
+            message = (
+                f"{root.path} is shared: {others} also load it. It stays until "
+                f"the last Apothem install that uses it is uninstalled."
+                f"{_holders_sentence(held)}"
+            )
+            advisories.append(
+                _entry(public_id, root, resolved, "holder", message, held)
+            )
         elif _holds_apothem_content(resolved):
+            placed_by = owner_of_record(root, held)
+            source = (
+                f"the {_display_name(placed_by)} install"
+                if placed_by is not None
+                else "an Apothem install"
+            )
             message = (
                 f"{_qualified(root, public_id)} also loads {root.path}, which "
-                f"holds Apothem content from the {_display_name(root.owner)} install."
+                f"holds Apothem content from {source}."
             )
-            advisories.append(_entry(public_id, root, resolved, "reader", message))
+            advisories.append(
+                _entry(public_id, root, resolved, "reader", message, held)
+            )
     return advisories
 
 
@@ -302,4 +393,4 @@ def mcp_profile_advisories(
     return advisories
 
 
-__all__ = ["mcp_profile_advisories", "shared_root_advisories"]
+__all__ = ["mcp_profile_advisories", "owner_of_record", "shared_root_advisories"]

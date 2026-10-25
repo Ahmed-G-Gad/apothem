@@ -613,7 +613,10 @@ def apply_claude_rules(
     project_root: Path | None = None,
     harness_name: str = "manual",
 ) -> list[MaterializationResult]:
-    """Install rule files with ``pathFilter`` rendered as Claude Code ``paths:``.
+    """Install rule files as Claude Code reads them (see :func:`_claude_rule_text`).
+
+    ``pathFilter`` becomes ``paths:`` and the closing ``## Bindings`` section is
+    left out of each copy.
 
     *ignore* and *exclude* are accepted for the shared emission signature (see
     :data:`HARNESS_EMISSION_APPLIERS`); a flat rules cohort uses neither.

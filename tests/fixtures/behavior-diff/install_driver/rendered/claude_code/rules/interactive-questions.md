@@ -1,8 +1,17 @@
 ---
 name: "interactive-questions"
 description: "Canonical discipline for soliciting user input — the harness-neutral structured-inquiry channel is the sanctioned abstraction; every invocation carries a structured option annotation; destructive operations and ambiguity resolution route through this rule; a prose fallback shape covers harnesses that lack a native tool."
-pathFilter: ""
-alwaysApply: true
+pathFilter: "**/CLAUDE.md, **/AGENTS.md, **/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/output-styles/**/*.md"
+alwaysApply: false
+paths:
+  - "**/CLAUDE.md"
+  - "**/AGENTS.md"
+  - "**/rules/**/*.md"
+  - "**/commands/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
+  - "**/output-styles/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -78,12 +87,4 @@ Six anti-patterns: schema-bypassing raw prompts, destructive batching, driver-le
 
 ## Enforcement
 
-Always-on. Implements CM-2 extension. Detail-tier at `rules/interactive-questions-canonical-shapes.md`; matchers at `rules/interactive-questions-sweep-matchers.md`.
-
-## Bindings (§0.j five-direction)
-
-- **Drives →** ● Every structured-inquiry invocation across the ecosystem (every command, rule, skill, agent, hook surface that solicits user input routes through the canonical channel). ● The three-segment option-annotation schema (every option's `description` carries `rationale:`, `recommendation:`, `default-pointer:`). ● The per-file destructive-op confirmation floor (§6 — every delete / rename / move / overwrite / revert routes through the structured-inquiry channel per-file). ● The fallback prose shape (§5 — the sole permitted free-form-looking prompt outside the canonical channel). ◐ The `(Recommended)` label postfix bidirectional bind with body `recommendation: recommended`.
-- **Satisfies →** ● CM-2 extension (the structured-inquiry surface CM-2 delegates to). ● the rules registry row "Interactive Questions". ● Option Annotation Discipline (the mandate this rule's annotation schema enforces).
-- **Established by ↑** ● CM-2 (Zero Assumptions — this rule is the structured-inquiry extension). ● Option Annotation Discipline. ● Authority Hygiene (per-file destructive-op confirmation operationalizes the no-silent-substitution invariant).
-- **Gated by ←** ● `CLAUDE.md` always-loaded preamble. ● `rules/operational-mandates.md` (CM-2 inline definition delegates the structured-inquiry surface here).
-- **Cross-bound with ↔** ↔ `rules/interactive-questions-canonical-shapes.md` (companion sub-rule carrying §2–§7 worked examples, schema bodies, taxonomy details, canonical option-set templates). ↔ `rules/interactive-questions-sweep-matchers.md` (companion sub-rule carrying the §8 H1–H7 matcher catalog). ↔ `rules/operational-mandates.md` (CM-2 inline anchor delegates here). ↔ `commands/plan-execute.md` + `commands/plan-generate.md` + `commands/plan-spec.md` + `commands/plan-review.md` (every plan-pipeline command's structured-inquiry invocations). ↔ `scripts/dev/validate_ecosystem.py` (the `--check option-annotation` subcommand operationalizes the H4–H7 matchers). ↔ `rules/agent-capability-discipline.md` (§6 destructive-op canonical option sets govern agent-capability invocations). ↔ `rules/agnostic-posture.md` (preference selection routes through the end user under the host-agnostic posture rather than being silently picked). ↔ `rules/interactive-questions-detail.md` (companion sub-rule carrying the §9 authoring-discipline procedure and the anti-pattern catalog moved out of the always-on body). ↔ `rules/authority-inquiry.md` (the canonical structured-inquiry invocation schema, three-segment annotation, recommendation taxonomy, harness fallback, and per-file destructive-op confirmation are owned there; this rule carries the seven-category outward-projection catalog and delegates the structured-inquiry subset). ↔ `rules/authority-inquiry-categories.md` (the canonical-channel routing the parent rule delegates; every §1 inquiry routes through the structured inquiry schema). ↔ `rules/canonical-layout-reporting-tiers.md` (§6.4 destructive-op canonical option set governs §3's orphan-retirement path; §7.3 borderline-tier inquiry routes through the canonical channel). ↔ `rules/operational-mandates-expanded.md` (CM-2 structured-inquiry surface cited in the CM-2 directive). ↔ `rules/option-annotation.md` (the structured-inquiry subset is canonicalized there; this rule extends to prose-and-document option sets without duplicating the schema). ↔ `rules/surgical-manipulation.md` (§6 — destructive mutations route per-file through the canonical destructive-op floor).
+Applies whenever the user is asked for input. Implements CM-2 extension. Detail-tier at `rules/interactive-questions-canonical-shapes.md`; matchers at `rules/interactive-questions-sweep-matchers.md`.

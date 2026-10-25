@@ -24,8 +24,8 @@
 | `naming_grep.py` | Naming-convention conformance. |
 | `binding_reciprocity_grep.py` | Reciprocal five-direction bindings — half-edge detection. |
 | `binding_reciprocity_corpus_grep.py` | The same reciprocity check run across the whole artifact corpus rather than a single Write/Edit input. |
-| `binding_five_direction_grep.py` | Every rule, command, agent, and skill closes with a five-direction `## Bindings` section (hook messages: the three-direction subset). |
-| `always_on_budget_grep.py` | Always-on rule body token budget (the 500-token ceiling). |
+| `binding_five_direction_grep.py` | Every rule, command, agent, and skill closes with a five-direction `## Bindings` section (hook messages: the three-direction subset). In an installed tree (a flat root holding `.apothem/support`), a rule or skill copy with no section is the shipped form and passes; a section that is present must be complete. |
+| `always_on_budget_grep.py` | Always-on rule body token budget (the 500-token ceiling). Pointed at a rules directory, it also holds the loaded always-on set to `MAX_ALWAYS_ON_LOADED_BYTES` and the rule index to `MAX_INDEX_LOADED_BYTES`; the per-write check sees one file and enforces the body budget only. |
 | `agent_capability_grep.py` | Every harness declares its agentic-capability matrix. |
 | `agents_md_coverage_grep.py` | Stale agent-companion files under the root-only AGENTS.md convention. |
 | `registry_capability_consistency_grep.py` | Registry capability cells not backed by install / materializer / projection evidence. |

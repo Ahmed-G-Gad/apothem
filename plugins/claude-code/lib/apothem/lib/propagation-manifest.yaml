@@ -33,7 +33,23 @@
 #                      `${HARNESS_ROOT}` as the placeholder for the
 #                      harness's native config root resolved at install
 #                      time.
-#       exclude:       Glob patterns excluded from every directory copy.
+#                      `${PROJECT_ROOT}` is the operator-supplied project
+#                      root, and `${USER_HOME}` is the user home.
+#                      A `${USER_HOME}` target is a user-level folder, shared
+#                      by every install that names it: it is limited to a
+#                      closed set of folders (`.agents/skills`,
+#                      `.codebuddy/skills`, `.kiro/skills`, `.trae/skills`
+#                      for the `native_skills` and `command_skills` modes;
+#                      `.config/apothem/rules` and
+#                      `.config/apothem/templates` for `merge_tree_entries`),
+#                      must be `apothem-owned`, and in a project-scope block
+#                      comes before the project entries so a failure writing
+#                      the user folder aborts the install before the project
+#                      changes. Every install that writes such a folder emits
+#                      the same bytes, and the install ledger counts the
+#                      installs that hold it: an uninstall removes a folder
+#                      only when no other install still lists it.
+#       exclude:      Glob patterns excluded from every directory copy.
 #                      Matched against entry basenames within each
 #                      directory the adapter walks.
 #       stale-sweep:   Harness-root-relative paths swept on every install.
@@ -85,7 +101,8 @@ harnesses:
         mode: command_skills
         ownership_class: apothem-owned
       # Claude Code reads only `paths:` from a rule; claude_rules renders the
-      # corpus pathFilter as that list so path-scoped rules stop loading at launch.
+      # corpus pathFilter as that list so path-scoped rules stop loading at launch,
+      # and leaves the closing `## Bindings` section out of each copy.
       - source: "rules/"
         target: "${HARNESS_ROOT}/rules/"
         mode: claude_rules
@@ -210,6 +227,10 @@ harnesses:
     # at ~/.agents/skills/. Codex's ~/.codex/rules/ directory is reserved
     # for .rules execution policies, so Apothem Markdown rules remain under
     # ~/.config/apothem/ and are referenced from AGENTS.md / generated skills.
+    # The skills root and ~/.config/apothem/ are user-level targets
+    # (${USER_HOME}): they sit in the user home whatever CODEX_HOME is, and
+    # every install that names them writes the same bytes (see the
+    # ${USER_HOME} note in the schema above).
     install:
       - source: "harnesses/codex/templates/AGENTS.md"
         target: "${HARNESS_ROOT}/AGENTS.md"
@@ -224,18 +245,18 @@ harnesses:
         mode: merge_tree_entries
         ownership_class: apothem-owned
       - source: "rules/"
-        target: "${HARNESS_ROOT}/../.config/apothem/rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
       # native_skills / command_skills write agents/openai.yaml with
       # policy.allow_implicit_invocation: false beside each SKILL.md whose
       # source sets disable-model-invocation: true (Codex ignores that key).
       - source: "skills/"
-        target: "${HARNESS_ROOT}/../.agents/skills/"
+        target: "${USER_HOME}/.agents/skills/"
         mode: native_skills
         ownership_class: apothem-owned
       - source: "commands/"
-        target: "${HARNESS_ROOT}/../.agents/skills/"
+        target: "${USER_HOME}/.agents/skills/"
         mode: command_skills
         ownership_class: apothem-owned
       - source: "agents/"
@@ -243,7 +264,7 @@ harnesses:
         mode: codex_agents
         ownership_class: apothem-owned
       - source: "templates/"
-        target: "${HARNESS_ROOT}/../.config/apothem/templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
 
@@ -404,12 +425,36 @@ harnesses:
     # The adapter at src/apothem/harnesses/github_copilot/ opts into the
     # project-scope contract (requires_project = True) and supplies the
     # operator-supplied --project value via the project-scope CLI plumbing.
+    # Skills and command skills install at the shared user-level skills folder
+    # ~/.agents/skills/ (Copilot reads it; vendor docs at
+    # https://docs.github.com/en/copilot/concepts/agents/about-agent-skills),
+    # and the rules and templates corpus they cite at ~/.config/apothem/. Those
+    # user-level entries come first, so a failure writing the user home aborts
+    # the install before the project file changes.
     # profile_position: first puts the operator's shared-profile block ahead
     # of the governance text: GitHub's code-review guidance says shorter
     # instruction files are more likely to be fully processed
     # (docs.github.com/en/copilot/tutorials/customize-code-review, retrieved
     # 2026-10-03), so the operator-specific part leads.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/github_copilot/templates/copilot-instructions.md"
         target: "${PROJECT_ROOT}/.github/copilot-instructions.md"
         mode: sentinel_merge
@@ -441,8 +486,29 @@ harnesses:
     # of apothem's adapter scope. The harness slug stays "windsurf". The adapter
     # at src/apothem/harnesses/windsurf/ opts into the project-scope contract
     # (requires_project = True) and supplies the operator-supplied --project
-    # value via the project-scope CLI plumbing.
+    # value via the project-scope CLI plumbing. Skills and command skills
+    # install at the shared user-level skills folder ~/.agents/skills/ (vendor
+    # docs at https://docs.devin.ai/desktop/cascade/skills) and the rules and
+    # templates corpus at ~/.config/apothem/, ahead of the project rule.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/windsurf/templates/apothem-rules.md"
         target: "${PROJECT_ROOT}/.devin/rules/apothem-rules.md"
         mode: sentinel_merge
@@ -469,8 +535,29 @@ harnesses:
     # adapter at src/apothem/harnesses/cursor/ opts into the
     # project-scope contract (requires_project = True) and supplies the
     # operator-supplied --project value via the project-scope CLI plumbing; the
-    # manifest entry uses ${PROJECT_ROOT} rather than ${HARNESS_ROOT}.
+    # manifest entry uses ${PROJECT_ROOT} rather than ${HARNESS_ROOT}. Skills and
+    # command skills install at the shared user-level skills folder
+    # ~/.agents/skills/ (vendor docs at https://cursor.com/docs/skills) and the
+    # rules and templates corpus at ~/.config/apothem/, ahead of the project rule.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/cursor/templates/apothem-rules.mdc"
         target: "${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc"
         mode: sentinel_merge
@@ -794,8 +881,30 @@ harnesses:
     # .codebuddy/settings.json (permissions/MCP) are operator-owned and out
     # of apothem's adapter scope. The adapter at
     # src/apothem/harnesses/codebuddy/ opts into the project-scope contract
-    # (requires_project = True).
+    # (requires_project = True). Skills and command skills install at
+    # CodeBuddy's user-level skills folder ~/.codebuddy/skills/ (CodeBuddy
+    # documents ~/.codebuddy/skills/ and does not document ~/.agents/skills/),
+    # and the rules and templates corpus at ~/.config/apothem/, ahead of the
+    # project rule.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.codebuddy/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.codebuddy/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/codebuddy/templates/apothem-rules.md"
         target: "${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md"
         mode: sentinel_merge
@@ -820,8 +929,29 @@ harnesses:
     # clobbers Kiro's operator-authored foundation files (product.md, tech.md,
     # structure.md) or the .kiro/specs/ surface. The adapter at
     # src/apothem/harnesses/kiro/ opts into the project-scope contract
-    # (requires_project = True).
+    # (requires_project = True). Skills and command skills install at Kiro's
+    # user-level skills folder ~/.kiro/skills/ (https://kiro.dev/docs/skills/;
+    # Kiro does not document ~/.agents/skills/), and the rules and templates
+    # corpus at ~/.config/apothem/, ahead of the project steering file.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.kiro/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.kiro/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/kiro/templates/apothem-rules.md"
         target: "${PROJECT_ROOT}/.kiro/steering/apothem-rules.md"
         mode: sentinel_merge
@@ -844,11 +974,35 @@ harnesses:
     # <project>/.trae/rules/*.md (per https://docs.trae.ai/ide/rules). The
     # vendor anchors project_rules.md and user_rules.md are operator-owned
     # and never clobbered; apothem writes only its own apothem-rules.md file.
-    # The .trae/mcp.json and .trae/skills/ surfaces are operator-owned and
-    # out of apothem's adapter scope. The adapter at
-    # src/apothem/harnesses/trae/ opts into the project-scope contract
-    # (requires_project = True).
+    # The project .trae/mcp.json and .trae/skills/ surfaces are operator-owned
+    # and out of apothem's adapter scope. Skills and command skills install at
+    # Trae's user-level skills folder ~/.trae/skills/, and the rules and templates
+    # corpus at ~/.config/apothem/, ahead of the project rule.
+    # TODO(clarify): Trae's China edition may read ~/.trae-cn/skills/ instead of
+    # ~/.trae/skills/ (its changelog says the global directories are
+    # compatible, which was not read directly). Until a probe settles it, this
+    # block writes ~/.trae/skills/ only.
+    # The adapter at src/apothem/harnesses/trae/ opts into the project-scope
+    # contract (requires_project = True).
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.trae/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.trae/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/trae/templates/apothem-rules.md"
         target: "${PROJECT_ROOT}/.trae/rules/apothem-rules.md"
         mode: sentinel_merge
@@ -875,8 +1029,29 @@ harnesses:
     # out of apothem's adapter scope. The adapter at
     # src/apothem/harnesses/zed/ opts into the project-scope contract
     # (requires_project = True); the shared driver backs up any pre-existing
-    # .rules before replace.
+    # .rules before replace. Skills and command skills install at the shared
+    # user-level skills folder ~/.agents/skills/ (vendor docs at
+    # https://zed.dev/docs/ai/skills) and the rules and templates corpus at
+    # ~/.config/apothem/, ahead of the project file.
     install:
+      # User-level entries run first, so a failure writing the user home
+      # aborts the install before anything in the project changes.
+      - source: "rules/"
+        target: "${USER_HOME}/.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: native_skills
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${USER_HOME}/.agents/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${USER_HOME}/.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
       - source: "harnesses/zed/templates/apothem-rules.md"
         target: "${PROJECT_ROOT}/.rules"
         mode: sentinel_merge

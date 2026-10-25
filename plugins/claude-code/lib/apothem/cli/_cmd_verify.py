@@ -41,6 +41,7 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._user_level_report import verify_hint
 from apothem.lib.profile import ProfileValidationError
 
 
@@ -228,6 +229,9 @@ def _verify_row(
     # fidelity: a present-but-drifted install fails verify so a chosen
     # profile is confirmed faithfully installed, not merely present.
     verified = verified_struct and drift != "drift"
+    # A failed structural check on a harness that writes user-home folders says
+    # which of them is missing or not Apothem's, so the fix is not a guess.
+    hint = None if verified_struct else _user_level_hint(harness_id)
     row: dict[str, object] = {
         "harness": harness_id,
         "outcome": "unchanged" if verified else "error",
@@ -241,9 +245,22 @@ def _verify_row(
     }
     if drift is not None:
         row["drift"] = drift
+    if hint is not None:
+        row["user_level"] = hint
+        row["message"] = f"{row['message']}; {hint['message']}"
     if sweep.fmt != "json":
         _print_verify_line(sweep.con, harness_id, output_path, verified_struct, drift)
+        if hint is not None:
+            sweep.con.print(f"  [yellow]Note:[/] {escape(str(hint['message']))}")
     return row
+
+
+def _user_level_hint(harness_id: str) -> dict[str, object] | None:
+    """Return why a failed verify points at the user-home folders, or ``None``."""
+    try:
+        return verify_hint(harness_id)
+    except OSError:
+        return None
 
 
 def _verify_message(

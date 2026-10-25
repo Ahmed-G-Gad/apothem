@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.lib.propagation import HarnessRules, resolve_target
+from apothem.lib.propagation import HarnessRules, resolve_target, user_home
 
 #: Corpus directories whose files Apothem bodies cite by relative path, in the
 #: order the announcement lists them.
@@ -47,6 +47,11 @@ REFERENCE_NOTE_HEADING: Final[str] = "## Installed Reference Paths"
 #: Heading of the announcement an instruction anchor carries.
 ANNOUNCEMENT_HEADING: Final[str] = "## Apothem support files"
 
+#: The rule that names every other rule and when to read it. The announcement
+#: points at it when the install places it, so a harness that loads no rule
+#: files at launch still reaches the whole rule set.
+RULE_INDEX_CITATION: Final[str] = "rules/apothem-rule-index.md"
+
 
 @dataclass(frozen=True)
 class CorpusLayout:
@@ -67,10 +72,36 @@ class CorpusLayout:
         return bool(self.dirs)
 
     def display(self, path: Path) -> str:
-        """Return *path* as the text a note or announcement shows."""
+        """Return *path* as the text a note or announcement shows.
+
+        Under a project-scope ``base`` a path is shown relative to it. One
+        outside it, a user-level folder in the home, is shown as ``~/...``, so a
+        file that may be committed never carries a user name.
+        """
         if self.base is not None:
-            return path.relative_to(self.base).as_posix()
+            try:
+                return path.relative_to(self.base).as_posix()
+            except ValueError:
+                try:
+                    return (Path("~") / path.relative_to(user_home())).as_posix()
+                except ValueError:
+                    return path.as_posix()
         return path.as_posix()
+
+    def in_project(self, path: Path) -> bool:
+        """Return True when *path* sits inside the project of a project-scope layout.
+
+        A user-level folder in the home (``~/.config/apothem/rules``) is outside
+        it, so the text that names it must not say it is in the project or
+        relative to the project root.
+        """
+        if self.base is None:
+            return False
+        try:
+            path.relative_to(self.base)
+        except ValueError:
+            return False
+        return True
 
     @property
     def support_root(self) -> Path | None:
@@ -179,21 +210,47 @@ def _example_citations(layout: CorpusLayout) -> str:
     return ", ".join(forms[:-1]) + f", and {forms[-1]}"
 
 
+def _rule_index_shipped() -> bool:
+    """Return True when the rules the install copies include the rule index.
+
+    Read from the package's own ``rules/`` directory, the source of every rules
+    install, so the announcement never points at a file the install does not
+    write. Imported at call time for the reason :func:`_load_rules` is.
+    """
+    from apothem.harnesses._shared import install_driver
+
+    return (install_driver.APOTHEM_SRC / RULE_INDEX_CITATION).is_file()
+
+
+def _rule_index_line(layout: CorpusLayout) -> str:
+    """Return the sentence that points at the installed rule index, or ``""``."""
+    index = layout.resolve(RULE_INDEX_CITATION)
+    if index is None or not _rule_index_shipped():
+        return ""
+    return (
+        f"Start with the rule index at `{layout.display(index)}`: it names "
+        "every rule and when to read it."
+    )
+
+
 def support_announcement(layout: CorpusLayout) -> str:
     """Return the anchor section that names the installed support files.
 
     Harness-neutral: anchors that several tools load carry it unchanged. Empty
-    when the install places no cited corpus directory.
+    when the install places no cited corpus directory. When the install places
+    the rule index, one sentence points at it.
     """
     root = layout.support_root
     if root is None:
         return ""
+    in_project = layout.in_project(root)
+    index_line = _rule_index_line(layout)
     where = (
         f"`{layout.display(root)}/` in this project"
-        if layout.base is not None
+        if in_project
         else f"`{layout.display(root)}`"
     )
-    relative = ", relative to this project's root" if layout.base is not None else ""
+    relative = ", relative to this project's root" if in_project else ""
     lines = [
         ANNOUNCEMENT_HEADING,
         "",
@@ -204,6 +261,7 @@ def support_announcement(layout: CorpusLayout) -> str:
         "",
         *layout.path_lines(),
         "",
+        *([index_line, ""] if index_line else []),
         "A cited path whose first segment is not listed here is not installed.",
     ]
     return "\n".join(lines)
@@ -236,6 +294,21 @@ def announces_in_profile_document(harness_name: str) -> bool:
     return not any(entry.mode == "sentinel_merge" for entry in rules.install)
 
 
+def shared_corpus_layout() -> CorpusLayout:
+    """Return where every writer of the shared skill folders places the corpus.
+
+    The skill folders in the user home are one copy read by many tools, so the
+    note they carry cannot name a root: it names the user-level corpus folders
+    every writer installs, spelled ``~/...``. The layout takes no root, so the
+    note is the same bytes whoever writes it. A test pins it to the manifest
+    entries of every harness that writes those folders.
+    """
+    support = Path("~/.config/apothem")
+    return CorpusLayout(
+        dirs=(("rules", support / "rules"), ("templates", support / "templates"))
+    )
+
+
 def reference_note(layout: CorpusLayout) -> str:
     """Return the note a generated command skill carries.
 
@@ -250,7 +323,9 @@ def reference_note(layout: CorpusLayout) -> str:
             "project-local file with the same relative path.\n"
         )
     relative = (
-        " Paths are relative to the project root." if layout.base is not None else ""
+        " Paths are relative to the project root."
+        if any(layout.in_project(path) for _, path in layout.dirs)
+        else ""
     )
     bullets = "\n".join(layout.path_lines())
     return (
@@ -260,3 +335,24 @@ def reference_note(layout: CorpusLayout) -> str:
         "unless a project-local file with the same relative path exists."
         f"{relative}\n\n{bullets}\n"
     )
+
+
+#: Closing sentence of the shared note. The note names only the two corpus
+#: folders every writer installs; a skill may also cite a folder only some
+#: installs have (Codex's hooks, say), and the instruction file of such an
+#: install names it in its 'Apothem support files' section.
+SHARED_NOTE_TAIL: Final[str] = (
+    "\n"
+    "For a cited path whose first segment is not listed above, use the "
+    "directory the instruction file's 'Apothem support files' section names for "
+    "it, when that section lists one.\n"
+)
+
+
+def shared_reference_note() -> str:
+    """Return the note every writer of the shared skill folders appends.
+
+    The same bytes whoever writes it: the two user-level corpus folders, then a
+    pointer to the instruction file for any other first segment.
+    """
+    return reference_note(shared_corpus_layout()) + SHARED_NOTE_TAIL

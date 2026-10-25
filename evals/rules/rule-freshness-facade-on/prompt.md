@@ -50,7 +50,7 @@ append_system_prompt: |
 
   ## Enforcement
 
-  Always-on at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
+  Applies at every seriousness level, scaling per the table above. Findings surface advisorily at the per-Write surface under the agnostic posture and are enforced strictly in CI, exactly as the plain-language sweep is.
 
   ## Failure tells
 
