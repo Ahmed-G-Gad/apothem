@@ -294,6 +294,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   published site: it is a static export with unoptimized images, no server
   actions and no `use cache` functions, and `zod` validates page frontmatter
   only at build time.
+- **VS Code publishing tool updated for one advisory.** The locked `vsce`
+  toolchain overrides `@azure/msal-node` to 7.1.1 (GHSA-xcx6-jx8p-x3h5), since
+  `@azure/identity` still requires the 6.x line. The publish step signs in with
+  a personal access token and never reaches the affected authorization-code
+  flow; the packaged extension is unchanged.
 
 ## [1.2.2] - 2026-10-20
 
