@@ -287,6 +287,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   path is reached only through the deprecated `setup_requires` mechanism,
   which Apothem does not use, and the build environment's `certifi` is not
   shipped.
+- **Documentation site dependencies updated for three advisories.** The site
+  moves to `next` 16.4.3 (GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r,
+  GHSA-673q-mjm6-r5xr) and `zod` 4.6.7 (GHSA-mrhx-c7xc-m3w5). None reaches the
+  published site: it is a static export with unoptimized images, no server
+  actions and no `use cache` functions, and `zod` validates page frontmatter
+  only at build time.
 
 ## [1.2.2] - 2026-10-20
 
