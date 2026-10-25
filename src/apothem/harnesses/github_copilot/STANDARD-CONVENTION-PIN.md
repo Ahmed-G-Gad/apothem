@@ -65,7 +65,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions> (instruction files)
 - <https://docs.github.com/en/copilot/tutorials/customize-code-review> (code review and instruction length)
 - <https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions> (Copilot CLI instructions)
-- <https://docs.github.com/en/copilot/concepts/agents/about-agent-skills> (skills; the folder the adapter writes, retrieved 2026-10-24)
+- <https://docs.github.com/en/copilot/concepts/customizations/agent-skills> (skills; the folder the adapter writes, retrieved 2026-10-25)
 - <https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file> (prompt files; retrieved 2026-10-02)
 - <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/create-custom-agents> (agent profiles)
 

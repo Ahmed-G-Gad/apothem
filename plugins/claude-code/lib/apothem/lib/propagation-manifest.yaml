@@ -444,7 +444,7 @@ harnesses:
     # operator-supplied --project value via the project-scope CLI plumbing.
     # Skills and command skills install at the shared user-level skills folder
     # ~/.agents/skills/ (Copilot reads it; vendor docs at
-    # https://docs.github.com/en/copilot/concepts/agents/about-agent-skills),
+    # https://docs.github.com/en/copilot/concepts/customizations/agent-skills),
     # and the rules and templates corpus they cite at ~/.config/apothem/. Those
     # user-level entries come first, so a failure writing the user home aborts
     # the install before the project file changes.

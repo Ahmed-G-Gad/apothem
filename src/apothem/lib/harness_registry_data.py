@@ -941,7 +941,7 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://learn.chatgpt.com/docs/build-skills",
             "https://cursor.com/docs/skills",
             "https://geminicli.com/docs/cli/skills/",
-            "https://docs.github.com/en/copilot/concepts/agents/about-agent-skills",
+            "https://docs.github.com/en/copilot/concepts/customizations/agent-skills",
             "https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html",
             "https://docs.openclaw.ai/tools/skills",
             "https://opencode.ai/docs/skills/",
