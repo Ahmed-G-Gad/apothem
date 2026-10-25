@@ -21,10 +21,10 @@ page contrasts hand-maintaining that config against managing it with Apothem.
 ## What Apothem manages
 
 The github-copilot adapter embeds the shared rules into
-`.github/copilot-instructions.md`. Copilot operates as an IDE extension and
-exposes no tool-call hooks, so guardrail intent is carried entirely in the
-rendered instructions. Every change to the shared rules re-renders the file on
-the next `apothem update`.
+`.github/copilot-instructions.md`. Copilot documents hooks in
+`.github/hooks/*.json`, which the adapter does not write, so guardrail intent is
+carried entirely in the rendered instructions. Every change to the shared rules
+re-renders the file on the next `apothem update`.
 
 ## Migration path
 

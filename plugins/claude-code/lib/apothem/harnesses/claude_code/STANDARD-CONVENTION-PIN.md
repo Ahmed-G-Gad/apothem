@@ -14,7 +14,7 @@
 
 - MCP: registered with `claude mcp add --scope local|project|user` and stored in `~/.claude.json` (user and local scope) and the project `.mcp.json`, not `settings.json`. Apothem authors no MCP server entries; the template `settings.json` carries no `mcpServers`.
 - Permissions: `settings.json` `permissions` holds `allow`, `ask`, and `deny` rules, evaluated deny, then ask, then allow; the first match in that order decides. The Apothem template uses `allow` and `deny`.
-- Hook events: Apothem wires a current subset (SessionStart, PreToolUse with Write/Edit/NotebookEdit/Bash matchers, PreCompact, PostCompact, Stop).
+- Hook events: Apothem wires a current subset of the vendor events: `SessionStart`, `PreToolUse` (matchers `Write`, `Edit`, `NotebookEdit`, `Bash|PowerShell`, and `AskUserQuestion`), `PostToolUse`, and `Stop`. The template registers no `PreCompact` or `PostCompact` event.
 - Shared roots: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode, and `~/.claude/agents/`, where it installs agents, is also loaded by Cursor (re-checked 2026-10-24 against the Cursor docs). The VS Code docs list `~/.claude/agents/` for their Anthropic Claude agent, not for the one GitHub Copilot runs, so Copilot is not a reader. The registry records Claude Code as the owner of both roots and `apothem install` names the other readers.
 
 ## Rule loading
@@ -84,7 +84,7 @@ plugin manifest. Installing the plugin *alone* — without running
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |
 | Output styles | Yes | The 4 styles ship in the plugin's default `output-styles/` folder, which Claude Code scans when the manifest sets no `outputStyles` key ([plugins reference](https://code.claude.com/docs/en/plugins-reference), retrieved 2026-10-03); they are selectable from `/config` with the plugin alone. |
 | Rules | Degraded — requires `apothem install` for full reference tree | The plugin carries no rules-directory primitive; the embedded directives degrade to a SessionStart `additionalContext` pointer. The full `${HARNESS_ROOT}/rules/` reference tree lands only via the engine. |
-| Settings / statuslines / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny gates only — see the MCP row above), `statuslines/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. The statusline ships as `statuslines/statusline.md`, not as a `settings.json` key. |
+| Settings / statuslines / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny gates only — see the MCP row below), `statuslines/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. The statusline ships as `statuslines/statusline.md`, not as a `settings.json` key. |
 | MCP | No — operator-owned | MCP servers register via `claude mcp add` into `~/.claude.json` / project `.mcp.json`; neither the plugin nor the engine authors entries. |
 
 Bundle status: this is the reference plugin-alone implementation — commands,

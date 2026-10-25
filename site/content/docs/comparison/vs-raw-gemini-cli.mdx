@@ -23,8 +23,9 @@ The gemini-cli adapter writes a sentinel-delimited Apothem block into
 `<project>/GEMINI.md` that carries project-wide guidance and points to Apothem's
 material. Rules, templates and hooks land as support files under
 `<project>/.gemini/.apothem/support/`, and commands, skills and agents land under
-`<project>/.gemini/`. Gemini CLI has no PreToolUse hook, so guardrail intent is
-expressed in the rule prose rather than a tool-call interception point. Every
+`<project>/.gemini/`. Gemini CLI documents a `hooks` object in `settings.json`,
+which stays operator-owned, so the adapter registers no hook and guardrail intent
+is expressed in the rule prose rather than a tool-call interception point. Every
 change to the shared rules re-renders `GEMINI.md` on the next `apothem update`.
 
 ## Migration path

@@ -22,11 +22,12 @@ hand-maintaining that config against managing it with apothem.
 
 ## What Apothem manages
 
-The windsurf adapter renders the shared rules into the `.devin/rules/`
-directory; it does not write a single-file `.windsurfrules`. Windsurf has
-no PreToolUse hook, so guardrail intent lives in the rule prose rather than a
+The windsurf adapter renders the shared rules into one file,
+`<project>/.devin/rules/apothem-rules.md`; it does not write a single-file
+`.windsurfrules`. Windsurf documents hooks in `hooks.json`, which the adapter
+does not write, so guardrail intent lives in the rule prose rather than a
 tool-call interception point. Every change to the shared rules re-renders the
-directory on the next `apothem update`.
+file on the next `apothem update`.
 
 ## Migration path
 

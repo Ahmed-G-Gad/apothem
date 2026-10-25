@@ -11,29 +11,11 @@ either always-on or path-filtered.
 
 ## Active rules
 
-The canonical registry is the rules cohort. The same set in flat form:
-
-| Rule | Scope | Implements |
-|------|-------|------------|
-| Agnostic Posture | Always-on | Default-off posture |
-| Authority Inquiry | Always-on | Never invent identity, scope, or version data |
-| Session Closure | Always-on | Verifiable session close |
-| Context Management | Always-on | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Rule Index (`apothem-rule-index`) | Always-on | Which rule to read when |
-| Auto Memory | Path-filtered | CM-26 |
-| Clean-Room Generation | Path-filtered | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Path-filtered | CM-21 |
-| Context Management Scratch | Path-filtered | CM-12 / CM-24 (companion) |
-| Conventions Vigilance | Path-filtered | CM-22 |
-| Interactive Questions | Path-filtered | CM-2 extension |
-| Interactive Questions Sweep Matchers | Path-filtered | CM-2 extension (companion) |
-| Operational Mandates | Path-filtered | CM-1–10 |
-| Worker Orchestration | Path-filtered | CM-17 / CM-25 |
-| Clean Architecture | Path-filtered | CM-27 |
-| Large File Generation | Path-filtered | CM-23 |
-| Performance Discipline | Path-filtered | Performance axis |
-| Planning Techniques | Path-filtered | CM-20 / CM-21 |
-| Python Senior Architect | Path-filtered | CM-28 |
+The canonical registry is the rules cohort in `src/apothem/rules/`. The
+[generated inventory](#generated-rule-inventory) at the foot of this page lists
+every rule with its description and source file. Five rules are always-on and the
+rest are path-filtered; the next section names the five that load in every
+session.
 
 ## Frontmatter contract
 

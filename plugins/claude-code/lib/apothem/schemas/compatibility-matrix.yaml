@@ -2,7 +2,7 @@
 
 # Cross-harness compatibility matrix
 # Declares per-rule, per-agent, per-hook, per-output-style, per-skill, and
-# per-schema compatibility across the 15 Apothem harness adapters.
+# per-schema compatibility across the 17 Apothem harness adapters.
 # A reference artifact exposed via schemas.compatibility_matrix_path(); install-
 # time asset resolution itself flows through lib/propagation-manifest.yaml and
 # cohort-manifest.yaml, not this matrix.

@@ -18,12 +18,14 @@ intent into the shape its harness expects.
 
 | Shape | Harnesses (examples) | What Apothem emits |
 | --- | --- | --- |
-| Flat `.md` rule files in a directory | claude-code, windsurf, trae | Raw rule files copied into the harness's rules tree |
-| Cursor `.mdc` rules | cursor | A `.mdc` rule set carrying the metadata header Cursor expects |
+| Flat `.md` rule files in a directory | claude-code | Raw rule files copied into the harness's rules tree |
+| One merged rules file in a rules directory | windsurf, trae | One `apothem-rules.md` file with the activation frontmatter the harness reads |
+| Cursor `.mdc` rules | cursor | One `.mdc` rules file carrying the metadata header Cursor expects |
 | Single-file instruction document | codex, gemini-cli, github-copilot, zed | One concatenated document — `AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules` — assembled from the profile's rule set |
 
-A flat-`.md` harness takes the rules verbatim. A `.mdc` harness needs the
-Cursor metadata header wrapped around each rule. A single-file harness needs
+A flat-`.md` harness takes the rules verbatim. A merged-file harness takes one
+rules file whose frontmatter sets when the rules apply. A `.mdc` harness needs
+the Cursor metadata header at the top of its rules file. A single-file harness needs
 the whole rule set flattened into one document with stable section ordering so
 the operator reads the same conventions in the same sequence regardless of
 target. The neutral profile is the single source of truth; the divergence lives

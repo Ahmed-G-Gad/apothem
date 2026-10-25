@@ -23,7 +23,7 @@ registry, the per-adapter `capabilities.yml`, and each adapter's
 | GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md`; `~/.agents/skills/`; `~/.config/apothem/{rules,templates}/` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
-| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; native `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
@@ -56,23 +56,28 @@ A test renders every converted file and checks the maps against the output.
 
 | Harness | Native or converted payloads | Support-tree payloads | Unsupported or pending warnings |
 | --- | --- | --- | --- |
-| Antigravity | converted commands, agents, and rules; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, templates | statuslines, output styles; MCP and memory discovery pending |
-| Claude Code | converted commands; native skills, hooks, agents, rules, statuslines, output styles, sub-agent dispatch, tool restrictions, memory | templates | `CLAUDE.md` remains operator-owned; no adapter-written system prompt template; MCP discovery pending |
-| CodeBuddy | converted commands; native skills, rules, system prompt templates, memory; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
-| Codex | converted commands and agents; native skills, hooks, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | rules, templates | statuslines, output styles; MCP discovery pending because Apothem does not overwrite `config.toml` |
-| Cursor | converted commands; native skills, rules, system prompt templates; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
-| Gemini CLI | converted commands and agents; native skills, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles; MCP discovery pending |
-| GitHub Copilot | converted commands; native skills, rules, system prompt templates; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, MCP, sub-agent dispatch, memory |
+| Antigravity | converted commands, agents, and rules; native skills, sub-agent dispatch, system prompt templates | hooks, templates | statuslines, output styles; MCP and memory discovery pending |
+| Claude Code | converted commands; native skills, hooks, agents, rules, statuslines, output styles, sub-agent dispatch | templates | `CLAUDE.md` stays operator-owned apart from the one Apothem block; no adapter-written system prompt template; MCP discovery pending |
+| CodeBuddy | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
+| Codex | converted commands and agents; native skills, hooks, sub-agent dispatch, system prompt templates | rules, templates | statuslines, output styles; MCP discovery pending because Apothem does not overwrite `config.toml` |
+| Cursor | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
+| Gemini CLI | converted commands and agents; native skills, sub-agent dispatch, system prompt templates, memory | hooks, rules, templates | statuslines, output styles; MCP discovery pending |
+| GitHub Copilot | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, MCP, sub-agent dispatch, memory |
 | GLM (Z.ai) | none | none | commands, skills, hooks, agents, rules, templates, statuslines, output styles, MCP, sub-agent dispatch, tool restrictions, system prompt templates, memory — GLM is a model backend with no native config surface |
-| Hermes | converted commands; native system prompt templates, MCP; profile-projected tool restrictions | skills, hooks, agents, rules, templates | statuslines, output styles, sub-agent dispatch |
-| Kimi Code | native sub-agent dispatch, system prompt templates, memory | commands, skills, hooks, agents, rules, templates | statuslines, output styles; MCP and tool restrictions discovery pending |
-| Kiro | converted commands; native skills, rules, system prompt templates, memory; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
-| Open-Claw | converted commands; native system prompt templates; profile-projected tool restrictions | skills, hooks, agents, rules, templates | statuslines, output styles, MCP, sub-agent dispatch |
-| OpenCode | converted commands and agents; native skills, MCP, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles |
-| Qwen Code | converted commands and agents; native skills, hooks, MCP, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | rules, templates | statuslines, output styles |
-| Trae | converted commands; native skills, rules, system prompt templates; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
-| Windsurf | converted commands; native skills, rules, system prompt templates; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
-| Zed | converted commands; native skills, rules, system prompt templates; profile-projected tool restrictions | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
+| Hermes | converted commands; native system prompt templates, MCP, sub-agent dispatch | skills, hooks, agents, rules, templates | statuslines, output styles |
+| Kimi Code | converted commands; native skills, sub-agent dispatch, system prompt templates, memory | hooks, agents, rules, templates | statuslines, output styles; MCP and tool restrictions discovery pending |
+| Kiro | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
+| Open-Claw | converted commands; native system prompt templates, sub-agent dispatch | skills, hooks, agents, rules, templates | statuslines, output styles, MCP |
+| OpenCode | converted commands and agents; native skills, MCP, sub-agent dispatch, system prompt templates | hooks, rules, templates | statuslines, output styles |
+| Qwen Code | converted commands and agents; native skills, hooks, MCP, sub-agent dispatch, system prompt templates | rules, templates | statuslines, output styles |
+| Trae | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
+| Windsurf | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
+| Zed | converted commands; native skills, rules, system prompt templates | templates | hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
+
+The table leaves out the cells the registry marks `not-applicable`: tool
+restrictions on every harness except `Kimi Code` (`discovery-pending`) and
+`GLM (Z.ai)` (`unsupported`), and memory on `Claude Code`, `CodeBuddy`, `Codex`,
+`Hermes`, `Kiro`, `Open-Claw`, `OpenCode`, and `Qwen Code`.
 
 ## Shared roots
 
