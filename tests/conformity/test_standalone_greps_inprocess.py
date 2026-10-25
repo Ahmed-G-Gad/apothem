@@ -68,6 +68,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 #       * ``no_global_plans_grep``          — the git index for tracked plans paths
 #       * ``plans_discipline_language_grep``— four named instruction surfaces
 #       * ``plan_next_step_consistency_grep``— plan-suite infra footers (advisory)
+#       * ``gate_evidence_grep``            — plan-suite gate claims (advisory)
 #       * ``binding_reciprocity_corpus_grep``— the cross-file ↔-reciprocity walk
 _ROOT_SWEEP_EXCLUDED_MODULES: frozenset[str] = frozenset(
     {
@@ -79,6 +80,7 @@ _ROOT_SWEEP_EXCLUDED_MODULES: frozenset[str] = frozenset(
         "no_global_plans_grep",
         "plans_discipline_language_grep",
         "plan_next_step_consistency_grep",
+        "gate_evidence_grep",
         "binding_reciprocity_corpus_grep",
     }
 )

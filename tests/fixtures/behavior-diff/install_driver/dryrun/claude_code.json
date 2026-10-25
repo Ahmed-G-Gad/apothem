@@ -169,7 +169,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "claude_agents",
     "outcome": "created",
     "path": "<ROOT>/agents",
     "source": "<APOTHEM_SRC>/agents"

@@ -10,6 +10,7 @@ from typing import Any
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
+from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import (
@@ -19,6 +20,7 @@ from apothem.lib.propagation import (
 
 from .install_driver_apply import (
     HARNESS_EMISSION_APPLIERS,
+    _apply_rendered_cohort,
     apply_codex_agents,
     apply_command_skills,
     apply_gemini_agents,
@@ -184,6 +186,15 @@ def _dispatch_install_entry(
     if entry.mode == "markdown_commands":
         return apply_markdown_commands(
             entry,
+            harness_root=harness_root,
+            project_root=project_root,
+            harness_name=harness_name,
+        )
+    if entry.mode == "claude_agents":
+        return _apply_rendered_cohort(
+            entry,
+            renderer=claude_agent_text,
+            operation="claude_agents",
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,

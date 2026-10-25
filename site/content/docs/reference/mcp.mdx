@@ -47,6 +47,50 @@ with `claude mcp add` into `~/.claude.json` (user or local scope) and a
 project-level `.mcp.json`; the Claude Code adapter writes neither file, and
 Apothem's managed Claude Code settings never carry an `mcpServers` block.
 
+## Give a helper access to MCP servers
+
+The read-only research agents (`research-scout`, `citation-auditor`) ship with
+an explicit `tools` list of `Read, Glob, Grep, WebSearch, WebFetch`. Claude Code
+admits an MCP tool to a subagent's explicit list only when an entry names the
+server, in the form `mcp__<server>__*`. The profile's `agent_mcp_servers` key
+names those servers per agent:
+
+```yaml
+agent_mcp_servers:
+  research-scout:
+    - "your-scholarly-server"
+  citation-auditor:
+    - "your-scholarly-server"
+```
+
+The Claude Code install adds one `mcp__<server>__*` entry per named server to
+each listed agent's `tools` line, and changes no other agent or line. With no
+key every agent keeps the plain list, so no agent reaches an MCP tool. Write each
+server name as `/mcp` shows it. Claude Code writes `:` and `.` as `_` in tool
+names, so the install renders the server `plugin:bio-research:biorxiv` as
+`mcp__plugin_bio-research_biorxiv__*`. A name holds letters, digits, `-`, `_`,
+`:` and `.`, starts and ends with a letter or digit, and never has two of `_`,
+`:` and `.` in a row (the rendered entry would hold a `__`); `*`, whitespace and
+every other character are rejected.
+A grant names every tool of that server, including any that writes, so grant
+only a server you trust for lookups; the agents' instructions limit them to
+lookups, but the harness enforces only the names you list. A grant for an agent
+that does not exist, or one without an explicit `tools` list, is reported and
+skipped. A per-harness override under `harnesses.claude-code` adds to the shared
+lists.
+
+The grant applies to the engine install only (`apothem install`). Other
+harnesses ignore the key: Gemini CLI documents a per-server `mcp_<server>_*`
+entry for a subagent's `tools`, which Apothem does not render yet; Qwen Code
+documents no per-server entry for `tools`; OpenCode controls tools through
+permissions; Codex and Antigravity emit no tool list.
+
+The Claude Code plugin is assembled without a profile, so its two agents keep the
+plain list. To give them connector access without editing plugin files, define a
+user-level agent of your own in `~/.claude/agents/`, under a name of your
+choosing, that carries the same read-only `tools` list plus the
+`mcp__<server>__*` entries you want.
+
 ## Adding a server
 
 Register a server through your tool's native mechanism; the canonical entry shape

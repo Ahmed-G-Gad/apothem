@@ -11,6 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Final
 
+from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.propagation import (
     HarnessRules,
     InstallEntry,
@@ -168,7 +169,12 @@ def _generated_targets_for_entry(
             for source_path in sorted(src.glob("*.md"))
             if source_path.name not in _COHORT_DOC_FILES
         ]
-    if entry.mode in {"markdown_commands", "claude_rules", "antigravity_rules"}:
+    if entry.mode in {
+        "markdown_commands",
+        "claude_agents",
+        "claude_rules",
+        "antigravity_rules",
+    }:
         return [
             dst / source_path.name
             for source_path in sorted(src.glob("*.md"))
@@ -316,6 +322,7 @@ _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
     "opencode_agents": _opencode_agent_text,
     "qwen_agents": _qwen_agent_text,
     "markdown_commands": _native_markdown_command_text,
+    "claude_agents": claude_agent_text,
     "claude_rules": _claude_rule_text,
     "antigravity_rules": _antigravity_rule_text,
     "antigravity_agents": _antigravity_agent_text,

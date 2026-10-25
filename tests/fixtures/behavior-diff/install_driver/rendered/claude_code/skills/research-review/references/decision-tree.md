@@ -4,11 +4,14 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
-%% provenance: commands/research-review.md §Workflow %%
-%% cross-reference: agents/fact-checker.md, commands/research-paper.md, commands/research-publish.md, rules/pre-emission-gate.md %%
+%% verified: 2026-10-25 %%
+%% provenance: commands/research-review.md §Workflow and §Mode --paper %%
+%% cross-reference: agents/fact-checker.md, commands/research-paper.md, commands/research-publish.md, rules/pre-emission-gate.md, skills/research-suite/references/external-paper-checks.md %%
 flowchart TD
-    Start[/research-review invoked] --> Gate0{Sequence Gate: paper + analysis + synthesis present?}
+    Start[/research-review invoked] --> Mode{"--paper supplied, or a paper given with no suite?"}
+    Mode -->|yes| Ext["Mode --paper: intake · venue profile · roles · consistency audit"]
+    Ext --> Score
+    Mode -->|no| Gate0{Sequence Gate: paper + analysis + synthesis present?}
     Gate0 -->|no| Blocked[Halt: 'Blocked: run /research-paper first']
     Gate0 -->|yes| Ingest[Phase 1 read paper + evidence base · resolve venue standard]
     Ingest --> Venue{Venue standard resolved?}

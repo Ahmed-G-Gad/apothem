@@ -26,8 +26,11 @@ anchor as a sentinel-delimited Apothem managed block (identity / preferences /
 rules / seriousness / opted-in behaviors); operator prose outside the sentinels
 is preserved verbatim. Per the ratified transport map, Claude Code MCP is
 registered via ``claude mcp add`` into ``~/.claude.json`` / project ``.mcp.json``
-— not a file Apothem authors — so this adapter projects no MCP entries and the
-``settings.json`` permissions/hooks template is left unchanged.
+— not a file Apothem authors — so this adapter projects no MCP server entries and the
+``settings.json`` permissions/hooks template is left unchanged. The one MCP surface
+it does author is the per-agent tool grant: the profile's ``agent_mcp_servers`` key
+names, per agent, the servers whose tools (``mcp__<server>__*``) that agent's
+``tools`` list admits.
 
 The adapter is user-scope: it propagates under the harness root resolved
 as ``output_path.parent`` (``~/.claude/``). Its propagation contract —
@@ -48,6 +51,8 @@ from typing import Any
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.install_driver_layout import with_support_announcement
+from apothem.harnesses._shared.install_driver_types import _result, resolve_source
+from apothem.lib.claude_agent_mcp import agent_mcp_grants, grant_problems
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project
 from apothem.lib.python_resolver import resolve_python_bin, windows_short_path
@@ -90,7 +95,10 @@ def install(
     is materialized, then the shared *profile* is projected into the
     user-scope ``CLAUDE.md`` instruction anchor as a sentinel-delimited managed
     block (identity / preferences / rules / seriousness / opted-in behaviors).
-    Operator prose outside the sentinels is preserved verbatim. All operations
+    Operator prose outside the sentinels is preserved verbatim. For each agent
+    the profile's ``agent_mcp_servers`` key lists, the agent file's explicit
+    ``tools`` list gains one ``mcp__<server>__*`` entry per named server; with
+    no such key every agent is written as its source. All operations
     are idempotent — re-running with the same profile yields byte-identical
     output and preserves unrelated operator-authored discovery entries.
 
@@ -119,12 +127,24 @@ def install(
         profile=profile,
         extra=(harness_root / "CLAUDE.md",),
     )
-    with install_driver.content_tokens(
-        PYTHON_BIN=python_bin, STATUSLINE_PYTHON_BIN=statusline_python_bin
+    grants = for_harness.get("agent_mcp_servers")
+    with (
+        install_driver.content_tokens(
+            PYTHON_BIN=python_bin, STATUSLINE_PYTHON_BIN=statusline_python_bin
+        ),
+        agent_mcp_grants(grants),
     ):
         run = install_driver.run_install(
             _HARNESS_NAME, harness_root=harness_root, dry_run=dry_run
         )
+    # A grant that cannot take effect (unknown agent, or an agent that already
+    # inherits every tool) is reported, never silently dropped.
+    run = run.extend(
+        [
+            _result("warning", "claude_agents", harness_root / "agents", message)
+            for message in grant_problems(resolve_source("agents"), grants)
+        ]
+    )
     anchor_result = install_driver.apply_managed_block_anchor(
         harness_root / "CLAUDE.md",
         body,

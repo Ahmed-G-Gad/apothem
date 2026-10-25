@@ -20,7 +20,7 @@ and `evals/case.schema.json` describes it.
 
 | Kind | Cases | What passes |
 | --- | --- | --- |
-| Trigger | 142 | Each model-invocable command, model-invocable skill and subagent fires on a request in its domain (65 cases). Each of them stays quiet on a near miss, and so do six of the ten user-invoked-only commands (71 near-miss cases in all). Those six also have a case where a request that matches them exactly must still not start them (6 cases). |
+| Trigger | 148 | Each model-invocable command, model-invocable skill and subagent fires on a request in its domain (68 cases). Each of them stays quiet on a near miss, and so do six of the ten user-invoked-only commands (74 near-miss cases in all). Those six also have a case where a request that matches them exactly must still not start them (6 cases). |
 | Outcome | 32 | One per stage: the eight plan stages, the thirteen research stages and the eleven audit dimensions. Each runs the stage on a seeded workspace and checks the artifact it writes; audit cases also check that nothing in the seeded sources was edited. |
 | Rule effect | 6 pairs | Two copies of one request, one with a sampled rule's text appended to the system prompt and one without. The pair isolates the rule's effect, because an eval run loads no rules of its own. |
 

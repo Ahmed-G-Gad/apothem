@@ -32,6 +32,9 @@ The profile is a single YAML document. Its top-level keys:
 - `exclude_harnesses` — harness ids skipped by batch (`--harness all`)
   commands.
 - `mcp_servers` — MCP server definitions keyed by server name.
+- `agent_mcp_servers` — per helper name, the MCP servers that helper may call
+  (see [Give a helper access to MCP servers](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)).
+  Empty by default, so no helper reaches an MCP tool.
 - `workspace` — where Apothem keeps its shared working directory
   (`directory_name`, `scope`).
 - `schema_version` — optional profile-schema version; a profile without it is

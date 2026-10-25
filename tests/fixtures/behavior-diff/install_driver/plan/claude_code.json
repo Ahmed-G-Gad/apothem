@@ -5,7 +5,7 @@
     "target": "<ROOT>/settings.json"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "claude_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/agents"
   },

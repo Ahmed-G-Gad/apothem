@@ -24,6 +24,7 @@
 - Imports: an `@path` import in a `CLAUDE.md` resolves relative to the file that holds it, so `@rules/<name>.md` in `~/.claude/CLAUDE.md` names `~/.claude/rules/<name>.md`.
 - Match: each `paths` pattern is relative to the rule's base directory, which for a user-level rule is the session's primary working directory (memory page, retrieved 2026-10-24). The matcher in the build of 2026-10-20 applies `.gitignore` semantics and never matches a file whose path from that directory starts with `..`, so a file outside the working directory does not match. The auto memory directory is outside it.
 - Projection: the adapter writes the corpus `pathFilter` as `paths:` (`claude_rules` install mode), drops the `## Bindings` section from each rule copy, and installs five rules without `paths`: the four core rules and the rule index `apothem-rule-index`. Every other rule carries a `paths` list that scopes it; none is `**` alone.
+- Agent MCP grants: an explicit `tools` list admits an MCP tool only when an entry names the server, in the form `mcp__<server>__*` (sub-agents page, retrieved 2026-10-25). The `claude_agents` install mode copies each agent as written and, for each agent the profile's `agent_mcp_servers` key lists, appends one such entry per named server to its `tools` line. With no key the files match their sources; the plugin tree reads no profile and keeps the plain list.
 
 ## Vendor Sources
 

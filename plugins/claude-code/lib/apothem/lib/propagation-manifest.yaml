@@ -92,9 +92,13 @@ harnesses:
         target: "${HARNESS_ROOT}/settings.json"
         mode: write_text
         ownership_class: operator-owned
+      # claude_agents copies each agent as written and, for an agent the
+      # profile's agent_mcp_servers key lists, appends one mcp__<server>__*
+      # entry per named server to its explicit tools list. With no setting the
+      # files match their sources byte for byte.
       - source: "agents/"
         target: "${HARNESS_ROOT}/agents/"
-        mode: merge_tree_entries
+        mode: claude_agents
         ownership_class: apothem-owned
       - source: "commands/"
         target: "${HARNESS_ROOT}/skills/"

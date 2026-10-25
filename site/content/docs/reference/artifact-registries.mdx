@@ -157,9 +157,11 @@ Reusable skills live under `src/apothem/skills/`, one folder per skill.
 | Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Yes | Yes | Blind audit of the Apothem configuration tree |
 | Eval Harness | `src/apothem/skills/eval-harness/` | Yes | Yes | Reproducible language-model evaluation harnesses with explicit pass criteria |
 | Incident Runbook | `src/apothem/skills/incident-runbook/` | Yes | Yes | Runbook authoring as Trigger → Diagnosis → Action → Verification → Rollback |
-| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Yes | No | Issue to fix with evidence at each stage: drafts, sizing, a failing-test checkpoint, the fix |
+| Issue Lifecycle | `src/apothem/skills/issue-lifecycle/` | Yes | No | Issue to fix with evidence at each stage: drafts, sizing, a failing-test checkpoint, the fix, a drafted reporter request and an opt-in draft pull request |
 | Knowledge Wiki | `src/apothem/skills/knowledge-wiki/` | Yes | Yes | Index-first Markdown knowledge base with lint, drift and hub analysis |
 | Multi-Source Research | `src/apothem/skills/multi-source-research/` | Yes | Yes | Fanned-out, cross-verified, cited research reports |
+| Paper Toolkit | `src/apothem/skills/paper-toolkit/` | Yes | Yes | Reading notes, paper comparisons, supplied-source related-work drafts with coverage reports, draft critiques and reference style passes, without a research suite |
+| Perspectives | `src/apothem/skills/perspectives/` | Yes | Yes | Several separate viewpoints on a contested question, reconciled with a confidence and the strongest dissent |
 | Plan Suite | `src/apothem/skills/plan-suite/` | No | No | Master template consumed by the `/plan` pipeline stages |
 | Projectify | `src/apothem/skills/projectify/` | Yes | Yes | Chat-app Project elevation — the Description / Instruction / knowledge-Files deliverables to SOTA conventions within a measurable per-platform context budget |
 | Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Yes | Yes | Eval-validated structured prompt design |
@@ -168,12 +170,13 @@ Reusable skills live under `src/apothem/skills/`, one folder per skill.
 | Source Synthesis | `src/apothem/skills/source-synthesis/` | Yes | Yes | Reconciles a fixed source set into one cited synthesis |
 | Research Suite | `src/apothem/skills/research-suite/` | No | No | Canonical research-suite surface — the ten rigor mandates (R1–R10), the thirteen-stage research lifecycle, and the Principal-Investigator Framework; resolved by path from the `/research` pipeline stages |
 | Surgical Guard | `src/apothem/skills/surgical-guard/` | Yes | Yes | Minimal-diff anchor-bounded editing paired with a reactive, diff-based post-edit quality guard |
+| Teaching Pack | `src/apothem/skills/teaching-pack/` | Yes | Yes | Learning goals, curriculum, formula walk-throughs, worked examples, quiz with key and glossary from one paper or technical document, each line marked by source section |
 | Test Authoring | `src/apothem/skills/test-authoring/` | Yes | Yes | Behavior-first test authoring with Arrange-Act-Assert discipline |
 | UI Design | `src/apothem/skills/ui-design/` | Yes | Yes | Interface design and refinement to a craft floor with a `DESIGN.md` context |
 | Vuln Triage | `src/apothem/skills/vuln-triage/` | Yes | Yes | Severity-classifies security advisories and routes remediation |
 | Workflow | `src/apothem/skills/workflow/` | Yes | No | General-purpose multi-agent workflow harnessing with adversarial refute-by-default verification and disclosed beyond-mission remediation |
 
-A skill with `disable-model-invocation: true` runs only when the operator invokes it by name. Seventeen skills are model-invocable. Four are manual because they change state outside the working tree or depend on the operator choosing the moment: Dependency Upgrade, Secret Rotation, Workflow, and Issue Lifecycle. The two suite skills are reference-only templates read by path. The session-start skill index lists the model-invocable and manual names by domain.
+A skill with `disable-model-invocation: true` runs only when the operator invokes it by name. Twenty skills are model-invocable. Four are manual because they change state outside the working tree or depend on the operator choosing the moment: Dependency Upgrade, Secret Rotation, Workflow, and Issue Lifecycle. The two suite skills are reference-only templates read by path. The session-start skill index lists the model-invocable and manual names by domain.
 
 > **Convention.** Each row's **Path** is a folder; the entry point is the `SKILL.md` file inside it — e.g. `src/apothem/skills/plan-suite/SKILL.md` — per the folder-with-`SKILL.md` skill convention declared in the project source layout.
 

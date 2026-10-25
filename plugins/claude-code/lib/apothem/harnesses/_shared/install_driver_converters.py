@@ -354,23 +354,41 @@ _GEMINI_TOOL_MAP: Final[dict[str, tuple[str, ...]]] = {
 }
 
 
+#: Gemini's wildcard for every tool of every connected MCP server. The single
+#: underscore is Gemini's spelling, not Claude Code's ``mcp__`` prefix
+#: (https://geminicli.com/docs/core/subagents, retrieved 2026-10-25).
+_GEMINI_MCP_WILDCARD: Final[str] = "mcp_*"
+
+
 def _gemini_tool_names(source_path: Path) -> list[str] | None:
     """Return the Gemini ``tools`` allowlist, or ``None`` to inherit all tools.
 
-    The source grant minus its deny list, mapped to Gemini names. A tool with
-    no Gemini equivalent is left out rather than widened to a wildcard.
+    With a source grant: the grant minus its deny list, mapped to Gemini
+    names. A tool with no Gemini equivalent is left out rather than widened to
+    a wildcard.
+
+    Without a grant the source inherits every tool except its denials, which
+    is how an agent reaches MCP servers unknown when it is written. Gemini has
+    no deny list, and an omitted ``tools`` there inherits everything, so the
+    allowlist the denials imply is written out instead: every mapped built-in
+    the source does not deny, plus ``mcp_*`` unless a denial names MCP tools.
+    A source with neither a grant nor a denial inherits as written.
     """
     granted = [_tool_key(t) for t in _agent_scalar_list(source_path, "tools")]
-    if not granted:
-        return None
     denied = {_tool_key(t) for t in _agent_scalar_list(source_path, "disallowedTools")}
+    inherits_all = not granted
+    if inherits_all and not denied:
+        return None
+    denied_native = {n for key in denied for n in _GEMINI_TOOL_MAP.get(key, ())}
     names: list[str] = []
-    for key in granted:
+    for key in list(_GEMINI_TOOL_MAP) if inherits_all else granted:
         if key in denied:
             continue
         for native in _GEMINI_TOOL_MAP.get(key, ()):
-            if native not in names:
+            if native not in names and native not in denied_native:
                 names.append(native)
+    if inherits_all and not any(key.startswith("mcp") for key in denied):
+        names.append(_GEMINI_MCP_WILDCARD)
     return names
 
 
@@ -379,7 +397,9 @@ def _gemini_agent_text(source_path: Path) -> str:
 
     Gemini subagents accept ``tools`` (an allowlist; omitted means every tool)
     and ``max_turns`` (https://geminicli.com/docs/core/subagents, retrieved
-    2026-10-02), so the source grant and turn limit carry over natively.
+    2026-10-02), so the source grant and turn limit carry over natively. A
+    source with no grant gets the allowlist its denials imply, with MCP
+    access kept (see :func:`_gemini_tool_names`).
     """
     name = (field_value(source_path, "name") or source_path.stem).strip().lower()
     description = _agent_description(source_path)
@@ -436,11 +456,18 @@ def _antigravity_agent_text(source_path: Path) -> str:
     )
 
 
+#: Claude-Code-style tool names to Qwen Code tool names
+#: (https://qwenlm.github.io/qwen-code-docs/en/developers/tools/introduction/,
+#: retrieved 2026-10-25). ``agent`` and ``monitor`` are here so a source that
+#: denies them keeps the denial on Qwen, where an omitted ``tools`` inherits
+#: every tool of the parent session.
 _QWEN_TOOL_MAP: dict[str, str] = {
+    "agent": "agent",
     "bash": "run_shell_command",
     "edit": "edit",
     "glob": "glob",
     "grep": "grep_search",
+    "monitor": "monitor",
     "read": "read_file",
     "todowrite": "todo_write",
     "write": "write_file",
@@ -469,7 +496,15 @@ def _qwen_approval_mode(source_path: Path) -> str | None:
 
 
 def _qwen_agent_text(source_path: Path) -> str:
-    """Normalize a Markdown agent definition for Qwen Code subagents."""
+    """Normalize a Markdown agent definition for Qwen Code subagents.
+
+    A source with no ``tools`` grant emits no ``tools`` key, so the subagent
+    inherits the parent session's tools, MCP servers included, and the
+    ``disallowedTools`` list removes the denied ones. An explicit list would
+    cut MCP off: Qwen admits only MCP tools named in it
+    (https://qwenlm.github.io/qwen-code-docs/en/users/features/sub-agents/,
+    retrieved 2026-10-25).
+    """
     name = (field_value(source_path, "name") or source_path.stem).strip().lower()
     description = _agent_description(source_path)
     body = _agent_body(source_path).strip()

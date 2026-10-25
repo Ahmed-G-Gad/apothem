@@ -30,7 +30,7 @@ Any claim about what the literature contains (a gap, a first, a consensus, a cou
 
 1. the queries run, with the index or tool each ran against;
 2. the items opened, and how far each was read (per obligation 1);
-3. the items that were blocked, paywalled, or unreachable, listed by name;
+3. the items that were blocked, paywalled, or unreachable, listed by name; a lookup tool or connector that was never loaded, was not authorised, or returned nothing for lack of a session is listed here as blocked, with its name, and is never reported as "searched, nothing found";
 4. the point where the search stopped and why.
 
 The record sits next to the claim or in a linked file. A literature claim with no record is reported as unverified.
@@ -50,6 +50,9 @@ A test, script, or statistic is evidence only when it can return a negative resu
 - Include a control that is expected to fail, and confirm that it does.
 - Copy every reported number from the run's actual output; never from memory, from an earlier run, or from an expectation.
 - State the command or script and the input it ran on, so the check can be repeated.
+- Show that the check reacts to a fault in what it guards. Change that target in one small way (flip a comparison, drop a branch, shift an index by one, corrupt one input value) and confirm the check turns red. List each change the check let through; a check that stays green through every change tried guards nothing.
+- Match success on the whole expected token, anchored to a line, a field, or the exit status. A pass test that searches output for a substring (`ok`, `0 failed`) can match inside a failure line; run the failing case once to confirm it is not read as a pass.
+- Keep the assertions the claim rests on. Where assertions can be compiled out or skipped (an optimised interpreter run, a release build), write a load-bearing check as an explicit error or a test-framework assertion, and run the suite once with assertions removed to see that no claim rested on one alone.
 
 A check that has only ever passed is labelled `not yet shown to discriminate`.
 
@@ -63,7 +66,7 @@ Path-filtered: the globs in this rule's `pathFilter` field demand-load it on res
 
 ## Failure tells
 
-An abstract-only source described as read. A conjecture stated without a status. A novelty claim backed by one empty query. A search summary with no list of what was unreachable. A theorem applied with its conditions unchecked. A passing test with no control that fails. A number in the text that differs from the run output. A model-written reading listed as a review.
+An abstract-only source described as read. A conjecture stated without a status. A novelty claim backed by one empty query. A search summary with no list of what was unreachable. A theorem applied with its conditions unchecked. A passing test with no control that fails. A check that no small fault in its target turns red. A pass test that matches a substring of a failure line. A claim resting on an assertion that an optimised run deletes. A lookup connector that never loaded, reported as "nothing found". A number in the text that differs from the run output. A model-written reading listed as a review.
 
 ## Bindings (§0.j five-direction)
 

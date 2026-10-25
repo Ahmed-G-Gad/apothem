@@ -57,6 +57,7 @@
 | `user_confirm_grep.py` | Unfilled `<USER-CONFIRM:…>` placeholders. |
 | `plan_suite_structure_grep.py` | Plan-suite structure — suite-locality, closed vocabulary, numeric-prefix discipline. |
 | `plan_next_step_consistency_grep.py` | Plan-suite infra files' Recommended-Next-Step footer consistency (advisory). |
+| `gate_evidence_grep.py` | Plan-suite gate claims that lack the command, the exit status or output, and the HEAD SHA the plan-execute gate-evidence contract requires, and fifteen-bar attestation blocks that omit a field of the rule's schema or give an `n/a` without a reason (advisory; `--strict` exits non-zero). |
 
 ### Code craft
 

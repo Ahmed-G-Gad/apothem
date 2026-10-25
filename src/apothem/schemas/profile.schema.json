@@ -34,6 +34,10 @@
       "$ref": "#/$defs/mcpInventory",
       "default": {}
     },
+    "agent_mcp_servers": {
+      "$ref": "#/$defs/agentMcpServers",
+      "default": {}
+    },
     "harnesses": {
       "type": "object",
       "description": "Per-harness overrides keyed by supported public harness id.",
@@ -311,8 +315,27 @@
         },
         "mcp_servers": {
           "$ref": "#/$defs/mcpInventory"
+        },
+        "agent_mcp_servers": {
+          "$ref": "#/$defs/agentMcpServers"
         }
       }
+    },
+    "agentMcpServers": {
+      "type": "object",
+      "description": "Per subagent, the MCP servers that agent may call, keyed by agent name (the file stem under agents/, for example citation-auditor). Safe by default: with no entry an agent is granted no MCP tool. The Claude Code engine install adds one wildcard entry per server (that server's tools, and no other server's) to the agent's explicit tools list, and only for an agent whose source has one. Write each server name as /mcp shows it. Claude Code writes a colon or period as an underscore in tool names, so the install renders plugin:bio-research:biorxiv as mcp__plugin_bio-research_biorxiv__*. A name allows letters, digits, hyphen, underscore, colon and period, begins and ends with a letter or digit, holds no two of underscore, colon and period in a row, no asterisk and no whitespace, and is at most 64 characters. A per-harness override unions with the shared lists. Harnesses other than Claude Code do not read this key.",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(?![\\s\\S])"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(?!.*[_.:]{2})[A-Za-z0-9](?:[A-Za-z0-9_.:-]{0,62}[A-Za-z0-9])?(?![\\s\\S])"
+        },
+        "uniqueItems": true
+      },
+      "default": {}
     },
     "mcpInventory": {
       "type": "object",

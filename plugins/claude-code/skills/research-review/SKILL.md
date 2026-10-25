@@ -1,12 +1,12 @@
 ---
 name: "research-review"
-description: "Runs a hostile peer review of a finished paper: scores novelty, rigor, reproducibility, and ethics, then lists severity-ranked required revisions. Use when the user asks to 'review this paper like Reviewer 2' or 'give me the revision list'. Critique only; it does not rewrite the paper."
-argument-hint: "[--suite-name NAME] [--override] [--venue STANDARD] [--blind]"
+description: "Hostile peer review of a paper, from a research suite or a supplied PDF or text: scores novelty, rigor, reproducibility, ethics; ranks revisions. Use for 'review this paper like Reviewer 2', 'referee this PDF'. Rebuttal: research-disseminate; rewrite: research-paper; references: citation-auditor."
+argument-hint: "[--suite-name NAME] [--override] [--venue STANDARD] [--blind] [--paper PATH [--scale SPEC] [--roles LIST] [--out PATH]]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.0"
-  updated: "2026-10-24"
+  version: "0.1.1"
+  updated: "2026-10-25"
   portability: "universal"
 ---
 
@@ -52,20 +52,31 @@ The stage runs as one disciplined sprint: a single authoritative review report, 
 | -------- | ---- | -------- | ----------- |
 | `--suite-name <kebab-case>` | Flag + value | No | The research-suite folder name. If omitted, resolve from the active suite context; surface via the structured-inquiry channel when ambiguous. |
 | `--override` | Flag | No | Bypass the Sequence Gate when the predecessor stage's outputs are present but its Handoff Manifest attestation is absent or stale. The override is audited: it records a `[Gate — override: predecessor /research-paper; rationale: <operator-supplied>]` entry in the review report's disclosure ledger. |
-| `--venue <STANDARD>` | Flag + value | No | The target venue or review standard the critique scores against (e.g., a named conference, journal, or a generic top-tier bar). If omitted, resolve from the paper's stated target; when the paper is silent, Phase 1 ratifies the standard through the structured-inquiry channel before scoring the novelty and rigor axes, which are venue-relative. A value that resolves to an existing file is read as a venue profile (see Phase 1). |
+| `--venue <STANDARD>` | Flag + value | No | The target venue or review standard the critique scores against (e.g., a named conference, journal, or a generic top-tier bar). If omitted, resolve from the paper's stated target; when the paper is silent, Phase 1 ratifies the standard through the structured-inquiry channel before scoring the novelty and rigor axes, which are venue-relative. A value that resolves to an existing file is read as a venue profile, and a profile id from `skills/research-suite/references/venue-profiles.md` selects that generic profile (see Phase 1). |
 | `--blind` | Flag | No | Run a blind re-audit per `rules/planning-techniques.md` §6 — critique the paper without reading any prior review of it (a re-review cycle's earlier report, an author's response). The blind pass breaks anchoring bias and surfaces findings a prior-anchored review missed; its findings are reconciled against any prior review at Phase 4. |
+| `--paper <path>` | Flag + value | No | Review a paper that belongs to no suite: a PDF or text file, or `-` for pasted text. Skips the Sequence Gate; excludes `--suite-name` and `--override`; takes `--scale`, `--roles`, `--out`. See [Mode: `--paper`](#mode---paper-external-paper-review). |
 
 ---
 
 ## Sequence Gate
 
+Suite mode only: with `--paper` there is no predecessor and no gate (see the `--paper` mode below).
+
 **Predecessor.** `/research-paper` (Stage 10). This stage requires the finished paper deliverable and the suite evidence artifacts the paper rests on.
 
 **Precondition.** The paper deliverable exists at the host-natural location (`paper/`, discovered per `rules/host-discovery.md`), `{suite}/_outputs/analysis.md` and `{suite}/_inputs/synthesis.md` exist and are non-empty, and the Handoff Manifest records `/research-paper` as the most recent stage with a clean attestation block.
 
-**Gate-failure line.** When the precondition is unmet, halt and emit: `Blocked: run /research-paper first` — naming the missing artifact (absent paper, absent analysis, absent synthesis, or unsatisfied manifest attestation). Do not review a paper that does not exist or whose evidence base is incomplete.
+**Gate-failure line.** When the precondition is unmet and the operator supplied no paper, halt and emit: `Blocked: run /research-paper first` — naming the missing artifact (absent paper, absent analysis, absent synthesis, or unsatisfied manifest attestation). Do not review a paper that does not exist or whose evidence base is incomplete.
+
+**A supplied paper is not a gate failure.** When no suite resolves, or the suite holds none of the predecessor outputs, and the operator supplied a file, a path, or pasted text to review (with or without the `--paper` flag), do not halt. Offer `--paper` through the structured-inquiry channel with it as the recommended option, and on acceptance run the [Mode: `--paper`](#mode---paper-external-paper-review) section. When the operator declines, emit the gate-failure line above.
 
 **Override path.** `--override` proceeds when the predecessor outputs are present but the manifest attestation is stale; the override records its rationale in the review report's disclosure ledger per the `--override` input row above.
+
+---
+
+## Mode: `--paper` (External-Paper Review)
+
+> Moved to `references/mode-paper.md`. MUST read it when invoked with `--paper`; otherwise skip it.
 
 ---
 
@@ -118,13 +129,7 @@ The stage runs as one disciplined sprint: a single authoritative review report, 
 
 ## Output
 
-| Artifact | Path | Purpose |
-| -------- | ---- | ------- |
-| Review report | `{suite}/_outputs/review-report.md` | The seven-axis scorecard + severity-triaged required-revision list + reproducibility-package and re-run verdict + citation-integrity audit + overall verdict, ready for `/research-publish` consumption. |
-| Claim inventory | `{suite}/_inputs/review-claims.md` | Optional Phase 1 working file (the claim-to-evidence cross-check inventory) for a paper exceeding a single pass. |
-| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-publish`, the per-finding verification attestation, and the HIGH-finding count. |
-
-The `review-report.md` carries these canonical sections: `## §1 Scope & Venue` (the paper recap, the resolved venue standard and any venue profile applied, the evidence artifacts cross-checked, the four pre-screen figures); `## §2 Reviewer Scorecard` (the seven-axis table — novelty · rigor · reproducibility · clarity · ethics · statistical review · reporting-guideline conformance, each with its scored verdict, justifying loci, reviewer confidence 1-5, and the could-not-judge list); `## §3 Reproducibility Re-Run` (the reproducibility-package completeness check, the headline-number re-derivation against the analysis, the data/code-pointer resolution); `## §4 Citation-Integrity Audit` (every citation's resolve verdict against the source ledger); `## §5 Required Revisions` (the severity-triaged list — HIGH / MEDIUM / LOW, each finding with its locus, the standard it fails, and its concrete-driver rationale); `## §6 Overall Verdict` (the annotated `accept` · `minor-revision` · `major-revision` · `reject` decision with the recommended verdict and its rationale); `## §7 Verification Record` (the `Pass log` of the two scoring passes, the per-finding fact-checker verdicts and the blind-reconciliation delta where `--blind` ran); `## §8 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 
@@ -136,7 +141,7 @@ The `review-report.md` carries these canonical sections: `## §1 Scope & Venue` 
 
 ## Critical Rules
 
-- **NEVER review against an incomplete evidence base.** The Sequence Gate halts with `Blocked: run /research-paper first` until the paper, the analysis, and the synthesis are present and the predecessor attestation is clean (or `--override` is supplied with rationale).
+- **NEVER review against an incomplete evidence base.** The Sequence Gate halts with `Blocked: run /research-paper first` until the paper, the analysis, and the synthesis are present and the predecessor attestation is clean (or `--override` is supplied with rationale); a paper the operator supplies outside any suite takes the `--paper` mode instead.
 - **NEVER accept a claim because the paper asserts it.** Refute-by-default: every passed claim traces to the manuscript's own data or a cited source; confidence is not evidence.
 - **NEVER emit a finding without a concrete-driver rationale.** Every required revision cites the manuscript locus it targets and the standard it fails against per `rules/interactive-questions-canonical-shapes.md` §3.2.1; a bare opinion is not a finding.
 - **NEVER score novelty against the paper's self-description.** The novelty axis scores the delta over the closest prior work in the synthesis SOTA map, not the contribution the paper claims for itself.
@@ -144,10 +149,12 @@ The `review-report.md` carries these canonical sections: `## §1 Scope & Venue` 
 - **NEVER rewrite the paper to fix a finding.** This stage critiques and prescribes revisions; patching the manuscript is a separate action and a reviewer who silently edits the paper has stopped reviewing it.
 - **NEVER grant an `accept` verdict by default.** The overall verdict is the advance gate: a paper MUST beat the venue bar convincingly *and* significantly — no unresolved HIGH finding, no confirmatory improvement claimed without statistical significance over its comparators — before it advances to `/research-publish`; a paper that does not clear the gate earns `major-revision` or `reject`, never `accept`. Each clearance is logged as the auditable-runbook entry — the overall verdict, the HIGH-finding count, and the statistical-superiority evidence — per `skills/research-suite/references/advancement-gate.md`.
 - **NEVER emit a one-pass review.** The constructive and adversarial passes are both logged; a report missing the adversarial pass is unfinished, and a verdict is never given on an axis without stating what could not be judged.
-- **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-publish` may consume the review.
+- **NEVER skip the validation gate.** All fifteen bars pass before the report is emitted; in suite mode they also pass before the Handoff Manifest updates and `/research-publish` may consume the review.
 
 ---
 
 ## Recommended Next Step
 
-Invoke `/research-publish` to assemble the venue-formatted submission package once the required revisions are addressed; `/research-publish` is the canonical pipeline successor that consumes the paper alongside `_outputs/review-report.md` to build the cover letter, data/code-availability statement, and ethics/COI declarations against the reviewer's findings.
+In suite mode, invoke `/research-publish` to assemble the venue-formatted submission package once the required revisions are addressed; `/research-publish` is the canonical pipeline successor that consumes the paper alongside `_outputs/review-report.md` to build the cover letter, data/code-availability statement, and ethics/COI declarations against the reviewer's findings.
+
+In `--paper` mode there is no suite, no Handoff Manifest, and no publish stage to hand to. The next step is the operator's: check each finding against the paper, drop or rewrite the ones that do not hold, and then sign or submit their own review (the report is a draft, not a review). When the paper is the operator's own draft, offer `/research-paper` to carry the required revisions into the manuscript.

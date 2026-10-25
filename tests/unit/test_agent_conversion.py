@@ -50,6 +50,7 @@ _GEMINI_TOOLS = {
     "google_web_search",
     "web_fetch",
     "write_todos",
+    "mcp_*",
 }
 
 
@@ -59,9 +60,11 @@ def _names(path: Path, key: str) -> set[str]:
 
 
 def _read_only(path: Path) -> bool:
-    return not (
-        (_names(path, "tools") - _names(path, "disallowedTools")) & _WRITE_TOOLS
-    )
+    granted, denied = _names(path, "tools"), _names(path, "disallowedTools")
+    if not granted:
+        # No grant inherits every tool, so only a denial of both writers counts.
+        return denied >= _WRITE_TOOLS
+    return not ((granted - denied) & _WRITE_TOOLS)
 
 
 def _fm(text: str) -> dict[str, object]:

@@ -101,6 +101,8 @@ CATALOG_CUES: Final[dict[str, tuple[str, str]]] = {
     "source-synthesis": ("research", "given documents"),
     "knowledge-wiki": ("research", ""),
     "decision-matrix": ("research", ""),
+    "paper-toolkit": ("research", ""),
+    "perspectives": ("research", ""),
     # Review and audit
     "audit": ("review", "all dimensions"),
     "code-audit": ("review", "cross-file"),
@@ -114,8 +116,8 @@ CATALOG_CUES: Final[dict[str, tuple[str, str]]] = {
     "supply-chain-audit": ("review", ""),
     "threat-model-audit": ("review", ""),
     "ux-review": ("review", "CLI and DX"),
-    "ecosystem-audit": ("review", "config tree"),
-    "vuln-triage": ("review", "one CVE"),
+    "ecosystem-audit": ("review", ""),
+    "vuln-triage": ("review", ""),
     # Engineering
     "dev-toolkit": ("engineering", "debug, TDD"),
     "test-suite": ("engineering", ""),
@@ -129,6 +131,7 @@ CATALOG_CUES: Final[dict[str, tuple[str, str]]] = {
     # Authoring and design
     "document-authoring": ("authoring", ""),
     "diagram-authoring": ("authoring", ""),
+    "teaching-pack": ("authoring", ""),
     "ui-design": ("authoring", ""),
     "projectify": ("authoring", "chat Projects"),
     # Operations and release
@@ -141,7 +144,7 @@ CATALOG_CUES: Final[dict[str, tuple[str, str]]] = {
     "incident-runbook": ("operations", ""),
     "issue-lifecycle": ("operations", ""),
     "secret-rotation": ("operations", "leaked key"),
-    "workflow": ("operations", "parallel, verified"),
+    "workflow": ("operations", "multi-agent"),
 }
 
 

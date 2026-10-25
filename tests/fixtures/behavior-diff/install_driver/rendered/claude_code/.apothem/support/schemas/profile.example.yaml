@@ -53,6 +53,15 @@ mcp_servers:
     transport: streamable-http
     url: "https://mcp.example.invalid/docs"
 
+# Per-agent MCP grants (optional; omit to give no agent an MCP tool). Keyed by
+# agent name; each value lists the servers that agent may call. The Claude Code
+# engine install adds one mcp__<server>__* entry per server to that agent's
+# explicit tools list. Use the server names Claude Code shows in /mcp; a colon
+# or period in a name is rendered as an underscore, as Claude Code spells it.
+# agent_mcp_servers:
+#   research-scout:
+#     - "your-scholarly-server"
+
 harnesses:
   claude-code:
     seriousness: SHARED
