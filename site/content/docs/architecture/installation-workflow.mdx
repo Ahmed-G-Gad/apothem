@@ -46,8 +46,12 @@ On `apothem uninstall --harness X`:
 
 Each adapter writes to its own fixed install root: user-home for user-scope
 adapters and project-local for project-scope adapters. The CLI does not expose
-a `--scope` flag; project-scope adapters require `--project <path>`. Each
-destination is documented at
+a `--scope` flag; project-scope adapters require `--project <path>`. Seven of
+the project-scope adapters also write shared folders in the user home, such as
+`~/.agents/skills/` and `~/.config/apothem/`, before they write the project
+file, and `--project` does not change where those go. The
+[install reference](/docs/cli-reference/install#folders-in-your-home-directory)
+lists them. Each destination is documented at
 `site/content/docs/harnesses/<harness>.mdx`.
 
 ## Error handling

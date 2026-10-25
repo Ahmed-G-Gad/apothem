@@ -92,4 +92,5 @@ paths left-to-right; only the surrounding prose flows RTL.
 ## Questions
 
 Open a [GitHub Discussion](https://github.com/ahmed-g-gad/apothem/discussions) or
-file an [issue](https://github.com/ahmed-g-gad/apothem/issues) with the `i18n` label.
+file a [documentation issue](https://github.com/ahmed-g-gad/apothem/issues/new?template=documentation.yml)
+and name the locale in the title.

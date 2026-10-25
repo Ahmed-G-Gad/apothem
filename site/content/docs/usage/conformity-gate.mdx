@@ -70,12 +70,21 @@ when the root has no commit history.
 # List every registered validator
 PYTHONPATH=src python -m apothem.conformity.gate --list
 
-# Run a single named validator
-PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
+# Run one per-write validator against one file
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence src/apothem/rules/my-rule.md
 
-# Run every validator against one file
+# Run one standalone validator over a root directory
+PYTHONPATH=src python -m apothem.conformity.gate --check naming-grep .
+
+# Run every per-write validator against one file
 PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
+
+A per-write validator takes the file to check, or `--stdin` to read the content
+from standard input; with neither it waits for input on standard input, so pass
+the file when you run it from a terminal. A standalone validator takes a root
+directory (the current directory when omitted). `--list` shows which group each
+validator belongs to.
 
 `--hook` mode (`python -m apothem.conformity.gate --hook`) is the
 harness-dispatched entry point: it reads a tool-input JSON payload from stdin

@@ -12,7 +12,7 @@
 <h1 align="center">Apothem</h1>
 
 <p align="center">
-  <em>Author one shared profile · materialize it into seventeen tools' native configs.</em>
+  <em>one profile, every harness</em>
 </p>
 
 <p align="center">
@@ -55,7 +55,7 @@
   </a>
 </p>
 
-**Apothem** authors one shared profile — rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template — and materializes that *whole synced unit* into all seventeen supported harnesses' native configuration directories through per-harness adapters. The profile also carries MCP server definitions. Edit the profile once; every tool picks up the change from a single command. One source of truth, seventeen destinations, zero hand-maintained drift — with a mechanized conformity gate keeping every materialized surface in line.
+**Apothem** authors one shared profile — rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template — and materializes it into the native configuration of seventeen supported harnesses through per-harness adapters. Each harness receives the primitives it can load, translated into its native form or placed under an Apothem support folder; the [harness registry](https://apothem.ahmedgad.com/docs/reference/harness-registry/) shows which cohorts reach which harness. The profile also carries MCP server definitions, which Apothem writes into the native configuration of Hermes, OpenCode, and Qwen Code only ([MCP servers](https://apothem.ahmedgad.com/docs/reference/mcp/)). Edit the profile once; one command re-materializes each harness you install. One source of truth, seventeen destinations, zero hand-maintained drift — with a mechanized conformity gate keeping every materialized surface in line.
 
 <details>
 <summary><b>Table of contents</b></summary>
@@ -83,11 +83,11 @@ Supported harnesses proliferate; each one parks its configuration in a different
 
 Apothem cuts the drift at the root, and goes wider than file-copying or rules-only sync:
 
-- **One profile, seventeen destinations.** Author your rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template once. Push the whole unit to every harness with one command.
-- **A wide synced unit, not rules alone.** Every primitive travels as a first-class citizen — translated into each harness's native schema, never flattened to a lowest common denominator.
+- **One profile, seventeen destinations.** Author your rules, skills, subagents, slash-commands, hooks, output-styles, statuslines, templates, conformity validators, schemas, per-harness instruction templates, and the Claude Code settings template once. One command installs each harness with the primitives it can load.
+- **A wide synced unit, not rules alone.** Each primitive a harness can load is translated into that harness's native schema, or placed under an Apothem support folder where the harness has no matching primitive — never flattened to a lowest common denominator. The [harness registry](https://apothem.ahmedgad.com/docs/reference/harness-registry/) lists what reaches each harness.
 - **A mechanized governance gate.** `python -m apothem.conformity.gate` runs multi-bar pre-emission checks — authorship headers, naming, code-craft, hedging, binding reciprocity — so every materialized surface stays conformant.
 - **Deterministic pipelines.** A review pipeline (`/plan-spec → /plan-generate → /plan-review → /plan-design → /plan-execute`, where `/plan-design` runs only for architecture-bearing suites), a thirteen-stage `/research` pipeline, and an eleven-command audit fortress apply to every change to the profile itself.
-- **Reversible, verified lifecycle.** Every install is undone by the matching uninstall — timestamped backups, zero orphans; `apothem verify --harness <name>` answers "is the profile faithfully installed here?" with a structured JSON drift report.
+- **Reversible, verified lifecycle.** Every install is undone by the matching uninstall — timestamped backups, zero orphans; `apothem verify --harness <name> --profile <path>` answers "is the profile faithfully installed here?" in plain text, or as a structured JSON drift report with `--json`; without `--profile` it checks that the managed files are present and valid.
 - **Durable memory + opt-in learning.** A persistent memory tier and an opt-in continuous-learning loop carry confirmed conventions forward across sessions.
 - **Work that survives session, account, and machine boundaries.** Long-running work externalizes its full state to a project-local `.apothem/plans/` suite — a resumption contract plus a cold-start protocol. Because the state lives in your project's files, not locked inside one cloud chat history, a fresh session on any account or machine pointed at the project picks the work back up in place. See [Resumable planning](https://apothem.ahmedgad.com/docs/concepts/resumable-planning/).
 
@@ -95,14 +95,14 @@ Apothem cuts the drift at the root, and goes wider than file-copying or rules-on
 
 | | Capability | What it gives you |
 |---|---|---|
-| 🎯 | **One profile → seventeen native configs** | Author once; install everywhere. Each harness receives the profile translated into its own native schema — no lowest-common-denominator flattening. |
-| 🧩 | **A wide synced unit** | Rules · skills · subagents · slash-commands · hooks · output-styles · statuslines · templates · conformity validators · schemas · per-harness instruction templates · Claude Code settings template travel together as first-class primitives — not rules alone. |
+| 🎯 | **One profile → seventeen native configs** | Author once; install one harness at a time or all at once with `--harness all`. Each harness receives the primitives it can load, translated into its own native schema or placed under an Apothem support folder — no lowest-common-denominator flattening. |
+| 🧩 | **A wide synced unit** | Rules · skills · subagents · slash-commands · hooks · output-styles · statuslines · templates · conformity validators · schemas · per-harness instruction templates · Claude Code settings template are authored together in one profile — not rules alone — and each reaches the harnesses that can load it. |
 | 🛡️ | **Mechanized governance gate** | `python -m apothem.conformity.gate` runs multi-bar pre-emission checks — authorship headers, naming, code-craft, hedging, binding reciprocity — across every materialized surface; a behavior-diff golden corpus regression-locks each adapter's output, so any unintended change to what a harness receives is caught. |
 | 🧭 | **Deterministic pipelines** | A staged `/plan` review pipeline and a thirteen-stage `/research` pipeline apply the same discipline to every change to the profile itself. |
 | 🏰 | **Eleven-command audit fortress** | Security · code · accessibility · performance · dependency · supply-chain · threat-model · architecture · code-review · docs-review · UX audits on demand. |
 | 🧠 | **Durable memory + opt-in learning** | A persistent memory tier and an opt-in continuous-learning loop carry confirmed conventions forward across sessions. |
 | 👁️ | **Preview before write** | `apothem diff --harness <name>` shows every pending change to a harness's native config before anything lands — inspect the full diff, then install. |
-| 🔍 | **Verifiable state** | `apothem verify --harness <name>` reports drift between source profile and harness destination — structured JSON with `--format json` for CI. |
+| 🔍 | **Verifiable state** | `apothem verify --harness <name>` reports drift between source profile and harness destination when you pass `--profile <path>` — structured JSON with `--format json` for CI. |
 | ↩️ | **Reversible lifecycle** | Every install is matched by a clean uninstall — timestamped backups at `~/.apothem/backups/`, zero orphans, confirmation-gated removal (`--yes` for batch). |
 | 🗂️ | **Multi-scope adapters** | User-scope and project-scope targets; `--project .` directs project-scope harnesses such as Cursor, Gemini CLI, GitHub Copilot, and Windsurf. |
 | 🔐 | **Supply-chain hardened releases** | SLSA-3 build provenance · Sigstore signatures · CycloneDX SBOM · npm provenance · OpenSSF Scorecard tracked. |
@@ -148,7 +148,8 @@ supported tool and is never the default.
 
 That is the whole path: `quickstart` scaffolds a shared profile when none
 exists, previews every file it will write, installs, and names the next
-commands; `verify` reports whether the profile is faithfully installed. What
+commands; `verify` confirms the installed files are present and valid (add
+`--profile PATH` to also check them against the profile). What
 follows is the longer tour — the same one command explained in full, then the
 explicit step-by-step alternative.
 
@@ -241,8 +242,8 @@ and a verification step.
 | 7 | [Codex plugin](#7--codex-plugin) | Bootstrap that runs the engine | Codex · Node 18+ · Python 3.10+ |
 | 8 | [Direct engine (`python -m apothem`)](#8--direct-engine-python--m-apothem) | Full harness from a checkout | Python 3.10+ (`click`, `rich`) |
 
-The npm shim (2), the one-shot installers (3), and the direct engine (8)
-deliver the whole synced unit for any harness. The Gemini CLI, Qwen Code, and
+The npm shim (2), the one-shot installers (3), and the direct engine (8) run
+the full install for any harness. The Gemini CLI, Qwen Code, and
 Codex extensions (5–7) install a small bootstrap that shells out to the engine
 (`npx @ahmed-g-gad/apothem install`) to materialize the full harness — they are
 the entry point, not the full delivery on their own.
@@ -261,7 +262,7 @@ Inside Claude Code:
 ```
 
 **Verify:** run `/help` inside Claude Code and confirm the Apothem commands are
-listed, or check the drift report with:
+listed, or check the install with:
 
 ```shell
 npx @ahmed-g-gad/apothem verify --harness claude-code
@@ -407,6 +408,8 @@ form — it never advertises a bare `apothem` command the run did not resolve.
 | `APOTHEM_REPO` | `https://github.com/ahmed-g-gad/apothem` | Git remote to clone |
 | `APOTHEM_REF` | *(latest signed tag)* | Git ref to check out; unset resolves the latest release tag, or set a tag to pin / `main` for the moving branch |
 | `APOTHEM_ALLOW_UNVERIFIED` | *(unset)* | Set to `1` to downgrade a tag-verification failure to a warning and proceed |
+| `APOTHEM_VERIFY` | `signature` | `signature` verifies the release tag's signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) |
+| `APOTHEM_RELEASE_BASE` | `${APOTHEM_REPO}/releases/download` | Download base for checksum mode |
 | `APOTHEM_SOURCE` | *(unset)* | Explicit local source tree to use instead of cloning (skips tag resolution and verification) |
 | `APOTHEM_HARNESS` | `claude-code` | Harness to materialize |
 | `APOTHEM_PROFILE` | `$HOME/.config/apothem/profile.yaml` | Shared profile path |
@@ -682,7 +685,7 @@ Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apoth
 ## Updating
 
 ```shell
-# Fast-forward the bundled source and re-materialize:
+# Check out the latest signed release tag (verified) and re-materialize:
 sh scripts/installer/update.sh                  # POSIX
 pwsh -NoProfile -File scripts/installer/update.ps1   # Windows
 
@@ -692,8 +695,9 @@ npx @ahmed-g-gad/apothem update --harness all --project .
 PYTHONPATH="$HOME/.apothem/src" python -m apothem update --harness cursor --project .
 ```
 
-The update script fast-forwards the source tree at `APOTHEM_HOME` and re-runs
-materialization. `apothem update` re-materializes harness configuration from
+The update script checks out the latest signed release tag in the source tree
+at `APOTHEM_HOME`, verifies its signature, and re-runs materialization.
+`apothem update` re-materializes harness configuration from
 the current shared profile; it is not a CLI self-updater, and the current
 command surface does not include `update --self`, `update --check`, or
 `update --apply`.

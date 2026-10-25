@@ -17,11 +17,11 @@ project-local configuration.
 | [`opencode/native-install/opencode.json`](opencode/native-install/opencode.json) | A materialized OpenCode `opencode.json` — a profile-rendered native config: the `$schema` pin, the `instructions` list naming each always-on rule in the `.apothem/support/` subtree, and the shared MCP inventory rendered into OpenCode's native `mcp` surface (`type: local`/`remote`, `${VAR}` secret indirection). |
 | [`cursor/native-install/apothem-rules.mdc`](cursor/native-install/apothem-rules.mdc) | A materialized Cursor rules file — the shape a project-scope install writes into `<project-root>/.cursor/rules/`. The Apothem template and the profile-projected managed block are folded together inside the `<!-- BEGIN/END APOTHEM MANAGED BLOCK -->` sentinels; operator prose outside the sentinels is preserved on re-install. |
 
-## Two adapter classes, side by side
+## Three adapter classes, side by side
 
-These two examples show the two ways a harness receives configuration, the
-distinction the [adapter-design deep-dive](https://apothem.ahmedgad.com/docs/blog/posts/multi-harness-adapter-design)
-calls Class II-A and Class II-B:
+These three examples show the three ways a harness receives configuration,
+the distinction the [adapter-design deep-dive](https://apothem.ahmedgad.com/docs/blog/posts/multi-harness-adapter-design)
+calls Class I, Class II-A, and Class II-B:
 
 - **Claude Code (Class II-A) — raw plus vendor templates.** Apothem propagates
   its authored artifacts and ships vendor settings templates; the
@@ -34,13 +34,18 @@ calls Class II-A and Class II-B:
   remote server needs. Its server list is illustrative and does not correspond
   to `profile.example.yaml`; to see the exact output for a given profile, use
   the `--dry-run` preview below.
-- **Cursor (Class II-B, project-scope) — profile-rendered into a project tree.**
-  Cursor is a project-scope harness: `apothem install --harness cursor --project <path>`
-  writes into the operator's project at `<project-root>/.cursor/rules/apothem-rules.mdc`
-  rather than a user-scope config home. The `apothem-rules.mdc` above is the
-  actual render for the shared `profile.example.yaml` — the identity,
-  preferences (including the `verbose` per-harness override), custom rules, and
-  MCP inventory are all projected from the profile.
+- **Cursor (Class I, project-scope) — raw propagation into a project tree.**
+  Cursor is a project-scope harness with no materializer:
+  `apothem install --harness cursor --project <path>` merges the Apothem
+  template into the operator's project at `<project-root>/.cursor/rules/apothem-rules.mdc`
+  rather than a user-scope config home, and writes its skills and the shared
+  rules and templates folders into your user home. The `apothem-rules.mdc`
+  above shows the project file for the shared `profile.example.yaml`: the
+  shared sentinel-merge step folds the identity, preferences (including the
+  `verbose` per-harness override), and custom rules from the profile into the
+  managed block. The MCP inventory is named there as reference, not rendered
+  into Cursor's own MCP configuration. To see the exact output for your own
+  profile, including the user-home folders, use the `--dry-run` preview below.
 
 ## Using these
 

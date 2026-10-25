@@ -112,14 +112,38 @@ apothem profile show --json
 
 The scaffold uses fake placeholder identity data and is safe to edit before you
 install any harness output. `show --json` reads it back and reports the
-validated profile:
+validated profile with every default filled in, starting with `schema_version`.
+The command prints it on one line; it is expanded here:
 
 ```json
 {
+  "schema_version": 1,
   "identity": {
     "name": "Example User",
+    "role": "senior software engineer",
     "email": "dev@example.invalid",
     "github": "example-user"
+  },
+  "preferences": {
+    "language": "python",
+    "style": "concise"
+  },
+  "rules": [],
+  "seriousness": "PERSONAL_USE",
+  "enforcement": {
+    "sprints": false,
+    "agent_teams": false,
+    "multitasking": false,
+    "continuous_execution": false,
+    "learning_loop": false
+  },
+  "mcp_servers": {},
+  "agent_mcp_servers": {},
+  "harnesses": {},
+  "exclude_harnesses": [],
+  "workspace": {
+    "directory_name": ".apothem",
+    "scope": "project-local"
   }
 }
 ```
@@ -146,9 +170,10 @@ apothem install --harness claude-code
 ✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
-Project-scope adapters write inside a project rather than your home directory,
-so they need a `--project PATH`. Preview any install without writing files using
-`--dry-run`:
+Project-scope adapters write their rules file inside a project, so they need a
+`--project PATH`; seven of them also write skills and shared rules into folders
+in your home directory, and `--project` does not change where those go. Preview
+any install without writing files using `--dry-run`:
 
 ```bash
 apothem install --harness cursor --project . --dry-run

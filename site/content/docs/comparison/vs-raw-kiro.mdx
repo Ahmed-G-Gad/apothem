@@ -23,8 +23,9 @@ against managing it with Apothem.
 
 The kiro adapter renders the shared rules into a dedicated `apothem-rules.md`
 steering file with `inclusion: always` front matter and does not touch Kiro's
-operator-authored foundation files. Kiro has no PreToolUse hook, so guardrail
-intent lives in the rule prose rather than a tool-call interception point.
+operator-authored foundation files. Kiro documents agent hooks, which the
+adapter does not write, so guardrail intent lives in the rule prose rather than
+a tool-call interception point.
 Every change to the shared rules re-renders the file on the next
 `apothem update`.
 

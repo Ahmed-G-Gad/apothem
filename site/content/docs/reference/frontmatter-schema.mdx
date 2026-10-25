@@ -31,7 +31,7 @@ src/apothem/schemas/plan.schema.json
 | `CLAUDE.md` (root config) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Rules (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Commands (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
-| Helpers, also called delegated workers (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (optional: omitted when the helper must reach connected MCP servers), `disallowedTools`, `maxTurns`, `effort` |
+| Helpers, also called delegated workers (`src/apothem/agents/*.md`) | `name`, `version`, `updated`, `description`, `tools` (optional: a helper that omits it inherits every tool; to give a helper that lists `tools` an MCP server, name the server in the profile's `agent_mcp_servers` key), `disallowedTools`, `maxTurns`, `effort` |
 | Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; the Claude Code install and plugin, and the shared user-level skill folders, rename `userInvocable` to `user-invocable`, and the schema requires each skill to carry exactly one of the two spellings, never both; the `Qwen Code` install writes `allowed-tools` as an `allowedTools` list, the key and shape `Qwen Code` reads |
 | Output styles (`src/apothem/output-styles/*.md`) | `name`, `description`; every shipped style also sets `keep-coding-instructions: true` so Claude Code keeps its software engineering instructions |
 

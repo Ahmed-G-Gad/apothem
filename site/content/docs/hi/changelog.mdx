@@ -98,9 +98,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `dependency-upgrade`, `secret-rotation` and `issue-lifecycle`) run only when
   you invoke them. `plan-suite` and `research-suite` are reference templates
   read by path and are not listed. Every description now leads with what the
-  skill does and the requests it serves, in about 300 characters (the 52
-  model-invocable descriptions total about 15,000 characters, down from
-  about 42,000 before trimming), and overlapping skills, commands and
+  skill does and the requests it serves, in about 300 characters (the 55
+  model-invocable descriptions total about 15,800 characters; the 52 that
+  predate this release's three new skills went from about 42,000 characters
+  to about 15,000 by trimming), and overlapping skills, commands and
   subagents name where each neighbouring request goes instead.
 - **Session start lists the skills by task.** A short generated index (one
   line per domain, about 400 tokens) reaches Claude Code at session start, so
@@ -190,11 +191,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   a plan-internal identifier, a numeric prefix on a suite-root plan file, or
   agent-attribution text, and names the finding.
 
-- **One tagline and token-aligned marks.** Every public surface now says
-  "one profile, every harness", and the logo, favicon, social images and
-  animated mark use the design-system colour tokens; a light animated mark
-  joins the dark one, and `scripts/dev/rebuild-assets-resvg.py` rebuilds
-  every raster from its source.
+- **One tagline and token-aligned marks.** The README, landing page, brand
+  page, wordmark lockups and social images carry the tagline "one profile,
+  every harness", and the logo, favicon, social images and animated mark use
+  the design-system colour tokens; a light animated mark joins the dark one,
+  and `scripts/dev/rebuild-assets-resvg.py` rebuilds every raster from its
+  source.
 - **`make lint` also runs `mypy`.** The target now matches the lint gate the
   docs describe: `ruff check`, `ruff format --check` and strict `mypy`.
 - **Cursor, GitHub Copilot, Windsurf, Zed, CodeBuddy, Kiro and Trae get
