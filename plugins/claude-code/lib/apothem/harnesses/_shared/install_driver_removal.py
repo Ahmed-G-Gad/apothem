@@ -14,7 +14,7 @@ import yaml
 from apothem.lib.harness_materializer import (
     remove_managed_block,
 )
-from apothem.lib.install_ledger import LedgerTarget, OwnedEntry
+from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
 from .install_driver_jsonmerge import (
@@ -446,3 +446,38 @@ def surgically_remove_materialized_config(
         recorded=current_target(harness_name, install_root, target),
         retired=retired,
     )
+
+
+def _remove_unlisted_anchors(
+    record: LedgerRecord | None,
+    handled: set[str],
+    *,
+    root: Path,
+    harness_name: str,
+    allowed_root: Path,
+) -> list[MaterializationResult]:
+    """Strip recorded sentinel anchors no current manifest entry covers.
+
+    These are the bolt-on profile anchors (claude-code ``CLAUDE.md``, the
+    single-file adapters' profile rule) and any sentinel entry removed from the
+    manifest after install. The managed block self-delimits, so it strips without
+    the template. Each path stripped is added to *handled*.
+    """
+    results: list[MaterializationResult] = []
+    if record is None:
+        return results
+    for recorded in record.targets:
+        if recorded.path in handled or recorded.mode != "sentinel_merge":
+            continue
+        removal = _surgical_remove_from_target(
+            Path(recorded.path),
+            "",
+            mode="sentinel_merge",
+            install_root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+        if removal is not None:
+            results.append(removal)
+        handled.add(recorded.path)
+    return results

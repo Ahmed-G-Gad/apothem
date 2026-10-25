@@ -46,7 +46,10 @@ from .install_driver_planvalidation import (
     _projected_profile_body,
     user_level_entry_ok,
 )
-from .install_driver_removal import _surgical_remove_from_target
+from .install_driver_removal import (
+    _remove_unlisted_anchors,
+    _surgical_remove_from_target,
+)
 from .install_driver_retention import apply_retention
 from .install_driver_shared import UserLevelGate, locked_for_harness
 from .install_driver_treeops import remove_created_dirs
@@ -596,25 +599,15 @@ def run_uninstall(
                 results.append(removal)
             handled.add(_path_text(target))
 
-    # Recorded sentinel anchors not covered by a current manifest entry: the
-    # bolt-on profile anchors (claude-code ``CLAUDE.md``, the single-file adapters'
-    # profile rule) and any sentinel entry removed from the manifest after install.
-    # The managed block self-delimits, so it strips without the template.
-    if record is not None:
-        for recorded in record.targets:
-            if recorded.path in handled or recorded.mode != "sentinel_merge":
-                continue
-            removal = _surgical_remove_from_target(
-                Path(recorded.path),
-                "",
-                mode="sentinel_merge",
-                install_root=root,
-                harness_name=harness_name,
-                allowed_root=allowed_root,
-            )
-            if removal is not None:
-                results.append(removal)
-            handled.add(recorded.path)
+    results.extend(
+        _remove_unlisted_anchors(
+            record,
+            handled,
+            root=root,
+            harness_name=harness_name,
+            allowed_root=allowed_root,
+        )
+    )
 
     # Back up and remove the shared data home (memory / contexts / learning) only
     # when this is the last harness referencing it; plans/ is always retained.
