@@ -177,8 +177,14 @@ def test_install_announces_only_installed_directories(
     # One sentence points at the rule index, and the file it names is installed.
     pointers = _INDEX_SENTENCE.findall(section)
     assert len(pointers) == 1, entry.public_id
-    shown = Path(pointers[0])
-    located = shown if shown.is_absolute() else project / shown
+    # Resolved the way the directory list above is: absolute, ``~/`` (a
+    # user-level folder) or project-relative.
+    pointer = pointers[0]
+    if pointer.startswith("~/"):
+        located = user_home() / pointer[2:]
+    else:
+        shown = Path(pointer)
+        located = shown if shown.is_absolute() else project / shown
     assert located == mapping["rules"] / "apothem-rule-index.md"
     assert located.is_file()
 
