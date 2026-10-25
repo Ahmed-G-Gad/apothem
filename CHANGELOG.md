@@ -36,6 +36,36 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   review accept "no findings", review deletions too, and keep a ledger of
   findings dropped in verification. Plan execution ties each gate to the
   commit it ran on, and tests and evals include a control that must fail.
+- **Paper work without a research suite, a viewpoint panel, and course
+  material.** `paper-toolkit` writes a reading note that records what was
+  actually read, compares two to five papers (saying when results are not
+  directly comparable and which paper to cite for which claim), drafts related
+  work from the sources you supply with a coverage report and visible
+  citation-needed markers, critiques a draft before submission, and runs a
+  reference style pass. `perspectives` runs several separate viewpoints on a
+  contested question, then reconciles them into agreement, real disagreements,
+  a recommendation with its confidence and the strongest dissent.
+  `teaching-pack` turns one paper or technical document into learning goals, a
+  curriculum, formula walk-throughs, worked examples, a quiz with an answer key
+  and a glossary, marking every line with its source section and reporting thin
+  parts instead of padding them. `/research-review --paper` reviews a PDF or
+  text you supply, outside any suite, against a generic venue profile with
+  reviewer roles and equation, ablation and baseline checks.
+  `authoritative-referencing-assurance` asks research files to list a proof's
+  assumptions and weakest step, bind each number to its run, name the closest
+  prior work behind a novelty claim, state tool and model use, and fix a
+  gate's definition before results are seen; `/research-publish` drafts the
+  tool and model use statement from the session record, and the provenance
+  rule now asks that a check be shown to fail when its target is altered, that
+  success be matched on the whole token, and that a lookup connector which
+  never loaded be listed as blocked. `gate-evidence-grep` is an
+  advisory conformity check that flags plan gate claims recorded without a
+  command, an exit status or output, and the commit it ran on.
+  `issue-lifecycle` can draft a request to the reporter for missing details
+  and, only when you name the `publish` stage, open a draft pull request
+  after three separate confirmations. `citation-auditor` and `research-scout`
+  use a scholarly lookup server you grant them and fall back to web lookup. The session-start hook adds one line when a project's knowledge
+  base has changed since its recorded baseline.
 
 ### Changed
 
@@ -73,6 +103,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   is the one that loads. A commented `openclaw.json` or `config.yaml` that
   lacks the entry is refused with the line to add, as for OpenCode and Qwen
   Code.
+- **`research-scout` and `citation-auditor` keep a read-only tool list and
+  reach a scholarly lookup server only when you name it.** Their `tools` list
+  stays `Read, Glob, Grep, WebSearch, WebFetch`, so with no setting they reach
+  no MCP tool and use the open web. A new profile key, `agent_mcp_servers`,
+  maps an agent name to the MCP servers it may call, and the Claude Code
+  install adds one `mcp__<server>__*` entry per server to that agent's list
+  and to no other agent. Server names allow letters, digits, `-`, `_`, `:` and
+  `.`; `*` and any other character are rejected, and a grant naming an unknown
+  agent is reported and skipped. The plugin install reads no profile and keeps
+  the plain list; a plugin user can get connector access with a user-level
+  agent of their own. Other harnesses ignore the key.
 - **Qwen Code reads Apothem's skill tool lists.** Skills now carry
   `allowedTools` as a list, the key and shape Qwen Code reads; it ignores
   `allowed-tools` and rejects a comma-separated string.

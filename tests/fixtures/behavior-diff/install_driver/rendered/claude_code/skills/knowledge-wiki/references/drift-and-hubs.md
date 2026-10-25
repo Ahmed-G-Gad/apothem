@@ -12,8 +12,8 @@ Drift answers one question: did the base change since the last time anyone looke
 
 A fingerprint has two parts:
 
-- `pages=<N>`: the number of `.md` files under `sources/`, `entities/`, and `syntheses/`, redirect and retired stubs included.
-- `last=<date>|<operation>|<id>`: the newest log line whose operation is neither `lint` nor `baseline`. Position in the file decides which line is newest, since the log is append-only.
+- `pages=<N>`: the number of `.md` files directly inside `sources/`, `entities/`, and `syntheses/`, redirect and retired stubs included. A missing directory counts as zero.
+- `last=<date>|<operation>|<id>`: the newest log line whose operation is neither `lint` nor `baseline`. Position in the file decides which line is newest, since the log is append-only. A log with no such line gives `last=none`.
 
 The stored fingerprint is the detail of the most recent baseline line in `log.md`:
 
@@ -29,6 +29,15 @@ The stored fingerprint is the detail of the most recent baseline line in `log.md
 4. **Fingerprints equal.** Print `No change since baseline <date>: <fingerprint>` and stop. Write nothing.
 5. **Stored `last` is missing from the log.** A line that the baseline relied on is gone, so the log was edited after the fact. Report it, do not append a baseline, and ask how to proceed through the structured-inquiry channel.
 6. **Fingerprints differ.** Produce the report below, then append a new baseline line with the current fingerprint.
+
+### Session-start check
+
+The SessionStart hook runs a read-only, bounded version of the comparison above, so a base that moved between sessions is flagged without anyone asking. It and this mode share one definition of the fingerprint, so a change to the fingerprint above is made in both.
+
+- It looks only at `knowledge-base/`, `wiki/`, `docs/knowledge-base/`, and `docs/wiki/` under the project root, and only at a directory that holds both `index.md` and `log.md`. It never searches the tree.
+- The stored fingerprint is the newest `baseline ... | all |` line in `log.md`, read from the last 256 KiB of the file. The current one is the page count (a listing of the three page directories) and the newest non-`lint`, non-`baseline` log line.
+- A differing fingerprint produces one line that names the base and recommends `--mode drift --kb <path>`. The line holds a date and two numbers taken from the base, never its text.
+- No baseline, a malformed newest baseline, a baseline further back than the window, an unreadable file, or an unchanged fingerprint produces nothing. The hook writes nothing, and records no baseline: this mode does.
 
 ### Drift report
 

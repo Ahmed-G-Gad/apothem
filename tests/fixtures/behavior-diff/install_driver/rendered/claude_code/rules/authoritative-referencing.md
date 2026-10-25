@@ -51,6 +51,8 @@ Reach for a live source when a fact may have shifted since training or its curre
 
 (Companion Sub-Rule Anchor) See `rules/authoritative-referencing-provenance.md` §1–§6 for the access and status labels, the literature search record, the empty-search limit on novelty claims, the conditions check on cited results, the discriminating-check bar, and the model-written-reading limit.
 
+(Companion Sub-Rule Anchor) See `rules/authoritative-referencing-assurance.md` §1–§6 for the checks a research claim needs beyond its source — a proof's assumptions and weakest step, the meaning of each status label, a number's binding to its run, the closest prior work behind a novelty claim, the tool-and-model use statement, and a gate fixed before results are seen.
+
 ## Seriousness Scaling
 
 (Companion Sub-Rule Anchor) See `rules/authoritative-referencing-homes.md` §2 for the four-level enforcement table (EXPLORING cite-load-bearing → PUBLIC_LAUNCH every-public-claim-cited, superseded-sources-refreshed).

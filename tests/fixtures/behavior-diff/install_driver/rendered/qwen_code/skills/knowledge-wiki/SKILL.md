@@ -36,7 +36,7 @@ The user asks to add a source to the project wiki or knowledge base, to check th
 
 ### 0. Resolve the base (every mode)
 
-1. Take `--kb PATH`, else Glob for a directory that holds both `index.md` and `log.md`. Exactly one hit is the base. Several hits, or none, go to the structured-inquiry channel; in `ingest` mode, creating a new base at a user-named path is one option. Never choose a location silently.
+1. Take `--kb PATH`, else Glob for a directory that holds both `index.md` and `log.md`. Exactly one hit is the base. Several hits, or none, go to the structured-inquiry channel; in `ingest` mode, creating a new base is one option, with `knowledge-base/` under the project root as the recommended default and a user-named path as the alternative. Never choose a location silently. The session-start check watches only a base at `knowledge-base/`, `wiki/`, `docs/knowledge-base/`, or `docs/wiki/`; a base elsewhere works in every mode but gets no session-start line.
 2. Read `index.md` in full and the last 20 lines of `log.md`. Take the mode from `--mode`, else from the request wording; if two modes fit, ask.
 
 ### Mode `ingest`
@@ -56,7 +56,7 @@ Run every check in the lint catalog with Glob and Grep, in catalog order, over t
 
 ### Mode `drift`
 
-Compare the stored fingerprint with the current one as set out in the drift-and-hubs reference. No baseline in `log.md` means record one and print nothing else. A matching fingerprint means print one line saying nothing changed, then stop. A differing fingerprint produces the drift report, followed by a new baseline entry.
+Compare the stored fingerprint with the current one as set out in the drift-and-hubs reference. No baseline in `log.md` means record one and print nothing else. A matching fingerprint means print one line saying nothing changed, then stop. A differing fingerprint produces the drift report, followed by a new baseline entry. The stored fingerprint is the newest `baseline` line in `log.md`; the session-start hook reads that same line and, when the fingerprint no longer matches, adds one line that points here. Only this mode writes a baseline, so the line repeats each session until the mode has run.
 
 ### Mode `hubs`
 

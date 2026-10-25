@@ -261,7 +261,7 @@ def test_user_invoked_commands_have_no_auto_trigger_cases() -> None:
 
 def test_trigger_suite_size() -> None:
     trigger_kinds = ("trigger", "no-trigger", "no-auto-trigger")
-    assert sum(len(_by_kind(kind)) for kind in trigger_kinds) >= 142
+    assert sum(len(_by_kind(kind)) for kind in trigger_kinds) >= 148
 
 
 def test_trigger_graders_name_their_component() -> None:

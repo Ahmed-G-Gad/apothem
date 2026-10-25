@@ -45,7 +45,7 @@ Tabel di bawah ini dihasilkan dari modul validator.
 
 {/* apothem:generated-reference:start */}
 
-The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 change-set. The gate registers the per-write and standalone ones.
+The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 change-set. The gate registers the per-write and standalone ones.
 
 | Validator | Runs | Rule anchor | What it checks |
 | --- | --- | --- | --- |
@@ -71,6 +71,7 @@ The conformity package ships 53 validators: 22 per-write, 30 standalone and 1 ch
 | `freshness-token-grep` | standalone | rules/freshness-facade.md | Flag freshness-narrative phrases on shipped public surfaces. |
 | `frontmatter-grep` | per-write | the per-class frontmatter JSON Schemas (src/apothem/schemas/) | Validate per-artifact-class YAML frontmatter against required-key sets. |
 | `frontmatter-value-grep` | standalone | per-class JSON Schema enum/pattern value constraints | Validate frontmatter VALUES against the per-class JSON Schema enum/pattern constraints. |
+| `gate-evidence-grep` | standalone | commands/plan-execute.md Gate evidence; rules/pre-emission-gate-bars.md section 2 (attestation schema) | Advisory: flag plan-suite gate claims that lack a command, an exit status or output, and a HEAD SHA beside them, and fifteen-bar attestations that omit a field of the rule's schema. |
 | `gitattributes-presence-grep` | standalone | supply-chain .gitattributes contract | Verify the repo-root ``.gitattributes`` carries the canonical contract. |
 | `harden-runner-grep` | standalone | harden-runner egress baseline | Verify every workflow job opens with a conformant harden-runner step. |
 | `hedging-grep` | per-write | M8 definitiveness §Hedging | Flag hedging vocabulary in prescriptive contexts. |

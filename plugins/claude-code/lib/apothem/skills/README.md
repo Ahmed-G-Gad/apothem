@@ -28,11 +28,14 @@ Skill definitions — reusable, detectable techniques the harness loads on deman
 | [`dev-toolkit/`](dev-toolkit/) | Engineering-discipline toolkit — sequences the core loops (structured debugging, test-first red-green-refactor, vertical-slice decomposition, requirement-to-issue breakdown) into one composable, gated procedure; cross-references sibling capabilities (does not duplicate them). | Model-invocable and user-invocable. |
 | [`knowledge-wiki/`](knowledge-wiki/) | Index-first Markdown knowledge base grown from project sources — focus-driven source pages with their reading basis, typed relations with confidence, deterministic lint, change-triggered drift report, and hub analysis. | Model-invocable and user-invocable. |
 | [`decision-matrix/`](decision-matrix/) | Weighted, evidence-cited choice between options — dealbreakers first, a sensitivity check on the weights, a runner-up, and the cheapest reversible first step. | Model-invocable and user-invocable. |
-| [`issue-lifecycle/`](issue-lifecycle/) | Issue to fix with evidence at each stage — duplicate-checked issue drafts, read-only sizing, a marked failing-test checkpoint, and an ours-or-dependency fix decision. | User-invocable only (it drafts outward-facing issues). |
+| [`issue-lifecycle/`](issue-lifecycle/) | Issue to fix with evidence at each stage — duplicate-checked issue drafts, read-only sizing, a marked failing-test checkpoint, an ours-or-dependency fix decision, a drafted reporter request, and an opt-in draft pull request. | User-invocable only (it drafts outward-facing text; it pushes and opens a draft pull request only in `publish`, after three confirmations, and never posts the reporter request). |
 | [`ui-design/`](ui-design/) | Interface design and refinement to a craft floor — surface classification, ranked rule categories, adjustable variance / motion / density, a `DESIGN.md` project context, and a pre-delivery checklist. | Model-invocable and user-invocable. |
+| [`paper-toolkit/`](paper-toolkit/) | Suite-free paper work: a reading note with its basis, a 2 to 5 paper comparison with comparability verdicts and a cite-for table, a related-work draft from supplied sources with visible citation-needed markers and a coverage report, an author-side critique, and a reference style pass. | Model-invocable and user-invocable. |
+| [`perspectives/`](perspectives/) | Contested-question panel: several separate viewpoints argue from evidence, then a reconciliation of agreement, real disagreements and what would settle each, a recommendation with its confidence, and the strongest dissent kept visible. | Model-invocable and user-invocable. |
+| [`teaching-pack/`](teaching-pack/) | Teaching pack from one paper or technical document: learning goals, a section-by-section curriculum, plain-step formula and algorithm walk-throughs, worked examples, a quiz with answer key, a glossary and an optional slide outline. Each line is marked with its source section or as outside it, and parts the source cannot support are reported as thin. | Model-invocable and user-invocable. |
 | [`surgical-guard/`](surgical-guard/) | Surgical-edit + reactive-guard — pairs a minimal-diff, anchor-bounded editing discipline with a post-edit diff-based quality guard (clean-code / test / docs checks with progressive rule loading); feeds the `surgical-manipulation` mandate. | Model-invocable and user-invocable. |
 
-A skill is model-invocable when `disable-model-invocation` is `false`: the model may load it when a request matches its description. The default is `false` for read-only and advisory skills. A skill is user-invocable only (`true`) when running it changes state outside the working tree or depends on the operator choosing the moment. Of the 23 skills, 17 are model-invocable, 4 are user-invocable only (`dependency-upgrade`, `secret-rotation`, `workflow`, `issue-lifecycle`), and 2 are reference-only templates (`plan-suite`, `research-suite`). The session-start skill index lists the model-invocable and manual names by domain; see the Hooks reference page.
+A skill is model-invocable when `disable-model-invocation` is `false`: the model may load it when a request matches its description. The default is `false` for read-only and advisory skills. A skill is user-invocable only (`true`) when running it changes state outside the working tree or depends on the operator choosing the moment. Of the 26 skills, 20 are model-invocable, 4 are user-invocable only (`dependency-upgrade`, `secret-rotation`, `workflow`, `issue-lifecycle`), and 2 are reference-only templates (`plan-suite`, `research-suite`). The session-start skill index lists the model-invocable and manual names by domain; see the Hooks reference page.
 
 ## What a skill is
 
@@ -76,6 +79,8 @@ selectively.
 | `research-suite/references/compute-utilization.md` | Compute accounting for a run — what is measured and what is reported. |
 | `research-suite/references/empirical-comparison-rigor.md` | The bar an empirical comparison clears before its claim may be stated. |
 | `research-suite/references/experiment-program-scaffold.md` | The scaffold an experiment program is laid out against. |
+| `research-suite/references/venue-profiles.md` | Generic venue profiles, the axis-to-verdict rule and the recommendation-scale mappings that `/research-review --paper` applies. |
+| `research-suite/references/external-paper-checks.md` | Paper types, reviewer roles and the equation, ablation, baseline and consistency checks for a paper outside any suite. |
 | `test-authoring/SKILL.md` | The test-authoring skill's entry point and procedure. |
 | `refactor-extract/SKILL.md` | The refactor-extract skill's entry point and procedure. |
 | `dependency-upgrade/SKILL.md` | The dependency-upgrade skill's entry point and procedure. |
@@ -99,7 +104,20 @@ selectively.
 | `decision-matrix/SKILL.md` | The decision-matrix skill's entry point and procedure. |
 | `decision-matrix/references/scoring-and-sensitivity.md` | Scoring rules, totals and the weight-sensitivity check. |
 | `issue-lifecycle/SKILL.md` | The issue-lifecycle skill's entry point and procedure. |
-| `issue-lifecycle/references/stage-details.md` | Per-stage detail for create, size, reproduce and fix. |
+| `issue-lifecycle/references/stage-details.md` | Per-stage detail for create, size, reproduce, fix and publish, plus the reporter request. |
+| `paper-toolkit/SKILL.md` | The paper-toolkit skill's entry point and procedure. |
+| `paper-toolkit/references/reading-note.md` | The one-paper reading note: claim, method, evidence, limits and what the paper is citable for. |
+| `paper-toolkit/references/paper-comparison.md` | The 2 to 5 paper comparison: comparability axes, verdicts and the cite-for table. |
+| `paper-toolkit/references/related-section.md` | The related-work draft from supplied sources, with citation-needed markers and a coverage report. |
+| `paper-toolkit/references/critique-template.md` | The author-side critique: strengths, reviewer questions, ranked changes and what was not judged. |
+| `paper-toolkit/references/reference-style-pass.md` | The reference style pass: duplicates, missing fields, inconsistent form and key collisions. |
+| `perspectives/SKILL.md` | The perspectives skill's entry point and procedure. |
+| `perspectives/references/viewpoint-roster.md` | Viewpoint roster, brief, return template and reconciliation worksheet. |
+| `teaching-pack/SKILL.md` | The teaching-pack skill's entry point and procedure. |
+| `teaching-pack/references/pack-templates.md` | The source-marker legend and the shape of each pack part. |
+| `teaching-pack/references/source-requirements.md` | What each part needs from the source, what each reading basis allows and the signs of padding. |
+| `teaching-pack/references/slide-outline.md` | The optional slide-outline shape and the hand-off to a host slide or document skill. |
+| `teaching-pack/references/pre-delivery-checks.md` | The checks run before a pack is delivered. |
 | `ui-design/SKILL.md` | The ui-design skill's entry point and procedure. |
 | `ui-design/references/surface-classes.md` | The four surface classes and the priorities each sets. |
 | `ui-design/references/rule-catalog.md` | The ranked rule categories with the conflict-priority table. |

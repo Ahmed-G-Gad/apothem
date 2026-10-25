@@ -47,7 +47,11 @@ _SCRIPT_MODULES: tuple[str, ...] = tuple(
 # Standalone validators whose empty scope is legitimate on a clean checkout:
 # plan suites live under the gitignored ``.apothem/plans/`` tree.
 _EMPTY_SCOPE_EXPECTED_ON_CHECKOUT: frozenset[str] = frozenset(
-    {"plan-suite-structure-grep", "plan-next-step-consistency-grep"}
+    {
+        "plan-suite-structure-grep",
+        "plan-next-step-consistency-grep",
+        "gate-evidence-grep",
+    }
 )
 
 

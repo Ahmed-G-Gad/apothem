@@ -197,7 +197,10 @@ above the cap.
 ## Compatibility notes
 
 Command prompts are converted into skill directories and rules are rendered as
-described above; agents, skills, and output styles are copied as they are.
+described above; skills and output styles are copied as they are, and agents are
+copied as written except that a helper the profile's `agent_mcp_servers` key lists
+gains an `mcp__<server>__*` entry per named server in its `tools` line (see
+[MCP servers](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)).
 Install validates that the profile is
 well-formed and all hook bindings in settings.json are resolvable. The adapter
 authors no MCP server entries: register servers with `claude mcp add` (see

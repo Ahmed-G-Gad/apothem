@@ -32,6 +32,7 @@ import yaml
 from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import ValidationError
 
+from apothem.lib.claude_agent_mcp import normalize_grants
 from apothem.lib.harness_registry import SUPPORTED_HARNESS_IDS
 from apothem.schemas import profile_schema_path
 
@@ -264,6 +265,10 @@ class CanonicalProfile:
         seriousness: Governance seriousness level.
         enforcement: Per-discipline enforcement flags.
         mcp_servers: MCP-server inventory keyed by name, or ``None``.
+        agent_mcp_servers: Per agent name, the MCP servers that agent may call
+            (the Claude Code engine install renders each as ``mcp__<server>__*``
+            in the agent's ``tools`` list); empty by default, so no agent is
+            granted an MCP tool.
         harnesses: Per-harness override mappings, or ``None``.
         exclude_harnesses: Harness ids to skip when installing all.
         workspace: Workspace and plans configuration.
@@ -275,6 +280,7 @@ class CanonicalProfile:
     seriousness: str = DEFAULT_SERIOUSNESS
     enforcement: EnforcementFlags = EnforcementFlags()
     mcp_servers: Mapping[str, McpServer] | None = None
+    agent_mcp_servers: Mapping[str, tuple[str, ...]] | None = None
     harnesses: Mapping[str, Mapping[str, Any]] | None = None
     exclude_harnesses: tuple[str, ...] = ()
     workspace: WorkspaceConfig = WorkspaceConfig()
@@ -292,6 +298,10 @@ class CanonicalProfile:
             "mcp_servers": {
                 name: (self.mcp_servers or {})[name].to_dict()
                 for name in sorted(self.mcp_servers or {})
+            },
+            "agent_mcp_servers": {
+                agent: list(servers)
+                for agent, servers in sorted((self.agent_mcp_servers or {}).items())
             },
             "harnesses": {
                 harness: _stable_mapping(override)
@@ -780,6 +790,9 @@ def coerce_profile(profile: Mapping[str, Any]) -> CanonicalProfile:
             learning_loop=_normalize_flag(enforcement.get("learning_loop")),
         ),
         mcp_servers=_normalize_mcp_servers(profile.get("mcp_servers")),
+        agent_mcp_servers=_normalize_agent_mcp_servers(
+            profile.get("agent_mcp_servers")
+        ),
         harnesses=normalized_harnesses,
         exclude_harnesses=tuple(
             sorted(
@@ -996,6 +1009,23 @@ def _normalize_mcp_servers(value: object) -> dict[str, McpServer]:
             headers=headers or None,
         )
     return servers
+
+
+def _normalize_agent_mcp_servers(value: object) -> dict[str, tuple[str, ...]]:
+    """Normalize ``agent_mcp_servers`` into sorted, de-duplicated server tuples.
+
+    A malformed agent or server name is dropped here rather than raised (the
+    schema rejects it before this runs on a validated profile), so a mapping
+    that skipped validation can never carry a name that widens a grant.
+    """
+    grants: dict[str, tuple[str, ...]] = {}
+    mapping = _mapping(value)
+    for agent in sorted(mapping, key=str):
+        try:
+            grants.update(normalize_grants({agent: mapping[agent]}))
+        except ValueError:
+            continue
+    return grants
 
 
 def _union_lists(base: list[Any], override: list[Any]) -> list[Any]:

@@ -6,7 +6,7 @@ Gathers ecosystem context at SessionStart and emits a single-line JSON
 envelope: ``{"hookSpecificOutput":{"hookEventName":"SessionStart",...}}``.
 
 The bootstrap produces a plaintext `additionalContext` payload composed
-of up to seven blocks, in this order:
+of up to eight blocks, in this order:
 
 * **Plugin posture** — a pointer to the bundled rules when Apothem runs as a
   plugin alone.
@@ -22,6 +22,8 @@ of up to seven blocks, in this order:
   ``## Key Conventions`` in the project's ``MEMORY.md`` index.
 * **Plan summary** — the most recently modified plan suite (if any) and
   key fields pulled from its ``PROGRESS.md``.
+* **Knowledge-base drift** — one line when the project's knowledge base (made
+  by the ``knowledge-wiki`` skill) changed since its recorded baseline.
 * **Conformity posture** — the standing session-start posture message.
 
 Any unexpected exception is caught at the outermost boundary; a valid
@@ -577,6 +579,186 @@ def plugin_alone_pointer() -> list[str]:
     return lines
 
 
+#: Directories under the project root where the ``knowledge-wiki`` skill keeps a
+#: knowledge base, in probe order. The skill documents the same list, so the
+#: session-start check looks at these four paths and never searches the tree.
+_KB_LOCATIONS: Final[tuple[str, ...]] = (
+    "knowledge-base",
+    "wiki",
+    "docs/knowledge-base",
+    "docs/wiki",
+)
+
+#: The page directories the fingerprint counts, directly inside the base.
+_KB_PAGE_DIRS: Final[tuple[str, ...]] = ("sources", "entities", "syntheses")
+
+#: How much of the end of ``log.md`` the check reads: the first size covers the
+#: usual case (a baseline within the last hundred or so lines), the second is
+#: the ceiling (about 2,500 lines) for a log that grew since the last baseline.
+_KB_LOG_WINDOWS: Final[tuple[int, ...]] = (16 * 1024, 256 * 1024)
+
+#: Page count past which the check gives up rather than keep counting.
+_KB_PAGE_LIMIT: Final[int] = 20_000
+
+#: A stored fingerprint, as the skill's drift mode writes it into ``log.md``.
+_KB_BASELINE_DETAIL = re.compile(r"pages=(\d{1,7}); last=(\S.*)")
+_KB_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+@dataclass(frozen=True)
+class KbBaseline:
+    """The fingerprint recorded by the newest ``baseline`` line of a ``log.md``."""
+
+    date: str
+    pages: int
+    last: str
+
+
+def _log_fields(raw: str) -> tuple[str, str, str, str] | None:
+    """Split ``- <date> | <operation> | <id> | <detail>`` into its four fields."""
+    if not raw.startswith("- "):
+        return None
+    parts = [part.strip() for part in raw[2:].split(" | ", 3)]
+    if len(parts) < 3:
+        return None
+    return parts[0], parts[1], parts[2], parts[3] if len(parts) > 3 else ""
+
+
+def _log_tail(log: Path, window: int) -> tuple[list[str], bool]:
+    """Return the last *window* bytes of *log* as lines, and whether that is all."""
+    with log.open("rb") as handle:
+        size = handle.seek(0, os.SEEK_END)
+        start = max(0, size - window)
+        handle.seek(start)
+        data = handle.read()
+    lines = data.decode("utf-8", errors="replace").split("\n")
+    if start > 0:
+        lines = lines[1:]  # the first line of a mid-file read is cut off
+    return [line.rstrip("\r") for line in lines], start == 0
+
+
+def _parse_baseline(date: str, detail: str) -> KbBaseline | None:
+    match = _KB_BASELINE_DETAIL.fullmatch(detail)
+    if match is None or _KB_DATE.fullmatch(date) is None:
+        return None
+    return KbBaseline(date=date, pages=int(match.group(1)), last=match.group(2))
+
+
+def _scan_log(lines: list[str]) -> tuple[bool, KbBaseline | None, str | None]:
+    """Scan *lines* from the newest one for the stored baseline and newest entry.
+
+    Returns whether a baseline line was seen, its parsed value (None when that
+    line is malformed), and the ``<date>|<operation>|<id>`` key of the newest
+    line whose operation is neither ``lint`` nor ``baseline`` (None if unseen).
+    """
+    seen_baseline = False
+    baseline: KbBaseline | None = None
+    newest: str | None = None
+    for raw in reversed(lines):
+        fields = _log_fields(raw)
+        if fields is None:
+            continue
+        date, operation, entry_id, detail = fields
+        if operation == "baseline":
+            if entry_id == "all" and not seen_baseline:
+                seen_baseline = True
+                baseline = _parse_baseline(date, detail)
+                if baseline is None:
+                    break
+        elif operation != "lint" and newest is None:
+            newest = f"{date}|{operation}|{entry_id}"
+        if seen_baseline and newest is not None:
+            break
+    return seen_baseline, baseline, newest
+
+
+def _read_log_state(log: Path) -> tuple[KbBaseline, str] | None:
+    """Return the stored baseline and the current newest-entry key of *log*.
+
+    The key is ``none`` when the log has no entry other than ``lint`` and
+    ``baseline`` lines. Returns None when either part cannot be told: no
+    baseline, a malformed newest baseline, or one further back than the
+    largest window read.
+    """
+    for window in _KB_LOG_WINDOWS:
+        lines, complete = _log_tail(log, window)
+        seen, baseline, newest = _scan_log(lines)
+        if seen and baseline is None:
+            return None
+        if baseline is not None and (newest is not None or complete):
+            return baseline, newest if newest is not None else "none"
+        if complete:
+            return None
+    return None
+
+
+def _count_kb_pages(base: Path) -> int | None:
+    """Count ``.md`` files directly inside the page directories, or None if huge."""
+    total = 0
+    for name in _KB_PAGE_DIRS:
+        try:
+            with os.scandir(base / name) as entries:
+                for entry in entries:
+                    if entry.name.endswith(".md") and entry.is_file():
+                        total += 1
+                        if total > _KB_PAGE_LIMIT:
+                            return None
+        except FileNotFoundError:
+            continue
+    return total
+
+
+def _kb_drift_line(project: Path, location: str) -> str:
+    base = project / location
+    log = base / "log.md"
+    if not (log.is_file() and (base / "index.md").is_file()):
+        return ""
+    state = _read_log_state(log)
+    if state is None:
+        return ""
+    baseline, newest = state
+    pages = _count_kb_pages(base)
+    if pages is None or (pages == baseline.pages and newest == baseline.last):
+        return ""
+    if pages != baseline.pages:
+        detail = f"pages {baseline.pages} -> {pages}"
+    else:
+        detail = "newer log entries"
+    return (
+        f"Knowledge base: {location}/ changed since its baseline of "
+        f"{baseline.date} ({detail}). To see what moved, use the knowledge-wiki "
+        f"skill in drift mode: --mode drift --kb {location}."
+    )
+
+
+def read_knowledge_base_drift(project: Path) -> str:
+    """Return one line when a project knowledge base changed since its baseline.
+
+    A knowledge base is a directory the ``knowledge-wiki`` skill created, found
+    only at the conventional paths in ``_KB_LOCATIONS`` (a stat of ``log.md``
+    each, so a project without one pays a few microseconds). Its fingerprint is
+    the page count plus the newest log entry; the stored copy is the newest
+    ``baseline`` line in ``log.md``, which only the skill's drift mode writes.
+    This reads the tail of that one file and lists three flat directories; it
+    never walks the tree and writes nothing. The line carries only the fixed
+    location, a validated date and two integers, never text taken from the base.
+
+    Returns:
+        The line, or an empty string for no base, no baseline, an unchanged
+        fingerprint, or any file that cannot be read. A fault here must not cost
+        the session its other context, so every error is swallowed.
+    """
+    for location in _KB_LOCATIONS:
+        try:
+            line = _kb_drift_line(project, location)
+        except Exception as exc:
+            _logger.debug("Knowledge-base drift check skipped %s: %s", location, exc)
+            continue
+        if line:
+            return line
+    return ""
+
+
 def build_context(
     root: Path,
     payload: dict[str, object] | None,
@@ -628,6 +810,10 @@ def build_context(
                 "- No active plan suite detected. Ready for ad-hoc work.",
             ]
         )
+
+    kb_line = read_knowledge_base_drift(project_dir)
+    if kb_line:
+        blocks.append([kb_line])
 
     posture_lines = read_conformity_posture(root)
     if posture_lines:

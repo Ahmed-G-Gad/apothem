@@ -33,6 +33,8 @@ Houses the Research Suite knowledge surface — the canonical specification ever
   - [`references/autonomous-experiment-loop.md`](references/autonomous-experiment-loop.md) — the opt-in, default-off unattended propose → trial → retain-or-revert loop (operationalizes R2 / R5 / R7).
   - [`references/advancement-gate.md`](references/advancement-gate.md) — the definition-of-done advance gate and its auditable runbook (operationalizes R7 / R5).
   - [`references/blinding-and-disclosure.md`](references/blinding-and-disclosure.md) — anonymization and staged-disclosure / double-blind readiness (operationalizes R6).
+  - [`references/venue-profiles.md`](references/venue-profiles.md) — generic venue profiles, the axis-to-verdict rule and recommendation-scale mappings that the `/research-review --paper` mode applies.
+  - [`references/external-paper-checks.md`](references/external-paper-checks.md) — paper types, reviewer roles and the equation, ablation, baseline and consistency checks for a paper outside any suite.
 
 ## Reference Surfaces
 

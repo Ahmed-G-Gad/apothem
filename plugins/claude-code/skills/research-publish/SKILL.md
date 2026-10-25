@@ -1,12 +1,12 @@
 ---
 name: "research-publish"
-description: "Builds the venue submission package for a reviewed paper: template formatting, cover letter, data and code availability statement, ethics and conflict declarations, license, archival deposit plan, and a submission checklist. Runs only when the user invokes it, because it prepares a submission. Stops at a ready package; the user submits."
+description: "Builds the venue submission package for a reviewed paper: template formatting, cover letter, data and code availability statement, ethics and conflict declarations, tool-and-model use statement, license, archival deposit plan, and a submission checklist. Runs only when the user invokes it, because it prepares a submission. Stops at a ready package; the user submits."
 argument-hint: "[--suite-name NAME] [--override] [--venue NAME] [--template PATH] [--preprint SERVER]"
 disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.0"
-  updated: "2026-10-24"
+  version: "0.1.1"
+  updated: "2026-10-25"
   portability: "universal"
 ---
 

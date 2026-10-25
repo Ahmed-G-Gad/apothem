@@ -12,7 +12,7 @@ and the Qwen Code `settings.json` hooks map.
 
 | Event | Timeout | Purpose |
 |-------|--------:|---------|
-| SessionStart | 30 seconds | Read memory, check plan state, report readiness; after compaction, deliver the recovery context |
+| SessionStart | 30 seconds | Read memory, check plan state, report readiness; after compaction, deliver the recovery context; flag a knowledge base that changed since its baseline |
 | PreCompact | 30 seconds | Verify state externalized before compaction (Codex, Qwen Code; not registered on Claude Code) |
 | PostCompact | 30 seconds | Restore working state after compaction (Codex, Qwen Code; not registered on Claude Code) |
 | Stop | 60 seconds | Session-end protocol, opt-in |
@@ -90,6 +90,22 @@ in this posture (`agnostic-posture`, `authority-inquiry`, `session-closure`,
 `context-management`), and names the index, which says which rule to read for
 which task. The index text is not inlined.
 
+When the project holds a knowledge base made by the `knowledge-wiki` skill, the
+SessionStart hook compares its fingerprint with the one recorded at the last
+baseline and, if they differ, adds one line that suggests the skill's drift mode
+(`--mode drift --kb <path>`). The fingerprint is the page count plus the newest
+log entry; the recorded copy is the newest `baseline` line in the base's
+`log.md`, which only the drift mode writes. The hook looks at four paths under
+the project root, in order: `knowledge-base/`, `wiki/`, `docs/knowledge-base/`
+and `docs/wiki/`, and only a directory that holds both `index.md` and `log.md`.
+A project without one pays under a millisecond. With one, the hook reads at
+most the last 256 KiB of `log.md` and lists three flat directories; it never
+walks the tree and never writes. The line carries a fixed path, a date and two
+page counts, never text from the base. It stays silent when there is no base, no
+baseline, no change, or a file it cannot read, and it repeats each session until
+the drift mode records a new baseline. A base at any other path works in every
+skill mode but gets no session-start line.
+
 Each context file is loaded by the dispatcher when its event fires
 and its context argument is registered in the settings file. The license
 comment line and the closing `## Bindings` section are removed before the text
@@ -128,7 +144,7 @@ install, Codex, and Qwen Code:
 - **Never runs project code.** The bootstrap resolves its own installed tree
   and never takes a script from the opened project. Session-start guidance is
   read from the installed tree; the project directory is read only for plan
-  and memory summaries.
+  and memory summaries and the knowledge-base drift check.
 - **Fails open.** A missing message file, a missing interpreter, or corrupt
   state yields exit 0 and a valid envelope.
 
