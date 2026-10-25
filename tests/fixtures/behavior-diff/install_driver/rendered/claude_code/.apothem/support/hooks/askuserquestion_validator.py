@@ -72,10 +72,16 @@ _NONCANONICAL_TAIL_RE: Final[re.Pattern[str]] = re.compile(
 # option contradicts the no-default floor for irreversible operations
 # (``rules/interactive-questions-canonical-shapes.md`` §5.8): a recommendation
 # marker on an irreversible action steers the operator toward the dangerous path.
+# The words follow the rule's destructive operations (delete, overwrite without
+# retention, revert uncommitted work) and their synonyms. "drop" counts only in
+# its data-destroying sense ("drop the table"), so "drop it from the copies"
+# does not read as destructive; "retire" is not one of the rule's operations.
 _DESTRUCTIVE_LABEL_RE: Final[re.Pattern[str]] = re.compile(
     r"\b("
-    r"delete|remove|retire|discard|destroy|wipe|erase|drop|purge|"
-    r"overwrite|reset|revert|rm|truncate|force[- ]?push"
+    r"delete|remove|discard|destroy|wipe|erase|purge|"
+    r"overwrite|reset|revert|rm|truncate|force[- ]?push|"
+    r"drop\s+(?:the\s+|this\s+|that\s+|all\s+)?"
+    r"(?:tables?|databases?|db|schemas?|columns?|collections?|indexes|indices)"
     r")\b",
     re.IGNORECASE,
 )
@@ -325,9 +331,9 @@ def _format_findings(findings: list[Finding]) -> str:
     lines: list[str] = []
     for finding in findings:
         label = f" label={finding.label!r}" if finding.label else ""
-        lines.append(
-            f"  - [Q{finding.question_index}] {finding.kind}{label}: {finding.detail}"
-        )
+        # question_index is zero-based; people count questions from one.
+        number = finding.question_index + 1
+        lines.append(f"  - [Q{number}] {finding.kind}{label}: {finding.detail}")
     return "\n".join(lines)
 
 
