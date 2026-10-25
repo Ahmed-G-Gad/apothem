@@ -20,6 +20,17 @@ in Apothem or as a third-party package.
 Follow the [Authoring a harness adapter](/docs/examples/authoring-a-harness-adapter)
 example to implement `HarnessAdapter` for the target harness.
 
+If the adapter writes a plain-text template (a file that is not JSON or YAML)
+with `mode: write_text` and `ownership_class: operator-owned`, `uninstall`
+deletes the file only while it is an unedited copy of a template Apothem
+shipped. When a later release changes the template, add the SHA-256 digest of
+the previous text to that manifest entry's `earlier_digests` list in the same
+change, or `uninstall` leaves every unedited copy the earlier release wrote in
+place. Take the digest of the text at the latest release tag with
+`git show <tag>:<template path> | sha256sum`; the template must carry no
+`${...}` path token. `tests/unit/test_template_digests.py` fails when a shipped
+template is not accounted for.
+
 ### 2. Write the docs page
 
 Create `site/content/docs/harnesses/<slug>.mdx` covering:

@@ -33,6 +33,19 @@
 #                      `${HARNESS_ROOT}` as the placeholder for the
 #                      harness's native config root resolved at install
 #                      time.
+#                      A `write_text` entry that is `operator-owned` and
+#                      targets a plain-text file (not `.json`, `.yaml` or
+#                      `.yml`) may carry `earlier_digests`: the SHA-256
+#                      digests of every earlier release's copy of the
+#                      template (`apothem.lib.propagation.text_digest`,
+#                      taken over LF-folded text). An uninstall deletes a
+#                      file Apothem created when it equals the current
+#                      template or matches one of these digests. Record the
+#                      previous digest in the same change that edits the
+#                      template; the template must carry no `${...}` path
+#                      token, since an install-specific rendering has no
+#                      fixed digest. tests/unit/test_template_digests.py
+#                      fails when a released template is not accounted for.
 #                      `${PROJECT_ROOT}` is the operator-supplied project
 #                      root, and `${USER_HOME}` is the user home.
 #                      A `${USER_HOME}` target is a user-level folder, shared
@@ -1094,7 +1107,8 @@ harnesses:
     # operator-owned target in a format Apothem cannot merge into is written
     # only when absent (create-if-missing) and never overwritten afterwards;
     # uninstall removes it only when Apothem created it and it is still the
-    # unedited template. The
+    # unedited template or an unedited copy of an earlier release's template
+    # (earlier_digests). The
     # adapter at src/apothem/harnesses/glm/ opts into the project-scope contract
     # (requires_project = True).
     install:
@@ -1102,6 +1116,12 @@ harnesses:
         target: "${PROJECT_ROOT}/.apothem/providers/glm.toml"
         mode: write_text
         ownership_class: operator-owned
+        # Earlier releases' copies of glm.toml, so uninstall also removes an
+        # unedited file those releases wrote: v1.0.1 to v1.1.0, then v1.2.0
+        # to v1.2.2.
+        earlier_digests:
+          - "6cb35635c4b74bf83c4f0abd1800a4676ffba5d4c8165e18e73c53dc4cad787d"
+          - "12b32d3e8dfb53d85b8ac702e6d335a6617a140bf66015cc2f18a7a4a302fc10"
 
     exclude:
       - "__pycache__"

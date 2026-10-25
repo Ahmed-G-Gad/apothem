@@ -27,10 +27,11 @@
   servers), so this pin records none and the adapter targets none. Decide
   whether ZCode needs an adapter target once that surface is checked.
 - Template text: the `glm.toml` template changed on 2026-10-24 (ZCode context
-  and the mapping `TODO(clarify)`). The uninstall compares the whole file to the
-  current template, so an unedited `glm.toml` written by an earlier release no
-  longer matches and `apothem uninstall` leaves it in place as if edited. The
-  file holds only placeholders; the operator deletes it by hand.
+  and the mapping `TODO(clarify)`). The uninstall deletes an unedited file
+  Apothem created when it equals the current template or matches a digest in the
+  manifest entry's `earlier_digests` list, which holds the SHA-256 digest of each
+  earlier shipped template (v1.0.1 to v1.1.0, and v1.2.0 to v1.2.2). A change to
+  the template adds the previous digest in the same change-set.
 - GLM (Z.ai) is configured here as a **model backend**. An
   Anthropic-compatible or OpenAI-compatible coding agent is pointed at GLM by
   setting backend environment variables.

@@ -124,7 +124,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `.`; `*` and any other character are rejected, and a grant naming an unknown
   agent is reported and skipped. The plugin install reads no profile and keeps
   the plain list; a plugin user can get connector access with a user-level
-  agent of their own. Other harnesses ignore the key.
+  agent of their own. Gemini CLI reads the key too (next entry); other
+  harnesses ignore it.
+- **Gemini CLI helpers can reach an MCP server you name.** The
+  `agent_mcp_servers` key now also reaches the Gemini CLI install: for each
+  listed helper, its `tools` allowlist gains one `mcp_<server>_*` entry per
+  server, the form Gemini CLI's subagent docs give, and no other helper
+  changes. Gemini CLI cannot address a server name with an underscore, so a
+  name with `_`, `:` or `.` is skipped and reported there rather than
+  rewritten; a helper that already reaches every server is reported and left
+  as it is. With no setting the helpers are written exactly as before.
 - **Qwen Code reads Apothem's skill tool lists.** Skills now carry
   `allowedTools` as a list, the key and shape Qwen Code reads; it ignores
   `allowed-tools` and rejects a comma-separated string.
@@ -229,9 +238,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   agentic development environment; the docs and the `glm.toml` template no
   longer say it ships none, and say this adapter configures GLM only as a
   model backend. The template's model mapping stays a placeholder because
-  Z.ai's pages give conflicting values. An unedited `glm.toml` written by an
-  earlier release no longer matches the template, so uninstall leaves it in
-  place.
+  Z.ai's pages give conflicting values.
+- **Uninstall removes an unedited copy of an earlier release's template.**
+  Uninstall deleted a plain operator-owned file such as `glm.toml` only when it
+  matched the current template, so a release that changed the template left
+  every unedited copy an earlier release wrote in place, as if you had edited
+  it. A manifest entry now lists the SHA-256 digests of the templates earlier
+  releases shipped (`earlier_digests`), and uninstall deletes a file Apothem
+  created that matches the current template or one of them. `glm.toml` records
+  the digests of the templates from `v1.0.1` through `v1.2.2`, and a test fails
+  when a shipped template changes without its previous digest recorded. The
+  release-preflight job checks the record against every release tag and fails
+  once a newer release exists, until the record is refreshed.
 - **The dynamic-evaluation guard ignores prose.** A call now needs its
   parenthesis right after the name and an argument, definitions named `eval`
   or `compile` are skipped, a shell `eval` must start a statement and expand

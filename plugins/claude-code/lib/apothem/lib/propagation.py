@@ -20,6 +20,7 @@ the adapter agree on the install layout.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -123,6 +124,12 @@ class InstallEntry:
     mode: str  # write_text, tree mode, or harness-specific conversion mode
     ownership_class: str = _DEFAULT_OWNERSHIP_CLASS
     profile_position: str = _DEFAULT_PROFILE_POSITION
+    #: SHA-256 digests (see :func:`text_digest`) of earlier shipped renderings
+    #: of this entry's template. An uninstall treats a file Apothem created
+    #: whose content matches one of them as an unedited template copy, the same
+    #: as a match with the current template. Only a ``write_text`` entry
+    #: carries them.
+    earlier_digests: tuple[str, ...] = ()
 
     @property
     def user_level(self) -> bool:
@@ -146,6 +153,47 @@ class HarnessRules:
 
 
 _MANIFEST_FILENAME: Final[str] = "propagation-manifest.yaml"
+
+_DIGEST_PATTERN: Final = re.compile(r"[0-9a-f]{64}")
+
+
+def text_digest(text: str) -> str:
+    """Return the SHA-256 digest of *text* as ``earlier_digests`` records it.
+
+    The digest covers the UTF-8 bytes of the text with every line ending
+    folded to LF, so a copy a checkout or an editor re-wrapped to CRLF hashes
+    the same as the template that was shipped.
+    """
+    folded = text.replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(folded.encode("utf-8")).hexdigest()
+
+
+def _parse_earlier_digests(
+    name: str, entry: dict[object, object], *, mode: str, ownership_class: str
+) -> tuple[str, ...]:
+    """Validate an install entry's ``earlier_digests`` list and return it."""
+    raw = entry.get("earlier_digests")
+    if raw is None:
+        return ()
+    where = f"harness '{name}' install entry '{entry['target']}'"
+    if mode != "write_text" or ownership_class != "operator-owned":
+        raise ValueError(
+            f"{where} declares earlier_digests; only an operator-owned "
+            "write_text entry may"
+        )
+    if not isinstance(raw, list):
+        raise ValueError(f"{where}: earlier_digests must be a list of SHA-256 digests")
+    digests: list[str] = []
+    for item in raw:
+        if not isinstance(item, str) or _DIGEST_PATTERN.fullmatch(item) is None:
+            raise ValueError(
+                f"{where}: earlier_digests entry {item!r} is not a lowercase "
+                "64-character SHA-256 hex digest"
+            )
+        if item in digests:
+            raise ValueError(f"{where}: earlier_digests lists {item} twice")
+        digests.append(item)
+    return tuple(digests)
 
 
 def load_manifest() -> dict[str, HarnessRules]:
@@ -241,12 +289,16 @@ def _parse_manifest_text(text: str) -> dict[str, HarnessRules]:
                     f"profile_position '{profile_position}' (expected "
                     "'first' or 'last')"
                 )
+            mode = str(entry.get("mode", "replace_tree"))
             parsed = InstallEntry(
                 source=str(entry["source"]),
                 target=str(entry["target"]),
-                mode=str(entry.get("mode", "replace_tree")),
+                mode=mode,
                 ownership_class=ownership_class,
                 profile_position=profile_position,
+                earlier_digests=_parse_earlier_digests(
+                    name, entry, mode=mode, ownership_class=ownership_class
+                ),
             )
             _validate_user_level_entry(name, parsed)
             install.append(parsed)
@@ -390,6 +442,7 @@ __all__ = [
     "InstallEntry",
     "load_manifest",
     "resolve_target",
+    "text_digest",
     "user_home",
     "user_level_prefix",
 ]

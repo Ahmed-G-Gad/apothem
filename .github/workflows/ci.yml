@@ -473,6 +473,19 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Check template digests against every release tag
+        # An unedited copy of an earlier release's plain-text template is
+        # removed on uninstall only while the manifest lists its digest. The
+        # test job's checkout is shallow and has no tags, so only the pinned
+        # latest release is checked there; this job has every tag, so it
+        # verifies the pin against its tag and fails once a newer release
+        # exists, which is the cue to refresh the pin in
+        # tests/unit/test_template_digests.py.
+        run: python -m pytest tests/unit/test_template_digests.py -n 0 -p no:cacheprovider
       - name: Check pip-pin single-source coherence
         # The pip pin (CVE-2026-13346) is single-sourced per workflow via the
         # PIP_PIN_VERSION env var; this gate fails if any workflow's pin drifts

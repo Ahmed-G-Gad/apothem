@@ -575,6 +575,7 @@ def run_uninstall(
                 harness_name=harness_name,
                 allowed_root=allowed_root,
                 recorded=recorded_targets.get(_path_text(target)),
+                earlier_digests=entry.earlier_digests,
             )
             if removal is not None:
                 results.append(removal)
