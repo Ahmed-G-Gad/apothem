@@ -46,6 +46,12 @@ _LATEST_RELEASE_DIGESTS = {
     ),
 }
 
+#: The last release whose glm.toml differs from the current template, and that
+#: copy's digest. The GLM uninstall tests write this copy, so they keep testing
+#: an earlier text when the latest release ships the current one.
+_GLM_EARLIER_RELEASE = "v1.2.2"
+_GLM_EARLIER_DIGEST = "12b32d3e8dfb53d85b8ac702e6d335a6617a140bf66015cc2f18a7a4a302fc10"
+
 _DIGEST_A = "a" * 64
 _DIGEST_B = "b" * 64
 
@@ -299,21 +305,34 @@ def _glm_entry() -> propagation.InstallEntry:
     return entry
 
 
+def _glm_earlier_text() -> str:
+    """Return glm.toml as the last release with a different template shipped it."""
+    _require_release_tags()
+    old = _text_at_tag(_GLM_EARLIER_RELEASE, _glm_entry().source)
+    assert old is not None
+    assert propagation.text_digest(old) == _GLM_EARLIER_DIGEST
+    assert old != _glm_current_text()
+    return old
+
+
+def _glm_current_text() -> str:
+    source = install_driver.resolve_source(_glm_entry().source)
+    return source.read_text(encoding="utf-8")
+
+
 def test_glm_records_the_digests_of_every_earlier_release() -> None:
     entry = _glm_entry()
     # v1.0.1 through v1.1.0, then v1.2.0 through v1.2.2.
     assert entry.earlier_digests == (
         "6cb35635c4b74bf83c4f0abd1800a4676ffba5d4c8165e18e73c53dc4cad787d",
-        _LATEST_RELEASE_DIGESTS[("glm", entry.source)],
+        _GLM_EARLIER_DIGEST,
     )
 
 
 def test_glm_uninstall_removes_an_unedited_copy_an_earlier_release_wrote(
     tmp_path: Path,
 ) -> None:
-    _require_release_tags()
-    old = _text_at_tag(_LATEST_RELEASE, _glm_entry().source)
-    assert old is not None
+    old = _glm_earlier_text()
     project = tmp_path / "project"
     project.mkdir()
     adapter = GlmAdapter()
@@ -329,9 +348,7 @@ def test_glm_uninstall_removes_an_unedited_copy_an_earlier_release_wrote(
 def test_glm_uninstall_keeps_an_earlier_copy_the_operator_placed(
     tmp_path: Path,
 ) -> None:
-    _require_release_tags()
-    old = _text_at_tag(_LATEST_RELEASE, _glm_entry().source)
-    assert old is not None
+    old = _glm_earlier_text()
     project = tmp_path / "project"
     provider = _glm_provider(project)
     provider.parent.mkdir(parents=True)
@@ -345,9 +362,7 @@ def test_glm_uninstall_keeps_an_earlier_copy_the_operator_placed(
 
 
 def test_glm_uninstall_keeps_an_edited_earlier_copy(tmp_path: Path) -> None:
-    _require_release_tags()
-    old = _text_at_tag(_LATEST_RELEASE, _glm_entry().source)
-    assert old is not None
+    old = _glm_earlier_text()
     project = tmp_path / "project"
     project.mkdir()
     adapter = GlmAdapter()
