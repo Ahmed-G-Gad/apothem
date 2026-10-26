@@ -18,8 +18,8 @@
 # SHA-pinning policy
 # ------------------
 # Every action `uses:` reference is pinned by 40-character commit SHA followed
-# by a `# vMAJOR.MINOR.PATCH` version comment. Renovate (see
-# renovate.json) proposes SHA bumps on its weekly schedule; a proposal
+# by a `# vMAJOR.MINOR.PATCH` version comment. Dependabot (see
+# .github/dependabot.yml) proposes SHA bumps weekly; a proposal
 # lands only when a maintainer merges it, so pins are also reviewed and
 # bumped manually during hardening passes. One documented exception
 # remains (release.yml): the SLSA reusable generator is trust-anchored on
@@ -544,24 +544,8 @@ jobs:
         # passed fails here, so a stale pin blocks the merge instead of
         # waiting for the weekly monitor.
         run: python scripts/dev/validate_harness_convention_pins.py --harnesses-root src/apothem/harnesses
-      - name: Check PR title fits the squash-merge subject limit
-        if: github.event_name == 'pull_request'
-        # A squash merge composes the subject as "<pr title> (#<number>)", so a
-        # title that fits the 72-char Conventional Commits cap on its own can
-        # still produce a non-conforming commit. PR #6's title was 68 chars and
-        # its merge commit was 73, turning every quality job on main red after a
-        # fully green branch. The branch cannot catch this from its own commits —
-        # the offending subject does not exist until the merge — so the check
-        # evaluates the prospective subject here.
-        #
-        # The title is attacker-controlled, so it crosses into the step through
-        # env rather than a ${{ }} expansion inside run: (template injection).
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          python scripts/dev/check_pr_title_squash_length.py \
-            --title "$PR_TITLE" --number "$PR_NUMBER"
+      # The PR title check (squash subject within 72 characters) runs in
+      # pr-title.yml, which re-runs on a title edit.
       - name: Install release toolchain
         run: python -m pip install --require-hashes -r scripts/release/requirements-build-linux.txt
       - name: Build sdist + wheel

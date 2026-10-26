@@ -16,8 +16,8 @@
 #
 # SHA-pinning policy mirrors the sibling `ci.yml` workflow: every `uses:`
 # reference is pinned by 40-character commit SHA followed by a `# vX.Y.Z`
-# version comment. Renovate bumps each pinned SHA (pinDigests) weekly so security
-# patches propagate without human-in-the-loop rewrite.
+# version comment. Dependabot proposes a bump for each pinned SHA weekly, so
+# security patches reach the pins without a hand rewrite.
 #
 # Permissions policy: the workflow declares `contents: read` at the workflow
 # scope; no per-job override escalates beyond read-only.

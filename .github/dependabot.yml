@@ -1,0 +1,183 @@
+# SPDX-License-Identifier: MIT
+
+# Dependabot version updates. Security updates are turned on in the repository
+# settings and follow these entries too (labels, commit prefix, assignee).
+# Options: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
+#
+# Version updates cover GitHub Actions (SHA pins; Dependabot moves the SHA and
+# rewrites the same-line "# vX.Y.Z" comment), the docs site, the vsce packager
+# lockfile, the harness-CLI lockfile the channel smoke installs, and the
+# pre-commit hooks. These stay hand edits for version updates, because a
+# single-pin bump would be wrong (a security update can still open a pull
+# request for one; adapt it by hand or close it):
+#   - pyproject.toml: deliberate floors, and click is pinned exactly for the
+#     completion golden (comment beside it).
+#   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
+#     regenerated whole with `pip download`; setuptools must equal pyproject's
+#     build-system pin (tests/scripts/test_normalize_sdist.py).
+#   - src/apothem/_vendor/vendor.txt: records the vendored source tree beside
+#     it; a bump means re-vendoring (docs: architecture/vendoring-strategy).
+#   - npm `overrides` blocks. Version updates leave them alone; a security
+#     update of an overridden package can move one, so keep the drop condition
+#     beside it in step (the vsce and channel-smoke overrides carry theirs in
+#     the workflow that installs them).
+#   - site/.nvmrc and engines floors.
+#
+# Dependabot cannot template pull request titles, and some, mostly grouped
+# ones that name a directory, run past the 72-character squash subject the PR
+# Title check enforces. The repository's squash default takes the PR title, so
+# retitle such a pull request before merging it. A hooks pull request is not
+# exercised in CI: run `pre-commit run --all-files` on its branch first.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      # CodeQL's init, autobuild, analyze and upload-sarif steps must run the
+      # same version, and Dependabot tracks each as its own dependency, so
+      # they move together in one pull request, majors included.
+      codeql:
+        patterns: ["github/codeql-action*"]
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # The SLSA generator is a reusable workflow trust-anchored on its
+      # per-tag attestation; release.yml pins it by tag with an
+      # action-pinning-exempt marker, so it is moved by hand. The wildcard
+      # covers the repository name and the per-workflow dependency name.
+      - dependency-name: "slsa-framework/slsa-github-generator*"
+
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      docs-framework:
+        patterns:
+          - "fumadocs-*"
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /.github/vsce
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      vsce:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /.github/channel-smoke
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      harness-clis:
+        patterns: ["*"]
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      hooks:
+        patterns: ["*"]
+    ignore:
+      # Each moves in lockstep with a pin outside this file (see the comment
+      # beside each hook): ruff with pyproject.toml and conformity.yml, mypy
+      # with pyproject.toml, gitleaks with GL_VERSION in ci.yml. The mypy
+      # hook's additional_dependencies mirror pyproject.toml's runtime pins
+      # and floors, so they move with it too.
+      - dependency-name: "*ruff-pre-commit"
+      - dependency-name: "*mirrors-mypy"
+      - dependency-name: "*gitleaks"
+      - dependency-name: "click"
+      - dependency-name: "rich"
+      - dependency-name: "pyyaml"
+      - dependency-name: "jsonschema"
+      - dependency-name: "types-*"
+
+  # Security updates only: version updates are off (limit 0), so these entries
+  # just give Dependabot's security pull requests the labels, prefix and
+  # assignee above. Both manifests stay hand edits (see the top of this file).
+  # The cooldown matches the other entries; security updates ignore it.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+
+  - package-ecosystem: pip
+    directory: /scripts/release
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]

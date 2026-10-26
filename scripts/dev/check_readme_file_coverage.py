@@ -83,7 +83,6 @@ IGNORED_NAMES = frozenset(
         "next.config.mjs",
         "postcss.config.mjs",
         "source.config.ts",
-        "renovate.json",
         "REUSE.toml",
         "CITATION.cff",
         "Makefile",

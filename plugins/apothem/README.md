@@ -6,8 +6,13 @@ This directory is the **Codex plugin distribution surface** for Apothem,
 installed through Codex's native marketplace:
 
 ```text
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
 ```
+
+The two `--sparse` paths fetch only the marketplace listing and the plugin,
+not the whole repository; a full clone can run past Codex's 30-second clone
+limit on a slow disk, such as a Windows drive under WSL.
 
 It is a hand-authored bootstrap, not authoritative source. What lives here:
 

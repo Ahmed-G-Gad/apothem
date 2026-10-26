@@ -30,7 +30,8 @@
 #
 # SHA-pinning policy mirrors ci.yml: every action `uses:` reference is
 # pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
-# version comment. Renovate (renovate.json) bumps each pinned SHA weekly.
+# version comment. Dependabot (.github/dependabot.yml) proposes a bump for
+# each pinned SHA weekly.
 
 name: Publish npm
 

@@ -8,8 +8,8 @@
 # It lives at the repository root because Scorecard, in the action's default
 # archive file mode, reads a GitHub archive of the default branch, and
 # .gitattributes marks .github/ export-ignore, which leaves that folder out of
-# every archive. Scorecard also looks for .github/scorecard.yml, but cannot
-# see it there.
+# every archive except .github/dependabot.yml. Scorecard also looks for
+# .github/scorecard.yml, but cannot see it there.
 #
 # fuzzing: the Hypothesis property tests under tests/property/ generate inputs
 # across the search space for the frontmatter parser, the materialize round

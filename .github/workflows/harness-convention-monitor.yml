@@ -16,7 +16,7 @@
 #
 # SHA-pinning policy mirrors sibling workflows; every `uses:` reference
 # is pinned by 40-char commit SHA followed by a `# vX.Y.Z` version
-# comment. Refresh on Renovate bump.
+# comment. Dependabot proposes the bumps.
 
 name: Harness Convention Monitor
 

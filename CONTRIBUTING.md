@@ -298,7 +298,7 @@ Every PR requires:
 
 - **Review by a maintainer** listed in [`.github/CODEOWNERS`](./.github/CODEOWNERS). Branch protection on `main` requires 0 approving reviews while the project has one maintainer, because GitHub does not let a pull request author approve their own pull request. The [Branch protection](https://apothem.ahmedgad.com/docs/security/branch-protection-ruleset/) page records the live settings.
 - **All CI checks passing** — the ecosystem-validation sweep, the test suite, and any pre-commit hooks wired into CI.
-- **Squash-merge** is the default strategy; the squashed commit message is derived from the PR title and description, so make those publish-quality.
+- **Squash-merge** is the default strategy; the squashed commit message is derived from the PR title and description, so make those publish-quality. The repository's squash default takes the PR title, and the PR Title check requires the title plus ` (#<number>)` to fit 72 characters; retitle a Dependabot pull request whose title is longer before merging it.
 
 Reviewers aim to respond within **5 business days**. If a PR is blocked on a review longer than that, a polite ping on the PR is welcome.
 
