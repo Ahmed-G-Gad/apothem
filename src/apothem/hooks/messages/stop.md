@@ -2,7 +2,7 @@
 
 Session-end protocol: externalize state; evaluate memory and artifacts.
 
-**Phase A — Mandatory externalization**
+**Phase A — Mandatory externalization** (every session end)
 
 1. With an active plan suite, mid-phase: write current task state to PROGRESS.md Resumption Contract — phase id, task id, status (in_progress|partial), next action as a precise imperative.
 2. Move every session decision to PLAN-NOTES.md § Resolved Decisions; remove from in-conversation working memory.

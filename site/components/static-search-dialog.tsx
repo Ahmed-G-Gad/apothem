@@ -36,14 +36,22 @@ import { localeFromPathname } from '@/lib/i18n';
  */
 export default function StaticSearchDialog(props: SharedProps) {
   const locale = localeFromPathname(usePathname());
-  const { search, setSearch, query } = useDocsSearch({
-    // Per-locale static index: one file per routed locale at
-    // `/api/search/<locale>`, split because the single combined index exceeded
-    // GitHub Pages' hard 100 MB per-file limit. Each file is a single-locale
-    // (non-i18n) index, so `locale` is omitted — the client reads the unkeyed
-    // default db, and passing a locale would miss it and warn.
-    client: oramaStaticClient({ from: `/api/search/${locale}` }),
-  });
+  const from = `/api/search/${locale}`;
+  const { search, setSearch, query } = useDocsSearch(
+    {
+      // Per-locale static index: one file per routed locale at
+      // `/api/search/<locale>`, split because the single combined index
+      // exceeded GitHub Pages' hard 100 MB per-file limit. Each file is a
+      // single-locale (non-i18n) index, so `locale` is omitted — the client
+      // reads the unkeyed default db, and passing a locale would miss it and
+      // warn.
+      client: oramaStaticClient({ from }),
+    },
+    // The dialog stays mounted across a soft locale switch, so the search
+    // must re-bind when the index URL changes; the client's own dependency
+    // list does not include `from`.
+    [from],
+  );
 
   return (
     <SearchDialog

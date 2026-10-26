@@ -21,7 +21,7 @@ version comments and are bumped by Dependabot.
 | Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges; no committed Python runtime lock |
 | Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs current matching versions |
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
-| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
 | VS Code packager | `.github/vsce/package.json` | `.github/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
 | Channel-smoke harness CLIs | `.github/channel-smoke/package.json` | `.github/channel-smoke/package-lock.json` committed and consumed by `npm ci` |
@@ -87,6 +87,7 @@ The website is different: `site/package-lock.json` is committed and CI uses
   the PR title. Some Dependabot titles, mostly grouped ones that name a
   directory, run past the 72-character squash subject; the PR Title check
   names them, and a retitle fixes them. A pull request that changes a tool
-  lockfile is installed by the npm audit workflow. A pre-commit hooks pull
-  request is not exercised in CI, so run `pre-commit run --all-files` on its
-  branch before merging it.
+  lockfile is installed by the npm audit workflow. The Markdown Lint workflow
+  runs the markdownlint hook on a pre-commit hooks pull request; the other hooks
+  are not exercised in CI, so run `pre-commit run --all-files` on its branch
+  before merging it.

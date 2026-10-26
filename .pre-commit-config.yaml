@@ -84,9 +84,12 @@ repos:
       #   that valid GFM table form, and it renders the same as the others.
       # The exclude skips test fixtures: install-output goldens, validator
       # pass/fail inputs, and scenario documents whose bytes the tests dictate.
-      # Their sources (src/, plugins/, docs) are linted.
+      # It also skips plugins/claude-code/, which assemble_plugin_tree.py
+      # generates from src/: a command's numbered steps become one reference
+      # file each, so a step file holds a one-item list starting at its step
+      # number. The sources (src/, the hand-authored plugins/, docs) are linted.
       - id: markdownlint
-        exclude: ^tests/(fixtures|conformity|conformity-scenarios/fixtures|scripts/inject-header/fixtures)/
+        exclude: ^(tests/(fixtures|conformity|conformity-scenarios/fixtures|scripts/inject-header/fixtures)/|plugins/claude-code/)
 
   # ---------------------------------------------------------------------------
   # YAML lint

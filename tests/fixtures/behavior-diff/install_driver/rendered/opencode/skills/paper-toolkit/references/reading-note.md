@@ -6,7 +6,7 @@ Detail for `note` mode, and for the per-paper notes inside `compare` mode. A not
 
 ## Header
 
-```
+```text
 Reading note: <short title>
 Citation:     <authors, year, title, venue or archive, identifier, as printed on the paper>
 Version read: <preprint vN | accepted manuscript | published version | unknown>
