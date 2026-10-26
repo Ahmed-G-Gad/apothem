@@ -15,6 +15,7 @@ from apothem.lib.harness_materializer import (
     remove_managed_block,
 )
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget, OwnedEntry
+from apothem.lib.propagation import text_digest
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
 from .install_driver_jsonmerge import (
@@ -276,6 +277,36 @@ def _strip_apothem_yaml(
     return yaml.safe_dump(reduced, sort_keys=False, allow_unicode=True)
 
 
+def _plain_file_remainder(
+    existing: str,
+    template_text: str,
+    *,
+    earlier_digests: tuple[str, ...],
+    recorded: LedgerTarget | None,
+) -> str | None:
+    """Return what stays of a plain operator-owned file: ``None`` deletes it.
+
+    Only a file Apothem created is deleted, and only while it is still an
+    unedited template: an exact copy of the rendered *template_text*, or a copy
+    whose digest (see :func:`apothem.lib.propagation.text_digest`) is one an
+    earlier release shipped (*earlier_digests*). Anything else is the
+    operator's and stays whole.
+
+    An earlier release's copy needs an install record that does not say the
+    operator placed it: with no record (never installed here, already
+    uninstalled, or a lost ledger) nothing shows Apothem wrote that copy, so it
+    stays. An exact copy of the current template is still deleted without a
+    record, as before.
+    """
+    if recorded is not None and recorded.created is False:
+        return existing
+    if existing == template_text:
+        return None
+    if recorded is not None and text_digest(existing) in earlier_digests:
+        return None
+    return existing
+
+
 def _surgical_remove_from_target(
     target: Path,
     template_text: str,
@@ -287,6 +318,7 @@ def _surgical_remove_from_target(
     apothem_keys: frozenset[str] = frozenset(),
     recorded: LedgerTarget | None = None,
     retired: tuple[OwnedEntry, ...] = (),
+    earlier_digests: tuple[str, ...] = (),
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -301,8 +333,9 @@ def _surgical_remove_from_target(
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;
       delete when the remainder is empty, else atomic-rewrite.
     - Any other suffix: delete when Apothem created the file and its content
-      still equals the rendered template; otherwise leave it in place (never
-      destroy unrecognized operator content) — the backup already captured it.
+      still equals the rendered template or a copy an earlier release shipped
+      (one of *earlier_digests*); otherwise leave it in place (never destroy
+      unrecognized operator content) — the backup already captured it.
 
     When *recorded* (the target's entry in the current install record) carries
     the entries Apothem owns in a JSON / YAML target, exactly those are removed
@@ -378,10 +411,14 @@ def _surgical_remove_from_target(
             retired=retired if recorded is not None else (),
         )
     else:
-        # Unrecognized operator content: only delete an exact template copy
+        # Unrecognized operator content: only delete an unedited template copy
         # Apothem itself created (an operator's own copy is left alone).
-        apothem_created = recorded is None or recorded.created is not False
-        remainder = None if existing == template_text and apothem_created else existing
+        remainder = _plain_file_remainder(
+            existing,
+            template_text,
+            earlier_digests=earlier_digests,
+            recorded=recorded,
+        )
     if remainder is None:
         result = _guarded_unlink(
             target, allowed_root=allowed_root, operation="surgical_uninstall"

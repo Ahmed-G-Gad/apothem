@@ -58,6 +58,9 @@ mcp_servers:
 # engine install adds one mcp__<server>__* entry per server to that agent's
 # explicit tools list. Use the server names Claude Code shows in /mcp; a colon
 # or period in a name is rendered as an underscore, as Claude Code spells it.
+# The Gemini CLI install adds one mcp_<server>_* entry per server to that
+# agent's tools list; Gemini CLI cannot address a server name with an
+# underscore, colon or period, so such a name is skipped and reported there.
 # agent_mcp_servers:
 #   research-scout:
 #     - "your-scholarly-server"

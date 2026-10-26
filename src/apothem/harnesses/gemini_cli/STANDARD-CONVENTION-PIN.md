@@ -4,8 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-03
-- Snapshot note: refreshed against the Gemini CLI docs at commit `fb972b2f87fe7d5b06d37eac711490162d98de2c` of `github.com/google-gemini/gemini-cli` (GEMINI.md context, custom commands, skills, hooks, MCP, memory files). Correction: Gemini CLI stores durable memories by editing Markdown memory files (project `GEMINI.md`, a private per-project memory folder, and `~/.gemini/GEMINI.md`), so the registry memory cell is `native` through the `GEMINI.md` anchor; the earlier "Auto Memory inbox" reading is not in these docs. Previous 2026-06-25.
+- Snapshot date: 2026-10-25
+- Snapshot note: refreshed against the Gemini CLI docs at commit `fb972b2f87fe7d5b06d37eac711490162d98de2c` of `github.com/google-gemini/gemini-cli` (GEMINI.md context, custom commands, skills, hooks, MCP, memory files). Correction: Gemini CLI stores durable memories by editing Markdown memory files (project `GEMINI.md`, a private per-project memory folder, and `~/.gemini/GEMINI.md`), so the registry memory cell is `native` through the `GEMINI.md` anchor; the earlier "Auto Memory inbox" reading is not in these docs. Subagent MCP wildcard (`tools: mcp_<server>_*`) and the MCP server-naming rule re-read on 2026-10-25 from the live docs pages listed under Vendor Sources. Previous 2026-10-03, 2026-06-25.
 - Adapter source: `src/apothem/harnesses/gemini_cli/`.
 - Upstream authority: `github.com/google-gemini/gemini-cli` docs read at commit
   `fb972b2f87fe7d5b06d37eac711490162d98de2c` — an immutable pin.
@@ -47,7 +47,7 @@
   `description` from the source, and a `prompt` holding the command body with
   the source frontmatter and license comment stripped. Every other source key
   is dropped (see `conversion_losses` in `capabilities.yml`).
-- Subagents (re-checked 2026-10-02 against
+- Subagents (re-checked 2026-10-25 against
   <https://geminicli.com/docs/core/subagents>): Markdown files with YAML
   frontmatter under `.gemini/agents/`; `name` and `description` are required,
   and `kind`, `tools` (an allowlist of Gemini tool names; omitted means every
@@ -59,7 +59,20 @@
   `run_shell_command`, `Write` to `write_file`, `Edit` to `replace`,
   `WebSearch` to `google_web_search`, `WebFetch` to `web_fetch`, `TodoWrite`
   to `write_todos`, per <https://geminicli.com/docs/reference/tools>), and
-  `max_turns` from `maxTurns`. No model is set, so it inherits.
+  `max_turns` from `maxTurns`. No model is set, so it inherits. The `tools`
+  field accepts wildcards: `*` (every tool), `mcp_*` (every tool of every
+  connected MCP server) and `mcp_<server>_*` (every tool of one server, for
+  example `mcp_my-server_*`); the page's schema table writes the last form as
+  `mcp_server_*`, the wildcard section as `mcp_my-server_*`, and the example uses
+  the server's own name. The MCP page names every MCP tool `mcp_{serverName}_{toolName}`,
+  says the policy parser splits it on the first underscore after `mcp_`, and tells
+  authors not to use underscores in server names. The page lists no other
+  character rule for server names, so Apothem writes a per-server entry only for
+  a name of letters, digits and `-`. For an agent the profile's
+  `agent_mcp_servers` key lists, the `gemini_agents` converter appends one
+  `mcp_<server>_*` entry per addressable server to the explicit `tools` list
+  (sorted, unique); an agent with no `tools` field or one holding `mcp_*`
+  already reaches every server and is left unchanged.
 - Memory: the memory tool edits Markdown memory files — shared project
   instructions in repository `GEMINI.md` files, private notes in a per-project
   memory folder, cross-project preferences in `~/.gemini/GEMINI.md` — and the
@@ -79,6 +92,8 @@ Retrieved 2026-10-03 unless marked, at commit `fb972b2f87fe7d5b06d37eac711490162
 - <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/tools/memory.md> (memory files)
 - <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/skills.md> (skill tiers; retrieved 2026-10-02)
 - <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/hooks/index.md> (hook events; retrieved 2026-10-02)
+- <https://geminicli.com/docs/core/subagents/> (subagent `tools` wildcards `*`, `mcp_*`, `mcp_<server>_*`; live page, not commit-pinned; retrieved 2026-10-25)
+- <https://geminicli.com/docs/tools/mcp-server/> (`mcp_{serverName}_{toolName}` names, no underscores in server names; live page, not commit-pinned; retrieved 2026-10-25)
 
 ## Discovery Targets
 

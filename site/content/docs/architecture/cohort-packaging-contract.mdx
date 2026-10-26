@@ -74,7 +74,11 @@ required `name`, SemVer `version`, and `description`. Optional metadata covers
 listing fields: `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and
 `termsOfServiceUrl`, each an `https://` URL, plus an `icon` path inside the
 plugin. The generated Claude Code package sets `displayName`,
-`documentationUrl` and `supportUrl`. A plugin manifest is the
+`documentationUrl` and `supportUrl`. Anthropic's directory reads the listing
+fields and Claude Code ignores them at load time. The claude.ai marketplace
+sync reports the two links as unrecognized keys and strips them, so the
+marketplace there shows "1 with warnings". That warning is expected, and the
+plugin loads unchanged. A plugin manifest is the
 unit a harness adapter materializes into its native plugin surface; cohorts
 select which members a plugin carries, and the propagation manifest resolves
 where those members land per harness.

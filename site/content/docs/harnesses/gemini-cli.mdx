@@ -55,6 +55,16 @@ allowlist of Gemini tool names, and `maxTurns` becomes `max_turns`. A read-only
 helper therefore gets no `write_file` or `replace` tool. No model is set, so
 each helper inherits the session model.
 
+A helper that the profile's `agent_mcp_servers` key lists also gets one
+`mcp_<server>_*` entry per named server in its `tools` allowlist, so it can call
+that server's tools and no other server's; with no key every helper keeps the
+plain allowlist (see
+[MCP servers](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)). Apothem
+writes a grant here only for a server name of letters, digits and `-`, because
+`Gemini CLI` cannot address a name with an underscore; any other name is skipped
+and reported, and so is a grant for a helper that already reaches every MCP
+server.
+
 ## Compatibility notes
 
 `~/.gemini/` remains user-scope territory for tools that use a global Gemini

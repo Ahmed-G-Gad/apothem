@@ -20,6 +20,45 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **Gemini CLI helpers can reach an MCP server you name.** The
+  `agent_mcp_servers` key now also reaches the Gemini CLI install: for each
+  listed helper, its `tools` allowlist gains one `mcp_<server>_*` entry per
+  server, the form Gemini CLI's subagent docs give, and no other helper
+  changes. Gemini CLI cannot address a server name with an underscore, so
+  Apothem writes a grant only for a name of letters, digits and `-`; any other
+  name is skipped and reported rather than rewritten. A server the helper's
+  own `disallowedTools` names stays denied, as it does on Claude Code, and a
+  helper that already reaches every server is left as it is; both are
+  reported. With no setting the helpers are written exactly as before.
+
+### Changed
+
+- **Security metadata and one vendor link are current.** `SECURITY-INSIGHTS.yml`
+  carries today's review date and lists npm audit, Dependabot security updates,
+  secret-scanning push protection and the approval-gated publishing jobs. The
+  GitHub Copilot pin and the harness registry cite the agent-skills page at the
+  address GitHub moved it to. The packaging contract page explains the
+  "1 with warnings" badge claude.ai shows for the Apothem marketplace: its sync
+  strips the directory listing links that Anthropic's directory reads.
+
+### Fixed
+
+- **Uninstall removes an unedited copy of an earlier release's template.**
+  Uninstall deleted a plain operator-owned file such as `glm.toml` only when it
+  matched the current template, so a release that changed the template left
+  every unedited copy an earlier release wrote in place, as if you had edited
+  it. A manifest entry now lists the SHA-256 digests of the templates earlier
+  releases shipped (`earlier_digests`), and uninstall deletes such a copy when
+  Apothem's install record shows it wrote the file. Without a record, only an
+  exact copy of the current template is removed, as before, and a copy you
+  placed is always kept. `glm.toml` records the digests of the templates from
+  `v1.0.1` through `v1.2.2`. A test fails when a shipped template changes
+  without its previous digest recorded, and the release-preflight job checks
+  the record against every release tag and fails once a newer release exists,
+  until the record is refreshed.
+
 ## [1.3.0] - 2026-10-25
 
 ### Added

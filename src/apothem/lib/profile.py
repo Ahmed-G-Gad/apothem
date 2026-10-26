@@ -267,8 +267,9 @@ class CanonicalProfile:
         mcp_servers: MCP-server inventory keyed by name, or ``None``.
         agent_mcp_servers: Per agent name, the MCP servers that agent may call
             (the Claude Code engine install renders each as ``mcp__<server>__*``
-            in the agent's ``tools`` list); empty by default, so no agent is
-            granted an MCP tool.
+            in the agent's ``tools`` list, and the Gemini CLI install as
+            ``mcp_<server>_*``); empty by default, so no agent is granted an
+            MCP tool.
         harnesses: Per-harness override mappings, or ``None``.
         exclude_harnesses: Harness ids to skip when installing all.
         workspace: Workspace and plans configuration.

@@ -218,6 +218,16 @@ To publish again after a failed run, dispatch the workflow for the same tag
 when the version is already on the registry, because npm versions are
 immutable.
 
+### 2.5 Refresh the template-digest pin
+
+After the tag exists, set `_LATEST_RELEASE` and `_LATEST_RELEASE_DIGESTS` in
+`tests/unit/test_template_digests.py` to the new release and the SHA-256 digest
+of each plain-text template as that release shipped it
+(`git show vX.Y.Z:<template path> | sha256sum`). Do it in the next change to
+`main`, and add the previous digest to the manifest entry's `earlier_digests`
+when the template changed. The `release-preflight` CI job checks out every tag,
+so it fails with the tag names until the pin is refreshed.
+
 ## 3. Distribution Surfaces
 
 Each surface has a verification command answering "did the release land

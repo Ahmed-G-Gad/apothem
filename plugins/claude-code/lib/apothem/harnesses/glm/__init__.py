@@ -14,8 +14,8 @@ operator can wire any compatible agent to GLM. The file is materialized via
 ``write_text`` as an operator-owned valid-TOML config: Apothem writes the
 template only when the file is absent and never overwrites it afterwards, so
 the operator's backend secrets and edits survive every ``install`` /
-``update``; ``uninstall`` removes it only while it is still the unedited
-template Apothem created. It carries **no** projected shared-profile content
+``update``; ``uninstall`` removes it only while it is still an unedited
+template Apothem created (the current one or an earlier release's). It carries **no** projected shared-profile content
 and **no** coding-agent cohort (rules, commands, skills, agents, hooks): a
 model backend is not rule-bearing and exposes none. The managed-block sentinel
 machinery is markdown-only (HTML-comment delimiters, a frozen contract), so it
