@@ -28,6 +28,7 @@ top-level `.github/README.md` would, and none exists.
 | `zizmor.yml` | push (main), PR, dispatch | Static analysis of every workflow for template injection, credential persistence, unpinned actions, and excessive permissions; uploads SARIF. |
 | `scorecard.yml` | push (main), schedule (weekly), dispatch, branch_protection_rule | OpenSSF Scorecard analysis; publishes to the OpenSSF API and uploads SARIF to the Security tab. Maintainer annotations live in `.scorecard.yml` at the repository root, because the archive Scorecard reads leaves out the export-ignored `.github/`. |
 | `dco.yml` | PR (main), dispatch | Developer Certificate of Origin enforcement — requires a `Signed-off-by` trailer on every PR commit. |
+| `pr-title.yml` | PR (main), including title edits | Checks that the squash-merge subject (`<title> (#<number>)`) fits the 72-character Conventional Commits cap, with `scripts/dev/check_pr_title_squash_length.py`. Retitling a pull request re-runs it; Dependabot titles need a retitle before merging. |
 | `dependency-review.yml` | PR (main) | Blocks PRs that introduce dependencies with known vulnerabilities or disallowed licenses, evaluated against the manifest/lockfile diff. |
 | `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, and the hash-locked release build tooling, plus a PR/push gate on changes to them. |
 | `npm-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `npm audit` of the documentation site's dependency tree, plus a PR/push gate on `site/package.json` and its lockfile. Sibling of `pip-audit.yml`, whose path filters cover the Python surface only — without this the npm tree is unaudited. Fails on high/critical. |
@@ -44,9 +45,9 @@ top-level `.github/README.md` would, and none exists.
 ## Conventions
 
 - **SHA-pinning.** Every action `uses:` reference is pinned by 40-character
-  commit SHA followed by a `# vMAJOR.MINOR.PATCH` version comment. Renovate
-  (`renovate.json`) proposes SHA bumps on a weekly schedule; a bump lands only
-  when a maintainer merges it. One documented exception exists in `release.yml`:
+  commit SHA followed by a `# vMAJOR.MINOR.PATCH` version comment. Dependabot
+  (`.github/dependabot.yml`) proposes SHA bumps weekly and rewrites the version
+  comment; a bump lands only when a maintainer merges it. One documented exception exists in `release.yml`:
   the SLSA reusable generator is trust-anchored on its per-tag attestation
   (Sigstore policy forbids SHA-pinning trusted reusable workflows), and that
   `uses:` line carries an `action-pinning-exempt:` marker. `.github/zizmor.yml`

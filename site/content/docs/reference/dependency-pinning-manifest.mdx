@@ -14,7 +14,7 @@ Apothem is a Python CLI with a small runtime dependency set plus a larger
 development, audit, release, and documentation toolchain. Runtime dependencies
 use conservative lower bounds in `pyproject.toml`; the website commits
 `site/package-lock.json`; GitHub Actions are pinned by immutable SHA with
-version comments and are bumped by Renovate.
+version comments and are bumped by Dependabot.
 
 | Class | Declaration | Lock policy |
 |---|---|---|
@@ -23,7 +23,7 @@ version comments and are bumped by Renovate.
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
 | CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
-| GitHub Actions | SHA-pinned `uses:` refs with version comments | Renovate proposes updates; exceptions carry `action-pinning-exempt:` markers |
+| GitHub Actions | SHA-pinned `uses:` refs with version comments | Dependabot proposes weekly updates; exceptions carry `action-pinning-exempt:` markers |
 
 ## Release ratification
 
@@ -67,5 +67,15 @@ The website is different: `site/package-lock.json` is committed and CI uses
   them.
 - **Why a committed Node lock?** The website is a deployed static artifact; the
   lockfile gives deterministic `npm ci` builds for that public surface.
-- **Why SHA-pinned Actions?** Tags are mutable; SHAs are immutable. Renovate
-  updates the pinned SHAs, while the release gate records any intentional hold.
+- **Why SHA-pinned Actions?** Tags are mutable; SHAs are immutable. Dependabot
+  proposes the SHA bumps and rewrites each version comment, while the release
+  gate records any intentional hold.
+- **What the update bot does not touch.** `.github/dependabot.yml` covers the
+  GitHub Actions pins, the website lockfile, the two release-tool lockfiles
+  (`.github/vsce`, `.github/channel-smoke`) and the pre-commit hooks. The
+  runtime floors in `pyproject.toml`, the hash-locked release requirements,
+  the vendored closure in `src/apothem/_vendor/vendor.txt`, npm `overrides`
+  blocks and the pre-commit hooks pinned in lockstep with `pyproject.toml` move
+  by hand, because a single-pin bump would break the files they agree with.
+  Dependabot titles do not fit the 72-character squash subject, so retitle a
+  Dependabot pull request before merging it.

@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: MIT
+
+# Dependabot version updates. Security updates are turned on in the repository
+# settings and follow these entries too (labels, commit prefix, assignee).
+# Options: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
+#
+# Covered: GitHub Actions (SHA pins; Dependabot moves the SHA and rewrites the
+# same-line "# vX.Y.Z" comment), the docs site, the two release-tool lockfiles
+# and the pre-commit hooks. Left to hand edits, because a single-pin bump would
+# be wrong:
+#   - pyproject.toml: deliberate floors, and click is pinned exactly for the
+#     completion golden (comment beside it).
+#   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
+#     regenerated whole with `pip download`; setuptools must equal pyproject's
+#     build-system pin (tests/scripts/test_normalize_sdist.py).
+#   - src/apothem/_vendor/vendor.txt: records the vendored source tree beside
+#     it; a bump means re-vendoring (docs: architecture/vendoring-strategy).
+#   - npm `overrides` blocks, which Dependabot does not edit; each carries its
+#     drop condition in the workflow that installs it.
+#   - site/.nvmrc and engines floors.
+#
+# Dependabot cannot template pull request titles, and its grouped titles run
+# past the 72-character squash subject the PR Title check enforces. Retitle a
+# Dependabot pull request before merging it.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # The SLSA generator is a reusable workflow trust-anchored on its
+      # per-tag attestation; release.yml pins it by tag with an
+      # action-pinning-exempt marker, so it is moved by hand. The wildcard
+      # covers the repository name and the per-workflow dependency name.
+      - dependency-name: "slsa-framework/slsa-github-generator*"
+
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      docs-framework:
+        patterns:
+          - "fumadocs-*"
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /.github/vsce
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      vsce:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /.github/channel-smoke
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      harness-clis:
+        patterns: ["*"]
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [ahmed-g-gad]
+    groups:
+      hooks:
+        patterns: ["*"]
+    ignore:
+      # Each moves in lockstep with a pin outside this file (see the comment
+      # beside each hook): ruff with pyproject.toml and conformity.yml, mypy
+      # with pyproject.toml, gitleaks with GL_VERSION in ci.yml. The mypy
+      # hook's additional_dependencies mirror pyproject.toml's runtime pins
+      # and floors, so they move with it too.
+      - dependency-name: "*ruff-pre-commit"
+      - dependency-name: "*mirrors-mypy"
+      - dependency-name: "*gitleaks"
+      - dependency-name: "click"
+      - dependency-name: "rich"
+      - dependency-name: "pyyaml"
+      - dependency-name: "jsonschema"
+      - dependency-name: "types-*"

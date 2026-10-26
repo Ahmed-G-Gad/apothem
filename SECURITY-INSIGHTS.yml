@@ -60,8 +60,8 @@ repository:
           Automated supply-chain and code-security controls run in CI: OpenSSF
           Scorecard, CodeQL, zizmor, pip-audit, npm audit, dependency-review,
           Trivy and gitleaks scanning, a REUSE/license-compatibility audit, and
-          DCO. Dependabot security updates and secret scanning with push
-          protection are enabled. The GitHub Release, npm and VS Code
+          DCO. Dependabot security and version updates and secret scanning
+          with push protection are enabled. The GitHub Release, npm and VS Code
           Marketplace publishing jobs wait for a maintainer's approval in the
           release environment.
           Each tagged release ships a CycloneDX SBOM with cosign signatures and
