@@ -243,14 +243,27 @@ CHANNELS: tuple[Channel, ...] = (
         id="codex-plugin",
         title="7 — Codex plugin",
         documented=(
-            f"codex plugin marketplace add {REPO}",
+            f"codex plugin marketplace add {REPO} --sparse .agents/plugins"
+            " --sparse plugins/apothem",
             "codex plugin add apothem@apothem",
             "npx @ahmed-g-gad/apothem install --harness codex",
             "npx @ahmed-g-gad/apothem verify --harness codex",
         ),
         requires=("codex", "npx", "python3"),
         steps=(
-            Step(("codex", "plugin", "marketplace", "add", REPO)),
+            Step(
+                (
+                    "codex",
+                    "plugin",
+                    "marketplace",
+                    "add",
+                    REPO,
+                    "--sparse",
+                    ".agents/plugins",
+                    "--sparse",
+                    "plugins/apothem",
+                )
+            ),
             Step(("codex", "plugin", "add", "apothem@apothem")),
             _npx("install", "--harness", "codex"),
             _npx("verify", "--harness", "codex"),

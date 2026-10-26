@@ -538,9 +538,13 @@ npx @ahmed-g-gad/apothem verify --harness qwen-code
 Add the repository as a Codex plugin marketplace, then install the plugin:
 
 ```shell
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
+
+The two `--sparse` paths fetch only the marketplace listing and the plugin,
+not the whole repository; a full clone can run past Codex's 30-second clone
+limit on a slow disk, such as a Windows drive under WSL.
 
 Like the Gemini CLI and Qwen Code extensions, this is a bootstrap that shells
 out to the engine; materialize the full harness by running the install through

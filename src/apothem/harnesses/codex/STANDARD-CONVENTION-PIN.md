@@ -79,6 +79,11 @@ Retrieved 2026-10-03 unless marked.
 
 Codex exposes a plugin-marketplace surface (`codex plugin marketplace add`).
 The bundle is `plugins/apothem/`, referenced by `.agents/plugins/marketplace.json`.
+The documented install passes `--sparse .agents/plugins --sparse plugins/apothem`
+(`codex plugin marketplace add --help`, codex-cli 0.163.0, retrieved 2026-10-26):
+Codex clones a Git marketplace with a 30-second limit, and a full clone of this
+repository ran past it on a Windows drive under WSL, while the sparse clone took
+about 8 seconds. Codex records the paths as `sparse_paths` in `config.toml`.
 Its manifest is the root `plugins/apothem/plugin.json`, the location Codex
 documents for a new package: it declares the Agent Plugins 1.0.0 schema
 (`$schema`, `additionalProperties: false`) and carries identity only, with no
