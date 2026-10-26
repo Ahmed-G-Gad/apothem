@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 
-# Weekly npm dependency audit for the documentation site.
+# Weekly npm dependency audit for the documentation site and the two tool
+# lockfiles: the vsce packager (.github/vsce) and the harness CLIs the channel
+# smoke installs (.github/channel-smoke). A pull request that changes a tool
+# lockfile, such as a Dependabot update, also installs it here, since no other
+# pull-request job uses those lockfiles.
 #
 # Sibling of pip-audit.yml, which covers the Python surface only: its triggers
 # are scoped to pyproject.toml, requirements*.txt and src/apothem/_vendor/**.
@@ -24,11 +28,15 @@ on:
     paths:
       - "site/package.json"
       - "site/package-lock.json"
+      - ".github/vsce/**"
+      - ".github/channel-smoke/**"
       - ".github/workflows/npm-audit.yml"
   pull_request:
     paths:
       - "site/package.json"
       - "site/package-lock.json"
+      - ".github/vsce/**"
+      - ".github/channel-smoke/**"
       - ".github/workflows/npm-audit.yml"
   workflow_dispatch:
 
@@ -72,3 +80,42 @@ jobs:
         # dependency tree. npm audit reads the committed lockfile, so no install
         # is needed and none is run — nothing executes package install scripts.
         run: npm audit --audit-level=high
+
+  tool-lockfiles:
+    name: npm-audit (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [.github/vsce, .github/channel-smoke]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "24"
+          # No dependency cache: these lockfiles feed publishing and smoke
+          # jobs, which install without a cache too.
+          package-manager-cache: false
+      - name: Run npm audit
+        working-directory: ${{ matrix.dir }}
+        run: npm audit --audit-level=high
+      - name: Install from the lockfile
+        # The same install the release, publish and channel-smoke jobs run;
+        # --ignore-scripts runs no dependency install script.
+        working-directory: ${{ matrix.dir }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Load the vsce packager
+        if: matrix.dir == '.github/vsce'
+        working-directory: ${{ matrix.dir }}
+        run: ./node_modules/.bin/vsce --version

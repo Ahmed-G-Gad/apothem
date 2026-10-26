@@ -27,16 +27,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Dependabot proposes dependency updates.** The repository's docs and workflow
   comments said Renovate bumped the pinned action SHAs weekly, but Renovate never
   ran here. `.github/dependabot.yml` now proposes grouped weekly updates for the
-  GitHub Actions pins (moving each SHA and its version comment), the website and
-  the pre-commit hooks, and monthly updates for the two release-tool lockfiles,
-  each held for seven days after a release. Pins that move in lockstep with
-  another file (the runtime floors, the hash-locked release requirements, the
-  vendored closure, npm overrides, the ruff, mypy and gitleaks hooks) stay hand
-  edits. `renovate.json` is gone. The PR title check moves to its own PR Title
-  workflow, which re-runs when a title is edited, so a Dependabot pull request
-  can be retitled to fit the 72-character squash subject before it merges.
-  `.gitattributes` keeps `.github/dependabot.yml` in source archives, where
-  Scorecard looks for the update tool.
+  GitHub Actions pins (moving each SHA and its version comment, with CodeQL's
+  steps kept together), the website and the pre-commit hooks, and monthly
+  updates for the vsce packager and channel-smoke lockfiles, each held for seven
+  days after a release. Pins that move in lockstep with another file (the
+  runtime floors, the hash-locked release requirements, the vendored closure,
+  the ruff, mypy and gitleaks hooks) stay hand edits. `renovate.json` is gone.
+  The npm audit workflow now also audits and installs the two tool lockfiles,
+  so a pull request that changes one is tested. The PR title check moves to its
+  own PR Title workflow, which re-runs when a title is edited, and the
+  repository's squash default now takes the PR title, so a long Dependabot
+  title is fixed by a retitle before it merges. `.gitattributes` keeps
+  `.github/dependabot.yml` in source archives, where Scorecard looks for the
+  update tool.
 - **Security metadata and one vendor link are current.** `SECURITY-INSIGHTS.yml`
   carries today's review date and lists npm audit, Dependabot security updates,
   secret-scanning push protection and the approval-gated publishing jobs. The

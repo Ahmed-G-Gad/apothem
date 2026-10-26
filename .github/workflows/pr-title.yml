@@ -11,8 +11,9 @@
 # subject.
 #
 # It runs on its own and on `edited`, so retitling a pull request re-runs it in
-# seconds. Dependabot writes titles that do not fit (for example "chore(deps):
-# bump next from 16.4.0 to 16.4.3 in /site in the npm_and_yarn group across 1
+# seconds. The repository's squash default takes the PR title, so the title is
+# what lands. Some Dependabot titles do not fit (for example "chore(deps): bump
+# next from 16.4.0 to 16.4.3 in /site in the npm_and_yarn group across 1
 # directory"); retitle such a pull request before merging it.
 #
 # The title is attacker-controlled, so it crosses into the step through env

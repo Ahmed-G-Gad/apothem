@@ -9,8 +9,8 @@
 
 header:
   schema-version: 2.2.0
-  last-updated: '2026-10-25'
-  last-reviewed: '2026-10-25'
+  last-updated: '2026-10-26'
+  last-reviewed: '2026-10-26'
   url: https://raw.githubusercontent.com/ahmed-g-gad/apothem/main/SECURITY-INSIGHTS.yml
   comment: |
     Single-repository Security Insights file: it carries both a project and a
