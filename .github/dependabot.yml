@@ -26,8 +26,9 @@
 # Dependabot cannot template pull request titles, and some, mostly grouped
 # ones that name a directory, run past the 72-character squash subject the PR
 # Title check enforces. The repository's squash default takes the PR title, so
-# retitle such a pull request before merging it. A hooks pull request is not
-# exercised in CI: run `pre-commit run --all-files` on its branch first.
+# retitle such a pull request before merging it. On a hooks pull request the
+# Markdown Lint workflow runs the markdownlint hook; the other hooks are not
+# exercised in CI, so run `pre-commit run --all-files` on its branch first.
 
 version: 2
 

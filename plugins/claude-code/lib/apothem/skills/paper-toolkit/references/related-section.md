@@ -26,7 +26,7 @@ Two to five themes, each a paragraph or two, in this order: background that ever
 
 Where the argument needs support the supplied set lacks, write a marker in the prose, in this exact form:
 
-```
+```text
 [citation needed: <what the support must show>]
 ```
 

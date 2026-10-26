@@ -118,24 +118,15 @@ the compiled file itself, in four parts. An item that does not apply to a file
 (printed codes in a manuscript that has none, a print specification for a file
 that is never printed) is recorded as not applicable, with the reason.
 
-**Read from the file.**
+Checks 1 to 4 read the file, 5 and 6 read the rendered page, 7 is asked of the venue or the printer, and 8 covers copies.
 
 1. **Geometry.** Read the exact page dimensions and the page count, and compare them with the venue's or printer's written specification.
 2. **Fonts.** List the fonts the file uses. Every font MUST be embedded unless the venue's or printer's specification says otherwise; an unembedded font makes the line `unmet`.
 3. **Raster images.** For each raster image, divide its pixel dimensions by its placed dimensions to get the effective resolution, and compare that with the floor the venue or printer states. An image enlarged beyond its pixels adds no detail and is not presented as if it did.
 4. **Document properties.** Read the file's metadata fields (author, creator, producer and similar) and compare them with the confirmed author line and the venue's anonymity policy. Under a double-blind policy the fields hold no identity, and the other file-property surfaces in `skills/research-suite/references/blinding-and-disclosure.md` apply (R6).
-
-**Read from the rendered page.**
-
 5. **Layout.** Render each page to an image and inspect the edges, margins, columns, overlaps and clipping, and each figure and table in place. For a large-format poster, also view a reduced-scale render from the distance that corresponds to reading the full size.
 6. **Printed codes and links.** Scan or resolve each printed code or link from the rendered page. It MUST reach the destination recorded in the publication record.
-
-**Asked of the venue or the printer.**
-
 7. **Print requirements.** Bleed, safe margin, colour profile, the print-standard PDF variant, and a resolution floor the specification does not state are asked per `rules/authority-inquiry.md`, never assumed.
-
-**Copies.**
-
 8. **Derived files.** A compressed, resized, converted or re-exported copy is a new artifact. Keep the original and run the check again on the copy.
 
 Discover the inspection tooling through `rules/host-discovery.md`; do not
