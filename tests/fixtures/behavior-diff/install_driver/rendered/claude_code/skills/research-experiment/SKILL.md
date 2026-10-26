@@ -6,7 +6,7 @@ disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -104,7 +104,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 | ---------- | ---- | ----------------- |
 | Reproducibility (R2) | `rules/ten-dimension-check.md` | Phase 4 manifest carries env + seed + protocol log + version pins + re-run recipe so an independent party re-runs to the same observations. |
 | Open science / FAIR (R8) | `rules/host-discovery.md` | Phase 3 captures raw data FAIR-aligned (findable / accessible / interoperable / reusable); Phase 4 records a containerized or pinned environment so the runtime is byte-identifiable; Phase 2 runs positive/negative controls that validate the measurement chain. |
-| Falsifiability (R3) | `rules/definitiveness.md` | Every trial enters the log — null results, failed trials, and unexpected readings recorded as faithfully as confirming observations. |
+| Falsifiability (R3) | `rules/definitiveness.md` | Every trial enters the log — null results, failed trials, and unexpected readings recorded as faithfully as confirming observations; in the autonomous loop each trial states its falsifiable prediction before it runs. |
 | Preregistration discipline (R5) | `rules/disclosure-ledger.md` | The preregistration is frozen; every deviation from it is disclosed in the experiment log with cause and timestamp, never erased. |
 | Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phase 1 confirms the ethics + conflict-of-interest + data-availability declarations cover the execution; an out-of-scope run blocks. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until data-destination, seed-source, and human-subject inquiries resolve. |
@@ -124,7 +124,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 | Reproducibility manifest | `{suite}/_outputs/reproducibility-manifest.md` | The environment + seed + protocol log + version pins + data manifest + re-run recipe so an independent party reproduces the run. |
 | Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-analysis` and the protocol-adherence-vs-deviation attestation. |
 
-The `experiment-log.md` carries these canonical sections: `## §1 Run Header` (the study recap, the run's start/end timestamps, the operator, the suite); `## §2 Protocol Trace` (the ordered steps as executed, each timestamped, with its observation reference); `## §3 Trials & Observations` (every trial — confirming, null, failed, unexpected — keyed to its raw-data record); `## §4 Deviation Ledger` (every departure from the preregistered protocol with cause and timestamp per R5); `## §5 Ethics & Conflicts` (the R6 declarations carried forward, confirmed to cover the run); `## §6 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`. The `reproducibility-manifest.md` carries: `## §1 Environment` (OS, runtime, hardware-relevant facts, locale); `## §2 Container / Pinned Environment` (the container image digest or pinned environment spec that instantiates the exact runtime; R8); `## §3 Seed` (every seed in force); `## §4 Version Pins` (every dependency at its exact resolved version, commit-pinned where applicable); `## §5 Data Manifest` (raw-data paths, FAIR metadata, schemas/units, per-file content hashes); `## §6 Re-Run Recipe` (the exact command sequence, working directory, and inputs that reproduce the run).
+The `experiment-log.md` carries these canonical sections: `## §1 Run Header` (the study recap, the run's start/end timestamps, the operator, the suite); `## §2 Protocol Trace` (the ordered steps as executed, each timestamped, with its observation reference); `## §3 Trials & Observations` (every trial — confirming, null, failed, unexpected — keyed to its raw-data record; an autonomous campaign's close-out record is entered here); `## §4 Deviation Ledger` (every departure from the preregistered protocol with cause and timestamp per R5, and each response executed under a contingency record, logged as a planned adaptation with its register row and trigger reading); `## §5 Ethics & Conflicts` (the R6 declarations carried forward, confirmed to cover the run); `## §6 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`. The `reproducibility-manifest.md` carries: `## §1 Environment` (OS, runtime, hardware-relevant facts, locale); `## §2 Container / Pinned Environment` (the container image digest or pinned environment spec that instantiates the exact runtime; R8); `## §3 Seed` (every seed in force); `## §4 Version Pins` (every dependency at its exact resolved version, commit-pinned where applicable); `## §5 Data Manifest` (raw-data paths, FAIR metadata, schemas/units, per-file content hashes); `## §6 Re-Run Recipe` (the exact command sequence, working directory, and inputs that reproduce the run).
 
 ---
 
@@ -147,6 +147,7 @@ The `experiment-log.md` carries these canonical sections: `## §1 Run Header` (t
 - **NEVER drop a null or failed trial.** Every trial enters the log with the same fidelity as a confirming observation (R3); a marked missing value records its reason, never a silent interpolation.
 - **NEVER fabricate a reproducibility fact.** Data points, data paths, and version pins are observed, not invented; an unrecordable environment fact is marked as a reproducibility hole in the manifest (R2).
 - **NEVER rewrite a recorded observation in place.** The raw data is append-only; a correction is a new dated record with its rationale.
+- **NEVER let the autonomous loop steer on its admission set or read its final untouched set early.** The search signal steers, the admission signal decides, and the untouched set is read once at close-out; with no untouched set the result is labelled selection-contaminated and exploratory (R5, R7).
 - **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-analysis` may consume the data.
 
 ---

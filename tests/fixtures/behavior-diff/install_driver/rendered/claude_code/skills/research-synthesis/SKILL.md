@@ -5,8 +5,8 @@ argument-hint: "[--suite-name NAME] [--override] [--matrix-dimensions DIM,DIM,..
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.0"
-  updated: "2026-10-24"
+  version: "0.2.0"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -84,15 +84,7 @@ Lay every source against shared comparison dimensions. When `--matrix-dimensions
 
 ### Phase 3 — Adversarial Verification (refute-by-default)
 
-Route every load-bearing claim destined for the SOTA map through `agents/fact-checker.md` adversarial verification. The fact-checker treats each claim as false until ≥2 independent sources force otherwise, seeks the strongest counter-evidence first (Filter 3 Inversion Press), and assigns a cited verdict per claim:
-
-| Verdict | Condition | Destination |
-| ------- | --------- | ----------- |
-| `corroborated` | Two or more independent sources agree; no surviving counter-evidence. | Anchors the SOTA map. |
-| `contested` | Sources disagree; both positions carry evidence. | Contested-findings ledger (both positions + evidence). |
-| `unverified` | No independent corroboration. | Contested-findings ledger. |
-
-A claim defaults to contested-or-unverified when evidence is insufficient, never a charitable `corroborated`. Only `corroborated` claims anchor the SOTA map (R1, R3). Dispatch the verification as an Audit Team per `rules/agent-orchestration.md` when the claim count justifies parallel fan-out (3+ independent claims); each agent returns a pass/fail verdict plus cited evidence under the 200-token audit return contract.
+> Moved to `references/step-03-adversarial-verification-refute-by.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Synthesize the SOTA Map, Rate Certainty, Consolidate the Theory & State the Gap
 
@@ -118,6 +110,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 | Reporting-guideline conformance (R9) | `rules/ten-dimension-check.md` | Phase 4 assigns a GRADE-style certainty rating per evidence body, carrying the source-ledger risk-of-bias judgments forward per the EQUATOR catalog. |
 | Theoretical grounding (R10) | `rules/definitiveness.md` | Phase 4 consolidates the sources' theoretical frameworks into a single model the gap statement and proposal trace to; a contested construct is never collapsed into false consensus. |
 | Cross-corpus coherence (R1, R3) | `skills/research-suite/references/advancement-gate.md` | Phase 4 reconciles the SOTA map, model, and gap against sibling corpora before finalization; a cross-corpus conflict routes to the contested-findings ledger and the gap resolves to a distinct, parsimonious contribution the downstream advance gate re-checks. |
+| Search provenance (R2, R9) | `skills/research-suite/references/search-record.md` | Phase 3 counts independent studies, not reports; Phase 4 states the search-record coverage the gap rests on. |
 | Pre-emission gate | `rules/pre-emission-gate.md` | Phase 5 runs all fifteen bars against the synthesis before the manifest update. |
 
 R2 (reproducibility) is forward-declared here and operationalized at `/research-design`; R5 (preregistration), R6 (ethics), R7 (statistical rigor), and R8 (open-science / FAIR) bind the downstream design, experiment, and analysis stages.
@@ -132,7 +125,7 @@ R2 (reproducibility) is forward-declared here and operationalized at `/research-
 | Claim inventory | `{suite}/_inputs/synthesis-claims.md` | Optional Phase 1 working file (claim inventory keyed by source ID) for a corpus exceeding a single pass. |
 | Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-proposal` and the per-claim verification attestation. |
 
-The `synthesis.md` carries these canonical sections: `## §1 Scope & Corpus` (the research question recap, source count, claim count per verdict); `## §2 Literature Matrix` (the source-by-dimension table); `## §3 SOTA Map` (the current state-of-the-art along each dimension, every assertion cited with its GRADE-style certainty rating); `## §4 Certainty of Evidence` (the GRADE-style `high`/`moderate`/`low`/`very-low` rating per evidence body with its down-rating and up-rating rationale); `## §5 Consolidated Theoretical Model` (the reconciled constructs, their relationships, and framework boundaries the prior work converges on; R10); `## §6 Gap Statement` (the one-sentence explicit gap the study addresses, plus its derivation from the matrix coverage gaps, low-certainty regions, and the model's open relationships); `## §7 Contested-Findings Ledger` (every contested or unverified claim with both positions and their evidence, folding in the cross-corpus reconciliation outcome — a sibling-corpus terminology or finding conflict is recorded here as a contested finding carrying both positions); `## §8 Citation Index` (every source ID with permalink, author, access date); `## §9 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+The `synthesis.md` carries these canonical sections: `## §1 Scope & Corpus` (the research question recap, report count, study count, claim count per verdict); `## §2 Literature Matrix` (the source-by-dimension table); `## §3 SOTA Map` (the current state-of-the-art along each dimension, every assertion cited with its GRADE-style certainty rating); `## §4 Certainty of Evidence` (the GRADE-style `high`/`moderate`/`low`/`very-low` rating per evidence body with its down-rating and up-rating rationale); `## §5 Consolidated Theoretical Model` (the reconciled constructs, their relationships, and framework boundaries the prior work converges on; R10); `## §6 Gap Statement` (the one-sentence explicit gap the study addresses, plus its derivation from the matrix coverage gaps, low-certainty regions, and the model's open relationships, and the search-record coverage line); `## §7 Contested-Findings Ledger` (every contested or unverified claim with both positions and their evidence, folding in the cross-corpus reconciliation outcome — a sibling-corpus terminology or finding conflict is recorded here as a contested finding carrying both positions); `## §8 Citation Index` (every source ID with permalink, author, access date); `## §9 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
 
 ---
 
@@ -157,6 +150,8 @@ The `synthesis.md` carries these canonical sections: `## §1 Scope & Corpus` (th
 - **NEVER hedge the gap statement.** The gap is one definitive, testable sentence per `rules/definitiveness.md` — the prior work leaves X open, stated as a binding claim, never softened with hedging vocabulary.
 - **NEVER finalize a SOTA-map, consolidated-model, or gap claim that conflicts with a sibling corpus without recording the conflict.** A terminology or finding conflict against a related sibling corpus lands in the contested-findings ledger with both positions and their evidence, never silently harmonized (R1).
 - **NEVER state a gap whose contribution duplicates a corroborated claim or decomposes into overlapping, non-distinct elements.** The gap resolves to a distinct, parsimonious contribution the downstream advance gate re-checks per `skills/research-suite/references/advancement-gate.md`; a duplicate is re-framed, and a bundle whose parts collapse into one is stated as one (R3).
+- **NEVER count two reports of one study, or two studies on one shared dataset, as independent corroboration.** Corroboration and certainty ratings count studies (`search-record.md` §7).
+- **NEVER let a `retracted` or `withdrawn` source anchor the map, and NEVER read an empty `contrary` class as consensus.**
 - **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-design` may consume the synthesis.
 
 ---

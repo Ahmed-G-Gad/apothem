@@ -1,7 +1,7 @@
 ---
 name: "diagram-authoring"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-10-26"
 description: "Author, validate and render diagrams (flowchart, sequence, state, ER, architecture) and data visualizations to SVG, PNG or PDF. Use when the user asks to 'draw a diagram', 'make a flowchart', 'render this Mermaid' or 'export a diagram to SVG'. Source is syntax-validated before render."
 archetype: "authoring-template"
 userInvocable: true
@@ -54,7 +54,7 @@ Under `--notation auto` (default) the classification is by subject; when ambiguo
 
 ### 2. Author the Diagram Source
 
-Author the source in the chosen notation, derived from the subject's intent (the structure to depict, the data to plot). For data-driven visualizations, bind the supplied / discovered dataset to the visual encoding (axes, scales, marks, color) **deterministically** — the same dataset produces the same picture. Keep the source human-readable and diffable (text source over binary where the notation permits).
+Author the source in the chosen notation, derived from the subject's intent (the structure to depict, the data to plot). For data-driven visualizations, bind the supplied / discovered dataset to the visual encoding (axes, scales, marks, color) **deterministically** — the same dataset produces the same picture. A data-driven chart meets `skills/research-suite/references/figure-integrity.md` (baselines, named intervals, raw observations, gaps, colour scales, non-colour cues) before it renders. Keep the source human-readable and diffable (text source over binary where the notation permits).
 
 ### 3. Validate Before Render
 
@@ -114,4 +114,4 @@ When the notation, the diagram class, the dataset shape, the target format, or t
 - **Satisfies →** ● `CLAUDE.md` Source Layout row "diagram-authoring" (skills/ class). ● The elevation dimension **structural novelty** (one unified author→validate→render→export pipeline across declarative + data-driven notation — a shape no single source capability carries alone). ● `rules/visual-leverage.md` (M9 diagram provenance + verification-date discipline).
 - **Established by ↑** ● `CLAUDE.md` Source Layout (skills/ folder-with-`SKILL.md` class). ● `CLAUDE.md` Ambiguity Handling (structured inquiry over fabrication). ● `rules/own-voice-reimplementation.md` (zero-verbatim own-voice; `reference-token-grep` = 0). ● `rules/agnostic-posture.md` (17-harness agnostic floor).
 - **Gated by ←** ● A discovered diagram renderer (the gap is surfaced where absent). ● The host's structured-inquiry + Edit + Write + Bash tool surface. ● A statable subject (and, for data-viz, a supplied / discovered dataset — never invented).
-- **Cross-bound with ↔** ↔ `rules/visual-leverage.md` (M9 — provenance + `verified:` metadata; this skill is the authoring instrument for the diagrams that rule mandates). ↔ `rules/own-voice-reimplementation.md` + `rules/agnostic-posture.md` (own-voice + agnostic floors). ↔ `rules/determinism.md` (deterministic pipeline). ↔ `skills/document-authoring/SKILL.md` (sibling own-voice authoring skill; consumes this skill's render output for embedded figures).
+- **Cross-bound with ↔** ↔ `rules/visual-leverage.md` (M9 — provenance + `verified:` metadata; this skill is the authoring instrument for the diagrams that rule mandates). ↔ `rules/own-voice-reimplementation.md` + `rules/agnostic-posture.md` (own-voice + agnostic floors). ↔ `rules/determinism.md` (deterministic pipeline). ↔ `skills/research-suite/references/figure-integrity.md` (the honesty and accessibility floor a data-driven chart meets before it renders). ↔ `skills/document-authoring/SKILL.md` (sibling own-voice authoring skill; consumes this skill's render output for embedded figures).

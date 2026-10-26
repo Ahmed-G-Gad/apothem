@@ -7,7 +7,7 @@ description: "/research-analysis — Analyzes the raw data per the preregistered
 **Role:** Principal Investigator (analysis)
 **Pipeline position:** mid-chain
 
-Analyzes the raw data per the preregistered plan — runs the planned statistical tests, reports effect sizes with confidence intervals (not p-values alone), applies multiple-comparison correction where applicable, runs robustness / sensitivity checks, and discloses every deviation from preregistration.
+Analyzes the raw data per the preregistered plan — runs the planned statistical tests on the independent unit of analysis, reports effect sizes with confidence intervals (credible intervals under a Bayesian plan; not p-values alone), applies multiple-comparison correction where applicable, states how missing data was handled, runs robustness / sensitivity checks, and discloses every deviation from preregistration.
 
 ## Canonical invocation
 
@@ -27,7 +27,7 @@ The raw data at the host-natural location the experiment stage recorded, plus `_
 
 ## Outputs
 
-`_outputs/analysis.md` (the preregistered tests with effect sizes and CIs, the multiple-comparison correction, the robustness checks, and disclosed deviations) + figures / tables at a host-natural location.
+`_outputs/analysis.md` (the preregistered tests with effect sizes, CIs, unit of analysis, and a per-domain bias judgment for each headline result; the multiple-comparison correction; the missing-data handling; the robustness checks; and disclosed deviations) + figures / tables at a host-natural location.
 
 ## Downstream
 
@@ -39,10 +39,18 @@ The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read the raw data and the preregistration.
 2. **Verify the Sequence Gate** — Confirm the experiment outputs exist; otherwise halt with `Blocked: run /research-experiment first`.
-3. **Analyze** — Run the preregistered tests; report effect sizes + CIs; correct for multiple comparisons; run robustness / sensitivity checks.
-4. **Disclose deviations** — Record every departure from the preregistered plan.
+3. **Analyze** — Run the preregistered tests on the independent unit of analysis; diagnose assumptions without letting the diagnostics choose the test; report effect sizes + CIs; correct for multiple comparisons; state the missing-data handling; run robustness / sensitivity checks.
+4. **Disclose deviations** — Record every departure from the preregistered plan. A move to a fallback the preregistration names is logged as a planned adaptation; any other substitution is a deviation.
 5. **Update the handoff manifest** — Record the analysis path and the figures / tables.
 6. **Emit the analysis** — `_outputs/analysis.md` + figures / tables.
+
+## Statistical discipline
+
+- **The test follows the design.** The preregistered primary test stands unless the preregistration's own fallback trigger fires; a screening test that fails to reject does not show an assumption holds.
+- **n counts independent units.** Repeated measures, sub-samples, clusters, and seeds are aggregated to the unit or modeled as dependence, never counted as independent replicates.
+- **A null is read three ways.** The effect-size interval, the equivalence result against the smallest effect of interest, and a sensitivity statement (the smallest effect detectable at the achieved analyzed n) are reported together. Power computed from the observed effect is never reported.
+- **Bayesian plans on their own terms.** A preregistered Bayesian plan reports the posterior summary with its credible interval, runs prior-sensitivity, computation-diagnostic, and posterior-predictive checks before any posterior is reported, and uses a pre-fixed practical-equivalence region for nulls.
+- **Result-level bias and figures.** Each headline result carries a low / some-concerns / high judgment per domain, seeded from the design's threats-to-validity ledger and never summed into one score, and every figure meets the encoding, uncertainty-disclosure, and accessibility floor.
 
 ## Rigor floor
 
@@ -54,6 +62,8 @@ A stochastic method is run for at least thirty independent repetitions per insta
 |---------|-------|----------|
 | Blocked: run /research-experiment first | No raw data | Run `/research-experiment` to produce the data + log |
 | p-value reported without effect size | Incomplete statistical reporting | Report effect sizes + confidence intervals |
+| Dependent observations counted as replicates | Repeated measures, sub-samples, clusters, or seeds treated as independent | Aggregate to the independent unit or model the dependence; n counts units |
+| Observed power reported for a null | Power computed from the observed effect | Drop it; report the interval, the equivalence result, and the sensitivity statement |
 | Undisclosed analysis deviation | Plan departed silently | Disclose the deviation against the preregistration |
 
 ## Examples

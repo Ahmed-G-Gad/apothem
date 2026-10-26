@@ -5,8 +5,8 @@ argument-hint: "[--suite-name NAME] [--override] [--venue NAME] [--template PATH
 disable-model-invocation: true
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.1"
-  updated: "2026-10-25"
+  version: "0.1.2"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -103,8 +103,9 @@ The stage runs as one disciplined sprint: a single venue-formatted package at th
 | Citation integrity (R4) | `rules/ten-dimension-check.md` | Every citation in the formatted manuscript resolves to a permalinked/DOI-pinned source; Phase 4 re-dereferences each; a phantom citation blocks the package. |
 | Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phases 1 + 3 gather ethics/COI/data-availability facts from the suite or required inquiry; no declaration carries an invented value; missing facts block the package per the gate's unresolved-confirm-placeholder check. |
 | Reproducibility (R2) | `rules/ten-dimension-check.md` | The data/code-availability statement and supplementary materials trace to the actual experiment/analysis locations; nothing re-derived for the package. |
-| Open science / FAIR (R8) | `rules/authority-inquiry.md` | Phase 4 ratifies the open-access route and the reuse licenses, plans the Zenodo data/code deposit with its own persistent DOIs, and carries the registered-report Stage-2 route where one was preregistered. |
+| Open science / FAIR (R8) | `rules/authority-inquiry.md` | Phase 4 ratifies the open-access route and the reuse licenses, plans the data/code deposit (Zenodo or an equivalent archive, in the class the proposal's data management and sharing plan sets) with its own persistent DOIs, and carries the registered-report Stage-2 route where one was preregistered. |
 | Preregistration discipline (R5) | `rules/disclosure-ledger.md` | Any residual finding the operator accepted is recorded as a known-state note, never hidden in the package. |
+| Venue-rule sourcing | `rules/authoritative-referencing.md` | Phase 1 enters a venue rule only with its source, read date, and submission stage; Phase 2 enforces the stage in hand. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until identity, ethics/COI, and venue-naming inquiries resolve; these are required-category. |
 | Structured inquiry | `rules/interactive-questions.md` | Every venue, template, ethics, COI, and preprint ambiguity routes through the canonical channel; free-form prose questions forbidden. |
 | Adversarial verification | `agents/fact-checker.md` | Phase 4 re-dereferences every citation and re-checks every declaration refute-by-default before the package earns `ready`. |
@@ -135,6 +136,8 @@ The stage runs as one disciplined sprint: a single venue-formatted package at th
 - **NEVER ship a phantom citation.** Every citation in the formatted manuscript resolves to a permalinked/DOI-pinned source; Phase 4 re-dereferences each one; an unresolvable citation blocks the package (R4).
 - **NEVER fabricate a DOI.** The reserved DOI is a real, resolvable identifier minted through the archival authority, never a placeholder string (R4, R6).
 - **NEVER omit a required declaration.** A nil ethics or conflict-of-interest statement is declared explicitly when accurate, never silently dropped (R6).
+- **NEVER enter a venue rule without its source, its read date, and its stage.** A rule from another cycle, track, or neighbouring venue is not a stand-in, and the rules enforced are those of the stage in hand.
+- **NEVER alter the venue's template files.** A locally written starting file is reported as such and never as the venue's template.
 - **NEVER call a package ready with an unmet checklist line.** Only an all-`met` submission checklist earns the `ready` verdict; a single `unmet` line holds the package at `not-ready`.
 - **NEVER call a package ready on the strength of its inputs.** The produced archive is retrieved, its contents and checksums are verified against the manifest, and the outcome is recorded before the `ready` verdict.
 - **NEVER submit on the operator's behalf.** The stage produces a ready package and stops; the operator performs the submission.

@@ -27,7 +27,7 @@ The suite's `_outputs/publication-record.md` (the venue package + submission rec
 
 ## Outputs
 
-`_outputs/dissemination-plan.md` (the preprint announcement, the public-artifact plan, the FAIR archival deposit record, the altmetrics and impact-tracking plan, the rebuttal / revision loop, and the registered-report stage-2 path).
+`_outputs/dissemination-plan.md` (the preprint announcement, the public-artifact plan with each talk's intake, time budget, and question and backup list, each poster's section map, a figure-provenance table, and the compiled-artifact outcome, the FAIR archival deposit record, the altmetrics and impact-tracking plan, the rebuttal / revision loop, and the registered-report stage-2 path).
 
 ## Downstream
 
@@ -38,15 +38,17 @@ Terminal — the dissemination plan is the pipeline's final artifact. The review
 The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read `_outputs/publication-record.md`, the rules, and any existing suite state.
-2. **Plan the preprint and public artifacts** — Draft the preprint announcement and the talk / poster / blog plan.
+2. **Plan the preprint and public artifacts** — Draft the preprint announcement and plan each talk and poster by intake, time budget, question and backup list, and figure provenance, with a compiled-PDF check on anything built.
 3. **Record the FAIR archival deposit** — Plan the data + code deposit to a FAIR repository with persistent identifiers.
 4. **Set up impact tracking** — Plan altmetrics and impact tracking against the proposal's impact pathway.
-5. **Prepare the rebuttal loop** — Draft the reviewer rebuttal and the registered-report stage-2 path where applicable.
+5. **Prepare the rebuttal loop** — Read the venue's response-stage constraints from the publication record's venue-rule register before drafting, then draft the reviewer rebuttal and the registered-report stage-2 path where applicable.
 6. **Verify and emit** — Confirm the plan is actionable; emit `_outputs/dissemination-plan.md` plus the handoff manifest. The operator performs the public actions.
 
 ## Rigor floor
 
 Public artifacts carry natural domain language; where dissemination precedes de-anonymization, author, institution, and system identity are held for the designated stage. The FAIR deposit is the durable, citable reproducibility-evidence package, scaled to the venue ambition, that lets an independent party reproduce the study.
+
+Talks and posters are planned from their intake: slot length, talk kind, audience, and whether questions share the slot are asked, never assumed. The sections sum to the speaking time, and the speaking time plus in-slot questions, transitions, and reserve sum to the slot. A data figure is the paper's own file or a regeneration from the recorded data, never redrawn by hand or by a generative tool. A response that breaks a stated venue constraint (length cap, anonymity of response files, link policy, admission of new results) is not called ready.
 
 ## Failure modes
 
@@ -55,6 +57,8 @@ Public artifacts carry natural domain language; where dissemination precedes de-
 | No FAIR deposit record | Archival step skipped | Select a FAIR repository (`--archive`) and record the deposit plan with persistent identifiers |
 | Plan attempts to auto-publish | Stage boundary overstepped | Stop at the ready plan; the operator performs every public action |
 | Missing publication record | `/research-publish` not yet run | Run `/research-publish` first to produce the venue package |
+| Redrawn data figure on a talk or poster | The figure was drawn again instead of reused | Use the paper's file, or regenerate it from the recorded data |
+| Talk time budget does not sum | Slot, speaking time, questions, or reserve left unplanned | Ask for the intake, then size the sections so the budget adds up to the slot |
 
 ## Examples
 

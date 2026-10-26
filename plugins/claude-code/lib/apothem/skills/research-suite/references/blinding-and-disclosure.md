@@ -17,7 +17,10 @@ timing problem: which identity a deliverable withholds now, and the stage at
 which that identity is restored. CM-7 suppresses suite-internal references so a
 deliverable reads as ordinary domain prose; blinding extends that same
 natural-language reflex from suite-internal names to author, institution,
-funding, and the identity of the system under study.
+funding, and the identity of the system under study. Blinding here is the
+peer-review anonymity of a deliverable; who knows which condition a unit
+received while a study runs is *masking*, set in
+[`study-allocation-and-structure.md`](study-allocation-and-structure.md).
 
 ## What the anonymity policy governs
 
@@ -36,6 +39,26 @@ strings the deliverable withholds now and restores later.
 - **Restore at the designated stage.** The payload SHOULD be restored at the stage the policy designates for de-anonymization — the camera-ready or post-acceptance stage — and MUST NOT be restored earlier than that stage. Restoration replaces every placeholder in the deliverable body with the recorded string from the payload.
 - **One payload, one attestation.** A deliverable carries a single de-anonymization payload; the attestation is the sole authoritative record of what was held out, so a later stage restores from one place rather than reconstructing identity from memory.
 
+## Leak surfaces outside the prose
+
+Identity leaves a submission through files and history as readily as through
+sentences. The gate inspects each surface below on every file the submission
+ships or links, not on the manuscript PDF alone. The inspection is the
+submitting side's check. A reviewer of a double-blind submission does not
+search these surfaces for identity; an identity the reviewer meets without
+looking is reported to the operator as a leak and enters no score.
+
+- **File properties.** A shipped file (the manuscript PDF and its source, figures, data files, spreadsheets, slides, archives) can carry author, creator, producer, organisation, and last-saved-by fields, tracked changes, and comments. The check prints the properties of each file and clears or replaces any that name the author, the institution, the funder, or the system. Where the host grants a shell, the host's own tools print the fields; where it does not, the check lists the files for the operator to inspect, and the attestation records which path ran.
+- **Embedded paths and handles.** Build logs, notebook cell outputs, stack traces, configuration files, and exported figures can carry absolute local paths, user names, and host names. The check reads the outputs saved inside notebooks and logs, not only their code.
+- **Repository history and ownership.** A linked or bundled repository exposes commit author names and addresses, remote addresses, the owner or organisation, branch and tag names, issue and discussion history, forks, licence holders, and package metadata. Under a double-blind policy, a repository offered to reviewers MUST be an anonymised export that carries none of them. Where no export can be produced before the deadline, the availability statement says the repository is withheld, and the attestation records its address as part of the payload.
+- **Supplementary archives.** The check opens the archive and inspects folder and file names, README and licence headers, and the properties of each member. Verifying the archive's manifest and checksum does not substitute for opening it.
+- **Rendered figures and screenshots.** The check views the rendered image, not only its source: a screenshot can show a user name, an institution's name or logo, a host name, a file path, or a watermark.
+- **Link targets and self-citation form.** An address that names the author or the institution (a personal page, a laboratory domain, an institutional repository) is a leak even when the sentence around it is neutral. A reference to the author's own unpublished or in-preparation work is phrased as a neutral third-person citation, supplied in anonymised form, or removed.
+
+Whether linked material may change after the submission deadline is set by the
+venue. That rule belongs to the venue-requirement inventory built in
+`/research-publish` Phase 1, not to this gate.
+
 ## Double-blind readiness is a gated check
 
 Double-blind readiness MUST be treated as a **gated check** run against the
@@ -44,6 +67,7 @@ only when every bar below holds:
 
 - **No residual identity leak in the body.** The deliverable body MUST carry no residual author, institution, funding, or system/tool identity — not in prose, not in captions, not in acknowledgements, not in metadata, not in repository or artifact handles that reconstruct identity.
 - **Self-citations are de-anonymization-safe.** A reference to the author's own prior contribution MUST be phrased so it does not de-anonymize the author — a neutral third-person reference to a prior contribution, never a first-person one that reveals authorship.
+- **The non-prose surfaces are inspected.** Every surface under "Leak surfaces outside the prose" is inspected on each file the submission ships or links; the attestation lists what was inspected, and records a surface that does not apply as not applicable, with the reason. A surface left uninspected fails this bar until the operator inspects it.
 - **The attestation records the held-out identity.** The attestation MUST record the de-anonymization payload — the held-out author, institution, funding, and system/tool identity — so the designated later stage restores it exactly. A gate that clears the body checks but records no payload is incomplete: it produces a deliverable that can never be de-anonymized.
 
 A deliverable that does not clear every bar is not double-blind-ready and MUST
@@ -55,4 +79,4 @@ remediated and the gate re-run, never waived.
 - **Drives →** ● The anonymization and staged-disclosure decisions in `/research-paper`, `/research-review`, `/research-publish`, and `/research-disseminate` (which identity a deliverable withholds now and the stage at which it is restored).
 - **Satisfies →** ● The [`research-suite`](../SKILL.md) skill's reference-surface obligation (the blinding and staged-disclosure surface loads selectively, beside the router).
 - **Established by ↑** ● [`research-suite/SKILL.md`](../SKILL.md) (the knowledge surface this reference extends). ● [`references/rigor-mandates.md`](rigor-mandates.md) (the R6 mandate this surface operationalizes).
-- **Cross-bound with ↔** ↔ `rules/operational-mandates.md` (CM-7 natural-domain-language, which this surface extends from suite-internal references to author, institution, funding, and system/tool identity). ↔ `rules/authority-inquiry.md` (the naming of public surfaces is an authority-inquiry category, routed through the structured-inquiry channel on host silence). ↔ [`references/advancement-gate.md`](advancement-gate.md) (review is the advance gate that checks blinding integrity before a deliverable clears).
+- **Cross-bound with ↔** ↔ `rules/operational-mandates.md` (CM-7 natural-domain-language, which this surface extends from suite-internal references to author, institution, funding, and system/tool identity). ↔ `rules/authority-inquiry.md` (the naming of public surfaces is an authority-inquiry category, routed through the structured-inquiry channel on host silence). ↔ [`references/advancement-gate.md`](advancement-gate.md) (review is the advance gate that checks blinding integrity before a deliverable clears). ↔ [`references/study-allocation-and-structure.md`](study-allocation-and-structure.md) (masking of study assignment, distinct from the anonymity governed here).

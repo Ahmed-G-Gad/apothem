@@ -5,8 +5,8 @@ argument-hint: "[--suite-name NAME] [--override] [--archive REPO] [--preprint SE
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.0"
-  updated: "2026-10-24"
+  version: "0.1.1"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -106,7 +106,7 @@ Read the publication record in full. Compose the preprint announcement (the prep
 | Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phase 2 states the data/code-availability access terms and any restriction's basis from the suite or required inquiry; no availability fact is invented. |
 | Blinding & staged disclosure (R6) | `skills/research-suite/references/blinding-and-disclosure.md` | Phases 1–2 hold author/institution/system identity out of a preprint issued under a still-active double-blind policy; full disclosure is reserved for the designated post-acceptance stage and the held-out identity is recorded as the de-anonymization payload. |
 | Citation integrity (R4) | `rules/ten-dimension-check.md` | Phase 4 re-checks every public-artifact claim against the published paper; an invented or overstated claim blocks the artifact. |
-| Reproducibility (R2) | `rules/ten-dimension-check.md` | The FAIR deposit traces to the actual experiment/analysis data and code locations; nothing re-derived for the deposit. |
+| Reproducibility (R2) | `rules/ten-dimension-check.md` | The FAIR deposit traces to the actual experiment/analysis data and code locations; nothing re-derived for the deposit. Every talk and poster figure is the paper's file or a regeneration from the recorded data. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until archival-repository and data-availability inquiries resolve; these are required-category. |
 | Structured inquiry | `rules/interactive-questions.md` | Every archive, preprint, and impact-tracking ambiguity routes through the canonical channel; free-form prose questions forbidden. |
 | Adversarial verification | `agents/fact-checker.md` | Phase 4 re-dereferences every archival identifier and re-checks every public claim refute-by-default before the plan earns `ready`. |
@@ -119,14 +119,7 @@ Read the publication record in full. Compose the preprint announcement (the prep
 
 ## Output
 
-| Artifact | Path | Purpose |
-| -------- | ---- | ------- |
-| Dissemination plan | `{suite}/_outputs/dissemination-plan.md` | The dissemination-and-impact record: preprint announcement + public-artifact plan + FAIR archival deposit record + altmetrics/impact-tracking plan + rebuttal/revision loop + registered-report stage-2 path + the readiness-checklist outcome, ready for the operator to execute. |
-| Public artifacts | host-natural (a blog draft, a talk script, a poster source) | Optional artifact drafts authored at the host-natural location, each restating the paper's claims. |
-| Dissemination-requirement inventory | `{suite}/_inputs/dissemination-requirements.md` | Optional Phase 1 working file (the public-artifact, archival, and impact-tracking requirement list). |
-| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Closed at Phase 5 with `downstream: operator dissemination (terminal)`, the per-identifier and per-claim verification attestation, and the readiness-checklist outcome. |
-
-The `dissemination-plan.md` carries these canonical sections: `## §1 Publication Recap & Preprint Announcement` (the `ready` package recap, the reserved DOI, the preprint server and timing); `## §2 FAIR Archival Deposit` (the repository, the persistent identifier, the access terms and any restriction basis; R8); `## §3 Public Artifacts` (the talk / poster / blog plan, each claim traced to the paper); `## §4 Altmetrics & Impact Tracking` (the reach-and-impact measurement plan traced to the impact pathway; R10); `## §5 Rebuttal / Revision Loop & Registered-Report Path` (the route back through `/research-review` and the stage-2 path); `## §6 Identifier-Integrity Report` (the Phase 4 per-identifier resolution outcomes; R8); `## §7 Dissemination-Readiness Checklist` (the requirement × verdict table; the `ready` / `not-ready` verdict); `## §8 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 
@@ -143,6 +136,8 @@ The `dissemination-plan.md` carries these canonical sections: `## §1 Publicatio
 - **NEVER fabricate an archival identifier.** Every persistent identifier and accession is a real, resolvable deposit; Phase 4 re-dereferences each one; an unresolvable identifier blocks the plan line (R8).
 - **NEVER fabricate an impact metric.** An altmetric figure is recorded from a real tracking surface or planned as a future measurement, never invented (R10).
 - **NEVER draft a rebuttal response that claims a change the revision lacks**, and never mark a comment `answered` without citing the revised text.
+- **NEVER redraw a data figure for a talk or poster.** The figure is the paper's own file or is regenerated from the recorded data; a figure redrawn by a generative tool or by hand is no longer the recorded data (R2, R4).
+- **NEVER plan a talk without its intake or with a time budget that does not sum.** Slot length, talk kind, audience, and whether questions share the slot are asked, never assumed; the sections sum to the speaking time, and the speaking time plus in-slot questions, transitions, and reserve sum to the slot.
 - **NEVER ship a public claim the paper does not make.** Every public-artifact claim is re-checked against the published paper; an invented or overstated claim blocks the artifact (R4).
 - **NEVER de-anonymize a preprint issued under a still-active double-blind policy.** Author, institution, and system identity are held out of the body until the designated post-acceptance stage; full disclosure is reserved for that stage and the held-out identity is recorded as the de-anonymization payload, never restored earlier (R6).
 - **NEVER omit the FAIR deposit's access terms.** The data/code-availability access basis is stated, with any restriction and its basis declared, never elided (R6, R8).

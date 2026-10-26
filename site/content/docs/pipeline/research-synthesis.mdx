@@ -27,7 +27,7 @@ With arguments:
 
 ## Outputs
 
-`_inputs/synthesis.md` — the SOTA map, the literature matrix, the contested-findings ledger, and the explicit one-sentence gap statement.
+`_inputs/synthesis.md` — the SOTA map, the literature matrix, the contested-findings ledger, and the explicit one-sentence gap statement with the search coverage it rests on. It reports both the report count and the study count.
 
 ## Downstream
 
@@ -39,8 +39,8 @@ The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read the source ledger and the per-source extractions.
 2. **Verify the Sequence Gate** — Confirm the source ledger exists; otherwise halt with `Blocked: run /research-sources first`.
-3. **Synthesize** — Build the SOTA map + literature matrix; reconcile agreements and contradictions; state the explicit gap.
-4. **Adversarially verify** — Every load-bearing claim is refuted-by-default against two or more independent sources.
+3. **Synthesize** — Build the SOTA map + literature matrix, carrying each source's study id, evidence class, and integrity status from the ledger; reconcile agreements and contradictions; state the explicit gap and name the search coverage it rests on.
+4. **Adversarially verify** — Every load-bearing claim is refuted-by-default against two or more independent studies.
 5. **Update the handoff manifest** — Record the synthesis path and the contested-claims ledger.
 6. **Emit the synthesis** — `_inputs/synthesis.md`.
 
@@ -48,12 +48,19 @@ The command follows the standard `/research` pipeline workflow:
 
 Before the gap statement is finalized, the synthesis reconciles its terminology, findings, and recommendations against related sibling corpora (cross-corpus coherence); a conflict is recorded in the contested-findings ledger, never silently harmonized. The gap must resolve to a distinct, parsimonious contribution — not one already closed by a corroborated claim, and not decomposable into overlapping non-distinct elements.
 
+## Counting evidence
+
+- **Studies, not reports.** Reports that share a study id in the ledger, studies that share a collected sample, and sources that cite each other count as one source; two papers from one author group are checked for shared data first. Certainty ratings count independent studies the same way.
+- **Integrity.** A retracted or withdrawn source does not count toward corroboration, and a source whose integrity status is `concern` is never the sole support for a claim.
+- **Contrary evidence and coverage.** A prior synthesis found in the search locates primary studies and does not count beside them. When the contrary-evidence class retained nothing, the finding is recorded as `none found in the searches recorded`, never as consensus, and the gap sentence names its scope in the same terms: the indexes, the terms and date range, the date last run, and any pass flagged `incomplete`.
+
 ## Failure modes
 
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
 | Blocked: run /research-sources first | No source ledger | Run `/research-sources` to produce `_inputs/source-ledger.md` |
-| Claim survives without ≥2 sources | Insufficient corroboration | Mark contested or unverifiable; do not assert |
+| Claim survives without ≥2 independent studies | Insufficient corroboration, or the sources share a study or a sample | Mark contested or unverifiable; do not assert |
+| Gap stated as absence in the field | The gap sentence has no search coverage behind it | Name the searches recorded as the scope; never assert an absence beyond them |
 | No explicit gap statement | Synthesis lacks a target | Re-derive the one-sentence gap the research addresses |
 
 ## Examples

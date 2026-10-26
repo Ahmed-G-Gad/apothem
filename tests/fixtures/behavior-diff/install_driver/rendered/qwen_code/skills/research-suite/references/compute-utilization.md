@@ -60,7 +60,9 @@ fair comparison and MUST be disclosed.
   on a test split that is DISJOINT from the training split. Test-split
   instances MUST NOT enter tuning under any circumstance — a parameter chosen
   with sight of a test instance makes that instance's result an artifact of the
-  tuning, not a measure of the method.
+  tuning, not a measure of the method. A split consulted to retain or reject a
+  tuned configuration is tuning-side whatever it is called; only a split no
+  selection step has read is a test split.
 - **Record the tuning protocol.** The study MUST record the tuning protocol,
   the tuning budget, and the training/test split definition into the working
   trace, so the tuning is reproducible and its fairness is auditable.
@@ -83,7 +85,7 @@ spending is result-invariant.
   fully while keeping runs parallel yet safe: no core oversubscription, no
   memory exhaustion, and a stated headroom margin below the machine's limits.
   Oversubscribed cores and exhausted memory distort wall-clock measurements and
-  corrupt the very budget parity the comparison rests on.
+  corrupt the budget parity the comparison rests on.
 - **Parallelization is result-invariant.** Running repetitions in parallel MUST
   NOT change any repetition's result. Each repetition MUST carry its own fixed,
   recorded seed and its own fixed per-trial budget, enforced per-run and never

@@ -1,0 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 5 — Validation Gate
+
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted proposal. M5 authority: every resource estimate, budget figure, call requirement, registry name, contingency role, and ethics fact traces to suite-recorded, call-text, or operator-supplied data (R6); no unfilled authority-inquiry placeholder remains. M8 definitiveness: the aims and the impact pathway carry no hedging vocabulary. M9 visual leverage: the impact pathway and the risk register render with the metadata header. M14 systemicity: the proposal declares its upstream (synthesis + theory), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the SMART-aims completeness check + the preregistration-plan presence check + the call-requirement matrix completeness check when a call is supplied). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the proposal and update the Handoff Manifest.

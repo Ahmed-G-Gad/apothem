@@ -6,7 +6,7 @@ disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -26,7 +26,7 @@ You are an **instrument, not an advocate**. The job is not to find significance;
 
 - A **null result is a result** — recorded with its effect-size CI bracketing the null, never dropped (R3).
 - A **deviation is disclosed at the point of impact** — logged in the same artifact that reports the effect it altered, never deferred to the paper (R5).
-- A **p-value never stands alone** — every reported effect carries its effect size and confidence interval as the primary evidence (R7).
+- A **p-value never stands alone** — every reported effect carries its effect size and confidence interval as the primary evidence (R7). Under a preregistered Bayesian plan, read "credible interval" wherever this command says "confidence interval" (Phase 2).
 
 Apply the Five Cognitive Filters at full intensity: **Filter 1 (Obvious Purge)** discards the first reading of the data so the analysis does not chase the most flattering interpretation; **Filter 3 (Inversion Press)** demands the strongest case *against* each reported effect before it earns a claim — at least one inverted assumption survives into the robustness battery; **Filter 5 (Aesthetic Demand)** governs the precision of every reported interval.
 
@@ -73,11 +73,7 @@ The stage runs as one disciplined sprint: a single authoritative analysis artifa
 
 ### Phase 1 — Ingest the Raw Data & the Frozen Plan
 
-**Read the plan before the data.** Open `{suite}/_inputs/preregistration.md` in full *first*: the frozen plan is authoritative over every analysis choice, and reading it ahead of the data is what keeps the analysis from drifting toward whichever framing the data flatters (R5). Then read `{suite}/_outputs/experiment-log.md` and `{suite}/_outputs/reproducibility-manifest.md` to resolve the raw-data location, the seed, and the environment pins, and ingest the raw data per the locate-before-read discipline at `rules/large-file-reading.md`.
-
-Build the **analysis inventory** — for each preregistered test: its variables, its planned statistic, its declared alpha and tail, and its place in any comparison family — plus the declared correction method and the robustness/sensitivity checks the plan committed to. When the inventory exceeds a single pass, externalise it to `{suite}/_inputs/analysis-plan.md` (a free-form `{kebab-case-topic}.md` scratch file per `rules/context-management-scratch.md` §1).
-
-**Integrity check before any test runs.** Verify the raw data against the reproducibility manifest's expected shape — row count, variable set, value ranges. A mismatch is a finding surfaced *here*, before a single statistic is computed.
+> Moved to `references/step-01-ingest-the-raw-data-the-frozen-plan.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — Run the Preregistered Tests with Effect Sizes & CIs
 
@@ -104,7 +100,7 @@ Build the **analysis inventory** — for each preregistered test: its variables,
 | Reproducibility (R2) | `rules/ten-dimension-check.md` | Every number records its test invocation, data slice, seed, and version pins; Phase 4 re-derives the headline effects from the raw data. |
 | Falsifiability (R3) | `rules/definitiveness.md` | Null results recorded with their effect-size CI bracketing the null; no result dropped for failing to reject. |
 | Preregistration discipline (R5) | `rules/disclosure-ledger.md` | Every deviation logged with rationale beside the altered result; unplanned tests labeled exploratory. |
-| Statistical rigor (R7) | `rules/definitiveness.md` | Every effect carries its size and CI, never a bare p-value; multiplicity correction where a family is declared; null results carry an SESOI-bounded equivalence test; a head-to-head comparison uses a paired nonparametric signed-rank test (pairwise) or an omnibus rank test plus post-hoc pairwise tests under the correction (multi-method), carries a stochastic-superiority effect size with its CI per comparison, and — for a multi-method ranking — a rank critical-difference visualization (`skills/research-suite/references/empirical-comparison-rigor.md`). |
+| Statistical rigor (R7) | `rules/definitiveness.md` | Every effect carries its size and CI, never a bare p-value; multiplicity correction where a family is declared; null results carry an SESOI-bounded equivalence test; a head-to-head comparison uses a paired nonparametric signed-rank test (pairwise) or an omnibus rank test plus post-hoc pairwise tests under the correction (multi-method), carries a stochastic-superiority effect size with its CI per comparison, and — for a multi-method ranking — a rank critical-difference visualization (`skills/research-suite/references/empirical-comparison-rigor.md`); the test follows the design, n counts independent units, missing data and Bayesian plans are handled on the stated terms, and a null is read without observed power (`skills/research-suite/references/analysis-discipline.md`); every figure meets `skills/research-suite/references/figure-integrity.md`. |
 | Open science / FAIR (R8) | `rules/host-discovery.md` | Phase 4 runs the computational-reproducibility re-run inside the pinned environment and confirms every number reproduces; the pre-specified-vs-exploratory split table guards against HARKing. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until deviation-ratification and undeclared-correction inquiries resolve. |
 | Structured inquiry | `rules/interactive-questions.md` | Every deviation and undeclared-method choice routes through the canonical channel; free-form prose questions forbidden. |
@@ -117,14 +113,7 @@ Build the **analysis inventory** — for each preregistered test: its variables,
 
 ## Output
 
-| Artifact | Path | Purpose |
-| -------- | ---- | ------- |
-| Analysis | `{suite}/_outputs/analysis.md` | The preregistered tests + effect sizes and CIs + multiplicity correction + robustness battery + disclosed-deviation ledger + null results, ready for `/research-paper` consumption. |
-| Figures & tables | `analysis/figures/`, `analysis/tables/` (host-natural, discovered) | The effect-with-CI figures and per-test results tables the paper embeds; never inside `.apothem/plans/`. |
-| Analysis plan inventory | `{suite}/_inputs/analysis-plan.md` | Optional Phase 1 working file (preregistered-test inventory) for a plan exceeding a single pass. |
-| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-paper`, the per-result verification attestation, and the deviation count. |
-
-The `analysis.md` carries these canonical sections: `## §1 Scope & Data` (the hypotheses recap, the raw-data provenance from the reproducibility manifest, the row/variable counts, the integrity-check outcome); `## §2 Preregistered Results` (per-test table — statistic, effect size, confidence interval, p-value alongside, assumption-check outcome; each stochastic method-instance cell carries the best/mean/median/standard-deviation/worst of the primary metric with its repetition count); `## §3 Pre-Specified vs. Exploratory Split` (every result classified confirmatory-vs-exploratory, the exploratory rows flagged hypothesis-generating; R5); `## §4 Multiplicity Correction` (the comparison family, the correction method, the corrected and uncorrected outcomes side by side; for a multi-method family the omnibus rank-test outcome, the post-hoc pairwise outcomes under the correction, and the stochastic-superiority effect size with its CI per comparison); `## §5 Equivalence & Robustness` (the SESOI-bounded equivalence tests on null results, each perturbation and whether the headline effect survives, with the effect-with-CI figure, the convergence curves, the per-condition distribution plots, and — for a multi-method comparison — the rank critical-difference diagram); `## §6 Disclosed-Deviation Ledger` (every departure from the preregistration with rationale and altered-result link); `## §7 Null & Fragile Results` (results that fail to reject, fail robustness, or fail the advancement gate, recorded with their intervals); `## §8 Reproducibility Record` (the test invocations, seeds, version pins, and the computational-reproducibility re-run outcome inside the pinned environment so an independent party re-runs the analysis; R8); `## §9 Validation Gate & Advancement-Gate Outcome` (the Phase 5 gate attestation plus, per headline result, the advancement-gate decision and its auditable runbook entry — the passed clauses, the supporting-evidence paths, and the promote-or-redesign verdict; R5/R7); `## §Bindings (§0.j five-direction)`.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 
@@ -137,7 +126,9 @@ The `analysis.md` carries these canonical sections: `## §1 Scope & Data` (the h
 ## Critical Rules
 
 - **NEVER run against incomplete data.** The Sequence Gate halts with `Blocked: run /research-experiment first` until the raw data, the preregistration, and the predecessor attestation are present and clean (or `--override` is supplied with rationale).
-- **NEVER report a bare p-value.** Every reported effect carries its effect size and confidence interval as the primary evidence; the p-value appears alongside, never alone (R7).
+- **NEVER report a bare p-value.** Every reported effect carries its effect size and confidence interval as the primary evidence; the p-value appears alongside, never alone; under a preregistered Bayesian plan the credible interval is that interval, and a posterior probability or Bayes factor likewise never stands alone (R7).
+- **NEVER count dependent observations as independent replicates.** Repeated measures, sub-samples, clusters and seeds are aggregated to the independent unit or modeled as dependence, and n counts units (R2/R7).
+- **NEVER compute or report observed power.** A null is read through its effect-size CI, its equivalence result and its sensitivity statement (R7).
 - **NEVER run an unplanned test as confirmatory.** A test absent from the preregistration is exploratory by construction, labeled exploratory, and never reported as a confirmatory result (R5).
 - **NEVER hide a deviation.** Every departure from the frozen plan lands in the disclosed-deviation ledger with its rationale, in the same artifact that reports the altered result — never deferred to the paper (R5).
 - **NEVER drop a null result.** A test that fails to reject the null is a finding, recorded with its effect-size CI bracketing the null (R3).

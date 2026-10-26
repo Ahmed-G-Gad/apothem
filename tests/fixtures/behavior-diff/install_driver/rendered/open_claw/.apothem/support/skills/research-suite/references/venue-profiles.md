@@ -21,7 +21,12 @@ criteria of any conference, journal, society, or publisher.
 - When the operator supplies the venue's reviewer guidelines or checklist as a
   file or pasted text, that text governs. The review reads it from the
   supplied text, never from recall, and uses a profile only to fill what the
-  text leaves open.
+  text leaves open. The report header records where the text came from, the
+  date it carries or was retrieved, and the year or cycle, track, and article
+  type it covers; rules of another track, cycle, or similarly named venue are
+  not merged in.
+- A profile fits a venue's shape. The venue's standing (its ranking, acceptance
+  rate, or journal-level measure) sets no weight and moves no band.
 - The operator ratifies the profile through the structured-inquiry channel;
   where no one can answer, the review states the chosen profile as an
   assumption in the report header.
@@ -91,9 +96,13 @@ weight of 0 marks the axis not applicable; the report names the reason.
   analyses are labelled. Effect sizes carry intervals. Multiplicity is handled.
   Alternative explanations and limitations are discussed. Data and code
   availability are stated. The field's reporting checklist is completed where
-  one exists.
+  one exists. Each experimental image carries a processing statement: the
+  originals are retained, whole-image adjustments are disclosed, any splice or
+  composite is marked, no part is selectively enhanced or erased, and a
+  micrograph carries a scale bar.
 - **Severity notes.** A conclusion that reaches past the sample or the design
-  is HIGH.
+  is HIGH. An experimental image with an undisclosed splice, composite, or
+  processing step is HIGH.
 
 ### `human-subjects-journal`
 
@@ -106,9 +115,12 @@ weight of 0 marks the axis not applicable; the report names the reason.
   is stated where the field expects it. The reporting-guideline checklist is
   named and completed. Participant flow carries numbers. Missing data and
   harms are reported. Funding and competing interests are declared. The limits
-  of the sample are stated.
+  of the sample are stated. Experimental images meet the image line of the
+  `field-journal` checklist.
 - **Severity notes.** An absent approval statement, an undeclared competing
-  interest, and an outcome that differs from the registered one are HIGH.
+  interest, an outcome that differs from the registered one with no reported
+  reason, and an experimental image with an undisclosed splice, composite, or
+  processing step are HIGH.
 
 ### `workshop-short`
 
@@ -139,7 +151,13 @@ profile with an adjustment the report states.
 The procedure is Apothem's own convention and applies to every profile.
 
 1. Score each applicable axis: `strong` 3, `adequate` 2, `weak` 1, `failing` 0.
-2. Take the weighted mean over the applicable axes, leaving out weight-0 axes.
+   An applicable axis that was not judged (unreadable material, a field
+   outside the reviewer's, artifacts not supplied, or a confidence of 1 the
+   operator has not ratified) takes no score. It is neither `failing` nor
+   weight 0: it stays on the not-judged list with its reason.
+2. Take the weighted mean over the scored axes, leaving out weight-0 axes and
+   unjudged axes. The scored share is the weight of the scored axes over the
+   weight of all applicable axes.
 3. Read the mean as a starting band: 2.5 or higher is an `accept` candidate,
    2.0 up to 2.5 is `minor-revision`, 1.2 up to 2.0 is `major-revision`, and
    below 1.2 is `reject`.
@@ -148,11 +166,25 @@ The procedure is Apothem's own convention and applies to every profile.
    over its comparators caps it at `major-revision`. A `failing` verdict on any
    axis with weight 20 or more caps it at `major-revision`. A refuted headline
    claim sets `reject`.
-5. Print the weights used, the mean, and each gate that fired, so the operator
-   can re-derive the verdict.
+5. Bracket any unjudged axes and test the weights. When an axis is unjudged,
+   recompute the mean twice: with every unjudged axis scored 3, then with every
+   one scored 0, and read each result through the bands and the gates. When the
+   two readings fall in different bands, the verdict is conditional on those
+   axes: the report prints both bands, names the material or read that would
+   judge each axis, holds the overall confidence at 3 or lower, and issues no
+   verdict above `minor-revision`. Then print the distance from the mean to the nearest band
+   edge, and the equal-weight mean over the same scored axes beside the
+   profile-weight mean; when those two fall in different bands, the weights
+   chose the band, and the report says so. For a mean close to an edge, the
+   operator MAY ask for the per-axis weight sensitivity of
+   `skills/decision-matrix/references/scoring-and-sensitivity.md`.
+6. Print the weights used, the scored share, the mean, and each gate that
+   fired, so the operator can re-derive the verdict.
 
 When a supplied guidelines file gives its own weights or decision rules, those
-replace steps 1 to 3; the gates in step 4 still apply.
+replace steps 1 to 3; the gates in step 4 still apply, step 5 brackets an
+unjudged axis at the highest and lowest scores of the supplied scale, and step
+6 prints the weights and rule the review used.
 
 ## Recommendation scales
 

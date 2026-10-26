@@ -4,7 +4,7 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
+%% verified: 2026-10-26 %%
 %% provenance: src/apothem/commands/research-sources.md §Workflow — Five Phases %%
 %% cross-reference: skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle %%
 flowchart TD
@@ -15,11 +15,11 @@ flowchart TD
     Audit --> P1
     P1 --> Inq{Screening criteria + source budget fixed?}
     Inq -->|no| Surface[Surface USER-CONFIRM placeholders via structured inquiry · block on required gaps]
-    Inq -->|yes| P2[Phase 2 · parallel research-scout dispatch · one agent per facet]
+    Inq -->|yes| P2[Phase 2 · parallel research-scout dispatch · one agent per facet · search record per pass]
     Surface --> P2
-    P2 --> P3[Phase 3 · dedup · rank by authority/recency/relevance · screen against criteria]
-    P3 --> Cap{Screened-in count over --max-sources?}
-    Cap -->|yes| Trim[Retain highest-ranked survivors · record trimmed candidates]
+    P2 --> P3[Phase 3 · dedup · link reports to studies · rank · screen · chase references · assess bias]
+    P3 --> Cap{Included count over --max-sources and ceiling applies?}
+    Cap -->|yes| Trim[Retain highest-ranked survivors · record each trimmed source as eligible, not extracted]
     Cap -->|no| P4
     Trim --> P4[Phase 4 · extract each source with provenance · fact-checker resolves every citation]
     P4 --> Phantom{Any phantom citation?}

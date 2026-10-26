@@ -4,7 +4,7 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
+%% verified: 2026-10-26 %%
 %% provenance: commands/research-publish.md §Workflow %%
 %% cross-reference: agents/fact-checker.md, commands/research-review.md, rules/authority-inquiry.md, rules/pre-emission-gate.md %%
 flowchart TD

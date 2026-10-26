@@ -4,7 +4,7 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-15 %%
+%% verified: 2026-10-26 %%
 %% provenance: commands/research-analysis.md §Workflow %%
 %% cross-reference: agents/fact-checker.md, commands/research-experiment.md, commands/research-paper.md, rules/pre-emission-gate.md %%
 flowchart TD
@@ -12,9 +12,12 @@ flowchart TD
     Gate0 -->|no| Blocked[Halt: 'Blocked: run /research-experiment first']
     Gate0 -->|yes| Ingest[Phase 1 read preregistration first · ingest raw data · verify integrity]
     Ingest --> Tests[Phase 2 run preregistered tests · assumption checks]
-    Tests --> Assume{Assumption check passes?}
-    Assume -->|no| Deviate[Route substitution to deviation flow]
+    Tests --> Assume{Assumption diagnostics hold?}
+    Assume -->|no| Fallback{Preregistered fallback named?}
     Assume -->|yes| Effect[Report effect size + CI · p-value alongside · null results recorded]
+    Fallback -->|yes| Contingency[Switch to the fallback · log as planned adaptation]
+    Fallback -->|no| Deviate[Route substitution to deviation flow]
+    Contingency --> Effect
     Deviate --> Effect
     Effect --> Family{Comparison family declared or revealed?}
     Family -->|yes| Correct[Phase 3 apply correction · report corrected vs uncorrected]

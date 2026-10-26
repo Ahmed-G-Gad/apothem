@@ -1,7 +1,7 @@
 ---
 name: "research-suite"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-10-26"
 description: "Research Suite template, read by path by the /research pipeline stages (ideate through disseminate). Holds the canonical research-suite surface: the ten rigor mandates and the thirteen-stage lifecycle. A template, not invoked directly and not listed; use the /research commands instead."
 archetype: "workflow-template"
 userInvocable: false
@@ -27,11 +27,18 @@ Houses the Research Suite knowledge surface — the canonical specification ever
   - [`references/principal-investigator-framework.md`](references/principal-investigator-framework.md) — the Principal-Investigator (PI) lens and its six commitments.
   - [`references/empirical-comparison-rigor.md`](references/empirical-comparison-rigor.md) — the statistical floor a head-to-head empirical comparison meets (operationalizes R7).
   - [`references/comparator-provenance.md`](references/comparator-provenance.md) — sourcing and verifying the executed baselines a comparison runs against (operationalizes R1 / R4).
+  - [`references/search-record.md`](references/search-record.md) — the per-pass search record, study identity and flow counts, reviewer mode, integrity status, and risk-of-bias record behind `/research-sources` (operationalizes R2 / R9).
+  - [`references/plan-branching-and-contingencies.md`](references/plan-branching-and-contingencies.md) — the plan stress test, evidence labels on plan inputs, and the contingency records that complete the `/research-proposal` risk register (operationalizes R3 / R5).
+  - [`references/study-allocation-and-structure.md`](references/study-allocation-and-structure.md) — experimental unit, allocation, masking, nuisance factors and run order, within-unit and multi-factor layouts, and control conditions (operationalizes R2 / R5 / R6 / R7).
+  - [`references/power-and-sample-size.md`](references/power-and-sample-size.md) — recorded sizing inputs, effect-range sensitivity, sizing for the planned analysis, clustering, attrition, simulation power, and sequential looks (operationalizes R7 / R2 / R5).
   - [`references/experiment-program-scaffold.md`](references/experiment-program-scaffold.md) — the per-deliverable setup / pilot / comparison / ablation / sensitivity layout (operationalizes R2 / R5).
   - [`references/compute-utilization.md`](references/compute-utilization.md) — budget parity, tuning on disjoint splits, and safe parallelization (operationalizes R2).
-  - [`references/autonomous-experiment-loop.md`](references/autonomous-experiment-loop.md) — the opt-in, default-off unattended propose → trial → retain-or-revert loop (operationalizes R2 / R5 / R7).
+  - [`references/autonomous-experiment-loop.md`](references/autonomous-experiment-loop.md) — the opt-in, default-off unattended propose → trial → retain-or-revert loop (operationalizes R2 / R5 / R7; applies R3 per trial).
+  - [`references/analysis-discipline.md`](references/analysis-discipline.md) — test selection by design, unit of analysis, missing data, reading a null, Bayesian plans, and result-level bias appraisal (operationalizes R7 / R5 / R2).
+  - [`references/figure-integrity.md`](references/figure-integrity.md) — the honesty, disclosure, and accessibility floor for research figures and experimental images (operationalizes R7 / R2).
   - [`references/advancement-gate.md`](references/advancement-gate.md) — the definition-of-done advance gate and its auditable runbook (operationalizes R7 / R5).
   - [`references/blinding-and-disclosure.md`](references/blinding-and-disclosure.md) — anonymization and staged-disclosure / double-blind readiness (operationalizes R6).
+  - [`references/talk-and-poster.md`](references/talk-and-poster.md) — talk intake, time budget, poster adaptation, figure rule, and compiled-artifact check for `/research-disseminate` and `/research-publish` (operationalizes R2 / R4 / R7).
   - [`references/venue-profiles.md`](references/venue-profiles.md) — generic venue profiles, the axis-to-verdict rule and recommendation-scale mappings that the `/research-review --paper` mode applies.
   - [`references/external-paper-checks.md`](references/external-paper-checks.md) — paper types, reviewer roles and the equation, ablation, baseline and consistency checks for a paper outside any suite.
 
@@ -46,18 +53,12 @@ consuming stage loads a section only when it needs it.
 - **The thirteen-stage research lifecycle** — the fixed stage order + per-stage invoking-surfaces table. See [`references/lifecycle.md`](references/lifecycle.md).
 - **The Principal-Investigator (PI) Framework** — the evidentiary-stewardship lens every stage operates under. See [`references/principal-investigator-framework.md`](references/principal-investigator-framework.md).
 
-Seven operationalizing surfaces add empirical-experimentation detail to the
-existing mandates — each operationalizes an R-mandate and introduces no new one
-(R1–R10 stays a closed set of ten); a stage loads one only when its work needs
-that detail:
-
-- **Empirical-comparison rigor floor** — the repetition regime, reporting statistics, figures, and significance-and-effect-size protocol a head-to-head comparison meets (operationalizes R7). See [`references/empirical-comparison-rigor.md`](references/empirical-comparison-rigor.md).
-- **Comparator provenance** — selecting, verifying, and recording the executed baselines a comparison runs against (operationalizes R1 / R4). See [`references/comparator-provenance.md`](references/comparator-provenance.md).
-- **Experiment-program scaffold** — the per-deliverable setup / pilot / comparison / ablation / sensitivity layout (operationalizes R2 / R5). See [`references/experiment-program-scaffold.md`](references/experiment-program-scaffold.md).
-- **Compute-utilization plan** — unified budget parity, tuning on disjoint splits, and safe parallelization (operationalizes R2). See [`references/compute-utilization.md`](references/compute-utilization.md).
-- **Autonomous experiment loop** — the opt-in, default-off unattended propose → trial → retain-or-revert loop (operationalizes R2 / R5 / R7). See [`references/autonomous-experiment-loop.md`](references/autonomous-experiment-loop.md).
-- **Advancement gate** — the definition-of-done advance gate and its auditable runbook (operationalizes R7 / R5). See [`references/advancement-gate.md`](references/advancement-gate.md).
-- **Blinding & staged disclosure** — anonymization and double-blind readiness (operationalizes R6). See [`references/blinding-and-disclosure.md`](references/blinding-and-disclosure.md).
+Fourteen operationalizing surfaces add operational detail to the existing
+mandates — each is listed under Contents with the R-mandates it operationalizes
+and introduces no new one (R1–R10 stays a closed set of ten). A stage loads one
+only when its work needs that detail;
+[`references/rigor-mandates.md`](references/rigor-mandates.md) maps each to the
+mandates it serves.
 
 A single canonical surface guarantees every stage reads the same mandate IDs
 and lifecycle order — so cross-stage references never drift.
@@ -189,4 +190,4 @@ Invoke `/research-ideate` to consume this skill's `research-template.md` and for
 - **Satisfies →** ● `CLAUDE.md` Source Layout row "research-suite". ● `CLAUDE.md` Project Purpose (the thirteen `/research` pipeline stages consume this skill's surface).
 - **Established by ↑** ● `CLAUDE.md` Source Layout. ● `CLAUDE.md` Project Purpose (the path declaration `skills/research-suite/research-template.md`). ● `CLAUDE.md` Source Layout (skills/ class declaration with the folder-with-`SKILL.md` convention).
 - **Gated by ←** ● The harness's Read tool surface (commands resolve the surface by reading the canonical path). ● The presence of the surface file at the canonical path (path-based resolution per the Resolution & Recovery clause).
-- **Cross-bound with ↔** ↔ `commands/research-ideate.md` + `commands/research-spec.md` + `commands/research-theory.md` + `commands/research-sources.md` + `commands/research-synthesis.md` + `commands/research-proposal.md` + `commands/research-design.md` + `commands/research-experiment.md` + `commands/research-analysis.md` + `commands/research-paper.md` + `commands/research-review.md` + `commands/research-publish.md` + `commands/research-disseminate.md` (the thirteen consumer commands). ↔ `commands/research.md` (the wrapped dynamic workflow over the thirteen stages). ↔ `skills/plan-suite/SKILL.md` (the structural sibling this surface mirrors). ↔ `skills/multi-source-research/SKILL.md` + `skills/source-synthesis/SKILL.md` + `agents/research-scout.md` + `agents/fact-checker.md` (the discovery / extraction / synthesis / verification surfaces the stages dispatch). ↔ [`references/empirical-comparison-rigor.md`](references/empirical-comparison-rigor.md) + [`references/comparator-provenance.md`](references/comparator-provenance.md) + [`references/experiment-program-scaffold.md`](references/experiment-program-scaffold.md) + [`references/compute-utilization.md`](references/compute-utilization.md) + [`references/autonomous-experiment-loop.md`](references/autonomous-experiment-loop.md) + [`references/advancement-gate.md`](references/advancement-gate.md) + [`references/blinding-and-disclosure.md`](references/blinding-and-disclosure.md) (the seven operationalizing detail surfaces the empirical stages load at Step 0).
+- **Cross-bound with ↔** ↔ `commands/research-ideate.md` + `commands/research-spec.md` + `commands/research-theory.md` + `commands/research-sources.md` + `commands/research-synthesis.md` + `commands/research-proposal.md` + `commands/research-design.md` + `commands/research-experiment.md` + `commands/research-analysis.md` + `commands/research-paper.md` + `commands/research-review.md` + `commands/research-publish.md` + `commands/research-disseminate.md` (the thirteen consumer commands). ↔ `commands/research.md` (the wrapped dynamic workflow over the thirteen stages). ↔ `skills/plan-suite/SKILL.md` (the structural sibling this surface mirrors). ↔ `skills/multi-source-research/SKILL.md` + `skills/source-synthesis/SKILL.md` + `agents/research-scout.md` + `agents/fact-checker.md` (the discovery / extraction / synthesis / verification surfaces the stages dispatch). ↔ the fourteen operationalizing detail surfaces under `references/` (listed under Contents, mapped to their mandates at [`references/rigor-mandates.md`](references/rigor-mandates.md); the empirical stages load them at Step 0).

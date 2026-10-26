@@ -4,7 +4,7 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-16 %%
+%% verified: 2026-10-26 %%
 %% provenance: commands/research-disseminate.md §Workflow %%
 %% cross-reference: commands/research-publish.md (predecessor), agents/fact-checker.md, skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle, rules/authority-inquiry.md %%
 flowchart TD

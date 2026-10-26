@@ -1,7 +1,7 @@
 ---
 name: "document-authoring"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-10-26"
 description: "Write a long, cited document (thesis, report, LaTeX) from an approved outline, with checked citations and a PDF compile. Use when the user asks to 'write a thesis', 'author a LaTeX document', 'compile this to PDF' or 'manage the bibliography'. Not for short edits; pipeline papers: research-paper."
 archetype: "authoring-template"
 userInvocable: true
@@ -65,7 +65,7 @@ On a recoverable build error (a missing label, an undefined reference, a layout 
 
 ### 5. Review & Self-Check
 
-Review the compiled document against the approved outline (plan-compliance), verify cross-references resolve, verify every citation is verified-or-flagged, and run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md`. Emit the document source, the bibliography, the compiled artifact, the unverified-citations ledger (if any), and the single recommended next move.
+Review the compiled document against the approved outline (plan-compliance), verify cross-references resolve, verify every citation is verified-or-flagged, apply the compiled-artifact check in `skills/research-suite/references/talk-and-poster.md` to the compiled PDF (page size and count, embedded fonts, effective image resolution at placed size, document properties) and record the commands and output (an item that was not run is recorded as unmet), and run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md`. Emit the document source, the bibliography, the compiled artifact, the unverified-citations ledger (if any), and the single recommended next move.
 
 ## Arguments
 
@@ -80,6 +80,7 @@ Review the compiled document against the approved outline (plan-compliance), ver
 - the compiled **artifact** (PDF where typeset);
 - the **unverified-citations ledger** (every reference that cannot be verified, with the gap);
 - the **compile-route record** (detected engine / bib-tool / passes, with provenance);
+- the **compiled-artifact check record** (commands, output, and outcome per item);
 - the fifteen-bar gate attestation;
 - a single `## Recommended Next Step`.
 
@@ -115,4 +116,4 @@ When the document kind, the target structure, the citation style, the bibliograp
 - **Satisfies →** ● `CLAUDE.md` Source Layout row "document-authoring" (skills/ class). ● The elevation dimension **robustness** (detection-signal-driven compile pipeline + citation verification — failure modes handled by rule, not retry-and-hope). ● `rules/authority-inquiry.md` (citations verified, never invented).
 - **Established by ↑** ● `CLAUDE.md` Source Layout (skills/ folder-with-`SKILL.md` class). ● `CLAUDE.md` Ambiguity Handling (structured inquiry over fabrication). ● `rules/own-voice-reimplementation.md` (zero-verbatim; `reference-token-grep` = 0). ● `rules/agnostic-posture.md` (17-harness agnostic floor).
 - **Gated by ←** ● A discovered document toolchain (the gap is surfaced where absent). ● The outline-approval gate (no full draft before approval). ● The host's structured-inquiry + Edit + Write + Bash tool surface.
-- **Cross-bound with ↔** ↔ `skills/diagram-authoring/SKILL.md` (figures are authored + rendered there and composed here). ↔ `rules/own-voice-reimplementation.md` + `rules/agnostic-posture.md` (own-voice + agnostic floors). ↔ `rules/authority-inquiry.md` (citation verification). ↔ `rules/determinism.md` (deterministic pipeline). ↔ `skills/dev-toolkit/SKILL.md` + `skills/surgical-guard/SKILL.md` (sibling own-voice engineering skills).
+- **Cross-bound with ↔** ↔ `skills/diagram-authoring/SKILL.md` (figures are authored + rendered there and composed here). ↔ `skills/research-suite/references/talk-and-poster.md` (the compiled-artifact check applied to the compiled PDF). ↔ `rules/own-voice-reimplementation.md` + `rules/agnostic-posture.md` (own-voice + agnostic floors). ↔ `rules/authority-inquiry.md` (citation verification). ↔ `rules/determinism.md` (deterministic pipeline). ↔ `skills/dev-toolkit/SKILL.md` + `skills/surgical-guard/SKILL.md` (sibling own-voice engineering skills).
