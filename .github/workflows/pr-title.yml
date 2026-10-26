@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: MIT
+
+# PR title: the squash-merge subject fits the 72-character cap.
+#
+# A squash merge composes the subject as "<pr title> (#<number>)", so a title
+# that fits the Conventional Commits cap on its own can still produce a
+# non-conforming commit. PR #6's title was 68 chars and its merge commit was
+# 73, turning every quality job on main red after a fully green branch. The
+# branch cannot catch this from its own commits, since the offending subject
+# does not exist until the merge, so this check evaluates the prospective
+# subject.
+#
+# It runs on its own and on `edited`, so retitling a pull request re-runs it in
+# seconds. The repository's squash default takes the PR title, so the title is
+# what lands. Some Dependabot titles do not fit (for example "chore(deps): bump
+# next from 16.4.0 to 16.4.3 in /site in the npm_and_yarn group across 1
+# directory"); retitle such a pull request before merging it.
+#
+# The title is attacker-controlled, so it crosses into the step through env
+# rather than a ${{ }} expansion inside run: (template injection).
+
+name: PR Title
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  squash-subject:
+    name: squash subject fits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Block egress: the job checks out the repository and runs one
+          # standard-library script, so only the checkout endpoints are needed.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            codeload.github.com:443
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Check the squash-merge subject length
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 scripts/dev/check_pr_title_squash_length.py \
+            --title "$PR_TITLE" --number "$PR_NUMBER"

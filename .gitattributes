@@ -45,4 +45,8 @@
 .plans/  export-ignore
 .apothem/  export-ignore
 tests/   export-ignore
-.github/ export-ignore
+.github/** export-ignore
+# Scorecard's default archive mode reads a GitHub archive of the default branch
+# and finds the dependency-update tool by its config file, so this one file
+# stays in source archives.
+.github/dependabot.yml -export-ignore
