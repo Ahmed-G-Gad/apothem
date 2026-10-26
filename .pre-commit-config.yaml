@@ -69,7 +69,7 @@ repos:
   # Markdown
   # ---------------------------------------------------------------------------
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+    rev: v0.49.1
     hooks:
       # Rule policy lives in .markdownlint.json (auto-discovered by
       # markdownlint-cli); no args here so the policy is declared once.
