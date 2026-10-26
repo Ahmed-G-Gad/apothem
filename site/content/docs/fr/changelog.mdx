@@ -121,6 +121,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `plugins/claude-code/` tree as it skips test fixtures, and a Markdown Lint
   workflow runs the hook on every change to Markdown, the lint policy or the
   hook pin.
+- **Windows CI runs get room to finish.** The Windows quality cells take 30 to
+  55 minutes, and the 60-minute cap cancelled healthy runs on slow runners; the
+  cap is now 90 minutes, the matrix-job ceiling the workflow validator allows.
 - **The Codex plugin installs with a sparse checkout.** `codex plugin
   marketplace add` cloned the whole repository, more than 8,000 files, to read
   one small folder, and Codex gives up on a clone after 30 seconds, so on a slow
