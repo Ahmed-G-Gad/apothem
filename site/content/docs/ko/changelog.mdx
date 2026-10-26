@@ -61,6 +61,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The Codex plugin installs with a sparse checkout.** `codex plugin
+  marketplace add` cloned the whole repository, more than 8,000 files, to read
+  one small folder, and Codex gives up on a clone after 30 seconds, so on a slow
+  disk such as a Windows drive under WSL the add or a later refresh timed out
+  and the plugin stayed at an old version. The documented command now passes
+  `--sparse .agents/plugins --sparse plugins/apothem`, the channel smoke runs
+  it, and the troubleshooting page shows how to re-add an existing marketplace.
 - **Uninstall removes an unedited copy of an earlier release's template.**
   Uninstall deleted a plain operator-owned file such as `glm.toml` only when it
   matched the current template, so a release that changed the template left

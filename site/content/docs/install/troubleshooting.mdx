@@ -62,6 +62,22 @@ rules), then retry. If the marketplace was added earlier under a partial
 fetch, remove and re-add it before running
 `/plugin install apothem@apothem`.
 
+### Adding the plugin host's marketplace times out
+
+The plugin host's command that adds a marketplace clones its repository and
+gives up after 30 seconds. A full clone of this repository can take longer on a slow
+disk, such as a Windows drive under WSL, and an earlier full clone can also
+leave the plugin stuck at an old version when a later refresh times out.
+Fetch only the two folders the plugin needs:
+
+```bash
+codex plugin marketplace remove apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
+codex plugin add apothem@apothem
+```
+
+Listing the host's plugins then shows the current version of `apothem@apothem`.
+
 ### npx serves a stale version
 
 `npx` caches downloaded packages. When `npx @ahmed-g-gad/apothem --version`

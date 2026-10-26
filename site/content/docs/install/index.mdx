@@ -348,9 +348,13 @@ Add the repository as a plugin marketplace, then install the plugin — the
 command carries the exact host and harness slug:
 
 ```bash title="Install the plugin"
-codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin marketplace add ahmed-g-gad/apothem --sparse .agents/plugins --sparse plugins/apothem
 codex plugin add apothem@apothem
 ```
+
+The two `--sparse` paths fetch only the marketplace listing and the plugin,
+not the whole repository; a full clone can run past the host's 30-second
+clone limit on a slow disk, such as a Windows drive under WSL.
 
 Like the channel-5 and channel-6 extensions, this is a **bootstrap** that shells
 out to the engine. The plugin bundles one entry skill; its manifest is a root
