@@ -30,7 +30,7 @@ Skill definitions — reusable, detectable techniques the harness loads on deman
 | [`decision-matrix/`](decision-matrix/) | Weighted, evidence-cited choice between options — dealbreakers first, a sensitivity check on the weights, a runner-up, and the cheapest reversible first step. | Model-invocable and user-invocable. |
 | [`issue-lifecycle/`](issue-lifecycle/) | Issue to fix with evidence at each stage — duplicate-checked issue drafts, read-only sizing, a marked failing-test checkpoint, an ours-or-dependency fix decision, a drafted reporter request, and an opt-in draft pull request. | User-invocable only (it drafts outward-facing text; it pushes and opens a draft pull request only in `publish`, after three confirmations, and never posts the reporter request). |
 | [`ui-design/`](ui-design/) | Interface design and refinement to a craft floor — surface classification, ranked rule categories, adjustable variance / motion / density, a `DESIGN.md` project context, and a pre-delivery checklist. | Model-invocable and user-invocable. |
-| [`paper-toolkit/`](paper-toolkit/) | Suite-free paper work: a reading note with its basis, a 2 to 5 paper comparison with comparability verdicts and a cite-for table, a related-work draft from supplied sources with visible citation-needed markers and a coverage report, an author-side critique, and a reference style pass. | Model-invocable and user-invocable. |
+| [`paper-toolkit/`](paper-toolkit/) | Suite-free paper work: a reading note with its basis, a 2 to 5 paper comparison with comparability verdicts and a cite-for table, a related-work draft from supplied sources with visible citation-needed markers and a coverage report, an author-side critique, a reference style pass, and reference entries built from identifiers with every field copied from an opened record. | Model-invocable and user-invocable. |
 | [`perspectives/`](perspectives/) | Contested-question panel: several separate viewpoints argue from evidence, then a reconciliation of agreement, real disagreements and what would settle each, a recommendation with its confidence, and the strongest dissent kept visible. | Model-invocable and user-invocable. |
 | [`teaching-pack/`](teaching-pack/) | Teaching pack from one paper or technical document: learning goals, a section-by-section curriculum, plain-step formula and algorithm walk-throughs, worked examples, a quiz with answer key, a glossary and an optional slide outline. Each line is marked with its source section or as outside it, and parts the source cannot support are reported as thin. | Model-invocable and user-invocable. |
 | [`surgical-guard/`](surgical-guard/) | Surgical-edit + reactive-guard — pairs a minimal-diff, anchor-bounded editing discipline with a post-edit diff-based quality guard (clean-code / test / docs checks with progressive rule loading); feeds the `surgical-manipulation` mandate. | Model-invocable and user-invocable. |
@@ -73,12 +73,19 @@ selectively.
 | `research-suite/references/lifecycle.md` | The thirteen-stage research lifecycle + per-stage invoking-surfaces table (progressively disclosed by the router). |
 | `research-suite/references/principal-investigator-framework.md` | The Principal-Investigator (PI) lens and its six commitments (progressively disclosed by the router). |
 | `research-suite/references/advancement-gate.md` | The gate a stage must clear before the lifecycle advances. |
+| `research-suite/references/analysis-discipline.md` | Test selection by design, unit of analysis, missing data, reading a null, Bayesian plans and result-level bias appraisal. |
 | `research-suite/references/autonomous-experiment-loop.md` | The unattended experiment loop and its stopping conditions. |
 | `research-suite/references/blinding-and-disclosure.md` | Blinding protocol and the disclosure obligations that accompany it. |
 | `research-suite/references/comparator-provenance.md` | How a comparator's origin and version are recorded so a result stays attributable. |
 | `research-suite/references/compute-utilization.md` | Compute accounting for a run — what is measured and what is reported. |
 | `research-suite/references/empirical-comparison-rigor.md` | The bar an empirical comparison clears before its claim may be stated. |
 | `research-suite/references/experiment-program-scaffold.md` | The scaffold an experiment program is laid out against. |
+| `research-suite/references/figure-integrity.md` | The honesty, disclosure and accessibility floor for research figures and experimental images. |
+| `research-suite/references/plan-branching-and-contingencies.md` | The plan stress test, evidence labels on plan inputs and the contingency records that complete the `/research-proposal` risk register. |
+| `research-suite/references/power-and-sample-size.md` | Recorded sizing inputs, effect-range sensitivity, sizing for the planned analysis, clustering, attrition, simulation power and sequential looks. |
+| `research-suite/references/search-record.md` | The search record, study-level flow counts, integrity status and risk-of-bias record `/research-sources` keeps in the source ledger. |
+| `research-suite/references/study-allocation-and-structure.md` | The experimental unit, allocation, masking, nuisance factors and run order, within-unit and multi-factor layouts, and control conditions. |
+| `research-suite/references/talk-and-poster.md` | Talk intake, time budget, poster adaptation, the figure rule and the compiled-artifact check for `/research-disseminate` and `/research-publish`. |
 | `research-suite/references/venue-profiles.md` | Generic venue profiles, the axis-to-verdict rule and the recommendation-scale mappings that `/research-review --paper` applies. |
 | `research-suite/references/external-paper-checks.md` | Paper types, reviewer roles and the equation, ablation, baseline and consistency checks for a paper outside any suite. |
 | `test-authoring/SKILL.md` | The test-authoring skill's entry point and procedure. |
@@ -110,7 +117,8 @@ selectively.
 | `paper-toolkit/references/paper-comparison.md` | The 2 to 5 paper comparison: comparability axes, verdicts and the cite-for table. |
 | `paper-toolkit/references/related-section.md` | The related-work draft from supplied sources, with citation-needed markers and a coverage report. |
 | `paper-toolkit/references/critique-template.md` | The author-side critique: strengths, reviewer questions, ranked changes and what was not judged. |
-| `paper-toolkit/references/reference-style-pass.md` | The reference style pass: duplicates, missing fields, inconsistent form and key collisions. |
+| `paper-toolkit/references/reference-style-pass.md` | The reference style pass: duplicates, missing fields, inconsistent form, key collisions, truncated author lists and BibTeX well-formedness. |
+| `paper-toolkit/references/bibliography-entries.md` | The `entries` guide: reference entries from identifiers with fields taken from an opened record, the entry type chosen from the record, blank-field states and the normalised entry form. |
 | `perspectives/SKILL.md` | The perspectives skill's entry point and procedure. |
 | `perspectives/references/viewpoint-roster.md` | Viewpoint roster, brief, return template and reconciliation worksheet. |
 | `teaching-pack/SKILL.md` | The teaching-pack skill's entry point and procedure. |

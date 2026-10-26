@@ -20,15 +20,17 @@ inside `.apothem/plans/`.
 | Research spec | `{suite}/_spec/research-spec.md` | Question, falsifiable hypotheses, scope, inclusion/exclusion criteria, success metrics, glossary |
 | Theory framework | `{suite}/_inputs/theory.md` | Conceptual / theoretical framework, theory-of-change, defined constructs and relations (R10) |
 | Per-source extractions | `{suite}/sources/<id>.md` | One file per source: extracted claims, provenance, authority/recency/relevance score |
-| Source ledger | `{suite}/_inputs/source-ledger.md` | Ranked, screened, deduplicated source index with citation keys |
+| Source ledger | `{suite}/_inputs/source-ledger.md` | Ranked, screened, deduplicated source index with citation keys, the search record, the report-to-study map with flow counts, and the reviewer-mode disclosure (R2/R9) |
 | Synthesis | `{suite}/_inputs/synthesis.md` | SOTA map, literature matrix, explicit gap statement |
-| Proposal | `{suite}/_inputs/proposal.md` | Objectives → plan-of-record, SMART aims, feasibility, resource/risk plan, impact pathway (R10), preregistration plan (R5), EQUATOR pre-selection (R9) |
-| Study design | `{suite}/_inputs/study-design.md` | Operationalized predictions, variables, controls, sample, instruments, power analysis, threats-to-validity |
+| Proposal | `{suite}/_inputs/proposal.md` | Objectives → plan-of-record, SMART aims, feasibility, resource/risk plan with contingency records, impact pathway (R10), preregistration plan (R5), data management and sharing plan (R8), EQUATOR pre-selection (R9) |
+| Call-requirement matrix | `{suite}/_inputs/call-requirements.md` | Optional: each requirement of a supplied funder call mapped to the proposal section that answers it, its draft location, and its status (`/research-proposal --call`) |
+| Study design | `{suite}/_inputs/study-design.md` | Operationalized predictions, variables, control conditions, experimental unit, allocation and masking, sample, instruments, power analysis, threats-to-validity |
 | Preregistration | `{suite}/_inputs/preregistration.md` | Frozen analysis plan fixed before data collection (R5) |
 | Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Stage-to-stage chain per `src/apothem/schemas/handoff-manifest.yaml` |
 | Experiment log | `{suite}/_outputs/experiment-log.md` + `{suite}/_outputs/reproducibility-manifest.md` | Run log + env/seed/protocol/version pins (R2) |
 | Experiment program | `{suite}/_outputs/<deliverable>-program/` (`setup/` `pilot/` `comparison/` `ablation/` `sensitivity/` `statistics/`) | Per-deliverable empirical-program working records; one program subtree per deliverable — see [`experiment-program-scaffold.md`](experiment-program-scaffold.md). Raw per-run data + figures land host-natural (see the bottom row) |
 | Analysis | `{suite}/_outputs/analysis.md` | Preregistered tests, effect sizes + CIs, robustness checks, disclosed deviations |
+| Resubmission response | `{suite}/_outputs/resubmission-response.md` | Standalone: the limits rows, revision matrix, and propagation check answering a funder's critique (`/research-proposal --resubmission`) |
 | Review report | `{suite}/_outputs/review-report.md` | Reviewer scorecard + severity-triaged required-revision list |
 | Publication record | `{suite}/_outputs/publication-record.md` | Submission package manifest, archival/DOI plan, submission checklist |
 | Dissemination plan | `{suite}/_outputs/dissemination-plan.md` | Post-acceptance dissemination and impact pathway, preprint, archival, altmetrics tracking, rebuttal / revision loop, registered-report stage-2 (R8/R10) |

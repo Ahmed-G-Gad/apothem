@@ -30,7 +30,7 @@ The basis line is not optional. An `abstract only` note opens with the line `Ful
 - *Stated by the authors:* the limitations the paper itself gives.
 - *Visible on reading:* limits the reader can see that the paper does not state, such as a single dataset, no comparison to the strongest alternative, results without variation, or a design that supports association but not cause. Each one says where in the paper it shows.
 
-**Citable for.** One to four statements, each worded as a citing sentence would be worded, and each tied to the result under Evidence that supports it. A statement with no supporting result is not listed.
+**Citable for.** One to four statements, each worded as a citing sentence would be worded, and each tied to the result under Evidence that supports it. A statement with no supporting result is not listed. The paper's venue, a journal-level measure, or its citation count is not a reason to list a statement (`rules/authoritative-referencing-provenance.md` §8).
 
 **Not citable for.** Statements that citations tend to attach to a paper and that it does not support: a result carried beyond the range tested, a cause drawn from a correlational design, a claim that appears only in the introduction's motivation, a figure quoted from another paper's work. This list is what keeps a later citation honest.
 

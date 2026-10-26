@@ -23,11 +23,11 @@ With arguments:
 
 ## Inputs
 
-The paper deliverable and `_outputs/review-report.md` (the peer-review revisions).
+The paper deliverable and `_outputs/review-report.md` (the peer-review revisions and its not-judged list).
 
 ## Outputs
 
-The venue-formatted submission package at a host-natural location (the formatted manuscript + supplementary materials + data / code-availability statement + cover letter + ethics / COI declarations) + `_outputs/publication-record.md` + a submission checklist.
+The venue-formatted submission package at a host-natural location (the formatted manuscript + supplementary materials + data / code-availability statement + cover letter + ethics / COI declarations) + `_outputs/publication-record.md` (including the dated venue-rule register: each rule with its official source page, read date, and submission stage) + a submission checklist.
 
 ## Downstream
 
@@ -37,16 +37,18 @@ The venue-formatted submission package at a host-natural location (the formatted
 
 The command follows the standard `/research` pipeline workflow:
 
-1. **Load context** — Read the paper and the review report.
+1. **Load context** — Read the paper and the review report; pin the venue, cycle, track, and article type, and record each venue rule with its official source page, read date, and submission stage.
 2. **Verify the Sequence Gate** — Confirm `_outputs/review-report.md` exists and its HIGH-severity revisions are resolved (or the operator has explicitly accepted the residual risk); otherwise halt with `Blocked: run /research-review first`.
-3. **Format & package** — Apply the venue template; assemble supplementary, data/code availability, cover letter, ethics / COI declarations.
+3. **Format & package** — Carry each venue rule with its source page, read date and submission stage, build on the venue's untouched template, count pages and words the venue's way, and inspect the compiled PDF; then assemble supplementary, data/code availability, cover letter, ethics / COI declarations.
 4. **Plan the preprint / archival** — Record the preprint and DOI plan; build the submission checklist.
 5. **Update the handoff manifest** — Record the submission package and the publication record.
 6. **Emit the package** — the venue-formatted submission package + `_outputs/publication-record.md`.
 
 ## Rigor floor
 
-Formatting honors staged disclosure: for a double-blind venue, author, institution, and system identity are stripped to separately-submitted metadata and restored only at the designated camera-ready stage. The archival deposit carries the venue-scaled reproducibility-evidence package (data, code, pinned environment, seeds, hardware log, per-instance results, and figures).
+Formatting honors staged disclosure: for a double-blind venue, author, institution, and system identity are stripped to separately-submitted metadata and restored only at the designated camera-ready stage. The archival deposit carries the venue-scaled reproducibility-evidence package (data, code, pinned environment, seeds, hardware log, per-instance results, and figures). For a double-blind venue the supplementary archive and every linked repository or dataset are inspected for identity, not only the manuscript.
+
+Venue rules are sourced and staged. Only the target's own official pages count: a neighboring venue, an earlier cycle, or a sibling track is never a stand-in, and a rebuild for a revision or for camera-ready enforces that stage's limits, not the initial-submission ones. A rule with no official page behind it is asked of the operator and marked not verified against the venue. The venue's template files stay as issued, so a locally written starting file is reported as such. Pages and words are counted the venue's way, with the excluded sections recorded, and each figure and table is checked at the size and format the venue receives.
 
 ## Failure modes
 
@@ -55,6 +57,8 @@ Formatting honors staged disclosure: for a double-blind venue, author, instituti
 | Blocked: run /research-review first | No review report, or open HIGH-severity revisions | Run `/research-review` to produce `_outputs/review-report.md`, or resolve the open HIGH revisions and re-run `/research-review`, or explicitly accept the residual risk |
 | Unaddressed HIGH revision | Review finding skipped | Address the revision and re-run `/research-review` |
 | Missing data/code availability | Reproducibility surface absent | Add the data / code-availability statement before submission |
+| Venue rule without a source | The rule comes from another cycle, track, or neighboring venue, or from memory | Pin the target; record the official page, read date, and stage for the rule, or ask the operator and mark it not verified |
+| Template altered | A local edit changes the venue's page geometry or type settings | Restore the venue's files and change the layout only through options the template documents |
 
 ## Examples
 

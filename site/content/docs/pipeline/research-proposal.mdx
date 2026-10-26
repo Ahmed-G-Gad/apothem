@@ -1,6 +1,6 @@
 ---
 title: "/research-proposal"
-description: "/research-proposal — Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record: SMART aims, feasibility and risk register, impact pathway, preregistration plan, and EQUATOR reporting-guideline selection — the proposal stage of the /research pipeline, between /research-synthesis and /research-design."
+description: "/research-proposal — Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record: SMART aims, feasibility and risk register with contingencies, impact pathway, preregistration plan, data management and sharing plan, and EQUATOR reporting-guideline selection, plus a requirement matrix for a supplied funder call and a standalone resubmission response — the proposal stage of the /research pipeline, between /research-synthesis and /research-design."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,16 +18,20 @@ Transforms the synthesized gap and theoretical framework into a fundable, review
 With arguments:
 
 ```bash
-/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]
 ```
 
 ## Inputs
 
 The suite's `_inputs/synthesis.md` (the SOTA map + gap analysis) and `_inputs/theory.md` (the conceptual framework).
 
+With `--call`, the funder call text, as a file path or `-` for pasted text; the supplied text is the only source for the funder's requirements. With `--resubmission`, the funder's critique of an earlier application, and no synthesis or theory is needed (see below).
+
 ## Outputs
 
-`_inputs/proposal.md` (the SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register, the impact pathway, the preregistration plan, and the EQUATOR reporting-guideline pre-selection).
+`_inputs/proposal.md` (the SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register with its contingencies, the impact pathway, the preregistration plan, the data management and sharing plan, and the EQUATOR reporting-guideline pre-selection).
+
+With `--call`, also `_inputs/call-requirements.md` (the call-requirement matrix). With `--resubmission`, `_outputs/resubmission-response.md` in place of the proposal.
 
 ## Downstream
 
@@ -39,14 +43,34 @@ The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read `_inputs/synthesis.md` and `_inputs/theory.md`, the rules, and any existing suite state.
 2. **Build the SMART aims hierarchy** — Turn the gap into specific, measurable, achievable, relevant, time-bound aims.
-3. **Assess feasibility and risk** — Build the resource / timeline / risk register; surface ethics feasibility up front.
-4. **Plan preregistration and reporting** — Select the registry, draft the preregistration plan, and pre-select the EQUATOR reporting guideline.
+3. **Assess feasibility and risk** — Build the resource / timeline / risk register; give each risk that reaches an aim's achievability a contingency record and stress-test the decision behind it; reconcile any supplied cost lines; surface ethics feasibility up front.
+4. **Plan preregistration, data, and reporting** — Select the registry, draft the preregistration plan, commit the data management and sharing plan, and pre-select the EQUATOR reporting guideline.
 5. **Map the impact pathway** — Trace how the aims, if met, produce downstream impact.
 6. **Verify and emit** — Confirm the aims are testable and the plan reproducible; emit `_inputs/proposal.md` plus the handoff manifest.
+
+## A supplied funder call
+
+With `--call`, the call text governs the proposal's shape. The stage writes a requirement matrix to `_inputs/call-requirements.md`, one row per requirement (section, limit, eligibility, attachment, review criterion, or policy) with the proposal section that answers it, its location in the operator's draft, and a status of `met`, `partly-met`, `gap`, or `operator-owned`. Each review criterion is a row, so every aim traces to the criterion it answers; no criterion is weighted and no claim is made about funding odds.
+
+- **Tool-use policy first.** The call's policy on automated tools resolves before any text is written: permitted, permitted with disclosure (the tool-use statement is drafted), or restricted. Under a restricted policy the stage stops after the matrix and returns the decision to the operator. A call that is silent on the policy is asked about, never assumed.
+- **No recall, no budget.** A funder's requirement, limit, date, rate, or cap comes from the supplied text or the operator, never from memory. The stage builds no budget: it checks the operator's cost lines, and a line that traces to no aim is `orphan`, an aim with no resourcing is `unresourced`, and a total that does not add up is `unreconciled`.
+- **No funder-facing narrative.** The stage emits a plan-of-record, not significance or approach prose. Team, biographies, facilities, letters of support, and current-and-pending support are `operator-owned` rows, never drafted.
+
+## Resubmission mode
+
+`--resubmission PATH` answers a funder's critique of an earlier application, outside the thirteen-stage chain. The Sequence Gate does not apply and the handoff manifest is left untouched. The operator supplies the critique, the call text (`--call`), the application as submitted, and the revised draft, and the stage writes `_outputs/resubmission-response.md` from three parts:
+
+- **Eligibility and limits** — Read from the call text whether a resubmission is permitted, how many the call allows, the deadline, and the limits on the response and the revised application. A rule the text leaves unstated is asked of the operator; with no call text the response cannot reach `ready`.
+- **Revision matrix** — One row per critique comment, numbered as the funder numbers it: the comment quoted, the action (`changed`, `clarified`, or `declined`), the revised locus, the scientific consequence, any unresolved question, and a status of `answered`, `partly-answered`, or `not-answered` backed by the revised text. A declined comment carries its reason and evidence.
+- **Propagation check** — Trace each `changed` row to every plan element it touches: aims, methods, timeline, budget lines, data plan, and risk register. An element the change touches that the revised draft leaves unchanged is `unpropagated`.
+
+The response is `ready` when every row is `answered` or carries an operator-accepted residual, no element is `unpropagated`, and every call limit is met. A response that needs new evidence returns to the operator, who routes it to `/research-design` or `/research-experiment`. The operator submits.
 
 ## Rigor floor
 
 The target-venue ambition sets not only the reporting-guideline choice but the depth of the rigor floor the downstream design and experiment stages must clear — replication floor, budget parity, tuning on disjoint splits, and significance with an effect size — plus the reproducibility-evidence package the deliverable will carry.
+
+Each risk is a refutable prediction of how the plan fails. A risk that reaches an aim's achievability does not stop at its mitigation: it carries a contingency record (trigger, responsible role, review date, lead time, cost of the backup, residual risk) fixed before data collection, and a response written into the plan is a planned adaptation, not a deviation. The data management and sharing plan fixes the repository class, access terms with the basis for each restriction, and retention period before the design fixes the data, and the consent scope must permit the sharing it promises.
 
 ## Failure modes
 
@@ -55,6 +79,8 @@ The target-venue ambition sets not only the reporting-guideline choice but the d
 | Aim is not measurable | Goal stated as activity, not outcome | Re-frame as a SMART aim with an explicit success metric |
 | No preregistration plan | Preregistration step skipped | Select a registry and draft the plan before proceeding to `/research-design` |
 | Missing synthesis input | `/research-synthesis` not yet run | Run `/research-synthesis` first to produce the gap analysis |
+| Funder call named without its text | `--call` omitted or the text unreadable | Supply the call text; the stage never fills a funder rule from memory |
+| Resubmission response not `ready` | A comment is not answered, a change is `unpropagated`, or a call limit is exceeded | Propagate the change to the revised draft, answer the comment, or bring the response within the limit |
 
 ## Examples
 
@@ -64,6 +90,12 @@ The target-venue ambition sets not only the reporting-guideline choice but the d
 
 # Pin the reporting guideline and preregistration registry
 /research-proposal --guideline PRISMA --prereg-registry OSF
+
+# Map a funder call onto the plan-of-record
+/research-proposal --suite-name retrieval-latency --call funder-call.md
+
+# Answer a funder's critique of an earlier application
+/research-proposal --resubmission critique.md --call funder-call.md
 ```
 
 ## Cross-references

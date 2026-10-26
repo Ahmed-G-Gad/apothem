@@ -5,8 +5,8 @@ argument-hint: "[--suite-name NAME] [--override] [--venue STANDARD] [--blind] [-
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.1"
-  updated: "2026-10-25"
+  version: "0.1.2"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -114,7 +114,7 @@ Suite mode only: with `--paper` there is no predecessor and no gate (see the `--
 | Citation integrity (R4) | `rules/ten-dimension-check.md` | Phase 3 audits every citation against the source ledger; a phantom or mismatched citation is HIGH (dim 9). |
 | Preregistration discipline (R5) | `rules/disclosure-ledger.md` | Confirmatory claims trace to preregistered tests; an unplanned test reported as confirmatory is a rigor defect. |
 | Ethics & conflicts (R6) | `rules/authority-inquiry.md` | The ethics axis confirms human/data-privacy handling and COI declarations; an absent required declaration is HIGH. |
-| Statistical rigor (R7) | `rules/definitiveness.md` | An effect reported without its CI is a finding; a bare p-value reported as the result is a rigor defect. |
+| Statistical rigor (R7) | `rules/definitiveness.md` | An effect reported without its CI is a finding; a bare p-value reported as the result is a rigor defect; Phase 2 checks the claim types and recurring appraisal errors of `external-paper-checks.md` §11. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until the venue-standard and ethics-blocking inquiries resolve. |
 | Structured inquiry | `rules/interactive-questions.md` | Every venue ratification and severity-margin choice routes through the canonical channel; free-form prose questions forbidden. |
 | Adversarial verification | `agents/fact-checker.md` | Phase 4 re-derives every finding refute-by-default before it enters the required-revision list. |
@@ -145,6 +145,7 @@ Suite mode only: with `--paper` there is no predecessor and no gate (see the `--
 - **NEVER accept a claim because the paper asserts it.** Refute-by-default: every passed claim traces to the manuscript's own data or a cited source; confidence is not evidence.
 - **NEVER emit a finding without a concrete-driver rationale.** Every required revision cites the manuscript locus it targets and the standard it fails against per `rules/interactive-questions-canonical-shapes.md` §3.2.1; a bare opinion is not a finding.
 - **NEVER score novelty against the paper's self-description.** The novelty axis scores the delta over the closest prior work in the synthesis SOTA map, not the contribution the paper claims for itself.
+- **NEVER treat standing as evidence.** A journal-level measure, a citation count, an author-level index, or the reputation of the venue, institution, or authors scores no axis and supports no claim; Phase 2 sets how such a figure is quoted.
 - **NEVER pass a phantom citation.** Phase 3 audits every citation against the source ledger; a citation resolving to nothing or supporting a claim its source does not make is a HIGH finding (R4).
 - **NEVER rewrite the paper to fix a finding.** This stage critiques and prescribes revisions; patching the manuscript is a separate action and a reviewer who silently edits the paper has stopped reviewing it.
 - **NEVER grant an `accept` verdict by default.** The overall verdict is the advance gate: a paper MUST beat the venue bar convincingly *and* significantly — no unresolved HIGH finding, no confirmatory improvement claimed without statistical significance over its comparators — before it advances to `/research-publish`; a paper that does not clear the gate earns `major-revision` or `reject`, never `accept`. Each clearance is logged as the auditable-runbook entry — the overall verdict, the HIGH-finding count, and the statistical-superiority evidence — per `skills/research-suite/references/advancement-gate.md`.

@@ -6,7 +6,7 @@ disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -79,7 +79,7 @@ The stage runs as a single disciplined sprint: two authoritative artifacts (the 
 
 ### Phase 1 — Ingest the Gap & Hypotheses
 
-Read `{suite}/_inputs/synthesis.md` and `{suite}/_spec/research-spec.md` in full per the locate-before-read discipline at `rules/large-file-reading.md`. Extract the explicit gap statement, the falsifiable hypothesis set, the success metrics, and the inclusion/exclusion criteria. Confirm every hypothesis is a refutable prediction (R3); a hypothesis no observable outcome can refute is returned to `/research-spec` for restatement, never carried into the design. Carry forward each hypothesis's provenance — the synthesis gap or the literature source ID it answers — so every downstream prediction traces back. Externalise the extracted hypothesis-and-construct inventory to `{suite}/_inputs/design-constructs.md` (free-form `{kebab-case-topic}.md` per the scratch convention at `rules/context-management-scratch.md` §1) when the construct count exceeds a single pass.
+> Moved to `references/step-01-ingest-the-gap-hypotheses.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — Operationalize Predictions & Design Type
 
@@ -108,11 +108,11 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against b
 | Discipline | Rule | Enforcement point |
 | ---------- | ---- | ----------------- |
 | Falsifiability (R3) | `rules/definitiveness.md` | Every prediction names the outcome that would refute it; non-refutable hypotheses are returned to `/research-spec`. |
-| Reproducibility (R2) | `rules/ten-dimension-check.md` | Phase 4 records the power-analysis inputs and N so an independent party re-derives the sample size. |
-| Preregistration (R5) | `rules/disclosure-ledger.md` | Phase 5 freezes the analysis plan before data collection; deviations are disclosed against the frozen preregistration, never edited into it. The registered-report Stage-1 format is the strongest preregistration discipline where the venue admits it. |
+| Reproducibility (R2) | `rules/ten-dimension-check.md` | Phase 3 records the seeded allocation procedure and Phase 4 the power-analysis inputs and N, so an independent party re-derives the schedule and the sample size. |
+| Preregistration (R5) | `rules/disclosure-ledger.md` | Phase 5 freezes the analysis plan, allocation, masking, and control conditions before data collection; deviations are disclosed against the frozen preregistration, never edited into it. The registered-report Stage-1 format is the strongest preregistration discipline where the venue admits it. |
 | Open science / FAIR (R8) | `rules/disclosure-ledger.md` | Phase 5 records the preregistration format (public preregistration or registered-report Stage-1) per the COS/TOP guidelines; the registered-report path carries an in-principle-acceptance route the publish stage honors. |
-| Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phase 3 surfaces the ethics/consent/data-handling posture as a required inquiry when the sample frame touches subjects or sensitive data. |
-| Statistical rigor (R7) | `rules/ten-dimension-check.md` | Phase 4 ratifies alpha, power, the test family, and the multiple-comparison correction; effect sizes carry provenance, never invented. |
+| Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phase 3 surfaces the ethics/consent/data-handling posture and the masking plan as a required inquiry when the sample frame touches subjects or sensitive data. |
+| Statistical rigor (R7) | `rules/ten-dimension-check.md` | Phase 4 ratifies the inferential goal, sidedness, alpha, power, the test family, and the multiple-comparison correction, and sizes for the analysis planned; effect sizes carry provenance, never invented. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until design-type, primary-outcome, and ethics inquiries resolve. |
 | Structured inquiry | `rules/interactive-questions.md` | Every design-type, threshold, and instrument ratification routes through the canonical channel; free-form prose questions forbidden. |
 | Pre-emission gate | `rules/pre-emission-gate.md` | Phase 6 runs all fifteen bars against both artifacts before the manifest update. |
@@ -128,7 +128,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against b
 | Construct inventory | `{suite}/_inputs/design-constructs.md` | Optional Phase 1 working file (hypothesis-and-construct inventory) for a design exceeding a single pass. |
 | Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 6 with `downstream: /research-experiment` and the preregistration freeze timestamp. |
 
-The `study-design.md` carries these canonical sections: `## §1 Gap & Hypotheses` (the gap recap, the falsifiable hypothesis set, each hypothesis's provenance); `## §2 Operational Predictions` (each hypothesis's measurable prediction + the outcome that refutes it); `## §3 Design Type` (the ratified design with its rationale); `## §4 Variable Structure` (the independent / dependent / control table with instruments and the confound each control rules out); `## §5 Sample & Power Analysis` (the sample frame, the effect-size provenance, alpha, power, computed N, stopping rule); `## §6 Threats to Validity` (the internal / external / construct / statistical-conclusion ledger with mitigations); `## §7 Ethics & Conflicts` (the R6 posture where applicable); `## §8 Validation Gate Outcome` (the Phase 6 gate attestation); `## §Bindings (§0.j five-direction)`. The `preregistration.md` carries: `## §1 Hypotheses` (verbatim, frozen); `## §2 Primary & Secondary Outcomes`; `## §3 Statistical Plan` (test family, alpha, power, SESOI, correction, stopping rule, DAG adjustment set); `## §4 Sample Size` (the SESOI-powered N with its derivation inputs); `## §5 Preregistration Format` (public preregistration or registered-report Stage-1, with the COS/TOP rationale; R5/R8); `## §6 Freeze Attestation` (the freeze timestamp + the no-edit invariant).
+The `study-design.md` carries these canonical sections: `## §1 Gap & Hypotheses` (the gap recap, the falsifiable hypothesis set, each hypothesis's provenance); `## §2 Operational Predictions` (each hypothesis's measurable prediction + the outcome that refutes it); `## §3 Design Type` (the ratified design with its rationale, allocation procedure, masking plan, and control conditions); `## §4 Variable Structure` (the independent / dependent / control table with instruments and the confound each control rules out, the experimental unit and unit of analysis, the nuisance-factor and run-order plan); `## §5 Sample & Power Analysis` (the sample frame, the effect-size provenance, the inputs N is re-derived from, alpha, power, computed N across the effect range, collection target, stopping rule); `## §6 Threats to Validity` (the internal / external / construct / statistical-conclusion ledger with mitigations); `## §7 Ethics & Conflicts` (the R6 posture where applicable, and the data handling that carries the proposal's data management and sharing plan; R8); `## §8 Validation Gate Outcome` (the Phase 6 gate attestation); `## §Bindings (§0.j five-direction)`. The `preregistration.md` carries: `## §1 Hypotheses` (verbatim, frozen); `## §2 Primary & Secondary Outcomes` (with the control conditions and their pass criteria); `## §3 Statistical Plan` (test family and the structure it carries, each primary claim's fallback test and trigger and its independent unit of analysis, the Bayesian model, priors, interval type, practical-equivalence region and decision threshold where the plan is Bayesian, inferential goal, sidedness, alpha, power, SESOI, correction, missing-outcome handling, stopping rule and any looks, DAG adjustment set); `## §4 Sample Size & Allocation` (the SESOI-powered N with its derivation inputs and collection target, the allocation procedure and concealment, the masking plan, the run-order rule); `## §5 Preregistration Format` (public preregistration or registered-report Stage-1, with the COS/TOP rationale; R5/R8); `## §6 Freeze Attestation` (the freeze timestamp + the no-edit invariant).
 
 ---
 
@@ -152,6 +152,7 @@ The `study-design.md` carries these canonical sections: `## §1 Gap & Hypotheses
 - **NEVER edit a frozen preregistration.** The preregistration is write-once; once frozen before data collection, any deviation is disclosed against it per `rules/disclosure-ledger.md`, never edited into it (R5).
 - **NEVER collect or reference data within this stage.** The preregistration freezes the plan before data collection; any data-collection task belongs to `/research-experiment`.
 - **NEVER skip the ethics posture when the sample frame touches subjects or sensitive data.** The R6 consent and data-handling inquiry is required and blocks emission until resolved.
+- **NEVER leave the structure to the analysis.** The experimental unit, allocation, masking, run order, and control conditions are fixed in the design and frozen in the preregistration; no test applied afterwards separates a confound the layout built in.
 - **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-experiment` may consume the design.
 
 ---

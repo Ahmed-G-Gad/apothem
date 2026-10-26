@@ -7,7 +7,7 @@ description: "/research-review — Peer-review-grade adversarial critique of the
 **Role:** Principal Investigator (peer review)
 **Pipeline position:** mid-chain
 
-Subjects the paper to a peer-review-grade adversarial critique against venue standards — novelty, rigor, reproducibility, clarity, ethics, statistical review, and reporting-guideline conformance. Emits a **seven-axis** reviewer scorecard plus a severity-triaged required-revision list with concrete-driver rationale per finding. Refute-by-default.
+Subjects the paper to a peer-review-grade adversarial critique against venue standards — novelty, rigor, reproducibility, clarity, ethics, statistical review, and reporting-guideline conformance. Emits a **seven-axis** reviewer scorecard plus a severity-triaged required-revision list with concrete-driver rationale per finding. Refute-by-default, and every point rests on the draft's own words and evidence, never on the standing of the venue, institution, or authors.
 
 ## Canonical invocation
 
@@ -41,8 +41,8 @@ The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read the paper deliverable.
 2. **Verify the Sequence Gate** — Confirm the paper, `_outputs/analysis.md`, and `_inputs/synthesis.md` exist and are non-empty; otherwise halt with `Blocked: run /research-paper first`.
-3. **Review adversarially** — Score the seven axes (novelty · rigor · reproducibility · clarity · ethics · statistical review · reporting-guideline conformance); run the reproducibility re-run and citation-integrity audit; refute-by-default; locate concrete defects with evidence.
-4. **Triage revisions** — Rank required revisions HIGH / MEDIUM / LOW with concrete-driver rationale.
+3. **Review adversarially** — Score the seven axes (novelty · rigor · reproducibility · clarity · ethics · statistical review · reporting-guideline conformance); type each claim as descriptive, associational, or causal and check the recurring appraisal errors; check that figures encode honestly and read without color; run the reproducibility re-run and citation-integrity audit; refute-by-default; locate concrete defects with evidence.
+4. **Triage revisions** — Rank required revisions HIGH / MEDIUM / LOW with concrete-driver rationale. An axis the review cannot judge takes no verdict; it stays on the not-judged list with its reason, and the overall verdict brackets it.
 5. **Update the handoff manifest** — Record the review report and the scorecard verdict.
 6. **Emit the review** — `_outputs/review-report.md`.
 
@@ -50,12 +50,16 @@ The command follows the standard `/research` pipeline workflow:
 
 `--paper` reviews a manuscript that is not part of a research suite, for example a submission you were asked to referee or a draft from a colleague.
 
-- **Venue profile.** `--venue` takes the id of a generic profile (for example `empirical-conference` or `field-journal`). A named venue uses the closest generic profile and the report says so. Apothem ships generic profiles only and never claims any venue's own criteria; guidelines you supply govern when you paste them.
+- **Venue profile.** `--venue` takes the id of a generic profile (for example `empirical-conference` or `field-journal`). A named venue uses the closest generic profile and the report says so. Apothem ships generic profiles only and never claims any venue's own criteria; guidelines you supply govern when you paste them, and the report header records their source, their date, and the year or cycle and track they cover.
+- **Manuscript version.** The report records which version was read (preprint, accepted manuscript, version of record, or unknown), any version marker the file carries, where it came from, and the date it was read, so the review is pinned to one revision.
 - **Reviewer roles.** The default roles are methods, domain and skeptical. `--roles` changes the list. Where roles disagree the report prints the disagreement instead of averaging it.
 - **Confidentiality.** You are asked once whether the paper is a confidential submission, a published paper or your own draft. When the answer is unknown the stricter handling applies: lookups use titles, identifiers or generic topic terms and never sentences from the manuscript.
 - **Novelty.** Without a suite there is no map of prior work, so the review uses the paper's named neighbours plus a bounded search record. An empty search is never taken as evidence of novelty, and novelty confidence stays low unless the record covers a scholarly index.
+- **Anonymity.** For your own readiness check at a double-blind venue, the review inspects the surfaces beyond the prose (document properties, shipped and linked files, repository history, supplementary archives, rendered figures); one it cannot open goes to the not-judged list, never to the clean list. For a confidential submission you are assigned, the review does not search those surfaces for identity: an identity met without looking is reported to you as a leak and enters no score.
 
 ## Rigor floor
+
+No axis verdict, finding, or confidence rests on a journal-level measure, a citation count, an author-level index, or the reputation of the venue, institution, or authors; a review that quotes such a figure quotes it descriptively, with what it measures, its source, and the date. HIGH-severity findings include an experimental image with an undisclosed splice, composite, or processing step, and a registered outcome that differs from the reported one with no stated reason. The statistical review checks that n counts the independent unit rather than repeated measures, folds, or seeds of one unit.
 
 The review scores the empirical claims against the advance-gate bar — adequate replication, nonparametric significance with an effect size and critical-difference ranks, and budget parity across compared methods — and treats the verdict as an explicit advance gate: a paper advances only when it beats the venue bar convincingly and significantly, with the clearance logged. Under a double-blind venue the reviewer also flags any identity leak as an anonymization defect.
 
@@ -66,6 +70,7 @@ The review scores the empirical claims against the advance-gate bar — adequate
 | Blocked: run /research-paper first | No paper | Run `/research-paper` to produce the manuscript |
 | Blocked: no paper supplied | `--paper` file missing or unreadable | Pass a readable PDF or text file, or paste the text |
 | Charitable scoring | Reviewer assumed best case | Refute-by-default; score against the evidence present |
+| Point resting on standing | A venue, institution, author, journal-level measure, or citation count was used as evidence | Remove it; restate the point from the draft's own words and evidence |
 | Finding without rationale | Revision asserted, not justified | Attach a concrete-driver rationale to every finding |
 
 ## Examples

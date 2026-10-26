@@ -27,7 +27,7 @@ With arguments:
 
 ## Outputs
 
-`_outputs/experiment-log.md` (the timestamped protocol trace), the raw data at a host-natural location, and `_outputs/reproducibility-manifest.md` (environment, seed, protocol, version pins).
+`_outputs/experiment-log.md` (the timestamped protocol trace, plus the close-out record of an autonomous campaign), the raw data at a host-natural location, and `_outputs/reproducibility-manifest.md` (environment, seed, protocol, version pins).
 
 ## Downstream
 
@@ -46,7 +46,9 @@ The command follows the standard `/research` pipeline workflow:
 
 ## Rigor floor
 
-Execution runs a pilot pass to calibrate budgets and ranges, then the full comparison under a declared compute-utilization plan (core allocation, memory ceilings, safe parallelization of independent repetitions). Each stochastic method runs its preregistered repetition regime with recorded seeds and logged hardware. An opt-in, default-off autonomous experiment loop is available: against a frozen harness it proposes a change to a single mutable target, runs it at the fixed budget, retains it only if it beats the incumbent, and journals every trial.
+Execution runs a pilot pass to calibrate budgets and ranges, then the full comparison under a declared compute-utilization plan (core allocation, memory ceilings, safe parallelization of independent repetitions). Each stochastic method runs its preregistered repetition regime with recorded seeds and logged hardware. An opt-in, default-off autonomous experiment loop is available. Against a frozen harness it proposes a change to a single mutable target, states a falsifiable prediction before each run, and runs it at the fixed budget. The primary metric is read from the run log as two signals: a search signal that steers the loop, and an admission signal from a disjoint set, which confirms or rejects a change before it is retained: the change must clear the search stage, then beat the incumbent on admission by more than the stated noise margin (or tie it while reducing complexity). Every trial is journaled and every admission query is counted and disclosed.
+
+A final untouched set is evaluated once, at close-out. A campaign with none labels its result selection-contaminated and exploratory, and any figure the campaign reports is re-measured under the repetition regime above. The operator confirms the target, harness, metric, evaluation sets, acceptance rule, budget, and workspace once, and may fix stop criteria; at stopping, the close-out record (trial, keep, discard, crash, and admission-query counts, the gain over baseline, and the untouched-set result) goes into the experiment log so the analysis stage can classify the loop-selected result.
 
 ## Failure modes
 
@@ -55,6 +57,7 @@ Execution runs a pilot pass to calibrate budgets and ranges, then the full compa
 | Blocked: run /research-design first | No study design | Run `/research-design` to produce `_inputs/study-design.md` |
 | Run not reproducible | Missing seed / environment record | Record the full reproducibility manifest before proceeding |
 | Protocol deviation undocumented | Mid-run change not logged | Log the deviation in the experiment log; disclose at analysis |
+| Loop result presented as confirmatory | The loop steered on its admission set, or no untouched set was read at close-out | Label the result selection-contaminated and exploratory; the search signal steers, the admission signal decides, and the untouched set is read once |
 
 ## Examples
 

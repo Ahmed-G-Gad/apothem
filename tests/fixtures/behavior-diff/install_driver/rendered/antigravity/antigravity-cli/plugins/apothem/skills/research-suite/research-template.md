@@ -198,7 +198,7 @@ Source IDs are kebab-case `<first-author>-<year>` with a disambiguating suffix o
 | # | Stage | Predecessor (Sequence Gate) | Consumes (handoff) | Emits | Rigor floor |
 |---|-------|------------------------------|--------------------|-------|-------------|
 | 1 | `/research-spec` | none (entry) | raw question / notes | `_spec/research-spec.md` — question, falsifiable hypotheses, scope, inclusion/exclusion criteria, success metrics, glossary. `--quick` writes a lightweight plan-local brief. | R3 |
-| 2 | `/research-sources` | research-spec | `_spec/research-spec.md` | `sources/<id>.md` per-source extractions + `_inputs/source-ledger.md` (ranked by authority/recency/relevance, screened against inclusion criteria, citation index, dedup record). Dispatches `research-scout` (discovery) + `multi-source-research` (extraction). | R1, R4 |
+| 2 | `/research-sources` | research-spec | `_spec/research-spec.md` | `sources/<id>.md` per-source extractions + `_inputs/source-ledger.md` (ranked by authority/recency/relevance, screened against inclusion criteria, citation index, dedup record, search record). Dispatches `research-scout` (discovery) + `multi-source-research` (extraction). | R1, R4 |
 | 3 | `/research-synthesis` | research-sources | `_inputs/source-ledger.md` + `sources/` | `_inputs/synthesis.md` — SOTA map, literature matrix, explicit gap statement the work addresses. Every claim adversarially verified by `fact-checker`; uses `source-synthesis`. | R1, R4 |
 | 4 | `/research-design` | research-synthesis | `_inputs/synthesis.md` + `_spec/research-spec.md` | `_inputs/study-design.md` (operationalized predictions, variables, controls, sample, instruments, power analysis, threats-to-validity) + `_inputs/preregistration.md` (frozen analysis plan). | R5, R7 |
 | 5 | `/research-experiment` | research-design | `_inputs/study-design.md` + `_inputs/preregistration.md` | `_outputs/experiment-log.md` + raw data at host-natural location + `_outputs/reproducibility-manifest.md` (env, seed, protocol, version pins). | R2 |
@@ -425,8 +425,8 @@ Start a new session. The Blind Bootstrap Protocol (`rules/context-management.md`
 ### Bundle E: Systematic Review / Meta-Analysis
 
 - **Tooling:** PRISMA flow, search-string log, dual screening, effect-size extraction sheet
-- **Standards:** inclusion/exclusion criteria frozen before screening, heterogeneity assessed, publication-bias check
-- **Rigor:** R1 (primary studies only), R3 (pre-registered review question), R7 (heterogeneity + funnel plot)
+- **Standards:** inclusion/exclusion criteria frozen before screening, heterogeneity assessed, publication-bias assessment with the method justified (a funnel plot only with enough studies, since asymmetry has other causes)
+- **Rigor:** R1 (primary studies only), R3 (pre-registered review question), R7 (heterogeneity + publication-bias assessment, method justified)
 
 ---
 

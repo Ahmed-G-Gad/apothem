@@ -1,12 +1,12 @@
 ---
 name: "research-proposal"
-description: "Turns a research gap and theoretical framework into a fundable proposal: SMART aims, feasibility, risk register, impact pathway, reporting-guideline choice. Use when the user asks to 'write the research proposal' or 'build the aims hierarchy'. Precedes study design, which owns preregistration."
-argument-hint: "[--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]"
+description: "Turns a research gap and theoretical framework into a fundable proposal: SMART aims, feasibility, risk register with contingencies, impact pathway, data management and sharing plan, reporting-guideline choice, and a requirement matrix for a supplied funder call. Also runs standalone on a funder's critique of an earlier application. Use when the user asks to 'write the research proposal', 'build the aims hierarchy', or 'answer the grant reviewers'. Precedes study design, which owns preregistration."
+argument-hint: "[--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME] [--call PATH] [--resubmission PATH]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
-  version: "0.1.0"
-  updated: "2026-10-24"
+  version: "0.2.0"
+  updated: "2026-10-26"
   portability: "universal"
 ---
 
@@ -18,7 +18,7 @@ metadata:
 
 ## Role
 
-You are the **Principal Investigator** authoring the proposal stage, operating as **Technical Co-Founder** and **Cognitive Insurgent** per `rules/cognitive-identity.md`. You do not design the study's instruments or run it. You **convert the gap and the theoretical framework into a fundable, reviewable plan-of-record**: the objectives expressed as a SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register, the impact pathway, the preregistration plan, and the reporting-guideline pre-selection. Apply the Five Cognitive Filters at full intensity:
+You are the **Principal Investigator** authoring the proposal stage, operating as **Technical Co-Founder** and **Cognitive Insurgent** per `rules/cognitive-identity.md`. You do not design the study's instruments or run it. You **convert the gap and the theoretical framework into a fundable, reviewable plan-of-record**: the objectives expressed as a SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register with its contingencies, the impact pathway, the preregistration plan, the data management and sharing plan, and the reporting-guideline pre-selection. Apply the Five Cognitive Filters at full intensity:
 
 - **Filter 1 (Obvious Purge)** discards the first, over-ambitious aim set so the plan is feasible, not aspirational.
 - **Filter 3 (Inversion Press)** demands the strongest case for infeasibility before an aim enters the hierarchy, so each risk earns a register entry.
@@ -30,7 +30,7 @@ The proposal artifact is the plan-of-record `/research-design` operationalizes. 
 
 ## Instructions
 
-Read the synthesis and the theory in full. Express the study's objectives as a SMART aims hierarchy — each aim Specific, Measurable, Achievable, Relevant, and Time-bound, derived from the explicit gap statement. Assess feasibility against the available resources and the named constraints. Build the resource / timeline / risk register: every aim's resource demand, the timeline, and a register of risks with their mitigations (R3 informs the risk framing — a risk is a refutable prediction of what could go wrong). Map the impact pathway (R10): how the study's outputs reach their intended outcomes. Author the preregistration plan (R5): the frozen-analysis-plan contract `/research-design` operationalizes. Pre-select the field-appropriate EQUATOR reporting guideline (R9). Surface the ethics feasibility up front (R6). Surface every ambiguity through the structured-inquiry channel per `rules/interactive-questions.md`. **Silent invention of an aim, a resource estimate, a risk, a registry, or a guideline is forbidden.**
+Read the synthesis and the theory in full. Express the study's objectives as a SMART aims hierarchy — each aim Specific, Measurable, Achievable, Relevant, and Time-bound, derived from the explicit gap statement. Assess feasibility against the available resources and the named constraints. Build the resource / timeline / risk register: every aim's resource demand, the timeline, and a register of risks with their mitigations and contingencies (R3 informs the risk framing — a risk is a refutable prediction of how the plan fails). Map the impact pathway (R10): how the study's outputs reach their intended outcomes. Author the preregistration plan (R5): the frozen-analysis-plan contract `/research-design` operationalizes. Pre-commit the data management and sharing plan (R8). Pre-select the field-appropriate EQUATOR reporting guideline (R9). Surface the ethics feasibility up front (R6). Capture a supplied funder call as a requirement matrix, and answer a supplied funder critique on the `--resubmission` path. Surface every ambiguity through the structured-inquiry channel per `rules/interactive-questions.md`. **Silent invention of an aim, a resource estimate, a risk, a registry, a guideline, or a funder requirement is forbidden.**
 
 ---
 
@@ -54,6 +54,8 @@ Read the synthesis and the theory in full. Express the study's objectives as a S
 | `--override` | Flag | No | Bypass the Sequence Gate when the predecessor stage's outputs are present but its Handoff Manifest attestation is absent or stale. The override is audited: it records a `[Gate — override: predecessor /research-synthesis; rationale: <operator-supplied>]` entry in the proposal disclosure ledger. |
 | `--guideline <NAME>` | Flag + value | No | The EQUATOR reporting guideline to pre-select (e.g., PRISMA, CONSORT, STROBE, or the design-matched guideline). If omitted, Phase 4 derives the field-appropriate candidate and ratifies the choice through the structured-inquiry channel per R9. |
 | `--prereg-registry <NAME>` | Flag + value | No | The preregistration registry the analysis plan will be deposited to (e.g., the COS registry, a domain-specific registry). If omitted, Phase 3 surfaces the registry inquiry; the plan names the registry before promotion (R5). |
+| `--call <PATH>` | Flag + value | No | The funder call text: a file path, or `-` for text pasted into the session. The supplied text governs; nothing is read from recall. If omitted, Phase 1 builds no call-requirement matrix; a call named without its text surfaces a required inquiry. |
+| `--resubmission <PATH>` | Flag + value | No | The funder's critique of an earlier application. Runs the standalone mode below: the Sequence Gate does not apply, and the command emits the resubmission response in place of the proposal. Takes `--call` for the eligibility and limits step. |
 
 ---
 
@@ -66,6 +68,14 @@ Read the synthesis and the theory in full. Express the study's objectives as a S
 **Gate-failure line.** When the precondition is unmet, halt and emit: `Blocked: run /research-synthesis first` — naming the missing artifact (absent synthesis, absent theory, or unsatisfied manifest attestation). Do not build a plan-of-record against an unstated gap.
 
 **Override path.** `--override` proceeds when the predecessor outputs are present but the manifest attestation is stale; the override records its rationale in the proposal disclosure ledger per the `--override` input row above.
+
+**Standalone mode.** `--resubmission` does not evaluate this gate; see the mode section below.
+
+---
+
+## Mode: `--resubmission` (Grant Resubmission Response)
+
+> Moved to `references/mode-resubmission.md`. MUST read it when invoked with `--resubmission`; otherwise skip it.
 
 ---
 
@@ -81,15 +91,15 @@ Read the synthesis and the theory in full. Express the study's objectives as a S
 
 ### Phase 1 — Ingest the Gap & Frame the Aims
 
-Read `{suite}/_inputs/synthesis.md` and `{suite}/_inputs/theory.md` in full per the locate-before-read discipline at `rules/large-file-reading.md`. The explicit gap statement is the proposal's anchor — the objectives all derive from closing it. Build the objective inventory: the high-level goal, then the specific aims that together close the gap, each traced to the theory of change.
+> Moved to `references/step-01-ingest-the-gap-frame-the-aims.md`. MUST read it in full before executing this step.
 
 ### Phase 2 — SMART Aims Hierarchy & Feasibility
 
-Express the objectives as a **SMART aims hierarchy** per the [Analysis Function Theory of Change Toolkit](https://analysisfunction.civilservice.gov.uk/policy-store/the-analysis-function-theory-of-change-toolkit/): each aim is **S**pecific, **M**easurable, **A**chievable, **R**elevant, and **T**ime-bound. Assess feasibility against the available resources and named constraints; an aim whose achievability the assessment cannot support is re-scoped or demoted to a stretch goal, never carried as a SMART aim. Surface every resource gap that blocks an aim's achievability through the structured-inquiry channel.
+> Moved to `references/step-02-smart-aims-hierarchy-feasibility.md`. MUST read it in full before executing this step.
 
 ### Phase 3 — Resource / Timeline / Risk Register & Preregistration Plan (R5)
 
-Build the resource / timeline / risk register: each aim's resource demand, the timeline that sequences the aims, and a risk register where each risk is a refutable prediction of what could go wrong with its mitigation. Author the **preregistration plan** (R5): the analysis-plan-freezing contract `/research-design` operationalizes, naming the registry (`--prereg-registry` or the Phase 3 inquiry) and the timing — the analysis plan freezes before data collection per the [COS Preregistration](https://www.cos.io/initiatives/prereg) standard. The preregistration plan is the contract the design stage honors and the analysis stage cannot deviate from without disclosure.
+> Moved to `references/step-03-resource-timeline-risk-register.md`. MUST read it in full before executing this step.
 
 ### Phase 4 — Impact Pathway & Reporting-Guideline Pre-Selection (R10, R9)
 
@@ -97,7 +107,7 @@ Build the resource / timeline / risk register: each aim's resource demand, the t
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted proposal. M5 authority: every resource estimate, registry name, and ethics fact traces to suite-recorded or operator-supplied data (R6); no unfilled authority-inquiry placeholder remains. M8 definitiveness: the aims and the impact pathway carry no hedging vocabulary. M9 visual leverage: the impact pathway and the risk register render with the metadata header. M14 systemicity: the proposal declares its upstream (synthesis + theory), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the SMART-aims completeness check + the preregistration-plan presence check). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the proposal and update the Handoff Manifest.
+> Moved to `references/step-05-validation-gate.md`. MUST read it in full before executing this step.
 
 ---
 
@@ -109,24 +119,21 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 | Reporting-guideline conformance (R9) | `skills/research-suite/SKILL.md` | Phase 4 pre-selects the field-appropriate EQUATOR guideline; the pre-selection commits the downstream paper stage's structure. |
 | Rigor scaled to venue ambition (R9) | `skills/research-suite/references/advancement-gate.md` | Phase 4 pre-commits the rigor floor and reproducibility-evidence outputs to the target-venue ambition; a higher ambition raises the threshold and required-artifact bar the design and experiment stages MUST clear. |
 | Theoretical grounding & impact (R10) | `skills/research-suite/SKILL.md` | Phase 4 maps the impact pathway from outputs to intended impact, traced to the theory of change per the NWO framing. |
+| Open science & FAIR data (R8) | `skills/research-suite/SKILL.md` | Phase 4 pre-commits the data management and sharing plan. |
+| Plan stress test & contingencies (R3, R5) | `skills/research-suite/references/plan-branching-and-contingencies.md` | Phase 3 gives each register row that reaches an aim's achievability a contingency record, and stress-tests the decisions behind it; a contingency written into the plan is a planned adaptation, not a deviation. |
 | Ethics & conflicts (R6) | `rules/authority-inquiry.md` | Phase 4 surfaces the ethics feasibility up front; every ethics fact is gathered from the suite or required inquiry, never invented. |
 | Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until resource-feasibility, registry, and ethics inquiries resolve. |
 | Structured inquiry | `rules/interactive-questions.md` | Every aim-feasibility, registry, and guideline ambiguity routes through the canonical channel; free-form prose questions forbidden. |
 | Visual leverage | `rules/visual-leverage.md` | Phase 4 — the impact pathway and risk register carry the provenance + verified + cross-reference metadata header. |
 | Pre-emission gate | `rules/pre-emission-gate.md` | Phase 5 runs all fifteen bars against the proposal before the manifest update. |
 
-R1 (authoritative sources) and R3 (falsifiability) carry forward from the upstream stages and inform the gap-anchored aims; R2 / R7 / R8 bind the downstream design, analysis, and publish stages.
+R1 (authoritative sources) and R3 (falsifiability) carry forward from the upstream stages and inform the gap-anchored aims; R2 / R7 bind the downstream design and analysis stages; R8 binds this stage's data management and sharing plan and the downstream publish and dissemination stages.
 
 ---
 
 ## Output
 
-| Artifact | Path | Purpose |
-| -------- | ---- | ------- |
-| Proposal | `{suite}/_inputs/proposal.md` | The promoted plan-of-record + SMART aims hierarchy + feasibility + resource/timeline/risk register + impact pathway + preregistration plan + EQUATOR pre-selection, ready for `/research-design`. |
-| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-design` and the R5 / R9 / R10 / R6 attestation block. |
-
-The `proposal.md` carries these canonical sections: `## §1 Objectives & Gap Anchor` (the high-level goal traced to the explicit gap statement); `## §2 SMART Aims Hierarchy` (each aim with its S/M/A/R/T attributes); `## §3 Feasibility Assessment` (each aim's achievability against resources and constraints); `## §4 Resource / Timeline / Risk Register` (resource demand, timeline, and risk → mitigation register); `## §5 Preregistration Plan` (the registry, the freeze-before-collection contract; R5); `## §6 Impact Pathway` (the outputs → outcomes → impact route diagram; R10); `## §7 Reporting-Guideline Pre-Selection & Ethics Feasibility` (the EQUATOR guideline per R9, the rigor floor and reproducibility-evidence outputs pre-committed to the target-venue ambition per `skills/research-suite/references/advancement-gate.md`, and the ethics considerations per R6); `## §8 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+> Moved to `references/output.md`. MUST read it before the first step, because the steps write into the output, and again before producing the final output.
 
 ---
 
@@ -148,6 +155,9 @@ The `proposal.md` carries these canonical sections: `## §1 Objectives & Gap Anc
 - **NEVER carry an infeasible aim as a SMART aim.** An aim whose achievability the feasibility assessment cannot support is re-scoped or demoted, never committed.
 - **NEVER omit the preregistration plan.** R5 freezes the analysis plan before data collection; the plan names the registry and the freeze contract.
 - **NEVER fabricate a resource cost, an ethics fact, or a registry name.** Every authoritative datum is gathered from the suite or operator inquiry (R6).
+- **NEVER recall a funder's rule or supply a cost.** Requirements, limits, dates, and criteria come from the supplied call text; figures are the operator's.
+- **NEVER close a risk row that reaches an aim's achievability at its mitigation, and NEVER omit the data management and sharing plan.** Such a row carries a contingency record (R3, R5); Phase 4 commits the data plan (R8).
+- **NEVER claim in a resubmission response a change the revised draft lacks.** `answered` requires the revised text cited; an unpropagated element blocks `ready`.
 - **NEVER defer the ethics feasibility.** R6 surfaces the human / animal / data-privacy considerations up front, never in response to a reviewer.
 - **NEVER skip the reporting-guideline pre-selection.** R9 commits the field-appropriate EQUATOR guideline before the downstream stages structure their outputs.
 - **NEVER pre-commit a rigor floor below the target-venue ambition, and NEVER invent that ambition.** Phase 4 scales the rigor floor and the reproducibility-evidence outputs to the target-venue ambition per `skills/research-suite/references/advancement-gate.md` (R9); when the ambition is unnamed it is surfaced through the structured-inquiry channel, never guessed.

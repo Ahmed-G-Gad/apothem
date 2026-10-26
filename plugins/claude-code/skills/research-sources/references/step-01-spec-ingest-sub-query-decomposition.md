@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: MIT -->
+
+### Phase 1 — Spec Ingest & Sub-Query Decomposition
+
+Read `{suite}/_spec/research-spec.md` in full. Extract the question, the falsifiable hypotheses, the scope boundaries, the inclusion/exclusion criteria, the success metrics, and the glossary. Decompose the question into **orthogonal sub-queries** — one facet per distinct evidence dimension (claim domain, competing-method axis, temporal window, population/subject scope). Non-orthogonal sub-queries produce redundant returns; the decomposition minimizes overlap. Beside the dimension facets, add one **contrary-evidence facet** with a query group for the null form of each hypothesis, a facet for prior syntheses, and a facet for foundational and method-precedent works, each searched with its own query set (`skills/research-suite/references/search-record.md` §6); the spec's temporal window does not apply to the foundational facet.
+
+Emit the pre-flight inquiry set: the source-budget ceiling when unfixed, and a screening-criterion confirmation placeholder for every inclusion/exclusion criterion the spec leaves under-specified. Persist the decomposition and the ratified screening contract to `{suite}/_inputs/notes.md` as the discovery lineage, and open the ledger's `## Search Record` section with the planned passes per `rules/authoritative-referencing-provenance.md` §2 and `search-record.md` §1-§2; the notes are distilled into that section before they are deleted.

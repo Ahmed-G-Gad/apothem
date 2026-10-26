@@ -47,6 +47,19 @@ Ranked by how much each would change a reader's belief in, or ability to use, th
 
 Fewer than three is allowed when fewer matter; say that and stop. Do not pad the list to reach three.
 
+## Criteria table (only when criteria text is supplied)
+
+When the user supplies the review criteria for a proposal or another non-paper draft (a call's or a funder's criteria text), add a table with one row per criterion:
+
+| Criterion | The draft's evidence | The weakness that remains | Proposed revision |
+|-----------|----------------------|---------------------------|-------------------|
+
+- **The draft's evidence:** anchored in the draft's own words and location. A criterion with no evidence in the draft gets the row `no evidence in the draft`, never an invented one.
+- **The weakness that remains:** what a reader applying that criterion would still doubt; `none identified` when nothing remains.
+- **Proposed revision:** an instruction, not a rewrite.
+
+Assign no weight to a criterion and no score to the draft, and make no claim about the chance of funding or acceptance. The table sits beside the three changes; it does not replace them.
+
 ## 4. What was not judged
 
 State the limits of the reading: material the input lacked, claims in a field the reading cannot assess, references not checked (route to `agents/citation-auditor.md`), numbers not recomputed. The section is never empty; if nothing applies, write that the draft was read in full and no references or numbers were checked.
@@ -54,5 +67,6 @@ State the limits of the reading: material the input lacked, claims in a field th
 ## Conduct
 
 - Quote the draft's own words to anchor each point, with a section or paragraph position that was seen.
+- Rest no point on the standing of the venue, the institution, or the authors, or on a journal-level measure or a citation count; a point rests on the draft's own words and evidence (`rules/authoritative-referencing-provenance.md` §8).
 - Keep praise and doubt in separate sections; do not soften a doubt with a compliment attached to it.
 - Do not raise a point about presentation (grammar, layout) unless it hides a claim from the reader.

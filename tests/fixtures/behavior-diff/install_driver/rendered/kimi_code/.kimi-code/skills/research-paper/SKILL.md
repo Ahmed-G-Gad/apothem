@@ -139,7 +139,7 @@ Assemble every in-text citation into the reference ledger at `{suite}/_inputs/re
 
 ### Phase 4 — Adversarial Reference & Claim Verification
 
-**Resolve every reference refute-by-default.** Route each through `agents/fact-checker.md`, which treats each citation as a phantom until the source resolves: it retrieves the reference at its recorded locator, confirms the locator returns a real source (a DOI that resolves, a permalink that loads, a commit pin that exists), and confirms the cited claim is actually supported by the retrieved source, not misattributed (R1). It assigns a cited verdict per reference:
+**Resolve every reference refute-by-default.** Route each through `agents/fact-checker.md`, which treats each citation as a phantom until the source resolves: it retrieves the reference at its recorded locator, confirms the locator returns a real source (a DOI that resolves, a permalink that loads, a commit pin that exists), and confirms the cited claim is actually supported by the retrieved source, not misattributed (R1). It records each source's integrity status with the index and the date, and a retracted or withdrawn source never lands as support (`skills/research-suite/references/search-record.md` §11). It assigns a cited verdict per reference:
 
 - **`resolved`** — the locator returns a real source and the cited claim is supported. Only `resolved` references appear in the final list.
 - **`misattributed`** — the source resolves but does not support the cited claim. Corrected to a supporting source, or the claim is removed (R4).

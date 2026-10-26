@@ -7,7 +7,7 @@ description: "/research-design — Operationalizes the hypotheses into testable 
 **Role:** Principal Investigator (study design)
 **Pipeline position:** mid-chain
 
-Operationalizes the hypotheses into testable predictions and designs the study or experiment — variables, controls, sample, instruments, power analysis, threats-to-validity — then produces a preregistration that freezes the analysis plan before data collection.
+Operationalizes the hypotheses into testable predictions and designs the study or experiment — variables, control conditions, experimental unit, allocation and masking, sample, instruments, power analysis, threats-to-validity — then produces a preregistration that freezes the analysis plan before data collection.
 
 ## Canonical invocation
 
@@ -27,7 +27,7 @@ With arguments:
 
 ## Outputs
 
-`_inputs/study-design.md` (operationalized predictions, variable specification, controls, sample, instruments, power analysis, threats-to-validity) + `_inputs/preregistration.md` (the frozen analysis plan).
+`_inputs/study-design.md` (operationalized predictions, variable specification, control conditions, experimental unit, allocation and masking plan, sample, instruments, power analysis, threats-to-validity) + `_inputs/preregistration.md` (the frozen analysis plan, including the control conditions with their pass criteria, the allocation and masking plan, the missing-outcome handling, and any interim looks).
 
 ## Downstream
 
@@ -39,10 +39,18 @@ The command follows the standard `/research` pipeline workflow:
 
 1. **Load context** — Read the synthesis and the spec's hypotheses.
 2. **Verify the Sequence Gate** — Confirm `_inputs/proposal.md` (and the upstream `_inputs/synthesis.md` and `_spec/research-spec.md`) exists; otherwise halt with `Blocked: run /research-proposal first`.
-3. **Design the study** — Operationalize predictions; specify variables, controls, sample, instruments, power; enumerate threats-to-validity.
-4. **Preregister** — Freeze the analysis plan before any data collection.
+3. **Design the study** — Operationalize predictions; specify variables, control conditions, and instruments; fix the experimental unit, the seeded allocation, the masking plan, and the run order; size the sample for the planned analysis; enumerate threats-to-validity.
+4. **Preregister** — Freeze the analysis plan, control conditions, allocation, and masking before any data collection.
 5. **Update the handoff manifest** — Record the study-design and preregistration paths.
 6. **Emit the design** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Structure and sizing
+
+- **Structure is fixed in the design, not the analysis.** The design names the experimental unit and the unit of analysis, the allocation procedure with its seeded schedule and, when units enroll one after another, its concealment, who is masked (or why masking is infeasible), the nuisance factors and how each is blocked, randomized, or held, and the run order. It plans the comparator and the positive and negative controls the experiment will execute. A control added after the freeze is a disclosed deviation.
+- **One-factor sweeps cannot show an interaction.** Where components or parameters are suspected to interact, the design adds a joint layout over the suspect set and preregisters the interaction it claims.
+- **The smallest effect of interest comes from the spec.** It traces to the spec's success metrics or a practical-significance threshold the synthesis grounds. A prior study's reported effect bounds the plausible range and never stands in as the smallest effect of interest.
+- **Size for the analysis that will run.** Each primary claim's goal (superiority, non-inferiority, or equivalence) and sidedness are fixed in the design, and each is powered at its own smallest effect of interest at the per-test threshold the declared correction leaves. The required N is reported as a range across the plausible effect; when feasibility caps N, the smallest detectable effect at that N is reported and the smallest effect of interest is stated as not powered.
+- **Allowances and simulation.** N counts independent units and is inflated for within-cluster correlation; the collection target comes from the analyzed N through a recorded loss rate. Where no closed form matches the planned analysis, power is estimated by simulation with the tool, version, seed, and Monte Carlo error recorded, and a sequential rule fixes its number of looks and boundary in the preregistration.
 
 ## Rigor floor
 
@@ -53,7 +61,9 @@ For a comparison-bearing study the design fixes, and preregisters, the empirical
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
 | Blocked: run /research-proposal first | No plan-of-record | Run `/research-proposal` to produce `_inputs/proposal.md` |
-| Underpowered design | Sample too small for the effect | Re-run the power analysis; resize the sample |
+| Underpowered design | Sample too small for the effect | Re-run the power analysis for the planned analysis; resize the sample, or report the smallest detectable effect and state that the smallest effect of interest is not powered |
+| Structure left to the analysis | Unit, allocation, masking, or run order not fixed in the design | Fix them in the design and the preregistration; no test applied afterwards separates a confound the layout built in |
+| Prior estimate used as the target effect | A single study's reported effect stands in for the smallest effect of interest | Ground the target in the spec's success metrics; use the prior study only to bound the range |
 | Analysis plan not frozen | Preregistration skipped | Author `_inputs/preregistration.md` before data collection |
 
 ## Examples
