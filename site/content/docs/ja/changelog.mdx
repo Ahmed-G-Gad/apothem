@@ -42,6 +42,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   keeps `./` with an inline ignore that records why neither of the audit's
   risks applies, and the zizmor workflow's egress note now describes how the
   current action installs zizmor (a hash-locked wheel from PyPI).
+- **Switching the docs language in the page now updates the page's language
+  and direction.** The language switcher moves between locales without a page
+  load, and the site set `<html lang>` and `dir` only when a page first loaded,
+  so after a switch from German to Arabic the Arabic page stayed marked German
+  and laid out left to right. A client component now applies the new page's
+  language tag and direction after every navigation, before the page paints.
+  Search already followed the switch.
 
 ## [1.4.0] - 2026-10-26
 
