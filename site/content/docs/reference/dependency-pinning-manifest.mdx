@@ -80,6 +80,9 @@ The website is different: `site/package-lock.json` is committed and CI uses
   release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
   and the pre-commit hooks pinned in lockstep with `pyproject.toml` move by
   hand, because a single-pin bump would break the files they agree with.
+  The website's `@types/node` major follows its Node floor (`engines` and
+  `.nvmrc`, Node 22), so Dependabot proposes only its minor and patch updates;
+  raise that major together with the floor.
   Version updates leave npm `overrides` blocks alone. Dependabot security
   updates still cover every manifest, so a security pull request can propose
   one of these pins, or move an override; adapt it by hand or close it.

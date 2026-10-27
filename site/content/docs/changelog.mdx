@@ -19,6 +19,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **The docs site's Node type definitions match the Node it runs on.**
+  `@types/node` moves from 25 to 22, the major of the site's Node floor
+  (`engines` and `.nvmrc`), so the type-check no longer accepts Node APIs that
+  Node 22 lacks. Dependabot stops proposing `@types/node` major updates for the
+  site; raise that major together with the floor.
+
 ### Fixed
 
 - **Dependabot assigns its pull requests without a warning.** The assignee in
