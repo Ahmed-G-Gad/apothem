@@ -8,12 +8,20 @@
 # it to the Visual Studio Marketplace, so the extension installs across VS Code
 # and GitHub Copilot.
 #
-# Authentication: the publish step is gated on the `VSCE_PAT` personal-access-
-# token secret. When the token is absent the publish step is SKIPPED — never
-# failed — so a release without the token configured still runs green and
-# produces the packaged `.vsix` artifact. The maintainer configures the
-# publisher (`ahmed-g-gad`) on the Marketplace and adds the token before the
-# first publish.
+# Authentication: the `Select Marketplace credential` step chooses one of two
+# credentials, or none. With the repository variable `VSCE_AUTH=entra` and the
+# variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`, the job signs in to
+# Microsoft Entra ID through a GitHub OIDC federated credential (Azure/login,
+# no stored secret) and vsce publishes with `--azure-credential`, using a
+# short-lived token. Otherwise the `VSCE_PAT` personal-access-token secret
+# publishes, as before. Either path needs the repository variable
+# `VSCODE_MARKETPLACE_READY=true`. When no credential is configured the publish
+# steps are SKIPPED — never failed — so a release without one still runs green
+# and produces the packaged `.vsix` artifact. The maintainer adds the
+# publisher (`ahmed-g-gad`) membership or the token before the first publish.
+# The credential is a switch, not a retry: a failed Entra publish does not fall
+# back to the PAT, so flip `VSCE_AUTH` and dispatch again. A manual dispatch
+# with `dry_run` signs in and verifies publisher access without publishing.
 #
 # SHA-pinning policy mirrors the other workflows: every action `uses:` reference
 # is pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
@@ -31,6 +39,11 @@ on:
         description: Release tag to package and publish (e.g. v0.0.1).
         required: true
         type: string
+      dry_run:
+        description: Sign in with Entra ID and verify publisher access; publish nothing.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -46,6 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     timeout-minutes: 15
+    # A job-level block replaces the workflow-level one, so contents: read is
+    # repeated.
+    permissions:
+      contents: read
+      id-token: write   # OIDC for the Entra federated credential (Azure/login)
     defaults:
       run:
         working-directory: vscode-extension
@@ -93,7 +111,8 @@ jobs:
       # and --ignore-scripts runs no dependency install script. Bump it there.
       # Its package.json overrides @azure/msal-node to 7.1.1, which fixes
       # GHSA-xcx6-jx8p-x3h5: @azure/identity 4.14 still pins msal-node ^6.
-      # Publishing uses VSCE_PAT and never reaches the affected Entra ID flow.
+      # The Entra publish path loads @azure/identity, so the affected flow can be
+      # reached and the override stays. The PAT path does not load it.
       # Drop the override once @azure/identity requires msal-node 7.1 or later.
       - name: Install vsce from its lockfile
         run: npm ci --prefix ../vsce-tool/.github/vsce --ignore-scripts --no-audit --no-fund
@@ -102,29 +121,72 @@ jobs:
       # The `secrets` context is not a valid context inside an `if:` expression
       # (GitHub allows env / steps / github / vars / … there, not secrets), so a
       # `if: ${{ secrets.VSCE_PAT != '' }}` gate makes the workflow fail to start.
-      # This detection step reads the token into a step-scoped env and exports
-      # only a boolean — never the token itself — that the gated steps key their
-      # `if:` on, keeping the token scoped to the single step that consumes it.
-      - name: Detect Marketplace token
-        id: token
+      # This selection step reads the secret and the variables into a step-scoped
+      # env and exports only a mode (entra, pat or none) — never the token itself
+      # — that the gated steps key their `if:` on, keeping the token scoped to
+      # the single step that consumes it. The Entra steps never receive VSCE_PAT,
+      # because vsce prefers it over --azure-credential, and never receive
+      # AZURE_CLIENT_ID, so vsce reads the token from the Azure CLI session that
+      # Azure/login opened and not from environment credentials. Azure/login runs
+      # directly before the vsce steps because az reuses the GitHub OIDC token
+      # for later token requests.
+      - name: Select Marketplace credential
+        id: auth
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          VSCE_AUTH: ${{ vars.VSCE_AUTH }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          MARKETPLACE_READY: ${{ vars.VSCODE_MARKETPLACE_READY }}
         run: |
           set -euo pipefail
-          if [ -n "${VSCE_PAT:-}" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
+          mode=none
+          if [ "${MARKETPLACE_READY:-}" = "true" ]; then
+            if [ "${VSCE_AUTH:-}" = "entra" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ]; then
+              mode=entra
+            elif [ -n "${VSCE_PAT:-}" ]; then
+              mode=pat
+              if [ "${VSCE_AUTH:-}" = "entra" ]; then
+                echo "::warning title=Entra variables incomplete::VSCE_AUTH=entra but AZURE_CLIENT_ID or AZURE_TENANT_ID is empty; using the VSCE_PAT fallback."
+              fi
+            fi
           fi
-      - name: Publish to Visual Studio Marketplace
-        # vsce reads VSCE_PAT from the environment natively, so the token is
-        # never passed as a process argument (which would be visible in a
-        # process listing). The token stays scoped to this single step.
-        if: ${{ steps.token.outputs.configured == 'true' && vars.VSCODE_MARKETPLACE_READY == 'true' }}
+          echo "Marketplace credential mode: ${mode}"
+          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+      - name: Sign in to Microsoft Entra ID
+        if: ${{ steps.auth.outputs.mode == 'entra' }}
+        uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906  # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Dry run - print the Azure DevOps profile id
+        if: ${{ steps.auth.outputs.mode == 'entra' && inputs.dry_run }}
+        run: >-
+          az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me
+          --resource 499b84ac-1321-427f-aa17-267ca6975798
+          --query '{id: id, displayName: displayName}' -o json
+      - name: Dry run - verify publisher access
+        if: ${{ steps.auth.outputs.mode == 'entra' && inputs.dry_run }}
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          set -euo pipefail
+          publisher="$(node -p "require('./package.json').publisher")"
+          ../vsce-tool/.github/vsce/node_modules/.bin/vsce verify-pat "${publisher}" --azure-credential
+      - name: Publish to Visual Studio Marketplace (Entra ID)
+        # No VSCE_PAT: vsce prefers it over --azure-credential. No AZURE_CLIENT_ID either.
+        if: ${{ steps.auth.outputs.mode == 'entra' && !inputs.dry_run }}
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --azure-credential
+      - name: Publish to Visual Studio Marketplace (PAT fallback)
+        # vsce reads VSCE_PAT natively, so the token is never a process argument.
+        if: ${{ steps.auth.outputs.mode == 'pat' && !inputs.dry_run }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix
       - name: Marketplace publish skipped (not yet enabled)
-        if: ${{ steps.token.outputs.configured != 'true' || vars.VSCODE_MARKETPLACE_READY != 'true' }}
+        if: ${{ steps.auth.outputs.mode == 'none' }}
         run: |
-          echo "::notice title=Marketplace publish skipped::Set the VSCE_PAT secret and the repository variable VSCODE_MARKETPLACE_READY=true to publish ahmed-g-gad.apothem-vscode on the next tag. The packaged apothem.vsix artifact was still produced."
+          echo "::notice title=Marketplace publish skipped::Set VSCODE_MARKETPLACE_READY=true and either VSCE_AUTH=entra with AZURE_CLIENT_ID and AZURE_TENANT_ID, or the VSCE_PAT secret, to publish ahmed-g-gad.apothem-vscode on the next tag. The packaged apothem.vsix artifact was still produced."

@@ -9,6 +9,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **The Marketplace publish can sign in with Microsoft Entra ID instead of a
+  stored token.** `publish-vscode.yml` now picks its credential in a
+  `Select Marketplace credential` step. With the repository variables
+  `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` and `AZURE_TENANT_ID` set, the job
+  signs in through a GitHub OIDC federated credential (`Azure/login`, pinned
+  by commit, no client secret) and `vsce publish --azure-credential` publishes
+  with a short-lived token; the Entra steps never receive `VSCE_PAT`. Without
+  those variables the `VSCE_PAT` secret publishes as before, and the
+  credential is a switch, not an automatic retry. A manual dispatch with the
+  new `dry_run` input signs in and verifies publisher access without
+  publishing. The publish job now holds `id-token: write`. The release-cycle
+  runbook gains the Azure and Marketplace setup procedure, which marks the
+  facts no primary source confirms.
+
 ### Changed
 
 - **The docs site's Node type definitions match the Node it runs on.**

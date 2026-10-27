@@ -210,13 +210,170 @@ trusted publishing (OIDC); no registry token is stored in the repository.
 Approve the waiting `Publish VS Code Extension` run as well. It packages
 `apothem.vsix` and publishes it to the Visual Studio Marketplace as
 `ahmed-g-gad.apothem-vscode`. The publish step runs only while the repository
-variable `VSCODE_MARKETPLACE_READY` is `true` and the `VSCE_PAT` secret is
-set; otherwise the run packages the extension and skips publication.
+variable `VSCODE_MARKETPLACE_READY` is `true` and one credential is
+configured: either the variables `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` and
+`AZURE_TENANT_ID` (a short-lived Microsoft Entra ID token, no stored secret),
+or the `VSCE_PAT` secret. With neither, the run packages the extension and
+skips publication. The credential is a switch, not a retry: a failed Entra
+publish does not fall back to the token by itself. The setup for the Entra
+route is in
+[Marketplace publishing with Microsoft Entra ID](#marketplace-publishing-with-microsoft-entra-id)
+below.
 
 To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
 when the version is already on the registry, because npm versions are
 immutable.
+
+#### Marketplace publishing with Microsoft Entra ID
+
+The Entra route replaces the stored personal access token with a short-lived
+token. `publish-vscode.yml` asks GitHub for an OIDC token, the `Azure/login`
+action exchanges it for an Entra sign-in through a federated credential, and
+`vsce publish --azure-credential` publishes with the resulting token. No client
+secret exists. The `VSCE_PAT` secret stays as a fallback that the operator
+selects; the workflow never switches to it on its own.
+
+The vsce release pinned in `.github/vsce` supports this route. Marketplace Trusted
+Publishing (`vsce publish --oidc`) is a different mechanism that would remove
+Azure from the setup, but it needs a newer vsce release than the pinned one and
+its Marketplace rollout is not confirmed, so this procedure does not use it.
+Recheck it before the next change to the publish workflow.
+
+1. **Check the preconditions.** Find the account that owns the publisher
+   `ahmed-g-gad` (the Members tab at
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`) and
+   the Entra tenant where you can register applications. Unconfirmed: whether
+   the publisher owner's tenant must match the application's tenant, and
+   whether the Azure DevOps organization `Ahmed-G-Gad` must be connected to
+   Entra (`dev.azure.com/Ahmed-G-Gad`, Organization settings, Microsoft
+   Entra). No source states either. If step 5 or 6 fails, check these first.
+
+2. **Register the application.** In `https://entra.microsoft.com`, open
+   App registrations, then New registration. Name it `apothem-vscode-publish`,
+   choose a single tenant, and leave the redirect URI empty. From Overview, copy
+   the Application (client) ID and the Directory (tenant) ID. Create no client
+   secret and grant no API permission. The step needs application-owner rights
+   or an Entra role such as Application Administrator.
+
+3. **Add the federated credential.** On that application, open Certificates &
+   secrets, Federated credentials, Add credential, and choose the scenario
+   "GitHub Actions deploying Azure resources". Enter organization
+   `Ahmed-G-Gad`, repository `apothem`, entity type `Environment`, environment
+   name `release`, and credential name `apothem-release`. The generated fields
+   must read:
+
+   ```text
+   issuer:   https://token.actions.githubusercontent.com
+   subject:  repo:Ahmed-G-Gad/apothem:environment:release
+   audience: api://AzureADTokenExchange
+   ```
+
+   Matching is exact and case-sensitive. If a later sign-in fails with
+   AADSTS700213 or AADSTS7002138, compare the credential with the
+   `subject claim` line that `Azure/login` writes to the job log. AADSTS70021
+   right after creation means the credential has not propagated yet; wait a few
+   minutes and retry.
+
+4. **Set the repository variables.** The Entra route is active as soon as all
+   three are set, so set them when no release tag is waiting for approval.
+
+   ```bash
+   gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
+   gh variable set AZURE_TENANT_ID --body "<directory-tenant-id>"
+   gh variable set VSCE_AUTH --body entra
+   ```
+
+   Leave `VSCODE_MARKETPLACE_READY` and `VSCE_PAT` as they are. When
+   `VSCE_AUTH` is `entra` but `AZURE_CLIENT_ID` or `AZURE_TENANT_ID` is empty,
+   the workflow logs a warning and uses the `VSCE_PAT` secret instead.
+
+5. **Run the dry run.** Dispatch the workflow for an existing release tag with
+   `dry_run` set. It signs in, prints the Azure DevOps profile, and verifies
+   publisher access without publishing. Approve the waiting `release`
+   environment run.
+
+   ```bash
+   gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
+   ```
+
+   Expected: `Marketplace credential mode: entra`, a `subject claim` line equal
+   to the subject in step 3, and the profile `id` and `displayName` printed by
+   the first dry-run step. The verify step is expected to fail with a 403 until
+   step 6. Unconfirmed: that a sign-in without an Azure subscription yields a
+   token for the Marketplace through the Azure CLI. This run is the first test
+   of it. If it fails here, register a user-assigned managed identity in a
+   subscription instead, which is the route Microsoft documents.
+
+6. **Add the application to the publisher.** In the Members tab from step 1,
+   sign in as a publisher Owner and add a member using the profile `id` from
+   step 5, with the role Contributor. Unconfirmed: the dialog's field label,
+   and whether it accepts the id before the application is a member of an Azure
+   DevOps organization. Azure DevOps adds application identities per
+   organization as a general rule. If the dialog rejects the id, add the
+   service principal to the organization `Ahmed-G-Gad` (Organization settings,
+   Users, using the Enterprise application Object ID) and retry. Also
+   unconfirmed: whether the profile exists before the identity's first Azure
+   DevOps call.
+
+7. **Repeat the dry run.** The verify step now succeeds with "verification
+   succeeded for the publisher"; its messages still say Personal Access Token,
+   because the Entra token travels the same path. The check proves publisher
+   membership (Creator, Owner, Contributor or Reader), not publishing rights.
+   Unconfirmed: that Contributor is enough to publish an update. Microsoft's
+   role description says it is, and no source shows a publish with it, so the
+   first real publish is the proof.
+
+8. **Publish a release.** Tag as in §2.2 and approve the run. The step
+   `Publish to Visual Studio Marketplace (Entra ID)` runs, its environment
+   header lists only `AZURE_TENANT_ID`, the token fallback step is skipped, and
+   vsce prints `DONE Published ahmed-g-gad.apothem-vscode`. The Marketplace
+   gallery lists the new version after about four minutes.
+
+9. **Decide on the token.** Keep `VSCE_PAT` until the first successful Entra
+   publish, then delete the secret if no fallback is wanted. To keep a fallback
+   past the retirement of global personal access tokens, create an
+   organization-scoped token for `Ahmed-G-Gad` with the custom scope
+   Marketplace Manage and the shortest expiry you accept, and store it as
+   `VSCE_PAT`. Unconfirmed: the portal labels in this step are from memory, not
+   from a primary source; Microsoft calls organization-scoped tokens a
+   temporary workaround and can stop honoring them; and Microsoft's pages
+   disagree on the retirement date of global tokens.
+
+10. **Fall back to the token.** Delete the selector and dispatch again, then
+    approve the run. A failed Entra publish published nothing, so the same tag
+    can be dispatched again; check the Marketplace page first, because a version
+    that landed cannot be published twice.
+
+    ```bash
+    gh variable delete VSCE_AUTH
+    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z
+    ```
+
+When the Entra publish fails, read the step log:
+
+- A message that begins "Can not acquire a Microsoft Entra ID access token"
+  means the sign-in or the credential chain failed. Check the
+  `Sign in to Microsoft Entra ID` step and the federated credential first. If
+  the sign-in is green, remove `AZURE_TENANT_ID` from the vsce step's `env` in
+  the workflow; GitHub's own extension release workflow does not export it.
+- "InvalidAccessException" or "not allowed" means the token's identity is not a
+  publisher member. Compare the profile `id` from the dry run with the Members
+  tab.
+- A 403 from the dry-run verify step means the application has no role yet.
+
+Three limits apply to this route:
+
+- `id-token: write` is granted to the whole publish job, so every step in it
+  can request an OIDC token, in token mode too. The token's subject is bound to
+  the `release` environment, which requires a reviewer's approval.
+- The `release` environment has no deployment branch or tag policy, so any ref
+  a maintainer approves can obtain the environment-subject token. Restricting it
+  to `v*.*.*` tags needs a check of what `release.yml` and `publish-npm.yml`
+  dispatch first.
+- A repository rename or transfer changes the OIDC subject format and silently
+  breaks the federated credential. Copy the subject from the `Azure/login` log
+  into the credential again after any rename.
 
 ### 2.5 Refresh the template-digest pin
 

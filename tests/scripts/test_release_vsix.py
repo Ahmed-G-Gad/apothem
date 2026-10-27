@@ -130,12 +130,14 @@ def _vsce_jobs() -> list[dict[str, Any]]:
 def test_every_vsce_run_packages_or_publishes_without_dependencies() -> None:
     # The vsix carries only vscode-extension/; --no-dependencies keeps vsce
     # from walking an npm tree into the package.
+    # verify-pat only calls the Marketplace roles API; it neither packages nor
+    # publishes, and it rejects the flag, so it is the one exemption.
     runs = [
         line
         for job in _vsce_jobs()
         for run in _runs(job)
         for line in run.splitlines()
-        if "/.bin/vsce " in line
+        if "/.bin/vsce " in line and " verify-pat " not in line
     ]
     assert len(runs) >= 3, runs
     for line in runs:
@@ -156,3 +158,77 @@ def test_each_vsce_job_sets_up_a_node_the_locked_vsce_supports() -> None:
         ]
         assert versions, "a vsce job sets up Node explicitly"
         assert all(int(version.split(".")[0]) >= floor for version in versions)
+
+
+_AZURE_LOGIN_SHA = "a641126d1b8aa4d1fa005f4f92df94a3a4c4c906"
+
+
+def _step(job: dict[str, Any], name: str) -> dict[str, Any]:
+    found = [step for step in job["steps"] if step.get("name") == name]
+    assert len(found) == 1, name
+    return found[0]
+
+
+def test_the_marketplace_job_can_request_an_oidc_token_for_entra_id() -> None:
+    # A job-level permissions block replaces the workflow-level one, so the job
+    # repeats contents: read next to id-token: write.
+    job = _job("publish-vscode.yml", "publish")
+    assert job["permissions"] == {"contents": "read", "id-token": "write"}
+
+
+def test_the_entra_sign_in_is_pinned_to_a_commit_and_needs_no_subscription() -> None:
+    job = _job("publish-vscode.yml", "publish")
+    login = _step(job, "Sign in to Microsoft Entra ID")
+    assert login["uses"] == f"Azure/login@{_AZURE_LOGIN_SHA}"
+    assert login["with"]["allow-no-subscriptions"] is True
+    assert "client-secret" not in login["with"]
+    assert login["if"] == "${{ steps.auth.outputs.mode == 'entra' }}"
+
+
+def test_the_entra_publish_step_uses_the_azure_credential_and_never_a_pat() -> None:
+    # vsce prefers VSCE_PAT over --azure-credential, so an exported token would
+    # silently turn the Entra publish into a PAT publish. AZURE_CLIENT_ID stays
+    # out as well, which keeps the environment credential from being tried
+    # before the Azure CLI session that Azure/login opened.
+    job = _job("publish-vscode.yml", "publish")
+    entra = _step(job, "Publish to Visual Studio Marketplace (Entra ID)")
+    assert "--azure-credential" in entra["run"]
+    assert "--no-dependencies" in entra["run"]
+    assert "--pat" not in entra["run"]
+    env = entra.get("env", {})
+    assert "VSCE_PAT" not in env
+    assert "AZURE_CLIENT_ID" not in env
+    assert "mode == 'entra'" in entra["if"]
+    assert "!inputs.dry_run" in entra["if"]
+
+
+def test_the_pat_fallback_is_the_only_step_that_receives_the_token() -> None:
+    job = _job("publish-vscode.yml", "publish")
+    holders = [
+        str(step["name"]) for step in job["steps"] if "VSCE_PAT" in step.get("env", {})
+    ]
+    assert holders == [
+        "Select Marketplace credential",
+        "Publish to Visual Studio Marketplace (PAT fallback)",
+    ]
+    fallback = _step(job, "Publish to Visual Studio Marketplace (PAT fallback)")
+    assert "--azure-credential" not in fallback["run"]
+    assert "mode == 'pat'" in fallback["if"]
+
+
+def test_the_dry_run_input_publishes_nothing() -> None:
+    data = yaml.safe_load(
+        (_WORKFLOWS / "publish-vscode.yml").read_text(encoding="utf-8")
+    )
+    # PyYAML reads the bare `on` key as the boolean True.
+    inputs = data[True]["workflow_dispatch"]["inputs"]
+    assert inputs["dry_run"]["type"] == "boolean"
+    assert inputs["dry_run"]["default"] is False
+    job = data["jobs"]["publish"]
+    for step in job["steps"]:
+        name = str(step["name"])
+        if name.startswith("Publish to Visual Studio Marketplace"):
+            assert "!inputs.dry_run" in step["if"], name
+        if name.startswith("Dry run"):
+            assert "inputs.dry_run" in step["if"], name
+            assert "!inputs.dry_run" not in step["if"], name
