@@ -43,6 +43,8 @@ EXPECTED_MODULES = {
     "install_driver_skillguard",
     "install_driver_treeops",
     "install_driver_apply",
+    "install_driver_agent_emitters",
+    "install_driver_agent_apply",
     "install_driver_materialize",
     "install_driver_lifecycle",
 }

@@ -18,7 +18,8 @@ in the same order, so no rendered install output changes.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ from apothem.lib.profile import (
     load_profile_file,
     resolve_profile_path,
 )
+from apothem.lib.python_resolver import resolve_python_bin
 
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
@@ -368,12 +370,52 @@ def make_user_scope_adapter(
     return _UserScopeAdapter
 
 
+#: Resolves the install-time ``${NAME}`` template tokens for one install pass.
+ContentTokens = Callable[[], Mapping[str, str]]
+
+
+def python_bin_tokens() -> dict[str, str]:
+    """Return the ``${PYTHON_BIN}`` token: the interpreter hook commands run under.
+
+    The resolver both locates and version-probes a real CPython, and raises
+    :class:`RuntimeError` when none is found, so it is a callable the install
+    invokes (see :data:`ContentTokens`) and never a value read at import.
+    """
+    return {"PYTHON_BIN": resolve_python_bin().as_posix()}
+
+
+@contextmanager
+def _rendering_tokens(resolve: ContentTokens | None) -> Iterator[None]:
+    """Render the tokens *resolve* returns into every template inside the block.
+
+    The tokens are resolved on entry, before anything is written, so a failure
+    to resolve one leaves the project untouched. With no *resolve* the block
+    adds nothing, and the install renders exactly the placeholders the root
+    paths supply.
+    """
+    if resolve is None:
+        yield
+        return
+    with install_driver.content_tokens(**resolve()):
+        yield
+
+
 def make_project_scope_install(
-    harness_name: str, *, error_message: str
+    harness_name: str,
+    *,
+    error_message: str,
+    content_tokens: ContentTokens | None = None,
 ) -> _ProjectScopeInstall:
     """Return a project-scope ``install`` shim for the rules-only cluster.
 
     *error_message* is the adapter's distinct ``--project`` rejection message.
+
+    *content_tokens*, when given, is called once per install (the preview
+    included) before anything is written, and the ``${NAME}`` tokens it
+    returns, such as ``${PYTHON_BIN}`` from :func:`python_bin_tokens`, are
+    rendered into every template the install writes. The adapter's ``update``
+    is built on this install, so it renders the same tokens. Left ``None``,
+    the install is unchanged.
     """
 
     def install(
@@ -386,23 +428,24 @@ def make_project_scope_install(
         del output_path  # resolved per-entry from manifest + project root
         if project is None:
             raise ValueError(error_message)
-        if dry_run:
-            return install_driver.run_install(
-                harness_name, project_root=project, profile=profile, dry_run=True
-            )
-        # One lock from the first user-level write to the ledger record (a
-        # no-op for a harness with no user-level entry).
-        with shared_scope(harness_name):
-            missing = install_driver.capture_missing_dirs(
-                harness_name, project_root=project, profile=profile
-            )
-            return install_driver.finalize_install(
-                install_driver.run_install(
+        with _rendering_tokens(content_tokens):
+            if dry_run:
+                return install_driver.run_install(
+                    harness_name, project_root=project, profile=profile, dry_run=True
+                )
+            # One lock from the first user-level write to the ledger record (a
+            # no-op for a harness with no user-level entry).
+            with shared_scope(harness_name):
+                missing = install_driver.capture_missing_dirs(
                     harness_name, project_root=project, profile=profile
-                ),
-                root=project,
-                missing_before=missing,
-            )
+                )
+                return install_driver.finalize_install(
+                    install_driver.run_install(
+                        harness_name, project_root=project, profile=profile
+                    ),
+                    root=project,
+                    missing_before=missing,
+                )
 
     install.__doc__ = _INSTALL_DOC_PROJECT
     return install
