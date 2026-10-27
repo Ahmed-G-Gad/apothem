@@ -39,6 +39,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   only; the Copilot files are part of your repository, so the cloud agent and
   your teammates see them. The two harness pages explain the files, and how an
   uninstall treats a file of yours with an Apothem helper's name.
+- **Kimi Code and Windsurf now get Apothem's helpers as their own subagents.**
+  The install writes each Apothem helper into the project as a Markdown subagent
+  file, in `.kimi-code/agents/` for Kimi Code and in `.devin/agents/` for
+  Windsurf's Devin Local agent. Kimi Code kept the helpers in a support folder
+  where it never loaded them; the first update or uninstall after this release
+  removes that old folder, `.kimi-code/.apothem/support/agents/`, after saving a
+  copy under `~/.apothem/backups/`. Windsurf received no helpers before. Both
+  tools spell tools their own way, so the install translates them. Kimi Code
+  gets lists of its own tool names (`WebFetch` becomes `FetchURL`, `TodoWrite`
+  becomes `TodoList`, and a name Kimi Code has no tool for is left out). Devin
+  has no key that denies a tool, so a helper's allowed and denied tools become
+  one lowercase `allowed-tools` list, and `Bash` becomes `exec`. Windsurf gets
+  eleven of the fourteen helpers: Devin documents no tool name for web search
+  or web fetch, so `citation-auditor`, `fact-checker` and `research-scout` wait
+  until it does. No model is set for either tool, and Kimi Code never gets
+  `override`. Both install for the project only. Kimi Code uses a helper when
+  you ask for it by name, since its 2.3.2 release stopped delegating on its own,
+  and Devin labels custom subagents experimental and puts them behind a
+  Subagents (Preview) setting. The two harness pages explain the files, and how
+  an uninstall treats a file of yours with an Apothem helper's name.
 
 ### Changed
 

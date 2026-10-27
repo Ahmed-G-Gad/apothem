@@ -19,7 +19,8 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 The adapter writes one project-scope Windsurf rules file from the shared
-Apothem rules and governance surface.
+Apothem rules and governance surface, and writes eleven of Apothem's helpers as
+Devin Local subagents in the project (see [Subagents](#subagents)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -28,6 +29,7 @@ your user home, before it touches the project (see
 **Files written:**
 
 - `<project>/.devin/rules/apothem-rules.md`, the rules file.
+- `<project>/.devin/agents/<name>.md` for eleven Apothem helpers, in the project.
 - `~/.agents/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -47,8 +49,8 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the rules file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the rules file, plus the `.apothem/` data folder every project install
-  creates.
+  gets the rules file and the subagent files in `.devin/agents/`, plus the
+  `.apothem/` data folder every project install creates.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -60,6 +62,63 @@ These folders are shared. They are not private to the project:
 
 The install prints a note that names the folders it writes outside `--project`,
 and `--dry-run` lists them.
+
+## Subagents
+
+Devin Local, which new Devin Desktop tabs start on, reads a subagent from a
+Markdown file in `<project>/.devin/agents/`, per the
+[Devin subagents documentation](https://docs.devin.ai/cli/subagents.md). Cascade,
+the older mode, has no subagents. The install writes eleven of Apothem's
+fourteen helpers into that folder. It installs for the project only and writes no
+user-level subagent folder (`~/.config/devin/agents/` on Linux and macOS,
+`%APPDATA%\devin\agents\` on Windows).
+
+Each file keeps the helper's instructions unchanged and carries these frontmatter
+keys:
+
+| Key | What Apothem writes |
+| --- | --- |
+| `name`, `description` | The helper's name and description. |
+| `allowed-tools` | The tools the helper may use, as a list of Devin tool names: `read`, `edit`, `grep`, `glob`, `exec` (the helper's `Bash`) and `write`. |
+
+Devin has no key that denies a tool, so the helper's allowed tools minus its denied
+tools become the one `allowed-tools` list. The helper's `Bash` is `exec` in Devin,
+and a tool Devin has no listed name for is left out. Read-only helpers get `read`,
+`glob` and `grep`, plus `exec` for the ones that run commands, and never `write` or
+`edit`.
+
+Three helpers are not installed: `citation-auditor`, `fact-checker` and
+`research-scout`. They need web search and web fetch, and Devin documents no
+`allowed-tools` name for either, so the install holds them back instead of
+writing a version that cannot research or one that has every tool. A file of yours
+in `.devin/agents/` with one of those names is never touched.
+
+The install writes no `model` key. Devin runs a subagent on its own default
+subagent model, which is not the model of the session that started it. It also
+writes no `max-nesting` and none of Apothem's `maxTurns`, `version`, `updated` and
+`portability` keys.
+
+Things to know:
+
+- Custom subagents are experimental. Devin labels the format and options as subject
+  to change, and Devin Desktop has a Subagents (Preview) switch in Devin Settings
+  (the Devin CLI setting `subagents_enabled` is on by default).
+- The subagent files are ordinary project files. Commit them with the project or
+  list `.devin/agents/` in `.gitignore`; Apothem does not choose for you.
+- A file of yours with an Apothem helper's name is saved under
+  `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
+  Files with other names are never touched.
+- Devin also reads the shared `.agents/agents/` folder, which Apothem never writes,
+  and the Devin CLI documents an import of subagents from a `.claude/` folder
+  without naming the path. Apothem has not confirmed that Devin Desktop's Local
+  mode applies that import.
+- Apothem has not confirmed the `allowed-tools` names for web tools, which values
+  `model` accepts, or how an empty `allowed-tools` list is read.
+
+{/* TODO(clarify): the allowed-tools names for Devin's web tools (the three held
+back helpers wait on them), the model values, the .claude/ subagent import path
+and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
+subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Profile-to-native-config mapping
 
@@ -82,8 +141,9 @@ form is intentionally not written.
 
 Devin Desktop (Windsurf) discovers `~/.agents/skills/`, so the skills the
 install writes appear without further setup. It can also list the same names
-from `~/.claude/skills/` when its Claude Code config import is on; its
-documentation does not state the default. Apothem has not confirmed how
+from `~/.claude/skills/` when its Claude Code config import is on; the Devin CLI
+documentation makes that import on by default, and the Desktop pages do not say
+whether the Local mode applies it. Apothem has not confirmed how
 Windsurf treats a `SKILL.md` header key it does not list; the skills carry
 `user-invocable`, `disable-model-invocation`, `allowed-tools`, `argument-hint`,
 and a `metadata` map.
@@ -97,9 +157,9 @@ apothem verify --harness windsurf --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists; managed files are non-empty, and JSON or YAML
-   configs parse. Add `--profile PATH` to also confirm that the installed files
-   match that profile.
+2. Each managed target exists, the `.devin/agents/` folder included; managed
+   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
+   also confirm that the installed files match that profile.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -116,6 +176,7 @@ Re-derives the project rules file from the current shared profile state.
 
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
+It rewrites subagent files that differ from the current ones, and adds any that are missing.
 
 ## Uninstalling
 
@@ -130,7 +191,9 @@ timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and Apothem engine are
 unaffected.
 
-The uninstall also removes the skill folders it wrote in `~/.agents/skills/` and the
+The uninstall also removes the subagent files it wrote in `<project>/.devin/agents/`
+and keeps any other file there; the folder is removed when it is left empty.
+It removes the skill folders it wrote in `~/.agents/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
 folder, may. In that case the uninstall keeps the folders, prints which install
@@ -150,6 +213,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness windsurf --project /path/to/project` |
 | Verification failed | Run `apothem update --harness windsurf --project /path/to/project`, then verify again |
+| Devin Local lists none of the Apothem helpers | Run `apothem verify --harness windsurf --project /path/to/project`; if it passes, check that the Subagents (Preview) setting is on and that the project is open in Devin Desktop's Local mode, then start a new tab |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness windsurf --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

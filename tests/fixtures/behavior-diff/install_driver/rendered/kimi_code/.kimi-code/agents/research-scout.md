@@ -1,16 +1,18 @@
 ---
 name: "research-scout"
-version: "0.3.0"
-updated: "2026-10-26"
 description: "Read-only source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through any scholarly index server the operator has granted it, WebSearch, and WebFetch, and any in-repo corpus through Read / Glob / Grep. Also looks up papers and preprints by DOI, arXiv id, or topic ('find the paper behind this DOI'), and scouts existing open-source projects before anything new is built ('is there already a library for this', 'adopt or fork'). Discovery and ranking only — never fabricates a URL, never synthesizes; a written cited report routes to the multi-source-research skill, claim verification to fact-checker, and combining given documents to source-synthesis."
-tools: "Read, Glob, Grep, WebSearch, WebFetch"
-disallowedTools: "Write, Edit, MultiEdit, NotebookEdit, Bash, PowerShell, Monitor, Agent, Artifact, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 15
-# maxTurns rationale: 15 exceeds the 5–10 norm because source discovery fans out across
-# independent search facets — each facet runs its own WebSearch, then WebFetch confirms
-# authority and recency on candidate hits. A multi-facet question needs 2–3 tool calls per
-# facet (query → fetch → confirm), and several facets run within one invocation.
-portability: "universal"
+tools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
+  - "FetchURL"
+disallowedTools:
+  - "Write"
+  - "Edit"
+  - "Bash"
+  - "Agent"
+  - "TodoList"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

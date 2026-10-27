@@ -625,9 +625,9 @@ graph LR
     A --> OC["~/.config/opencode/<br/>OpenCode"]
     A --> QW["~/.qwen/<br/>Qwen Code"]
     A --> TR["project .trae/rules + .trae/agents + ~/.trae/skills + ~/.config/apothem<br/>Trae"]
-    A --> WI["project .devin/rules (.windsurf/rules fallback) + ~/.agents/skills + ~/.config/apothem<br/>Windsurf (Devin Desktop)"]
+    A --> WI["project .devin/rules (.windsurf/rules fallback) + .devin/agents + ~/.agents/skills + ~/.config/apothem<br/>Windsurf (Devin Desktop)"]
     A --> ZE["project .rules + ~/.agents/skills + ~/.config/apothem<br/>Zed"]
-    A --> KM["project AGENTS.md + .kimi-code/<br/>Kimi Code"]
+    A --> KM["project AGENTS.md + .kimi-code/skills + .kimi-code/agents<br/>Kimi Code"]
     A --> GL["project .apothem/providers/glm.toml<br/>GLM (Z.ai)"]
 ```
 
@@ -672,17 +672,17 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | Gemini CLI | Project | `<project>/GEMINI.md` + `<project>/.gemini/` |
 | GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Hermes | User | `~/.hermes/` |
-| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/.apothem/support/` |
+| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/agents/` + `<project>/.kimi-code/.apothem/support/` |
 | Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Open-Claw | User | `~/.openclaw/` |
 | OpenCode | User | `~/.config/opencode/` |
 | Qwen Code | User | `~/.qwen/` |
 | Trae | Project | `<project>/.trae/rules/apothem-rules.md` + `<project>/.trae/agents/` + `~/.trae/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot and Trae also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/` and `.trae/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 
 Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/harnesses). Authoring a new adapter? See the [new-harness-adapter authoring runbook](https://apothem.ahmedgad.com/docs/runbooks/new-harness-adapter-authoring/).
 

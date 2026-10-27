@@ -1,12 +1,12 @@
 {
   "changed": true,
   "counts": {
-    "created": 176,
+    "created": 187,
     "error": 0,
     "skipped": 0,
     "unchanged": 0,
     "updated": 0,
-    "warning": 7
+    "warning": 5
   },
   "dry_run": false,
   "files_written": [
@@ -185,8 +185,19 @@
     "<ROOT>/.apothem/contexts/fragments.json",
     "<ROOT>/.apothem/learning/signals.jsonl",
     "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.devin/agents/codebase-explorer.md",
+    "<ROOT>/.devin/agents/convention-auditor.md",
+    "<ROOT>/.devin/agents/dependency-auditor.md",
+    "<ROOT>/.devin/agents/design-critic.md",
+    "<ROOT>/.devin/agents/mcp-builder.md",
+    "<ROOT>/.devin/agents/memory-auditor.md",
+    "<ROOT>/.devin/agents/prompt-evaluator.md",
+    "<ROOT>/.devin/agents/quality-gate.md",
+    "<ROOT>/.devin/agents/refactor-surgeon.md",
+    "<ROOT>/.devin/agents/security-scanner.md",
+    "<ROOT>/.devin/agents/test-runner.md",
     "<ROOT>/.devin/rules/apothem-rules.md"
   ],
   "harness": "windsurf",
-  "warnings": 7
+  "warnings": 5
 }

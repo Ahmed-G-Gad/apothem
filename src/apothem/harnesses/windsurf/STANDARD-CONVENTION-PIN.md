@@ -4,13 +4,55 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-24
+- Snapshot date: 2026-10-27
+- Snapshot note (agents): the adapter now installs eleven of Apothem's fourteen agents as Devin Local subagents in `<project>/.devin/agents/`. The subagents page, the Devin Local page, the extensibility overview, the configuration import page, the plugins page, the skills page, the models page and both changelogs were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`.
 - Adapter source: `src/apothem/harnesses/windsurf/`
 - Evidence level: vendor-doc pinned (living docs at `docs.devin.ai`; no-immutable-source exception). No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
+- Re-pinned 2026-10-27 for the native agents surface (Devin Local only). Read that
+  day on `docs.devin.ai`:
+  - Agents, which agent: custom subagents exist for the Devin Local agent only.
+    The legacy Cascade agent has "no Cascade equivalent at all", and new Desktop
+    conversations never start on Cascade. The adapter therefore targets Devin
+    Local and ignores Cascade for agents.
+  - Agents, locations: project `.devin/agents/<name>.md` or
+    `.devin/agents/<name>/AGENT.md` (`AGENTS.md`, `agent.md` and `agents.md` are
+    also accepted as the file name, in that order of precedence), and also
+    `.agents/agents/` in the project; user `~/.config/devin/agents/` on
+    Linux and macOS, `%APPDATA%\devin\agents\` on Windows. No user-level
+    `~/.agents/agents/` is documented. A `name:` in the frontmatter overrides the
+    name taken from the path. A plugin's `agents/` folder is surfaced as
+    `<plugin>:<name>`. The Desktop pages defer to the CLI page for where the
+    folders are discovered, and the Desktop changelog (v3.6.21, 2026-07-29)
+    confirms the flat `agents/<name>.md` form and the Subagents (Preview)
+    toggle; no Desktop page lists the roots.
+  - Agents, file: Markdown with the same YAML frontmatter as skills, then the
+    body as the subagent's system prompt. Keys, all optional: `name` (default the
+    file or directory name; a name equal to a built-in, `subagent_explore` or
+    `subagent_general`, is skipped with a warning), `description`, `model`
+    (default the router-selected subagent model, which is **not** the parent's
+    model), `allowed-tools` (a list, default every tool; the alias `tools` is also
+    accepted; it cannot grant `ask_user_question`; on a subagent profile it
+    restricts the tool set, on a skill it only auto-approves) and `max-nesting`.
+    The page labels custom subagents experimental. `devin doctor` checks
+    profiles for incorrect frontmatter, and its rules are unpublished.
+  - Agents, tool names: the skills page lists `read`, `edit`, `grep`, `glob` and
+    `exec` for `allowed-tools`, and the CLI changelog (v3000.11.1) adds `write`.
+    The hooks page lists more lowercase tool names (`apply_patch`,
+    `notebook_read`, `notebook_edit`, `webfetch` and others) as hook matcher
+    values; nothing says `allowed-tools` accepts them, and no page names a web
+    search tool.
+  - Agents, switch: "Subagents (Preview)" in Devin Settings on Desktop;
+    `subagents_enabled` in the CLI config (user only, on by default). An admin
+    setting of Default subagent model = None disables subagents.
+  - Agents, other roots: the Configuration Import page lists the Claude Code
+    imports as rules, skills, commands and MCP servers, with no agents row, but
+    the Extensibility overview says the Devin CLI imports custom subagents from
+    the `.claude/` directory, without naming a subpath. The two pages describe
+    the CLI, not Desktop's Local agent.
 - Refreshed 2026-10-03 against `docs.devin.ai`. The windsurf harness is Devin
   Desktop (rebranded 2026-06-02); the slug stays `windsurf`. Devin Desktop now
   has two agents: the Devin Local agent, the default for new tabs, which
@@ -33,8 +75,9 @@
   skills, plus its commands wrapped as skills, to `~/.agents/skills/`, the one
   user-level copy shared with Codex, Cursor, GitHub Copilot, and Zed, and not to
   the Windsurf-specific folders. Windsurf may also list the same names from
-  `~/.claude/skills/` when its Claude Code config import is on (the default is
-  not stated).
+  `~/.claude/skills/` when its Claude Code config import is on (the Devin CLI
+  docs make that import on by default; the Desktop pages do not say whether the
+  Local agent applies it).
   TODO(clarify): the vendor docs do not say how Windsurf treats a `SKILL.md`
   frontmatter key it does not list. The shared emission sets `user-invocable`,
   `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
@@ -52,8 +95,58 @@
   Operator-owned; the adapter authors no entries.
 - Memories: auto-generated memories apply to the legacy Cascade agent only and
   stay on the machine; the Devin Local agent does not persist memories.
-- The adapter delivers the project rules file and the shared skills folder
-  above. It authors no workflow, hook, or subagent.
+- The adapter delivers the project rules file, the shared skills folder above
+  and, for the Devin Local agent, eleven of Apothem's agents as subagents in
+  `<project>/.devin/agents/`. It authors no workflow or hook.
+- Agents the adapter writes: one `<name>.md` per Apothem agent in
+  `<project>/.devin/agents/`, with `name`, `description` and, where the source
+  restricts tools, `allowed-tools` as a YAML list of lowercase Devin tool names
+  (`read`, `edit`, `grep`, `glob`, `exec`, `write`; the source `Bash` is `exec`).
+  Devin documents no deny key, so the source grant minus its denials is compiled
+  into the allowlist, a source tool pattern such as `Bash(git status)` has no
+  Devin form and is left out of a grant (a patterned denial denies the whole
+  tool), and a source with denials and no grant gets the documented names it does
+  not deny. Eleven agents are installed. The three that need web tools
+  (citation-auditor, fact-checker, research-scout) are held back: Devin documents
+  no `allowed-tools` name for web search or fetch, and installing them without the
+  web grant would leave a research agent unable to research, while installing them
+  without `allowed-tools` would give them every tool. The hold is the `exclude`
+  set of the `devin_agents` row in `AGENT_EMITTERS`, and a file you wrote in
+  `.devin/agents/` under one of those names is never read, replaced or removed.
+  No release shipped an agents entry for this harness (checked v1.0.1 to
+  v1.4.0), so there is nothing to retire; an agent added to that set after a
+  release shipped it needs a `stale-sweep` entry in the same change. The adapter
+  never writes `model` (the default subagent model is router-selected and is not
+  the parent's), `max-nesting`, `maxTurns`, `version`, `updated` or
+  `portability`, nor `.agents/agents/` (shared with Kimi Code, whose tool names
+  are capitalised, so one file could not serve both readers), nor the user
+  folders `~/.config/devin/agents/` and `%APPDATA%\devin\agents\`. A same-named
+  file you wrote in `.devin/agents/` is backed up before it is replaced.
+- Shared roots: the registry records no new shared root and does not list Windsurf
+  as a reader of `~/.claude/agents/`, because the `.claude/` subagent import the
+  extensibility overview describes has no named subpath.
+- TODO(clarify): the `allowed-tools` names for Devin's web search and fetch tools.
+  The held-back agents install once the docs name them.
+- TODO(clarify): which values `model` accepts. The subagents page shows
+  `model: sonnet` and never defines the values; the short names are defined on the
+  models page for the `--model` flag, and linking the two is an inference. The
+  adapter writes no `model`.
+- TODO(clarify): how Devin reads `allowed-tools: []`. The adapter writes it only for
+  a source grant that loses every tool (no agent in the corpus does), so that the
+  agent is not given every tool; the page does not define an empty list.
+- TODO(clarify): whether `apply_patch`, a tool the hooks page lists, is covered by
+  `edit` or `write` in `allowed-tools`; an agent granted `edit` and `write` may or
+  may not be able to apply a patch.
+- TODO(clarify): the `.claude/` subagent import. The extensibility overview says
+  the CLI imports custom subagents from the `.claude/` directory, the
+  configuration import page has no agents row, and neither names a subpath or
+  says that Devin Desktop's Local agent applies it. Until a probe settles it,
+  Windsurf is not recorded as a reader of `~/.claude/agents/`.
+- TODO(clarify): whether Devin Desktop's Local agent discovers the same folders as
+  the CLI (`.agents/agents/`, `~/.config/devin/agents/`); the Desktop pages defer
+  to the CLI page and list none.
+- TODO(clarify): how Devin treats a frontmatter key it does not list; the rules
+  `devin doctor` applies are unpublished. The adapter writes only listed keys.
 - Open question (review by 2026-12-31): the Devin CLI imports other tools'
   rules by default (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and
   `~/.claude/CLAUDE.md`). If Devin Desktop's Local agent applies the same
@@ -78,6 +171,28 @@ Retrieved 2026-10-03 unless marked.
 - <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports)
 - <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-24, the folder the adapter writes)
 - <https://docs.devin.ai/desktop/cascade/hooks.md> (hooks; retrieved 2026-10-02)
+
+Retrieved 2026-10-27 (the agents the adapter writes).
+
+- <https://docs.devin.ai/cli/subagents.md> (agent folders, layouts, keys,
+  `allowed-tools`, the experimental label, the `subagents_enabled` switch)
+- <https://docs.devin.ai/desktop/devin-local.md> (the Subagents (Preview)
+  toggle, no Cascade equivalent, hooks and workflows on Devin Local)
+- <https://docs.devin.ai/desktop/changelog.md> (flat `agents/<name>.md` files and
+  the toggle in v3.6.21, the Subagents section in Customizations)
+- <https://docs.devin.ai/cli/extensibility/index.md> (the `.claude/` import
+  table)
+- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (the
+  Claude Code import has no agents row; the import default)
+- <https://docs.devin.ai/cli/extensibility/plugins/overview.md> (plugin
+  subagents, `<plugin>:<name>`)
+- <https://docs.devin.ai/cli/extensibility/skills/creating-skills.md> (the
+  `allowed-tools` names; restricts on a subagent profile)
+- <https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md> (the
+  lowercase tool names hook matchers see)
+- <https://docs.devin.ai/cli/changelog/stable.md> (`write` in `allowed-tools`,
+  the `tools` alias, `devin doctor` for subagent profiles)
+- <https://docs.devin.ai/cli/models.md> (short model names for `--model`)
 
 ## Discovery Targets
 
@@ -107,15 +222,17 @@ Windsurf (Devin Desktop) exposes **no vendor plugin or extension install surface
 that Apothem ships. The adapter writes a merged rules file at
 `<project>/.devin/rules/apothem-rules.md` (the preferred surface;
 `.windsurf/rules/` is the backward-compat fallback), the skills at
-`~/.agents/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
-and authors no other cohort. There is no standalone-installable bundle; every artifact requires the
-full `apothem install --harness windsurf --project <path>` engine run.
+`~/.agents/skills/`, the rules and templates corpus at `~/.config/apothem/`, and
+eleven agents as Devin Local subagents at `<project>/.devin/agents/`, and authors
+no other cohort. There is no standalone-installable bundle; every artifact
+requires the full `apothem install --harness windsurf --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the preferred `.devin/rules/` directory (`.windsurf/rules/` backward-compat fallback). Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run. |
-| Agents | No — adapter scope | The vendor documents workflows (`.windsurf/workflows/`) and subagents; the adapter authors neither. |
+| Agents | No — requires `apothem install` | The engine writes eleven of the fourteen as Devin Local subagents to the project's `.devin/agents/`. Nothing persists before that run. |
+| Workflows | No — adapter scope | The vendor documents workflows (`.windsurf/workflows/`), which reach the legacy Cascade agent only; the adapter authors none. |
 | Hooks / MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and `hooks.json` (hooks) are operator-owned; the adapter authors no entries. |
 
 The Devin CLI documents plugins and team marketplaces, but Apothem ships no

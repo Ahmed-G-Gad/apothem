@@ -106,9 +106,11 @@ limit natively, states it in the helper's instructions, or drops the read-only l
 | Trae | `tools` / `disallowedTools` as comma strings, limited to the tool names Trae documents; no MCP entry | not available | inherited (not set) |
 | GitHub Copilot | `tools` allowlist of Copilot aliases (`read`, `search`, `edit`, `execute`, `web`, `agent`, `todo`) with the denials folded in, because Copilot has no deny key; an alias that covers a denied tool is left out; no MCP entry | not available | inherited (not set) |
 | Cursor | no tool list (Cursor has none); `readonly: true` for the five read-only helpers without `Bash`, and the other read-only helpers drop the "read-only" label | not available | inherited (not set) |
+| Kimi Code | `tools` / `disallowedTools` as lists of Kimi Code tool names (`WebFetch` becomes `FetchURL`, `TodoWrite` becomes `TodoList`; names Kimi Code has no tool for are left out); no MCP entry | not available | inherited (not set) |
+| Windsurf | `allowed-tools` allowlist of Devin tool names (`read`, `edit`, `grep`, `glob`, `exec`, `write`) with the denials folded in, because Devin has no deny key; the three helpers that need web tools are not installed; no MCP entry | not available | Devin's default subagent model (not set) |
 
-Hermes, Open-Claw and Kimi Code receive the helper files as support material,
-not as native helpers.
+Hermes and Open-Claw receive the helper files as support material, not as native
+helpers.
 
 ## Orchestration
 

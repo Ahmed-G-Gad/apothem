@@ -1,16 +1,11 @@
 ---
 name: "security-scanner"
-version: "0.1.0"
-updated: "2026-06-23"
 description: "Read-only secret, SAST-pattern, and config-risk sweep — a coarse first-pass that surfaces candidates fast and routes deep scanning to the host's CI scanners. Dispatch inside a security audit, after touching auth/crypto/IO surfaces, or when a secret may have been committed; a full repository security audit routes to the security-audit command. Greps for credential literals (key/token/password/private-key/certificate, committed `.env` values), injection surfaces (`shell=True` on untrusted input, string-formatted SQL, command interpolation), unsafe-eval (`eval`/`exec`/`Invoke-Expression`), unsafe deserialization (`pickle.loads`, `yaml.load` without `SafeLoader`), and config risk (over-broad CI `permissions:`, unpinned Actions `uses:`, network egress). Routes known-vulnerable dependencies to the dependency-auditor agent, CVE/advisory triage to the vuln-triage skill, and leaked-credential rotation to the secret-rotation skill."
-tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 20
-# maxTurns rationale: 20 exceeds the 5–10 norm because a security sweep runs several independent
-# Grep passes (secrets, injection, unsafe-eval, deserialization, config) and each candidate hit
-# needs a targeted Read to confirm the pattern in context and rule out false positives. 20 covers
-# the multi-pattern sweep plus per-finding confirmation without permitting unbounded escalation.
-portability: "universal"
+allowed-tools:
+  - "read"
+  - "glob"
+  - "grep"
+  - "exec"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

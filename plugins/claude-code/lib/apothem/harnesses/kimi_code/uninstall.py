@@ -29,16 +29,18 @@ def uninstall(output_path: Path, *, project: Path | None = None) -> None:
     native skills under ``<project>/.kimi-code/skills/`` are reversed
     child-by-child against the Apothem source enumeration, so operator-authored
     skills with other names survive; one named like an Apothem skill is removed
-    with it, after a backup. The Apothem-owned support tree under
-    ``<project>/.kimi-code/.apothem/support/`` (rules, agents, templates,
-    hooks) is removed.
+    with it, after a backup. The native agents under
+    ``<project>/.kimi-code/agents/`` are reversed the same way: Apothem's files
+    go and an agent file of the operator's with another name stays. The
+    Apothem-owned support tree under ``<project>/.kimi-code/.apothem/support/``
+    (rules, templates, hooks) is removed.
 
     The shared uninstall reverses only the layout the current manifest declares.
-    An install from before skills moved to the native directory holds them in
-    the support tree, a path no install entry targets any longer. The manifest's
-    ``stale-sweep`` list names it, so it is swept first and its backups are
-    passed on as ``prior_results``: the uninstall record then references them
-    and retention keeps them.
+    An install from before skills and agents moved to the native directories
+    holds them in the support tree, paths no install entry targets any longer.
+    The manifest's ``stale-sweep`` list names them, so they are swept first and
+    their backups are passed on as ``prior_results``: the uninstall record then
+    references them and retention keeps them.
     """
     project_root = (
         project if project is not None else output_path.parents[_PROJECT_DEPTH]

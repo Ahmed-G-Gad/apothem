@@ -1,17 +1,13 @@
 ---
 name: "refactor-surgeon"
-version: "0.1.0"
-updated: "2026-10-02"
 description: "Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch as a delegated team member on a single named target with a clear refactor intent; a user-driven interactive extraction is the refactor-extract skill — e.g. 'consolidate the duplicated validation in the CLI's install module', 'untangle the nested conditionals in the config renderer without changing output', 'rename the god-object methods in the adapter class to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect."
-tools: "Read, Write, Edit, Glob, Grep, Bash"
-disallowedTools: ""
-maxTurns: 20
-# maxTurns rationale: 20 exceeds the 5–10 norm because a behavior-preserving refactor runs a
-# four-stage chain (contract extraction → clean-room re-derivation → deficiency naming →
-# regression verification), each stage spanning several Read / Edit / Bash calls. Contract
-# extraction alone needs multiple reads to map call-sites and edge cases, and the regression
-# stage re-runs the host's tests with targeted follow-up reads on each failure.
-portability: "universal"
+tools:
+  - "Read"
+  - "Write"
+  - "Edit"
+  - "Glob"
+  - "Grep"
+  - "Bash"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

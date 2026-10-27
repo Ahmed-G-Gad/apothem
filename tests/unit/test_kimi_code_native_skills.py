@@ -3,9 +3,12 @@
 """Native skills layout of the kimi_code harness adapter.
 
 Skills and commands (installed as skills) land in Kimi Code's native project
-skills directory, ``<project>/.kimi-code/skills/``. Agents and hooks stay out of
+skills directory, ``<project>/.kimi-code/skills/``, and agents in its native
+project agents directory, ``<project>/.kimi-code/agents/``. Hooks stay out of
 Kimi Code's own locations, and an install made with the earlier layout (skills
-in the support tree) is migrated by ``update`` and cleaned by ``uninstall``.
+in the support tree) is migrated by ``update`` and cleaned by ``uninstall``. The
+agents move from the support tree is covered by
+``tests/integration/test_kimi_devin_agents_roundtrip.py``.
 """
 
 from __future__ import annotations
@@ -140,24 +143,25 @@ def test_install_writes_the_native_layout(
     for name in _command_only_names():
         assert (native / name / "SKILL.md").is_file(), name
 
-    # No skill remains in the support tree, which keeps the cohorts that have
-    # no native install.
+    # No skill and no agent remains in the support tree, which keeps the cohorts
+    # that have no native install.
     assert not (project / _SUPPORT_SKILLS).exists()
     support = project / _KIMI / ".apothem" / "support"
     assert sorted(path.name for path in support.iterdir()) == [
-        "agents",
         "hooks",
         "rules",
         "templates",
     ]
 
-    # ``.agents/`` is shared with other tools, so it is never written; agents
-    # and hooks stay out of Kimi Code's own locations (pin: Open Questions).
+    # ``.agents/`` is shared with other tools, so it is never written; the agents
+    # are native in ``.kimi-code/agents/`` and hooks stay out of Kimi Code's own
+    # locations (pin: Open Questions).
     assert not (project / ".agents").exists()
-    assert not (project / _KIMI / "agents").exists()
+    assert (project / _KIMI / "agents").is_dir()
     assert not list(project.rglob("*.toml"))
     assert sorted(path.name for path in (project / _KIMI).iterdir()) == [
         ".apothem",
+        "agents",
         "skills",
     ]
 
@@ -165,7 +169,8 @@ def test_install_writes_the_native_layout(
     anchor = (project / "AGENTS.md").read_text(encoding="utf-8")
     assert ".kimi-code/skills/" in anchor
     assert ".apothem/support/skills" not in anchor
-    assert ".kimi-code/.apothem/support/agents/" in anchor
+    assert ".apothem/support/agents" not in anchor
+    assert ".kimi-code/agents/" in anchor
 
 
 def test_install_keeps_operator_skills_beside_apothem_skills(
@@ -406,8 +411,13 @@ def test_manifest_targets_the_native_skills_directory() -> None:
     assert skills.mode == "native_skills"
     assert commands.mode == "command_skills"
     assert skills.ownership_class == commands.ownership_class == "apothem-owned"
+    # Agents install natively, in the tool-specific folder.
+    agents = by_source["agents"]
+    assert agents.target == "${PROJECT_ROOT}/.kimi-code/agents/"
+    assert agents.mode == "kimi_agents"
+    assert agents.ownership_class == "apothem-owned"
     # Cohorts with an open question or no native surface keep the support tree.
-    for source in ("agents", "hooks", "rules", "templates"):
+    for source in ("hooks", "rules", "templates"):
         assert by_source[source].target.startswith(
             "${PROJECT_ROOT}/.kimi-code/.apothem/support/"
         ), source
@@ -422,10 +432,11 @@ def test_manifest_never_writes_a_shared_or_user_scope_root() -> None:
         assert not entry.target.endswith(".toml"), entry.target
 
 
-def test_manifest_sweeps_the_support_tree_skills_directory() -> None:
+def test_manifest_sweeps_the_support_tree_skills_and_agents_directories() -> None:
     rules = propagation.load_manifest()["kimi_code"]
 
     assert ".kimi-code/.apothem/support/skills" in rules.stale_sweep
+    assert ".kimi-code/.apothem/support/agents" in rules.stale_sweep
     # The sweep never names a live install target.
     live = {
         entry.target.removeprefix("${PROJECT_ROOT}/").rstrip("/")
@@ -440,5 +451,6 @@ def test_registry_records_the_native_skills_surface() -> None:
     assert entry.capability_status["skills"] == "native"
     assert entry.capability_status["commands"] == "converted"
     assert entry.capability_status["hooks"] == "support-tree"
-    assert entry.capability_status["agents"] == "support-tree"
+    assert entry.capability_status["agents"] == "converted"
     assert "<project>/.kimi-code/skills/" in entry.target_paths
+    assert "<project>/.kimi-code/agents/" in entry.target_paths

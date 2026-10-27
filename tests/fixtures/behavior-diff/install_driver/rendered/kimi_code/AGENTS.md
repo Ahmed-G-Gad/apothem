@@ -14,7 +14,9 @@ The install placed Apothem's skills and reference material in this project:
 
 - `.kimi-code/skills/` — Apothem skills, plus command prompts wrapped as
   skills, in the project skills directory.
-- `.kimi-code/.apothem/support/agents/` — Apothem helper definitions.
+- `.kimi-code/agents/` — Apothem helper definitions, one sub-agent file each.
+  Helpers are used on request, not launched automatically, so ask for a helper
+  by name to hand a task to it.
 
 Apothem's rules, templates, and hook helpers are installed under
 `.kimi-code/.apothem/support/`; the Apothem support files section below names

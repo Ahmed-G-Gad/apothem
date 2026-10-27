@@ -1,16 +1,11 @@
 ---
 name: "codebase-explorer"
-version: "0.1.0"
-updated: "2026-06-23"
 description: "Read-only codebase exploration — exhaustively find every instance of a pattern, trace call/import dependencies, discover host conventions, map architecture and layering. Use when the query is 'where is X used', 'find all callers of Y', 'what convention does this repo follow for Z', 'map the module structure', or 'trace what depends on this file' — never for edits or design, and never for review verdicts (architecture-review, code-audit). Works through Grep / Glob / Read plus read-only Bash and returns evidence-cited findings (path + line + snippet) exhaustive within the declared scope; reports gaps rather than guessing."
-tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 20
-# maxTurns rationale: 20 exceeds the 5–10 norm because exhaustive codebase exploration requires
-# sequential Glob → Grep → Read chains per discovery thread. Large codebases with 50+ files
-# regularly need 3–5 tool calls per pattern (discover candidates → filter false positives →
-# read for confirmation), and a single invocation may need to query several independent patterns.
-portability: "universal"
+allowed-tools:
+  - "read"
+  - "glob"
+  - "grep"
+  - "exec"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

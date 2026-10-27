@@ -81,13 +81,13 @@ profile.yaml + packaged cohorts
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
          +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- windsurf       --> <project>/.devin/rules/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- windsurf       --> <project>/.devin/rules/ + <project>/.devin/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
 
 ## Skills in your user home
 
-Seven project-scope adapters write one rules file into your project (four of
+Seven project-scope adapters write one rules file into your project (five of
 them also write Apothem's helpers there as subagent files; each harness page names
 the folder), and they also write Apothem's skills, and the rules and templates the
 skills cite, to folders in your user home:

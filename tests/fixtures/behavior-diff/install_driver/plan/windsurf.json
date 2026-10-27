@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/windsurf/templates/apothem-rules.md",
     "target": "<ROOT>/.devin/rules/apothem-rules.md"
+  },
+  {
+    "mode": "devin_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.devin/agents"
   }
 ]

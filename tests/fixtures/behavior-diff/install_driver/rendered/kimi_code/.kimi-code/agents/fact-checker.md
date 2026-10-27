@@ -1,16 +1,16 @@
 ---
 name: "fact-checker"
-version: "0.2.0"
-updated: "2026-10-26"
 description: "Read-only adversarial claim verification — decompose input into atomic claims, seek ≥2 independent sources, attempt refutation, assign cited verdicts (supported / refuted / unverifiable) with quoted evidence and confidence. Use when a claim needs proof before it ships: a benchmark or statistic in docs/copy, a 'X is faster/safer than Y' assertion, a citation that names an RFC or spec, a release note, or any factual claim a reviewer would challenge. Routes external claims through WebSearch / WebFetch and repository claims through Read / Glob / Grep; defaults to refuted-or-unverifiable when evidence is insufficient, never a charitable supported."
-tools: "Read, Glob, Grep, WebSearch, WebFetch"
-disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 15
-# maxTurns rationale: 15 exceeds the 5–10 norm because adversarial verification requires
-# sequential search → fetch → cross-reference chains per claim. Each claim needs ≥2 independent
-# sources (2–4 tool calls to locate and read), plus a dedicated refutation pass, and a single
-# invocation may carry several discrete claims that each consume their own chain.
-portability: "universal"
+tools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
+  - "FetchURL"
+disallowedTools:
+  - "Write"
+  - "Edit"
+  - "TodoList"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

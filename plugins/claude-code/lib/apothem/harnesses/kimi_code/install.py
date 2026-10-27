@@ -10,17 +10,19 @@ configuration lives under ``<project>/.kimi-code/``. The adapter
 writes the apothem governance surface into ``AGENTS.md`` as a
 sentinel-delimited managed block so operator prose is never clobbered.
 Skills and command skills install at the native project skills directory
-``<project>/.kimi-code/skills/``; the other cohorts (rules, agents, templates,
-hooks) stay under a single Apothem-owned support tree at
-``<project>/.kimi-code/.apothem/support/`` — referenced from the anchor. An
-update over the earlier layout, which kept skills in the support tree, sweeps
-that directory (the manifest's ``stale-sweep`` list) so each skill loads once.
+``<project>/.kimi-code/skills/``, and agents at the native project agents
+directory ``<project>/.kimi-code/agents/`` (the ``kimi_agents`` mode); the other
+cohorts (rules, templates, hooks) stay under a single Apothem-owned support tree
+at ``<project>/.kimi-code/.apothem/support/`` — referenced from the anchor. An
+update over the earlier layout, which kept skills and agents in the support
+tree, sweeps those two directories (the manifest's ``stale-sweep`` list) so each
+skill and agent loads once.
 
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``kimi_code`` key
 (an operator-owned ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/AGENTS.md``, the native skills directory, and the
-apothem-owned support tree) and
+``${PROJECT_ROOT}/AGENTS.md``, the native skills directory, the native agents
+directory, and the apothem-owned support tree) and
 applied by the shared driver at
 ``apothem.harnesses._shared.install_driver``. The ``${PROJECT_ROOT}``
 placeholder is substituted with the operator-supplied ``--project <path>``

@@ -100,7 +100,7 @@ harnesses:
     display: Windsurf
     config_format: markdown
     supports_hooks: false
-    supports_agents: false
+    supports_agents: true
     supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
@@ -112,7 +112,10 @@ harnesses:
       backward-compat fallback). Workflows and machine-local memories are
       operator-owned; legacy .windsurfrules is intentionally excluded. Skills
       and commands (as skills) go to the shared user-level ~/.agents/skills/,
-      and the rules and templates corpus to ~/.config/apothem/.
+      and the rules and templates corpus to ~/.config/apothem/. Eleven of the
+      fourteen agents are rewritten as Devin Local subagents in
+      <project>/.devin/agents/ (project scope only; the three agents that need
+      web tools are held back until Devin documents their tool names).
 
   - name: opencode
     display: OpenCode
@@ -206,9 +209,10 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       Project-root AGENTS.md managed block, skills and commands (as skills)
-      under the native <project>/.kimi-code/skills/, plus an Apothem support
+      under the native <project>/.kimi-code/skills/, agents rewritten as Kimi
+      Code sub-agents in <project>/.kimi-code/agents/, plus an Apothem support
       tree under <project>/.kimi-code/.apothem/support/ carrying hooks, rules,
-      agents, and templates. Apothem does not register the hook scripts with
+      and templates. Apothem does not register the hook scripts with
       Kimi Code; they are reference material. The
       <project>/.kimi-code/mcp.json MCP surface is
       operator-owned.

@@ -457,6 +457,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/AGENTS.md",
             "<project>/.kimi-code/skills/",
+            "<project>/.kimi-code/agents/",
             "<project>/.kimi-code/.apothem/support/",
         ),
         docs_path="site/content/docs/harnesses/kimi-code.mdx",
@@ -472,7 +473,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="support-tree",
-            agents="support-tree",
+            agents="converted",
             rules="support-tree",
             templates="support-tree",
             statuslines="unsupported",
@@ -625,6 +626,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.devin/rules/apothem-rules.md",
+            "<project>/.devin/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -639,13 +641,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
@@ -653,10 +655,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Windsurf adapter does not author a Windsurf hook cohort; it delivers the rules file and the skills.",
-            agents="Devin documents subagents (docs.devin.ai/cli/subagents); Apothem does not author Devin subagents.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
-            sub_agent_dispatch="Apothem does not dispatch sub-agents through Devin Desktop.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",
         ),
     ),
@@ -904,12 +904,18 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # and ~/.agents/skills is not documented) or Hermes (its docs name
 # ~/.agents/skills only as a skills.external_dirs example).
 # TODO(clarify): ~/.claude/skills/ - only the VS Code docs list it for GitHub
-# Copilot, Windsurf reads it only when its Claude Code config import is on
-# (the default is not stated), Kimi Code lists it only in its older docs, and
-# Qwen Code reads it only through its skills.directories setting.
+# Copilot, Windsurf reads it only when its Claude Code config import is on (the
+# Devin CLI docs make that import on by default; the Desktop pages do not say
+# whether the Local agent applies it), Kimi Code lists it only in its older docs,
+# and Qwen Code reads it only through its skills.directories setting.
 # ~/.claude/agents/ is not an open gap: VS Code lists it for its Anthropic Claude
 # harness, not for the Local harness Copilot uses, so Copilot is not a reader. A
 # VS Code page that names it for the Local harness would add Copilot.
+# TODO(clarify): ~/.claude/agents/ for Windsurf - the Devin CLI extensibility page
+# (read 2026-10-27) says the CLI imports custom subagents from the .claude/
+# directory without naming a subpath, and the configuration import page lists no
+# agents row. Windsurf is not a reader until a probe names the path and shows that
+# Devin Desktop's Local agent applies the import.
 # The adapters that write the user-level rules and templates corpus besides Codex.
 SUPPORT_CO_INSTALLERS: tuple[str, ...] = (
     "codebuddy",

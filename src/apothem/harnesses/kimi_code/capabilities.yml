@@ -4,12 +4,13 @@
 # harness (Kimi Code CLI, Moonshot) reads project-root AGENTS.md as its
 # agent-instructions surface and keeps project configuration under
 # <project>/.kimi-code/. Apothem writes the AGENTS.md managed block, installs
-# skills and command skills at the native <project>/.kimi-code/skills/, and keeps
+# skills and command skills at the native <project>/.kimi-code/skills/, installs
+# the agents as Kimi Code sub-agents at <project>/.kimi-code/agents/, and keeps
 # an Apothem support tree under <project>/.kimi-code/.apothem/support/ for the
-# cohorts it does not install natively (rules, agents, templates, hooks). MCP is
+# cohorts it does not install natively (rules, templates, hooks). MCP is
 # the recognized operator-owned surface at <project>/.kimi-code/mcp.json; Apothem
 # names it but defers authoring entries. The vendor docs are pinned in
-# STANDARD-CONVENTION-PIN.md (snapshot-date 2026-10-24); the model FAMILY is
+# STANDARD-CONVENTION-PIN.md (snapshot-date 2026-10-27); the model FAMILY is
 # vendor-pinned, never adapter-authored.
 
 mcp_servers:
@@ -21,7 +22,7 @@ custom_command_support: "yes"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "AGENTS.md plus <project>/.kimi-code/skills/ (skills and command skills) and <project>/.kimi-code/.apothem/support/{hooks,rules,agents,templates}"
+layered_context_surface: "AGENTS.md plus <project>/.kimi-code/skills/ (skills and command skills), <project>/.kimi-code/agents/*.md sub-agents and <project>/.kimi-code/.apothem/support/{hooks,rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -54,3 +55,24 @@ conversion_losses:
     version: "ignored"
     updated: "ignored"
     portability: "ignored"
+
+# Agents ship as Kimi Code sub-agents in <project>/.kimi-code/agents/<name>.md (see
+# harnesses/_shared/install_driver_agent_kimi_devin.py). Kimi Code reads name,
+# description (required), whenToUse, override, tools, disallowedTools and
+# subagents, and ignores every other key. tools and disallowedTools are written
+# as lists of Kimi tool names (WebFetch becomes FetchURL and TodoWrite becomes
+# TodoList; a name Kimi Code has no tool for, such as MultiEdit or Monitor, is
+# left out; a grant that loses every name is written as tools: [] because an
+# omitted tools allows every tool). Kimi Code has no per-agent model key and no
+# turn limit, so neither model nor maxTurns is written; override and subagents
+# are never written; version, updated and portability are Apothem metadata
+# Kimi Code does not read.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:disallowedTools"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

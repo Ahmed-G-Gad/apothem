@@ -1,15 +1,11 @@
 ---
 name: "design-critic"
-version: "0.1.0"
-updated: "2026-10-24"
 description: "Read-only UI critique. Use for a design review, a usability or accessibility check, or 'what is wrong with this screen' before a UI ships. A WCAG sweep across a whole web surface routes to the a11y-audit command; a CLI or install-flow review to ux-review. Reviews code, screenshots, or a running page and returns fixes ranked by user impact, from a scored heuristic review and separately measured evidence. Opens with a degraded notice when measurement tooling is missing; never guesses a measurement."
-tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 15
-# maxTurns rationale: 15 exceeds the 5–10 norm because a critique runs two independent passes. The
-# measured pass needs a locate, read, compute chain per property (colour pairs, target sizes,
-# landmarks, focus order), and the heuristic pass needs a read of every screen state in scope.
-portability: "universal"
+allowed-tools:
+  - "read"
+  - "glob"
+  - "grep"
+  - "exec"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -300,9 +300,9 @@
       "target": "<ROOT>/.kimi-code/skills"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "kimi_agents",
       "source": "agents",
-      "target": "<ROOT>/.kimi-code/.apothem/support/agents"
+      "target": "<ROOT>/.kimi-code/agents"
     },
     {
       "mode": "merge_tree_entries",
@@ -436,6 +436,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/windsurf/templates/apothem-rules.md",
       "target": "<ROOT>/.devin/rules/apothem-rules.md"
+    },
+    {
+      "mode": "devin_agents",
+      "source": "agents",
+      "target": "<ROOT>/.devin/agents"
     }
   ],
   "codebuddy": [

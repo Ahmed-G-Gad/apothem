@@ -46,6 +46,7 @@ EXPECTED_MODULES = {
     "install_driver_agent_emitters",
     "install_driver_agent_comma_tools",
     "install_driver_agent_copilot_cursor",
+    "install_driver_agent_kimi_devin",
     "install_driver_agent_apply",
     "install_driver_materialize",
     "install_driver_lifecycle",

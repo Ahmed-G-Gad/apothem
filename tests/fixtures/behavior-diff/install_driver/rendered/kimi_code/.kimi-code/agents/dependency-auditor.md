@@ -1,17 +1,15 @@
 ---
 name: "dependency-auditor"
-version: "0.1.0"
-updated: "2026-06-23"
 description: "Read-only dependency-tree risk audit — flags unpinned, stale, duplicate, and known-vulnerable dependencies with manifest/lockfile evidence. Dispatch within a dependency audit, before a release cut, or after adding a dependency; one named CVE or advisory routes to the vuln-triage skill, and a signing or provenance review to the supply-chain-audit command. Detects the ecosystem via host-discovery: npm (package.json + package-lock/yarn/pnpm), pip (pyproject/requirements + lock), cargo (Cargo.toml + Cargo.lock), go (go.mod + go.sum). Runs npm audit / pip-audit / cargo audit / govulncheck and returns a risk-ranked table (known-vulnerable → unpinned → duplicate → stale) with per-row evidence; never widens a pin or escalates a scope — gaps surface as inquiry."
-tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 15
-# maxTurns rationale: 15 exceeds the 5–10 norm because a dependency audit reads the manifest and
-# lockfile, enumerates direct and transitive entries, and runs the host's audit tooling
-# (npm audit, pip-audit, cargo audit, govulncheck). Each vulnerability hit requires a targeted
-# follow-up read to confirm the pin and assess the transitive path. 15 covers a full ecosystem
-# sweep with per-finding diagnostic follow-up without permitting unbounded retries.
-portability: "universal"
+tools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "Bash"
+disallowedTools:
+  - "Write"
+  - "Edit"
+  - "TodoList"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,15 +1,18 @@
 ---
 name: "citation-auditor"
-version: "0.3.0"
-updated: "2026-10-26"
 description: "Read-only citation audit — checks that each reference in a bibliography or cited passage exists, matches its record, and that the opened source states what the text attributes to it. Use when a draft cites sources: 'check my references', 'are these DOIs real', 'does this paper say what I cite it for'. Finding new sources routes to research-scout; a free-standing claim routes to fact-checker."
-tools: "Read, Glob, Grep, WebSearch, WebFetch"
-disallowedTools: "Write, Edit, MultiEdit, NotebookEdit, Bash, PowerShell, Monitor, Agent, Artifact, TodoWrite, TaskCreate, TaskUpdate"
-maxTurns: 20
-# maxTurns rationale: 20 exceeds the 5-10 norm because every reference needs its own lookup chain
-# (identifier, then title search, then opening the record) and each attributed claim needs the source
-# opened and read; one invocation commonly carries a dozen or more references.
-portability: "universal"
+tools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "WebSearch"
+  - "FetchURL"
+disallowedTools:
+  - "Write"
+  - "Edit"
+  - "Bash"
+  - "Agent"
+  - "TodoList"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
