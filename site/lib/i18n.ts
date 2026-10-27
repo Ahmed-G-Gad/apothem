@@ -74,7 +74,8 @@ export const COHORT_LOCALES: readonly CohortLocale[] = [
   { code: 'ru', path: 'ru', label: 'Русский', dir: 'ltr' },
   { code: 'id', path: 'id', label: 'Bahasa Indonesia', dir: 'ltr' },
   // Arabic is the cohort's sole RTL locale; `dir: 'rtl'` drives the per-locale
-  // `<html dir>` RTL rendering (see app/layout.tsx head script + export-to-dist.mjs).
+  // `<html dir>` RTL rendering (see app/layout.tsx head script, export-to-dist.mjs
+  // and components/document-locale.tsx).
   { code: 'ar', path: 'ar', label: 'العربية', dir: 'rtl' },
   { code: 'hi', path: 'hi', label: 'हिन्दी', dir: 'ltr' },
 ] as const;
@@ -108,6 +109,22 @@ export function localeFromPathname(pathname: string): string {
   return first !== undefined && ROUTED_NON_DEFAULT_LOCALES.includes(first)
     ? first
     : DEFAULT_LOCALE;
+}
+
+/**
+ * The `<html lang>` and `dir` for a URL path: the language tag and text
+ * direction of the cohort locale its first segment names, else English, left
+ * to right. The head script in `app/layout.tsx` applies the same mapping on a
+ * document's first load; `components/document-locale.tsx` reapplies it after
+ * each client-side navigation, which that script never sees.
+ */
+export function documentLocaleFromPathname(pathname: string): {
+  lang: string;
+  dir: LocaleDirection;
+} {
+  const routed = localeFromPathname(pathname);
+  const locale = COHORT_LOCALES.find((entry) => (entry.path || DEFAULT_LOCALE) === routed);
+  return locale ? { lang: locale.code, dir: locale.dir } : { lang: DEFAULT_LOCALE, dir: 'ltr' };
 }
 
 /**
