@@ -37,6 +37,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and laid out left to right. A client component now applies the new page's
   language tag and direction after every navigation, before the page paints.
   Search already followed the switch.
+- **The conformity gate no longer reports on files that belong to another
+  checkout.** Validators that walk the repository from its root descended into
+  nested git checkouts (a worktree under `.claude/worktrees/`, a submodule, a
+  nested clone), so `agnosticism-grep` failed the strict gate on the
+  `AGENTS.md` copies inside a worktree, and the same walk entered
+  `site/node_modules`, which stretched a strict run past ten minutes. One
+  shared tree walk in `_grep_base.py` now skips any directory that holds a
+  `.git` file or directory, plus the vendored, virtual-environment and cache
+  trees. `agnosticism-grep`, `agents-md-coverage-grep`, `dynamism-grep`,
+  `freshness-token-grep`, `plain-language-grep`, `reference-token-grep` and the
+  stray-suite sweep in `no-global-plans-grep` use it. In a single checkout they
+  scan the same files as before.
 
 ## [1.4.0] - 2026-10-26
 

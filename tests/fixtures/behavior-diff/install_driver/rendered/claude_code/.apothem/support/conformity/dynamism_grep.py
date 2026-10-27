@@ -29,7 +29,8 @@ inventory blocks, the ``_spec/`` and ``.plans/`` trees (specification +
 planning ephemera carry release identifiers in literal form), the
 ``tests/`` tree (fixtures must use literal versions to assert behaviour),
 and ``*.py`` files outside docs (source modules consume ``__version__``
-dynamically).
+dynamically). A nested git checkout below the root (a worktree, a submodule,
+a nested clone) is another repository and is skipped.
 
 Detection strategy. The validator scans each in-scope file line by line
 for the semver regex ``\\bv?\\d+\\.\\d+\\.\\d+\\b``. Hits inside fenced
@@ -57,6 +58,12 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_tree_files,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "dynamism-grep"
 RULE_ANCHOR: Final[str] = "rules/dynamism.md (static-version embeds)"
@@ -253,13 +260,15 @@ def _scan_file(path: Path) -> list[Finding]:
 
 
 def check(root: Path) -> GrepResult:
-    """Walk *root* for in-scope surfaces; flag every literal semver."""
+    """Walk *root* for in-scope surfaces; flag every literal semver.
+
+    A page inside a nested git checkout (a worktree, a submodule, a nested
+    clone) belongs to another repository and is not scanned.
+    """
     findings: list[Finding] = []
     scanned = 0
-    candidates = sorted(p for suffix in DOCS_SUFFIXES for p in root.rglob(f"*{suffix}"))
+    candidates = sorted(iter_tree_files(root, DOCS_SUFFIXES))
     for candidate in candidates:
-        if not candidate.is_file():
-            continue
         if not _is_in_scope(candidate, root):
             continue
         scanned += 1
@@ -279,9 +288,6 @@ def main(root: Path) -> int:
     The report carries ``inspected`` (files scanned); a scan that read no
     file fails rather than passing vacuously.
     """
-    # Imported here, not at module top: ``check()`` stays stdlib-only.
-    from apothem.conformity._grep_base import finish_root_report
-
     result = check(root)
     return finish_root_report(
         result.to_json(), passed=result.passed, inspected=result.scanned_count
@@ -289,8 +295,6 @@ def main(root: Path) -> int:
 
 
 def _main(argv: list[str]) -> int:
-    from apothem.conformity._grep_base import parse_root_args
-
     return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 

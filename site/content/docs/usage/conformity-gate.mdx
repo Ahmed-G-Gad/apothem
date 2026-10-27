@@ -44,6 +44,10 @@ checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
 when the root has no commit history.
 
+A validator that walks the tree skips nested git checkouts, such as worktrees
+and submodules, and generated or vendored trees such as `node_modules`. A run
+reports on the checkout it was pointed at and on nothing else.
+
 ## Gate bars
 
 | Bar | Check | Kind |

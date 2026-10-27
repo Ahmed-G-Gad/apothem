@@ -15,7 +15,8 @@ commands, skills, agents directories, the documentation tree, and the
 brand-asset tree). The denylist data file, the conformity machinery, the
 schemas directory, the test tree, and the plan-suite scratch are all
 exempt — they are not the authored product narrative the discipline holds
-to the zero-leak bar.
+to the zero-leak bar. A nested git checkout below the root (a worktree, a
+submodule, a nested clone) is another repository and is skipped.
 
 Detection. The denylist data file holds a SHA-256 digest of each forbidden
 token rather than the token, so neither this module nor the data file
@@ -49,6 +50,12 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_tree_files,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "reference-token-grep"
 RULE_ANCHOR: Final[str] = "rules/own-voice-reimplementation.md"
@@ -422,20 +429,15 @@ def check(root: Path) -> GrepResult:
     memo: dict[str, bool] = {}
     literal_memo: dict[str, tuple[tuple[int, int], ...]] = {}
     if not denylist.empty:
-        for suffix in sorted(_TEXT_SUFFIXES):
-            for path in root.rglob(f"*{suffix}"):
-                if not path.is_file():
-                    continue
-                try:
-                    rel_posix = path.resolve().relative_to(root_resolved).as_posix()
-                except ValueError:
-                    continue
-                if not _is_in_scope(rel_posix):
-                    continue
-                inspected += 1
-                findings.extend(
-                    _scan_file(path, rel_posix, denylist, memo, literal_memo)
-                )
+        for path in iter_tree_files(root, sorted(_TEXT_SUFFIXES)):
+            try:
+                rel_posix = path.resolve().relative_to(root_resolved).as_posix()
+            except ValueError:
+                continue
+            if not _is_in_scope(rel_posix):
+                continue
+            inspected += 1
+            findings.extend(_scan_file(path, rel_posix, denylist, memo, literal_memo))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),
@@ -446,10 +448,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     # Advisory posture: ``to_json`` declares ``advisory: true``, so ``_main``
