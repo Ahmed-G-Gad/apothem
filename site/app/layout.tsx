@@ -13,10 +13,12 @@ import { SiteProviders } from '@/components/site-providers';
 // bake the correct `lang`/`dir` into each locale's HTML files. This inline
 // head script complements that at runtime: it derives the active locale from
 // the URL path against the cohort table and sets `documentElement.lang`/`dir`
-// before paint — so client-side navigation into (and within) the RTL locale
-// flips direction with no flash, and LTR locales stay `ltr`. The locale →
-// (lang, dir) pairs are projected from COHORT_LOCALES so this script never
-// diverges from the single i18n source of truth.
+// before a document's first paint, whichever file served it. It runs once per
+// document load, so client-side navigation (the language switcher uses the
+// router) is covered by `components/document-locale.tsx`, which reapplies the
+// same mapping after every route change. The locale → (lang, dir) pairs are
+// projected from COHORT_LOCALES, so neither diverges from the single i18n
+// source of truth.
 const LOCALE_DIR_SCRIPT = `(function(){try{var P=${JSON.stringify(
   COHORT_LOCALES.filter((l) => l.path).map((l) => [l.path, l.code, l.dir]),
 )};var s=location.pathname.split('/').filter(Boolean);var seg=s[0];var lang='${DEFAULT_LOCALE}',dir='ltr';for(var i=0;i<P.length;i++){if(P[i][0]===seg){lang=P[i][1];dir=P[i][2];break;}}var e=document.documentElement;e.lang=lang;e.dir=dir;}catch(_){}})();`;

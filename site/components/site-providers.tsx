@@ -13,6 +13,7 @@ import {
 } from '@/lib/i18n';
 import StaticSearchDialog from '@/components/static-search-dialog';
 import { ChromeLang } from '@/components/chrome-lang';
+import { DocumentLocale } from '@/components/document-locale';
 
 const ROUTED_SET = new Set<string>(ROUTED_LOCALES);
 
@@ -77,6 +78,9 @@ export function SiteProviders({
         onLocaleChange,
       }}
     >
+      {/* Moves `<html lang>` and `dir` to the new page's locale after a
+          client-side navigation, which never re-renders `<html>` (WCAG 3.1.1). */}
+      <DocumentLocale />
       {/* Marks the untranslated chrome strings `lang="en"` on translated pages
           and each language-switcher entry with its own language (WCAG 3.1.2). */}
       <ChromeLang />

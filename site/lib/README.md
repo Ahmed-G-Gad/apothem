@@ -17,7 +17,9 @@ derive from it rather than re-declaring it.
   the default (`en`). `DEFAULT_LOCALE` is the source locale served at the site
   root with no path prefix. `localeFromPathname` maps a URL path to its routed
   locale for client components mounted above the per-locale i18n provider (the
-  search dialog); `i18n.test.mjs` covers it (run by `npm test`). **This file is the single source of truth for the
+  search dialog), and `documentLocaleFromPathname` maps it to the `<html lang>` and
+  `dir` that `components/document-locale.tsx` applies after client-side
+  navigation; `i18n.test.mjs` covers both (run by `npm test`). **This file is the single source of truth for the
   routed-locale set** — build scripts (`build-llms-txt.mjs`,
   `check-search-index-sizes.mjs`, `export-to-dist.mjs`) re-parse it and fail on
   drift rather than hard-coding a divergent copy.
