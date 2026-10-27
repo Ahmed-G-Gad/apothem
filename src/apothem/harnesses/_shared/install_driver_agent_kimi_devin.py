@@ -106,8 +106,9 @@ _DEVIN_VOCABULARY: Final[tuple[str, ...]] = (
 def _denied_names(source_path: Path, mapping: dict[str, str]) -> list[str]:
     """Return the native names of the tools the source denies, in source order.
 
-    A denial with a pattern (``Bash(rm *)``) denies the whole tool, because
-    neither vendor can express the pattern.
+    A denial with a pattern (``Bash(rm *)``) denies the whole tool, because none
+    of the vendors that use this (Kimi Code, Devin, CodeBuddy and Trae) can
+    express the pattern.
     """
     names: list[str] = []
     for item in _agent_scalar_list(source_path, "disallowedTools"):

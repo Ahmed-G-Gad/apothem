@@ -2,7 +2,7 @@
 name: "security-scanner"
 description: "Read-only secret, SAST-pattern, and config-risk sweep — a coarse first-pass that surfaces candidates fast and routes deep scanning to the host's CI scanners. Dispatch inside a security audit, after touching auth/crypto/IO surfaces, or when a secret may have been committed; a full repository security audit routes to the security-audit command. Greps for credential literals (key/token/password/private-key/certificate, committed `.env` values), injection surfaces (`shell=True` on untrusted input, string-formatted SQL, command interpolation), unsafe-eval (`eval`/`exec`/`Invoke-Expression`), unsafe deserialization (`pickle.loads`, `yaml.load` without `SafeLoader`), and config risk (over-broad CI `permissions:`, unpinned Actions `uses:`, network egress). Routes known-vulnerable dependencies to the dependency-auditor agent, CVE/advisory triage to the vuln-triage skill, and leaked-credential rotation to the secret-rotation skill."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit"
+disallowedTools: "Write, Edit, TaskCreate, TaskUpdate"
 maxTurns: 20
 ---
 

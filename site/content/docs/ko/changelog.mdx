@@ -31,10 +31,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   tools read, and, for CodeBuddy only, the turn limit. A tool the tool's own
   documentation does not name is left out of both lists, a helper that could
   not edit files still cannot, and no model is set. Trae installs for the
-  project only, because its documentation gives two different user-level
-  folders for subagents and one of them is not confirmed. The two harness pages
-  explain the files, the switch Trae may need, and how an uninstall treats a
-  file of yours with an Apothem helper's name.
+  project only, because its documentation gives the user-level subagent folder
+  as `~/.trae-cn/agents/` while every other Trae user folder is under `~/.trae/`,
+  and which one an international install reads is not confirmed. The two
+  harness pages explain the files, the switch Trae may need, and how an
+  uninstall treats a file of yours with an Apothem helper's name.
 - **GitHub Copilot and Cursor now get Apothem's helpers as their own agents.**
   The install writes each Apothem helper into the project as a Markdown agent
   file, in `.github/agents/` as `<name>.agent.md` for GitHub Copilot and in

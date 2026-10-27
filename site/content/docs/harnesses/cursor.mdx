@@ -89,8 +89,11 @@ edits and no state-changing shell commands. So the helper's `tools` and
   `dependency-auditor`, `design-critic`, `prompt-evaluator`, `quality-gate`,
   `security-scanner` and `test-runner`). `readonly: true` would also stop their
   test and lint runs, so they get no flag, and their descriptions drop the
-  read-only label that Cursor would not enforce. Their instructions still tell them
-  to report and not to fix, and they run with every tool the parent has.
+  read-only label that Cursor would not enforce. Only the description changes: the
+  instructions are copied unchanged, so they still call the helper read-only and
+  mention a tool restriction that a Cursor file does not have. The model follows
+  that text, but Cursor does not enforce it, and the helper runs with every tool
+  the parent has.
 - `mcp-builder` and `refactor-surgeon` write files and are unchanged.
 
 The install writes no `model` key, so a helper runs on the model the parent uses,
@@ -107,7 +110,9 @@ Things to know:
   rest). On a name clash the project wins over the home folder and `.cursor/` wins
   over the others, so in a project with this install the native files supersede the
   Claude Code copies Cursor would import from `~/.claude/agents/`. Cursor's
-  documentation does not say whether it loads both copies or drops the lower one.
+  documentation does not say whether it loads both copies or drops the lower one,
+  nor whether it applies the `tools` and `disallowedTools` lines of a Claude Code
+  file it imports.
 - A file of yours with an Apothem helper's name is saved under
   `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
   Files with other names are never touched.
@@ -154,7 +159,10 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.cursor/agents/` folder included; managed
    files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
-   also confirm that the installed files match that profile.
+   also confirm that the installed files match that profile. For
+   `.cursor/agents/` the check is that the folder exists, not that each helper
+   file is in it; `apothem diff --harness cursor --project /path/to/project`
+   lists the helper files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -208,7 +216,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness cursor --project /path/to/project` |
 | Verification failed | Run `apothem update --harness cursor --project /path/to/project`, then verify again |
-| Cursor lists none of the Apothem helpers | Run `apothem verify --harness cursor --project /path/to/project`; if it passes, check that the project is open in Cursor and start a new chat |
+| Cursor lists none of the Apothem helpers | Run `apothem diff --harness cursor --project /path/to/project`. A pending line for the `.cursor/agents` folder means helper files are missing or out of date, so run `apothem update --harness cursor --project /path/to/project`. `apothem verify` is not a test of this: it passes when `.cursor/agents/` exists, even with no helper file in it. If `diff` reports no pending changes, check that the project is open in Cursor and start a new chat |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness cursor --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

@@ -2,7 +2,7 @@
 name: "codebase-explorer"
 description: "Read-only codebase exploration — exhaustively find every instance of a pattern, trace call/import dependencies, discover host conventions, map architecture and layering. Use when the query is 'where is X used', 'find all callers of Y', 'what convention does this repo follow for Z', 'map the module structure', or 'trace what depends on this file' — never for edits or design, and never for review verdicts (architecture-review, code-audit). Works through Grep / Glob / Read plus read-only Bash and returns evidence-cited findings (path + line + snippet) exhaustive within the declared scope; reports gaps rather than guessing."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit"
+disallowedTools: "Write, Edit, TaskCreate, TaskUpdate"
 maxTurns: 20
 ---
 

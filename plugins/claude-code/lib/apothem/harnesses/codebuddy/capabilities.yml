@@ -59,8 +59,8 @@ conversion_losses:
 # harnesses/_shared/install_driver_agent_comma_tools.py). CodeBuddy documents
 # name, description, tools, disallowedTools and maxTurns among its keys, so the
 # turn limit carries over. The tool fields are comma strings limited to the tool
-# names CodeBuddy's docs show; a source name outside that set is left out of the
-# field. version, updated and portability are Apothem metadata that CodeBuddy
+# names CodeBuddy's docs show (its Settings page lists the tools); a source name
+# outside that set is left out of the field. version, updated and portability are Apothem metadata that CodeBuddy
 # does not list, so they are not written.
   agents:
     name: "native:name"

@@ -66,7 +66,8 @@ conversion_losses:
 # the five agents that are read-only and hold no Bash (the other nine inherit
 # every Cursor tool). The seven read-only agents that keep Bash get no flag,
 # since readonly would bar their test and lint runs, and their descriptions
-# drop the read-only label that Cursor would not enforce. maxTurns has no
+# drop the read-only label that Cursor would not enforce (the body is copied
+# unchanged, so it still says read-only). maxTurns has no
 # Cursor key, no model is written, and version, updated and portability are
 # Apothem metadata Cursor does not list.
   agents:

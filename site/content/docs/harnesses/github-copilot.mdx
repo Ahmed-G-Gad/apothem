@@ -88,10 +88,13 @@ list:
 | `web` | WebSearch, WebFetch | `WebSearch` or `WebFetch` |
 | `todo` | TodoWrite | `TodoWrite` |
 
-Copilot has two more aliases, one for starting other helpers and `todo` for a
-task list. An alias is left out when the helper denies any tool it covers, because
-the alias would let the helper use that tool. A tool with no alias (for example `Monitor`) is
-left out. A helper that cannot edit files keeps that limit: it never gets `edit`.
+Copilot has one more alias, the one that lets a helper start other helpers; no
+Apothem helper is allowed to do that, so it is never written. An alias is left out when the
+helper denies any tool it covers, because the alias would let the helper use that
+tool. A tool with no alias (for example `Monitor`) is left out. A tool with a
+pattern, such as `Bash(git status)`, has no alias form: as an allowed tool it is
+left out, and as a denied tool it denies the whole tool. A helper that cannot edit
+files keeps that limit: it never gets `edit`.
 If every tool in a helper's list is left out, the file says `tools: []`, which
 gives the helper no tools, rather than omitting the key, which would give it every
 tool.
@@ -106,9 +109,10 @@ Things to know:
 - `.github/agents/` is part of your repository. Teammates and Copilot's cloud coding service
   read the same files, so commit them with the project or list
   `.github/agents/` in `.gitignore`; Apothem does not choose for you.
-- The cloud coding service does not honor the `web` and `todo` aliases, so `citation-auditor`,
-  `fact-checker` and `research-scout` can read and search there but cannot fetch
-  pages.
+- The cloud coding service does not honor the `web` and `todo` aliases. The `web`
+  alias covers both web search and page fetches, so `citation-auditor`,
+  `fact-checker` and `research-scout` can read and search files there but can
+  neither search the web nor fetch pages.
 - The Copilot CLI also reads the repository's `.claude/agents/`, but not
   `~/.claude/agents/`, so the Claude Code install does not reach Copilot.
 - A file of yours named like an Apothem helper (`<name>.agent.md`) is saved under
@@ -168,7 +172,10 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.github/agents/` folder included; managed
    files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
-   also confirm that the installed files match that profile.
+   also confirm that the installed files match that profile. For
+   `.github/agents/` the check is that the folder exists, not that each helper
+   file is in it; `apothem diff --harness github-copilot --project /path/to/project`
+   lists the helper files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -229,7 +236,7 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness github-copilot --project /path/to/project` |
 | Verification failed | Run `apothem update --harness github-copilot --project /path/to/project`, then verify again |
-| Copilot lists none of the Apothem helpers | Check that `.github/agents/` holds the `.agent.md` files and that they are on the branch you are using, then run `apothem verify --harness github-copilot --project /path/to/project` |
+| Copilot lists none of the Apothem helpers | Check that `.github/agents/` holds the `.agent.md` files and that they are on the branch you are using. Run `apothem diff --harness github-copilot --project /path/to/project`: a pending line for the `.github/agents` folder means helper files are missing or out of date, so run `apothem update --harness github-copilot --project /path/to/project`. `apothem verify` is not a test of this: it passes when `.github/agents/` exists, even with no helper file in it |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness github-copilot --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

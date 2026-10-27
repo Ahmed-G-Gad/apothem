@@ -179,7 +179,11 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, including the skills and subagent directories; managed files are
    non-empty, and JSON or YAML configs parse. Add `--profile PATH` to also
-   confirm that the installed files match that profile.
+   confirm that the installed files match that profile. For
+   `.kimi-code/agents/` the check is that the folder exists, not that each
+   helper file is in it; the command
+   `apothem diff --harness kimi-code --project /path/to/project` lists the
+   helper files that are missing or out of date.
 3. The adapter-specific verification routine reports success.
 
 ## Updating

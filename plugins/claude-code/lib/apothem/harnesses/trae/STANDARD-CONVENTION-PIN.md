@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (review): the Chinese-edition skills page and changelog (`docs.trae.cn`) were read on 2026-10-28 for the global skills folder. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Trae subagents in `<project>/.trae/agents/`. The Subagents page (English, `updated_at` 2026-10-09; Chinese, 2026-10-22), the built-in Agent page and the changelog (2026-10-22) were read on 2026-10-27 from the document JSON the pages ship, the same method as the rules page. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at Trae's own `~/.trae/skills/` and the rules and templates corpus at `~/.config/apothem/`. The skills claims were read on 2026-10-24 from the English page through a text-extraction proxy (the page does not render without a browser) and from the Chinese-edition page directly.
 - Snapshot note: the docs site renders its text in the browser, so a plain text extractor sees no body, and its `llms.txt` and `.md` variants redirect to a landing page. The rules page's text ships as document JSON inside the page HTML; the rules claims below were read from that text on 2026-10-03. The MCP claims carry over from the 2026-06-25 reading. Previous 2026-06-25.
@@ -47,10 +48,21 @@
   `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
   `metadata` map; probe Trae with the full set before a release and, if it
   rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
-- Skills user folder (re-read 2026-10-27): the English and the Chinese skills
-  pages both give `~/.trae/skills` (`%userprofile%/.trae/skills` on Windows).
-  The earlier note about a v3.3.63 changelog entry on CN and international
-  skill directories is closed: neither changelog contains a 3.3.6x version.
+- Skills user folder (Chinese-edition pages read 2026-10-28; English page read
+  2026-10-27): the editions disagree. The English
+  skills page (`docs.trae.ai`) gives `~/.trae/skills` (`%userprofile%/.trae/skills`
+  on Windows); the Chinese-edition skills page (`docs.trae.cn`, TRAE CN) gives
+  `~/.trae-cn/skills` (`%userprofile%/.trae-cn/skills`) and names no
+  `~/.trae/skills`. The Chinese changelog's TRAE CN v3.3.63 entry (2026-06-04)
+  says, for the personal edition only, that the global skills directories of
+  TRAE CN and the international TRAE are compatible. The English changelog has
+  no 3.3.6x entry because it numbers the same releases 3.5.6x, so the
+  earlier note that neither changelog has a 3.3.63 entry held only for the
+  English one. The adapter writes `~/.trae/skills` only, which that entry
+  supports for the personal edition of TRAE CN.
+  TODO(clarify): whether a TRAE CN install other than the personal edition reads
+  `~/.trae/skills`; the changelog entry limits the compatibility to the personal
+  edition.
 - Agents (read 2026-10-27): a subagent is one Markdown file with YAML
   frontmatter (standard YAML, no BOM) and the system prompt as the body. The
   project folder is `{project_folder}/.trae/agents/<name>.md`, corroborated by
@@ -111,6 +123,8 @@
 - <https://docs.trae.ai/ide/subagents> (subagent file format, keys, tool vocabulary, project and user folders; retrieved 2026-10-27, the folder the adapter writes agents to)
 - <https://docs.trae.ai/ide/built-in-agent> (the built-in Agent invokes custom agents and Markdown subagents; retrieved 2026-10-27)
 - <https://docs.trae.ai/ide/changelog> (v3.5.67 adds the `.trae/agents` directory and its switch; retrieved 2026-10-27)
+- <https://docs.trae.cn/ide/skills> (Chinese-edition skills page: global skills at `~/.trae-cn/skills`; retrieved 2026-10-28)
+- <https://docs.trae.cn/ide/changelog> (Chinese-edition changelog: TRAE CN v3.3.63, 2026-06-04, global skills directories compatible with the international edition, personal edition only; v3.3.67 loads `.trae/agents`; retrieved 2026-10-28)
 - <https://docs.trae.ai/ide/agent> (agents created in the UI, no file surface; retrieved 2026-06-25)
 
 ## Discovery Targets

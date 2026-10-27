@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (review): the Settings page was read on 2026-10-28 for the complete tool list. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as CodeBuddy subagents in `<project>/.codebuddy/agents/`. The CLI sub-agents, directory-structure, hooks and plugins-reference pages were read on 2026-10-27, and the IDE Subagents page the same day. The other sections below keep their earlier read dates. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at CodeBuddy's own `~/.codebuddy/skills/` and the rules and templates corpus at `~/.config/apothem/`. The CodeBuddy skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
@@ -58,12 +59,21 @@
   harness selects), no `permissionMode`, and no `hooks`: the hooks page
   denies hooks in the frontmatter of a user or project agent file unless
   `allowUntrustedFrontmatterHooks` is on.
-- Agent tools: the tool names the CLI docs show are Read, Grep, Glob, Bash,
-  Edit, Write, WebFetch, WebSearch and Agent. The `tools` and `disallowedTools`
-  fields carry a source tool only when its name is in that list, in the source
-  order, so MultiEdit, NotebookEdit, PowerShell, Monitor, Artifact, TodoWrite,
-  TaskCreate and TaskUpdate are left out. A source with `tools` is never
-  widened: the allowlist stays, and an allowlist that loses every name is
+- Agent tools (read 2026-10-28): the sub-agents page says a sub-agent can use
+  any of CodeBuddy Code's internal tools and points to the Settings page for the
+  complete list. That page's "Tools Available to CodeBuddy" table names
+  AskUserQuestion, Bash, Edit, ExitPlanMode, Glob, Grep, LSP, MultiEdit,
+  NotebookEdit, Read, Skill, SlashCommand, Task, TaskCreate, TaskGet, TaskList,
+  TaskOutput, TaskStop, TaskUpdate, WebFetch, WebSearch and Write. `Agent` is
+  not in that table, but the sub-agents page names an Agent tool, so it is kept.
+  The `tools` and `disallowedTools` fields carry a source tool only when its name
+  is in that vocabulary, in the source order, so PowerShell, Monitor, Artifact
+  and TodoWrite, which neither page names, are left out. A source denial of
+  MultiEdit and NotebookEdit (citation-auditor and research-scout) and of
+  TaskCreate and TaskUpdate (twelve of the fourteen agents) is carried. A source tool
+  with a pattern, such as `Bash(rm *)`, has no form in a comma list: as a grant it
+  is left out, and as a denial it denies the whole tool. A source with `tools` is
+  never widened: the allowlist stays, and an allowlist that loses every name is
   written as an empty string instead of being omitted.
 - CodeBuddy documents no read of `.claude/agents/` or `~/.claude/agents/` (the
   only Claude-named path it accepts is the plugin manifest folder
@@ -80,9 +90,9 @@
 - TODO(clarify): whether the IDE accepts the CLI keys the adapter writes
   (`disallowedTools` and `maxTurns`) is not documented; its Subagents page shows
   no `disallowedTools`.
-- TODO(clarify): the docs do not itemize the full tool-name list or say whether
-  an unknown name in `tools` or `disallowedTools` is ignored or rejected; the
-  adapter writes only the nine names above for that reason.
+- TODO(clarify): the docs do not say whether an unknown name in `tools` or
+  `disallowedTools` is ignored or rejected; the adapter writes only the names the
+  Settings and sub-agents pages show for that reason.
 - TODO(clarify): the docs do not say what an empty `tools` string means. The
   adapter writes it only when a source allowlist loses every name, which no
   current Apothem agent does.
@@ -97,6 +107,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
 - <https://www.codebuddy.ai/docs/cli/hooks> (hooks and sub-agent events; retrieved 2026-10-02; frontmatter-hooks gate re-read 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/sub-agents> (sub-agent folders, frontmatter keys, precedence, model fallback; retrieved 2026-10-27)
+- <https://www.codebuddy.ai/docs/cli/settings> (the "Tools Available to CodeBuddy" table, the complete tool list the sub-agents page points to; retrieved 2026-10-28)
 - <https://www.codebuddy.ai/docs/cli/codebuddy-dir> (project and user `agents/` folders and the project-over-user rule; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/plugins-reference> (fields a plugin agent accepts and the `.claude-plugin/` compatibility note; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/ide/Features/Subagents> (IDE Subagents page, same two folders; retrieved 2026-10-27)

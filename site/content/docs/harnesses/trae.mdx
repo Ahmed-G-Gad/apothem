@@ -85,7 +85,9 @@ Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
 ```
 
 A tool the source names that is not in that list (for example `MultiEdit` or
-`PowerShell`) is left out of both fields. A helper that cannot edit files keeps
+`PowerShell`) is left out of both fields. A tool with a pattern, such as
+`Bash(rm *)`, has no form in a comma list: as an allowed tool it is left out, and
+as a denied tool it denies the whole tool. A helper that cannot edit files keeps
 that limit: it lists no `Write` or `Edit` among its tools and denies both. Trae
 documents no turn limit, so the helper's `maxTurns` is not written. The install
 writes no `model` key, so a helper uses the model chosen in the chat box, and no
@@ -127,11 +129,15 @@ directory or your global rules. The
 `.trae/mcp.json` tool-server surface and the project `.trae/skills/` skill
 surface are operator-owned; Apothem does not write them.
 
-Trae documents `~/.trae/skills/` for global skills, on both its English and
-its Chinese skills page. It reads the cross-tool `.agents/skills/` folder only
-after the setting `Enable .agents Skills Directory` is switched on, so the
-install writes the Trae folder. Apothem has not confirmed how Trae treats a
-`SKILL.md` header key it does not list.
+Trae documents `~/.trae/skills/` for global skills. It reads the cross-tool
+`.agents/skills/` folder only after the setting `Enable .agents Skills
+Directory` is switched on, so the install writes the Trae folder. The China
+edition (TRAE CN) documents `~/.trae-cn/skills/` instead; its changelog says the
+global skills directories of TRAE CN and the international edition are
+compatible, for the personal edition only. The install writes `~/.trae/skills/`
+only, and Apothem has not confirmed whether the other TRAE CN editions read it.
+Apothem has also not confirmed how Trae treats a `SKILL.md` header key it does
+not list.
 
 ## Verification
 
@@ -144,7 +150,10 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.trae/agents/` folder included; managed
    files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to also confirm that the installed files
-   match that profile.
+   match that profile. For `.trae/agents/` the check is that the folder exists,
+   not that each helper file is in it; the command
+   `apothem diff --harness trae --project /path/to/project` lists the helper
+   files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or

@@ -34,8 +34,11 @@ is not applied here, and a source tool name outside the alias table, an
 A restriction the source states is never relaxed. Copilot leaves an alias out of
 the allowlist when the source denies any tool the alias covers, so a grant of
 ``Write`` with ``Edit`` denied loses ``edit`` altogether instead of keeping a
-tool the source forbids. A grant that loses every alias is written as
-``tools: []`` because an omitted ``tools`` would enable every tool. Cursor marks
+tool the source forbids. A source tool with a pattern has no form in an alias
+list: a patterned grant such as ``Bash(git status)`` is left out (a narrower
+agent) instead of being widened to ``execute``, and a patterned denial such as
+``Bash(rm *)`` denies the whole tool. A grant that loses every alias is written
+as ``tools: []`` because an omitted ``tools`` would enable every tool. Cursor marks
 an agent ``readonly: true`` only when it is read-only by the source rule and
 holds no shell: ``readonly`` also bars a test or lint run, so a read-only agent
 that keeps ``Bash`` (a test runner, a quality gate) gets no flag, and its
@@ -55,6 +58,7 @@ from .install_driver_converters import (
     _agent_description,
     _agent_is_read_only,
     _agent_scalar_list,
+    _agent_tool_names,
     _drop_read_only_claim,
     _tool_key,
     _yaml_scalar,
@@ -119,28 +123,27 @@ def copilot_tool_aliases(source_path: Path) -> list[str] | None:
     """Return the Copilot ``tools`` allowlist, or ``None`` to leave ``tools`` out.
 
     With a source grant: the aliases of the granted tools, in source order and
-    without repeats. Without one the source inherits every tool except its
+    without repeats. A granted name must match exactly, so a patterned grant such
+    as ``Bash(git status)`` is left out instead of being widened to ``execute``,
+    the whole shell. Without a grant the source inherits every tool except its
     denials, and an omitted Copilot ``tools`` would enable everything, so the
     allowlist the denials imply is written instead: every alias the source does
     not deny. A source with neither a grant nor a denial inherits as written
-    (``None``). An alias is dropped when the source denies any tool it covers,
-    because the alias would admit that tool.
+    (``None``). An alias is dropped when the source denies any tool it covers (a
+    patterned denial covers the whole tool), because the alias would admit that
+    tool.
     """
-    granted = _tool_keys(source_path, "tools")
+    has_grant = bool(_agent_scalar_list(source_path, "tools"))
     denied = set(_tool_keys(source_path, "disallowedTools"))
-    if not granted and not denied:
+    if not has_grant and not denied:
         return None
     blocked = {_COPILOT_ALIAS_OF[key] for key in denied if key in _COPILOT_ALIAS_OF}
     candidates = (
-        [_COPILOT_ALIAS_OF[key] for key in granted if key in _COPILOT_ALIAS_OF]
-        if granted
+        _agent_tool_names(source_path, "tools", _COPILOT_ALIAS_OF)
+        if has_grant
         else list(_COPILOT_ALIASES)
     )
-    aliases: list[str] = []
-    for alias in candidates:
-        if alias not in blocked and alias not in aliases:
-            aliases.append(alias)
-    return aliases
+    return [alias for alias in candidates if alias not in blocked]
 
 
 def copilot_agent_text(source_path: Path) -> str:

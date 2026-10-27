@@ -117,8 +117,14 @@ Things to know:
   resource, while the configuration reference says an agent inherits the default
   skills. The install adds no `resources` key, so the helpers see the skills only
   if the second reading holds.
-- Apothem has not confirmed which tools the `read` category covers (it maps
-  `Grep` and `Glob` there), what Kiro does with an omitted `tools` key, or which
+- Kiro's [Built-in tools page](https://kiro.dev/docs/tools/) lists the tools
+  each category commonly includes. The `read` category includes the file search
+  and text search tools (the CLI 2.x `glob` and `grep`), which is why `Glob` and
+  `Grep` map there. It also includes `code` (code analysis by syntax tree) and
+  `introspect` (answers questions about Kiro itself), so a helper with `read`
+  can use both. The page lists `code` under `write` too, and does not say
+  whether the tool edits files.
+- Apothem has not confirmed what Kiro does with an omitted `tools` key, or which
   frontmatter keys Kiro requires beyond `name`.
 
 ## Profile-to-native-config mapping
@@ -158,7 +164,10 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.kiro/agents/` folder included; managed
    files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
-   also confirm that the installed files match that profile.
+   also confirm that the installed files match that profile. For
+   `.kiro/agents/` the check is that the folder exists, not that each helper
+   file is in it; `apothem diff --harness kiro --project /path/to/project`
+   lists the helper files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or

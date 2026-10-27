@@ -241,6 +241,26 @@ def test_a_denied_tool_drops_the_whole_tag(tmp_path: Path) -> None:
     assert kiro_tool_tags(source) == ["read"]
 
 
+@pytest.mark.parametrize(
+    ("granted", "denied"),
+    [
+        ("Read, Write", "MultiEdit"),
+        ("Read, Bash", "PowerShell"),
+        ("Read, Agent", "Task"),
+    ],
+)
+def test_a_denial_of_a_tool_the_tag_covers_drops_the_tag_by_itself(
+    tmp_path: Path, granted: str, denied: str
+) -> None:
+    """MultiEdit, PowerShell and Task have no grant form in the corpus, only denials."""
+    source = _agent(
+        tmp_path,
+        f'name: "probe-agent"\ndescription: "d"\ntools: "{granted}"\n'
+        f'disallowedTools: "{denied}"\n',
+    )
+    assert kiro_tool_tags(source) == ["read"]
+
+
 def test_a_grant_that_loses_every_tag_is_an_empty_list_not_a_missing_key(
     tmp_path: Path,
 ) -> None:

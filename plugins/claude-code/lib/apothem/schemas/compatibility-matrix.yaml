@@ -345,21 +345,35 @@ asset_classes:
     compatible_harnesses:
       - claude-code
       - antigravity
+      - codebuddy
       - codex
+      - cursor
       - gemini-cli
+      - github-copilot
       - hermes
+      - kimi-code
+      - kiro
       - open-claw
       - opencode
       - qwen-code
+      - trae
+      - windsurf
     materialisation_strategy:
       claude-code: "copy to ~/.claude/agents/"
       antigravity: "convert to ~/.gemini/antigravity-cli/plugins/apothem/agents/*.md"
+      codebuddy: "convert to <project>/.codebuddy/agents/*.md"
       codex: "convert to ~/.codex/agents/*.toml"
+      cursor: "convert to <project>/.cursor/agents/*.md"
       gemini-cli: "convert to <project>/.gemini/agents/*.md"
+      github-copilot: "convert to <project>/.github/agents/*.agent.md"
       hermes: "support cohort under ~/.hermes/.apothem/support/agents/"
+      kimi-code: "convert to <project>/.kimi-code/agents/*.md"
+      kiro: "convert to <project>/.kiro/agents/*.md"
       open-claw: "support cohort under ~/.openclaw/.apothem/support/agents/"
       opencode: "convert to ~/.config/opencode/agents/*.md"
       qwen-code: "convert to ~/.qwen/agents/*.md"
+      trae: "convert to <project>/.trae/agents/*.md"
+      windsurf: "convert to <project>/.devin/agents/*.md; the three agents that need web tools are held back"
       default: "support cohort under apothem/agents/"
 
   hooks:

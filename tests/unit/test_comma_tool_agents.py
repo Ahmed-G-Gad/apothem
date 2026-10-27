@@ -35,48 +35,57 @@ _TOOLS_SEARCH = "Read, Glob, Grep, WebSearch, WebFetch"
 _TOOLS_SHELL = "Read, Glob, Grep, Bash"
 _TOOLS_EDIT = "Read, Write, Edit, Glob, Grep, Bash"
 
+#: CodeBuddy names the task tools and MultiEdit / NotebookEdit on its Settings
+#: page (https://www.codebuddy.ai/docs/cli/settings, retrieved 2026-10-28), so a
+#: source denial of one of them is carried; Trae names none of them.
+_CB_DENY_READ_ONLY = "Write, Edit, TaskCreate, TaskUpdate"
+_CB_DENY_NO_SHELL = "Write, Edit, Bash, TaskCreate, TaskUpdate"
+_CB_DENY_WEB_ONLY = (
+    "Write, Edit, MultiEdit, NotebookEdit, Bash, Agent, TaskCreate, TaskUpdate"
+)
+
 #: stem -> (CodeBuddy tools, CodeBuddy disallowedTools, Trae tools, Trae
 #: disallowedTools, maxTurns). The source denies Write and Edit on every agent
 #: that cannot author files, plus the tools the vendor names or not.
 _EXPECTED: dict[str, tuple[str, str | None, str, str | None, int]] = {
     "citation-auditor": (
         _TOOLS_SEARCH,
-        "Write, Edit, Bash, Agent",
+        _CB_DENY_WEB_ONLY,
         _TOOLS_SEARCH,
         "Write, Edit, Bash, TodoWrite",
         20,
     ),
     "codebase-explorer": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         20,
     ),
     "convention-auditor": (
         _TOOLS_READ,
-        "Write, Edit, Bash",
+        _CB_DENY_NO_SHELL,
         _TOOLS_READ,
         "Write, Edit, Bash, TodoWrite",
         15,
     ),
     "dependency-auditor": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         15,
     ),
     "design-critic": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         15,
     ),
     "fact-checker": (
         _TOOLS_SEARCH,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SEARCH,
         "Write, Edit, TodoWrite",
         15,
@@ -84,21 +93,21 @@ _EXPECTED: dict[str, tuple[str, str | None, str, str | None, int]] = {
     "mcp-builder": (_TOOLS_EDIT, None, _TOOLS_EDIT, None, 20),
     "memory-auditor": (
         _TOOLS_READ,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_READ,
         "Write, Edit, TodoWrite",
         15,
     ),
     "prompt-evaluator": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         15,
     ),
     "quality-gate": (
         "Bash, Read, Glob, Grep",
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         "Bash, Read, Glob, Grep",
         "Write, Edit, TodoWrite",
         15,
@@ -106,21 +115,21 @@ _EXPECTED: dict[str, tuple[str, str | None, str, str | None, int]] = {
     "refactor-surgeon": (_TOOLS_EDIT, None, _TOOLS_EDIT, None, 20),
     "research-scout": (
         _TOOLS_SEARCH,
-        "Write, Edit, Bash, Agent",
+        _CB_DENY_WEB_ONLY,
         _TOOLS_SEARCH,
         "Write, Edit, Bash, TodoWrite",
         15,
     ),
     "security-scanner": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         20,
     ),
     "test-runner": (
         _TOOLS_SHELL,
-        "Write, Edit",
+        _CB_DENY_READ_ONLY,
         _TOOLS_SHELL,
         "Write, Edit, TodoWrite",
         15,
@@ -281,7 +290,8 @@ def test_a_short_agent_renders_to_this_exact_text(tmp_path: Path) -> None:
     assert codebuddy_agent_text(source) == (
         '---\nname: "probe-agent"\n'
         'description: "Probes the edge: colons, a hash # and commas."\n'
-        'tools: "Read, Agent"\ndisallowedTools: "Write"\nmaxTurns: 7\n---\n\n'
+        'tools: "Read, MultiEdit, Agent"\n'
+        'disallowedTools: "Write, NotebookEdit"\nmaxTurns: 7\n---\n\n'
         "Body line.\n"
     )
     assert trae_agent_text(source) == (
@@ -317,7 +327,7 @@ def test_a_grant_with_no_usable_name_is_never_widened(tmp_path: Path) -> None:
     """Dropping the key would let the agent inherit every tool; an empty string does not."""
     source = _agent(
         tmp_path,
-        'name: "probe-agent"\ndescription: "d"\ntools: "PowerShell, NotebookEdit"\n',
+        'name: "probe-agent"\ndescription: "d"\ntools: "PowerShell, Monitor"\n',
     )
     for render in (codebuddy_agent_text, trae_agent_text):
         head, _ = _split(render(source))
@@ -352,3 +362,64 @@ def test_the_registry_rows_pair_each_mode_with_its_renderer() -> None:
         assert row.target_extension is None
         assert row.exclude == frozenset()
         assert row.remove_stale_markdown is False
+
+
+def test_a_patterned_denial_denies_the_whole_tool(tmp_path: Path) -> None:
+    """``Bash(rm *)`` has no form in a comma list, so it must not vanish."""
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Read, Glob, Grep, Bash"\n'
+        'disallowedTools: "Bash(rm *), Write, Edit"\n',
+    )
+    for render in (codebuddy_agent_text, trae_agent_text):
+        head, _ = _split(render(source))
+        assert _tool_set(head, "disallowedTools") == {"Bash", "Write", "Edit"}
+        effective = _tool_set(head, "tools") - _tool_set(head, "disallowedTools")
+        assert "Bash" not in effective
+
+
+def test_a_patterned_grant_is_left_out_not_widened(tmp_path: Path) -> None:
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Read, Bash(git status)"\n',
+    )
+    for render in (codebuddy_agent_text, trae_agent_text):
+        head, _ = _split(render(source))
+        assert 'tools: "Read"\n' in head
+
+
+def test_a_grant_of_only_a_patterned_tool_is_an_empty_string(tmp_path: Path) -> None:
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Bash(git status)"\n',
+    )
+    for render in (codebuddy_agent_text, trae_agent_text):
+        head, _ = _split(render(source))
+        assert '\ntools: ""\n' in head
+
+
+@pytest.mark.parametrize(
+    "tool", ["MultiEdit", "NotebookEdit", "Task", "TaskCreate", "TaskUpdate"]
+)
+def test_codebuddy_carries_the_denials_its_settings_page_names(
+    tmp_path: Path, tool: str
+) -> None:
+    """Each is in CodeBuddy's "Tools Available to CodeBuddy" table: it stays denied."""
+    source = _agent(
+        tmp_path,
+        f'name: "probe-agent"\ndescription: "d"\ndisallowedTools: "{tool}"\n',
+    )
+    assert f'disallowedTools: "{tool}"\n' in codebuddy_agent_text(source)
+    assert "disallowedTools" not in trae_agent_text(source)
+
+
+@pytest.mark.parametrize("tool", ["Skill", "LSP"])
+def test_trae_keeps_a_grant_of_each_tool_its_page_lists(
+    tmp_path: Path, tool: str
+) -> None:
+    """Skill and LSP are in Trae's subagent vocabulary but in no corpus agent."""
+    source = _agent(
+        tmp_path,
+        f'name: "probe-agent"\ndescription: "d"\ntools: "Read, {tool}"\n',
+    )
+    assert f'tools: "Read, {tool}"\n' in trae_agent_text(source)

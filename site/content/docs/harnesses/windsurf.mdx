@@ -159,7 +159,10 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.devin/agents/` folder included; managed
    files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
-   also confirm that the installed files match that profile.
+   also confirm that the installed files match that profile. For
+   `.devin/agents/` the check is that the folder exists, not that each helper
+   file is in it; `apothem diff --harness windsurf --project /path/to/project`
+   lists the helper files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -213,7 +216,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness windsurf --project /path/to/project` |
 | Verification failed | Run `apothem update --harness windsurf --project /path/to/project`, then verify again |
-| Devin Local lists none of the Apothem helpers | Run `apothem verify --harness windsurf --project /path/to/project`; if it passes, check that the Subagents (Preview) setting is on and that the project is open in Devin Desktop's Local mode, then start a new tab |
+| Devin Local lists none of the Apothem helpers | Run `apothem diff --harness windsurf --project /path/to/project`. A pending line for the `.devin/agents` folder means helper files are missing or out of date, so run `apothem update --harness windsurf --project /path/to/project`. `apothem verify` is not a test of this: it passes when `.devin/agents/` exists, even with no helper file in it. If `diff` reports no pending changes, check that the Subagents (Preview) setting is on and that the project is open in Devin Desktop's Local mode, then start a new tab |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness windsurf --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

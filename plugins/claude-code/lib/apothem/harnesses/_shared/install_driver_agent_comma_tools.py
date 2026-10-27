@@ -11,9 +11,14 @@ the one extra key CodeBuddy documents:
 - CodeBuddy (``<project>/.codebuddy/agents/<name>.md``) documents ``name``,
   ``description``, ``tools``, ``disallowedTools`` and ``maxTurns`` among its
   keys, so the source turn limit carries over natively
-  (https://www.codebuddy.ai/docs/cli/sub-agents, retrieved 2026-10-27). The
-  tool names seen in its CLI docs are Read, Grep, Glob, Bash, Edit, Write,
-  WebFetch, WebSearch and Agent.
+  (https://www.codebuddy.ai/docs/cli/sub-agents, retrieved 2026-10-27). Its
+  sub-agents page points to the Settings page for the complete tool list, and
+  that page's "Tools Available to CodeBuddy" table names AskUserQuestion, Bash,
+  Edit, ExitPlanMode, Glob, Grep, LSP, MultiEdit, NotebookEdit, Read, Skill,
+  SlashCommand, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop,
+  TaskUpdate, WebFetch, WebSearch and Write
+  (https://www.codebuddy.ai/docs/cli/settings, retrieved 2026-10-28). The
+  sub-agents page also names an ``Agent`` tool.
 - Trae (``<project>/.trae/agents/<name>.md``) documents ``name``,
   ``description``, ``model``, ``tools``, ``disallowedTools`` and ``mcpServers``,
   with a ``disallowedTools`` that wins over ``tools``, and no turn limit
@@ -30,9 +35,12 @@ is not applied here (a follow-up); a source tool name outside the vocabulary,
 an ``mcp__`` entry included, is left out.
 
 A tool the source denies stays denied: the harness has a native deny list, so no
-read-only claim is rewritten. A grant is never widened. When the source grants
-tools but none is in the vocabulary, the file carries an empty ``tools`` string
-instead of omitting the key, because an omitted ``tools`` inherits every tool.
+read-only claim is rewritten. A denial with a pattern, such as ``Bash(rm *)``,
+has no form in either list, so it denies the whole tool. A grant is never
+widened: a granted tool with a pattern, such as ``Bash(git status)``, is left
+out instead of being widened to the whole tool. When the source grants tools but
+none is in the vocabulary, the file carries an empty ``tools`` string instead of
+omitting the key, because an omitted ``tools`` inherits every tool.
 """
 
 from __future__ import annotations
@@ -42,6 +50,7 @@ from typing import Final
 
 from apothem.lib.frontmatter import field_value
 
+from .install_driver_agent_kimi_devin import _denied_names
 from .install_driver_converters import (
     _agent_body,
     _agent_description,
@@ -50,9 +59,9 @@ from .install_driver_converters import (
     _yaml_scalar,
 )
 
-#: CodeBuddy tool names as its CLI docs spell them. A source name outside this
-#: set (MultiEdit, NotebookEdit, PowerShell, Monitor, Artifact, TodoWrite,
-#: TaskCreate, TaskUpdate) is left out.
+#: CodeBuddy tool names as its Settings page spells them (the "Tools Available
+#: to CodeBuddy" table), plus ``Agent``, which its sub-agents page names. A source
+#: name outside this set (PowerShell, Monitor, Artifact, TodoWrite) is left out.
 _CODEBUDDY_TOOLS: Final[tuple[str, ...]] = (
     "Read",
     "Grep",
@@ -63,6 +72,20 @@ _CODEBUDDY_TOOLS: Final[tuple[str, ...]] = (
     "WebFetch",
     "WebSearch",
     "Agent",
+    "AskUserQuestion",
+    "ExitPlanMode",
+    "LSP",
+    "MultiEdit",
+    "NotebookEdit",
+    "Skill",
+    "SlashCommand",
+    "Task",
+    "TaskCreate",
+    "TaskGet",
+    "TaskList",
+    "TaskOutput",
+    "TaskStop",
+    "TaskUpdate",
 )
 
 #: Trae subagent tool names as its Subagents page spells them (a different
@@ -97,9 +120,11 @@ def _tool_lines(source_path: Path, vocabulary: dict[str, str]) -> str:
     """Return the ``tools`` and ``disallowedTools`` lines for one agent.
 
     Each is a double-quoted comma-separated string in the source order, holding
-    only names in *vocabulary*. A field with nothing left is omitted, except a
-    grant that had names but lost them all, which stays as an empty string so the
-    agent is not handed every tool.
+    only names in *vocabulary*. A granted name must match the vocabulary exactly,
+    so a patterned grant (``Bash(git status)``) is left out, while a patterned
+    denial (``Bash(rm *)``) denies the whole tool. A field with nothing left is
+    omitted, except a grant that had names but lost them all, which stays as an
+    empty string so the agent is not handed every tool.
     """
     lines = ""
     granted = _agent_tool_names(source_path, "tools", vocabulary)
@@ -107,7 +132,7 @@ def _tool_lines(source_path: Path, vocabulary: dict[str, str]) -> str:
         lines += f"tools: {_yaml_scalar(', '.join(granted))}\n"
     elif _agent_scalar_list(source_path, "tools"):
         lines += 'tools: ""\n'
-    denied = _agent_tool_names(source_path, "disallowedTools", vocabulary)
+    denied = _denied_names(source_path, vocabulary)
     if denied:
         lines += f"disallowedTools: {_yaml_scalar(', '.join(denied))}\n"
     return lines

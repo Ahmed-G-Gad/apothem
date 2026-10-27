@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (tool categories): the Built-in tools page was read on 2026-10-28 from its raw Markdown, which closes the open question about which tools the `read` tag covers. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Kiro custom agents in `<project>/.kiro/agents/`, as Markdown files for Kiro IDE 1.0 and Kiro CLI V3. The custom-agents pages, the configuration reference, the sub-agents page, the permissions page, the V3 pages and the changelog were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at Kiro's own `~/.kiro/skills/` and the rules and templates corpus at `~/.config/apothem/`. The Kiro skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `kiro.dev/docs` (steering, MCP configuration, skills, hooks). Steering inclusion modes (`always`, `fileMatch` with `fileMatchPattern`, `manual`, `auto`), `AGENTS.md` support (workspace root and `~/.kiro/steering/`), MCP at `.kiro/settings/mcp.json` and `~/.kiro/settings/mcp.json`, and agent files in `.kiro/agents` are confirmed. Previous 2026-06-25.
@@ -116,11 +117,24 @@
 - No release shipped an agents entry for this harness (checked v1.0.1 to
   v1.4.0), so there is nothing to retire and the manifest's `stale-sweep` list
   stays empty.
-- TODO(clarify): which tools the `read` tag covers. The docs list the tag and
-  name `read_file` and `grep_search` as tool ids, but no page says whether
-  `grep_search` and a glob tool belong to `read`; the adapter maps `Grep` and
-  `Glob` to it, and an agent whose search tool sits under another tag would lose
-  search.
+- Agent tool categories (read 2026-10-28): the Built-in tools page, which the
+  configuration reference names as the authority on category membership, lists
+  under "Configuring tool access" what each tag commonly includes. `read` is
+  `read_file`, `list_directory`, `file_search`, `grep_search`, `code`,
+  `tool_search` (V2) and `introspect`; `write` is `fs_write`, `fs_append`,
+  `str_replace`, `delete_file` and `code`; `shell` is `execute_bash` or
+  `execute_pwsh` and, on IDE clients, the process-control tools; `web` is
+  `web_fetch` and `remote_web_search`; `subagent` is the per-agent dispatch
+  tools. The same page names `file_search` as the CLI 2.x `glob` and
+  `grep_search` as the CLI 2.x `grep`, so mapping `Glob` and `Grep` to `read` is
+  the vendor's own grouping. The page words the table as mappings that
+  "include" those tools, not as a closed list. The adapter's mapping is
+  unchanged. A `read` tag also selects `code` (AST-based code analysis) and
+  `introspect` (answers questions about Kiro's own features from its docs), and
+  `code` appears under `write` as well.
+- TODO(clarify): whether the `read` tag alone gives an agent every operation of
+  the `code` tool, which the Built-in tools page also lists under `write`; the
+  page does not say whether the tool edits files.
 - TODO(clarify): what an omitted `tools` key selects, and how Kiro reads
   `tools: []`. The adapter writes `[]` only for a source grant that loses every
   tag (no agent in the corpus does), so that the agent is not given every tool.
@@ -147,6 +161,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://kiro.dev/docs/custom-agents/configuration-reference/> (agent keys, `tools` selectors, `permissions`, the V3 additions, default resources; retrieved 2026-10-27)
 - <https://kiro.dev/docs/custom-agents/creating/> (`kiro-cli agent create` and the global default; retrieved 2026-10-27)
 - <https://kiro.dev/docs/custom-agents/subagents/> (any custom agent as a sub-agent, the `subagent` tool tag; retrieved 2026-10-27)
+- <https://kiro.dev/docs/tools/> (Built-in tools: the commonly included tools of each category tag, "Configuring tool access"; read from the raw Markdown at `https://kiro.dev/docs/tools.md` on 2026-10-28)
 - <https://kiro.dev/docs/cli/v3/> (V3 is opt-in through `kiro-cli --v3`; retrieved 2026-10-27)
 - <https://kiro.dev/docs/cli/v3/agent-config/> (the same fields in both formats, `model`; retrieved 2026-10-27)
 - <https://kiro.dev/docs/cli/2x-reference/> (the Markdown format added in V3; retrieved 2026-10-27)

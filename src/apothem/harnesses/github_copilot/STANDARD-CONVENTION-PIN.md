@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (review): the tool aliases table of the custom-agents reference was re-read on 2026-10-28 for the `web` and `todo` cloud-agent notes and the `agent` alias. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as custom agent profiles in `<project>/.github/agents/`. The custom-agents reference and how-to pages, the CLI config-directory reference, the VS Code agent pages and the Copilot CLI changelog were read on 2026-10-27 (the changelog from its raw file, whole). Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`. Refreshed against `docs.github.com/en/copilot`. Corrections: Copilot has user-defined commands (prompt files in `.github/prompts/*.prompt.md`, run as `/name` in Copilot Chat) and repository agent files (`.github/agents/*.agent.md`), and MCP can be configured in a custom agent profile as well as in repository settings, the IDE, and the Copilot CLI. Code review reads instructions from the pull request's head branch and no longer documents a fixed character cap. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/github_copilot/`
@@ -55,8 +56,12 @@
   (Edit, MultiEdit, Write, NotebookEdit), `search` (Grep, Glob), `agent`
   (custom-agent, Task), `web` (WebSearch, WebFetch) and `todo` (TodoWrite). MCP
   tools are written `server/tool` or `server/*`. The cloud agent does not honor
-  `web` and `todo`, so the three agents that search the web (citation-auditor,
-  fact-checker, research-scout) read and search there but cannot fetch.
+  `web` and `todo`; the `web` alias covers both WebSearch and WebFetch, so the
+  three agents that search the web (citation-auditor, fact-checker,
+  research-scout) can read and search files there but can neither search the web
+  nor fetch pages. A source tool with a pattern, such as `Bash(git status)`, has
+  no alias form: a patterned grant is left out (it is never widened to the whole
+  tool's alias) and a patterned denial drops the alias of the whole tool.
 - Agents the adapter writes: one `<name>.agent.md` per Apothem agent in
   `<project>/.github/agents/`, with `name`, `description` and `tools` as a flow
   list of aliases, for example `tools: ["read", "search", "execute"]`. Because

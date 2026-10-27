@@ -184,6 +184,20 @@ def test_compatibility_matrix_matches_registry_capabilities() -> None:
         assert row["supports_statuslines"] is (status["statuslines"] == "native")
 
 
+def test_compatibility_matrix_agents_asset_class_matches_the_registry() -> None:
+    """The per-harness rows and the agents asset class must tell the same story."""
+    matrix = yaml.safe_load(_COMPATIBILITY_MATRIX.read_text(encoding="utf-8"))
+    block = matrix["asset_classes"]["agents"]
+    expected = {
+        entry.public_id
+        for entry in HARNESS_REGISTRY
+        if entry.capability_status["agents"] != "unsupported"
+    }
+    assert set(block["compatible_harnesses"]) == expected
+    assert len(block["compatible_harnesses"]) == len(expected)
+    assert set(block["materialisation_strategy"]) == expected | {"default"}
+
+
 def test_adapter_classes_match_registry_entries() -> None:
     for entry in HARNESS_REGISTRY:
         adapter = load_adapter_class(entry)()

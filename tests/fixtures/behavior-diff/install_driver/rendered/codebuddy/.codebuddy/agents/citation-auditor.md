@@ -2,7 +2,7 @@
 name: "citation-auditor"
 description: "Read-only citation audit — checks that each reference in a bibliography or cited passage exists, matches its record, and that the opened source states what the text attributes to it. Use when a draft cites sources: 'check my references', 'are these DOIs real', 'does this paper say what I cite it for'. Finding new sources routes to research-scout; a free-standing claim routes to fact-checker."
 tools: "Read, Glob, Grep, WebSearch, WebFetch"
-disallowedTools: "Write, Edit, Bash, Agent"
+disallowedTools: "Write, Edit, MultiEdit, NotebookEdit, Bash, Agent, TaskCreate, TaskUpdate"
 maxTurns: 20
 ---
 

@@ -277,6 +277,67 @@ def test_the_copilot_name_falls_back_to_the_file_stem(tmp_path: Path) -> None:
     assert 'name: "probe-agent"\n' in copilot_agent_text(source)
 
 
+def test_a_patterned_grant_is_left_out_not_widened_to_the_whole_shell(
+    tmp_path: Path,
+) -> None:
+    """``Bash(git status)`` must not become ``execute``, which runs any command."""
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\n'
+        'tools: "Read, Bash(git status)"\ndisallowedTools: "Write, Edit"\n',
+    )
+    assert copilot_tool_aliases(source) == ["read"]
+    assert '\ntools: ["read"]\n' in copilot_agent_text(source)
+
+
+def test_a_grant_of_only_a_patterned_tool_gives_an_empty_list(tmp_path: Path) -> None:
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Bash(git status)"\n',
+    )
+    assert copilot_tool_aliases(source) == []
+    assert "\ntools: []\n" in copilot_agent_text(source)
+
+
+def test_a_patterned_denial_removes_the_whole_tool_alias(tmp_path: Path) -> None:
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Read, Bash"\n'
+        'disallowedTools: "Bash(rm *)"\n',
+    )
+    assert copilot_tool_aliases(source) == ["read"]
+
+
+def test_a_webfetch_grant_alone_is_the_web_alias(tmp_path: Path) -> None:
+    source = _agent(
+        tmp_path, 'name: "probe-agent"\ndescription: "d"\ntools: "WebFetch"\n'
+    )
+    assert copilot_tool_aliases(source) == ["web"]
+
+
+@pytest.mark.parametrize("denied", ["MultiEdit", "NotebookEdit"])
+def test_each_edit_tool_denial_alone_removes_the_edit_alias(
+    tmp_path: Path, denied: str
+) -> None:
+    """The alias covers all four edit tools, so denying any one drops it."""
+    source = _agent(
+        tmp_path,
+        'name: "probe-agent"\ndescription: "d"\ntools: "Read, Write"\n'
+        f'disallowedTools: "{denied}"\n',
+    )
+    assert copilot_tool_aliases(source) == ["read"]
+
+
+@pytest.mark.parametrize("granted", ["MultiEdit", "NotebookEdit"])
+def test_each_edit_tool_grant_alone_is_the_edit_alias(
+    tmp_path: Path, granted: str
+) -> None:
+    source = _agent(
+        tmp_path, f'name: "probe-agent"\ndescription: "d"\ntools: "{granted}"\n'
+    )
+    assert copilot_tool_aliases(source) == ["edit"]
+
+
 # --- Cursor -----------------------------------------------------------------
 
 
@@ -430,6 +491,15 @@ def test_an_agent_that_can_write_is_never_flagged(tmp_path: Path) -> None:
 def test_the_cursor_name_falls_back_to_the_file_stem(tmp_path: Path) -> None:
     source = _agent(tmp_path, 'description: "d"\ntools: "Read"\n')
     assert 'name: "probe-agent"\n' in cursor_agent_text(source)
+
+
+@pytest.mark.parametrize("render", [copilot_agent_text, cursor_agent_text])
+def test_an_upper_case_source_name_is_written_in_lower_case(
+    tmp_path: Path, render: Callable[[Path], str]
+) -> None:
+    """The shared head lower-cases the source name, as every native renderer does."""
+    source = _agent(tmp_path, 'name: "Probe-Agent"\ndescription: "d"\ntools: "Read"\n')
+    assert 'name: "probe-agent"\n' in render(source)
 
 
 # --- Registry ---------------------------------------------------------------

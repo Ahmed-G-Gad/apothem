@@ -78,14 +78,20 @@ keys:
 | `disallowedTools` | The tools the helper is denied, as one comma-separated string. Omitted when the helper has none. |
 | `maxTurns` | The helper's turn limit. |
 
-Only the tool names CodeBuddy's documentation shows are written:
+Only the tool names CodeBuddy's documentation shows are written. Its
+[Settings page](https://www.codebuddy.ai/docs/cli/settings) lists the tools, and
+its sub-agents page names one more tool, which the list below includes:
 
 ```text
-Read, Grep, Glob, Bash, Edit, Write, WebFetch, WebSearch, Agent
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
 ```
 
-A tool the source names that is not in that list (for example `MultiEdit` or
-`PowerShell`) is left out of both fields. A helper that cannot edit files keeps
+A tool the source names that is not in that list (for example `PowerShell` or
+`TodoWrite`) is left out of both fields. A tool with a pattern, such as
+`Bash(rm *)`, has no form in a comma list: as an allowed tool it is left out, and
+as a denied tool it denies the whole tool. A helper that cannot edit files keeps
 that limit: it lists no `Write` or `Edit` among its tools and denies both. The
 install writes no `model` key, so a helper runs on the model CodeBuddy
 selects, and no `permissionMode` or `hooks` key.
@@ -152,7 +158,10 @@ The verify command confirms that:
 
 1. The native config exists at the expected path.
 2. The managed rules file is present and non-empty.
-3. The `.codebuddy/agents/` folder exists.
+3. The `.codebuddy/agents/` folder exists. The check is on the folder, not on
+   each helper file in it; the command
+   `apothem diff --harness codebuddy --project /path/to/project` lists the
+   helper files that are missing or out of date.
 4. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or

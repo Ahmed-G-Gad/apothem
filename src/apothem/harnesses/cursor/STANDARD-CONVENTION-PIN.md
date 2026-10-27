@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (review): the Subagents page was re-read on 2026-10-28 for how it treats Claude-style keys in the Claude-compatibility folders (it does not say). Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Cursor subagents in `<project>/.cursor/agents/`. The Subagents page, the plugins reference, the third-party hooks page and the CLI changelog were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`. Refreshed against `cursor.com/docs`. The rules page moved to `cursor.com/docs/rules`, the MCP page to `cursor.com/docs/mcp`, and the old `@Web` page is gone. The agent's Browser tool visits URLs, so `web_fetch` moves from partial to yes. The skills page was re-read on 2026-10-24; the other pages keep their 2026-10-03 retrieval date. Previous 2026-10-03.
 - Adapter source: `src/apothem/harnesses/cursor/`
@@ -61,7 +62,11 @@
   dependency-auditor, design-critic, prompt-evaluator, quality-gate,
   security-scanner, test-runner) get no flag and their descriptions drop the
   read-only wording that Cursor would not enforce; they run with every tool the
-  parent has. The two agents that write files are unchanged. The source `tools`
+  parent has. Only the description is rewritten: the body is copied unchanged, so
+  the instructions of those seven agents still call them read-only and refer to a
+  tool restriction in frontmatter that a Cursor file does not carry. The model
+  follows that text; Cursor does not enforce it. The two agents that write files
+  are unchanged. The source `tools`
   and `disallowedTools` have no other Cursor home, so they are not written. No
   `model` is written (the agent then inherits the parent's model), nor
   `is_background`, `maxTurns`, `version`, `updated` or `portability`. A same-named
@@ -70,10 +75,16 @@
   agents folder.
 - Shared roots: the project `.cursor/agents/` copy supersedes the Claude-format
   agents Cursor imports from `~/.claude/agents/` inside an installed project, by
-  the precedence above. Those imported files carry `tools` and `disallowedTools`
-  that Cursor does not enforce, so the native copy is the one that carries
-  `readonly`. Cursor still loads `~/.claude/agents/` in every project without a
-  native copy, so it stays a reader of that shared root.
+  the precedence above (`.cursor/` wins over `.claude/` and `.codex/` on a name
+  clash). The native copy is the one that carries `readonly`, the only restriction
+  the Subagents page documents. Cursor still loads `~/.claude/agents/` in every
+  project without a native copy, so it stays a reader of that shared root.
+- TODO(clarify): whether Cursor honors `tools` and `disallowedTools` in a
+  Claude-format file found in `.claude/agents/` or `~/.claude/agents/`. The
+  Subagents page lists the keys `name`, `description`, `model`, `readonly` and
+  `is_background` and has no `tools` key, and it says nothing about how the
+  Claude-compatibility folders treat Claude-style keys; the adapter relies on
+  neither behavior.
 - TODO(clarify): whether Cursor loads both the `.cursor/agents/` copy and a
   `~/.claude/agents/` copy of one agent name, or drops the lower-precedence one.
 - TODO(clarify): the page does not say which file formats Cursor parses in the

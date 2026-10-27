@@ -453,6 +453,16 @@ def test_a_devin_source_with_denials_and_no_grant_gets_the_allowlist_they_imply(
     assert 'allowed-tools:\n  - "read"\n  - "edit"\n' in devin_agent_text(source)
 
 
+def test_a_devin_denial_of_only_the_shell_keeps_every_other_documented_name(
+    tmp_path: Path,
+) -> None:
+    """``write`` is a documented name (CLI changelog v3000.11.1), so it stays."""
+    source = _agent(
+        tmp_path, 'name: "probe-agent"\ndescription: "d"\ndisallowedTools: "Bash"\n'
+    )
+    assert devin_allowed_tools(source) == ["read", "edit", "grep", "glob", "write"]
+
+
 def test_a_devin_source_that_restricts_nothing_leaves_allowed_tools_out(
     tmp_path: Path,
 ) -> None:
