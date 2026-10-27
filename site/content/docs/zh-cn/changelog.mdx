@@ -20,6 +20,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dependabot assigns its pull requests without a warning.** The assignee in
+  `.github/dependabot.yml` now spells the maintainer's login with GitHub's own
+  capitals. The assignable-users lookup Dependabot runs is case-sensitive, so
+  the lowercase spelling made it comment that the user "could not be added" on
+  every pull request, although the assignment itself went through.
+- **The workflow audit's open finding is resolved with its reason.** zizmor's
+  self-repository audit asks the test matrix to call its reusable workflow with
+  GitHub's `$/` form, which the pinned actionlint does not accept yet. The call
+  keeps `./` with an inline ignore that records why neither of the audit's
+  risks applies, and the zizmor workflow's egress note now describes how the
+  current action installs zizmor (a hash-locked wheel from PyPI).
+
 ## [1.4.0] - 2026-10-26
 
 ### Added
