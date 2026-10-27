@@ -94,6 +94,12 @@ updates:
       dev-tools:
         dependency-type: development
         update-types: [minor, patch]
+    ignore:
+      # @types/node follows the site's Node floor (`engines` and `.nvmrc`,
+      # Node 22): a newer major lets the type-check accept Node APIs the
+      # runtime lacks. Raise its major by hand with the floor.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /.github/vsce
