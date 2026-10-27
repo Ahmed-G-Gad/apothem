@@ -18,9 +18,11 @@ four places that act on a mode read the same row:
 - a test pins that a row names a mode with a label.
 
 A new agent emission is therefore one row here plus its renderer, with no edit
-to the appliers or the enumeration. The renderers for the modes below stay in
-:mod:`install_driver_converters`; renderers and tool maps for later modes are
-added to this module so that file stays under the module size ceiling.
+to the appliers or the enumeration. The renderers for the first six modes stay in
+:mod:`install_driver_converters`; the CodeBuddy and Trae renderers, which share
+a comma-string tool shape, are in :mod:`install_driver_agent_comma_tools`.
+Renderers for later modes are added outside that file so it stays under the
+module size ceiling.
 
 ``_INSTALL_ENTRY_MODES`` and ``OPERATION_LABELS`` in
 :mod:`install_driver_types` remain literal tables, because that module is a
@@ -37,6 +39,7 @@ from typing import Final
 
 from apothem.lib.claude_agent_mcp import claude_agent_text
 
+from .install_driver_agent_comma_tools import codebuddy_agent_text, trae_agent_text
 from .install_driver_converters import (
     _antigravity_agent_text,
     _codex_agent_text,
@@ -94,6 +97,8 @@ _EMITTERS: Final[tuple[AgentEmitter, ...]] = (
     AgentEmitter("qwen_agents", _qwen_agent_text),
     AgentEmitter("antigravity_agents", _antigravity_agent_text),
     AgentEmitter("claude_agents", claude_agent_text),
+    AgentEmitter("codebuddy_agents", codebuddy_agent_text),
+    AgentEmitter("trae_agents", trae_agent_text),
 )
 
 #: Agent emission modes by name. Adding an agent emission is one row above.

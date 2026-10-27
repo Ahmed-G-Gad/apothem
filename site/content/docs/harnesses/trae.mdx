@@ -16,7 +16,8 @@ apothem install --harness trae --project /path/to/project
 ```
 
 The adapter writes one project-scope Trae rules file from the shared
-Apothem rules and governance surface.
+Apothem rules and governance surface, and Apothem's helpers as Trae subagents
+in the project (see [Subagents](#subagents)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -25,6 +26,7 @@ your user home, before it touches the project (see
 **Files written:**
 
 - `<project>/.trae/rules/apothem-rules.md`, the rules file.
+- `<project>/.trae/agents/<name>.md` for each Apothem helper, in the project.
 - `~/.trae/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -44,8 +46,8 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the rules file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the rules file, plus the `.apothem/` data folder every project install
-  creates.
+  gets the rules file and the subagent files in `.trae/agents/`, plus the
+  `.apothem/` data folder every project install creates.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -57,6 +59,52 @@ These folders are shared. They are not private to the project:
 
 The install prints a note that names the folders it writes outside `--project`,
 and `--dry-run` lists them.
+
+## Subagents
+
+Trae reads a subagent from a Markdown file in `<project>/.trae/agents/`, per the
+[Trae subagents documentation](https://docs.trae.ai/ide/subagents). The install
+writes one file per Apothem helper into that folder. It installs for the project
+only: the documentation gives the user-level folder as `~/.trae-cn/agents/` while
+every other Trae user folder is under `~/.trae/`, and Apothem has not confirmed
+which one an international install reads, so it writes neither.
+
+Each file keeps the helper's instructions unchanged and carries these frontmatter
+keys:
+
+| Key | What Apothem writes |
+| --- | --- |
+| `name`, `description` | The helper's name and description. Trae needs both. |
+| `tools` | The helper's allowed tools, as one comma-separated string. |
+| `disallowedTools` | The tools the helper is denied, as one comma-separated string. Trae applies it over `tools`. Omitted when the helper has none. |
+
+Only the tool names on Trae's subagents page are written:
+
+```text
+Bash, Edit, Glob, Grep, Read, Skill, TodoWrite, WebFetch, WebSearch, Write, LSP
+```
+
+A tool the source names that is not in that list (for example `MultiEdit` or
+`PowerShell`) is left out of both fields. A helper that cannot edit files keeps
+that limit: it lists no `Write` or `Edit` among its tools and denies both. Trae
+documents no turn limit, so the helper's `maxTurns` is not written. The install
+writes no `model` key, so a helper uses the model chosen in the chat box, and no
+`mcpServers` key.
+
+Things to know:
+
+- Trae's English documentation says to turn on **Settings > Beta > Subagents >
+  Enable Subagents Directory** before it loads `.trae/agents/`. Its Chinese
+  page, updated later, says the feature is usually on by default. If Trae lists
+  none of the helpers, check that switch.
+- The subagent files are ordinary project files. Commit them with the project or
+  list `.trae/agents/` in `.gitignore`; Apothem does not choose for you.
+- A file of yours with an Apothem helper's name is saved under
+  `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
+  Files with other names are never touched.
+- Trae's documentation does not say how it treats a frontmatter key it does not
+  list, or whether `.trae/agents/` applies in the second window of the merged
+  "all-new TRAE" as it does in the IDE window.
 
 ## Profile-to-native-config mapping
 
@@ -79,13 +127,11 @@ directory or your global rules. The
 `.trae/mcp.json` tool-server surface and the project `.trae/skills/` skill
 surface are operator-owned; Apothem does not write them.
 
-Trae documents `~/.trae/skills/` for global skills. It reads the cross-tool
-`.agents/skills/` folder only after the setting `Enable .agents Skills
-Directory` is switched on, so the install writes the Trae folder. The China
-edition documents `~/.trae-cn/skills/`; the install writes `~/.trae/skills/`
-only, and Apothem has not confirmed whether the China edition reads it.
-Apothem has also not confirmed how Trae treats a `SKILL.md` header key it does
-not list.
+Trae documents `~/.trae/skills/` for global skills, on both its English and
+its Chinese skills page. It reads the cross-tool `.agents/skills/` folder only
+after the setting `Enable .agents Skills Directory` is switched on, so the
+install writes the Trae folder. Apothem has not confirmed how Trae treats a
+`SKILL.md` header key it does not list.
 
 ## Verification
 
@@ -96,8 +142,8 @@ apothem verify --harness trae --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists; managed files are non-empty, and JSON or YAML
-   configs parse. Add `--profile PATH` to also confirm that the installed files
+2. Each managed target exists, the `.trae/agents/` folder included; managed
+   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to also confirm that the installed files
    match that profile.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
@@ -115,6 +161,7 @@ Re-derives the project rules file from the current shared profile state.
 
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
+It rewrites subagent files that differ from the current ones, and adds any that are missing.
 
 ## Uninstalling
 
@@ -129,7 +176,9 @@ timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and Apothem engine are
 unaffected.
 
-The uninstall also removes the skill folders it wrote in `~/.trae/skills/` and the
+The uninstall also removes the subagent files it wrote in `<project>/.trae/agents/`
+and keeps any other file there; the folder is removed when it is left empty.
+It removes the skill folders it wrote in `~/.trae/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
 folder, may. In that case the uninstall keeps the folders, prints which install
@@ -149,6 +198,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness trae --project /path/to/project` |
 | Verification failed | Run `apothem update --harness trae --project /path/to/project`, then verify again |
+| Trae lists none of the Apothem helpers | Turn on Settings > Beta > Subagents > Enable Subagents Directory, then start a new chat |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness trae --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

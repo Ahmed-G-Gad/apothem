@@ -38,9 +38,9 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 | `opencode` | `~/.config/opencode/opencode.json`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native commands, skills, and agents. |
 | `qwen_code` | `~/.qwen/settings.json`, `~/.qwen/QWEN.md`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native hooks, commands, skills, agents, context anchor, and support cohorts. |
 | `windsurf` | `<project>/.devin/rules/apothem-rules.md`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter (Devin Desktop preferred surface; `.windsurf/rules/` fallback); skills (commands wrapped as skills) in the shared user-level folder. |
-| `codebuddy` | `<project>/.codebuddy/rules/apothem-rules.md`, `~/.codebuddy/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in CodeBuddy's own user-level folder. |
+| `codebuddy` | `<project>/.codebuddy/rules/apothem-rules.md`, `<project>/.codebuddy/agents/`, `~/.codebuddy/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; agents as CodeBuddy subagents in the project; skills (commands wrapped as skills) in CodeBuddy's own user-level folder. |
 | `kiro` | `<project>/.kiro/steering/apothem-rules.md`, `~/.kiro/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in Kiro's own user-level folder. |
-| `trae` | `<project>/.trae/rules/apothem-rules.md`, `~/.trae/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; skills (commands wrapped as skills) in Trae's own user-level folder. |
+| `trae` | `<project>/.trae/rules/apothem-rules.md`, `<project>/.trae/agents/`, `~/.trae/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; agents as Trae subagents in the project; skills (commands wrapped as skills) in Trae's own user-level folder. |
 | `zed` | `<project>/.rules`, `~/.agents/skills/`, `~/.config/apothem/{rules,templates}/` | Project-scope manifest adapter; flat project-root file; skills (commands wrapped as skills) in the shared user-level folder. |
 | `glm` | `<project>/.apothem/providers/glm.toml` | Project-scope provider adapter (GLM / Z.ai model backend; TOML config only). |
 

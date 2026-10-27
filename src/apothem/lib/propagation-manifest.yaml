@@ -926,6 +926,15 @@ harnesses:
         target: "${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # CodeBuddy reads subagents from <project>/.codebuddy/agents/*.md
+      # (https://www.codebuddy.ai/docs/cli/sub-agents, retrieved 2026-10-27).
+      # codebuddy_agents writes each agent with the keys CodeBuddy documents
+      # (name, description, tools, disallowedTools, maxTurns), one file per
+      # agent. A same-named file the operator wrote is backed up first.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.codebuddy/agents/"
+        mode: codebuddy_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -995,10 +1004,8 @@ harnesses:
     # and out of apothem's adapter scope. Skills and command skills install at
     # Trae's user-level skills folder ~/.trae/skills/, and the rules and templates
     # corpus at ~/.config/apothem/, ahead of the project rule.
-    # TODO(clarify): Trae's China edition may read ~/.trae-cn/skills/ instead of
-    # ~/.trae/skills/ (its changelog says the global directories are
-    # compatible, which was not read directly). Until a probe settles it, this
-    # block writes ~/.trae/skills/ only.
+    # The English and Chinese skills pages both give ~/.trae/skills (read
+    # 2026-10-27), so the user skills folder is ~/.trae/skills/.
     # The adapter at src/apothem/harnesses/trae/ opts into the project-scope
     # contract (requires_project = True).
     install:
@@ -1024,6 +1031,18 @@ harnesses:
         target: "${PROJECT_ROOT}/.trae/rules/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Trae reads subagents from <project>/.trae/agents/*.md
+      # (https://docs.trae.ai/ide/subagents, retrieved 2026-10-27). trae_agents
+      # writes each agent with the keys Trae documents (name, description,
+      # tools, disallowedTools), one file per agent. Project scope only: the
+      # user-level agents path is documented as ~/.trae-cn/agents/ while every
+      # other Trae user path is ~/.trae/, so the user folder waits for a probe.
+      # TODO(clarify): which of ~/.trae/agents/ and ~/.trae-cn/agents/ an
+      # international install reads.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.trae/agents/"
+        mode: trae_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"

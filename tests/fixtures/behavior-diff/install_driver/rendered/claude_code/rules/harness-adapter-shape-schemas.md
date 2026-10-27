@@ -26,7 +26,7 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 |---|---|---|---|
 | antigravity | `~/.gemini/GEMINI.md` plus `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` | Markdown global context plus JSON plugin metadata | `src/apothem/harnesses/antigravity/` |
 | claude_code | `settings.json` (+ one managed block in `CLAUDE.md`; the rest of it operator-owned) | JSON; Claude Code settings schema | `src/apothem/harnesses/claude_code/` |
-| codebuddy | `<project>/.codebuddy/rules/apothem-rules.md` | Markdown rules-directory file; CodeBuddy rules schema | `src/apothem/harnesses/codebuddy/` |
+| codebuddy | `<project>/.codebuddy/rules/apothem-rules.md` plus `<project>/.codebuddy/agents/` | Markdown rules-directory file plus Markdown subagents; CodeBuddy rules schema | `src/apothem/harnesses/codebuddy/` |
 | codex | `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/` | Markdown, JSON hooks, TOML custom agents, shared skills; OpenAI Codex schema | `src/apothem/harnesses/codex/` |
 | cursor | `<project>/.cursor/rules/apothem-rules.mdc` | Markdown + YAML frontmatter; Cursor rules schema | `src/apothem/harnesses/cursor/` |
 | gemini_cli | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` | Markdown context plus TOML commands and Markdown skills/agents | `src/apothem/harnesses/gemini_cli/` |
@@ -37,7 +37,7 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 | open_claw | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | JSON native config plus support cohorts | `src/apothem/harnesses/open_claw/` |
 | opencode | `~/.config/opencode/opencode.json` plus native commands, skills, and agents | JSON native config plus Markdown cohorts | `src/apothem/harnesses/opencode/` |
 | qwen_code | `~/.qwen/settings.json`, `~/.qwen/QWEN.md`, native commands, skills, and agents | JSON settings plus Markdown context/cohorts | `src/apothem/harnesses/qwen_code/` |
-| trae | `<project>/.trae/rules/apothem-rules.md` | Markdown rules-directory file; Trae workspace rules schema | `src/apothem/harnesses/trae/` |
+| trae | `<project>/.trae/rules/apothem-rules.md` plus `<project>/.trae/agents/` | Markdown rules-directory file plus Markdown subagents; Trae workspace rules schema | `src/apothem/harnesses/trae/` |
 | windsurf | `<project>/.devin/rules/apothem-rules.md` | Markdown; Devin Desktop / Windsurf rules schema | `src/apothem/harnesses/windsurf/` |
 | zed | `<project>/.rules` | Markdown rules file (`.rules`); Zed rules schema | `src/apothem/harnesses/zed/` |
 | glm | `<project>/.apothem/providers/glm.toml` | TOML provider config; GLM (Z.ai) Anthropic/OpenAI-compatible backend schema | `src/apothem/harnesses/glm/` |
@@ -70,9 +70,9 @@ Discovery walks read the harness's vendor-pinned schema (per the STANDARD CONVEN
 | opencode | Materializes `opencode.json` while also writing native commands, skills, and agents under `~/.config/opencode/` |
 | qwen_code | Materializes `settings.json` plus `QWEN.md` and writes native command, skill, and agent cohorts under `~/.qwen/` |
 | windsurf | No materializer; project-scope adapter writes `<project>/.devin/rules/apothem-rules.md` (the preferred Devin Desktop surface; `.windsurf/rules/` is the backward-compat fallback) via one `sentinel_merge`, installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
-| codebuddy | No materializer; project-scope adapter writes `<project>/.codebuddy/rules/apothem-rules.md`, installs skills and command skills in the user-level `~/.codebuddy/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
+| codebuddy | No materializer; project-scope adapter writes `<project>/.codebuddy/rules/apothem-rules.md`, writes the agents as CodeBuddy subagents in `<project>/.codebuddy/agents/`, installs skills and command skills in the user-level `~/.codebuddy/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
 | kiro | No materializer; project-scope adapter writes `<project>/.kiro/steering/apothem-rules.md`, installs skills and command skills in the user-level `~/.kiro/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
-| trae | No materializer; project-scope adapter writes `<project>/.trae/rules/apothem-rules.md` alongside the vendor `project_rules.md` / `user_rules.md` anchors without clobbering them, and installs skills and command skills in the user-level `~/.trae/skills/` and the rules and templates corpus in `~/.config/apothem/` |
+| trae | No materializer; project-scope adapter writes `<project>/.trae/rules/apothem-rules.md` alongside the vendor `project_rules.md` / `user_rules.md` anchors without clobbering them, writes the agents as Trae subagents in `<project>/.trae/agents/`, and installs skills and command skills in the user-level `~/.trae/skills/` and the rules and templates corpus in `~/.config/apothem/` |
 | zed | No materializer; project-scope adapter writes the project-root `<project>/.rules` file, installs skills and command skills in the shared user-level `~/.agents/skills/` and the rules and templates corpus in `~/.config/apothem/`, and authors no other cohorts |
 | glm | No rules/skills/commands cohort; backend-provider adapter writes a single `<project>/.apothem/providers/glm.toml` configuring GLM (Z.ai) as an Anthropic/OpenAI-compatible model backend, and authors no governance surface |
 

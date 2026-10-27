@@ -213,7 +213,7 @@ harnesses:
     display: CodeBuddy
     config_format: markdown
     supports_hooks: false
-    supports_agents: false
+    supports_agents: true
     supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
@@ -225,7 +225,8 @@ harnesses:
       .codebuddy/settings.json, and the project .mcp.json (MCP servers) are
       operator-owned. Skills and commands (as skills) go to the user-level
       ~/.codebuddy/skills/, and the rules and templates corpus to
-      ~/.config/apothem/.
+      ~/.config/apothem/. Agents are rewritten as CodeBuddy subagents in
+      <project>/.codebuddy/agents/.
 
   - name: kiro
     display: Kiro
@@ -248,7 +249,7 @@ harnesses:
     display: Trae
     config_format: markdown
     supports_hooks: false
-    supports_agents: false
+    supports_agents: true
     supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
@@ -259,7 +260,9 @@ harnesses:
       operator-owned project_rules.md and user_rules.md anchors. The
       project .trae/mcp.json and .trae/skills/ surfaces are operator-owned.
       Skills and commands (as skills) go to the user-level ~/.trae/skills/,
-      and the rules and templates corpus to ~/.config/apothem/.
+      and the rules and templates corpus to ~/.config/apothem/. Agents are
+      rewritten as Trae subagents in <project>/.trae/agents/ (project scope
+      only).
 
   - name: zed
     display: Zed

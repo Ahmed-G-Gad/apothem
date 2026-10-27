@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10
     import tomli as tomllib
 
 from apothem.harnesses._shared import install_driver_converters as conv
+from apothem.harnesses._shared.install_driver_agent_emitters import AGENT_EMITTERS
 from apothem.harnesses._shared.install_driver_shared import emission_name
 from apothem.lib.harness_registry import iter_harness_entries
 from apothem.lib.propagation import load_manifest
@@ -112,6 +113,8 @@ def _render(harness: str, mode: str, path: Path) -> tuple[set[str], str, set[str
         "antigravity_agents": conv._antigravity_agent_text,
         "antigravity_rules": conv._antigravity_rule_text,
     }
+    # Every agent mode renders through its registry row.
+    renderers.update({mode: row.renderer for mode, row in AGENT_EMITTERS.items()})
     sidecars: set[str] = set()
     if mode == "command_skills":
         # Render with the identity the install uses: a user-level skills folder

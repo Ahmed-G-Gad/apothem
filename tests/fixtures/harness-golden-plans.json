@@ -453,6 +453,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/codebuddy/templates/apothem-rules.md",
       "target": "<ROOT>/.codebuddy/rules/apothem-rules.md"
+    },
+    {
+      "mode": "codebuddy_agents",
+      "source": "agents",
+      "target": "<ROOT>/.codebuddy/agents"
     }
   ],
   "kiro": [
@@ -507,6 +512,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/trae/templates/apothem-rules.md",
       "target": "<ROOT>/.trae/rules/apothem-rules.md"
+    },
+    {
+      "mode": "trae_agents",
+      "source": "agents",
+      "target": "<ROOT>/.trae/agents"
     }
   ],
   "zed": [

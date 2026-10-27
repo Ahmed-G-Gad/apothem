@@ -23,6 +23,10 @@ from apothem.harnesses._shared import (
     install_driver_planvalidation as planvalidation,
 )
 from apothem.harnesses._shared.install_driver_agent_apply import apply_agent_emitter
+from apothem.harnesses._shared.install_driver_agent_comma_tools import (
+    codebuddy_agent_text,
+    trae_agent_text,
+)
 from apothem.harnesses._shared.install_driver_agent_emitters import (
     AGENT_EMITTERS,
     AgentEmitter,
@@ -38,6 +42,8 @@ _REGISTERED_MODES = {
     "qwen_agents",
     "antigravity_agents",
     "claude_agents",
+    "codebuddy_agents",
+    "trae_agents",
 }
 
 
@@ -62,6 +68,8 @@ def test_rows_keep_the_renderers_and_target_names_they_always_had() -> None:
         "qwen_agents": (converters._qwen_agent_text, None, False),
         "antigravity_agents": (converters._antigravity_agent_text, None, False),
         "claude_agents": (claude_agent_text, None, False),
+        "codebuddy_agents": (codebuddy_agent_text, None, False),
+        "trae_agents": (trae_agent_text, None, False),
     }
     for mode, (renderer, extension, stale) in expected.items():
         emitter = AGENT_EMITTERS[mode]

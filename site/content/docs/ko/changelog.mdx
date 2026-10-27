@@ -20,6 +20,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **CodeBuddy and Trae now get Apothem's helpers as their own subagents.** The
+  install writes each Apothem helper into the project as a Markdown subagent
+  file, in `.codebuddy/agents/` for CodeBuddy and `.trae/agents/` for Trae,
+  where before neither tool received the helpers. A file keeps the helper's
+  instructions and carries the keys the tool documents: the name, the
+  description, the allowed and denied tools as the comma-separated strings both
+  tools read, and, for CodeBuddy only, the turn limit. A tool the tool's own
+  documentation does not name is left out of both lists, a helper that could
+  not edit files still cannot, and no model is set. Trae installs for the
+  project only, because its documentation gives two different user-level
+  folders for subagents and one of them is not confirmed. The two harness pages
+  explain the files, the switch Trae may need, and how an uninstall treats a
+  file of yours with an Apothem helper's name.
+
 ### Changed
 
 - **The docs site's Node type definitions match the Node it runs on.**

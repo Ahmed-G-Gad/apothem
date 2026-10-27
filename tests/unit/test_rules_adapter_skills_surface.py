@@ -23,6 +23,7 @@ import yaml
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared import install_driver_converters as conv
+from apothem.harnesses._shared.install_driver_agent_emitters import AGENT_EMITTERS
 from apothem.harnesses._shared.install_driver_shared import SHARED_EMISSION
 from apothem.lib.harness_registry import HARNESS_REGISTRY, get_harness_entry
 from apothem.lib.propagation import load_manifest
@@ -42,6 +43,9 @@ _SEVEN = {
     "trae": ("trae", ".trae/skills"),
 }
 _IDS = sorted(_SEVEN)
+
+#: The adapters that also write the agents cohort as native subagents.
+_WITH_AGENTS = frozenset({"codebuddy", "trae"})
 
 #: The harnesses that write ``~/.agents/skills/`` with the registered owner.
 _SHARED_AGENTS_SKILLS = ("cursor", "github-copilot", "windsurf", "zed")
@@ -68,7 +72,7 @@ def test_manifest_has_the_four_user_level_entries_before_the_project_anchor(
     # D19: the user-level steps run first, so a failure writing the user home
     # aborts the install before anything in the project changes.
     assert install[: len(user)] == user
-    anchors = install[len(user) :]
+    anchors = [e for e in install[len(user) :] if e.mode not in AGENT_EMITTERS]
     assert [e.mode for e in anchors] == ["sentinel_merge"]
     assert "${PROJECT_ROOT}" in anchors[0].target
 
@@ -94,9 +98,15 @@ def test_registry_lists_the_user_level_folders_and_cells(public_id: str) -> None
     for cell in ("skills", "commands", "templates"):
         assert cell not in entry.unsupported_rationale
     # The cohorts the adapter still does not write keep an honest rationale.
-    for cell in ("hooks", "agents"):
-        assert status[cell] == "unsupported"
-        assert entry.unsupported_rationale[cell].strip()
+    assert status["hooks"] == "unsupported"
+    assert entry.unsupported_rationale["hooks"].strip()
+    if public_id in _WITH_AGENTS:
+        assert status["agents"] == "converted"
+        assert status["sub_agent_dispatch"] == "native"
+        assert "agents" not in entry.unsupported_rationale
+    else:
+        assert status["agents"] == "unsupported"
+        assert entry.unsupported_rationale["agents"].strip()
 
 
 def test_the_seven_are_the_only_project_scope_rules_adapters_with_user_folders() -> (
@@ -117,7 +127,7 @@ def test_capability_dossier_declares_skills_and_converted_commands(
     entry = get_harness_entry(public_id)
     caps = yaml.safe_load((_REPO / entry.capabilities_path).read_text("utf-8"))
     assert caps["custom_command_support"] == "skills"
-    assert caps["sub_agent_dispatch"] is False
+    assert caps["sub_agent_dispatch"] is (public_id in _WITH_AGENTS)
     assert "skills" in caps["layered_context_surface"]
     assert "~/.config/apothem" in caps["layered_context_surface"]
     losses = caps["conversion_losses"]["commands"]
@@ -148,7 +158,9 @@ def test_convention_pin_records_the_skills_surface_and_the_open_probe(
     folder = _SEVEN[public_id][1]
     pin = (_REPO / entry.standard_pin_path).read_text("utf-8")
     flat = " ".join(pin.split())
-    assert "- Snapshot date: 2026-10-24" in pin
+    snapshot = re.search(r"^- Snapshot date: (\d{4}-\d{2}-\d{2})$", pin, re.MULTILINE)
+    assert snapshot is not None
+    assert snapshot.group(1) >= "2026-10-24"  # ISO dates compare as text
     assert f"~/{folder}/" in flat
     assert "rules-only posture" not in flat
     assert "deliberate rules-only" not in flat
@@ -157,16 +169,24 @@ def test_convention_pin_records_the_skills_surface_and_the_open_probe(
     assert "SHARED_TOPLEVEL_KEYS" in flat or "metadata" in flat
 
 
-def test_trae_records_the_china_edition_folder_as_an_open_question() -> None:
+def test_trae_records_the_user_agents_folder_as_an_open_question() -> None:
+    """Trae documents ``~/.trae-cn/agents/`` where its other user paths are ``~/.trae/``.
+
+    Both skills pages give ``~/.trae/skills`` (read 2026-10-27), so the earlier
+    open question about a ``~/.trae-cn/skills/`` folder is closed; the user
+    folder for subagents is the open one, and the install writes neither.
+    """
     pin = " ".join(
         (_REPO / get_harness_entry("trae").standard_pin_path).read_text("utf-8").split()
     )
-    assert "~/.trae-cn/skills/" in pin
+    assert "~/.trae-cn/agents/" in pin
     assert "TODO(clarify)" in pin
+    assert "~/.trae-cn/skills/" not in pin
     manifest = (_PKG / "lib" / "propagation-manifest.yaml").read_text("utf-8")
     block = manifest[manifest.index("\n  trae:\n") : manifest.index("\n  zed:\n")]
     assert "TODO(clarify)" in block
-    assert "~/.trae-cn/skills/" in block
+    assert "~/.trae-cn/agents/" in block
+    assert not any(".trae-cn" in e.target for e in load_manifest()["trae"].install)
     # The cross-tool folder stays out of Trae's block.
     assert ".agents/skills" not in "".join(
         e.target for e in load_manifest()["trae"].install

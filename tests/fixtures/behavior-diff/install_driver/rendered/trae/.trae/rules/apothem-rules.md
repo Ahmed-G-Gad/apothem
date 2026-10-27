@@ -15,7 +15,7 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.trae/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions and hook helpers are not installed by the Trae adapter.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as Trae subagents in `.trae/agents/` in this project, one file each; Trae loads that folder when Settings > Beta > Subagents > Enable Subagents Directory is on. Hook helpers are not installed by the Trae adapter.
 - **MCP** — Trae's tool-server surface (`.trae/mcp.json`) is operator-authored, not apothem-managed.
 - **Project skills directory** — Trae's project skill surface (`.trae/skills/`) is operator-authored, not apothem-managed.
 

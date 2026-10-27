@@ -12,6 +12,11 @@ global ``~/.trae/user_rules`` are never clobbered: Apothem writes only its own
 (``.trae/mcp.json``) and the project skill surface (``.trae/skills/``) are
 operator-owned and out of apothem's adapter scope.
 
+The install also writes Apothem's agents into the project as Trae subagents, one
+Markdown file each in ``<project>/.trae/agents/`` (the ``trae_agents`` mode), per
+https://docs.trae.ai/ide/subagents. It writes no user-level agents folder: the
+vendor documents ``~/.trae-cn/agents/`` while its other user paths use ``~/.trae/``.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.trae/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

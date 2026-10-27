@@ -6,20 +6,21 @@
 # does not author entries). The adapter
 # delivers a project rules file under .codebuddy/rules/, installs skills and
 # command skills at CodeBuddy's user-level ~/.codebuddy/skills/ and the rules
-# and templates corpus at ~/.config/apothem/, and does not dispatch sub-agents
-# or author agent/hook cohorts.
+# and templates corpus at ~/.config/apothem/, and writes Apothem's agents as
+# CodeBuddy subagents in .codebuddy/agents/. CodeBuddy dispatches sub-agents
+# natively through its Agent tool; the adapter authors no hook cohort.
 
 mcp_servers:
   - project-scope-.mcp.json-operator-owned
   - user-scope-~/.codebuddy/.mcp.json
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
-sub_agent_dispatch: false
+sub_agent_dispatch: true
 custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".codebuddy/rules/*.md directory plus ~/.codebuddy/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".codebuddy/rules/*.md directory plus .codebuddy/agents/*.md subagents, ~/.codebuddy/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -53,3 +54,20 @@ conversion_losses:
     version: "native:metadata.version"
     updated: "native:metadata.updated"
     portability: "native:metadata.portability"
+
+# Agents ship as CodeBuddy subagents in <project>/.codebuddy/agents/ (see
+# harnesses/_shared/install_driver_agent_comma_tools.py). CodeBuddy documents
+# name, description, tools, disallowedTools and maxTurns among its keys, so the
+# turn limit carries over. The tool fields are comma strings limited to the tool
+# names CodeBuddy's docs show; a source name outside that set is left out of the
+# field. version, updated and portability are Apothem metadata that CodeBuddy
+# does not list, so they are not written.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:disallowedTools"
+    maxTurns: "native:maxTurns"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"
