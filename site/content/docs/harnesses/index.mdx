@@ -78,19 +78,19 @@ profile.yaml + packaged cohorts
          +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
-         +-- cursor         --> <project>/.cursor/rules/*.mdc + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
-         +-- github-copilot --> <project>/.github/copilot-instructions.md + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md + <project>/.github/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- windsurf       --> <project>/.devin/rules/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- ...
 ```
 
 ## Skills in your user home
 
-Seven project-scope adapters write one rules file into your project (CodeBuddy
-and Trae also write the subagent files, in `.codebuddy/agents/` and
-`.trae/agents/`), and they also write Apothem's skills, and the rules and templates the skills cite, to folders
-in your user home:
+Seven project-scope adapters write one rules file into your project (four of
+them also write Apothem's helpers there as subagent files; each harness page names
+the folder), and they also write Apothem's skills, and the rules and templates the
+skills cite, to folders in your user home:
 
 ```text
 cursor, github-copilot, windsurf, zed  ->  ~/.agents/skills/ (codex writes it too)

@@ -25,9 +25,9 @@ Each adapter sub-package walks its harness's ratified config schema. The 17-harn
 | claude_code | `settings.json` (+ one managed block in `CLAUDE.md`; the rest of it operator-owned) | JSON; Claude Code settings schema | `src/apothem/harnesses/claude_code/` |
 | codebuddy | `<project>/.codebuddy/rules/apothem-rules.md` plus `<project>/.codebuddy/agents/` | Markdown rules-directory file plus Markdown subagents; CodeBuddy rules schema | `src/apothem/harnesses/codebuddy/` |
 | codex | `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/hooks/`, `~/.codex/agents/*.toml`, `~/.agents/skills/` | Markdown, JSON hooks, TOML custom agents, shared skills; OpenAI Codex schema | `src/apothem/harnesses/codex/` |
-| cursor | `<project>/.cursor/rules/apothem-rules.mdc` | Markdown + YAML frontmatter; Cursor rules schema | `src/apothem/harnesses/cursor/` |
+| cursor | `<project>/.cursor/rules/apothem-rules.mdc` plus `<project>/.cursor/agents/` | Markdown + YAML frontmatter plus Markdown subagents; Cursor rules schema | `src/apothem/harnesses/cursor/` |
 | gemini_cli | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` | Markdown context plus TOML commands and Markdown skills/agents | `src/apothem/harnesses/gemini_cli/` |
-| github_copilot | `.github/copilot-instructions.md` | Markdown prose; Copilot instructions schema | `src/apothem/harnesses/github_copilot/` |
+| github_copilot | `.github/copilot-instructions.md` plus `.github/agents/` | Markdown prose plus `.agent.md` custom agents; Copilot instructions schema | `src/apothem/harnesses/github_copilot/` |
 | hermes | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | YAML native config plus support cohorts | `src/apothem/harnesses/hermes/` |
 | kimi_code | `<project>/AGENTS.md`, `<project>/.kimi-code/skills/` plus `<project>/.kimi-code/.apothem/support/` | Markdown project instruction surface plus native skills and support cohorts | `src/apothem/harnesses/kimi_code/` |
 | kiro | `<project>/.kiro/steering/apothem-rules.md` | Markdown steering-directory file; Kiro steering schema | `src/apothem/harnesses/kiro/` |

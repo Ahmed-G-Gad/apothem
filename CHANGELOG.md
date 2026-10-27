@@ -24,6 +24,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folders for subagents and one of them is not confirmed. The two harness pages
   explain the files, the switch Trae may need, and how an uninstall treats a
   file of yours with an Apothem helper's name.
+- **GitHub Copilot and Cursor now get Apothem's helpers as their own agents.**
+  The install writes each Apothem helper into the project as a Markdown agent
+  file, in `.github/agents/` as `<name>.agent.md` for GitHub Copilot and in
+  `.cursor/agents/` as `<name>.md` for Cursor, where before neither tool
+  received the helpers. A file keeps the helper's instructions and carries the
+  keys the tool documents. Copilot has no key that denies a tool, so the
+  helper's allowed and denied tools become one list of Copilot tool aliases, and
+  an alias that would let a helper use a tool it is denied is left out. Cursor has
+  no tool list at all, so five read-only helpers that cannot run commands are
+  marked `readonly: true`, and the seven read-only helpers that run commands
+  drop the "read-only" label from their descriptions, since Cursor would not
+  enforce it. No model is set for either tool. Both install for the project
+  only; the Copilot files are part of your repository, so the cloud agent and
+  your teammates see them. The two harness pages explain the files, and how an
+  uninstall treats a file of yours with an Apothem helper's name.
 
 ### Changed
 

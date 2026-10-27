@@ -9,6 +9,12 @@ https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instruction
 User-scope is unavailable — Copilot's user-level settings live in IDE
 state (VS Code / JetBrains UI), not a file path the harness can write.
 
+The install also writes Apothem's agents into the project as Copilot custom agents,
+one ``<name>.agent.md`` file each in ``<project>/.github/agents/`` (the
+``copilot_agents`` mode), per
+https://docs.github.com/en/copilot/reference/custom-agents-configuration. It writes
+no user-level agents folder.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

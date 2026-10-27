@@ -477,6 +477,21 @@ harnesses:
         mode: sentinel_merge
         ownership_class: operator-owned
         profile_position: first
+      # Copilot reads custom agents from <project>/.github/agents/<name>.agent.md
+      # (https://docs.github.com/en/copilot/reference/custom-agents-configuration,
+      # retrieved 2026-10-27). copilot_agents writes each agent with name,
+      # description and a tools allowlist of Copilot aliases (the source denials
+      # are folded into the allowlist; Copilot has no deny key), one
+      # .agent.md file per agent. The folder is committed with the repository and
+      # is read by the cloud agent and by teammates, not only by this machine.
+      # A same-named file the operator wrote is backed up first. Project scope
+      # only: ~/.copilot/agents/ is a possible user-level follow-up.
+      # TODO(clarify): whether Copilot prefers .github/agents over .claude/agents
+      # when both hold an agent of the same name.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.github/agents/"
+        mode: copilot_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -579,6 +594,20 @@ harnesses:
         target: "${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Cursor reads subagents from <project>/.cursor/agents/<name>.md
+      # (https://cursor.com/docs/subagents, retrieved 2026-10-27). cursor_agents
+      # writes each agent with name, description and, for an agent that is
+      # read-only and holds no shell, readonly: true; Cursor has no tools key.
+      # A native .cursor/agents/ file wins over the same name in .claude/agents/
+      # or .codex/agents/ (the documented precedence), so the project copy
+      # supersedes the ~/.claude/agents/ import Claude Code's install feeds.
+      # A same-named file the operator wrote is backed up first.
+      # TODO(clarify): whether Cursor loads both the .cursor/agents/ copy and a
+      # ~/.claude/agents/ copy of one name or drops the lower one.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.cursor/agents/"
+        mode: cursor_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"

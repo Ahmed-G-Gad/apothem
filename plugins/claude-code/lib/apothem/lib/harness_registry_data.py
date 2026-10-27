@@ -290,6 +290,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="mdc",
         target_paths=(
             "<project>/.cursor/rules/apothem-rules.mdc",
+            "<project>/.cursor/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -304,13 +305,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
@@ -318,10 +319,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Cursor adapter does not author a Cursor hook cohort; it delivers the rules file and the skills.",
-            agents="The Cursor adapter does not author a Cursor agent cohort.",
             statuslines="No Cursor statusline file surface is pinned.",
             output_styles="No Cursor output-style file surface is pinned.",
-            sub_agent_dispatch="Apothem does not dispatch sub-agents through Cursor.",
             agent_memory="No Cursor durable memory file surface is adapter-owned.",
         ),
     ),
@@ -376,6 +375,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.github/copilot-instructions.md",
+            "<project>/.github/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -394,24 +394,22 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="unsupported",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
             hooks="The Copilot adapter does not author a Copilot hook cohort; it delivers the rules file and the skills.",
-            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); Apothem does not author agent profiles.",
             statuslines="No Copilot statusline file surface is pinned.",
             output_styles="No Copilot output-style file surface is pinned.",
             mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
-            sub_agent_dispatch="Copilot sub-agent dispatch is outside this adapter scope.",
             agent_memory="Copilot user memory is IDE/service state, not a file target.",
         ),
     ),
@@ -984,6 +982,12 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-10-02",
     ),
+    # Cursor loads this folder, and the Cursor adapter now writes its own
+    # <project>/.cursor/agents/ with the same agent names. The vendor's precedence
+    # (project subagents beat user ones, and .cursor/ beats .claude/ on a name
+    # clash, read 2026-10-27) puts that native copy first inside an installed
+    # project, so it supersedes this import there. Cursor stays a reader here:
+    # it still loads the folder in every project without a native copy.
     SharedRoot(
         path="~/.claude/agents/",
         owner="claude-code",

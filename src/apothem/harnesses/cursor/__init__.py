@@ -10,6 +10,10 @@ https://cursor.com/docs/rules. The legacy single-file
 current project rules surface; Cursor does not offer a file-based user-global
 rules surface.
 
+The install also writes Apothem's agents into the project as Cursor subagents, one
+Markdown file each in ``<project>/.cursor/agents/`` (the ``cursor_agents`` mode), per
+https://cursor.com/docs/subagents. It writes no user-level agents folder.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

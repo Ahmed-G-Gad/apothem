@@ -165,6 +165,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/cursor/templates/apothem-rules.mdc",
       "target": "<ROOT>/.cursor/rules/apothem-rules.mdc"
+    },
+    {
+      "mode": "cursor_agents",
+      "source": "agents",
+      "target": "<ROOT>/.cursor/agents"
     }
   ],
   "gemini-cli": [
@@ -229,6 +234,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/github_copilot/templates/copilot-instructions.md",
       "target": "<ROOT>/.github/copilot-instructions.md"
+    },
+    {
+      "mode": "copilot_agents",
+      "source": "agents",
+      "target": "<ROOT>/.github/agents"
     }
   ],
   "hermes": [

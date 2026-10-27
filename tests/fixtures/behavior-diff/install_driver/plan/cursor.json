@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/cursor/templates/apothem-rules.mdc",
     "target": "<ROOT>/.cursor/rules/apothem-rules.mdc"
+  },
+  {
+    "mode": "cursor_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.cursor/agents"
   }
 ]

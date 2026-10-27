@@ -16,7 +16,8 @@ apothem install --harness github-copilot --project /path/to/project
 ```
 
 The adapter derives the project instructions file from your shared profile and
-the shared Apothem rules and governance surface.
+the shared Apothem rules and governance surface, and writes Apothem's helpers as
+Copilot helper profiles in the project (see [Helper profiles](#helper-profiles)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -25,6 +26,7 @@ your user home, before it touches the project (see
 **Files written:**
 
 - `<project>/.github/copilot-instructions.md`, the instructions file.
+- `<project>/.github/agents/<name>.agent.md` for each Apothem helper, in the project.
 - `~/.agents/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -44,8 +46,8 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the instructions file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the instructions file, plus the `.apothem/` data folder every project install
-  creates.
+  gets the instructions file and the helper profile files in `.github/agents/`,
+  plus the `.apothem/` data folder every project install creates.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -57,6 +59,65 @@ These folders are shared. They are not private to the project:
 
 The install prints a note that names the folders it writes outside `--project`,
 and `--dry-run` lists them.
+
+## Helper profiles
+
+Copilot reads a helper profile from `<project>/.github/agents/<name>.agent.md`, per
+[GitHub's reference for these profiles](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
+The install writes one file per Apothem helper into that folder. It installs for
+the project only and writes no `~/.copilot/agents/` folder.
+
+Each file keeps the helper's instructions unchanged and carries these frontmatter
+keys:
+
+| Key | What Apothem writes |
+| --- | --- |
+| `name`, `description` | The helper's name and description. Copilot requires the description. |
+| `tools` | The tools the helper may use, as a list of Copilot tool aliases, for example `["read", "search", "execute"]`. |
+
+Copilot's `tools` key is an allowlist of aliases, and it has no key that denies a
+tool. So the helper's allowed tools and its denied tools are combined into the one
+list:
+
+| Copilot alias | Covers | Written for a helper that is allowed |
+| --- | --- | --- |
+| `read` | Read, NotebookRead | `Read` |
+| `search` | Grep, Glob | `Grep` or `Glob` |
+| `edit` | Edit, MultiEdit, Write, NotebookEdit | `Write`, `Edit` or `MultiEdit` |
+| `execute` | Bash, PowerShell | `Bash` or `PowerShell` |
+| `web` | WebSearch, WebFetch | `WebSearch` or `WebFetch` |
+| `todo` | TodoWrite | `TodoWrite` |
+
+Copilot has two more aliases, one for starting other helpers and `todo` for a
+task list. An alias is left out when the helper denies any tool it covers, because
+the alias would let the helper use that tool. A tool with no alias (for example `Monitor`) is
+left out. A helper that cannot edit files keeps that limit: it never gets `edit`.
+If every tool in a helper's list is left out, the file says `tools: []`, which
+gives the helper no tools, rather than omitting the key, which would give it every
+tool.
+
+The install writes no `model` key, so a helper uses the default model, and none of
+the other keys Copilot documents (`target`, `disable-model-invocation`,
+`user-invocable`, `mcp-servers`, `metadata`), a turn limit, or Apothem's `version`,
+`updated` and `portability` keys.
+
+Things to know:
+
+- `.github/agents/` is part of your repository. Teammates and Copilot's cloud coding service
+  read the same files, so commit them with the project or list
+  `.github/agents/` in `.gitignore`; Apothem does not choose for you.
+- The cloud coding service does not honor the `web` and `todo` aliases, so `citation-auditor`,
+  `fact-checker` and `research-scout` can read and search there but cannot fetch
+  pages.
+- The Copilot CLI also reads the repository's `.claude/agents/`, but not
+  `~/.claude/agents/`, so the Claude Code install does not reach Copilot.
+- A file of yours named like an Apothem helper (`<name>.agent.md`) is saved under
+  `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
+  Files with other names are never touched. Copilot's documentation does not say
+  what happens when the folder holds both `<name>.md` and `<name>.agent.md`.
+- Apothem has not confirmed whether Copilot prefers `.github/agents/` or
+  `.claude/agents/` for one name, or how the cloud coding service and VS Code treat a
+  frontmatter key they do not list.
 
 ## Profile-to-native-config mapping
 
@@ -105,9 +166,9 @@ apothem verify --harness github-copilot --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists; managed files are non-empty, and JSON or YAML
-   configs parse. Add `--profile PATH` to also confirm that the installed files
-   match that profile.
+2. Each managed target exists, the `.github/agents/` folder included; managed
+   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
+   also confirm that the installed files match that profile.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -124,6 +185,7 @@ Re-derives the project instructions file from the current shared profile state.
 
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
+It rewrites helper profile files that differ from the current ones, and adds any that are missing.
 
 ## Uninstalling
 
@@ -137,7 +199,9 @@ it. Before the change, a timestamped copy of the file is saved under
 `~/.apothem/backups/`. The shared profile YAML and Apothem engine are
 unaffected.
 
-The uninstall also removes the skill folders it wrote in `~/.agents/skills/` and the
+The uninstall also removes the helper profile files it wrote in `<project>/.github/agents/`
+and keeps any other file there; the folder is removed when it is left empty.
+It removes the skill folders it wrote in `~/.agents/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
 folder, may. In that case the uninstall keeps the folders, prints which install
@@ -165,6 +229,7 @@ python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness github-copilot --project /path/to/project` |
 | Verification failed | Run `apothem update --harness github-copilot --project /path/to/project`, then verify again |
+| Copilot lists none of the Apothem helpers | Check that `.github/agents/` holds the `.agent.md` files and that they are on the branch you are using, then run `apothem verify --harness github-copilot --project /path/to/project` |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness github-copilot --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

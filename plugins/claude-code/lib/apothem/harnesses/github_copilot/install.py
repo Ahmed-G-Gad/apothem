@@ -12,7 +12,9 @@ state (VS Code / JetBrains UI), not a file path the harness can write.
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``github_copilot``
 key (a ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/.github/copilot-instructions.md``, preceded by the user-level entries that
+``${PROJECT_ROOT}/.github/copilot-instructions.md`` and an apothem-owned
+``copilot_agents`` operation targeting ``${PROJECT_ROOT}/.github/agents/``,
+preceded by the user-level entries that
 install the skills in ``~/.agents/skills/`` and the rules and templates corpus in
 ``~/.config/apothem/``) and applied by the
 shared driver at ``apothem.harnesses._shared.install_driver``. The

@@ -27,6 +27,10 @@ from apothem.harnesses._shared.install_driver_agent_comma_tools import (
     codebuddy_agent_text,
     trae_agent_text,
 )
+from apothem.harnesses._shared.install_driver_agent_copilot_cursor import (
+    copilot_agent_text,
+    cursor_agent_text,
+)
 from apothem.harnesses._shared.install_driver_agent_emitters import (
     AGENT_EMITTERS,
     AgentEmitter,
@@ -44,6 +48,8 @@ _REGISTERED_MODES = {
     "claude_agents",
     "codebuddy_agents",
     "trae_agents",
+    "copilot_agents",
+    "cursor_agents",
 }
 
 
@@ -70,6 +76,8 @@ def test_rows_keep_the_renderers_and_target_names_they_always_had() -> None:
         "claude_agents": (claude_agent_text, None, False),
         "codebuddy_agents": (codebuddy_agent_text, None, False),
         "trae_agents": (trae_agent_text, None, False),
+        "copilot_agents": (copilot_agent_text, "agent.md", False),
+        "cursor_agents": (cursor_agent_text, None, False),
     }
     for mode, (renderer, extension, stale) in expected.items():
         emitter = AGENT_EMITTERS[mode]
