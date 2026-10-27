@@ -17,15 +17,17 @@ against managing it with Apothem.
 | Keep foundation files untouched | Remember not to overwrite `product.md` / `tech.md` / `structure.md` | The adapter writes only `apothem-rules.md` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
 | Share reusable skills and commands | Hand-copy each skill folder into `~/.kiro/skills/` and keep the copies current | Written to `~/.kiro/skills/` by the adapter, one copy for every project, and refreshed on `apothem update` |
+| Keep reusable helpers in sync | Hand-write each custom agent file under `.kiro/agents/` and track Kiro's tool categories | Fourteen helpers written to `.kiro/agents/` with their tools translated, and refreshed on `apothem update` |
 | Verify the config is correct | Manual inspection | `apothem verify --harness kiro --project <path>` |
 
 ## What Apothem manages
 
 The kiro adapter renders the shared rules into a dedicated `apothem-rules.md`
 steering file with `inclusion: always` front matter and does not touch Kiro's
-operator-authored foundation files. Kiro documents agent hooks, which the
-adapter does not write, so guardrail intent lives in the rule prose rather than
-a tool-call interception point.
+operator-authored foundation files. It also writes Apothem's fourteen helpers
+as Kiro custom agents in `<project>/.kiro/agents/`, for Kiro IDE 1.0 and Kiro CLI
+V3. Kiro documents agent hooks, which the adapter does not write, so guardrail
+intent lives in the rule prose rather than a tool-call interception point.
 Every change to the shared rules re-renders the file on the next
 `apothem update`.
 

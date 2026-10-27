@@ -240,7 +240,7 @@ harnesses:
     display: Kiro
     config_format: markdown
     supports_hooks: false
-    supports_agents: false
+    supports_agents: true
     supports_skills: true
     supports_custom_rules: true
     supports_output_styles: false
@@ -251,7 +251,9 @@ harnesses:
       (inclusion: always). Kiro foundation files (product.md, tech.md,
       structure.md) and specs are operator-owned. Skills and commands (as
       skills) go to the user-level ~/.kiro/skills/, and the rules and
-      templates corpus to ~/.config/apothem/.
+      templates corpus to ~/.config/apothem/. Agents are rewritten as Kiro
+      custom agents (Markdown, IDE 1.0 and CLI V3) in <project>/.kiro/agents/
+      (project scope only).
 
   - name: trae
     display: Trae

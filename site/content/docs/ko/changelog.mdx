@@ -70,6 +70,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and Devin labels custom subagents experimental and puts them behind a
   Subagents (Preview) setting. The two harness pages explain the files, and how
   an uninstall treats a file of yours with an Apothem helper's name.
+- **Kiro now gets Apothem's helpers as its own custom agents.** The install
+  writes each Apothem helper into the project as a Markdown agent file in
+  `.kiro/agents/`, where before Kiro received no helpers. The files are for Kiro
+  IDE 1.0 and Kiro CLI V3 (`kiro-cli --v3`), the versions that read the Markdown
+  format; no JSON profile and none of the older CLI 2.x keys are written. A file
+  keeps the helper's instructions and carries the name, the description and one
+  list of Kiro tool categories (`read`, `write`, `shell`, `web`, `subagent`).
+  Kiro has a single list for tools, so a helper's allowed and denied tools are
+  folded into it, and a category that would let a helper use a tool it is denied
+  is left out. No model is set. The install is for the project only, and Kiro
+  does not load a project's agents until you trust the workspace. The Kiro page
+  explains the files, the trust step, and how an uninstall treats a file of
+  yours with an Apothem helper's name.
 
 ### Changed
 

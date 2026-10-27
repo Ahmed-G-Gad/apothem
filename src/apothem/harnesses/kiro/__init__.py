@@ -11,6 +11,12 @@ operator-authored; the adapter writes only its own ``apothem-rules.md``
 steering file and never clobbers them. Kiro specs
 (``.kiro/specs/``) and agent hooks are out of apothem's adapter scope.
 
+The install also writes Apothem's agents into the project as Kiro custom agents,
+one Markdown file each in ``<project>/.kiro/agents/`` (the ``kiro_agents`` mode),
+per https://kiro.dev/docs/custom-agents/, retrieved 2026-10-27. Markdown agents
+are the format IDE 1.0 and Kiro CLI V3 (``kiro-cli --v3``) read; no CLI 2.x JSON
+profile is written, and the user folder ``~/.kiro/agents/`` is not.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.kiro/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

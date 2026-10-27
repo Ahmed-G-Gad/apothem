@@ -620,7 +620,7 @@ graph LR
     A --> GE["project GEMINI.md + .gemini<br/>Gemini CLI"]
     A --> GC["project .github/copilot-instructions.md + .github/agents + ~/.agents/skills + ~/.config/apothem<br/>GitHub Copilot"]
     A --> HE["~/.hermes/<br/>Hermes"]
-    A --> KI["project .kiro/steering + ~/.kiro/skills + ~/.config/apothem<br/>Kiro"]
+    A --> KI["project .kiro/steering + .kiro/agents + ~/.kiro/skills + ~/.config/apothem<br/>Kiro"]
     A --> OW["~/.openclaw/<br/>Open-Claw"]
     A --> OC["~/.config/opencode/<br/>OpenCode"]
     A --> QW["~/.qwen/<br/>Qwen Code"]
@@ -673,7 +673,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Hermes | User | `~/.hermes/` |
 | Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/agents/` + `<project>/.kimi-code/.apothem/support/` |
-| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Open-Claw | User | `~/.openclaw/` |
 | OpenCode | User | `~/.config/opencode/` |
 | Qwen Code | User | `~/.qwen/` |
@@ -682,7 +682,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 
 Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/harnesses). Authoring a new adapter? See the [new-harness-adapter authoring runbook](https://apothem.ahmedgad.com/docs/runbooks/new-harness-adapter-authoring/).
 

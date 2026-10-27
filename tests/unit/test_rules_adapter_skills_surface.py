@@ -45,7 +45,9 @@ _SEVEN = {
 _IDS = sorted(_SEVEN)
 
 #: The adapters that also write the agents cohort as native subagents.
-_WITH_AGENTS = frozenset({"codebuddy", "cursor", "github-copilot", "trae", "windsurf"})
+_WITH_AGENTS = frozenset(
+    {"codebuddy", "cursor", "github-copilot", "kiro", "trae", "windsurf"}
+)
 
 #: The harnesses that write ``~/.agents/skills/`` with the registered owner.
 _SHARED_AGENTS_SKILLS = ("cursor", "github-copilot", "windsurf", "zed")

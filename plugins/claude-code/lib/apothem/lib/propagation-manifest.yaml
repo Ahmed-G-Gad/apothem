@@ -1045,6 +1045,25 @@ harnesses:
         target: "${PROJECT_ROOT}/.kiro/steering/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Kiro reads custom agents from <project>/.kiro/agents/<name>.md (Markdown
+      # with YAML frontmatter, the body is the system prompt; IDE 1.0 and CLI V3,
+      # https://kiro.dev/docs/custom-agents/, retrieved 2026-10-27). kiro_agents
+      # writes each agent with name, description and a tools list of Kiro
+      # category tags (read, write, shell, web, subagent) in which the source
+      # tool grant and denials are already folded, and never model, permissions,
+      # excludedTools, resources, mcpServers, hooks or the CLI 2.x allowedTools.
+      # No release shipped a Kiro agents entry (v1.0.1 to v1.4.0), so there is
+      # nothing to retire and the stale-sweep list stays empty. A same-named file
+      # the operator wrote is backed up first. Project scope only: the user folder
+      # ~/.kiro/agents/ stays unwritten. A V3 interactive CLI session loads
+      # project agents only after the operator trusts the folder (CLI 2.33).
+      # TODO(clarify): which tools the read tag covers (grep and glob are mapped
+      # to it), what an omitted tools list selects, and whether CLI 2.x loads a
+      # V3 Markdown agent.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.kiro/agents/"
+        mode: kiro_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"

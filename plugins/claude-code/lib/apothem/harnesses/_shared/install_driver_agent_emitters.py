@@ -25,7 +25,9 @@ the GitHub Copilot and Cursor renderers, whose tool restriction is an alias
 allowlist and a single ``readonly`` flag, are in
 :mod:`install_driver_agent_copilot_cursor`, and the Kimi Code and Devin Local
 renderers, which translate the tool names into each vendor's own list, are in
-:mod:`install_driver_agent_kimi_devin`. Renderers for later modes are added
+:mod:`install_driver_agent_kimi_devin`, and the Kiro renderer, which folds the
+tool grant and denials into a list of category tags, is in
+:mod:`install_driver_agent_kiro`. Renderers for later modes are added
 outside that file so it stays under the module size ceiling.
 
 ``_INSTALL_ENTRY_MODES`` and ``OPERATION_LABELS`` in
@@ -46,6 +48,7 @@ from apothem.lib.claude_agent_mcp import claude_agent_text
 from .install_driver_agent_comma_tools import codebuddy_agent_text, trae_agent_text
 from .install_driver_agent_copilot_cursor import copilot_agent_text, cursor_agent_text
 from .install_driver_agent_kimi_devin import devin_agent_text, kimi_agent_text
+from .install_driver_agent_kiro import kiro_agent_text
 from .install_driver_converters import (
     _antigravity_agent_text,
     _codex_agent_text,
@@ -119,6 +122,7 @@ _EMITTERS: Final[tuple[AgentEmitter, ...]] = (
     AgentEmitter("cursor_agents", cursor_agent_text),
     AgentEmitter("kimi_agents", kimi_agent_text),
     AgentEmitter("devin_agents", devin_agent_text, exclude=_DEVIN_HELD_BACK),
+    AgentEmitter("kiro_agents", kiro_agent_text),
 )
 
 #: Agent emission modes by name. Adding an agent emission is one row above.

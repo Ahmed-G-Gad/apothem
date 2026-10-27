@@ -39,6 +39,7 @@ from apothem.harnesses._shared.install_driver_agent_kimi_devin import (
     devin_agent_text,
     kimi_agent_text,
 )
+from apothem.harnesses._shared.install_driver_agent_kiro import kiro_agent_text
 from apothem.harnesses._shared.install_driver_types import _INSTALL_ENTRY_MODES
 from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.propagation import HarnessRules, InstallEntry
@@ -56,6 +57,7 @@ _REGISTERED_MODES = {
     "cursor_agents",
     "kimi_agents",
     "devin_agents",
+    "kiro_agents",
 }
 
 #: The only row that holds source agents back: the three that need web tools, whose
@@ -92,6 +94,7 @@ def test_rows_keep_the_renderers_and_target_names_they_always_had() -> None:
         "cursor_agents": (cursor_agent_text, None, False),
         "kimi_agents": (kimi_agent_text, None, False),
         "devin_agents": (devin_agent_text, None, False),
+        "kiro_agents": (kiro_agent_text, None, False),
     }
     for mode, (renderer, extension, stale) in expected.items():
         emitter = AGENT_EMITTERS[mode]

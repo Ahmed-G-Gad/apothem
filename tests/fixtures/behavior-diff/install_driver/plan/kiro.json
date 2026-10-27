@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/kiro/templates/apothem-rules.md",
     "target": "<ROOT>/.kiro/steering/apothem-rules.md"
+  },
+  {
+    "mode": "kiro_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.kiro/agents"
   }
 ]

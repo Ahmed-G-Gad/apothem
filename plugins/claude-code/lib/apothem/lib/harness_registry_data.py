@@ -713,6 +713,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.kiro/steering/apothem-rules.md",
+            "<project>/.kiro/agents/",
             "~/.kiro/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -727,13 +728,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="not-applicable",
@@ -741,11 +742,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Kiro adapter does not author a Kiro hook cohort; it delivers the rules file and the skills.",
-            agents="The Kiro adapter does not author a Kiro sub-agent cohort.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
-            sub_agent_dispatch="Kiro documents custom agents (.kiro/agents and "
-            "the Kiro CLI); Apothem does not dispatch sub-agents through Kiro.",
         ),
     ),
     HarnessRegistryEntry(

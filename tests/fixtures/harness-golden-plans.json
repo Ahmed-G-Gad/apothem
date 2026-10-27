@@ -500,6 +500,11 @@
       "mode": "sentinel_merge",
       "source": "harnesses/kiro/templates/apothem-rules.md",
       "target": "<ROOT>/.kiro/steering/apothem-rules.md"
+    },
+    {
+      "mode": "kiro_agents",
+      "source": "agents",
+      "target": "<ROOT>/.kiro/agents"
     }
   ],
   "trae": [

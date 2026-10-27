@@ -13,7 +13,9 @@ operator-authored foundation files (``product.md``, ``tech.md``,
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``kiro`` key
 (a ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/.kiro/steering/apothem-rules.md``, preceded by the user-level entries that
+``${PROJECT_ROOT}/.kiro/steering/apothem-rules.md`` and an apothem-owned
+``kiro_agents`` operation targeting ``${PROJECT_ROOT}/.kiro/agents/``,
+preceded by the user-level entries that
 install the skills in ``~/.kiro/skills/`` and the rules and templates corpus in
 ``~/.config/apothem/``) and applied by the
 shared driver at ``apothem.harnesses._shared.install_driver``. The
