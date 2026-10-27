@@ -16,16 +16,11 @@ from apothem.lib.propagation import (
 
 from .install_driver_backup import _replace_path, write_bytes_safely
 from .install_driver_converters import (
-    _antigravity_agent_text,
     _antigravity_rule_text,
     _claude_rule_text,
-    _codex_agent_text,
     _command_skill_files,
-    _gemini_agent_text,
     _gemini_command_text,
     _native_markdown_command_text,
-    _opencode_agent_text,
-    _qwen_agent_text,
 )
 from .install_driver_merge import (
     _apply_operator_owned_file,
@@ -404,6 +399,22 @@ _COHORT_DOC_FILES: frozenset[str] = frozenset({"README.md", "AGENTS.md"})
 CohortRenderer = Callable[[Path], str]
 
 
+def _cohort_members(src: Path, exclude: frozenset[str] = frozenset()) -> list[Path]:
+    """Return the ``*.md`` members of a source cohort directory, in sorted order.
+
+    The documentation companions (:data:`_COHORT_DOC_FILES`) are never members,
+    and a member whose stem is in *exclude* is left out. The rendered-cohort
+    applier, the plan builder and the dry-run preview all enumerate through
+    this one function, so what an install writes, what the plan lists and what
+    an uninstall removes cannot drift apart.
+    """
+    return [
+        source_path
+        for source_path in sorted(src.glob("*.md"))
+        if source_path.name not in _COHORT_DOC_FILES and source_path.stem not in exclude
+    ]
+
+
 def _apply_rendered_cohort(
     entry: InstallEntry,
     *,
@@ -411,6 +422,7 @@ def _apply_rendered_cohort(
     operation: str,
     target_extension: str | None = None,
     remove_stale_markdown: bool = False,
+    exclude: frozenset[str] = frozenset(),
     harness_root: Path | None = None,
     project_root: Path | None = None,
     harness_name: str = "manual",
@@ -434,6 +446,9 @@ def _apply_rendered_cohort(
             earlier install is backed up and removed before the renamed target
             is written (``codex``, which changed its extension to ``.toml``).
             Its removal result is recorded; an error outcome skips that member.
+        exclude: Stems of source members this target is not given (see
+            :func:`_cohort_members`); a skipped member is neither rendered nor
+            written, and an earlier copy of it is left alone.
     """
     src = resolve_source(entry.source)
     dst = resolve_target(
@@ -460,9 +475,7 @@ def _apply_rendered_cohort(
     dst.mkdir(parents=True, exist_ok=True)
     root = _root_for(harness_root, project_root)
     results: list[MaterializationResult] = []
-    for source_path in sorted(src.glob("*.md")):
-        if source_path.name in _COHORT_DOC_FILES:
-            continue
+    for source_path in _cohort_members(src, exclude):
         if remove_stale_markdown:
             removed = _replace_path(
                 dst / source_path.name,
@@ -491,80 +504,6 @@ def _apply_rendered_cohort(
             )
         )
     return results
-
-
-def apply_codex_agents(
-    entry: InstallEntry,
-    *,
-    harness_root: Path | None = None,
-    project_root: Path | None = None,
-    harness_name: str = "manual",
-) -> list[MaterializationResult]:
-    """Install Markdown agent files as Codex TOML custom agents."""
-    return _apply_rendered_cohort(
-        entry,
-        renderer=_codex_agent_text,
-        operation="codex_agents",
-        target_extension="toml",
-        remove_stale_markdown=True,
-        harness_root=harness_root,
-        project_root=project_root,
-        harness_name=harness_name,
-    )
-
-
-def apply_gemini_agents(
-    entry: InstallEntry,
-    *,
-    harness_root: Path | None = None,
-    project_root: Path | None = None,
-    harness_name: str = "manual",
-) -> list[MaterializationResult]:
-    """Install normalized Gemini CLI Markdown subagent definitions."""
-    return _apply_rendered_cohort(
-        entry,
-        renderer=_gemini_agent_text,
-        operation="gemini_agents",
-        harness_root=harness_root,
-        project_root=project_root,
-        harness_name=harness_name,
-    )
-
-
-def apply_opencode_agents(
-    entry: InstallEntry,
-    *,
-    harness_root: Path | None = None,
-    project_root: Path | None = None,
-    harness_name: str = "manual",
-) -> list[MaterializationResult]:
-    """Install normalized OpenCode Markdown subagent definitions."""
-    return _apply_rendered_cohort(
-        entry,
-        renderer=_opencode_agent_text,
-        operation="opencode_agents",
-        harness_root=harness_root,
-        project_root=project_root,
-        harness_name=harness_name,
-    )
-
-
-def apply_qwen_agents(
-    entry: InstallEntry,
-    *,
-    harness_root: Path | None = None,
-    project_root: Path | None = None,
-    harness_name: str = "manual",
-) -> list[MaterializationResult]:
-    """Install normalized Qwen Code Markdown subagent definitions."""
-    return _apply_rendered_cohort(
-        entry,
-        renderer=_qwen_agent_text,
-        operation="qwen_agents",
-        harness_root=harness_root,
-        project_root=project_root,
-        harness_name=harness_name,
-    )
 
 
 def apply_gemini_commands(
@@ -657,37 +596,11 @@ def apply_antigravity_rules(
     )
 
 
-def apply_antigravity_agents(
-    entry: InstallEntry,
-    *,
-    ignore: IgnoreFn | None = None,
-    exclude: list[str] | None = None,
-    harness_root: Path | None = None,
-    project_root: Path | None = None,
-    harness_name: str = "manual",
-) -> list[MaterializationResult]:
-    """Install Markdown agents as Antigravity subagent definitions.
-
-    *ignore* and *exclude* are accepted for the shared emission signature; a
-    flat agents cohort uses neither.
-    """
-    del ignore, exclude
-    return _apply_rendered_cohort(
-        entry,
-        renderer=_antigravity_agent_text,
-        operation="antigravity_agents",
-        harness_root=harness_root,
-        project_root=project_root,
-        harness_name=harness_name,
-    )
-
-
 #: Harness-specific emission modes. Each applier takes the entry plus the
 #: ``ignore`` / ``exclude`` / ``harness_root`` / ``project_root`` /
 #: ``harness_name`` keywords; the install dispatcher looks a mode up here, so
 #: adding one is a single row.
 HARNESS_EMISSION_APPLIERS: dict[str, Callable[..., list[MaterializationResult]]] = {
-    "antigravity_agents": apply_antigravity_agents,
     "antigravity_rules": apply_antigravity_rules,
     "claude_rules": apply_claude_rules,
     "native_skills": apply_native_skills,

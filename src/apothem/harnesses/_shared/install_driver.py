@@ -34,17 +34,17 @@ from apothem.lib import install_ledger as install_ledger
 from apothem.lib.propagation import load_manifest as load_manifest
 from apothem.lib.propagation import resolve_target as resolve_target
 
+from .install_driver_agent_apply import apply_codex_agents as apply_codex_agents
+from .install_driver_agent_apply import apply_gemini_agents as apply_gemini_agents
+from .install_driver_agent_apply import apply_opencode_agents as apply_opencode_agents
+from .install_driver_agent_apply import apply_qwen_agents as apply_qwen_agents
 from .install_driver_apply import _COHORT_DOC_FILES as _COHORT_DOC_FILES
 from .install_driver_apply import apply_antigravity_rules as apply_antigravity_rules
 from .install_driver_apply import apply_claude_rules as apply_claude_rules
-from .install_driver_apply import apply_codex_agents as apply_codex_agents
 from .install_driver_apply import apply_command_skills as apply_command_skills
-from .install_driver_apply import apply_gemini_agents as apply_gemini_agents
 from .install_driver_apply import apply_gemini_commands as apply_gemini_commands
 from .install_driver_apply import apply_markdown_commands as apply_markdown_commands
 from .install_driver_apply import apply_merge_tree_entries as apply_merge_tree_entries
-from .install_driver_apply import apply_opencode_agents as apply_opencode_agents
-from .install_driver_apply import apply_qwen_agents as apply_qwen_agents
 from .install_driver_apply import apply_replace_tree as apply_replace_tree
 from .install_driver_apply import apply_write_text as apply_write_text
 from .install_driver_backup import _LEDGER_OUTCOMES as _LEDGER_OUTCOMES

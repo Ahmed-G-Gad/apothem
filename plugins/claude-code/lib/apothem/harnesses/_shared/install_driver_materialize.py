@@ -10,7 +10,6 @@ from typing import Any
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
-from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import (
@@ -18,17 +17,14 @@ from apothem.lib.propagation import (
     InstallEntry,
 )
 
+from .install_driver_agent_apply import apply_agent_emitter
+from .install_driver_agent_emitters import AGENT_EMITTERS
 from .install_driver_apply import (
     HARNESS_EMISSION_APPLIERS,
-    _apply_rendered_cohort,
-    apply_codex_agents,
     apply_command_skills,
-    apply_gemini_agents,
     apply_gemini_commands,
     apply_markdown_commands,
     apply_merge_tree_entries,
-    apply_opencode_agents,
-    apply_qwen_agents,
     apply_replace_tree,
     apply_write_text,
 )
@@ -148,29 +144,10 @@ def _dispatch_install_entry(
             harness_name=harness_name,
             skip=skills_sharing_command_target(entry, rules),
         )
-    if entry.mode == "codex_agents":
-        return apply_codex_agents(
-            entry,
-            harness_root=harness_root,
-            project_root=project_root,
-            harness_name=harness_name,
-        )
-    if entry.mode == "gemini_agents":
-        return apply_gemini_agents(
-            entry,
-            harness_root=harness_root,
-            project_root=project_root,
-            harness_name=harness_name,
-        )
-    if entry.mode == "opencode_agents":
-        return apply_opencode_agents(
-            entry,
-            harness_root=harness_root,
-            project_root=project_root,
-            harness_name=harness_name,
-        )
-    if entry.mode == "qwen_agents":
-        return apply_qwen_agents(
+    emitter = AGENT_EMITTERS.get(entry.mode)
+    if emitter is not None:
+        return apply_agent_emitter(
+            emitter,
             entry,
             harness_root=harness_root,
             project_root=project_root,
@@ -186,15 +163,6 @@ def _dispatch_install_entry(
     if entry.mode == "markdown_commands":
         return apply_markdown_commands(
             entry,
-            harness_root=harness_root,
-            project_root=project_root,
-            harness_name=harness_name,
-        )
-    if entry.mode == "claude_agents":
-        return _apply_rendered_cohort(
-            entry,
-            renderer=claude_agent_text,
-            operation="claude_agents",
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,
