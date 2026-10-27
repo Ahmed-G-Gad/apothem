@@ -11,7 +11,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Final
 
-from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.propagation import (
     HarnessRules,
     InstallEntry,
@@ -19,18 +18,14 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_apply import _COHORT_DOC_FILES
+from .install_driver_agent_emitters import AGENT_EMITTERS, AgentEmitter
+from .install_driver_apply import _cohort_members
 from .install_driver_converters import (
-    _antigravity_agent_text,
     _antigravity_rule_text,
     _claude_rule_text,
-    _codex_agent_text,
     _command_skill_files,
-    _gemini_agent_text,
     _gemini_command_text,
     _native_markdown_command_text,
-    _opencode_agent_text,
-    _qwen_agent_text,
 )
 from .install_driver_jsonmerge import CONFIG_UNPARSEABLE_CODE
 from .install_driver_merge import (
@@ -145,41 +140,20 @@ def _generated_targets_for_entry(
             for source_path in sorted(src.iterdir())
             if not _is_excluded_path(source_path, exclude)
         ]
+    emitter = AGENT_EMITTERS.get(entry.mode)
+    if emitter is not None:
+        return [
+            dst / emitter.target_name(source_path)
+            for source_path in _cohort_members(src, emitter.exclude)
+        ]
     if entry.mode == "command_skills":
+        return [dst / source_path.stem for source_path in _cohort_members(src)]
+    if entry.mode == "gemini_commands":
         return [
-            dst / source_path.stem
-            for source_path in sorted(src.glob("*.md"))
-            if source_path.name not in _COHORT_DOC_FILES
+            dst / f"{source_path.stem}.toml" for source_path in _cohort_members(src)
         ]
-    if entry.mode in {"codex_agents", "gemini_commands"}:
-        suffix = ".toml"
-        return [
-            dst / f"{source_path.stem}{suffix}"
-            for source_path in sorted(src.glob("*.md"))
-            if source_path.name not in _COHORT_DOC_FILES
-        ]
-    if entry.mode in {
-        "gemini_agents",
-        "opencode_agents",
-        "qwen_agents",
-        "antigravity_agents",
-    }:
-        return [
-            dst / source_path.name
-            for source_path in sorted(src.glob("*.md"))
-            if source_path.name not in _COHORT_DOC_FILES
-        ]
-    if entry.mode in {
-        "markdown_commands",
-        "claude_agents",
-        "claude_rules",
-        "antigravity_rules",
-    }:
-        return [
-            dst / source_path.name
-            for source_path in sorted(src.glob("*.md"))
-            if source_path.name not in _COHORT_DOC_FILES
-        ]
+    if entry.mode in {"markdown_commands", "claude_rules", "antigravity_rules"}:
+        return [dst / source_path.name for source_path in _cohort_members(src)]
     return []
 
 
@@ -316,16 +290,12 @@ _DRY_RUN_MESSAGE: Final[str] = DRY_RUN_MESSAGE
 
 #: Per-file directory modes whose native target keeps the source basename and
 #: whose body is a pure (source_path -> text) conversion. ``gemini_commands``
-#: is excluded — it renames to a ``.toml`` target and is handled inline.
+#: is excluded — it renames to a ``.toml`` target and is handled inline — and
+#: so is every agent mode, which :data:`AGENT_EMITTERS` describes.
 _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
-    "gemini_agents": _gemini_agent_text,
-    "opencode_agents": _opencode_agent_text,
-    "qwen_agents": _qwen_agent_text,
     "markdown_commands": _native_markdown_command_text,
-    "claude_agents": claude_agent_text,
     "claude_rules": _claude_rule_text,
     "antigravity_rules": _antigravity_rule_text,
-    "antigravity_agents": _antigravity_agent_text,
 }
 
 
@@ -370,6 +340,26 @@ def _prospective_merge_tree_outcomes(
     return outcomes
 
 
+def _prospective_agent_outcome(
+    emitter: AgentEmitter, source_path: Path, *, dst: Path
+) -> MaterializationOutcome:
+    """Classify one agent source against the file its emission would write."""
+    outcome = _prospective_file_outcome(
+        dst / emitter.target_name(source_path),
+        emitter.renderer(source_path).encode("utf-8"),
+    )
+    # A stale ``.md`` from a prior layout is removed before the renamed target
+    # is written, so its presence makes the child a change even when the
+    # rendered target already matches.
+    if (
+        outcome == "unchanged"
+        and emitter.remove_stale_markdown
+        and (dst / source_path.name).exists()
+    ):
+        outcome = "updated"
+    return outcome
+
+
 def _prospective_markdown_child_outcome(
     mode: str,
     source_path: Path,
@@ -394,17 +384,9 @@ def _prospective_markdown_child_outcome(
         if matches or (guard is not None and guard(skill_dir, matches) is not None):
             return "unchanged"
         return "updated" if skill_dir.exists() else "created"
-    if mode == "codex_agents":
-        outcome = _prospective_file_outcome(
-            dst / f"{source_path.stem}.toml",
-            _codex_agent_text(source_path).encode("utf-8"),
-        )
-        # A stale ``.md`` from a prior layout is removed before the ``.toml``
-        # is written, so its presence makes the child a change even when the
-        # rendered ``.toml`` already matches.
-        if outcome == "unchanged" and (dst / source_path.name).exists():
-            outcome = "updated"
-        return outcome
+    emitter = AGENT_EMITTERS.get(mode)
+    if emitter is not None:
+        return _prospective_agent_outcome(emitter, source_path, dst=dst)
     if mode == "gemini_commands":
         return _prospective_file_outcome(
             dst / f"{source_path.stem}.toml",
@@ -462,9 +444,11 @@ def _prospective_child_outcomes(
             render_tokens=not entry.user_level,
         )
     outcomes: list[MaterializationOutcome] = []
-    for source_path in sorted(src.glob("*.md")):
-        if source_path.name in _COHORT_DOC_FILES:
-            continue
+    emitter = AGENT_EMITTERS.get(entry.mode)
+    members = _cohort_members(
+        src, emitter.exclude if emitter is not None else frozenset()
+    )
+    for source_path in members:
         if entry.mode == "command_skills" and source_path.stem in skip:
             continue
         outcome = _prospective_markdown_child_outcome(
