@@ -54,11 +54,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `AGENTS.md` copies inside a worktree, and the same walk entered
   `site/node_modules`, which stretched a strict run past ten minutes. One
   shared tree walk in `_grep_base.py` now skips any directory that holds a
-  `.git` file or directory, plus the vendored, virtual-environment and cache
-  trees. `agnosticism-grep`, `agents-md-coverage-grep`, `dynamism-grep`,
-  `freshness-token-grep`, `plain-language-grep`, `reference-token-grep` and the
-  stray-suite sweep in `no-global-plans-grep` use it. In a single checkout they
-  scan the same files as before.
+  `.git` file or directory, plus the vendored, virtual-environment, cache and
+  build-output trees (`node_modules`, `_vendor`, `venv`, `dist`, `.next` and
+  similar), wherever they sit. `agnosticism-grep`, `agents-md-coverage-grep`,
+  `dynamism-grep`, `freshness-token-grep`, `plain-language-grep` and
+  `reference-token-grep` use it; the stray-suite sweep in `no-global-plans-grep`
+  keeps its own walk and now also stops at a nested checkout. Validators that
+  read one fixed folder, such as `naming-grep`, are unchanged. In a single
+  checkout the findings are the same, except that a file under one of the pruned
+  directory names is no longer read. `freshness-token-grep` and
+  `reference-token-grep` now list their findings in directory order instead of
+  one pass per file suffix.
 
 ## [1.4.0] - 2026-10-26
 

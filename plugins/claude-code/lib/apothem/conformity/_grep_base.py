@@ -34,9 +34,10 @@ nothing cannot pass unless it declares that an empty scope is expected.
 Tree walks. A validator that walks the repository from its root uses
 :func:`iter_tree_files`, which prunes every nested checkout (a worktree, a
 submodule, or a nested clone, each marked by a ``.git`` entry) and the
-generated or vendored trees in :data:`PRUNED_SEGMENTS`. Files below a nested
-checkout belong to another repository, so a root-level finding on one is a
-false positive, and a walk that descends into ``node_modules`` costs minutes.
+vendored, virtual-environment, cache and build-output trees in
+:data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
+repository, so a root-level finding on one is a false positive, and a walk that
+descends into ``node_modules`` or a built site costs minutes.
 """
 
 from __future__ import annotations
@@ -238,8 +239,10 @@ def finish_root_report(
 GIT_ENTRY: Final[str] = ".git"
 
 # Directory names no validator scans, wherever they sit below the root: VCS
-# state, vendored dependencies, virtual environments, and caches. A validator
-# with exclusions of its own keeps them and passes any further names as
+# state, vendored dependencies, virtual environments, caches, and build output
+# (``dist``, ``.next``, ``.audit``). The repository's ``.gitignore`` lists the
+# build-output names, so none of them holds authored content. A validator with
+# exclusions of its own keeps them and passes any further names as
 # ``extra_prune``.
 PRUNED_SEGMENTS: Final[frozenset[str]] = frozenset(
     {
@@ -253,6 +256,9 @@ PRUNED_SEGMENTS: Final[frozenset[str]] = frozenset(
         ".pytest_cache",
         ".ruff_cache",
         ".hypothesis",
+        ".audit",
+        ".next",
+        "dist",
     }
 )
 
@@ -264,36 +270,6 @@ def has_git_entry(directory: Path) -> bool:
     directory is a checkout root.
     """
     return os.path.lexists(directory / GIT_ENTRY)
-
-
-def is_inside_nested_checkout(
-    path: Path, root: Path, cache: dict[Path, bool] | None = None
-) -> bool:
-    """Return True iff ``path`` lies inside a checkout nested below ``root``.
-
-    Pre-conditions: ``path`` is ``root`` or lies below it, spelled the same
-    way (neither is resolved); anything else raises :class:`ValueError`.
-    Post-conditions: True iff some directory strictly between ``root`` and
-    ``path`` holds a ``.git`` entry. ``root`` itself is never nested, even
-    when it is a worktree whose ``.git`` is a file; a nested checkout's own
-    top directory is not between ``root`` and itself, so it is not inside
-    itself; checkouts above ``root`` are ignored. ``cache`` maps a directory
-    to whether it holds a ``.git`` entry: a caller testing many paths passes
-    one dict so each directory is probed once. The cache belongs to the caller
-    and should live no longer than its walk, because a marker created later
-    would otherwise be missed.
-    """
-    depth = len(path.relative_to(root).parts)
-    probes = cache if cache is not None else {}
-    directory = path.parent
-    for _ in range(depth - 1):
-        marked = probes.get(directory)
-        if marked is None:
-            marked = probes[directory] = has_git_entry(directory)
-        if marked:
-            return True
-        directory = directory.parent
-    return False
 
 
 def iter_tree_files(
@@ -312,8 +288,9 @@ def iter_tree_files(
     ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
     Post-conditions: yields existing regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
-    never enters a nested checkout (see :func:`is_inside_nested_checkout`; the
-    root is never nested), a directory named in the pruned set, or a symbolic
+    never enters a nested checkout (a directory below ``root`` that holds a
+    ``.git`` file or directory; ``root`` itself is never nested, even when its
+    ``.git`` is a file), a directory named in the pruned set, or a symbolic
     link to a directory. A directory it cannot read is skipped.
     """
     pruned = PRUNED_SEGMENTS.union(extra_prune)

@@ -22,8 +22,9 @@ Every other path is out of scope: tests, plans, harness adapter packages
 (whose per-harness catalog content legitimately names every harness), and
 all source code outside the four prose surfaces. A nested git checkout below
 the root (a Claude Code worktree under ``.claude/worktrees/``, a submodule, a
-nested clone) is another repository and is skipped, as are ``node_modules``,
-``_vendor``, and the generated trees, where no shipped surface lives.
+nested clone) is another repository and is skipped, as are the vendored,
+virtual-environment, cache and build-output trees (``node_modules``,
+``_vendor``, ``dist``), where no shipped surface lives.
 
 Detection — two closed classes.
 
@@ -99,13 +100,6 @@ _PRESET_PREFIXES: Final[tuple[str, ...]] = (
 # under a `templates/` leaf is NOT a companion — it is materialized output.
 _COMPANION_BASENAME: Final[str] = "AGENTS.md"
 _TEMPLATE_LEAF_FRAGMENT: Final[str] = "/templates/"
-
-# Generated output trees the walk skips, beyond the vendored, virtual-environment,
-# and cache trees the shared walk already prunes (``node_modules``,
-# ``_vendor``, ``.venv``, caches). No shipped surface lives in any of them, and
-# a nested git checkout (a worktree, a submodule, a nested clone) holds another
-# repository's files, so the walk skips those too.
-_GENERATED_TREES: Final[frozenset[str]] = frozenset({"dist", ".audit"})
 
 # Harness-bias forms. ``Claude Code`` (the brand phrase) and the branded
 # model names privilege one harness; the slug ``claude_code`` is the
@@ -295,14 +289,12 @@ def check(root: Path) -> GrepResult:
     Post-conditions: ``result.passed`` is True iff every in-scope shipped
     surface is free of privileging harness-brand references (outside fenced
     code) and re-introduced enforcement presets. Files inside a nested git
-    checkout, ``node_modules``, ``_vendor``, and the generated trees are never
-    read.
+    checkout, or below a directory the shared walk prunes (``node_modules``,
+    ``_vendor``, ``dist``), are never read.
     """
     findings: list[Finding] = []
     scanned = 0
-    for path in sorted(
-        iter_tree_files(root, (_MARKDOWN_SUFFIX,), extra_prune=_GENERATED_TREES)
-    ):
+    for path in sorted(iter_tree_files(root, (_MARKDOWN_SUFFIX,))):
         rel_posix = _relative_posix(path, root)
         if rel_posix is None:
             continue

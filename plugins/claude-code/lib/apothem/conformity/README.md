@@ -9,7 +9,7 @@
 | File | Purpose |
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
-| `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and generated or vendored trees), and the JSON envelope. Private to this package. |
+| `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -127,12 +127,19 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `parse_root_args`): `--help` prints usage and exits 0, and a usage error
   prints one line and exits 3 — never a traceback. A corpus walker resolves its
   root to an absolute path, so `.` and the absolute form inspect the same tree.
-- **Nested checkouts are not scanned.** A corpus walker that walks from the root
-  reads the checkout it was pointed at: it skips every nested git checkout (a
-  directory holding a `.git` file or directory, such as a worktree under
-  `.claude/worktrees/`, a submodule, or a nested clone) and the vendored or
-  generated trees (`node_modules`, `_vendor`, virtual environments, caches),
-  through `iter_tree_files` in `_grep_base.py`.
+- **A walk from the root skips nested checkouts.** A corpus walker that walks
+  from the root reads the checkout it was pointed at: it skips every nested git
+  checkout (a directory holding a `.git` file or directory, such as a worktree
+  under `.claude/worktrees/`, a submodule, or a nested clone) and the vendored,
+  virtual-environment, cache and build-output trees (`node_modules`, `_vendor`,
+  `venv`, `dist`, `.next`; the set is `PRUNED_SEGMENTS`), through
+  `iter_tree_files` in `_grep_base.py`. Six validators walk that way:
+  `agents-md-coverage-grep`, `agnosticism-grep`, `dynamism-grep`,
+  `freshness-token-grep`, `plain-language-grep` and `reference-token-grep`; the
+  stray-suite sweep in `no-global-plans-grep` stops at a nested checkout through
+  `has_git_entry` and keeps its own skip list. A walker confined to one fixed
+  subtree (`naming-grep` under `src/apothem/`, `redundancy-grep`, a plan suite's
+  own files) reads everything below that subtree.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many
   targets it examined), stamped by `finish_root_report`. A run that inspected
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite

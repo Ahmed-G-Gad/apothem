@@ -6,9 +6,10 @@ A root-level conformity walk must not report on files that belong to another
 checkout below the root: a Claude Code worktree under ``.claude/worktrees/``, a
 git submodule, or a nested clone. Each carries a ``.git`` entry (a file for a
 worktree or submodule, a directory for a clone). These tests cover the shared
-helpers in ``_grep_base`` directly, then plant the same offending file at the
-root and inside each kind of nested checkout for every validator that walks the
-tree, and assert only the root-level copy is reported.
+walk in ``_grep_base`` directly (what it prunes, which root it accepts, the order
+and the links it follows), then plant the same offending file at the root and
+inside each kind of nested checkout for every validator that walks the tree, and
+assert only the root-level copy is reported.
 
 For the validators whose scope is anchored at the root (the docs, rules and
 README surfaces), the nested checkout sits inside an in-scope directory, so the
@@ -35,7 +36,6 @@ from apothem.conformity import (
 from apothem.conformity._grep_base import (
     PRUNED_SEGMENTS,
     has_git_entry,
-    is_inside_nested_checkout,
     iter_tree_files,
 )
 
@@ -71,7 +71,7 @@ def _rel(root: Path, raw: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Helper predicates and the tree walk
+# The tree walk
 # ---------------------------------------------------------------------------
 
 
@@ -81,62 +81,6 @@ def test_has_git_entry_accepts_file_and_directory(tmp_path: Path) -> None:
     assert has_git_entry(tmp_path / "plain") is False
     (tmp_path / "plain").mkdir()
     assert has_git_entry(tmp_path / "plain") is False
-
-
-def test_nested_checkout_predicate_covers_both_kinds(tmp_path: Path) -> None:
-    make_worktree(tmp_path / ".claude" / "worktrees" / "wt")
-    make_clone(tmp_path / "third_party" / "clone")
-    in_worktree = _write(tmp_path / ".claude" / "worktrees" / "wt" / "deep" / "a.md")
-    in_clone = _write(tmp_path / "third_party" / "clone" / "a.md")
-    plain = _write(tmp_path / "docs" / "a.md")
-
-    assert is_inside_nested_checkout(in_worktree, tmp_path) is True
-    assert is_inside_nested_checkout(in_clone, tmp_path) is True
-    assert is_inside_nested_checkout(plain, tmp_path) is False
-
-
-def test_root_checkout_itself_is_not_nested(tmp_path: Path) -> None:
-    """The root carries its own ``.git`` (a file for a worktree); it is not nested."""
-    make_worktree(tmp_path)
-    assert is_inside_nested_checkout(_write(tmp_path / "a.md"), tmp_path) is False
-    assert is_inside_nested_checkout(_write(tmp_path / "d" / "a.md"), tmp_path) is False
-    make_clone(tmp_path / "sub")
-    assert is_inside_nested_checkout(_write(tmp_path / "sub" / "a.md"), tmp_path)
-
-
-def test_checkouts_above_the_root_do_not_count(tmp_path: Path) -> None:
-    """Only directories strictly between the root and the path are inspected."""
-    make_clone(tmp_path)
-    root = tmp_path / "pkg"
-    assert is_inside_nested_checkout(_write(root / "sub" / "a.md"), root) is False
-
-
-def test_nested_checkout_directory_itself_is_not_inside_itself(tmp_path: Path) -> None:
-    wt = make_worktree(tmp_path / "wt")
-    assert is_inside_nested_checkout(wt, tmp_path) is False
-    assert is_inside_nested_checkout(wt / ".git", tmp_path) is True
-
-
-def test_predicate_rejects_a_path_outside_the_root(tmp_path: Path) -> None:
-    root = tmp_path / "root"
-    root.mkdir()
-    with pytest.raises(ValueError, match="not in the subpath"):
-        is_inside_nested_checkout(tmp_path / "other" / "a.md", root)
-
-
-def test_predicate_cache_is_per_directory_and_caller_owned(tmp_path: Path) -> None:
-    clone = make_clone(tmp_path / "clone")
-    first = _write(clone / "a" / "a.md")
-    cache: dict[Path, bool] = {}
-    assert is_inside_nested_checkout(first, tmp_path, cache) is True
-    assert cache[clone / "a"] is False
-    assert cache[clone] is True
-    # A fresh cache sees a marker created after the first probe; a shared
-    # module-level cache would have kept answering from stale state.
-    late = _write(tmp_path / "late" / "a.md")
-    assert is_inside_nested_checkout(late, tmp_path) is False
-    make_worktree(tmp_path / "late")
-    assert is_inside_nested_checkout(late, tmp_path) is True
 
 
 def test_iter_tree_files_prunes_nested_checkouts_and_generated_trees(
@@ -163,21 +107,32 @@ def test_iter_tree_files_prunes_nested_checkouts_and_generated_trees(
     assert all(path.is_absolute() for path in found)
 
 
+def test_iter_tree_files_prunes_build_output_directories(tmp_path: Path) -> None:
+    """Built-site and build-output trees are listed by no validator."""
+    kept = _write(tmp_path / "site" / "content" / "docs" / "a.md")
+    for name in ("dist", ".next", ".audit"):
+        assert name in PRUNED_SEGMENTS
+        _write(tmp_path / name / "x.md")
+        _write(tmp_path / "site" / name / "pkg" / "x.md")
+
+    assert list(iter_tree_files(tmp_path, (".md",))) == [kept]
+
+
 def test_iter_tree_files_honours_names_and_extra_prune(tmp_path: Path) -> None:
     readme = _write(tmp_path / "pkg" / "README.md")
     _write(tmp_path / "pkg" / "NOTREADME.md")
-    _write(tmp_path / "dist" / "README.md")
-    _write(tmp_path / "pkg" / "dist" / "README.md")
+    _write(tmp_path / "scratch" / "README.md")
+    _write(tmp_path / "pkg" / "scratch" / "README.md")
 
     assert list(
-        iter_tree_files(tmp_path, names=("README.md",), extra_prune=("dist",))
+        iter_tree_files(tmp_path, names=("README.md",), extra_prune=("scratch",))
     ) == [readme]
     everything = {p.relative_to(tmp_path).as_posix() for p in iter_tree_files(tmp_path)}
     assert everything == {
         "pkg/README.md",
         "pkg/NOTREADME.md",
-        "dist/README.md",
-        "pkg/dist/README.md",
+        "scratch/README.md",
+        "pkg/scratch/README.md",
     }
 
 
@@ -191,6 +146,54 @@ def test_iter_tree_files_matches_rglob_on_a_plain_tree(tmp_path: Path) -> None:
     expected |= {p for p in tmp_path.rglob("*.mdx") if p.is_file()}
 
     assert set(iter_tree_files(tmp_path, (".md", ".mdx"))) == expected
+
+
+@pytest.mark.parametrize(
+    "make_root", [make_worktree, make_clone], ids=["worktree", "clone"]
+)
+def test_iter_tree_files_reads_the_checkout_it_is_pointed_at(
+    make_root: Callable[[Path], Path], tmp_path: Path
+) -> None:
+    """The root carries its own ``.git`` (a file in a worktree); it is not nested."""
+    root = make_root(tmp_path / "checkout")
+    top = _write(root / "README.md")
+    page = _write(root / "docs" / "a.md")
+    make_worktree(root / "nested")
+    _write(root / "nested" / "b.md")
+
+    assert list(iter_tree_files(root, (".md",))) == [top, page]
+
+
+def test_iter_tree_files_visits_siblings_in_name_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The order comes from the walk, not from how the filesystem lists a directory."""
+    real_walk = os.walk
+
+    def reversed_walk(top: Path) -> Iterator[tuple[str, list[str], list[str]]]:
+        for dirpath, dirnames, filenames in real_walk(top):
+            dirnames.reverse()
+            filenames.reverse()
+            yield dirpath, dirnames, filenames
+
+    monkeypatch.setattr(os, "walk", reversed_walk)
+    for rel in ("m.md", "k.md", "c/2.md", "c/1.md", "a/2.md", "a/1.md", "b/1.md"):
+        _write(tmp_path / rel)
+
+    found = [p.relative_to(tmp_path).as_posix() for p in iter_tree_files(tmp_path)]
+
+    assert found == ["k.md", "m.md", "a/1.md", "a/2.md", "b/1.md", "c/1.md", "c/2.md"]
+
+
+def test_iter_tree_files_does_not_enter_symlinked_directories(tmp_path: Path) -> None:
+    real = _write(tmp_path / "real" / "x.md")
+    try:
+        (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
+        (tmp_path / "real" / "up").symlink_to(tmp_path, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"this host cannot create a directory symlink: {exc}")
+
+    assert list(iter_tree_files(tmp_path, (".md",))) == [real]
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +322,28 @@ def test_no_global_plans_sweep_skips_nested_checkouts(tmp_path: Path) -> None:
     findings = no_global_plans_grep._sweep_stray_plans_dirs(tmp_path, frozenset())
 
     assert [f.path for f in findings] == ["workspace/.plans/"]
+
+
+@pytest.mark.parametrize(
+    "make_root", [make_worktree, make_clone], ids=["worktree", "clone"]
+)
+def test_validators_run_from_a_checkout_root_still_read_it(
+    make_root: Callable[[Path], Path], tmp_path: Path
+) -> None:
+    """A run from a worktree root must not collapse into ``inspected: 0``."""
+    leaky = (_FIXTURES / "plain-language-grep" / "fail.md").read_text(encoding="utf-8")
+    root = make_root(tmp_path / "checkout")
+    _write(root / "site" / "content" / "docs" / "page.md", leaky)
+    (root / "workspace" / ".plans").mkdir(parents=True)
+
+    result = plain_language_grep.check(root)
+    sweep = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+
+    assert result.scanned_count == 1
+    assert {_rel(root, f.path) for f in result.findings} == {
+        "site/content/docs/page.md"
+    }
+    assert [f.path for f in sweep] == ["workspace/.plans/"]
 
 
 _WALKERS: list[Callable[[Path], object]] = [
