@@ -71,7 +71,14 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-    uses: ./.github/workflows/reusable-python-setup.yml
+    # zizmor's self-repository audit asks for GitHub's `$/` form here. The
+    # pinned actionlint (v1.7.12, .pre-commit-config.yaml) rejects any
+    # reusable-workflow reference that is not `owner/repo/path@ref` or `./path`,
+    # so the call keeps `./` until actionlint accepts `$/`. Neither of the
+    # audit's risks applies: GitHub resolves a job-level `./` call from this
+    # workflow's own commit, not from files a step checked out, and the
+    # repository does not require SHA-pinned actions.
+    uses: ./.github/workflows/reusable-python-setup.yml  # zizmor: ignore[self-repository] see the comment above
     with:
       python-version: ${{ matrix.python-version }}
       runs-on: ${{ matrix.os }}
