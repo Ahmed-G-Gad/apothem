@@ -275,8 +275,11 @@ Recheck it before the next change to the publish workflow.
    right after creation means the credential has not propagated yet; wait a few
    minutes and retry.
 
-4. **Set the repository variables.** The Entra route is active as soon as all
-   three are set, so set them when no release tag is waiting for approval.
+4. **Set the repository variables.** While `VSCODE_MARKETPLACE_READY` is
+   `true`, the Entra route is active as soon as all three are set, so set them
+   when no release tag is waiting for approval. Without
+   `VSCODE_MARKETPLACE_READY=true` nothing signs in and the run skips the
+   publish.
 
    ```bash
    gh variable set AZURE_CLIENT_ID --body "<application-client-id>"
@@ -286,12 +289,17 @@ Recheck it before the next change to the publish workflow.
 
    Leave `VSCODE_MARKETPLACE_READY` and `VSCE_PAT` as they are. When
    `VSCE_AUTH` is `entra` but `AZURE_CLIENT_ID` or `AZURE_TENANT_ID` is empty,
-   the workflow logs a warning and uses the `VSCE_PAT` secret instead.
+   the workflow logs a warning, whether or not `VSCE_PAT` is set, and does not
+   use the Entra route. It then uses the `VSCE_PAT` secret if that is set; with
+   no secret it publishes nothing and the run still ends green, so look for the
+   warning.
 
 5. **Run the dry run.** Dispatch the workflow for an existing release tag with
-   `dry_run` set. It signs in, prints the Azure DevOps profile, and verifies
-   publisher access without publishing. Approve the waiting `release`
-   environment run.
+   `dry_run` set. On the Entra route it signs in, prints the Azure DevOps
+   profile, and verifies publisher access without publishing. The token route
+   has no dry run: if the log shows `Marketplace credential mode: pat`, the run
+   ends green with a warning and has verified nothing. Approve the waiting
+   `release` environment run.
 
    ```bash
    gh workflow run publish-vscode.yml --ref main -f tag=vX.Y.Z -f dry_run=true
@@ -331,7 +339,10 @@ Recheck it before the next change to the publish workflow.
    gallery lists the new version after about four minutes.
 
 9. **Decide on the token.** Keep `VSCE_PAT` until the first successful Entra
-   publish, then delete the secret if no fallback is wanted. To keep a fallback
+   publish, then delete the secret if no fallback is wanted. Once it is gone, a
+   deleted or empty Entra variable leaves the run green with no publish: with a
+   warning when `VSCE_AUTH` is still `entra`, and with only the skip notice
+   when it is not. Read the run's annotations after each tag. To keep a fallback
    past the retirement of global personal access tokens, create an
    organization-scoped token for `Ahmed-G-Gad` with the custom scope
    Marketplace Manage and the shortest expiry you accept, and store it as

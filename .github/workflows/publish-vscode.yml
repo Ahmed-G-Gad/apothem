@@ -20,8 +20,11 @@
 # and produces the packaged `.vsix` artifact. The maintainer adds the
 # publisher (`ahmed-g-gad`) membership or the token before the first publish.
 # The credential is a switch, not a retry: a failed Entra publish does not fall
-# back to the PAT, so flip `VSCE_AUTH` and dispatch again. A manual dispatch
-# with `dry_run` signs in and verifies publisher access without publishing.
+# back to the PAT, so flip `VSCE_AUTH` and dispatch again. On the Entra route a
+# manual dispatch with `dry_run` signs in and verifies publisher access without
+# publishing. The PAT route has no dry run: there the dispatch only warns that
+# nothing was verified. The values of `VSCE_AUTH` and `VSCODE_MARKETPLACE_READY`
+# are compared without regard to case, as a GitHub expression would.
 #
 # SHA-pinning policy mirrors the other workflows: every action `uses:` reference
 # is pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
@@ -40,7 +43,7 @@ on:
         required: true
         type: string
       dry_run:
-        description: Sign in with Entra ID and verify publisher access; publish nothing.
+        description: Entra route only - sign in with Entra ID and verify publisher access. Publishes nothing.
         required: false
         default: false
         type: boolean
@@ -140,14 +143,20 @@ jobs:
           MARKETPLACE_READY: ${{ vars.VSCODE_MARKETPLACE_READY }}
         run: |
           set -euo pipefail
+          # Compare without regard to case, as a GitHub expression would, so
+          # True and TRUE enable the publish as true does.
+          ready="${MARKETPLACE_READY:-}"
+          auth="${VSCE_AUTH:-}"
           mode=none
-          if [ "${MARKETPLACE_READY:-}" = "true" ]; then
-            if [ "${VSCE_AUTH:-}" = "entra" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ]; then
+          if [ "${ready,,}" = "true" ]; then
+            if [ "${auth,,}" = "entra" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ]; then
               mode=entra
-            elif [ -n "${VSCE_PAT:-}" ]; then
-              mode=pat
-              if [ "${VSCE_AUTH:-}" = "entra" ]; then
-                echo "::warning title=Entra variables incomplete::VSCE_AUTH=entra but AZURE_CLIENT_ID or AZURE_TENANT_ID is empty; using the VSCE_PAT fallback."
+            else
+              if [ "${auth,,}" = "entra" ]; then
+                echo "::warning title=Entra variables incomplete::VSCE_AUTH=entra but AZURE_CLIENT_ID or AZURE_TENANT_ID is empty, so the Entra route is not used."
+              fi
+              if [ -n "${VSCE_PAT:-}" ]; then
+                mode=pat
               fi
             fi
           fi
@@ -174,6 +183,12 @@ jobs:
           set -euo pipefail
           publisher="$(node -p "require('./package.json').publisher")"
           ../vsce-tool/.github/vsce/node_modules/.bin/vsce verify-pat "${publisher}" --azure-credential
+      - name: Dry run - the PAT route has no dry run
+        # Without this step a dry run on the PAT route is a green run that
+        # verified nothing.
+        if: ${{ steps.auth.outputs.mode == 'pat' && inputs.dry_run }}
+        run: |
+          echo "::warning title=Dry run verified nothing::The PAT route has no dry run, so nothing was signed in, verified or published. Set VSCE_AUTH=entra with AZURE_CLIENT_ID and AZURE_TENANT_ID to dry-run the Entra route."
       - name: Publish to Visual Studio Marketplace (Entra ID)
         # No VSCE_PAT: vsce prefers it over --azure-credential. No AZURE_CLIENT_ID either.
         if: ${{ steps.auth.outputs.mode == 'entra' && !inputs.dry_run }}
