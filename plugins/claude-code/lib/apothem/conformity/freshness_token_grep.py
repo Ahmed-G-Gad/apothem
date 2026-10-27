@@ -27,6 +27,8 @@ root ``README.md`` and every ``*.md`` / ``*.mdx`` under
 ``site/content/docs/``. Developer-only surfaces (rules, commands,
 matchers, plans, adapter modules) are out of scope — their process
 vocabulary is load-bearing, exactly as the plain-language boundary draws it.
+A nested git checkout below the root (a worktree, a submodule, a nested
+clone) is another repository and is skipped.
 
 Detection. Each denylist phrase is matched case-insensitively. Pure-alpha
 phrases anchor at word boundaries; punctuation- or space-bearing phrases
@@ -55,6 +57,7 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     iter_prose_lines,
+    iter_tree_files,
     parse_root_args,
 )
 
@@ -211,18 +214,15 @@ def check(root: Path) -> GrepResult:
     inspected = 0
     root_resolved = root.resolve()
     if pattern is not None:
-        for suffix in sorted(_TEXT_SUFFIXES):
-            for path in root.rglob(f"*{suffix}"):
-                if not path.is_file():
-                    continue
-                try:
-                    rel_posix = path.resolve().relative_to(root_resolved).as_posix()
-                except ValueError:
-                    continue
-                if not _is_in_scope(rel_posix):
-                    continue
-                inspected += 1
-                findings.extend(_scan_file(path, rel_posix, pattern))
+        for path in iter_tree_files(root, sorted(_TEXT_SUFFIXES)):
+            try:
+                rel_posix = path.resolve().relative_to(root_resolved).as_posix()
+            except ValueError:
+                continue
+            if not _is_in_scope(rel_posix):
+                continue
+            inspected += 1
+            findings.extend(_scan_file(path, rel_posix, pattern))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

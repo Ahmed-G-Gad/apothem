@@ -65,6 +65,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_tree_files,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
 RULE_ANCHOR: Final[str] = "rules/agents-md-convention.md"
 
@@ -204,17 +210,19 @@ def meaningful_folders(root: Path) -> list[str]:
     Pre-conditions: ``root`` is the repository root (or a subtree).
     Post-conditions: returns the sorted, deduplicated POSIX-relative folder
     paths (``.`` denotes the root) that satisfy rule (A) or rule (B) and pass
-    the constant exclusions. Re-running over an unchanged tree yields the
-    identical set — the enumeration is the single source of truth the
-    presence/freshness check and the documentation convention both consume.
+    the constant exclusions. A folder inside a nested git checkout (a
+    worktree, a submodule, a nested clone) belongs to another repository and is
+    never listed. Re-running over an unchanged tree yields the identical set —
+    the enumeration is the single source of truth the presence/freshness check
+    and the documentation convention both consume.
     """
     root_resolved = root.resolve()
     folders: set[str] = set()
 
     # Rule (A): folders carrying a contributor README, minus fixture/example leaves.
-    for readme in root.rglob(README_NAME):
-        if not readme.is_file():
-            continue
+    for readme in iter_tree_files(
+        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS
+    ):
         rel = _rel_posix(readme.parent, root_resolved)
         if rel is None or _has_excluded_segment(rel):
             continue
@@ -224,9 +232,9 @@ def meaningful_folders(root: Path) -> list[str]:
 
     # Rule (B): src/apothem source-package folders without a README, minus
     # vendored trees and rendered harness-template leaves.
-    for py_file in root.rglob(f"*{_PYTHON_SUFFIX}"):
-        if not py_file.is_file():
-            continue
+    for py_file in iter_tree_files(
+        root, (_PYTHON_SUFFIX,), extra_prune=_EXCLUDED_SEGMENTS
+    ):
         rel = _rel_posix(py_file.parent, root_resolved)
         if rel is None or rel == ".":
             continue
@@ -366,10 +374,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     # Advisory posture: exit 0 on findings so the sweep never silent-blocks by

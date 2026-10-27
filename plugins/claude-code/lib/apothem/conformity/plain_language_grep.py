@@ -32,7 +32,8 @@ generated reference inventory blocks, ``rules/**``,
 ``scripts/**``, every ``*.py`` / ``*.sh`` / ``*.ps1`` source file,
 ``CLAUDE.md``, ``.github/copilot-instructions.md``. The dev-facing surface
 is permissive by design — only the general operator-facing prose is held
-to the plain-language bar.
+to the plain-language bar. A nested git checkout below the root (a worktree,
+a submodule, a nested clone) is another repository and is skipped.
 
 Detection. Each forbidden token is a word-boundary case-insensitive
 match. Matches inside fenced code blocks (triple-backtick) are excluded:
@@ -54,6 +55,12 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_tree_files,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "plain-language-grep"
 RULE_ANCHOR: Final[str] = "rules/plain-language.md — user-facing prose"
@@ -529,12 +536,8 @@ def check(root: Path) -> GrepResult:
     """
     findings: list[Finding] = []
     scanned = 0
-    candidates = sorted(
-        p for suffix in _MARKDOWN_SUFFIXES for p in root.rglob(f"*{suffix}")
-    )
+    candidates = sorted(iter_tree_files(root, _MARKDOWN_SUFFIXES))
     for path in candidates:
-        if not path.is_file():
-            continue
         if not _is_user_facing(path, root):
             continue
         scanned += 1
@@ -549,10 +552,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

@@ -41,11 +41,11 @@ on-disk plans directory under the root — including a legacy
 ``<root>/.plans`` an operator upgrades via ``apothem migrate-workspace``
 — is a stray suite and a Plans-Locality violation. The sweep walks the
 filesystem (skipping the vendored / generated / VCS trees that carry
-upstream conventions or machine state) and flags every plans directory
-that is not the canonical ``<root>/.apothem/plans``. The two checks are
-complementary: the git-index check catches a *tracked* plans path; the
-filesystem sweep catches an *untracked stray* plans directory the index
-check is blind to.
+upstream conventions or machine state, and any nested git checkout) and
+flags every plans directory that is not the canonical
+``<root>/.apothem/plans``. The two checks are complementary: the git-index
+check catches a *tracked* plans path; the filesystem sweep catches an
+*untracked stray* plans directory the index check is blind to.
 
 Exit semantics. Exits 0 when no findings; exits 2 on any finding.
 The exit-2 convention matches the conformity-gate orchestrator's
@@ -61,6 +61,12 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
+
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    has_git_entry,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "no-global-plans-grep"
 RULE_ANCHOR: Final[str] = "CLAUDE.md Plans Discipline (no global plans)"
@@ -182,7 +188,10 @@ def _sweep_stray_plans_dirs(
 
     The walk prunes the vendored / generated / VCS / cache trees in
     ``_SWEEP_SKIP_DIRS`` so a plans directory inside one of those (upstream or
-    machine state, never an apothem plan suite) is not flagged. It descends into
+    machine state, never an apothem plan suite) is not flagged, and it does not
+    enter a nested git checkout (a directory holding a ``.git`` file or
+    directory below the root: a worktree, a submodule, a nested clone), which
+    owns its own plans tree. It descends into
     ``.apothem`` directories (they hold operator memory/learning/contexts data
     alongside plans) but never descends into a plans tree itself or into the
     ``.apothem`` data children — only the ``plans`` child of an ``.apothem``
@@ -256,6 +265,11 @@ def _sweep_stray_plans_dirs(
                 except OSError:
                     pass
                 continue
+            if has_git_entry(entry):
+                # A nested git checkout (a worktree, a submodule, a nested
+                # clone) is another repository with its own plans tree, not a
+                # stray suite of this project.
+                continue
             stack.append(entry)
     return findings
 
@@ -325,10 +339,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     try:
         result = check(root)

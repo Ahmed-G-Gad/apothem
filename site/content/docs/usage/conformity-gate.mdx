@@ -44,6 +44,26 @@ checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
 when the root has no commit history.
 
+Six validators start at the repository root and search the whole tree for the
+files they check:
+
+```text
+agents-md-coverage-grep
+agnosticism-grep
+dynamism-grep
+freshness-token-grep
+plain-language-grep
+reference-token-grep
+```
+
+These skip nested git checkouts, such as worktrees, submodules and nested
+clones, and skip directories that hold dependencies, virtual environments,
+caches or build output, such as `node_modules`, `venv` and `dist`. The
+stray-plans check in `no-global-plans-grep` also stops at a nested checkout. A
+run of any of these reports on the checkout it was pointed at and on nothing
+else. A validator that reads one fixed folder, such as `naming-grep` under
+`src/apothem/`, reads everything below that folder.
+
 ## Gate bars
 
 | Bar | Check | Kind |
