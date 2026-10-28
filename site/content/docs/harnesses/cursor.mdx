@@ -16,8 +16,9 @@ apothem install --harness cursor --project /path/to/project
 ```
 
 The adapter renders a single project-scope `.mdc` rules file from the shared
-Apothem rules and governance surface, and writes Apothem's helpers as Cursor
-subagents in the project (see [Subagents](#subagents)).
+Apothem rules and governance surface, writes Apothem's helpers as Cursor
+subagents in the project (see [Subagents](#subagents)), and adds one hook to
+the project's `hooks.json` (see [Hooks](#hooks)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -27,6 +28,8 @@ your user home, before it touches the project (see
 
 - `<project>/.cursor/rules/apothem-rules.mdc`, the rules file.
 - `<project>/.cursor/agents/<name>.md` for each Apothem helper, in the project.
+- `<project>/.cursor/hooks.json`, with one `sessionStart` entry added to it. Your own entries and keys in it stay.
+- `<project>/.apothem/support/cursor/hooks/`, the hook scripts, in the project.
 - `~/.agents/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -49,8 +52,9 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the rules file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the rules file and the subagent files in `.cursor/agents/`, plus the
-  `.apothem/` data folder every project install creates.
+  gets the rules file, the subagent files in `.cursor/agents/`, the hook entry
+  in `.cursor/hooks.json`, plus the `.apothem/` folder every project install
+  creates, which also holds the hook scripts.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -121,6 +125,93 @@ Things to know:
   imported folders off, or whether it reads extensions other than `.md` or nested
   folders in `.cursor/agents/`.
 
+## Hooks
+
+Cursor runs hooks from `hooks.json` files, per the
+[Cursor hooks documentation](https://cursor.com/docs/hooks). The install adds one
+entry to `<project>/.cursor/hooks.json`:
+
+| Event | What runs |
+| --- | --- |
+| `sessionStart` | The session bootstrap: session metadata, the skill index, the memory and plan summaries and the standing posture, added to the conversation's initial context. |
+
+The hook adds context for the model. It does not block anything, and Cursor does
+not wait for a `sessionStart` hook.
+
+This first version registers nothing else. Cursor's documentation lists
+`additional_context` for `postToolUse` as well, and Apothem will register the
+context-size counter there once a probe shows that the context reaches the model.
+It registers no `preToolUse` guard: Cursor documents `agent_message`, the field a
+guard would speak through, only for an action it denies, and Apothem's guards never
+deny. The write, edit and shell guards, the `AskUserQuestion` check and the
+session-end protocol stay on the tools that deliver them.
+
+**Where the files go**
+
+| File | What it holds |
+| --- | --- |
+| `<project>/.cursor/hooks.json` | One `sessionStart` entry, merged into the file's `hooks` map. |
+| `<project>/.apothem/support/cursor/hooks/` | The dispatcher script, its helpers and its message files. |
+
+`hooks.json` is your file, and Cursor documents project hooks as checked into
+version control. The install adds Apothem's entry after yours and leaves your
+entries and other keys as they were; an update replaces only the entry whose
+command runs the Apothem dispatcher under this project, and an uninstall removes
+only that entry (the file is deleted only when Apothem created it and nothing else
+remains in it). A file with comments, a trailing comma or a `hooks` value of the
+wrong shape cannot be rewritten without losing something, so the install reports a
+`config.unparseable` error for that file, leaves it untouched and stops, with the
+other files it had begun to write removed again: fix the file, or add the entry
+yourself.
+
+**The committed file names your machine.** The entry's command holds the
+interpreter Apothem found when it ran and the absolute path of the project, so
+a teammate who checks out the file gets a command that points at your machine.
+Cursor reports a command it cannot find as failed and the session goes on, so
+nothing breaks, but the hook does nothing there. Commit the file only if your team
+shares that layout. Cursor documents no uncommitted variant of the project hook
+file. The `.apothem/` folder is where the scripts live, and the project's
+`.gitignore` snippet keeps it out of version control.
+
+A command looks like this, with your interpreter and project path in place of the
+two paths:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
+```
+
+On a Windows host the command starts with `& `, PowerShell's call operator, because
+Cursor's desktop app runs hook commands through PowerShell, where a line that
+starts with a quoted program path is not a call. `sh` reads a leading `&` as a
+syntax error, so no other host gets it. The documentation names the shell and not
+the quoting, so this is Apothem's reading of PowerShell's syntax.
+
+`--contract cursor` reads Cursor's `conversation_id` and `workspace_roots` and
+answers with `{"additional_context": ...}` and nothing else.
+
+**Cursor also runs the hooks Claude Code wrote.** Cursor loads the hooks in
+`~/.claude/settings.json`, `.claude/settings.json` and `.claude/settings.local.json`
+while "Include Third-Party Plugins, Skills, and Other Configs" is on (in Cursor
+Settings, under Third-Party Imports), which is the default, and it runs every
+matching hook from every source. If you also installed Apothem for Claude Code,
+both sets of hooks can run. The `sessionStart` command here records one marker per
+session, so a repeat of that same command is silent, but the Claude Code copy is a
+separate command, and its context-size counter runs in addition. Apothem does not
+de-duplicate the counters. To run only the hook here, turn that setting off; it also
+stops Cursor importing third-party plugins, skills and other configs. The install
+prints this as a note.
+
+**Things to know.** Cursor reloads `hooks.json` when it is saved, so a restart is
+not needed. Project hooks run in trusted workspaces. Cursor's cloud runs a
+repository's project hooks but defers `sessionStart`, so the entry does not fire
+there. Set `APOTHEM_HOOKS_DISABLE=1` in Cursor's environment to silence the Apothem
+hook.
+
+{/* TODO(clarify): Cursor's default hook timeout (the entry sets 30 seconds), how
+its CLI runs hook commands on Windows, whether one command string can serve both sh
+and PowerShell, and whether the postToolUse context reaches the model; see the Hooks
+section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
+
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the project rules file
@@ -157,8 +248,10 @@ apothem verify --harness cursor --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists, the `.cursor/agents/` folder included; managed
-   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
+2. Each managed target exists, the `.cursor/agents/` folder and the hook file
+   `.cursor/hooks.json` included; managed
+   files are non-empty, and JSON or YAML configs parse. The check does not read
+   the hook entry or run it. Add `--profile PATH` to
    also confirm that the installed files match that profile. For
    `.cursor/agents/` the check is that the folder exists, not that each helper
    file is in it; `apothem diff --harness cursor --project /path/to/project`
@@ -180,6 +273,8 @@ Re-derives the project rules file from the current shared profile state.
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
 It rewrites subagent files that differ from the current ones, and adds any that are missing.
+It also refreshes the hook scripts and the Apothem entry in `.cursor/hooks.json`,
+leaving your own entries alone.
 
 ## Uninstalling
 
@@ -196,6 +291,10 @@ unaffected.
 
 The uninstall also removes the subagent files it wrote in `<project>/.cursor/agents/`
 and keeps any other file there; the folder is removed when it is left empty.
+It removes the Apothem entry from `<project>/.cursor/hooks.json`, recognising it by
+the dispatcher path in its command, and keeps your own entries and keys. The file is
+deleted only when nothing else remains in it. The hook scripts in
+`<project>/.apothem/support/cursor/hooks/` go too.
 It removes the skill folders it wrote in `~/.agents/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
@@ -217,6 +316,9 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness cursor --project /path/to/project` |
 | Verification failed | Run `apothem update --harness cursor --project /path/to/project`, then verify again |
 | Cursor lists none of the Apothem helpers | Run `apothem diff --harness cursor --project /path/to/project`. A pending line for the `.cursor/agents` folder means helper files are missing or out of date, so run `apothem update --harness cursor --project /path/to/project`. `apothem verify` is not a test of this: it passes when `.cursor/agents/` exists, even with no helper file in it. If `diff` reports no pending changes, check that the project is open in Cursor and start a new chat |
+| The Apothem hook does not run | Cursor runs project hooks in trusted workspaces only. Open the Hooks tab in Customize, or the Hooks output channel, to see whether the entry loaded and what it reported. A file written on another machine names that machine's interpreter, so Cursor reports the command as failed: run `apothem update --harness cursor --project /path/to/project` here |
+| An install reports `config.unparseable` for `hooks.json` | The file has comments, a trailing comma or a `hooks` value of the wrong shape. Fix the file and install again, or add the `sessionStart` entry yourself |
+| The Apothem context appears twice | Cursor also runs the hooks the Claude Code install wrote. Turn off "Include Third-Party Plugins, Skills, and Other Configs" in Cursor Settings, under Third-Party Imports, to run only the hook in `.cursor/hooks.json` |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness cursor --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

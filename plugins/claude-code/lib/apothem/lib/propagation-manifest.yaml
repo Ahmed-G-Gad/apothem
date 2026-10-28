@@ -597,6 +597,46 @@ harnesses:
         target: "${PROJECT_ROOT}/.devin/agents/"
         mode: devin_agents
         ownership_class: apothem-owned
+      # Devin Local runs hooks from the `hooks` key of its config files, and
+      # reads the same Claude-shaped object ({Event: [{matcher?, hooks: [{type,
+      # command, timeout}]}]}) from .devin/config.json, .devin/config.local.json,
+      # .devin/hooks.v1.json and .claude/settings*.json
+      # (https://docs.devin.ai/cli/extensibility/hooks/overview.md, retrieved
+      # 2026-10-28). The registration goes in the local override
+      # <project>/.devin/config.local.json, which the vendor documents as
+      # gitignored, never the shared config.json or the .claude/ settings the
+      # Claude Code install uses: each command names the install-resolved
+      # interpreter and the project path, which are machine-specific. The
+      # template is key-merged by the Claude-shaped hook merge: an operator's own
+      # hooks and keys stay, Apothem's handlers are told apart by the dispatcher
+      # path in their command, and an uninstall removes only those. Only the two
+      # events whose additionalContext Devin hands to the model are registered,
+      # SessionStart (the bootstrap) and PostToolUse (the proactive-compaction
+      # tracker); the PreToolUse guards are not, because Devin documents no
+      # context channel for PreToolUse. No matcher is written: Devin's matcher is
+      # a regex, an omitted one matches all, and SessionStart has no tool name.
+      # The dispatcher sits in the Apothem-owned support tree under the project's
+      # .apothem/, nested under the harness name so another project-scope hook
+      # adapter's uninstall cannot remove it. Devin loads no hook while a
+      # workspace is in Restricted Mode, and also loads the hooks the Claude Code
+      # install wrote to ~/.claude/settings.json (read_config_from.claude, on by
+      # default), so the install prints an advisory naming that switch.
+      # TODO(clarify): the shell Devin runs a hook command in on Windows is not
+      # documented; the command is quoted for sh and would need a call operator
+      # under PowerShell.
+      # TODO(clarify): whether Devin Desktop's Local agent applies the CLI's
+      # read_config_from defaults, and whether Devin adds config.local.json to a
+      # gitignore itself (the page only calls the file gitignored).
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.apothem/support/windsurf/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      # The source is config-local.json, a hyphenated name: the template is a
+      # file under harnesses/windsurf/templates/ and is committed as such.
+      - source: "harnesses/windsurf/templates/config-local.json"
+        target: "${PROJECT_ROOT}/.devin/config.local.json"
+        mode: write_text
+        ownership_class: operator-owned
 
     exclude:
       - "__pycache__"
@@ -660,6 +700,50 @@ harnesses:
         target: "${PROJECT_ROOT}/.cursor/agents/"
         mode: cursor_agents
         ownership_class: apothem-owned
+      # Cursor runs hooks from <project>/.cursor/hooks.json (version 1, a map
+      # from camelCase event to a flat array of {command, type, timeout, ...}
+      # entries; https://cursor.com/docs/hooks, retrieved 2026-10-28). That is
+      # the one project hook file, so it is the operator's: native_hooks merges
+      # into it without the matcher nesting of a Claude settings file, keeps the
+      # operator's entries and other keys ahead of Apothem's, tells Apothem's
+      # entries apart by the dispatcher path in their command (which holds with
+      # or without an install record), and refuses a file it would have to
+      # damage (JSON with comments, or not a hook registration) instead of
+      # replacing it. Cursor documents no uncommitted variant of the file, and a
+      # project hook file "is checked into version control with your project", so
+      # the command, which names the install-resolved interpreter and the project
+      # path, is machine-specific in a file a team shares; the install prints
+      # that hazard. Only sessionStart is registered (version 1 of the adapter's
+      # hooks): the session bootstrap, whose additional_context Cursor adds to
+      # the conversation's initial context. The hooks page also lists
+      # additional_context for postToolUse, which stays unregistered until a probe
+      # shows it reaches the model, and Apothem's PreToolUse guards are not
+      # registered, because Cursor documents agent_message only for a denied
+      # action and the guards never deny. Cursor runs
+      # hook commands through PowerShell on Windows, where a quoted program path
+      # needs the call operator: ${CALL_OP} is "& " on a Windows host and empty
+      # elsewhere. The dispatcher sits in the Apothem-owned support tree under
+      # the project's gitignored .apothem/, nested under the harness name, so a
+      # fresh clone has a hook that points at nothing; Cursor reports a command
+      # it cannot resolve as failed and the session goes on (a non-2 exit is
+      # fail-open). Cursor also imports the hooks the Claude Code install wrote
+      # to ~/.claude/settings.json (Third-Party Imports, on by default) and runs
+      # every matching hook from every source, so the install prints an advisory
+      # naming that switch; the SessionStart command records one marker per
+      # session so the same command firing twice speaks once.
+      # TODO(clarify): how Cursor's CLI and other non-desktop surfaces run hook
+      # commands on Windows, and whether any one command string is valid under
+      # both sh and PowerShell.
+      # TODO(clarify): the default hook timeout is not documented; the entry
+      # sets one.
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.apothem/support/cursor/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "harnesses/cursor/templates/apothem-hooks.json"
+        target: "${PROJECT_ROOT}/.cursor/hooks.json"
+        mode: native_hooks
+        ownership_class: operator-owned
 
     exclude:
       - "__pycache__"

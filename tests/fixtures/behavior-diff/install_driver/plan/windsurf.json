@@ -28,5 +28,15 @@
     "mode": "devin_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/.devin/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/windsurf/hooks"
+  },
+  {
+    "mode": "write_text",
+    "source": "<APOTHEM_SRC>/harnesses/windsurf/templates/config-local.json",
+    "target": "<ROOT>/.devin/config.local.json"
   }
 ]

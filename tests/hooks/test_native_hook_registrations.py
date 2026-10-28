@@ -121,3 +121,84 @@ def test_the_dispatcher_stays_advisory_for_both_vendors() -> None:
         assert contract.output in {vc.PLAIN, vc.FLAT}
         for event in contract.delivers:
             assert contract.shape_for(event) in {vc.PLAIN, vc.FLAT}
+
+
+# --- Cursor (a flat map) and Devin Local (Claude-shaped), the other two vendors ----
+
+_CURSOR = _SRC / "harnesses" / "cursor" / "templates" / "apothem-hooks.json"
+_DEVIN = _SRC / "harnesses" / "windsurf" / "templates" / "config-local.json"
+
+
+def _dispatch_args(command: str) -> list[str]:
+    """Return the words after ``dispatch.py`` in *command*: the contract call."""
+    tokens = shlex.split(command)
+    script = next(i for i, t in enumerate(tokens) if t.endswith("dispatch.py"))
+    return tokens[script + 1 :]
+
+
+def _devin_calls() -> list[tuple[str, str, list[str], dict[str, object]]]:
+    """Return (event, contract id, message names, group) per Devin handler."""
+    doc = json.loads(_DEVIN.read_text(encoding="utf-8"))
+    out: list[tuple[str, str, list[str], dict[str, object]]] = []
+    for event, groups in doc["hooks"].items():
+        for group in groups:
+            for handler in group["hooks"]:
+                args = _dispatch_args(handler["command"])
+                assert args[0] == "--contract", handler["command"]
+                assert args[2] == event, "the dispatcher is given the event fired"
+                out.append((event, args[1], args[3:], group))
+    return out
+
+
+def test_cursor_registers_session_start_with_the_snake_case_output() -> None:
+    doc = json.loads(_CURSOR.read_text(encoding="utf-8"))
+    assert doc["version"] == 1
+    assert list(doc["hooks"]) == ["sessionStart"]
+    [hook] = doc["hooks"]["sessionStart"]
+    # The call operator is a token: "& " on a Windows host, where Cursor runs the
+    # command through PowerShell, and empty elsewhere.
+    assert hook["command"].startswith('${CALL_OP}"${PYTHON_BIN}" ')
+    args = _dispatch_args(hook["command"])
+    assert args == ["--contract", "cursor", "sessionStart"]
+    contract = vc.get_contract("cursor")
+    assert contract.canonical_event("sessionStart") == "SessionStart"
+    assert contract.delivers == {"SessionStart"}
+    assert contract.shape_for("SessionStart") == vc.SNAKE
+    assert "matcher" not in hook, "sessionStart is not matched"
+    assert "failClosed" not in hook, "a failing hook must not block"
+    assert "preToolUse" not in doc["hooks"], "agent_message is read on a deny only"
+
+
+def test_devin_registers_the_events_whose_context_reaches_the_model() -> None:
+    contract = vc.get_contract("devin")
+    calls = _devin_calls()
+    assert [c[0] for c in calls] == ["SessionStart", "PostToolUse"]
+    for event, contract_id, _messages, group in calls:
+        assert contract_id == "devin"
+        assert contract.canonical_event(event) in contract.delivers, event
+        # Devin's matcher is a regex; an omitted one matches all and "*" is invalid.
+        assert "matcher" not in group
+        assert contract.shape_for(event) == vc.ENVELOPE
+    assert "PreToolUse" not in json.loads(_DEVIN.read_text(encoding="utf-8"))["hooks"]
+
+
+def test_session_start_is_idempotent_per_session_on_both_import_vendors() -> None:
+    # Cursor and Devin Local also load Claude Code's settings file, so a
+    # SessionStart command can fire twice for one session.
+    for contract_id in ("cursor", "devin"):
+        assert vc.get_contract(contract_id).dedupe_session_start is True
+
+
+def test_the_cursor_and_devin_messages_exist_in_the_hooks_tree() -> None:
+    messages = [name for _e, _c, names, _g in _devin_calls() for name in names]
+    assert messages == ["posttooluse-proactive-compaction"]
+    for name in messages:
+        assert (_MESSAGES / f"{name}.md").is_file(), name
+
+
+def test_the_dispatcher_stays_advisory_for_cursor_and_devin() -> None:
+    for contract_id in ("cursor", "devin"):
+        contract = vc.get_contract(contract_id)
+        assert contract.output in {vc.SNAKE, vc.ENVELOPE}
+        for event in contract.delivers:
+            assert contract.shape_for(event) in {vc.SNAKE, vc.ENVELOPE}

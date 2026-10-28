@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/windsurf/hooks/dispatch.py\" --contract devin SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/windsurf/hooks/dispatch.py\" --contract devin PostToolUse posttooluse-proactive-compaction",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

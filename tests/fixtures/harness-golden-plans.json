@@ -170,6 +170,16 @@
       "mode": "cursor_agents",
       "source": "agents",
       "target": "<ROOT>/.cursor/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/cursor/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/cursor/templates/apothem-hooks.json",
+      "target": "<ROOT>/.cursor/hooks.json"
     }
   ],
   "gemini-cli": [
@@ -451,6 +461,16 @@
       "mode": "devin_agents",
       "source": "agents",
       "target": "<ROOT>/.devin/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/windsurf/hooks"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/windsurf/templates/config-local.json",
+      "target": "<ROOT>/.devin/config.local.json"
     }
   ],
   "codebuddy": [

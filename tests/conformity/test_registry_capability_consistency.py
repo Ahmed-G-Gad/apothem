@@ -111,19 +111,19 @@ def test_failing_corpus_cohort_without_install_entry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Claiming a cohort class with no manifest install source trips the gate."""
-    # cursor installs no hook scripts; claiming a 'native' hooks cohort has no
-    # backing hooks/ install source for cursor.
+    # zed installs no hook scripts; claiming a 'native' hooks cohort has no
+    # backing hooks/ install source for zed.
     monkeypatch.setattr(
         harness_registry,
         "HARNESS_REGISTRY",
-        _registry_with_overclaim("cursor", "hooks", "native"),
+        _registry_with_overclaim("zed", "hooks", "native"),
     )
 
     result = rccg.check(_REPO_ROOT)
 
     assert result.passed is False
     over_claims = [
-        f for f in result.findings if f.harness == "cursor" and f.capability == "hooks"
+        f for f in result.findings if f.harness == "zed" and f.capability == "hooks"
     ]
     assert len(over_claims) == 1
     assert over_claims[0].evidence_class == "manifest-install-entry"

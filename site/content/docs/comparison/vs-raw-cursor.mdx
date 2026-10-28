@@ -29,8 +29,11 @@ directory-based MDC format Cursor reads; it does not write a single-file
 `.cursorrules`. It also writes the skills, and the commands wrapped as skills,
 to `~/.agents/skills/`, and the rules and templates those skills cite to
 `~/.config/apothem/`, both in your home directory.
-Cursor documents hooks through its plugin format, but the adapter builds no
-plugin and registers no hook, so guardrail intent lives in the rule prose.
+Cursor documents hooks in `hooks.json` files and through its plugin format. The
+adapter builds no plugin; it adds one `sessionStart` entry to the project's
+`.cursor/hooks.json`, which loads the session bootstrap, and leaves your own
+entries as they are. It registers no tool-call guard, so guardrail intent lives
+in the rule prose.
 
 ## Migration path
 

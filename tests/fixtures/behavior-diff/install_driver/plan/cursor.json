@@ -28,5 +28,15 @@
     "mode": "cursor_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/.cursor/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/cursor/hooks"
+  },
+  {
+    "mode": "native_hooks",
+    "source": "<APOTHEM_SRC>/harnesses/cursor/templates/apothem-hooks.json",
+    "target": "<ROOT>/.cursor/hooks.json"
   }
 ]

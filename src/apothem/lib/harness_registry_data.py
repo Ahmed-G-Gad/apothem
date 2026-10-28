@@ -291,6 +291,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/.cursor/rules/apothem-rules.mdc",
             "<project>/.cursor/agents/",
+            "<project>/.cursor/hooks.json",
+            "<project>/.apothem/support/cursor/hooks/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -300,11 +302,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         standard_pin_path="src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md",
         fixture_tests=("tests/unit/test_cursor_adapter.py",),
         package_data_key="apothem.harnesses.cursor",
-        template_sources=("harnesses/cursor/templates/apothem-rules.mdc",),
+        template_sources=(
+            "harnesses/cursor/templates/apothem-rules.mdc",
+            "harnesses/cursor/templates/apothem-hooks.json",
+        ),
         capability_status=_matrix(
             commands="converted",
             skills="native",
-            hooks="unsupported",
+            hooks="native",
             agents="converted",
             rules="native",
             templates="support-tree",
@@ -318,7 +323,6 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            hooks="The Cursor adapter does not author a Cursor hook cohort; it delivers the rules file and the skills.",
             statuslines="No Cursor statusline file surface is pinned.",
             output_styles="No Cursor output-style file surface is pinned.",
             agent_memory="No Cursor durable memory file surface is adapter-owned.",
@@ -629,6 +633,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/.devin/rules/apothem-rules.md",
             "<project>/.devin/agents/",
+            "<project>/.devin/config.local.json",
+            "<project>/.apothem/support/windsurf/hooks/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -638,11 +644,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         standard_pin_path="src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md",
         fixture_tests=("tests/unit/test_windsurf_adapter.py",),
         package_data_key="apothem.harnesses.windsurf",
-        template_sources=("harnesses/windsurf/templates/apothem-rules.md",),
+        template_sources=(
+            "harnesses/windsurf/templates/apothem-rules.md",
+            "harnesses/windsurf/templates/config-local.json",
+        ),
         capability_status=_matrix(
             commands="converted",
             skills="native",
-            hooks="unsupported",
+            hooks="native",
             agents="converted",
             rules="native",
             templates="support-tree",
@@ -656,7 +665,6 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            hooks="The Windsurf adapter does not author a Windsurf hook cohort; it delivers the rules file and the skills.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",

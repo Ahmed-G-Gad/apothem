@@ -10,9 +10,11 @@ the Claude Code `settings.json` hook block (engine install) or the plugin's
 `hooks.json` (plugin install), the Codex `hooks.json` hook file,
 the Qwen Code `settings.json` hooks map, the CodeBuddy
 `.codebuddy/settings.local.json` hooks key (SessionStart and PostToolUse only),
-the Kiro hook file `.kiro/hooks/apothem.json` (SessionStart only), and the
+the Kiro hook file `.kiro/hooks/apothem.json` (SessionStart only), the
 GitHub Copilot hook file `.github/hooks/apothem.json` (sessionStart and
-postToolUse only).
+postToolUse only), the Windsurf (Devin Local) `.devin/config.local.json` hooks
+key (SessionStart and PostToolUse only), and the Cursor project hook file
+`.cursor/hooks.json` (sessionStart only).
 
 | Event | Timeout | Purpose |
 |-------|--------:|---------|
@@ -80,15 +82,24 @@ documented command line of the dispatcher: `dispatch.py [--contract <id>]
 | `trae` | Claude-like stdin, `RunCommand` | bare text on SessionStart and UserPromptSubmit, the envelope on tool events | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse |
 | `claude` | Claude's stdin | the Claude envelope | every event |
 
-The `codebuddy`, `copilot` and `kiro` contracts are installed by an Apothem
-adapter today; the other rows are the contracts the adapters that follow
-register against. The dispatcher stays
+The `codebuddy`, `copilot`, `cursor`, `devin` and `kiro` contracts are installed
+by an Apothem adapter today (`devin` by the Windsurf adapter); the other rows are
+the contracts the adapters that follow register against. The dispatcher stays
 advisory under every contract: no shape carries a permission, a decision, a
 block or a rewritten tool input. A contract for a harness that also imports the
 Claude Code settings file (`cursor`, `devin`, `trae`) keeps one SessionStart
 marker per contract, session and source in the hook state directory, so the
 second run of the same session is silent; the default command line never reads
 the marker, so Claude Code's post-compaction SessionStart still delivers.
+
+Cursor and Devin Local load the hooks Claude Code's settings files hold as well as
+their own, so with the Apothem Claude Code install on the same machine two sets
+can run. The marker silences a repeat of the one SessionStart command only: the
+Claude Code copy is a different command, and no PostToolUse counter is
+de-duplicated, so the context-size counter runs in both places and reaches its
+thresholds early. The install prints a note that names the vendor's switch for
+turning the import off (Cursor's "Include Third-Party Plugins, Skills, and Other
+Configs"; Devin's `read_config_from.claude`).
 
 A command registers only where the vendor hands its output to the model. Kiro
 adds a hook's stdout to the context for `SessionStart` and `UserPromptSubmit`
@@ -99,6 +110,19 @@ their camelCase names, and no guard. Each Copilot entry carries a `bash` and a
 `powershell` command. Both files are Apothem-owned and name the interpreter and
 project path of the machine that ran the install; the harness pages say what
 that means for a file a repository commits.
+
+Devin Local reads `additionalContext` from `SessionStart`, `UserPromptSubmit` and
+`PostToolUse` and documents none for `PreToolUse`, so the Windsurf registration
+holds `SessionStart` and `PostToolUse`, with no matcher (Devin's matcher is a
+regular expression, and an omitted one matches every tool). It goes in the local
+override `.devin/config.local.json`, which Devin documents as gitignored.
+Cursor's `sessionStart` hook adds `additional_context` to the conversation's
+initial context; the first version registers that event alone. Cursor's
+`.cursor/hooks.json` is the one project hook file, so it is the operator's: the
+install merges one entry into it, keeps the operator's entries and keys, refuses a
+file it cannot rewrite without loss, and tells its own entry apart by the
+dispatcher path in the command. Cursor's desktop app runs hook commands through
+PowerShell on Windows, so on a Windows host the command starts with `& `.
 
 ## Message contexts
 
@@ -170,10 +194,11 @@ is installed in.
 
 Every registered hook command meets the same contract, checked by
 `tests/hooks/test_hook_contract.py` on the plugin, the Claude Code engine
-install, Codex, Qwen Code, and the CodeBuddy install (the Kiro and Copilot
-files, whose output is not the Claude envelope, are checked against their
-contracts by `tests/hooks/test_native_hook_registrations.py` and run as the
-vendors run them by `tests/integration/test_native_hook_files_roundtrip.py`):
+install, Codex, Qwen Code, and the CodeBuddy install (the Kiro, Copilot, Cursor
+and Windsurf files are checked against their contracts by
+`tests/hooks/test_native_hook_registrations.py` and run as the vendors run them
+by `tests/integration/test_native_hook_files_roundtrip.py`,
+`test_cursor_hooks_roundtrip.py` and `test_windsurf_hooks_roundtrip.py`):
 
 - **Runs from a plain checkout.** Exit 0, and standard output is empty or one
   JSON object. No hook depends on a file's executable bit.

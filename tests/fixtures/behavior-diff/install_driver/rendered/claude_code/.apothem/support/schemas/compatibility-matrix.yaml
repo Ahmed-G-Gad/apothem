@@ -31,7 +31,7 @@ harnesses:
   - name: cursor
     display: Cursor
     config_format: mdc
-    supports_hooks: false
+    supports_hooks: true
     supports_agents: true
     supports_skills: true
     supports_custom_rules: true
@@ -44,7 +44,12 @@ harnesses:
       .cursorrules path is intentionally excluded. Skills and commands (as
       skills) go to the shared user-level ~/.agents/skills/, and the rules and
       templates corpus to ~/.config/apothem/. Agents are rewritten as Cursor
-      subagents in <project>/.cursor/agents/ (project scope only).
+      subagents in <project>/.cursor/agents/ (project scope only). The
+      sessionStart hook is merged into the operator's own
+      <project>/.cursor/hooks.json, with the scripts under
+      <project>/.apothem/support/cursor/hooks/; the file names this machine's
+      interpreter and is usually committed, and Cursor also runs the hooks the
+      Claude Code install wrote to ~/.claude/settings.json.
 
   - name: gemini-cli
     display: Gemini CLI
@@ -103,7 +108,7 @@ harnesses:
   - name: windsurf
     display: Windsurf
     config_format: markdown
-    supports_hooks: false
+    supports_hooks: true
     supports_agents: true
     supports_skills: true
     supports_custom_rules: true
@@ -119,7 +124,11 @@ harnesses:
       and the rules and templates corpus to ~/.config/apothem/. Eleven of the
       fourteen agents are rewritten as Devin Local subagents in
       <project>/.devin/agents/ (project scope only; the three agents that need
-      web tools are held back until Devin documents their tool names).
+      web tools are held back until Devin documents their tool names). Devin
+      Local's SessionStart and PostToolUse hooks are registered in the local
+      <project>/.devin/config.local.json, with the scripts under
+      <project>/.apothem/support/windsurf/hooks/; Devin also runs the hooks the
+      Claude Code install wrote to ~/.claude/settings.json.
 
   - name: opencode
     display: OpenCode
@@ -394,6 +403,7 @@ asset_classes:
       - codex
       - antigravity
       - codebuddy
+      - cursor
       - gemini-cli
       - github-copilot
       - hermes
@@ -401,11 +411,13 @@ asset_classes:
       - open-claw
       - opencode
       - qwen-code
+      - windsurf
     materialisation_strategy:
       claude-code: "register in settings.json; support material under ~/.claude/.apothem/support/hooks/"
       codex: "copy to ~/.codex/hooks/ + register in ~/.codex/hooks.json"
       antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/; no active hook wiring until schema adapter exists"
       codebuddy: "register SessionStart and PostToolUse in <project>/.codebuddy/settings.local.json; support material under <project>/.apothem/support/hooks/"
+      cursor: "register sessionStart in <project>/.cursor/hooks.json; support material under <project>/.apothem/support/cursor/hooks/"
       gemini-cli: "support cohort under <project>/.gemini/.apothem/support/hooks/"
       github-copilot: "register sessionStart and postToolUse in <project>/.github/hooks/apothem.json; support material under <project>/.apothem/support/github-copilot/hooks/"
       hermes: "support cohort under ~/.hermes/.apothem/support/hooks/"
@@ -413,6 +425,7 @@ asset_classes:
       open-claw: "support cohort under ~/.openclaw/.apothem/support/hooks/"
       opencode: "support cohort under ~/.config/opencode/.apothem/support/hooks/"
       qwen-code: "register in settings.json; support material under ~/.qwen/.apothem/support/hooks/"
+      windsurf: "register SessionStart and PostToolUse in <project>/.devin/config.local.json; support material under <project>/.apothem/support/windsurf/hooks/"
       default: "support cohort under apothem/hooks/"
 
   skills:

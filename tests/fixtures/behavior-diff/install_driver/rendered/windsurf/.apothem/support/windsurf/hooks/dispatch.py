@@ -1,0 +1,491 @@
+# SPDX-License-Identifier: MIT
+
+"""Unified Python entrypoint for supported harness hook events.
+
+Routes `SessionStart` to `session_start_bootstrap.main()` and all other
+whitelisted events to `emit_hook_context.main()` (hook mode).
+
+Contract: always exits 0. Any uncaught exception is converted to a valid
+failure envelope on stdout so the hook runtime never sees a raw traceback.
+
+``--contract <id>`` runs the same routing under a vendor's hook contract (see
+``lib/vendor_contract.py``): event and tool spellings are translated in, the
+envelope is reshaped out, and the command stays advisory.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    import argparse
+
+_HOOK_DIR: Final[Path] = Path(__file__).resolve().parent
+_LIB_DIR: Final[Path] = _HOOK_DIR / "lib"
+for _path in (_HOOK_DIR, _LIB_DIR):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
+# Both event sets come from the single source of truth at
+# ``hooks/lib/events.py``. ``_VALID_EVENTS`` is the dispatcher
+# whitelist; ``_HOOK_SPECIFIC_EVENTS`` is the envelope-schema
+# subset used by the failure-fallback path so it remains usable
+# even when ``emit_hook_context`` itself fails to import.
+from events import (
+    HOOK_SPECIFIC_OUTPUT_EVENTS as _HOOK_SPECIFIC_EVENTS,
+)
+from events import (
+    SUPPORTED_EVENTS as _VALID_EVENTS,
+)
+
+#: Global kill switch. A truthy value silences every dispatcher-routed hook:
+#: no output, exit 0, before any handler runs. It exists so an operator can turn
+#: every Apothem hook off from the environment without editing installed hook
+#: configuration, which the harness snapshots at session start.
+DISABLE_ENV: Final[str] = "APOTHEM_HOOKS_DISABLE"
+_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+
+def hooks_disabled() -> bool:
+    """Return True when :data:`DISABLE_ENV` reads as an explicit "on" value."""
+    return os.environ.get(DISABLE_ENV, "").strip().casefold() in _TRUTHY
+
+
+def _emit_failure(event_name: str, message: str) -> None:
+    """Emit a failure envelope. Prefers ``emit_hook_context``'s rich writer;
+    falls back to a self-contained envelope when that module is unimportable
+    (e.g., its module-load itself raises). Always writes valid JSON to stdout
+    and never raises."""
+    try:
+        from emit_hook_context import emit_failure_envelope as _rich
+
+        _rich(event_name, message)
+        return
+    except Exception:  # noqa: BLE001, RUF100 - outermost dispatcher boundary; falls back to JSON envelope below (BLE001 is the validator's required intent-marker; RUF100 self-suppresses because ruff's BLE family is not active)
+        pass
+    import json as _json
+
+    name = event_name or "UnknownEvent"
+    text = f"Hook bootstrap failure: {message}"
+    payload: dict[str, object]
+    if name in _HOOK_SPECIFIC_EVENTS:
+        payload = {
+            "hookSpecificOutput": {
+                "hookEventName": name,
+                "additionalContext": text,
+            }
+        }
+    else:
+        payload = {"systemMessage": text}
+    sys.stdout.write(_json.dumps(payload, separators=(",", ":")) + "\n")
+
+
+_MESSAGES_DIR: Final[Path] = _HOOK_DIR / "messages"
+
+# The ``AskUserQuestion`` validator is a dispatch-routed ``PreToolUse`` handler
+# that inspects the live tool payload (an option-marker well-formedness check at
+# call time) rather than emitting a static Markdown context. It is selected by
+# its message basename so the same positional invocation shape the other
+# PreToolUse guards use (``PreToolUse pretooluse-askuserquestion-recommended``)
+# routes here. The basename is matched on the ``--context-file`` tail so the
+# routing is independent of where the message file lives on disk.
+_ASKUSERQUESTION_MESSAGE_BASENAME: Final[str] = "pretooluse-askuserquestion-recommended"
+
+# The proactive-compaction tracker is a dispatch-routed ``PostToolUse`` handler
+# that maintains per-session activity counters and surfaces a proactive-
+# compaction advisory once a CM-19 threshold is crossed. It is selected by its
+# message basename so the same positional invocation shape the other handlers
+# use (``PostToolUse posttooluse-proactive-compaction``) routes here; the
+# basename is matched on the ``--context-file`` tail, independent of where the
+# message file lives on disk.
+_PROACTIVE_COMPACTION_MESSAGE_BASENAME: Final[str] = "posttooluse-proactive-compaction"
+
+# The session-end gate is a dispatch-routed ``Stop`` handler that decides
+# *whether* this firing emits the session-end protocol. ``Stop`` fires at every
+# turn end, so emitting ``stop.md`` verbatim each time re-asserted the whole
+# mandate on every turn and never converged. The gate keeps the message file as
+# the single source of the protocol text and adds the missing termination
+# condition (at most one emission per session). Selected by message basename,
+# matched on the ``--context-file`` tail, so the route holds wherever the message
+# file lives on disk.
+_SESSION_END_MESSAGE_BASENAME: Final[str] = "stop"
+
+
+_FAST_FLAGS: Final[dict[str, str]] = {
+    "--event-name": "event",
+    "-e": "event",
+    "--context-file": "context",
+    "-c": "context",
+    "--contract": "contract",
+}
+
+
+def fast_parse(argv: list[str]) -> SimpleNamespace | None:
+    """Parse the fixed invocation shapes without argparse; ``None`` otherwise.
+
+    Every shipped hook configuration calls the dispatcher in one of the two
+    shapes :func:`parse_args` documents. Building an ``argparse`` parser costs
+    tens of milliseconds on current CPython (help-formatter and colour setup),
+    paid before every tool call, so those shapes are read directly. Anything
+    else (``--help``, ``--flag=value``, an unknown option, a missing value or
+    event) returns ``None`` and the caller falls back to :func:`parse_args`,
+    which keeps argparse's errors and exit codes for malformed input.
+    """
+    event: str | None = None
+    files: list[str] = []
+    names: list[str] = []
+    positionals: list[str] = []
+    contract = ""
+    quiet = False
+    index = 0
+    while index < len(argv):
+        token = argv[index]
+        if token in ("--quiet", "-q"):
+            quiet = True
+        elif token in _FAST_FLAGS:
+            if index + 1 >= len(argv):
+                return None
+            value = argv[index + 1]
+            index += 1
+            kind = _FAST_FLAGS[token]
+            if kind == "event":
+                event = value
+            elif kind == "contract":
+                contract = value
+            else:
+                files.append(value)
+        elif token.startswith("-"):
+            return None
+        else:
+            positionals.append(token)
+        index += 1
+    if positionals:
+        if event is None:
+            event = positionals[0]
+            names = positionals[1:]
+        else:
+            return None
+    if not event:
+        return None
+    files = [f for f in files if f]
+    if not files:
+        files = [str(_MESSAGES_DIR / f"{name}.md") for name in names]
+    return SimpleNamespace(
+        event_name=event,
+        context_files=files,
+        context_file=files[0] if files else "",
+        quiet=quiet,
+        contract=contract,
+    )
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse dispatch CLI arguments.
+
+    Two invocation shapes are accepted:
+
+    1. **Short positional form** (preferred — settings.json invocations):
+       ``apothem-hook <Event> [<message-name> ...]``. Each ``<message-name>``
+       is the bare basename of a Markdown fixture under
+       ``apothem.hooks.messages`` (e.g., ``pretooluse-write``); the ``.md``
+       suffix is added automatically.
+    2. **Flag form**: an alternate invocation shape accepted alongside
+       the positional form:
+       ``--event-name <Event> --context-file <path> [--context-file <path> ...]``.
+
+    Several messages in one invocation are evaluated against one payload and
+    answered with one envelope.
+
+    ``--contract <id>`` (either shape) names a vendor hook contract from
+    ``hooks/lib/vendor_contract.py``: the vendor's event and tool spellings are
+    translated on the way in and the envelope is reshaped on the way out. Left
+    out, the command speaks Claude Code's contract and nothing is translated.
+
+    When the positional form is used, ``<message-name>`` resolves to
+    ``<apothem-hooks-package-dir>/messages/<name>.md`` so the file is
+    located regardless of where the dispatcher lives on disk (a source
+    checkout or a materialized ``apothem/hooks/`` tree under a harness
+    root).
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="apothem-hook")
+    parser.add_argument("event_positional", nargs="?", default=None)
+    parser.add_argument("message_name_positional", nargs="*", default=[])
+    parser.add_argument("--event-name", "-e", default=None)
+    parser.add_argument("--context-file", "-c", action="append", default=[])
+    parser.add_argument("--quiet", "-q", action="store_true")
+    parser.add_argument("--contract", default="")
+    args = parser.parse_args(argv)
+    if args.event_positional and not args.event_name:
+        args.event_name = args.event_positional
+    args.context_files = [c for c in args.context_file if c]
+    if args.message_name_positional and not args.context_files:
+        args.context_files = [
+            str(_MESSAGES_DIR / f"{name}.md") for name in args.message_name_positional
+        ]
+    # ``context_file`` keeps the single-message shape for callers that read it;
+    # it names the first message when several are given.
+    args.context_file = args.context_files[0] if args.context_files else ""
+    if not args.event_name:
+        parser.error("event name is required (positional or --event-name)")
+    return args
+
+
+def _run_session_start(quiet: bool) -> None:
+    """Invoke the session-start bootstrap.
+
+    Fail-disposition: fail-open. Bootstrap is a context-emission helper;
+    a failure here degrades the operator's session-start summary but must
+    never block the session itself. Errors propagate to ``main`` and are
+    converted to a failure envelope on stdout.
+    """
+    import session_start_bootstrap as ssb
+
+    forwarded: list[str] = ["--quiet"] if quiet else []
+    ssb.main(forwarded)
+
+
+def _route_matches(context_file: str, basename: str) -> bool:
+    """Return True when *context_file*'s basename stem equals *basename*.
+
+    Matched on the ``--context-file`` basename (with or without the ``.md``
+    suffix) so a route holds whether the dispatcher is invoked with the
+    positional message name or an absolute message-file path resolved by
+    :func:`parse_args`. Shared by every message-basename route selector so the
+    match logic lives in one place.
+    """
+    if not context_file:
+        return False
+    name = Path(context_file).name
+    stem = name[:-3] if name.endswith(".md") else name
+    return stem == basename
+
+
+def _is_askuserquestion_route(context_file: str) -> bool:
+    """Return True when the message basename selects the AskUserQuestion guard."""
+    return _route_matches(context_file, _ASKUSERQUESTION_MESSAGE_BASENAME)
+
+
+def _run_askuserquestion_guard(quiet: bool) -> None:
+    """Invoke the call-time AskUserQuestion option-marker validator.
+
+    Fail-disposition: fail-open. The validator inspects the live tool payload
+    for ``(Recommended)``-marker well-formedness and emits an advisory
+    ``systemMessage`` (default) or a blocking ``decision`` envelope (strict
+    opt-in). Its own ``main`` swallows every exception and emits an allow
+    envelope, so a validator bug never blocks the operator's question. ``quiet``
+    suppresses no output here: a block decision must always reach the harness.
+    """
+    import askuserquestion_validator as aqv
+
+    aqv.main([])
+
+
+def _is_proactive_compaction_route(context_file: str) -> bool:
+    """Return True when the message basename selects the proactive-compaction tracker."""
+    return _route_matches(context_file, _PROACTIVE_COMPACTION_MESSAGE_BASENAME)
+
+
+def _run_proactive_compaction_tracker(quiet: bool) -> None:
+    """Invoke the per-session proactive-compaction activity tracker.
+
+    Fail-disposition: fail-open. The tracker maintains per-session activity
+    counters and emits an advisory ``systemMessage`` once a CM-19 threshold is
+    crossed; it NEVER blocks (a PostToolUse hook cannot block the tool call that
+    already ran). Its own ``main`` swallows every exception and emits an empty
+    envelope, so a tracker bug never disrupts the session. ``quiet`` is unused:
+    the tracker is already low-noise (silent below threshold), and its advisory
+    must always reach the harness when a threshold crosses.
+    """
+    import proactive_compaction_tracker as pct
+
+    pct.main([])
+
+
+def _is_session_end_route(context_file: str) -> bool:
+    """Return True when the message basename selects the session-end gate."""
+    return _route_matches(context_file, _SESSION_END_MESSAGE_BASENAME)
+
+
+def _run_session_end_gate(context_file: str, quiet: bool) -> None:
+    """Invoke the per-session gate that rations the session-end protocol.
+
+    Fail-disposition: fail-open. The gate reads the protocol body from
+    *context_file* and emits it at most once per session; it NEVER blocks
+    (session shutdown must not depend on an advisory). Its own ``main`` swallows
+    every exception and emits an empty envelope, so a gate bug costs the
+    operator nothing. ``quiet`` is unused: the gate is already silent by default
+    and emits at most one advisory for the whole session.
+    """
+    import session_end_gate as seg
+
+    seg.main(["--context-file", context_file])
+
+
+def _run_emit(event_name: str, context_files: list[str], quiet: bool) -> None:
+    """Invoke emit_hook_context in hook mode for one or more messages.
+
+    Several messages share one process and one envelope: the hook
+    configuration lists every guard for a matcher in a single invocation, so a
+    Write costs one interpreter start rather than one per guard.
+
+    Fail-disposition: fail-open. Hook-context emission is advisory; a
+    failure here degrades the contextual nudge but must never block the
+    underlying tool call (PreToolUse) or session shutdown (Stop).
+    Errors propagate to ``main`` and are converted to a failure envelope.
+    """
+    import emit_hook_context as ehc
+
+    ehc.run_hook_entry(event_name, context_files, quiet)
+
+
+def dispatch(
+    event_name: str,
+    context_file: str,
+    quiet: bool,
+    context_files: list[str] | None = None,
+) -> None:
+    """Route `event_name` to the correct hook script.
+
+    *context_files* lists every message for a combined invocation; when absent,
+    *context_file* alone is used. The dedicated handlers (session start, the
+    AskUserQuestion validator, the compaction tracker, the session-end gate) are
+    selected by the first message and take exactly one.
+    """
+    files = [c for c in (context_files or [context_file]) if c]
+    context_file = files[0] if files else ""
+    if event_name not in _VALID_EVENTS:
+        raise ValueError(f"Unknown event: {event_name}")
+
+    if event_name == "SessionStart":
+        _run_session_start(quiet)
+        return
+
+    # PreToolUse with the AskUserQuestion message basename routes to the live
+    # payload validator rather than emitting a static Markdown context.
+    if event_name == "PreToolUse" and _is_askuserquestion_route(context_file):
+        _run_askuserquestion_guard(quiet)
+        return
+
+    # PostToolUse with the proactive-compaction message basename routes to the
+    # per-session activity tracker rather than emitting a static Markdown
+    # context.
+    if event_name == "PostToolUse" and _is_proactive_compaction_route(context_file):
+        _run_proactive_compaction_tracker(quiet)
+        return
+
+    # Stop with the session-end message basename routes to the per-session gate,
+    # which emits the same Markdown context but at most once per session rather
+    # than on every turn end.
+    if event_name == "Stop" and _is_session_end_route(context_file):
+        _run_session_end_gate(context_file, quiet)
+        return
+
+    if not files:
+        raise ValueError(f"--context-file required for event '{event_name}'")
+
+    _run_emit(event_name, files, quiet)
+
+
+def run(
+    event_name: str,
+    context_file: str,
+    quiet: bool,
+    context_files: list[str] | None = None,
+    contract: str = "",
+) -> None:
+    """Dispatch *event_name*, under the vendor *contract* when one is named.
+
+    Without a contract this is :func:`dispatch` and nothing else runs: the
+    contract module is not even imported, so the default command line pays no
+    cost for the shim.
+    """
+    if not contract:
+        dispatch(event_name, context_file, quiet, context_files)
+        return
+    import vendor_contract
+
+    vendor_contract.run_contracted(
+        contract,
+        event_name,
+        lambda event: dispatch(event, context_file, quiet, context_files),
+    )
+
+
+def _best_effort_event_name(argv: list[str] | None) -> str:
+    """Recover the event name from *argv* without enforcing the full grammar.
+
+    A malformed invocation makes the strict :func:`parse_args` raise
+    ``SystemExit`` before the event name is bound, which would leave the failure
+    envelope naming ``UnknownEvent``. This lenient pre-parse extracts the event
+    name (the first positional or ``--event-name`` / ``-e`` value) where one is
+    present so the envelope names the event. Returns ``""`` when no event name
+    is recoverable. Never raises: argparse's own ``SystemExit`` (e.g. a missing
+    option-argument) is caught and degrades to ``""``.
+    """
+    import argparse
+
+    try:
+        lenient = argparse.ArgumentParser(add_help=False)
+        lenient.add_argument("event_positional", nargs="?", default=None)
+        lenient.add_argument("--event-name", "-e", default=None)
+        namespace, _ = lenient.parse_known_args(argv)
+    except SystemExit:
+        return ""
+    return namespace.event_name or namespace.event_positional or ""
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Entry point. Emits a failure envelope on any error; never raises non-zero.
+
+    A malformed invocation makes ``argparse`` raise ``SystemExit`` with a
+    non-zero code. The hook contract is that the harness never sees a raw
+    non-zero exit or traceback — only a valid JSON envelope — so an argparse
+    *error* exit is converted to a failure envelope and the process exits 0. A
+    clean ``--help`` / ``--version`` exit (code 0 or ``None``) passes through.
+
+    The event name is recovered best-effort before the strict parse so a parse
+    *error* still names the event in the failure envelope rather than
+    ``UnknownEvent``.
+    """
+    if hooks_disabled():
+        return
+    fast = fast_parse(sys.argv[1:] if argv is None else argv)
+    if fast is not None:
+        try:
+            run(
+                fast.event_name,
+                fast.context_file,
+                fast.quiet,
+                fast.context_files,
+                fast.contract,
+            )
+        except Exception as exc:
+            _emit_failure(fast.event_name, str(exc))
+        return
+    event_name = _best_effort_event_name(argv)
+    try:
+        args = parse_args(argv)
+        event_name = args.event_name
+        run(
+            event_name,
+            args.context_file,
+            args.quiet,
+            args.context_files,
+            args.contract,
+        )
+    except SystemExit as exc:
+        if exc.code in (0, None):
+            raise
+        _emit_failure(event_name, f"invalid hook invocation (argparse exit {exc.code})")
+    except Exception as exc:
+        _emit_failure(event_name, str(exc))
+
+
+if __name__ == "__main__":
+    main()

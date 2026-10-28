@@ -23,7 +23,9 @@ advisories name those instead of assuming the registered owner wrote the folder.
 
 Hook review. :func:`hook_review_advisories` names the step a harness requires
 before hooks written to its settings file by another tool take effect, or the
-hazard of a hook file a repository commits.
+hazard of a hook file a repository commits, and for a harness that also imports
+the hooks Claude Code's settings hold, the switch that stops the two sets running
+together.
 
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
@@ -270,7 +272,13 @@ def shared_root_advisories(
 #: step; its note names the committed-file hazard instead, because the file
 #: lives in a folder repositories commit and holds this machine's paths
 #: (https://docs.github.com/en/copilot/reference/hooks-reference, retrieved
-#: 2026-10-28).
+#: 2026-10-28). Devin Local loads no hook in Restricted Mode
+#: (https://docs.devin.ai/desktop/devin-local.md, retrieved 2026-10-28) and its
+#: config.local.json is gitignored
+#: (https://docs.devin.ai/cli/extensibility/hooks/overview.md, retrieved
+#: 2026-10-28). Cursor's project hook file is checked into version control, runs
+#: in trusted workspaces and is reloaded on save (https://cursor.com/docs/hooks,
+#: retrieved 2026-10-28).
 _HOOK_REVIEW: dict[str, tuple[str, str]] = {
     "codebuddy": (
         ".codebuddy/settings.local.json",
@@ -302,32 +310,115 @@ _HOOK_REVIEW: dict[str, tuple[str, str]] = {
         "file and runs only its bash command, which finds no interpreter "
         "there; Copilot logs the failure and the run goes on.",
     ),
+    "windsurf": (
+        ".devin/config.local.json",
+        "Apothem registers its SessionStart and PostToolUse hooks in {path}, "
+        "the local override Devin documents as gitignored; your own hooks and "
+        "keys in it stay. Devin loads no hook while the workspace is in "
+        "Restricted Mode, so trust the workspace first. The file names this "
+        "machine's Python interpreter and this project's path, so keep it out "
+        "of version control. The Devin docs name no shell for hook commands on "
+        "Windows and the command is quoted for sh: open the Hooks tab in Devin "
+        "Local's Customizations (or run /hooks in the Devin CLI) to confirm "
+        "the hooks loaded.",
+    ),
+    "cursor": (
+        ".cursor/hooks.json",
+        "Apothem registers its sessionStart hook in {path}, your project hook "
+        "file; your own entries and keys in it stay. Cursor documents project "
+        "hooks as checked into version control and runs them in trusted "
+        "workspaces, and it reloads the file on save. The command names this "
+        "machine's Python interpreter and this project's path, so commit the "
+        "file only if your team shares that layout; where the command is "
+        "missing, Cursor reports the hook as failed and the session goes on. "
+        "On a Windows host the command starts with the PowerShell call "
+        "operator (&), because Cursor's desktop app runs hook commands through "
+        "PowerShell there.",
+    ),
+}
+
+#: Harnesses that also load the hooks Claude Code's settings files hold, mapped
+#: to the file the install wrote and the note that names the switch and what
+#: turning it off costs. Cursor runs every matching hook from every source, and
+#: reads the Claude Code hooks while "Include Third-Party Plugins, Skills, and
+#: Other Configs" is on, its default
+#: (https://cursor.com/docs/reference/third-party-hooks, retrieved 2026-10-27).
+#: Devin loads them while read_config_from.claude is on, its default for the CLI
+#: (https://docs.devin.ai/cli/extensibility/hooks/overview.md and
+#: /cli/reference/configuration/read-config-from.md, retrieved 2026-10-28); the
+#: Desktop pages do not say whether the Local agent applies that default. The
+#: SessionStart command each install registers records one marker per session,
+#: so that command run twice speaks once; the Claude Code copy is a different
+#: command, and no PostToolUse counter is de-duplicated.
+_HOOK_IMPORT: dict[str, tuple[str, str]] = {
+    "windsurf": (
+        ".devin/config.local.json",
+        "Devin Local also loads the hooks Claude Code's settings files hold "
+        "(~/.claude/settings.json, .claude/settings.json and "
+        ".claude/settings.local.json) while read_config_from.claude is on, "
+        "which is its default for the Devin CLI; the Desktop docs do not say "
+        "whether the Local agent applies it. If this machine also has the "
+        "Apothem Claude Code install, both sets can run: the SessionStart "
+        "command in {path} records one marker per session, so a repeat of it "
+        "is silent, but the Claude Code copy is a separate command, and each "
+        "PostToolUse counter runs in both places, so its thresholds are "
+        'reached early. To load only the hooks in {path}, set "claude": false '
+        'under "read_config_from" in ~/.config/devin/config.json '
+        "(%APPDATA%/devin/config.json on Windows) or in the project's "
+        ".devin/config.json; that also stops Devin importing Claude Code's "
+        "rules, skills, commands and MCP servers.",
+    ),
+    "cursor": (
+        ".cursor/hooks.json",
+        "Cursor also loads the hooks Claude Code's settings files hold "
+        "(~/.claude/settings.json, .claude/settings.json and "
+        ".claude/settings.local.json) while 'Include Third-Party Plugins, "
+        "Skills, and Other Configs' is on (Cursor Settings, Agents, "
+        "Third-Party Imports), which is its default, and it runs every "
+        "matching hook from every source. If this machine also has the Apothem "
+        "Claude Code install, both sets can run: the sessionStart command in "
+        "{path} records one marker per session, so a repeat of it is silent, "
+        "but the Claude Code copy is a separate command, and each of its "
+        "PostToolUse counters runs in addition. To run only the hook in "
+        "{path}, turn that setting off; it also stops Cursor importing "
+        "third-party plugins, skills and other configs.",
+    ),
 }
 
 
 def hook_review_advisories(
     public_id: str, *, project: Path | None
 ) -> list[dict[str, object]]:
-    """Return the review note for *public_id*'s hook registration, if it has one.
+    """Return the notes for *public_id*'s hook registration, if it has any.
 
-    Names the file the install wrote and the step the operator takes before the
-    hooks run. A harness with no such step, or an install with no *project*,
-    gets none. Reads nothing; writes nothing.
+    The ``hook_review`` note names the file the install wrote and the step the
+    operator takes before the hooks run, or the hazard of the file. The
+    ``hook_import`` note names the switch that stops a harness running the hooks
+    Claude Code wrote beside Apothem's own. A harness with neither, or an install
+    with no *project*, gets none. Reads nothing; writes nothing.
     """
-    review = _HOOK_REVIEW.get(public_id)
-    if review is None or project is None:
+    if project is None:
         return []
-    relative, template = review
-    path = project / relative
-    return [
-        {
-            "harness": public_id,
-            "outcome": "advisory",
-            "operation": "hook_review",
-            "path": str(path),
-            "message": template.format(path=path),
-        }
-    ]
+    advisories: list[dict[str, object]] = []
+    for operation, table in (
+        ("hook_review", _HOOK_REVIEW),
+        ("hook_import", _HOOK_IMPORT),
+    ):
+        note = table.get(public_id)
+        if note is None:
+            continue
+        relative, template = note
+        path = project / relative
+        advisories.append(
+            {
+                "harness": public_id,
+                "outcome": "advisory",
+                "operation": operation,
+                "path": str(path),
+                "message": template.format(path=path),
+            }
+        )
+    return advisories
 
 
 # --- MCP profile advisories ---------------------------------------------------

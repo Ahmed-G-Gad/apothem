@@ -5,6 +5,7 @@
 ## Snapshot
 
 - Snapshot date: 2026-10-28
+- Snapshot note (hooks): the adapter now registers a hook. The hooks page was re-read on 2026-10-28 from the raw Markdown it serves, with the third-party hooks page (read 2026-10-27) for the Claude Code import. Previous 2026-10-28 (agents review below).
 - Snapshot note (review): the Subagents page was re-read on 2026-10-28 for how it treats Claude-style keys in the Claude-compatibility folders (it does not say). Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Cursor subagents in `<project>/.cursor/agents/`. The Subagents page, the plugins reference, the third-party hooks page and the CLI changelog were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`. Refreshed against `cursor.com/docs`. The rules page moved to `cursor.com/docs/rules`, the MCP page to `cursor.com/docs/mcp`, and the old `@Web` page is gone. The agent's Browser tool visits URLs, so `web_fetch` moves from partial to yes. The skills page was re-read on 2026-10-24; the other pages keep their 2026-10-03 retrieval date. Previous 2026-10-03.
@@ -99,10 +100,116 @@
   as a `model` value, which the page does not list.
 - The vendor documents plugins (`.cursor-plugin/plugin.json`, bundling skills, MCP
   servers, rules, agents, commands, hooks and variables) and a marketplace. The
-  adapter authors no plugin bundle or hook; it delivers the project rules file, the
-  project subagents and the skills folder above.
+  adapter authors no plugin bundle; it delivers the project rules file, the
+  project subagents, the skills folder above and one hook (next section).
 - Settings (IDE-managed) and status lines are not file surfaces the adapter
   owns.
+
+## Hooks
+
+Read 2026-10-28 (<https://cursor.com/docs/hooks>, raw Markdown) and 2026-10-27
+(<https://cursor.com/docs/reference/third-party-hooks>,
+<https://cursor.com/docs/cli/changelog>).
+
+- Files: `<project>/.cursor/hooks.json` ("run in any trusted workspace and are
+  checked into version control with your project") and `~/.cursor/hooks.json`;
+  enterprise (macOS `/Library/Application Support/Cursor/hooks.json`, Linux and
+  WSL `/etc/cursor/hooks.json`, Windows `C:\ProgramData\Cursor\hooks.json`) and
+  team (cloud dashboard) sources; a plugin's `hooks/hooks.json`. Priority runs
+  Enterprise, Team, Project, User, with plugin hooks after them. Project hook
+  commands run from the project root and user ones from `~/.cursor/`. Cursor
+  watches the files and reloads them on save; the troubleshooting section says to
+  restart Cursor if they still do not load. There is no uncommitted variant of the
+  project file.
+- Schema: `{"version": 1, "hooks": {"<event>": [{"command": "<string>", "type":
+  "command" | "prompt", "timeout": <seconds>, "loop_limit": <n | null>,
+  "failClosed": <bool>, "matcher": "<regex>"}]}}`. `version` is required (a
+  positive integer). `timeout` has a platform default that the page does not state.
+  A prompt hook carries `prompt` instead of `command`; the page marks `command`
+  required while its prompt example omits it. `failClosed: true` makes a crash,
+  timeout, non-zero exit or empty output block; the permission events block on
+  invalid JSON even with it off.
+- Events: 21 camelCase names (`sessionStart`, `sessionEnd`, `preToolUse`,
+  `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`,
+  `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`,
+  `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`,
+  `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`,
+  `beforeTabFileRead`, `afterTabFileEdit` and `workspaceOpen`).
+- Command contract: JSON on stdin with the common fields `conversation_id`,
+  `generation_id`, `model`, `hook_event_name`, `cursor_version`,
+  `workspace_roots`, `user_email` and `transcript_path`; sessionStart adds
+  `session_id` (the page says it is the same as `conversation_id`),
+  `is_background_agent` and `composer_mode`. sessionStart's stdout is
+  `{"env": {...}, "additional_context": "..."}`: it runs "fire-and-forget", the
+  agent loop does not wait for or enforce a blocking response, and the context goes
+  into the conversation's initial system context. Exit 0 uses the JSON output,
+  exit 2 blocks, and any other code is a failure that lets the action proceed.
+  `CURSOR_PROJECT_DIR` (alias `CLAUDE_PROJECT_DIR`) is the workspace root.
+- Where the adapter's context can land: `additional_context` is documented for
+  sessionStart and, on the page read 2026-10-28, for postToolUse and
+  postToolUseFailure as well. Version 1 of the adapter registers sessionStart only,
+  the session bootstrap, on the maintainer's decision; the postToolUse tracker
+  stays unregistered until a probe shows its context reaches the model (the
+  2026-10-27 reading did not confirm it). `agent_message` is documented as the
+  message fed back to the agent when an action is denied, and Apothem's guards
+  never deny, so no preToolUse or beforeShellExecution guard is registered. No
+  Stop gate, compaction hook, NotebookEdit or AskUserQuestion guard and no
+  conformity-gate hook is registered. The output the dispatcher writes under
+  `--contract cursor` is `{"additional_context": ...}` and nothing else: no
+  permission, no decision, no `followup_message`.
+- Windows: "the desktop app runs hook commands through PowerShell and pipes the
+  JSON into the command". A line that starts with a quoted program path is not a
+  call in PowerShell, so the registration starts the command with the call
+  operator (`& "<interpreter>" ...`) when the install ran on a Windows host, and
+  not otherwise (`sh` reads a leading `&` as a syntax error). That is a design
+  inference from PowerShell syntax; the vendor page names the shell, not the
+  quoting. It was checked locally on 2026-10-28 with PowerShell 7 on a Windows
+  host, not against Cursor: `pwsh -Command '& "<interpreter>" "<script>" ...'`
+  runs the dispatcher, and the same line without `&` fails to parse. The CLI
+  changelog (v2026.10.15) reports a hook whose command cannot be
+  found as failed, and the session goes on.
+- Cloud agents: a repository's project hooks run in cloud agents (command hooks
+  only). User hooks do not, and sessionStart is deferred there, so the adapter's
+  hook does not fire. Self-hosted workers fire sessionStart when a session claims
+  the worker; the command then names an interpreter that may not exist there, and
+  fails open.
+- Claude Code import: Cursor loads Claude Code hooks from
+  `.claude/settings.local.json`, `.claude/settings.json` and
+  `~/.claude/settings.json` (below Cursor's own files in priority) while "Include
+  Third-Party Plugins, Skills, and Other Configs" is on in Settings, Agents,
+  Third-Party Imports, which is the default. It accepts Claude Code's nested
+  `hookSpecificOutput` as well as its own flat output, and runs every matching hook
+  from every source. If the Apothem Claude Code install wrote its hooks to
+  `~/.claude/settings.json`, Cursor can run both sets. The install prints a note
+  naming the switch and what turning it off also stops. The sessionStart command
+  the adapter registers records one marker per (contract, session, source), so a
+  repeat of that command is silent; the Claude Code copy is a different command and
+  is not covered, and no PostToolUse counter is de-duplicated.
+- Files the adapter writes: the dispatcher tree at
+  `<project>/.apothem/support/cursor/hooks/` (Apothem-owned; nested under the
+  harness name; the project's `.gitignore` snippet ignores `.apothem/*`) and one
+  entry in `<project>/.cursor/hooks.json`, which is the operator's file: the
+  `native_hooks` mode (operator-owned) keeps their entries and other keys ahead of
+  Apothem's, tells Apothem's entry apart by the dispatcher path in its command, and
+  on an uninstall removes only that entry (deleting the file only when nothing else
+  remains). A file with comments, trailing commas, a non-object value or the
+  other vendor's `hooks` shape is refused with `config.unparseable` and left as it
+  is. The user file `~/.cursor/hooks.json` is never written. The registration names
+  an absolute interpreter and project path, which are machine-specific, in a file
+  Cursor documents as committed; the install prints that hazard.
+- TODO(clarify): the default `timeout` is not stated; the entry sets 30 seconds.
+- TODO(clarify): how the Cursor CLI and other non-desktop surfaces run hook
+  commands on Windows, and whether any one command string is valid under both `sh`
+  and PowerShell. The page's example hooks are shell scripts, and whether a bare
+  `.sh` hook is runnable on Windows is not documented; the adapter calls the
+  interpreter directly instead.
+- TODO(clarify): whether the postToolUse `additional_context` output reaches the
+  model; register the PostToolUse tracker once a probe shows it does.
+- TODO(clarify): whether Apothem's `.gitignore` snippet should list a hook file;
+  `.cursor/hooks.json` is shared, so the answer differs from the local files of
+  CodeBuddy and Devin.
+- TODO(clarify): whether the third-party import switch also gates Claude Code's
+  `.claude/agents/` (already recorded above for agents).
 
 ## Web-Fetch / Browser-Retrieval Surface
 
@@ -126,7 +233,8 @@ Retrieved 2026-10-03 unless marked.
 - <https://cursor.com/docs/subagents> (subagent folders, keys, `readonly`, precedence; retrieved 2026-10-27, the folder the adapter writes agents to)
 - <https://cursor.com/docs/cli/changelog> (model fallback for a pinned subagent model, no descent into hidden directories; retrieved 2026-10-27)
 - <https://cursor.com/docs/reference/plugins> (the plugin `agents/` folder, a separate surface; retrieved 2026-10-27)
-- <https://cursor.com/docs/reference/third-party-hooks> (the Third-Party Imports switch; retrieved 2026-10-27)
+- <https://cursor.com/docs/reference/third-party-hooks> (the Third-Party Imports switch and the Claude Code hook import, priority order and response compatibility; retrieved 2026-10-27)
+- <https://cursor.com/docs/hooks> (hook files, schema, events, the sessionStart contract, exit codes, the Windows PowerShell note, cloud agents; retrieved 2026-10-28)
 - <https://cursor.com/docs/agent/tools/browser> (Browser tool)
 
 ## Discovery Targets
@@ -157,8 +265,10 @@ Cursor documents a vendor plugin mechanism (`.cursor-plugin/plugin.json` that ca
 bundle agents, commands, skills, and hooks), but **Apothem ships no Cursor
 plugin bundle** — the adapter writes a merged MDC rules file at
 `<project>/.cursor/rules/apothem-rules.mdc`, the agents at
-`<project>/.cursor/agents/`, the skills at `~/.agents/skills/`, and
-the rules and templates corpus at `~/.config/apothem/`, and authors no other cohort. There is no Apothem-distributable standalone bundle; every
+`<project>/.cursor/agents/`, one hook entry in `<project>/.cursor/hooks.json` with
+its scripts under `<project>/.apothem/support/cursor/hooks/`, the skills at
+`~/.agents/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
+and authors no other cohort. There is no Apothem-distributable standalone bundle; every
 artifact requires the full `apothem install --harness cursor --project <path>`
 engine run.
 
@@ -167,7 +277,7 @@ engine run.
 | Rules | No — requires `apothem install` | The merged `apothem-rules.mdc` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.cursor/rules/` directory. Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run. |
 | Agents | No — requires `apothem install` | The engine writes them as subagents to the project's `.cursor/agents/`. Nothing persists before that run. |
-| Hooks | No — Apothem ships no bundle | Cursor's `.cursor-plugin/plugin.json` and `hooks.json` accept hooks, but Apothem authors no Cursor plugin and registers no hook. Bundling the cohort into a Cursor plugin is a documented future propagation-write-planning concern, not part of this adapter today. |
+| Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/cursor/hooks/` and merges a `sessionStart` entry into `<project>/.cursor/hooks.json`. Nothing persists before that run. Cursor's `.cursor-plugin/plugin.json` also accepts hooks, but Apothem authors no Cursor plugin; bundling the cohort into one is a documented future propagation-write-planning concern, not part of this adapter today. |
 | MCP / Settings | No — operator-owned | `~/.cursor/mcp.json` / `.cursor/mcp.json` and IDE-managed settings are operator-owned; the adapter authors no entries. |
 
 Platform note: the vendor plugin surface exists; the Apothem-distributable

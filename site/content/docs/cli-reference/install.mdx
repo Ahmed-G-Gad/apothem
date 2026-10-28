@@ -133,6 +133,16 @@ still uses the folder, otherwise the oldest install that does. In the
 `holder`, or `reader`, `holders` lists the installs using the folder, and
 `owner_of_record` names the owner of record.
 
+An install that registers hooks also prints notes about the hook file. A
+`hook_review` advisory names the step the tool needs before it runs the hooks (a
+restart and a review, or trusting the workspace), or the hazard of a hook file
+that a repository commits and that names this machine's interpreter. A
+`hook_import` advisory appears for a tool that also runs the hooks in Claude Code's
+settings files, such as those the Apothem install for Claude Code writes, and names
+the tool's own switch for turning that import off and what the switch also stops. Each is a `warnings` entry with
+`"outcome": "advisory"`, the `harness`, the `path` of the hook file and a
+`message`.
+
 The profile's MCP servers get three advisories, each naming the profile field:
 
 | Operation | Condition | Fix |

@@ -11,6 +11,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Windsurf and Cursor now run Apothem's session hooks.** For Windsurf the
+  install registers two Devin Local hooks in the project's
+  `.devin/config.local.json`, the local override Devin documents as gitignored:
+  the session bootstrap on `SessionStart` and the context-size advisory on
+  `PostToolUse`. For Cursor it adds one `sessionStart` entry, the session
+  bootstrap, to the project's `.cursor/hooks.json`. The scripts go in
+  `.apothem/support/windsurf/hooks/` and `.apothem/support/cursor/hooks/`. Each
+  vendor hands extra context to the model for those events, and Apothem's write,
+  edit and shell guards are not registered: Devin documents no context channel for
+  `PreToolUse`, and Cursor documents its agent message only for a denied action.
+  Both hooks only add context and never block. Devin runs no hook while a
+  workspace is in Restricted Mode, and the older Cascade mode reads a different
+  format that the install does not write. `.cursor/hooks.json` is your file and
+  Cursor documents project hooks as committed, so the install adds its entry after
+  yours, keeps your entries and keys, reports `config.unparseable` and leaves a
+  file it cannot rewrite without loss, and removes only its own entry on an
+  uninstall; the entry names the interpreter and project path of the machine that
+  ran the install, and on a Windows host it starts with PowerShell's call
+  operator, because Cursor's desktop app runs hook commands through PowerShell
+  there. Cursor and Devin Local also load the hooks Claude Code wrote, so with the
+  Apothem Claude Code install on the same machine two sets can run; the install
+  prints the switch that turns the import off (Cursor's "Include Third-Party
+  Plugins, Skills, and Other Configs", Devin's `read_config_from.claude`), the
+  session bootstrap speaks once per session when its own command repeats, and the
+  context-size counter is not de-duplicated.
 - **CodeBuddy now runs Apothem's session and compaction hooks.** The install
   registers two hooks in the project's `.codebuddy/settings.local.json`, the
   local settings file CodeBuddy does not commit: the session bootstrap on

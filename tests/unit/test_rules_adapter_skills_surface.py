@@ -54,8 +54,10 @@ _WITH_AGENTS = frozenset(
 #: key-merged registration), which follow the instruction anchor.
 _HOOK_MODES = {
     "codebuddy": ["merge_tree_entries", "write_text"],
+    "cursor": ["merge_tree_entries", "native_hooks"],
     "github-copilot": ["merge_tree_entries", "native_hooks"],
     "kiro": ["merge_tree_entries", "native_hooks"],
+    "windsurf": ["merge_tree_entries", "write_text"],
 }
 
 #: The harnesses that write ``~/.agents/skills/`` with the registered owner.
