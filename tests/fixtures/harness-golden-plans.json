@@ -170,6 +170,16 @@
       "mode": "cursor_agents",
       "source": "agents",
       "target": "<ROOT>/.cursor/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/cursor/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/cursor/templates/apothem-hooks.json",
+      "target": "<ROOT>/.cursor/hooks.json"
     }
   ],
   "gemini-cli": [
@@ -239,6 +249,16 @@
       "mode": "copilot_agents",
       "source": "agents",
       "target": "<ROOT>/.github/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/github-copilot/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/github_copilot/templates/apothem-hooks.json",
+      "target": "<ROOT>/.github/hooks/apothem.json"
     }
   ],
   "hermes": [
@@ -441,6 +461,16 @@
       "mode": "devin_agents",
       "source": "agents",
       "target": "<ROOT>/.devin/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/windsurf/hooks"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/windsurf/templates/config-local.json",
+      "target": "<ROOT>/.devin/config.local.json"
     }
   ],
   "codebuddy": [
@@ -473,6 +503,16 @@
       "mode": "codebuddy_agents",
       "source": "agents",
       "target": "<ROOT>/.codebuddy/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/codebuddy/templates/settings-local.json",
+      "target": "<ROOT>/.codebuddy/settings.local.json"
     }
   ],
   "kiro": [
@@ -505,6 +545,16 @@
       "mode": "kiro_agents",
       "source": "agents",
       "target": "<ROOT>/.kiro/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/kiro/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/kiro/templates/apothem-hooks.json",
+      "target": "<ROOT>/.kiro/hooks/apothem.json"
     }
   ],
   "trae": [

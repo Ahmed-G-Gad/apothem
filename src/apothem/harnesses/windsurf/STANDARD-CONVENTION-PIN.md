@@ -4,7 +4,8 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-27
+- Snapshot date: 2026-10-28
+- Snapshot note (hooks): the adapter now registers Devin Local hooks. The CLI hooks overview, the lifecycle hooks page, the configuration import page and the Devin Local page were re-read on 2026-10-28 from the raw Markdown each page serves, and the Cascade hooks page the day before. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs eleven of Apothem's fourteen agents as Devin Local subagents in `<project>/.devin/agents/`. The subagents page, the Devin Local page, the extensibility overview, the configuration import page, the plugins page, the skills page, the models page and both changelogs were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`.
 - Adapter source: `src/apothem/harnesses/windsurf/`
@@ -83,11 +84,13 @@
   `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
   `metadata` map; probe Windsurf with the full set before a release and, if it
   rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
-- Hooks (resolved): `hooks.json` at `.devin/hooks.json` in the workspace (the
-  legacy `.windsurf/hooks.json` is used only when the `.devin` file is absent or
-  defines no hooks), `~/.codeium/windsurf/hooks.json` for the user, and
-  OS-level system paths; all levels merge. The earlier "unverified" flag is
-  cleared.
+- Hooks (resolved, two agents, two formats): the legacy Cascade agent reads
+  `hooks.json` at `.devin/hooks.json` in the workspace (the legacy
+  `.windsurf/hooks.json` is used only when the `.devin` file is absent or defines
+  no hooks), `~/.codeium/windsurf/hooks.json` for the user, and OS-level system
+  paths; all levels merge. The Devin Local agent, the default for new tabs, has
+  its own format and files (next section). The adapter targets Devin Local and
+  writes no Cascade hook file. The earlier "unverified" flag is cleared.
 - MCP (corrected): Cascade reads `~/.config/devin/mcp_config.json`
   (`%APPDATA%\devin\mcp_config.json` on Windows), and the Devin Local agent
   uses the Devin CLI config files. The earlier
@@ -97,7 +100,8 @@
   stay on the machine; the Devin Local agent does not persist memories.
 - The adapter delivers the project rules file, the shared skills folder above
   and, for the Devin Local agent, eleven of Apothem's agents as subagents in
-  `<project>/.devin/agents/`. It authors no workflow or hook.
+  `<project>/.devin/agents/` and two hooks in `<project>/.devin/config.local.json`.
+  It authors no workflow and no Cascade hook.
 - Agents the adapter writes: one `<name>.md` per Apothem agent in
   `<project>/.devin/agents/`, with `name`, `description` and, where the source
   restricts tools, `allowed-tools` as a YAML list of lowercase Devin tool names
@@ -159,6 +163,122 @@
   <https://docs.devin.ai/desktop/cascade/web-search>; snapshot-id living docs;
   snapshot-date 2026-10-03.
 
+## Hooks
+
+Read 2026-10-28 (<https://docs.devin.ai/cli/extensibility/hooks/overview.md>,
+<https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md>,
+<https://docs.devin.ai/desktop/devin-local.md>), with the CLI changelog and the
+Desktop changelog read 2026-10-27. The hooks pages describe the Devin CLI. The
+Cascade hooks page says the Devin Local agent has its own lifecycle hooks, with a
+different configuration format, on those pages, and the Devin Local page lists
+hooks in its Customizations surface, so the adapter treats the CLI's format as
+Devin Local's. The legacy Cascade agent has a different format that the adapter
+does not write.
+
+- Files, project: `.devin/hooks.v1.json` (the recommended standalone file: the
+  hooks object is the whole file, no wrapper key), the `hooks` key of
+  `.devin/config.json`, the `hooks` key of `.devin/config.local.json` ("local
+  override, gitignored"), and `.claude/settings.json` and
+  `.claude/settings.local.json` (Claude Code format). Project files are found in
+  the working directory and its ancestors up to the repository root.
+- Files, user: the `hooks` key of `~/.config/devin/config.json`
+  (`%APPDATA%\devin\config.json` on Windows), and `~/.claude.json`,
+  `~/.claude/settings.json` and `~/.claude/settings.local.json`. There is no
+  user-level `hooks.v1.json`.
+- Schema: `{"<Event>": [{"matcher": "<regex, optional>", "hooks": [{"type":
+  "command", "command": "<string>", "timeout": <seconds, optional>}]}]}`; `type`
+  is `command` or `prompt`. The changelog adds `fail_closed: true` (v3000.11.205,
+  2026-10-22), which blocks the guarded action when the hook itself fails; it does
+  not say where in the schema the field sits, and the adapter writes it nowhere.
+- Events: the overview lists eight (PreToolUse, PostToolUse, PermissionRequest,
+  UserPromptSubmit, Stop, PostCompaction, SessionStart, SessionEnd); the changelog
+  adds PreCompact and PostCompact (v3000.11.92, 2026-10-14).
+- Command contract: JSON on stdin (`hook_event_name`, `session_id`, a per-turn
+  `prompt_id` that is absent before the first prompt, plus `tool_name` and
+  `tool_input` for tool events; PostToolUse adds `tool_response` with `success`,
+  `output` and `error`; SessionStart adds `source`). `DEVIN_PROJECT_DIR` is set to
+  the project root; the stdin payload carries no working directory, so the
+  `devin` contract fills `cwd` from that variable and the SessionStart summaries
+  (plan, memory, knowledge base) resolve against the project. Exit 0 succeeds, exit 2 blocks, and any other code, a timeout
+  or unreadable output is logged and does not block. Stdout JSON may carry
+  `decision` (`approve` or `block`) with `reason`, `hookSpecificOutput.updatedInput`
+  (PreToolUse) and `hookSpecificOutput.additionalContext`.
+- Where `additionalContext` reaches the model: UserPromptSubmit, SessionStart and
+  PostToolUse. PreToolUse documents `updatedInput` and a decision, and no context
+  channel, so a guard that speaks through `additionalContext` there is not known
+  to be delivered. Apothem registers SessionStart (the bootstrap) and PostToolUse
+  (the proactive-compaction tracker), and registers no PreToolUse guard, no Stop
+  gate, no compaction hook, no NotebookEdit or AskUserQuestion guard and no
+  conformity-gate hook. The envelope the dispatcher writes is Claude's, which
+  Devin reads (`--contract devin` changes no byte of it); the contract only maps
+  Devin's lowercase tool names (`exec`, `write`, `edit`, `read`, `grep`, `glob`)
+  onto the Claude spellings the handlers test.
+- Matcher: a regex over `tool_name` (unanchored: `exec` matches any name that
+  contains `exec`), available for PreToolUse, PostToolUse and PermissionRequest.
+  An empty or omitted matcher matches every tool name, and a glob such as `*` is
+  not a regex. The adapter writes no matcher: SessionStart has no tool name, and
+  the PostToolUse tracker counts every tool. Devin's built-in tool names are
+  lowercase (`read`, `write`, `edit`, `apply_patch`, `grep`, `glob`, `exec`,
+  `webfetch`, ...), so Claude Code matchers such as `Bash` or `Edit` are not
+  Devin's names.
+- Activation: hooks load and run only in a workspace that is not in Restricted
+  Mode (the Devin Local page: they "neither load nor run" there). The CLI's
+  `/hooks` command lists the loaded hooks with
+  their source files, and the Desktop changelog (v3.5.17, 2026-07-17) says the
+  Hooks tab in Devin Local's Customizations lists them with their source and
+  trigger events. The install prints a note with these two ways to check.
+- Claude Code import: `.claude/` hooks load while `read_config_from.claude` is on,
+  and the configuration page states it is on by default when `read_config_from`
+  is not set. The Desktop pages do not say whether the Local agent applies that
+  default. If the Apothem Claude Code install wrote its hooks to
+  `~/.claude/settings.json`, Devin can run both sets. The install prints a note
+  naming the switch (`"claude": false` under `read_config_from` in the user config
+  or the project's `.devin/config.json`) and what turning it off also stops
+  (Claude Code's rules, skills, commands and MCP servers). The SessionStart
+  command the adapter registers and the Claude Code copy of it (the default
+  command line) share one marker per (session, source) in the hook state
+  directory, so whichever runs second is silent. The default command line takes
+  part only when `DEVIN_PROJECT_DIR` is set; the marker binds for ten seconds, so
+  a later start of the same session delivers; no PostToolUse counter is
+  de-duplicated.
+- TODO(clarify): whether `DEVIN_PROJECT_DIR` is also set for a hook Devin imports
+  from `~/.claude/settings.json`; the overview page states it for hooks without
+  distinguishing the source. If it is not, the Claude Code copy runs unmarked and
+  the bootstrap can be delivered twice.
+- Files the adapter writes: the dispatcher tree at
+  `<project>/.apothem/support/windsurf/hooks/` (Apothem-owned; nested under the
+  harness name so another project-scope adapter's uninstall cannot remove it; the
+  project's `.gitignore` snippet ignores `.apothem/*`) and the registration in
+  `<project>/.devin/config.local.json`, key-merged: the operator's own hooks and
+  keys stay, and an uninstall removes only the handlers that tells Apothem's entry apart by what its command runs (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's). The shared `.devin/config.json`, the
+  standalone `.devin/hooks.v1.json`, the user config and the `.claude/` files are
+  never written. A file with comments is refused with `config.unparseable` and
+  left as it is. An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file.
+- TODO(clarify): which shell Devin runs a hook command in on Windows. The
+  Cascade page names `bash -c` and `powershell -Command`, and the Local pages name
+  none (the changelog's PowerShell default is for the `exec` tool). The adapter
+  writes bash quoting (`"<interpreter>" "<script>" ...`), which PowerShell would
+  not parse without a call operator; the install note says to confirm the hooks
+  loaded.
+- TODO(clarify): whether Devin Desktop's Local agent applies the CLI's
+  `read_config_from` defaults, and whether it reads the project `.devin/` files
+  of an ancestor directory the way the CLI does.
+- TODO(clarify): where `fail_closed` sits in the schema; the adapter relies on
+  the default (fail open).
+- Local config is excluded from git by Devin itself: "Local config files are
+  automatically excluded from git via `.git/info/exclude`"
+  (<https://docs.devin.ai/cli/reference/configuration/global-vs-local.md>, read
+  2026-10-28), and the precedence table calls `.devin/config.local.json`
+  "Personal, gitignored". The registration therefore stays out of the
+  repository without any edit to `.gitignore`, which Apothem does not make.
+- TODO(clarify): whether the Local agent also reads Cascade-format hook files
+  (`.devin/hooks.json`, `.windsurf/hooks.json`, `~/.codeium/windsurf/hooks.json`).
+  The changelog says Windsurf-format command and write hooks fire on GPT models
+  (v3000.11.92) and `post_setup_worktree` runs for Local sessions (Desktop v3.8.20),
+  so some are read; no page says which. The adapter does not rely on it.
+- TODO(clarify): whether Devin trims or caps `additionalContext`; the SessionStart
+  bootstrap is a few kilobytes.
+
 ## Vendor Sources
 
 Retrieved 2026-10-03 unless marked.
@@ -170,7 +290,21 @@ Retrieved 2026-10-03 unless marked.
 - <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules)
 - <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports)
 - <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-24, the folder the adapter writes)
-- <https://docs.devin.ai/desktop/cascade/hooks.md> (hooks; retrieved 2026-10-02)
+- <https://docs.devin.ai/desktop/cascade/hooks.md> (Cascade hooks, a different format from the Devin Local hooks the adapter writes; retrieved 2026-10-27)
+
+Retrieved 2026-10-28 (the hooks the adapter writes).
+
+- <https://docs.devin.ai/cli/extensibility/hooks/overview.md> (hook files and
+  locations, schema, events, stdin and stdout contract, exit codes,
+  `read_config_from.claude`, `/hooks`)
+- <https://docs.devin.ai/cli/extensibility/hooks/lifecycle-hooks.md> (per-event
+  stdin, the matcher regex, the lowercase tool names)
+- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (the
+  `claude` import option and its default, the project and user config examples)
+- <https://docs.devin.ai/cli/reference/configuration/global-vs-local.md> (local
+  config files, `.devin/config.local.json`, and their exclusion from git)
+- <https://docs.devin.ai/desktop/devin-local.md> (Restricted Mode, the
+  Customizations surface that lists hooks)
 
 Retrieved 2026-10-27 (the agents the adapter writes).
 
@@ -222,9 +356,10 @@ Windsurf (Devin Desktop) exposes **no vendor plugin or extension install surface
 that Apothem ships. The adapter writes a merged rules file at
 `<project>/.devin/rules/apothem-rules.md` (the preferred surface;
 `.windsurf/rules/` is the backward-compat fallback), the skills at
-`~/.agents/skills/`, the rules and templates corpus at `~/.config/apothem/`, and
-eleven agents as Devin Local subagents at `<project>/.devin/agents/`, and authors
-no other cohort. There is no standalone-installable bundle; every artifact
+`~/.agents/skills/`, the rules and templates corpus at `~/.config/apothem/`,
+eleven agents as Devin Local subagents at `<project>/.devin/agents/`, and the hook
+registration at `<project>/.devin/config.local.json` with its scripts under
+`<project>/.apothem/support/windsurf/hooks/`, and authors no other cohort. There is no standalone-installable bundle; every artifact
 requires the full `apothem install --harness windsurf --project <path>` engine run.
 
 | Artifact class | Persists standalone? | Mechanism / limit |
@@ -233,7 +368,8 @@ requires the full `apothem install --harness windsurf --project <path>` engine r
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run. |
 | Agents | No — requires `apothem install` | The engine writes eleven of the fourteen as Devin Local subagents to the project's `.devin/agents/`. Nothing persists before that run. |
 | Workflows | No — adapter scope | The vendor documents workflows (`.windsurf/workflows/`), which reach the legacy Cascade agent only; the adapter authors none. |
-| Hooks / MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and `hooks.json` (hooks) are operator-owned; the adapter authors no entries. |
+| Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/windsurf/hooks/` and registers SessionStart and PostToolUse in `<project>/.devin/config.local.json`. Nothing persists before that run, and Devin runs no hook while the workspace is in Restricted Mode. |
+| MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and the shared `config.json` and `hooks.v1.json` are operator-owned; the adapter authors no entries. The Cascade `hooks.json` is not written. |
 
 The Devin CLI documents plugins and team marketplaces, but Apothem ships no
 Devin plugin, so a

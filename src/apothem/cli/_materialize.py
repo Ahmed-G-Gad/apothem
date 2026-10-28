@@ -61,6 +61,7 @@ from apothem.harnesses._shared.install_driver import (
 from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
 from apothem.lib.install_advisories import (
+    hook_review_advisories,
     mcp_profile_advisories,
     shared_root_advisories,
 )
@@ -478,6 +479,7 @@ def _materialize_harness(
             holders=ledger_holders(),
         )
     )
+    shared_advisories.extend(hook_review_advisories(harness_id, project=project_root))
     totals.warnings.extend(shared_advisories)
     if run.fmt != "json":
         _print_harness_outcome(

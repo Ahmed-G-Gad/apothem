@@ -19,8 +19,9 @@ apothem install --harness windsurf --project /path/to/project
 ```
 
 The adapter writes one project-scope Windsurf rules file from the shared
-Apothem rules and governance surface, and writes eleven of Apothem's helpers as
-Devin Local subagents in the project (see [Subagents](#subagents)).
+Apothem rules and governance surface, writes eleven of Apothem's helpers as
+Devin Local subagents in the project (see [Subagents](#subagents)), and
+registers two Devin Local hooks (see [Hooks](#hooks)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -30,6 +31,8 @@ your user home, before it touches the project (see
 
 - `<project>/.devin/rules/apothem-rules.md`, the rules file.
 - `<project>/.devin/agents/<name>.md` for eleven Apothem helpers, in the project.
+- `<project>/.devin/config.local.json`, the hook registration, in the project. Your own entries in it stay.
+- `<project>/.apothem/support/windsurf/hooks/`, the hook scripts, in the project.
 - `~/.agents/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -49,8 +52,9 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the rules file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the rules file and the subagent files in `.devin/agents/`, plus the
-  `.apothem/` data folder every project install creates.
+  gets the rules file, the subagent files in `.devin/agents/`, the hook
+  registration in `.devin/config.local.json`, plus the `.apothem/` folder every
+  project install creates, which also holds the hook scripts.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -120,6 +124,114 @@ back helpers wait on them), the model values, the .claude/ subagent import path
 and whether Devin Desktop applies it, and how allowed-tools: [] is read; see the
 subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
+## Hooks
+
+Devin Local runs hooks from the `hooks` key of its config files, per the
+[Devin hooks documentation](https://docs.devin.ai/cli/extensibility/hooks/overview.md).
+The install registers two:
+
+| Event | What runs |
+| --- | --- |
+| `SessionStart` | The session bootstrap: session metadata, the skill index, the memory and plan summaries and the standing posture, added to the model's context. |
+| `PostToolUse` (every tool) | The proactive-compaction tracker. It counts activity and, at most twice per compaction cycle, tells the model to save its state or compact. It is silent otherwise. |
+
+Both add context for the model. Neither blocks a tool call or a session.
+
+Apothem registers no `PreToolUse` guard on Devin. Devin's documentation lists
+`additionalContext` (the field Apothem's guards speak through) for
+`UserPromptSubmit`, `SessionStart` and `PostToolUse`, and lists only a decision and
+an input rewrite for `PreToolUse`. A guard registered there would cost a process
+start on every tool call and might deliver nothing, so the write, edit and shell
+guards, the `AskUserQuestion` check and the session-end protocol stay on the
+tools that deliver them. Apothem will register a guard on a Devin event once the
+documentation, or a probe, shows that it reaches the model.
+
+These are Devin Local hooks. The older Cascade mode reads a different hook format
+(`.devin/hooks.json`), which the install does not write.
+
+**Where the files go**
+
+| File | What it holds |
+| --- | --- |
+| `<project>/.devin/config.local.json` | The two hook registrations, merged into the file's `hooks` key. Devin documents this file as the local override and gitignored, and excludes local config files from git itself through `.git/info/exclude`. |
+| `<project>/.apothem/support/windsurf/hooks/` | The dispatcher script, its helpers and its message files. |
+
+Each registered command names the interpreter Apothem found when it ran, and the
+absolute path of the project, so it is machine-specific. That is why the install
+writes the local file and never the shared `<project>/.devin/config.json`, the
+standalone `.devin/hooks.v1.json` or the `.claude/` settings. The install does not
+edit `.gitignore`. Devin excludes its local config files from git itself (through
+`.git/info/exclude`), so a teammate's checkout does not receive commands that
+point at your machine; check that your `.gitignore` lists `.apothem/`.
+
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
+
+A command looks like this, with your interpreter and project path in place of the
+two paths:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
+```
+
+`--contract devin` maps Devin's lowercase tool names (`exec`, `write`, `edit`,
+`read`, `grep`, `glob`) onto the names Apothem's handlers test, and leaves the
+output as the same envelope Claude Code reads. No matcher is written: Devin's
+matcher is a regular expression, an omitted one matches every tool, and
+`SessionStart` has no tool to match.
+
+**Things to check after the install**
+
+- Devin runs no hook while the workspace is in Restricted Mode. Trust the
+  workspace first.
+- To see whether the hooks loaded, open the Hooks tab in Devin Local's
+  Customizations, or run `/hooks` in the Devin CLI. Both list each hook with its
+  source file.
+- Devin's documentation names no shell for hook commands on Windows. The commands
+  use `sh` quoting, which PowerShell would not parse without a call operator.
+  Apothem has not confirmed what Devin Local runs on Windows; if the hooks do not
+  load there, say so in an issue.
+
+**Devin also runs the hooks Claude Code wrote.** Devin loads the hooks in
+`~/.claude/settings.json`, `.claude/settings.json` and
+`.claude/settings.local.json` while `read_config_from.claude` is on, which is its
+default for the Devin CLI; the Desktop pages do not say whether Devin Local
+applies it. If you also installed Apothem for Claude Code, both sets of hooks can
+run. The `SessionStart` command here and the Claude Code copy of it share one
+marker per session in Apothem's hook state folder, so whichever runs second is
+silent and the bootstrap reaches the model once; Apothem finds Devin from the
+`DEVIN_PROJECT_DIR` variable Devin sets for its hooks. The marker covers ten
+seconds, so a later start of the same session still delivers. The context-size
+counter runs in both places, so its thresholds are reached early, and Apothem does
+not de-duplicate the counters. To load only these hooks, set
+`"claude": false` under `"read_config_from"` in your user config
+(`~/.config/devin/config.json`, or `%APPDATA%\devin\config.json` on Windows) or in
+the project's `.devin/config.json`; that also stops Devin importing Claude Code's
+rules, skills, commands and MCP servers. The install prints this as a note.
+
+**Your own hooks.** The registration is merged into your file by key. Hooks and
+other keys you wrote stay as they were, a handler of yours under the same event
+stays beside Apothem's, and an update replaces only the handlers whose command runs
+the Apothem dispatcher (`.apothem/support/windsurf/hooks/dispatch.py` with
+`--contract devin`, whichever project path it was written under). A hook of yours
+that only shares the name, or that runs `python -m apothem.conformity.gate`, is
+never taken for Apothem's. A file with comments or other JSON5
+syntax cannot be rewritten without losing them, so the install reports a
+`config.unparseable` error for that file, leaves it untouched and stops, with the
+other files it had begun to write removed again: remove the comments, or add the
+two entries yourself.
+
+**Turning the hooks off.** Set `APOTHEM_HOOKS_DISABLE=1` in Devin's environment to
+silence the Apothem hooks.
+
+{/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
+Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
+the schema; see the Hooks
+section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
+
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the project rules file
@@ -136,7 +248,8 @@ block is kept on every sync.
 Windsurf's current rules surface is project-scoped under `.devin/rules/` (the
 preferred location, which takes precedence over the `.windsurf/rules/`
 backward-compat fallback). Workflows and machine-local memories are
-operator-owned; Apothem does not write them. The single-file `.windsurfrules`
+operator-owned; Apothem does not write them, and neither the Cascade hook file
+nor the shared Devin config. The single-file `.windsurfrules`
 form is intentionally not written.
 
 Devin Desktop (Windsurf) discovers `~/.agents/skills/`, so the skills the
@@ -157,8 +270,11 @@ apothem verify --harness windsurf --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists, the `.devin/agents/` folder included; managed
-   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
+2. Each managed target exists, the `.devin/agents/` folder and the hook
+   registration `.devin/config.local.json` included; managed
+   files are non-empty, and JSON or YAML configs parse. The hook file must hold
+   a handler that runs the Apothem dispatcher (the check does not run it), so a
+   file that was reverted or emptied no longer verifies. Add `--profile PATH` to
    also confirm that the installed files match that profile. For
    `.devin/agents/` the check is that the folder exists, not that each helper
    file is in it; `apothem diff --harness windsurf --project /path/to/project`
@@ -180,6 +296,8 @@ Re-derives the project rules file from the current shared profile state.
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
 It rewrites subagent files that differ from the current ones, and adds any that are missing.
+It also refreshes the hook scripts and the Apothem handlers in
+`.devin/config.local.json`, leaving your own entries alone.
 
 ## Uninstalling
 
@@ -196,6 +314,10 @@ unaffected.
 
 The uninstall also removes the subagent files it wrote in `<project>/.devin/agents/`
 and keeps any other file there; the folder is removed when it is left empty.
+It removes the Apothem hook handlers from `<project>/.devin/config.local.json`,
+recognising them by the dispatcher path in their command, and keeps your own hooks
+and keys. The file is deleted only when Apothem created it and nothing else remains
+in it. The hook scripts in `<project>/.apothem/support/windsurf/hooks/` go too.
 It removes the skill folders it wrote in `~/.agents/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
@@ -217,6 +339,9 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness windsurf --project /path/to/project` |
 | Verification failed | Run `apothem update --harness windsurf --project /path/to/project`, then verify again |
 | Devin Local lists none of the Apothem helpers | Run `apothem diff --harness windsurf --project /path/to/project`. A pending line for the `.devin/agents` folder means helper files are missing or out of date, so run `apothem update --harness windsurf --project /path/to/project`. `apothem verify` is not a test of this: it passes when `.devin/agents/` exists, even with no helper file in it. If `diff` reports no pending changes, check that the Subagents (Preview) setting is on and that the project is open in Devin Desktop's Local mode, then start a new tab |
+| The Apothem hooks do not run | Devin runs no hook in a workspace in Restricted Mode: trust the workspace. Open the Hooks tab in Devin Local's Customizations, or run `/hooks` in the Devin CLI, to see whether the Apothem entries loaded. On Windows Apothem has not confirmed which shell Devin runs hook commands in |
+| An install reports `config.unparseable` for `config.local.json` | The file has comments or other syntax a rewrite would lose. Remove the comments and install again, or add the two Apothem hook entries yourself |
+| The Apothem context appears twice, or the context-size reminder comes early | Devin also runs the hooks the Claude Code install wrote. Set `"claude": false` under `"read_config_from"` in your Devin config to load only the hooks in `.devin/config.local.json` |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness windsurf --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

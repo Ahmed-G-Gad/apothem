@@ -66,6 +66,7 @@ _INSTALL_ENTRY_MODES: tuple[str, ...] = (
     "kimi_agents",
     "devin_agents",
     "kiro_agents",
+    "native_hooks",
 )
 
 #: Suffix of the sibling folder a user-level skill folder is staged in before it
@@ -103,6 +104,7 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "kimi_agents": "Install agents",
     "devin_agents": "Install agents",
     "kiro_agents": "Install agents",
+    "native_hooks": "Register hooks",
     "sweep_stale": "Prune stale files",
     "capability_projection": "Project capability",
     "data_surface": "Write data file",

@@ -34,7 +34,10 @@ from .install_driver_types import (
 
 
 def _remove_apothem_hook_handlers(
-    existing_entries: object, *, harness_root: Path | None = None
+    existing_entries: object,
+    *,
+    harness_root: Path | None = None,
+    project_scope: bool = False,
 ) -> object:
     """Strip Apothem hook handlers from one hooks event's matcher list.
 
@@ -60,7 +63,9 @@ def _remove_apothem_hook_handlers(
         kept_handlers = [
             handler
             for handler in handlers
-            if not is_apothem_hook(handler, harness_root=harness_root)
+            if not is_apothem_hook(
+                handler, harness_root=harness_root, project_scope=project_scope
+            )
         ]
         if not kept_handlers:
             # Every handler under this matcher was Apothem's: drop the entry.
@@ -78,6 +83,7 @@ def _remove_apothem_hooks(
     template_hooks: object,
     *,
     harness_root: Path | None = None,
+    project_scope: bool = False,
 ) -> object:
     """Strip Apothem-managed handlers from an operator ``hooks`` object.
 
@@ -95,7 +101,7 @@ def _remove_apothem_hooks(
             result[event_name] = existing_entries
             continue
         stripped = _remove_apothem_hook_handlers(
-            existing_entries, harness_root=harness_root
+            existing_entries, harness_root=harness_root, project_scope=project_scope
         )
         if stripped is _REMOVE_KEY:
             continue
@@ -126,7 +132,11 @@ def _remove_apothem_list_items(
 
 
 def _remove_apothem_values(
-    existing: object, template: object, *, harness_root: Path | None = None
+    existing: object,
+    template: object,
+    *,
+    harness_root: Path | None = None,
+    project_scope: bool = False,
 ) -> object:
     """Return *existing* with Apothem's *template* contribution removed.
 
@@ -151,14 +161,20 @@ def _remove_apothem_values(
         template_value = template[key]
         if key == "hooks" and isinstance(value, dict):
             stripped_hooks = _remove_apothem_hooks(
-                value, template_value, harness_root=harness_root
+                value,
+                template_value,
+                harness_root=harness_root,
+                project_scope=project_scope,
             )
             if stripped_hooks is not _REMOVE_KEY:
                 result[key] = stripped_hooks
             continue
         if isinstance(value, dict) and isinstance(template_value, dict):
             reduced = _remove_apothem_values(
-                value, template_value, harness_root=harness_root
+                value,
+                template_value,
+                harness_root=harness_root,
+                project_scope=project_scope,
             )
             if reduced is not _REMOVE_KEY:
                 result[key] = reduced
@@ -199,6 +215,7 @@ def _strip_apothem_json(
     apothem_keys: frozenset[str] = frozenset(),
     harness_root: Path | None = None,
     retired: tuple[OwnedEntry, ...] = (),
+    project_scope: bool = False,
 ) -> str | None:
     """Return *operator_text* JSON with Apothem's *template_text* keys removed.
 
@@ -219,7 +236,9 @@ def _strip_apothem_json(
         operator = strip_owned(operator, retired)
     if isinstance(operator, dict) and apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
-    reduced = _remove_apothem_values(operator, template, harness_root=harness_root)
+    reduced = _remove_apothem_values(
+        operator, template, harness_root=harness_root, project_scope=project_scope
+    )
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -234,6 +253,7 @@ def _strip_apothem_yaml(
     apothem_keys: frozenset[str] = frozenset(),
     harness_root: Path | None = None,
     retired: tuple[OwnedEntry, ...] = (),
+    project_scope: bool = False,
 ) -> str | None:
     """Return *operator_text* YAML with Apothem's *template_text* keys removed.
 
@@ -269,7 +289,9 @@ def _strip_apothem_yaml(
     if apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
     template_dict = template if isinstance(template, dict) else {}
-    reduced = _remove_apothem_values(operator, template_dict, harness_root=harness_root)
+    reduced = _remove_apothem_values(
+        operator, template_dict, harness_root=harness_root, project_scope=project_scope
+    )
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -319,6 +341,7 @@ def _surgical_remove_from_target(
     recorded: LedgerTarget | None = None,
     retired: tuple[OwnedEntry, ...] = (),
     earlier_digests: tuple[str, ...] = (),
+    project_scope: bool = False,
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -385,6 +408,7 @@ def _surgical_remove_from_target(
                 created=recorded.created,
                 harness_root=install_root,
                 managed_header=_leading_comment_block(template_text),
+                project_scope=project_scope,
             )
         except _LossyRewriteError as refusal:
             return _result(
@@ -401,6 +425,7 @@ def _surgical_remove_from_target(
             apothem_keys=apothem_keys,
             harness_root=install_root,
             retired=retired if recorded is not None else (),
+            project_scope=project_scope,
         )
     elif suffix in {".yaml", ".yml"}:
         remainder = _strip_apothem_yaml(
@@ -409,6 +434,7 @@ def _surgical_remove_from_target(
             apothem_keys=apothem_keys,
             harness_root=install_root,
             retired=retired if recorded is not None else (),
+            project_scope=project_scope,
         )
     else:
         # Unrecognized operator content: only delete an unedited template copy

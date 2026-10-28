@@ -8,7 +8,13 @@ Hooks fire on tool events and load message contexts that the
 assistant treats as additional system prompts. Wiring lives in
 the Claude Code `settings.json` hook block (engine install) or the plugin's
 `hooks.json` (plugin install), the Codex `hooks.json` hook file,
-and the Qwen Code `settings.json` hooks map.
+the Qwen Code `settings.json` hooks map, the CodeBuddy
+`.codebuddy/settings.local.json` hooks key (SessionStart and PostToolUse only),
+the Kiro hook file `.kiro/hooks/apothem.json` (SessionStart only), the
+GitHub Copilot hook file `.github/hooks/apothem.json` (sessionStart and
+postToolUse only), the Windsurf (Devin Local) `.devin/config.local.json` hooks
+key (SessionStart and PostToolUse only), and the Cursor project hook file
+`.cursor/hooks.json` (sessionStart only).
 
 | Event | Timeout | Purpose |
 |-------|--------:|---------|
@@ -52,6 +58,85 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 `PYTHONPATH=src`) runs the same code for development. The dispatcher loads
 `hooks/lib/resolve_root.py` for ecosystem-root resolution and delegates to
 `hooks/emit_hook_context.py` and `hooks/session_start_bootstrap.py`.
+
+## Vendor contracts
+
+A harness that is not Claude Code runs the same dispatcher with
+`--contract <id>` after the script, for example
+`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+The contract (`hooks/lib/vendor_contract.py`) translates the vendor's event and
+tool-name spellings and payload keys into the Claude shape the handlers read,
+rewrites the envelope into the shape the vendor reads, and drops an event the
+vendor does not hand to the model. Without the flag nothing is translated and
+the output is the Claude envelope, byte for byte. The flag is part of the
+documented command line of the dispatcher: `dispatch.py [--contract <id>]
+<Event> [<message> ...]`.
+
+| Contract | Reads | Output | Delivered events |
+| --- | --- | --- | --- |
+| `codebuddy` | Claude's stdin | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+| `devin` | Claude's stdin with lowercase tool names (`exec`, `write`, `edit`); the project root from `DEVIN_PROJECT_DIR` | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+| `cursor` | camelCase events, `conversation_id`, `workspace_roots` | `{"additional_context": ...}` | SessionStart |
+| `copilot` | camelCase `sessionId`, `toolName`, `toolArgs`, or the PascalCase snake_case form | `{"additionalContext": ...}` | SessionStart, PostToolUse, Notification |
+| `kiro` | Claude-like stdin, Kiro tool ids (`execute_bash`, `fs_write`, `str_replace`) | bare text | SessionStart, UserPromptSubmit |
+| `claude` | Claude's stdin | the Claude envelope | every event |
+
+The `codebuddy`, `copilot`, `cursor`, `devin` and `kiro` contracts are installed
+by an Apothem adapter today (`devin` by the Windsurf adapter); the `claude`
+contract proves the default command line is unchanged. The dispatcher stays
+advisory under every contract: no shape carries a permission, a decision, a
+block or a rewritten tool input.
+
+Cursor and Devin Local load the hooks Claude Code's settings files hold as well as
+their own, so with the Apothem Claude Code install on the same machine two sets
+can run. The SessionStart bootstrap is delivered once: the vendor's own command
+(`--contract cursor` or `--contract devin`) and the Claude Code copy, which is
+the default command line, share one marker per session and source in the hook
+state directory, and whichever runs second is silent. The default command line
+takes part only when the process environment names the host (`CURSOR_PROJECT_DIR`,
+`CURSOR_VERSION` or `DEVIN_PROJECT_DIR`); under Claude Code, Codex and Qwen Code
+it never reads the marker. The marker binds for ten seconds, so a later start of
+the same session, such as a second compaction, still delivers its recovery
+context. No PostToolUse counter is de-duplicated, so the context-size counter
+runs in both places and reaches its thresholds early. The install prints a note
+that names the vendor's switch for turning the import off (Cursor's "Include
+Third-Party Plugins, Skills, and Other Configs"; Devin's
+`read_config_from.claude`).
+
+A command registers only where the vendor hands its output to the model. Kiro
+adds a hook's stdout to the context for `SessionStart` and `UserPromptSubmit`
+only, so the Kiro file registers `SessionStart` alone. Copilot reads
+`additionalContext` from `sessionStart` and `postToolUse` and only permission
+fields from `preToolUse`, so the Copilot file registers those two events, under
+their camelCase names, and no guard. Each Copilot entry carries a `bash` and a
+`powershell` command. Both files are Apothem-owned and name the interpreter and
+project path of the machine that ran the install; the harness pages say what
+that means for a file a repository commits.
+
+Devin Local reads `additionalContext` from `SessionStart`, `UserPromptSubmit` and
+`PostToolUse` and documents none for `PreToolUse`, so the Windsurf registration
+holds `SessionStart` and `PostToolUse`, with no matcher (Devin's matcher is a
+regular expression, and an omitted one matches every tool). It goes in the local
+override `.devin/config.local.json`, which Devin documents as gitignored and
+excludes from git itself through `.git/info/exclude`.
+Cursor's `sessionStart` hook adds `additional_context` to the conversation's
+initial context; the first version registers that event alone. Cursor's
+`.cursor/hooks.json` is the one project hook file, so it is the operator's: the
+install merges one entry into it, keeps the operator's entries and keys, refuses a
+file it cannot rewrite without loss, and tells its own entry apart by the
+dispatcher path in the command. Cursor's desktop app runs hook commands through
+PowerShell on Windows, so on a Windows host the command starts with `& `.
+
+Across all five files an entry is Apothem's when its command runs
+`.apothem/support/[<harness>/]hooks/dispatch.py` with `--contract <id>`,
+whichever project path it was written under. A renamed, moved or cloned project
+therefore keeps one set of entries, and a hook of yours, such as a
+`hooks/dispatch.py` in your own tree or `python -m apothem.conformity.gate`, is
+never replaced or removed. `apothem verify` reports the registration missing once
+none of Apothem's entries is left in the file, and an uninstall that cannot read
+the file reports it as skipped. A project or interpreter path that holds `$`, a
+backtick, a double quote or a backslash is refused at install, naming the path,
+because the quoted command would run a different file.
 
 ## Message contexts
 
@@ -123,7 +208,11 @@ is installed in.
 
 Every registered hook command meets the same contract, checked by
 `tests/hooks/test_hook_contract.py` on the plugin, the Claude Code engine
-install, Codex, and Qwen Code:
+install, Codex, Qwen Code, and the CodeBuddy install (the Kiro, Copilot, Cursor
+and Windsurf files are checked against their contracts by
+`tests/hooks/test_native_hook_registrations.py` and run as the vendors run them
+by `tests/integration/test_native_hook_files_roundtrip.py`,
+`test_cursor_hooks_roundtrip.py` and `test_windsurf_hooks_roundtrip.py`):
 
 - **Runs from a plain checkout.** Exit 0, and standard output is empty or one
   JSON object. No hook depends on a file's executable bit.

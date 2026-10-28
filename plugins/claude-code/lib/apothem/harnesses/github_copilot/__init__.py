@@ -15,6 +15,15 @@ one ``<name>.agent.md`` file each in ``<project>/.github/agents/`` (the
 https://docs.github.com/en/copilot/reference/custom-agents-configuration. It writes
 no user-level agents folder.
 
+The install registers two hooks (sessionStart and postToolUse) in
+``<project>/.github/hooks/apothem.json``, a version 1 hook file Apothem owns (the
+``native_hooks`` mode), running the dispatcher in the support tree under
+``<project>/.apothem/support/github-copilot/hooks/`` with ``--contract copilot``, per
+https://docs.github.com/en/copilot/reference/hooks-reference, retrieved 2026-10-28.
+Copilot reads only permission fields from a preToolUse hook, so no guard is
+registered there. The file sits in a folder that is part of the repository, and the cloud agent runs
+the ``bash`` command only. It writes no user-level hooks folder.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

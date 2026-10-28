@@ -27,6 +27,11 @@ from .install_driver_converters import (
     _gemini_command_text,
     _native_markdown_command_text,
 )
+from .install_driver_hookfile import (
+    HOOK_FILE_MODE,
+    preview_native_hooks,
+    unsafe_command_path,
+)
 from .install_driver_jsonmerge import CONFIG_UNPARSEABLE_CODE
 from .install_driver_merge import (
     PROFILE_DOCUMENT_RELATIVE,
@@ -186,7 +191,7 @@ def _validate_ownership_class(
 
 def _validate_source(entry: InstallEntry, src: Path) -> MaterializationResult | None:
     """Return an error result when a manifest source does not match its mode."""
-    if entry.mode in {"write_text", "sentinel_merge"}:
+    if entry.mode in {"write_text", "sentinel_merge", HOOK_FILE_MODE}:
         if not src.is_file():
             return _result(
                 "error",
@@ -253,6 +258,11 @@ def _validate_install_plan(
         source_error = _validate_source(entry, resolve_source(entry.source))
         if source_error is not None:
             errors.append(source_error)
+        path_error = unsafe_command_path(
+            entry, harness_root=harness_root, project_root=project_root
+        )
+        if path_error is not None:
+            errors.append(path_error)
         target_error = _validate_target_path(
             target,
             allowed_root=entry_write_root(entry, harness_root, project_root),
@@ -614,7 +624,18 @@ def _dry_run_results(
         operator_owned_write = entry.mode == "sentinel_merge" or (
             entry.mode == "write_text" and entry.ownership_class == "operator-owned"
         )
-        if operator_owned_write:
+        if entry.mode == HOOK_FILE_MODE:
+            hooks = preview_native_hooks(
+                entry, harness_root=harness_root, project_root=project_root
+            )
+            outcome = hooks.outcome
+            if hooks.diff:
+                detail["diff"] = hooks.diff
+            if hooks.refusal is not None:
+                message = hooks.refusal.reason
+                detail["code"] = CONFIG_UNPARSEABLE_CODE
+                detail["fix"] = hooks.refusal.fix
+        elif operator_owned_write:
             preview = _operator_owned_preview(
                 entry,
                 harness_root=harness_root,

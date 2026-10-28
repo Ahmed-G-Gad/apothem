@@ -16,8 +16,9 @@ apothem install --harness kiro --project /path/to/project
 ```
 
 The adapter writes one project-scope Kiro steering file from the shared
-Apothem rules and governance surface, and Apothem's helpers as Kiro custom agent
-files in the project (see [Custom agent files](#custom-agent-files)).
+Apothem rules and governance surface, Apothem's helpers as Kiro custom agent
+files in the project (see [Custom agent files](#custom-agent-files)), and one
+hook (see [Hooks](#hooks)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -27,6 +28,8 @@ your user home, before it touches the project (see
 
 - `<project>/.kiro/steering/apothem-rules.md`, the steering file.
 - `<project>/.kiro/agents/<name>.md` for each Apothem helper, in the project.
+- `<project>/.kiro/hooks/apothem.json`, the hook file, in the project. Your own hook files in that folder are not touched.
+- `<project>/.apothem/support/kiro/hooks/`, the hook scripts, in the project.
 - `~/.kiro/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -46,8 +49,9 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the steering file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the steering file and the custom agent files in `.kiro/agents/`, plus the
-  `.apothem/` data folder every project install creates.
+  gets the steering file, the custom agent files in `.kiro/agents/`, the hook file
+  `.kiro/hooks/apothem.json`, plus the `.apothem/` folder every project install
+  creates, which also holds the hook scripts.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -127,6 +131,80 @@ Things to know:
 - Apothem has not confirmed what Kiro does with an omitted `tools` key, or which
   frontmatter keys Kiro requires beyond `name`.
 
+## Hooks
+
+Kiro runs hooks from JSON files in `<project>/.kiro/hooks/`, per the
+[Kiro hooks documentation](https://kiro.dev/docs/hooks/). The install writes one
+file there, `apothem.json` (hook file version `v1`), with one hook:
+
+| Trigger | What runs |
+| --- | --- |
+| `SessionStart` | The session bootstrap: session metadata, the skill index, the memory and plan summaries and the standing posture, added to the model's context. |
+
+The hook adds context for the model. It does not block a tool call or a session.
+
+Apothem registers no `PreToolUse` or `PostToolUse` hook on Kiro. Kiro adds a
+command's output to the model's context for `SessionStart` and `UserPromptSubmit`
+only and ignores it for tool events. A guard registered on a tool event would
+cost a process start on every tool call and deliver nothing, so the write, edit
+and shell guards, the context-size advisory and the session-end protocol stay on
+the tools that deliver them. The install writes no hook for `UserPromptSubmit`,
+and it writes no hook to the user folder `~/.kiro/hooks/`.
+
+**Where the files go**
+
+| File | What it holds |
+| --- | --- |
+| `<project>/.kiro/hooks/apothem.json` | The hook registration. Apothem owns this one file. |
+| `<project>/.apothem/support/kiro/hooks/` | The dispatcher script, its helpers and its message files. |
+
+The command in the hook file looks like this, with your interpreter and project
+path in place of the two paths:
+
+```text
+"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+```
+
+`--contract kiro` makes the dispatcher print the context as plain text, which is
+what Kiro adds to the context for `SessionStart`. Kiro documents no shell for
+command actions on Windows. The command is written for sh and cmd.exe, with a
+forward-slash interpreter path in quotes; if Kiro runs it under PowerShell on
+your machine, the quoted path needs a call operator (`&`) in front, and you can
+add it by hand.
+
+**Trust the workspace.** Kiro CLI 2.33 and later loads a workspace's hooks only
+after you trust the workspace: it asks "Trust this workspace?" the first time you
+start an interactive V3 session (`kiro-cli --v3`) in a folder. Kiro Web sessions
+run no hooks. The install prints this as a note.
+
+**Commit with care.** The command names the interpreter Apothem found when it
+ran and the absolute path of the project, so the file is specific to your
+machine, and the scripts it runs are in `.apothem/`, which a project's
+`.gitignore` snippet ignores. If you commit `.kiro/hooks/apothem.json`, a
+teammate's checkout gets a hook that points at nothing: Kiro shows a warning for
+the failed command and the session goes on. Add `.kiro/hooks/apothem.json` to
+`.gitignore`, or commit it only for a team that shares the same layout. The
+install does not edit `.gitignore`.
+
+**Your own hooks.** Hook files of yours in `.kiro/hooks/` are never read or
+changed. A hook you add to `apothem.json` itself stays: an update and an uninstall
+replace or remove only the hooks whose command runs the Apothem dispatcher
+(`.apothem/support/kiro/hooks/dispatch.py` with `--contract kiro`, whichever
+project path it was written under). A hook of yours that only shares the name, or
+that runs `python -m apothem.conformity.gate`, is never taken for Apothem's. A file
+that is not valid JSON is saved under `~/.apothem/backups/` and replaced.
+
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
+
+**Turning the hook off.** Set `APOTHEM_HOOKS_DISABLE=1` in Kiro's environment to
+silence the Apothem hook. An update rewrites the Apothem entry, so an edit to it
+does not last, with one exception: set `"enabled": false` on it, which Kiro
+documents as skipping a hook without deleting it, and an update keeps that.
+
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the project steering file
@@ -144,8 +222,9 @@ sync.
 Kiro's steering surface is project-scoped under `.kiro/steering/`. The adapter
 writes a dedicated `apothem-rules.md` steering file with `inclusion: always`
 front matter and never clobbers Kiro's operator-authored foundation files
-(`product.md`, `tech.md`, `structure.md`). Kiro specs (`.kiro/specs/`) and agent
-hooks are operator-owned; Apothem does not write them.
+(`product.md`, `tech.md`, `structure.md`). Kiro specs (`.kiro/specs/`) are
+operator-owned; Apothem does not write them. It writes one hook file,
+`.kiro/hooks/apothem.json`, and no other file in `.kiro/hooks/`.
 
 Kiro documents `~/.kiro/skills/` for global skills and does not mention
 `~/.agents/skills/`, so the install writes the Kiro folder and not the
@@ -168,6 +247,9 @@ The verify command confirms that:
    `.kiro/agents/` the check is that the folder exists, not that each helper
    file is in it; `apothem diff --harness kiro --project /path/to/project`
    lists the helper files that are missing or out of date.
+   The hook file `.kiro/hooks/apothem.json` must exist, be non-empty and parse
+   as JSON and hold a hook that runs the Apothem dispatcher, and the hook scripts
+   must be in `.apothem/support/kiro/hooks/`. The check does not run the hook.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -185,6 +267,8 @@ Re-derives the project steering file from the current shared profile state.
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
 It rewrites custom agent files that differ from the current ones, and adds any that are missing.
+It also refreshes the hook scripts and the Apothem hook in `.kiro/hooks/apothem.json`,
+keeping any hook of yours in that file.
 
 ## Uninstalling
 
@@ -201,6 +285,13 @@ unaffected.
 
 The uninstall also removes the custom agent files it wrote in `<project>/.kiro/agents/`
 and keeps any other file there; the folder is removed when it is left empty.
+It removes the Apothem hook from `<project>/.kiro/hooks/apothem.json`, recognising
+it by the dispatcher path in its command, so it works without an install record, and
+keeps any hook of yours in that file. The file is deleted when nothing else is in it,
+and your other hook files are not touched. If the file has comments the
+uninstall cannot read, it leaves the file as it is and reports the hook as
+skipped, with the reason; remove the Apothem hook by hand. The hook scripts in
+`<project>/.apothem/support/kiro/hooks/` go too.
 It removes the skill folders it wrote in `~/.kiro/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
@@ -222,6 +313,7 @@ python -m apothem.conformity.gate --all .
 | Config file not found | Re-run `apothem install --harness kiro --project /path/to/project` |
 | Verification failed | Run `apothem update --harness kiro --project /path/to/project`, then verify again |
 | Kiro lists none of the Apothem helpers | Trust the workspace (the CLI asks "Trust this workspace?" on the first interactive V3 session in a folder), and use the IDE or `kiro-cli --v3` |
+| The Apothem hook does not run | Trust the workspace (the CLI asks "Trust this workspace?" on the first interactive V3 session in a folder), and use the IDE or `kiro-cli --v3`. Kiro Web sessions run no hooks. A warning about the command at the start of a session means the interpreter or the `.apothem/support/kiro/hooks/` folder is missing on this machine: run `apothem install --harness kiro --project /path/to/project` there |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness kiro --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

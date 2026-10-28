@@ -1,0 +1,93 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-header-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit-header-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-notebookedit.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md\" \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PostToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/posttooluse-proactive-compaction.md\"",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" Stop \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/stop.md\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

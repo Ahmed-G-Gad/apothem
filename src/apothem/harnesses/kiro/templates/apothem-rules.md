@@ -14,9 +14,9 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — engineering rules applied on every interaction. This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.kiro/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions are installed as Kiro custom agents in `.kiro/agents/` in this project, one Markdown file each; Kiro IDE 1.0 and Kiro CLI V3 (`kiro-cli --v3`) read them, and an interactive CLI session loads them after you trust the folder. Hook helpers are not installed by the Kiro adapter.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as Kiro custom agents in `.kiro/agents/` in this project, one Markdown file each; Kiro IDE 1.0 and Kiro CLI V3 (`kiro-cli --v3`) read them, and an interactive CLI session loads them after you trust the folder. One hook, a session-start bootstrap, is registered in `.kiro/hooks/apothem.json`, with its scripts in `.apothem/support/kiro/hooks/`; Kiro CLI V3 runs it after you trust the folder.
 - **Specs** — Kiro's spec surface (`.kiro/specs/`) is operator-authored, not apothem-managed.
-- **Agent hooks** — Kiro's agent-hook surface is operator-authored, not apothem-managed.
+- **Your own hooks** — Hook files you write in `.kiro/hooks/` are operator-authored, not apothem-managed; Apothem writes `apothem.json` there and no other file.
 
 ## Engineering disciplines in force
 

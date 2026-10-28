@@ -20,7 +20,10 @@ macOS and Linux every registered command is run the way the harness runs it
 * the engine-installed Claude Code ``settings.json`` (exec form: ``command`` plus
   ``args``);
 * the engine-installed Codex ``hooks.json`` and Qwen Code ``settings.json``
-  (shell form).
+  (shell form);
+* the engine-installed CodeBuddy ``<project>/.codebuddy/settings.local.json``
+  (shell form, run through Git Bash on Windows, which is the only shell
+  CodeBuddy runs hook commands under).
 
 On Windows every shell-form command runs through Git Bash. That is how Claude
 Code runs a plugin hook there. Codex runs each hook's ``commandWindows`` instead,
@@ -160,8 +163,12 @@ class HookEntry:
         index = self.dispatcher_index
         if index is None:
             return (_basename(tokens[-1]),)
-        names = tuple(_message_name(token) for token in tokens[index + 2 :])
-        return names or (_message_name(tokens[index + 1]),)
+        # A vendor-contract call is ``dispatch.py --contract <id> <Event> ...``.
+        rest = list(tokens[index + 1 :])
+        if rest[:1] == ["--contract"]:
+            rest = rest[2:]
+        names = tuple(_message_name(token) for token in rest[1:])
+        return names or (_message_name(rest[0]),)
 
     @property
     def name(self) -> str:
@@ -425,6 +432,7 @@ def workspace(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     project = base / "project"
     project.mkdir()
     (project / ".git").mkdir()
+    _apothem(home, "install", "--harness", "codebuddy", "--project", str(project))
     hostile = base / "hostile-project"
     (hostile / "hooks" / "lib").mkdir(parents=True)
     (hostile / ".git").mkdir()
@@ -453,6 +461,9 @@ def _all_entries(ws: dict[str, Path]) -> list[HookEntry]:
     entries += _settings_entries("claude-engine", home / ".claude" / "settings.json")
     entries += _settings_entries("codex", home / ".codex" / "hooks.json")
     entries += _settings_entries("qwen", home / ".qwen" / "settings.json")
+    entries += _settings_entries(
+        "codebuddy", ws["project"] / ".codebuddy" / "settings.local.json"
+    )
     return entries
 
 
@@ -466,6 +477,8 @@ def _env_for(
     env = _isolated_env(ws["home"], CLAUDE_PROJECT_DIR=str(project), **extra)
     if entry.surface == "plugin":
         env["CLAUDE_PLUGIN_ROOT"] = str(ws["plugin"])
+    if entry.surface == "codebuddy":
+        env["CODEBUDDY_PROJECT_DIR"] = str(ws["project"])
     if entry.surface == "codex":
         # The Codex command names python3: this test's interpreter answers it,
         # not the host's (see "Interpreter" in the module docstring).
@@ -485,7 +498,7 @@ def test_every_surface_registers_hooks(workspace: dict[str, Path]) -> None:
     by_surface: dict[str, int] = {}
     for entry in _all_entries(workspace):
         by_surface[entry.surface] = by_surface.get(entry.surface, 0) + 1
-    assert set(by_surface) == {"plugin", "claude-engine", "codex", "qwen"}
+    assert set(by_surface) == {"plugin", "claude-engine", "codex", "qwen", "codebuddy"}
     assert all(count > 0 for count in by_surface.values()), by_surface
 
 
@@ -729,6 +742,28 @@ def test_clause8_single_registration_per_surface(workspace: dict[str, Path]) -> 
     assert not split, f"one dispatcher entry per matcher expected: {split}"
     for entry in _plugin_entries(workspace["plugin"]):
         assert entry.argv[2].startswith('bash "'), entry.label
+
+
+def test_codebuddy_registers_only_events_it_delivers(
+    workspace: dict[str, Path],
+) -> None:
+    """CodeBuddy registers SessionStart and PostToolUse, each under its contract.
+
+    CodeBuddy's hooks page documents ``additionalContext`` for those events and
+    for UserPromptSubmit, but not for PreToolUse, so no guard is registered. Each
+    command is bash-quoted (Git Bash is the only Windows shell) and routes
+    through ``--contract codebuddy``; the interpreter is absolute.
+    """
+    entries = [e for e in _all_entries(workspace) if e.surface == "codebuddy"]
+    assert {e.event for e in entries} == {"SessionStart", "PostToolUse"}
+    for entry in entries:
+        assert entry.argv[:2] == (_SHELL, "-c"), entry.label
+        tokens = entry.tokens
+        assert Path(tokens[0].strip('"')).is_absolute(), entry.label
+        index = entry.dispatcher_index
+        assert index is not None
+        assert tokens[index + 1 : index + 3] == ("--contract", "codebuddy")
+        assert "${" not in entry.label
 
 
 def test_codex_windows_command_mirrors_the_command(workspace: dict[str, Path]) -> None:

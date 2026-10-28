@@ -1,12 +1,12 @@
 {
   "changed": true,
   "counts": {
-    "created": 190,
+    "created": 198,
     "error": 0,
     "skipped": 0,
-    "unchanged": 0,
+    "unchanged": 3,
     "updated": 0,
-    "warning": 4
+    "warning": 3
   },
   "dry_run": false,
   "files_written": [
@@ -182,9 +182,16 @@
     "<HOME>/.kiro/skills/ux-review",
     "<HOME>/.kiro/skills/vuln-triage",
     "<HOME>/.kiro/skills/workflow",
-    "<ROOT>/.apothem/contexts/fragments.json",
-    "<ROOT>/.apothem/learning/signals.jsonl",
-    "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.apothem/support/kiro/hooks/__init__.py",
+    "<ROOT>/.apothem/support/kiro/hooks/askuserquestion_validator.py",
+    "<ROOT>/.apothem/support/kiro/hooks/dispatch.py",
+    "<ROOT>/.apothem/support/kiro/hooks/emit_hook_context.py",
+    "<ROOT>/.apothem/support/kiro/hooks/hooks.json",
+    "<ROOT>/.apothem/support/kiro/hooks/lib",
+    "<ROOT>/.apothem/support/kiro/hooks/messages",
+    "<ROOT>/.apothem/support/kiro/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.apothem/support/kiro/hooks/session_end_gate.py",
+    "<ROOT>/.apothem/support/kiro/hooks/session_start_bootstrap.py",
     "<ROOT>/.kiro/agents/citation-auditor.md",
     "<ROOT>/.kiro/agents/codebase-explorer.md",
     "<ROOT>/.kiro/agents/convention-auditor.md",
@@ -199,8 +206,9 @@
     "<ROOT>/.kiro/agents/research-scout.md",
     "<ROOT>/.kiro/agents/security-scanner.md",
     "<ROOT>/.kiro/agents/test-runner.md",
+    "<ROOT>/.kiro/hooks/apothem.json",
     "<ROOT>/.kiro/steering/apothem-rules.md"
   ],
   "harness": "kiro",
-  "warnings": 4
+  "warnings": 3
 }

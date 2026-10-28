@@ -15,7 +15,7 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.codebuddy/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions are installed as CodeBuddy subagents in `.codebuddy/agents/` in this project, one file each; CodeBuddy loads them at the start of a session. Hook helpers are not installed by the CodeBuddy adapter.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as CodeBuddy subagents in `.codebuddy/agents/` in this project, one file each; CodeBuddy loads them at the start of a session. Two hooks are registered in `.codebuddy/settings.local.json`, a session-start bootstrap and a context-size advisory after tool use, and their scripts are in `.apothem/support/hooks/`; CodeBuddy runs them only after you restart it and review them in its `/hooks` panel.
 - **Memory** — CodeBuddy's project memory file (`CODEBUDDY.md`) is operator-owned, not apothem-managed.
 - **Settings** — CodeBuddy's MCP servers (`.mcp.json` at the project root) and settings (`.codebuddy/settings.json`) are operator-owned, not apothem-managed.
 
