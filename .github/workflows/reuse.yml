@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: MIT
+
+# REUSE: the file-level licensing gate, on every change.
+#
+# `reuse lint` enforces the REUSE.toml contract over the whole tree: every file
+# carries an SPDX license line or a REUSE.toml annotation (including the
+# src/apothem/_vendor/ blocks that record each vendored subtree's upstream
+# license and copyright), every LICENSES/ text is used, and every SPDX
+# expression parses. A new source or test file can break the last rule as
+# easily as a dependency change can break the others, so this gate runs on
+# every pull request and push to main rather than behind license-audit.yml's
+# dependency-path filter, where a malformed SPDX line in a test once reached
+# main unnoticed. The weekly schedule keeps it green between changes.
+#
+# SHA-pinning policy mirrors ci.yml: every action `uses:` reference is pinned by
+# 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH` version comment.
+# Dependabot (.github/dependabot.yml) proposes a bump for each pinned SHA
+# weekly.
+
+name: REUSE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1"   # every Monday 04:00 UTC, beside license-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reuse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reuse:
+    name: reuse-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
+        with:
+          # Stays on audit: fsfe/reuse-action is a Docker container action, so
+          # this job pulls a container image whose registry and layer-CDN egress
+          # is not conservatively enumerable as a stable allowed-endpoints set.
+          # Block-mode graduation is deferred until the pull endpoints are
+          # observed from an audit run.
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: REUSE lint
+        uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5  # v6.0.0
+        with:
+          args: lint

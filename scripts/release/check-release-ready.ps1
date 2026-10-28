@@ -61,6 +61,7 @@ $requiredWorkflows = @(
     'harness-matrix.yml'
     'license-audit.yml'
     'pip-audit.yml'
+    'reuse.yml'
     'publish-static-site.yml'
     'release.yml'
     'scorecard.yml'

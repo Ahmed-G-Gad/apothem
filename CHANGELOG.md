@@ -178,6 +178,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The licensing gate runs on every change.** `reuse lint` ran only inside the
+  license audit, which starts on dependency and license file changes, so a test
+  added with a fixture line the REUSE parser reads as a malformed license
+  expression reached main unnoticed. The gate now has its own workflow,
+  `reuse.yml`, on every pull request and push to main, and the release
+  readiness check requires it green. The fixture line is now marked for REUSE
+  to skip.
 - **Dependabot assigns its pull requests without a warning.** The assignee in
   `.github/dependabot.yml` now spells the maintainer's login with GitHub's own
   capitals. The assignable-users lookup Dependabot runs is case-sensitive, so
