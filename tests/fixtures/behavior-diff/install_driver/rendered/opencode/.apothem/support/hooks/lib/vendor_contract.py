@@ -70,6 +70,11 @@ marked 2026-10-27 (the refuted and confirmed claims of the design note):
 * kiro: https://kiro.dev/docs/hooks/ and /hooks/types/ (2026-10-27). Plain
   stdout joins the context for SessionStart and UserPromptSubmit only.
 
+TODO(clarify): whether Cursor and Devin Local set ``CURSOR_PROJECT_DIR``,
+``CURSOR_VERSION`` and ``DEVIN_PROJECT_DIR`` for a hook they import from
+``~/.claude/settings.json``; their pages state the variables for hooks without
+naming the source. Where they are not set, the Claude Code copy runs unmarked and
+the bootstrap can be delivered twice.
 TODO(clarify): Cursor's page lists ``additional_context`` for postToolUse, which
 the 2026-10-27 refuter did not confirm; the contract delivers SessionStart only.
 TODO(clarify): whether Copilot reads ``additionalContext`` from a PascalCase

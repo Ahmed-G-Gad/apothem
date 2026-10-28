@@ -380,8 +380,9 @@ def test_an_interpreter_path_the_shell_would_misread_is_refused(
         install_driver.run_install("kiro", project_root=project)
 
     [error] = refused.value.run.errors
-    assert "PYTHON_BIN" in error.message
+    assert "interpreter path" in error.message
     assert "'$'" in error.message
+    assert "PYTHON_BIN" not in error.message
     assert not (project / ".kiro").exists()
 
 

@@ -557,6 +557,13 @@ def registration_present(
 #: quoting) and that also break the JSON string the path is rendered into.
 _UNSAFE_IN_COMMAND: Final[frozenset[str]] = frozenset('"\\$`')
 
+#: What each path token is called in the refusal an operator reads.
+_PATH_LABELS: Final[dict[str, str]] = {
+    "PROJECT_ROOT": "The project path",
+    "HARNESS_ROOT": "The harness folder path",
+    "PYTHON_BIN": "The Python interpreter path",
+}
+
 
 def unsafe_command_path(
     entry: InstallEntry,
@@ -597,13 +604,13 @@ def unsafe_command_path(
                 "error",
                 entry.mode,
                 target,
-                f"{name} is {value!r}; the character {shown} in it would change "
-                "what the shell runs inside the quoted hook command",
+                f"{_PATH_LABELS.get(name, name)} {value!r} contains {shown}, which "
+                "would change what the shell runs inside the quoted hook command",
                 source=src,
             ),
             {
-                "fix": f"Use a path for {name} without those characters (for a "
-                "project, move or rename it), then re-run. Nothing was written."
+                "fix": "Use a path without those characters (for the project, move "
+                "or rename it), then re-run. Nothing was written."
             },
         )
     return None
