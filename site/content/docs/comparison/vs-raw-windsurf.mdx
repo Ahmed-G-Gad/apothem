@@ -18,14 +18,17 @@ hand-maintaining that config against managing it with apothem.
 | Keep one rule format | Hand-pick between `.windsurf/rules/` and a single `.windsurfrules` file | The adapter writes only `.devin/rules/` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
 | Share reusable skills and commands | Hand-copy each skill folder into `~/.agents/skills/` and keep the copies current | Written to `~/.agents/skills/` by the adapter, one copy for every project, and refreshed on `apothem update` |
+| Keep reusable helpers in sync | Hand-write each Devin Local subagent file under `.devin/agents/` and track Devin's tool names | Eleven helpers written to `.devin/agents/` with their tools translated, and refreshed on `apothem update` |
 | Verify the config is correct | Manual inspection | `apothem verify --harness windsurf --project <path>` |
 
 ## What Apothem manages
 
 The windsurf adapter renders the shared rules into one file,
 `<project>/.devin/rules/apothem-rules.md`; it does not write a single-file
-`.windsurfrules`. Windsurf documents hooks in `hooks.json`, which the adapter
-does not write, so guardrail intent lives in the rule prose rather than a
+`.windsurfrules`. It also writes eleven of Apothem's helpers as Devin Local
+subagents in `<project>/.devin/agents/`; the three that need web tools wait until
+Devin documents their tool names. Windsurf documents hooks in `hooks.json`, which
+the adapter does not write, so guardrail intent lives in the rule prose rather than a
 tool-call interception point. Every change to the shared rules re-renders the
 file on the next `apothem update`.
 

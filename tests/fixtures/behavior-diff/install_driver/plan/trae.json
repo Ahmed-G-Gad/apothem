@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/trae/templates/apothem-rules.md",
     "target": "<ROOT>/.trae/rules/apothem-rules.md"
+  },
+  {
+    "mode": "trae_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.trae/agents"
   }
 ]

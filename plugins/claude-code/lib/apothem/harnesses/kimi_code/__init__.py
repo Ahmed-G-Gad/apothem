@@ -16,14 +16,16 @@ preserved — identical to how the user-scope codex adapter handles its
 ``AGENTS.md``, but project-scoped via ``${PROJECT_ROOT}``). Skills and
 commands (installed as skills) land in Kimi Code's native project skills
 directory ``<project>/.kimi-code/skills/``, the tool-specific folder only; the
-cross-tool ``.agents/skills/`` is never written. The remaining cohorts (rules,
-agents, templates, hooks) land under a single Apothem-owned support tree at
-``<project>/.kimi-code/.apothem/support/`` — referenced
-from the instruction anchor. Agents stay there because their conversion is not
-scoped (the tool names in their frontmatter are not compared with Kimi Code's),
-and hooks because Kimi Code documents ``[[hooks]]`` in the user-scope
-``~/.kimi-code/config.toml``, which this project-scope adapter does not write;
-the convention pin records both gaps. The
+cross-tool ``.agents/skills/`` is never written. Agents install as Kimi Code
+sub-agents in ``<project>/.kimi-code/agents/``, one Markdown file each (the
+``kimi_agents`` mode, per
+https://moonshotai.github.io/kimi-code/en/customization/agents.md, retrieved
+2026-10-27); the cross-tool ``.agents/agents/`` is never written either. The
+remaining cohorts (rules, templates, hooks) land under a single Apothem-owned
+support tree at ``<project>/.kimi-code/.apothem/support/`` — referenced
+from the instruction anchor. Hooks stay there because Kimi Code documents
+``[[hooks]]`` in the user-scope ``~/.kimi-code/config.toml``, which this
+project-scope adapter does not write; the convention pin records the gap. The
 ``.kimi-code/mcp.json`` MCP surface is
 operator-owned and out of apothem's adapter scope; the model FAMILY and
 its configuration are vendor-pinned, not adapter-authored.

@@ -5,21 +5,22 @@
 # plus project-level .cursor/mcp.json; rules surface as MDC files under
 # .cursor/rules/. The adapter delivers a project rules file, installs skills
 # and command skills at the shared user-level ~/.agents/skills/ and the rules
-# and templates corpus at ~/.config/apothem/, and does not dispatch
-# sub-agents or author agent/hook cohorts; the Cursor plugin mechanism that
-# could host those is operator-driven.
+# and templates corpus at ~/.config/apothem/, and writes Apothem's agents as
+# Cursor subagents in .cursor/agents/ (project scope only). Cursor delegates to
+# subagents natively (cursor.com/docs/subagents); the adapter authors no hook
+# cohort, and the Cursor plugin mechanism is operator-driven.
 
 mcp_servers:
   - user-scope-~/.cursor/mcp.json
   - project-scope-.cursor/mcp.json
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
-sub_agent_dispatch: false
+sub_agent_dispatch: true
 custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".cursor/rules MDC files plus ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".cursor/rules MDC files plus .cursor/agents/*.md subagents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -55,3 +56,26 @@ conversion_losses:
     version: "native:metadata.version"
     updated: "native:metadata.updated"
     portability: "native:metadata.portability"
+
+# Agents ship as Cursor subagents in <project>/.cursor/agents/<name>.md (see
+# harnesses/_shared/install_driver_agent_copilot_cursor.py). Cursor documents
+# name, description, model, readonly and is_background, and no tools key: a
+# subagent inherits every tool of the parent. The one restriction Cursor can
+# enforce is readonly: true (no file edits, no state-changing shell commands),
+# so the source tools and disallowedTools reduce to that flag, written only for
+# the five agents that are read-only and hold no Bash (the other nine inherit
+# every Cursor tool). The seven read-only agents that keep Bash get no flag,
+# since readonly would bar their test and lint runs, and their descriptions
+# drop the read-only label that Cursor would not enforce (the body is copied
+# unchanged, so it still says read-only). maxTurns has no
+# Cursor key, no model is written, and version, updated and portability are
+# Apothem metadata Cursor does not list.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:readonly"
+    disallowedTools: "native:readonly"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

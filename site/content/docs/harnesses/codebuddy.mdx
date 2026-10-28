@@ -16,7 +16,8 @@ apothem install --harness codebuddy --project /path/to/project
 ```
 
 The adapter writes one project-scope rules file from the shared Apothem
-rules and governance surface.
+rules and governance surface, and Apothem's helpers as CodeBuddy subagents in
+the project (see [Subagents](#subagents)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -25,6 +26,7 @@ your user home, before it touches the project (see
 **Files written:**
 
 - `<project>/.codebuddy/rules/apothem-rules.md`, the rules file.
+- `<project>/.codebuddy/agents/<name>.md` for each Apothem helper, in the project.
 - `~/.codebuddy/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -44,8 +46,8 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the rules file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the rules file, plus the `.apothem/` data folder every project install
-  creates.
+  gets the rules file and the subagent files in `.codebuddy/agents/`, plus the
+  `.apothem/` data folder every project install creates.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -57,6 +59,55 @@ These folders are shared. They are not private to the project:
 
 The install prints a note that names the folders it writes outside `--project`,
 and `--dry-run` lists them.
+
+## Subagents
+
+CodeBuddy reads a subagent from a Markdown file in `<project>/.codebuddy/agents/`
+(project agents) or `~/.codebuddy/agents/` (user agents), per the
+[CodeBuddy sub-agents documentation](https://www.codebuddy.ai/docs/cli/sub-agents).
+The install writes one file per Apothem helper into the project folder only, and
+writes nothing to `~/.codebuddy/agents/`.
+
+Each file keeps the helper's instructions unchanged and carries these frontmatter
+keys:
+
+| Key | What Apothem writes |
+| --- | --- |
+| `name`, `description` | The helper's name and description. |
+| `tools` | The helper's allowed tools, as one comma-separated string. |
+| `disallowedTools` | The tools the helper is denied, as one comma-separated string. Omitted when the helper has none. |
+| `maxTurns` | The helper's turn limit. |
+
+Only the tool names CodeBuddy's documentation shows are written. Its
+[Settings page](https://www.codebuddy.ai/docs/cli/settings) lists the tools, and
+its sub-agents page names one more tool, which the list below includes:
+
+```text
+Read, Grep, Glob, Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch,
+Agent, Task, TaskCreate, TaskGet, TaskList, TaskOutput, TaskStop, TaskUpdate,
+AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
+```
+
+A tool the source names that is not in that list (for example `PowerShell` or
+`TodoWrite`) is left out of both fields. A tool with a pattern, such as
+`Bash(rm *)`, has no form in a comma list: as an allowed tool it is left out, and
+as a denied tool it denies the whole tool. A helper that cannot edit files keeps
+that limit: it lists no `Write` or `Edit` among its tools and denies both. The
+install writes no `model` key, so a helper runs on the model CodeBuddy
+selects, and no `permissionMode` or `hooks` key.
+
+Things to know:
+
+- The subagent files are ordinary project files. Commit them with the project or
+  list `.codebuddy/agents/` in `.gitignore`; Apothem does not choose for you.
+- CodeBuddy loads subagent files added by hand at the start of the next session, so
+  start a new session after the install.
+- A file of yours with an Apothem helper's name is saved under
+  `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
+  Files with other names are never touched.
+- CodeBuddy's IDE Subagents page shows keys the CLI page does not list, and
+  Apothem has not confirmed that the IDE accepts `disallowedTools` or
+  `maxTurns`.
 
 ## Profile-to-native-config mapping
 
@@ -79,9 +130,10 @@ adapter writes a dedicated `apothem-rules.md` file that co-exists with any
 rules files the operator authors in the same directory. The `CODEBUDDY.md`
 project memory file, `.codebuddy/settings.json`, and the project `.mcp.json`
 (MCP servers) are operator-owned; Apothem does not write them. CodeBuddy also
-documents commands, sub-agents, and hooks; the adapter writes none of them
-and references the disciplines inside the rules file instead. It does write
-skills, and Apothem's commands as skills, to your user folder (see
+documents commands and hooks; the adapter writes neither and references
+the disciplines inside the rules file instead. It does write subagents to the
+project (see [Subagents](#subagents)), and skills, and Apothem's commands as
+skills, to your user folder (see
 [Files outside the project](#files-outside-the-project)). When a
 project has no `CODEBUDDY.md`, CodeBuddy Code reads `AGENTS.md` as project
 memory, so an `AGENTS.md` another adapter writes reaches CodeBuddy as well. The vendor surface conventions the
@@ -106,11 +158,15 @@ The verify command confirms that:
 
 1. The native config exists at the expected path.
 2. The managed rules file is present and non-empty.
-3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
+3. The `.codebuddy/agents/` folder exists. The check is on the folder, not on
+   each helper file in it; the command
+   `apothem diff --harness codebuddy --project /path/to/project` lists the
+   helper files that are missing or out of date.
+4. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
    foreign folders.
-4. The adapter-specific verification routine reports success.
+5. The adapter-specific verification routine reports success.
 
 ## Updating
 
@@ -124,6 +180,7 @@ file with the latest rendered content.
 
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
+It rewrites subagent files that differ from the current ones, and adds any that are missing.
 
 ## Uninstalling
 
@@ -137,7 +194,9 @@ a timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and the Apothem engine are
 unaffected.
 
-The uninstall also removes the skill folders it wrote in `~/.codebuddy/skills/` and the
+The uninstall also removes the subagent files it wrote in `<project>/.codebuddy/agents/`
+and keeps any other file there; the folder is removed when it is left empty.
+It removes the skill folders it wrote in `~/.codebuddy/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
 folder, may. In that case the uninstall keeps the folders, prints which install
@@ -157,6 +216,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness codebuddy --project /path/to/project` |
 | Verification failed | Run `apothem update --harness codebuddy --project /path/to/project`, then verify again |
+| CodeBuddy does not list an Apothem helper | CodeBuddy loads subagent files at the start of a session. Start a new session |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness codebuddy --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

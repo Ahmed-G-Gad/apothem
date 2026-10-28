@@ -15,7 +15,9 @@ PRECEDENCE over the retained backward-compat fallback at
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``windsurf`` key
 (a ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/.devin/rules/apothem-rules.md``, preceded by the user-level entries that
+``${PROJECT_ROOT}/.devin/rules/apothem-rules.md`` and an apothem-owned
+``devin_agents`` operation targeting ``${PROJECT_ROOT}/.devin/agents/``,
+preceded by the user-level entries that
 install the skills in ``~/.agents/skills/`` and the rules and templates corpus in
 ``~/.config/apothem/``) and applied by the
 shared driver at ``apothem.harnesses._shared.install_driver``. The

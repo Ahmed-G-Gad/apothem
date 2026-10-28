@@ -107,9 +107,10 @@ def test_capabilities_names_native_mcp_surface() -> None:
 
 
 def test_capabilities_rules_file_and_skills_delivery() -> None:
-    # The adapter delivers a project rules file and installs the commands as
-    # skills (in the shared user-level folder); it does not dispatch sub-agents.
+    # The adapter delivers a project rules file, installs the commands as
+    # skills (in the shared user-level folder) and writes the agents as Cursor
+    # subagents; Cursor delegates to subagents natively.
     capabilities = _capabilities()
-    assert capabilities["sub_agent_dispatch"] is False
+    assert capabilities["sub_agent_dispatch"] is True
     assert capabilities["custom_command_support"] == "skills"
     assert "~/.agents/skills" in capabilities["layered_context_surface"]

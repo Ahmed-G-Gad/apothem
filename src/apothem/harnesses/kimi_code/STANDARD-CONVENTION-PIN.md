@@ -4,9 +4,14 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-24
+- Snapshot date: 2026-10-27
+- Snapshot note (agents): the adapter now installs Apothem's agents as Kimi Code
+  sub-agents in `<project>/.kimi-code/agents/`. The agents page, the tools
+  reference, the configuration-files page and the changelog were read on
+  2026-10-27; the other pages keep their 2026-10-24 and 2026-10-03 retrieval
+  dates. Previous 2026-10-24.
 - vendor-doc-url: <https://moonshotai.github.io/kimi-code/en/>
-- snapshot-date: 2026-10-24
+- snapshot-date: 2026-10-27
 - Canonical docs host: `moonshotai.github.io/kimi-code/en/` (Kimi Code CLI,
   Moonshot). The earlier `moonshotai.github.io/kimi-cli` host documented the
   predecessor CLI and is no longer the authority for this adapter. The
@@ -17,12 +22,78 @@
 - canonical-schema: free-form Markdown agent instructions (the AGENTS.md
   convention); no frontmatter.
 - Adapter source: `src/apothem/harnesses/kimi_code/`
-- Evidence level: vendor-doc pinned (living docs, no version or commit
-  surface; no-immutable-source exception). No vendor-native UI claim is made
-  here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source
+  exception). The vendor also publishes a changelog with versioned releases
+  (latest `@moonshot-ai/kimi-code@2.3.3`, 2026-10-26) and an MIT-licensed
+  repository, `MoonshotAI/kimi-code`, whose agent loader was read at commit
+  `e2ad1dcf21` (2026-10-27) for the facts marked "source" below. No
+  vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
+- Re-pinned 2026-10-27 for the native agents surface. Read that day on the
+  vendor's English pages (the agents page and the tools reference as raw
+  Markdown) and, for the facts marked "source", in the agent loader of the open
+  repository at commit `e2ad1dcf21`:
+  - Agents, locations: project level `.kimi-code/agents/` and `.agents/agents/`
+    (the project root is the nearest ancestor containing `.git`); user level
+    `$KIMI_CODE_HOME/agents/` (default `~/.kimi-code/agents/`) and
+    `~/.agents/agents/`, which stays under the real OS home; also the
+    `extra_agent_dirs` array in `config.toml` and the `agents` field of an
+    enabled plugin manifest. Each directory is scanned recursively for `.md`
+    files; dot-prefixed entries and `node_modules` are skipped and the walk
+    stops at depth 8 (source). Priority: explicit `--agent-file`, project,
+    extra, user, plugin, built-in. Inside the project level `.kimi-code/agents/`
+    is scanned before `.agents/agents/` and the first name wins, so the
+    Kimi-specific folder beats the shared one on a name clash (source; the docs
+    do not say). The docs name no `.claude` agents folder, so Kimi Code does not
+    read Claude Code agents; its `/import-from-cc-codex` command imports
+    instructions, skills and MCP settings, not agents.
+  - Agents, file: Markdown with a frontmatter block, and the body is the system
+    prompt. The loader reads seven keys: `name` (optional; kebab-case, matching
+    `^[a-z0-9]+(?:-[a-z0-9]+)*$` or the file is skipped with a warning; the file
+    name when absent), `description` (required, non-empty), `whenToUse`,
+    `override`, `tools`, `disallowedTools` and `subagents`. Any other key is
+    ignored. An empty body, or no frontmatter mapping, skips the file with a
+    warning and leaves the other files alone (source).
+  - Agents, tools: `tools` and `disallowedTools` take a YAML list or a
+    comma-separated string. An omitted `tools`, or a lone `*`, allows every
+    tool; `tools: []` allows none; `disallowedTools` applies after `tools`.
+    Names match exactly and case-sensitively, `mcp__<server>__*` entries match
+    MCP tools as globs, and a name no tool has only produces a warning. The
+    tools reference lists: `Read`, `Write`, `Edit`, `Grep`, `Glob`,
+    `ReadMediaFile`, `Bash`, `WebSearch`, `FetchURL`, `ExitPlanMode`,
+    `TodoList`, `Agent`, `AgentSwarm`, `AskUserQuestion`, `NotifyUser`, `Skill`,
+    `TaskList`, `TaskOutput`, `TaskStop`, `WaitFor`, `CronCreate`, `CronList`
+    and `CronDelete`. There is no `WebFetch`, `TodoWrite`, `MultiEdit`,
+    `NotebookEdit`, `PowerShell`, `Monitor`, `TaskCreate` or `TaskUpdate`.
+  - Agents, model: there is no per-agent model key, and the page says Claude
+    Code's `model` key is ignored. A sub-agent inherits the main agent's model or
+    uses the global `[secondary_model]` in `config.toml`; with that pool
+    configured the `Agent` tool gains a per-spawn `model` parameter that the main
+    agent picks.
+  - Agents, `override`: a directory-discovered file replaces a built-in agent of
+    the same name (`agent`, `coder`, `explore`, `plan`) only when it sets
+    `override: true`, and the page warns that a project file named `agent.md`
+    with `override: true` replaces the default main agent's whole system prompt.
+    Apothem never writes `override`.
+  - Agents, body: the body is a `${var}` template. Unknown variables stay
+    verbatim, a bare `$` is never special, and a known variable with no value in
+    context renders as an empty string. No Apothem agent body holds `${`, and
+    `tests/unit/test_kimi_devin_agents.py` pins that.
+  - Agents, delegation: a custom agent's default list of agents it can dispatch
+    is the built-ins (`coder`, `explore`, `plan`) unless its `subagents` key says
+    otherwise, so Apothem's agents do not dispatch each other; the main agent's
+    list includes every discovered custom agent. The page advises an agent meant
+    for delegation to state in its body that its last message is the complete,
+    self-contained result for the caller.
+  - Changelog 2.3.2 (2026-10-25): the main agent now handles tasks directly by
+    default instead of launching sub-agents on its own; delegation is requested
+    in a message, in `AGENTS.md`, in a skill or by an enabled multi-agent mode.
+    The agents page still says the main agent schedules sub-agents automatically.
+  - Agents, reload: the project agent roots are watched and reloaded in a running
+    session, with a 200 ms debounce (source; the docs state only that
+    `config.toml`, `AGENTS.md`, skills and MCP configuration reload).
 - Re-pinned 2026-10-24 for the native skills surface. Read that day on the
   vendor's English and Chinese pages (one vendor, one upstream):
   - Skills, project level: `.kimi-code/skills/` and `.agents/skills/`. The
@@ -99,27 +170,45 @@
   collision notice, and `tests/unit/test_kimi_code_native_skills.py` pins this
   behavior.
 - Agents: `~/.kimi-code/agents/`, `.kimi-code/agents/`, `~/.agents/agents/` and
-  `.agents/agents/`. The adapter authors none of them; Apothem's agents land in
-  the support tree as reference material because the conversion has not been
-  scoped: the `tools` entries in their frontmatter are Claude Code tool names,
-  which have not been compared with the names Kimi Code matches (see Open
-  Questions).
+  `.agents/agents/`. The adapter writes one `<name>.md` per Apothem agent (all
+  fourteen) into `<project>/.kimi-code/agents/`, with `name`, `description` and,
+  where the source restricts tools, `tools` and `disallowedTools` as YAML lists
+  of Kimi tool names. `WebFetch` becomes `FetchURL` and `TodoWrite` becomes
+  `TodoList`; a name Kimi Code has no tool for (`MultiEdit`, `NotebookEdit`,
+  `PowerShell`, `Monitor`, `Artifact`, `TaskCreate`, `TaskUpdate`, an `mcp__`
+  entry) is left out, and a grant that loses every name is written as
+  `tools: []` because an omitted `tools` would allow every tool. A source tool
+  pattern such as `Bash(git status)` has no Kimi form: in a grant it is left out
+  and in a denial it denies the whole tool. The adapter never writes `model`
+  (Kimi Code has no such key), `override`, `subagents` or `whenToUse`, nor
+  Apothem's `maxTurns`, `version`, `updated` and `portability`. It never writes
+  `.agents/agents/` (shared with Devin, whose tool names are lowercase, so one
+  file could not serve both readers), `~/.kimi-code/agents/` or
+  `~/.agents/agents/`. A same-named file you wrote in `.kimi-code/agents/` is
+  backed up before it is replaced. A project-level file there ranks above a
+  same-name definition at the extra, user and plugin levels, so an Apothem agent
+  would shadow a user-level definition of the same name; the names are the
+  agents' own (`test-runner`, `quality-gate` and so on). The agent bodies copy
+  the source text, so the three web agents still name `WebFetch` in prose where
+  Kimi Code's tool is `FetchURL`.
 - Hooks: `[[hooks]]` in the user-scope `~/.kimi-code/config.toml`. The adapter
   writes no hooks (see Open Questions). Apothem's hook helpers land in the
   support tree.
 - Tool permissions: `default_permission_mode` (`manual`, `yolo`, `auto`) and
   `[[permission.rules]]` entries in `config.toml`. Apothem does not yet project
   its universal-deny floor into them (see Discovery Targets).
-- Support tree: the cohorts Apothem does not install natively (rules, agents,
+- Support tree: the cohorts Apothem does not install natively (rules,
   templates, hooks) land under the Apothem-owned
   `<project>/.kimi-code/.apothem/support/` subtree and are referenced from the
-  `AGENTS.md` anchor. They are never written into `.kimi-code/agents/`,
-  `.agents/` or other vendor-read directories.
+  `AGENTS.md` anchor. They are never written into `.agents/` or other
+  vendor-read directories.
 - Migration: an install from before 2026-10-24 held skills at
-  `<project>/.kimi-code/.apothem/support/skills/`. That path is in the
-  manifest's `stale-sweep` list: an update removes it (after a backup) and
-  writes the native directory, and an uninstall removes it too, so each skill is
-  present once.
+  `<project>/.kimi-code/.apothem/support/skills/`, and every release from v1.0.1
+  to v1.4.0 held the agents at `<project>/.kimi-code/.apothem/support/agents/`.
+  Both paths are in the manifest's `stale-sweep` list: an update removes them
+  (after a backup) and writes the native directories, and an uninstall removes
+  them too, so each skill and each agent is present once and no orphan copy of
+  the agents stays in the support tree.
 - Web fetch (`web_fetch` = **yes**): Kimi Code ships built-in `FetchURL`
   (returns a page's body text) and `WebSearch` tools, both auto-allowed, backed
   by the `moonshot_fetch` and `moonshot_search` services in `config.toml`.
@@ -127,6 +216,21 @@
   configuration; the adapter authors no model id.
 
 ## Vendor Sources
+
+Retrieved 2026-10-27.
+
+- <https://moonshotai.github.io/kimi-code/en/customization/agents.md> (agent
+  locations, file format, keys, tool matching, `override`, delegation, priority)
+- <https://moonshotai.github.io/kimi-code/en/reference/tools.md> (the built-in
+  tool names, including `FetchURL` and `TodoList`)
+- <https://moonshotai.github.io/kimi-code/en/configuration/config-files.md>
+  (`extra_agent_dirs`, `[secondary_model]`, the `[watch]` switch)
+- <https://moonshotai.github.io/kimi-code/en/release-notes/changelog.md>
+  (release 2.3.3 and the 2.3.2 delegation default)
+- The agent loader in the `MoonshotAI/kimi-code` repository at commit
+  `e2ad1dcf21` (`agentFile.ts`, `agentFileDiscovery.ts`, `agentRoots.ts`), read
+  for the name pattern, the empty-body rule, the scan depth and the first-name-
+  wins order. These are implementation facts, not documented guarantees.
 
 Retrieved 2026-10-24.
 
@@ -176,19 +280,15 @@ stays as it is.
   rule for them, a key Kimi Code rejects would surface when it loads that skill,
   and a key it ignores changes behavior (a tool restriction that
   `allowed-tools` declares would not apply).
-- TODO(clarify): whether to install Apothem's agents natively. The agents page
-  documents the file format (see Official Surface Refresh), and says unknown
-  fields are ignored and the comma-separated `tools` form stays loadable, so
-  Apothem's agent files (frontmatter `name`, `version`, `updated`,
-  `description`, `tools`, `disallowedTools`, `maxTurns`, `portability`) would
-  load. They stay in the support tree because two points are unsettled: the
-  `tools` and `disallowedTools` entries name Claude Code tools such as
-  `WebFetch` and `TodoWrite`, and Kimi Code matches tool names case-sensitively
-  and warns on a name no tool has, so the names need a comparison with Kimi
-  Code's tool list first; and a project-level file in `.kimi-code/agents/` ranks
-  above a same-name definition at the extra, user and plugin levels, so
-  installing there can override a definition the project already uses. Install
-  them natively once both are settled.
+- TODO(clarify): whether the main agent delegates to Apothem's agents on its own.
+  The agents page says the main agent schedules sub-agents automatically, while
+  changelog 2.3.2 (2026-10-25) says tasks are handled directly by default and
+  delegation must be requested. The `AGENTS.md` block tells the reader to ask for
+  a helper by name; revisit when the page and the changelog agree.
+- TODO(clarify): whether the `[watch]` switch also governs the reload of project
+  agent files. The reload is source-derived (a 200 ms debounce at commit
+  `e2ad1dcf21`); the docs state it only for `config.toml`, `AGENTS.md`, skills
+  and MCP configuration.
 - TODO(clarify): hooks. Apothem writes no `[[hooks]]` entry. Three facts decide
   it. (1) The repository has no TOML read-merge-write with a surgical
   uninstall: the shared ownership merge reads and rewrites JSON and YAML, the
@@ -219,8 +319,9 @@ stays as it is.
 ## Verification
 
 Adapter output MUST produce an `AGENTS.md` managed block that Kimi Code reads as
-project instructions, and MUST write each skill and each command-as-skill to
-`<project>/.kimi-code/skills/<name>/SKILL.md`; deviations are findings per
+project instructions, MUST write each skill and each command-as-skill to
+`<project>/.kimi-code/skills/<name>/SKILL.md`, and MUST write each agent to
+`<project>/.kimi-code/agents/<name>.md`; deviations are findings per
 `rules/harness-adapter-shape.md` §4 Standard-Conformance.
 
 ## MCP Surface Projection
@@ -263,8 +364,9 @@ project instructions, and MUST write each skill and each command-as-skill to
 ## Large-Codebase Practice Projection
 
 - Layered context: declared in `capabilities.yml` under
-  `layered_context_surface` — `AGENTS.md` plus the support tree; no vendor-native
-  hierarchy is claimed beyond the adapter's documented file/template surface.
+  `layered_context_surface` — `AGENTS.md` plus the native skills and agents and
+  the support tree; no vendor-native hierarchy is claimed beyond the adapter's
+  documented file/template surface.
 - LSP symbol navigation: `tracked-gap` until a vendor-ratified plugin or tool
   surface is pinned.
 - Hook learning capture: routed through the `persistent-conventions-vigilance`
@@ -281,9 +383,11 @@ past its date, fails `scripts/dev/validate_harness_convention_pins.py`.
 
 ## Plugin-alone Persistence
 
-Kimi Code exposes **no vendor plugin or extension install surface** that Apothem
-ships. The adapter is project-scope: it writes the `AGENTS.md` managed block plus
-native skills under `<project>/.kimi-code/skills/` and an Apothem support tree under
+Kimi Code documents a plugin mechanism (`/plugins install`, per user, with
+manifest fields for agents and hooks), but **Apothem ships no Kimi Code plugin**.
+The adapter is project-scope: it writes the `AGENTS.md` managed block plus
+native skills under `<project>/.kimi-code/skills/`, native agents under
+`<project>/.kimi-code/agents/` and an Apothem support tree under
 `<project>/.kimi-code/.apothem/support/`. There is no
 standalone-installable bundle; every artifact requires the full
 `apothem install --harness kimi-code --project <path>` engine run.
@@ -292,7 +396,8 @@ standalone-installable bundle; every artifact requires the full
 |---|---|---|
 | Context anchor (rules-as-text) | No — requires `apothem install` | `AGENTS.md` is written by the engine; nothing persists before that run. |
 | Skills / Commands (as skills) | No — requires `apothem install` | Written by the engine to the native `<project>/.kimi-code/skills/`. |
-| Rules / Agents / Templates / Hooks | No — deliberate posture | The support tree under the Apothem-owned subtree is engine-materialized as reference material. Kimi Code documents agent files (`.kimi-code/agents/`) and `[[hooks]]` in `~/.kimi-code/config.toml`; the adapter authors neither, for the reasons under Open Questions, not an absence-of-surface claim. |
+| Agents | No — requires `apothem install` | Written by the engine to the native `<project>/.kimi-code/agents/`. |
+| Rules / Templates / Hooks | No — deliberate posture | The support tree under the Apothem-owned subtree is engine-materialized as reference material. Kimi Code documents `[[hooks]]` in `~/.kimi-code/config.toml`; the adapter authors none, for the reasons under Open Questions, not an absence-of-surface claim. |
 | MCP servers | No — operator-owned | `.kimi-code/mcp.json` is operator-owned; the adapter authors no entries. |
 
 ## Bindings

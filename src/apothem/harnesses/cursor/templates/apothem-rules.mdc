@@ -16,7 +16,7 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — the engineering disciplines below, summarized from Apothem's always-on and path-filtered rules. This install writes this one rules file in the project; the summary below is the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions and hook helpers are not installed by the Cursor adapter.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as Cursor subagents in `.cursor/agents/` in this project, one file each; Cursor loads them when it delegates a task. Hook helpers are not installed by the Cursor adapter.
 - **Conformity checks** — Apothem's mechanical pre-emission checks run where Apothem's engine is installed; this install registers no hook.
 
 ## Engineering disciplines in force

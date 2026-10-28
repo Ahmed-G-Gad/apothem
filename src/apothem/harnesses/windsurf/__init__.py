@@ -14,6 +14,13 @@ now TAKES PRECEDENCE over the retained backward-compat fallback at
 excluded; Windsurf / Devin workflows and memories are out of apothem's adapter
 scope.
 
+The install also writes eleven of Apothem's agents into the project as Devin Local
+subagents, one Markdown file each in ``<project>/.devin/agents/`` (the
+``devin_agents`` mode), per https://docs.devin.ai/cli/subagents.md. The three
+agents that need web tools are held back, because Devin documents no
+``allowed-tools`` name for them. The shared ``.agents/agents/`` folder and the
+user-level agents folders are never written.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

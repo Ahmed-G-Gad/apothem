@@ -4,11 +4,13 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-10-24
+- Snapshot date: 2026-10-28
+- Snapshot note (review): the Chinese-edition skills page and changelog (`docs.trae.cn`) were read on 2026-10-28 for the global skills folder. Previous 2026-10-27.
+- Snapshot note (agents): the adapter now installs Apothem's agents as Trae subagents in `<project>/.trae/agents/`. The Subagents page (English, `updated_at` 2026-10-09; Chinese, 2026-10-22), the built-in Agent page and the changelog (2026-10-22) were read on 2026-10-27 from the document JSON the pages ship, the same method as the rules page. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at Trae's own `~/.trae/skills/` and the rules and templates corpus at `~/.config/apothem/`. The skills claims were read on 2026-10-24 from the English page through a text-extraction proxy (the page does not render without a browser) and from the Chinese-edition page directly.
-- Snapshot note: the docs site renders its text in the browser, so a plain text extractor sees no body, and its `llms.txt` and `.md` variants redirect to a landing page. The rules page's text ships as document JSON inside the page HTML; the rules claims below were read from that text on 2026-10-03. The skills, agents, and MCP claims carry over from the 2026-06-25 reading. Previous 2026-06-25.
+- Snapshot note: the docs site renders its text in the browser, so a plain text extractor sees no body, and its `llms.txt` and `.md` variants redirect to a landing page. The rules page's text ships as document JSON inside the page HTML; the rules claims below were read from that text on 2026-10-03. The MCP claims carry over from the 2026-06-25 reading. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/trae/`
-- Evidence level: rules page text read 2026-10-03; skills, agents, and MCP pages last read 2026-06-25 (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
+- Evidence level: rules page text read 2026-10-03; skills page read 2026-10-24; Subagents page and changelog read 2026-10-27; MCP page last read 2026-06-25 (living docs; no-immutable-source exception). The `Trae-AI/TRAE` repository lists no IDE source, so `docs.trae.ai` is the only primary source. No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
@@ -46,21 +48,84 @@
   `disable-model-invocation`, `allowed-tools`, `argument-hint`, and a
   `metadata` map; probe Trae with the full set before a release and, if it
   rejects extras, change `SHARED_TOPLEVEL_KEYS` in `install_driver_shared.py`.
-- TODO(clarify): the Chinese edition (TRAE CN) documents `~/.trae-cn/skills/`,
-  and its 2026-06-04 changelog entry (v3.3.63) says the CN and international
-  global skill directories are compatible. The changelog was read through a
-  summary, not directly. Until a probe on a CN install settles it, the adapter
-  writes `~/.trae/skills/` only.
-- The vendor also documents Agents (`docs.trae.ai/ide/agent`), `AGENTS.md`, and
-  MCP (`.trae/mcp.json`, three transport types). The adapter authors none of
-  those. The project `.trae/skills/` folder stays operator-owned.
+- Skills user folder (Chinese-edition pages read 2026-10-28; English page read
+  2026-10-27): the editions disagree. The English
+  skills page (`docs.trae.ai`) gives `~/.trae/skills` (`%userprofile%/.trae/skills`
+  on Windows); the Chinese-edition skills page (`docs.trae.cn`, TRAE CN) gives
+  `~/.trae-cn/skills` (`%userprofile%/.trae-cn/skills`) and names no
+  `~/.trae/skills`. The Chinese changelog's TRAE CN v3.3.63 entry (2026-06-04)
+  says, for the personal edition only, that the global skills directories of
+  TRAE CN and the international TRAE are compatible. The English changelog has
+  no 3.3.6x entry because it numbers the same releases 3.5.6x, so the
+  earlier note that neither changelog has a 3.3.63 entry held only for the
+  English one. The adapter writes `~/.trae/skills` only, which that entry
+  supports for the personal edition of TRAE CN.
+  TODO(clarify): whether a TRAE CN install other than the personal edition reads
+  `~/.trae/skills`; the changelog entry limits the compatibility to the personal
+  edition.
+- Agents (read 2026-10-27): a subagent is one Markdown file with YAML
+  frontmatter (standard YAML, no BOM) and the system prompt as the body. The
+  project folder is `{project_folder}/.trae/agents/<name>.md`, corroborated by
+  the changelog entry for v3.5.67 (2026-06-17). A project subagent overrides a
+  user subagent of the same name. The adapter writes the project folder only,
+  one `<name>.md` per Apothem agent, and a same-named file you wrote there is
+  backed up before it is replaced.
+- Agent keys: `name` (required; starts with a letter, letters, digits and
+  hyphens only, ends with a letter or digit, at most 50 characters) and
+  `description` (required; it is the text Trae matches against the request, and
+  a file without it cannot be parsed). `tools` and `disallowedTools` are
+  comma-separated strings, not YAML lists; `disallowedTools` wins when a tool
+  is in both, and an empty `tools` string disables every tool. Also documented
+  are `model` (limited to TRAE's built-in model ids) and `mcpServers` (a YAML
+  list of servers already configured in the IDE). The adapter writes `name`,
+  `description`, `tools` and `disallowedTools` only. It writes no `model` (the
+  subagent then uses the model chosen for the Agent in the chat box) and no
+  `mcpServers`.
+- Agent tools: the vocabulary is Bash, Edit, Glob, Grep, Read, Skill,
+  TodoWrite, WebFetch, WebSearch, Write and LSP, plus
+  `mcp__<server_name>__<tool_name>` together with `mcpServers`. This is not the
+  hook matcher vocabulary (where Bash is RunCommand). The `tools` and
+  `disallowedTools` fields carry a source tool only when its name is in that
+  list, in the source order, so MultiEdit, NotebookEdit, PowerShell, Monitor,
+  Agent, Artifact, TaskCreate and TaskUpdate are left out. A source with `tools`
+  is never widened: an allowlist that loses every name is written as an empty
+  string instead of being omitted.
+- Feature gate: the English page says Settings > Beta > Subagents > Enable
+  Subagents Directory must be on. The Chinese page, updated later, says the
+  feature is usually on by default. Which applies to the current international
+  build is unverified, so the docs page for this adapter names the switch.
+- The Subagents page documents no read of `.claude/agents/`, `~/.claude/agents/`
+  or `.agents/agents/`, and no turn-limit key, so `maxTurns` is not written.
+- TODO(clarify): the Subagents page documents the user folder as
+  `~/.trae-cn/agents/` (`%userprofile%/.trae-cn/agents/` on Windows), in both
+  editions, while every other user path on the English site uses `~/.trae/`. Which
+  of `~/.trae/agents/` and `~/.trae-cn/agents/` an international install reads is
+  unverified, so the adapter writes no user-level agents folder.
+- TODO(clarify): the docs do not say how Trae treats a frontmatter key it does
+  not list, or an invalid `model` value.
+- TODO(clarify): whether a `tools` entry that is not in the vocabulary (for
+  example NotebookEdit) is ignored or rejected is unverified; the adapter leaves
+  such names out.
+- TODO(clarify): whether `.trae/agents/` applies to the Agent window of the
+  merged "all-new TRAE" (v3.6.x) as it does to the IDE window; the Agent window
+  pages carry no subagent text.
+- The vendor also documents Agents created in the UI (`docs.trae.ai/ide/agent`,
+  shared by link, no file surface), hooks (`hooks.json`, changelog v3.5.66),
+  `AGENTS.md`, and MCP (`.trae/mcp.json`, three transport types). The adapter
+  authors none of those. The project `.trae/skills/` folder stays
+  operator-owned.
 
 ## Vendor Sources
 
 - <https://docs.trae.ai/ide/rules> (rules directories, activation, nesting;
   retrieved 2026-10-03)
 - <https://docs.trae.ai/ide/skills> (skills; retrieved 2026-10-24, the folder the adapter writes)
-- <https://docs.trae.ai/ide/agent> (agents; retrieved 2026-06-25)
+- <https://docs.trae.ai/ide/subagents> (subagent file format, keys, tool vocabulary, project and user folders; retrieved 2026-10-27, the folder the adapter writes agents to)
+- <https://docs.trae.ai/ide/built-in-agent> (the built-in Agent invokes custom agents and Markdown subagents; retrieved 2026-10-27)
+- <https://docs.trae.ai/ide/changelog> (v3.5.67 adds the `.trae/agents` directory and its switch; retrieved 2026-10-27)
+- <https://docs.trae.cn/ide/skills> (Chinese-edition skills page: global skills at `~/.trae-cn/skills`; retrieved 2026-10-28)
+- <https://docs.trae.cn/ide/changelog> (Chinese-edition changelog: TRAE CN v3.3.63, 2026-06-04, global skills directories compatible with the international edition, personal edition only; v3.3.67 loads `.trae/agents`; retrieved 2026-10-28)
+- <https://docs.trae.ai/ide/agent> (agents created in the UI, no file surface; retrieved 2026-06-25)
 
 ## Discovery Targets
 
@@ -93,8 +158,9 @@ Trae exposes **no vendor plugin or extension install surface** that Apothem
 ships. The adapter writes a merged rules file at
 `<project>/.trae/rules/apothem-rules.md` (alongside, never clobbering, the
 operator's other project rules or the `~/.trae/user_rules` global rules), the
-skills at `~/.trae/skills/`, and the rules and templates corpus at
-`~/.config/apothem/`, and authors no other cohort.
+agents at `<project>/.trae/agents/`, the skills at `~/.trae/skills/`, and the
+rules and templates corpus at `~/.config/apothem/`, and authors no other
+cohort.
 There is no standalone-installable bundle; every artifact requires the full
 `apothem install --harness trae --project <path>` engine run.
 
@@ -102,8 +168,8 @@ There is no standalone-installable bundle; every artifact requires the full
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.trae/rules/` directory. Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.trae/skills/`. Nothing persists before that run. |
-| Agents | No — adapter scope | Trae documents Agents (`docs.trae.ai/ide/agent`); the adapter authors none of them. |
-| Hooks / MCP / Settings | No — operator-owned | `.trae/mcp.json` (MCP) is operator-owned; the adapter authors no entries. |
+| Agents | No — requires `apothem install` | The engine writes them as subagents to the project's `.trae/agents/`. Nothing persists before that run. |
+| Hooks / MCP / Settings | No — operator-owned | `.trae/mcp.json` (MCP) is operator-owned; the adapter authors no entries. Trae documents `hooks.json`; the adapter authors none. |
 
 Apothem ships no Trae plugin or extension, so the files `apothem install` writes
 are the sole persistence surface.

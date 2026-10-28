@@ -8,19 +8,22 @@
 # project rules file under the preferred .devin/rules/ surface (which takes
 # precedence over the .windsurf/rules/ backward-compat fallback), installs
 # skills and command skills at the shared user-level ~/.agents/skills/ and the
-# rules and templates corpus at ~/.config/apothem/, and does not dispatch
-# sub-agents or author workflow/hook cohorts.
+# rules and templates corpus at ~/.config/apothem/, and writes eleven of
+# Apothem's fourteen agents as Devin Local subagents in .devin/agents/ (project
+# scope only; the legacy Cascade agent has no subagents). Devin Local delegates
+# to subagents natively (docs.devin.ai/cli/subagents), a feature the vendor
+# labels experimental. The adapter authors no workflow or hook cohort.
 
 mcp_servers:
   - user-scope-~/.config/devin/mcp_config.json
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
-sub_agent_dispatch: false
+sub_agent_dispatch: true
 custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".devin/rules/*.md directory (preferred; .windsurf/rules/ backward-compat fallback) plus ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".devin/rules/*.md directory (preferred; .windsurf/rules/ backward-compat fallback) plus .devin/agents/*.md subagents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -56,3 +59,25 @@ conversion_losses:
     version: "native:metadata.version"
     updated: "native:metadata.updated"
     portability: "native:metadata.portability"
+
+# Agents ship as Devin Local subagents in <project>/.devin/agents/<name>.md (see
+# harnesses/_shared/install_driver_agent_kimi_devin.py). Devin documents name,
+# description, model, allowed-tools (alias tools) and max-nesting. allowed-tools
+# is a list of lowercase tool names (read, edit, grep, glob, exec, write) and is
+# the only restriction, with no deny key, so the source tools minus
+# disallowedTools compile to one allowlist: disallowedTools is folded into
+# allowed-tools, and Bash is exec. The three agents that need web tools
+# (citation-auditor, fact-checker, research-scout) are not installed, because
+# Devin documents no allowed-tools name for them. No model is written (Devin's
+# default subagent model is router-selected and is not the parent's), Devin
+# documents no turn limit, and version, updated and portability are Apothem
+# metadata Devin does not list.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:allowed-tools"
+    disallowedTools: "native:allowed-tools"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

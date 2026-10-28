@@ -290,6 +290,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="mdc",
         target_paths=(
             "<project>/.cursor/rules/apothem-rules.mdc",
+            "<project>/.cursor/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -304,13 +305,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
@@ -318,10 +319,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Cursor adapter does not author a Cursor hook cohort; it delivers the rules file and the skills.",
-            agents="The Cursor adapter does not author a Cursor agent cohort.",
             statuslines="No Cursor statusline file surface is pinned.",
             output_styles="No Cursor output-style file surface is pinned.",
-            sub_agent_dispatch="Apothem does not dispatch sub-agents through Cursor.",
             agent_memory="No Cursor durable memory file surface is adapter-owned.",
         ),
     ),
@@ -376,6 +375,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.github/copilot-instructions.md",
+            "<project>/.github/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -394,24 +394,22 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="unsupported",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
             hooks="The Copilot adapter does not author a Copilot hook cohort; it delivers the rules file and the skills.",
-            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); Apothem does not author agent profiles.",
             statuslines="No Copilot statusline file surface is pinned.",
             output_styles="No Copilot output-style file surface is pinned.",
             mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
-            sub_agent_dispatch="Copilot sub-agent dispatch is outside this adapter scope.",
             agent_memory="Copilot user memory is IDE/service state, not a file target.",
         ),
     ),
@@ -459,6 +457,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/AGENTS.md",
             "<project>/.kimi-code/skills/",
+            "<project>/.kimi-code/agents/",
             "<project>/.kimi-code/.apothem/support/",
         ),
         docs_path="site/content/docs/harnesses/kimi-code.mdx",
@@ -474,7 +473,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="support-tree",
-            agents="support-tree",
+            agents="converted",
             rules="support-tree",
             templates="support-tree",
             statuslines="unsupported",
@@ -627,6 +626,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.devin/rules/apothem-rules.md",
+            "<project>/.devin/agents/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -641,13 +641,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
@@ -655,10 +655,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Windsurf adapter does not author a Windsurf hook cohort; it delivers the rules file and the skills.",
-            agents="Devin documents subagents (docs.devin.ai/cli/subagents); Apothem does not author Devin subagents.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
-            sub_agent_dispatch="Apothem does not dispatch sub-agents through Devin Desktop.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",
         ),
     ),
@@ -671,6 +669,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.codebuddy/rules/apothem-rules.md",
+            "<project>/.codebuddy/agents/",
             "~/.codebuddy/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -687,13 +686,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="not-applicable",
@@ -701,11 +700,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The CodeBuddy adapter does not author a CodeBuddy hook cohort; it delivers the rules file and the skills.",
-            agents="The CodeBuddy adapter does not author a CodeBuddy sub-agent cohort.",
             statuslines="No CodeBuddy statusline file surface is pinned.",
             output_styles="No CodeBuddy output-style file surface is pinned.",
-            sub_agent_dispatch="CodeBuddy Code documents sub-agents; the "
-            "CodeBuddy adapter does not dispatch sub-agents through CodeBuddy.",
         ),
     ),
     HarnessRegistryEntry(
@@ -717,6 +713,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.kiro/steering/apothem-rules.md",
+            "<project>/.kiro/agents/",
             "~/.kiro/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -731,13 +728,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="not-applicable",
@@ -745,11 +742,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Kiro adapter does not author a Kiro hook cohort; it delivers the rules file and the skills.",
-            agents="The Kiro adapter does not author a Kiro sub-agent cohort.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
-            sub_agent_dispatch="Kiro documents custom agents (.kiro/agents and "
-            "the Kiro CLI); Apothem does not dispatch sub-agents through Kiro.",
         ),
     ),
     HarnessRegistryEntry(
@@ -761,6 +755,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="markdown",
         target_paths=(
             "<project>/.trae/rules/apothem-rules.md",
+            "<project>/.trae/agents/",
             "~/.trae/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -775,13 +770,13 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             commands="converted",
             skills="native",
             hooks="unsupported",
-            agents="unsupported",
+            agents="converted",
             rules="native",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
             mcp_servers="discovery-pending",
-            sub_agent_dispatch="unsupported",
+            sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
             agent_memory="unsupported",
@@ -789,10 +784,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             hooks="The Trae adapter does not author a Trae hook cohort; it delivers the rules file and the skills.",
-            agents="Trae documents custom Agents (docs.trae.ai/ide/agent); Apothem does not author Trae agents.",
             statuslines="No Trae statusline file surface is pinned.",
             output_styles="No Trae output-style file surface is pinned.",
-            sub_agent_dispatch="Apothem does not dispatch sub-agents through Trae.",
             agent_memory="No Trae adapter-owned agent-memory surface is documented.",
         ),
     ),
@@ -909,12 +902,18 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
 # and ~/.agents/skills is not documented) or Hermes (its docs name
 # ~/.agents/skills only as a skills.external_dirs example).
 # TODO(clarify): ~/.claude/skills/ - only the VS Code docs list it for GitHub
-# Copilot, Windsurf reads it only when its Claude Code config import is on
-# (the default is not stated), Kimi Code lists it only in its older docs, and
-# Qwen Code reads it only through its skills.directories setting.
+# Copilot, Windsurf reads it only when its Claude Code config import is on (the
+# Devin CLI docs make that import on by default; the Desktop pages do not say
+# whether the Local agent applies it), Kimi Code lists it only in its older docs,
+# and Qwen Code reads it only through its skills.directories setting.
 # ~/.claude/agents/ is not an open gap: VS Code lists it for its Anthropic Claude
 # harness, not for the Local harness Copilot uses, so Copilot is not a reader. A
 # VS Code page that names it for the Local harness would add Copilot.
+# TODO(clarify): ~/.claude/agents/ for Windsurf - the Devin CLI extensibility page
+# (read 2026-10-27) says the CLI imports custom subagents from the .claude/
+# directory without naming a subpath, and the configuration import page lists no
+# agents row. Windsurf is not a reader until a probe names the path and shows that
+# Devin Desktop's Local agent applies the import.
 # The adapters that write the user-level rules and templates corpus besides Codex.
 SUPPORT_CO_INSTALLERS: tuple[str, ...] = (
     "codebuddy",
@@ -987,6 +986,12 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
         ),
         retrieved="2026-10-02",
     ),
+    # Cursor loads this folder, and the Cursor adapter now writes its own
+    # <project>/.cursor/agents/ with the same agent names. The vendor's precedence
+    # (project subagents beat user ones, and .cursor/ beats .claude/ on a name
+    # clash, read 2026-10-27) puts that native copy first inside an installed
+    # project, so it supersedes this import there. Cursor stays a reader here:
+    # it still loads the folder in every project without a native copy.
     SharedRoot(
         path="~/.claude/agents/",
         owner="claude-code",

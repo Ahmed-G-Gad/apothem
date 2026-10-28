@@ -1,12 +1,12 @@
 {
   "changed": true,
   "counts": {
-    "created": 176,
+    "created": 190,
     "error": 0,
     "skipped": 0,
     "unchanged": 0,
     "updated": 0,
-    "warning": 7
+    "warning": 5
   },
   "dry_run": false,
   "files_written": [
@@ -185,8 +185,22 @@
     "<ROOT>/.apothem/contexts/fragments.json",
     "<ROOT>/.apothem/learning/signals.jsonl",
     "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.trae/agents/citation-auditor.md",
+    "<ROOT>/.trae/agents/codebase-explorer.md",
+    "<ROOT>/.trae/agents/convention-auditor.md",
+    "<ROOT>/.trae/agents/dependency-auditor.md",
+    "<ROOT>/.trae/agents/design-critic.md",
+    "<ROOT>/.trae/agents/fact-checker.md",
+    "<ROOT>/.trae/agents/mcp-builder.md",
+    "<ROOT>/.trae/agents/memory-auditor.md",
+    "<ROOT>/.trae/agents/prompt-evaluator.md",
+    "<ROOT>/.trae/agents/quality-gate.md",
+    "<ROOT>/.trae/agents/refactor-surgeon.md",
+    "<ROOT>/.trae/agents/research-scout.md",
+    "<ROOT>/.trae/agents/security-scanner.md",
+    "<ROOT>/.trae/agents/test-runner.md",
     "<ROOT>/.trae/rules/apothem-rules.md"
   ],
   "harness": "trae",
-  "warnings": 7
+  "warnings": 5
 }

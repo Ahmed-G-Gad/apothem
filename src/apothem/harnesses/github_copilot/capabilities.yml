@@ -6,19 +6,23 @@
 # CLAUDE.md/GEMINI.md, but the adapter delivers the repo-wide
 # instructions file, plus skills and command skills at the shared user-level
 # ~/.agents/skills/ and the rules and templates corpus at ~/.config/apothem/
-# (a folder on the machine that GitHub-hosted surfaces do not read). MCP is service/IDE state (~/.copilot/mcp-config.json),
-# not a repo-writable file, so mcp_servers stays []. No repo-config
-# sub-agent dispatch; no durable memory surface. Universal-deny floor binds.
+# (a folder on the machine that GitHub-hosted surfaces do not read), and writes
+# Apothem's agents as custom agent profiles in .github/agents/*.agent.md
+# (project scope only; the repository commits them and the cloud agent reads
+# them). Copilot delegates to custom agents natively (the agent tool alias,
+# docs.github.com/en/copilot/reference/custom-agents-configuration). The adapter
+# authors no MCP entries, so mcp_servers stays []; no durable memory surface.
+# Universal-deny floor binds.
 
 mcp_servers: []
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
-sub_agent_dispatch: false
+sub_agent_dispatch: true
 custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "copilot-instructions.md plus instructions directory, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: "copilot-instructions.md plus instructions directory and .github/agents/*.agent.md custom agents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -55,3 +59,23 @@ conversion_losses:
     version: "native:metadata.version"
     updated: "native:metadata.updated"
     portability: "native:metadata.portability"
+
+# Agents ship as custom agent profiles in <project>/.github/agents/<name>.agent.md
+# (see harnesses/_shared/install_driver_agent_copilot_cursor.py). Copilot
+# documents name, description (required), tools, model and more. Its tools key is
+# an allowlist of tool aliases (execute, read, edit, search, agent, web, todo)
+# with no deny key, so the source tools minus disallowedTools compile to one
+# allowlist: disallowedTools is folded into tools, and an alias that covers a
+# tool the source denies is left out. A grant that loses every alias is written
+# as an empty list, never omitted. The cloud agent does not honor the web and
+# todo aliases. Copilot documents no turn limit, no model is written, and
+# version, updated and portability are Apothem metadata Copilot does not list.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:tools"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

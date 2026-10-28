@@ -18,9 +18,17 @@ four places that act on a mode read the same row:
 - a test pins that a row names a mode with a label.
 
 A new agent emission is therefore one row here plus its renderer, with no edit
-to the appliers or the enumeration. The renderers for the modes below stay in
-:mod:`install_driver_converters`; renderers and tool maps for later modes are
-added to this module so that file stays under the module size ceiling.
+to the appliers or the enumeration. The renderers for the first six modes stay in
+:mod:`install_driver_converters`; the CodeBuddy and Trae renderers, which share
+a comma-string tool shape, are in :mod:`install_driver_agent_comma_tools`, and
+the GitHub Copilot and Cursor renderers, whose tool restriction is an alias
+allowlist and a single ``readonly`` flag, are in
+:mod:`install_driver_agent_copilot_cursor`, and the Kimi Code and Devin Local
+renderers, which translate the tool names into each vendor's own list, are in
+:mod:`install_driver_agent_kimi_devin`, and the Kiro renderer, which folds the
+tool grant and denials into a list of category tags, is in
+:mod:`install_driver_agent_kiro`. Renderers for later modes are added
+outside that file so it stays under the module size ceiling.
 
 ``_INSTALL_ENTRY_MODES`` and ``OPERATION_LABELS`` in
 :mod:`install_driver_types` remain literal tables, because that module is a
@@ -37,12 +45,26 @@ from typing import Final
 
 from apothem.lib.claude_agent_mcp import claude_agent_text
 
+from .install_driver_agent_comma_tools import codebuddy_agent_text, trae_agent_text
+from .install_driver_agent_copilot_cursor import copilot_agent_text, cursor_agent_text
+from .install_driver_agent_kimi_devin import devin_agent_text, kimi_agent_text
+from .install_driver_agent_kiro import kiro_agent_text
 from .install_driver_converters import (
     _antigravity_agent_text,
     _codex_agent_text,
     _gemini_agent_text,
     _opencode_agent_text,
     _qwen_agent_text,
+)
+
+#: Source agents Devin Local is not given: they need web tools, and the tool names
+#: Devin accepts in ``allowed-tools`` for them are undocumented
+#: (https://docs.devin.ai/cli/subagents.md, retrieved 2026-10-27). Installing them
+#: with the web grant dropped would hand a research agent no way to research, and
+#: with no ``allowed-tools`` it would hand it every tool. No release shipped a
+#: Windsurf agents entry (v1.0.1 to v1.4.0), so there is nothing to retire.
+_DEVIN_HELD_BACK: Final[frozenset[str]] = frozenset(
+    {"citation-auditor", "fact-checker", "research-scout"}
 )
 
 #: A per-harness agent renderer: ``source_path`` -> the native definition text
@@ -94,6 +116,13 @@ _EMITTERS: Final[tuple[AgentEmitter, ...]] = (
     AgentEmitter("qwen_agents", _qwen_agent_text),
     AgentEmitter("antigravity_agents", _antigravity_agent_text),
     AgentEmitter("claude_agents", claude_agent_text),
+    AgentEmitter("codebuddy_agents", codebuddy_agent_text),
+    AgentEmitter("trae_agents", trae_agent_text),
+    AgentEmitter("copilot_agents", copilot_agent_text, target_extension="agent.md"),
+    AgentEmitter("cursor_agents", cursor_agent_text),
+    AgentEmitter("kimi_agents", kimi_agent_text),
+    AgentEmitter("devin_agents", devin_agent_text, exclude=_DEVIN_HELD_BACK),
+    AgentEmitter("kiro_agents", kiro_agent_text),
 )
 
 #: Agent emission modes by name. Adding an agent emission is one row above.

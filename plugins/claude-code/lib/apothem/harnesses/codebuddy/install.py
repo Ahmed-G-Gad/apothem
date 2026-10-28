@@ -14,7 +14,9 @@ scope.
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``codebuddy`` key
 (an operator-owned ``sentinel_merge`` operation targeting
-``${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md``, preceded by the user-level entries that
+``${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md`` and an apothem-owned
+``codebuddy_agents`` operation targeting ``${PROJECT_ROOT}/.codebuddy/agents/``,
+preceded by the user-level entries that
 install the skills in ``~/.codebuddy/skills/`` and the rules and templates corpus in
 ``~/.config/apothem/``) and applied by the
 shared driver at ``apothem.harnesses._shared.install_driver``. The

@@ -1,12 +1,12 @@
 {
   "changed": true,
   "counts": {
-    "created": 176,
+    "created": 190,
     "error": 0,
     "skipped": 0,
     "unchanged": 0,
     "updated": 0,
-    "warning": 6
+    "warning": 4
   },
   "dry_run": false,
   "files_written": [
@@ -185,8 +185,22 @@
     "<ROOT>/.apothem/contexts/fragments.json",
     "<ROOT>/.apothem/learning/signals.jsonl",
     "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.kiro/agents/citation-auditor.md",
+    "<ROOT>/.kiro/agents/codebase-explorer.md",
+    "<ROOT>/.kiro/agents/convention-auditor.md",
+    "<ROOT>/.kiro/agents/dependency-auditor.md",
+    "<ROOT>/.kiro/agents/design-critic.md",
+    "<ROOT>/.kiro/agents/fact-checker.md",
+    "<ROOT>/.kiro/agents/mcp-builder.md",
+    "<ROOT>/.kiro/agents/memory-auditor.md",
+    "<ROOT>/.kiro/agents/prompt-evaluator.md",
+    "<ROOT>/.kiro/agents/quality-gate.md",
+    "<ROOT>/.kiro/agents/refactor-surgeon.md",
+    "<ROOT>/.kiro/agents/research-scout.md",
+    "<ROOT>/.kiro/agents/security-scanner.md",
+    "<ROOT>/.kiro/agents/test-runner.md",
     "<ROOT>/.kiro/steering/apothem-rules.md"
   ],
   "harness": "kiro",
-  "warnings": 6
+  "warnings": 4
 }

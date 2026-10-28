@@ -614,20 +614,20 @@ graph LR
     P --> A
     A --> AG["~/.gemini/GEMINI.md + antigravity-cli plugin<br/>Antigravity"]
     A --> CC["~/.claude/<br/>Claude Code"]
-    A --> CB["project .codebuddy/rules + ~/.codebuddy/skills + ~/.config/apothem<br/>CodeBuddy"]
+    A --> CB["project .codebuddy/rules + .codebuddy/agents + ~/.codebuddy/skills + ~/.config/apothem<br/>CodeBuddy"]
     A --> CO["~/.codex + ~/.agents/skills + ~/.config/apothem<br/>Codex"]
-    A --> CU["project .cursor/rules + ~/.agents/skills + ~/.config/apothem<br/>Cursor"]
+    A --> CU["project .cursor/rules + .cursor/agents + ~/.agents/skills + ~/.config/apothem<br/>Cursor"]
     A --> GE["project GEMINI.md + .gemini<br/>Gemini CLI"]
-    A --> GC["project .github/copilot-instructions.md + ~/.agents/skills + ~/.config/apothem<br/>GitHub Copilot"]
+    A --> GC["project .github/copilot-instructions.md + .github/agents + ~/.agents/skills + ~/.config/apothem<br/>GitHub Copilot"]
     A --> HE["~/.hermes/<br/>Hermes"]
-    A --> KI["project .kiro/steering + ~/.kiro/skills + ~/.config/apothem<br/>Kiro"]
+    A --> KI["project .kiro/steering + .kiro/agents + ~/.kiro/skills + ~/.config/apothem<br/>Kiro"]
     A --> OW["~/.openclaw/<br/>Open-Claw"]
     A --> OC["~/.config/opencode/<br/>OpenCode"]
     A --> QW["~/.qwen/<br/>Qwen Code"]
-    A --> TR["project .trae/rules + ~/.trae/skills + ~/.config/apothem<br/>Trae"]
-    A --> WI["project .devin/rules (.windsurf/rules fallback) + ~/.agents/skills + ~/.config/apothem<br/>Windsurf (Devin Desktop)"]
+    A --> TR["project .trae/rules + .trae/agents + ~/.trae/skills + ~/.config/apothem<br/>Trae"]
+    A --> WI["project .devin/rules (.windsurf/rules fallback) + .devin/agents + ~/.agents/skills + ~/.config/apothem<br/>Windsurf (Devin Desktop)"]
     A --> ZE["project .rules + ~/.agents/skills + ~/.config/apothem<br/>Zed"]
-    A --> KM["project AGENTS.md + .kimi-code/<br/>Kimi Code"]
+    A --> KM["project AGENTS.md + .kimi-code/skills + .kimi-code/agents<br/>Kimi Code"]
     A --> GL["project .apothem/providers/glm.toml<br/>GLM (Z.ai)"]
 ```
 
@@ -666,23 +666,23 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 |---|---|---|
 | Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/antigravity-cli/plugins/apothem/` |
 | Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` |
-| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
+| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Codex | User | `~/.codex/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Cursor | Project | `<project>/.cursor/rules/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Cursor | Project | `<project>/.cursor/rules/` + `<project>/.cursor/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Gemini CLI | Project | `<project>/GEMINI.md` + `<project>/.gemini/` |
-| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Hermes | User | `~/.hermes/` |
-| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/.apothem/support/` |
-| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/agents/` + `<project>/.kimi-code/.apothem/support/` |
+| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Open-Claw | User | `~/.openclaw/` |
 | OpenCode | User | `~/.config/opencode/` |
 | Qwen Code | User | `~/.qwen/` |
-| Trae | Project | `<project>/.trae/rules/apothem-rules.md` + `~/.trae/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Trae | Project | `<project>/.trae/rules/apothem-rules.md` + `<project>/.trae/agents/` + `~/.trae/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 
 Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/harnesses). Authoring a new adapter? See the [new-harness-adapter authoring runbook](https://apothem.ahmedgad.com/docs/runbooks/new-harness-adapter-authoring/).
 

@@ -16,7 +16,8 @@ apothem install --harness kiro --project /path/to/project
 ```
 
 The adapter writes one project-scope Kiro steering file from the shared
-Apothem rules and governance surface.
+Apothem rules and governance surface, and Apothem's helpers as Kiro custom agent
+files in the project (see [Custom agent files](#custom-agent-files)).
 
 It also writes Apothem's skills, and the rules and templates they cite, to
 your user home, before it touches the project (see
@@ -25,6 +26,7 @@ your user home, before it touches the project (see
 **Files written:**
 
 - `<project>/.kiro/steering/apothem-rules.md`, the steering file.
+- `<project>/.kiro/agents/<name>.md` for each Apothem helper, in the project.
 - `~/.kiro/skills/<name>/SKILL.md` for each Apothem skill and command, in your user home.
 - `~/.config/apothem/rules/` and `~/.config/apothem/templates/`, in your user home.
 
@@ -44,8 +46,8 @@ These folders are shared. They are not private to the project:
 - `--project` chooses the steering file to write and which project the
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
-  gets the steering file, plus the `.apothem/` data folder every project install
-  creates.
+  gets the steering file and the custom agent files in `.kiro/agents/`, plus the
+  `.apothem/` data folder every project install creates.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -57,6 +59,73 @@ These folders are shared. They are not private to the project:
 
 The install prints a note that names the folders it writes outside `--project`,
 and `--dry-run` lists them.
+
+## Custom agent files
+
+Kiro reads a custom agent from a Markdown file in `<project>/.kiro/agents/`, per
+the [Kiro custom agent documentation](https://kiro.dev/docs/custom-agents/). The
+install writes one file per Apothem helper into that folder, all fourteen. It
+targets Kiro IDE 1.0 and Kiro CLI V3 (`kiro-cli --v3`), the versions that read
+the Markdown format. It writes no JSON profile and none of the older CLI 2.x
+keys, because V3 skips a JSON profile that has `allowedTools` and no
+`permissions` block. It installs for the project only: the user folder `~/.kiro/agents/` is not written.
+
+Each file keeps the helper's instructions unchanged and carries these frontmatter
+keys:
+
+| Key | What Apothem writes |
+| --- | --- |
+| `name`, `description` | The helper's name and description. Kiro's main agent picks a helper by its description. |
+| `tools` | The tools the helper may use, as a list of Kiro tool categories: `["read", "shell"]`. Omitted when the helper restricts nothing. |
+
+Kiro has one list for tools, so the helper's allowed and denied tools become that
+list. The categories are `read`, `write`, `shell`, `web` and `subagent`:
+
+| The helper's tool | Kiro category |
+| --- | --- |
+| `Read`, `Glob`, `Grep` | `read` |
+| `Write`, `Edit`, `MultiEdit`, `NotebookEdit` | `write` |
+| `Bash`, `PowerShell` | `shell` |
+| `WebSearch`, `WebFetch` | `web` |
+| `Agent`, `Task` | `subagent` |
+
+A tool with no category (`TodoWrite`, `Monitor`, `Artifact`, `TaskCreate`,
+`TaskUpdate`, an MCP entry) is left out. A category is left out when the helper is
+denied any tool in it, so a helper never gains a tool it was denied: a helper
+that cannot edit files gets no `write` category. A helper whose allowed tools all
+drop out is written with `tools: []`, so it is not given every tool. Two helpers
+(`mcp-builder` and `refactor-surgeon`) carry `write`, nine carry `shell`, and
+three carry `web`. The install writes no `model` key, so a helper runs on the
+model Kiro selects, and none of `permissions`, `excludedTools`, `resources`,
+`mcpServers` or `hooks`.
+
+Things to know:
+
+- Kiro does not load a workspace's custom agent files until you trust the workspace.
+  Kiro CLI 2.33 and later asks "Trust this workspace?" the first time you start
+  an interactive V3 session in a folder. If Kiro lists none of the helpers, trust
+  the folder and start a new session.
+- Apothem has not confirmed whether Kiro CLI 2.x loads a V3 Markdown agent. Use
+  the IDE, or run `kiro-cli --v3`.
+- The agent files are ordinary project files. Commit them with the project or
+  list `.kiro/agents/` in `.gitignore`; Apothem does not choose for you.
+- A file of yours with an Apothem helper's name is saved under
+  `~/.apothem/backups/` and then replaced. The uninstall does not put it back.
+  Files with other names, JSON profiles included, are never touched.
+- Kiro's pages disagree on whether a custom agent sees the skills in
+  `~/.kiro/skills/` by default: the skills page says an agent needs a `skill://`
+  resource, while the configuration reference says an agent inherits the default
+  skills. The install adds no `resources` key, so the helpers see the skills only
+  if the second reading holds.
+- Kiro's [Built-in tools page](https://kiro.dev/docs/tools/) lists the tools
+  each category commonly includes. The `read` category includes the file search
+  and text search tools (the CLI 2.x `glob` and `grep`), which is why `Glob` and
+  `Grep` map there. It also includes `code` (code analysis by syntax tree) and
+  `introspect` (answers questions about Kiro itself), so a helper with `read`
+  can use both. The page lists `code` under `write` too, and does not say
+  whether the tool edits files.
+- Apothem has not confirmed what Kiro does with an omitted `tools` key, or which
+  frontmatter keys Kiro requires beyond `name`.
 
 ## Profile-to-native-config mapping
 
@@ -81,9 +150,8 @@ hooks are operator-owned; Apothem does not write them.
 Kiro documents `~/.kiro/skills/` for global skills and does not mention
 `~/.agents/skills/`, so the install writes the Kiro folder and not the
 cross-tool one. A workspace skill with the same name wins over the global one.
-Custom agents load skills only through a `skill://` resource, so the skills
-reach Kiro's default agent. Apothem has not confirmed how Kiro treats a
-`SKILL.md` header key it does not list.
+Apothem has not confirmed how Kiro treats a `SKILL.md` header key it does not
+list.
 
 ## Verification
 
@@ -94,9 +162,12 @@ apothem verify --harness kiro --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. Each managed target exists; managed files are non-empty, and JSON or YAML
-   configs parse. Add `--profile PATH` to also confirm that the installed files
-   match that profile.
+2. Each managed target exists, the `.kiro/agents/` folder included; managed
+   files are non-empty, and JSON or YAML configs parse. Add `--profile PATH` to
+   also confirm that the installed files match that profile. For
+   `.kiro/agents/` the check is that the folder exists, not that each helper
+   file is in it; `apothem diff --harness kiro --project /path/to/project`
+   lists the helper files that are missing or out of date.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -113,6 +184,7 @@ Re-derives the project steering file from the current shared profile state.
 
 The update also rewrites any skill folder whose files differ from the current ones.
 If you installed with an earlier release that wrote no skills, the update adds them.
+It rewrites custom agent files that differ from the current ones, and adds any that are missing.
 
 ## Uninstalling
 
@@ -127,7 +199,9 @@ timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
 file is left in the project. The shared profile YAML and Apothem engine are
 unaffected.
 
-The uninstall also removes the skill folders it wrote in `~/.kiro/skills/` and the
+The uninstall also removes the custom agent files it wrote in `<project>/.kiro/agents/`
+and keeps any other file there; the folder is removed when it is left empty.
+It removes the skill folders it wrote in `~/.kiro/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the
 folder, may. In that case the uninstall keeps the folders, prints which install
@@ -147,6 +221,7 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness kiro --project /path/to/project` |
 | Verification failed | Run `apothem update --harness kiro --project /path/to/project`, then verify again |
+| Kiro lists none of the Apothem helpers | Trust the workspace (the CLI asks "Trust this workspace?" on the first interactive V3 session in a folder), and use the IDE or `kiro-cli --v3` |
 | `apothem verify` names a missing skill folder | Run `apothem install --harness kiro --project /path/to/project`; it restores the folder |
 | An install or update warns that it skipped a skill folder | A folder with an Apothem skill's name already exists in the skills folder and Apothem did not write it. Rename or move it, then run `apothem update` |
 | An install stops before it changes the project | A write in your home failed. Read the error, fix the folder it names (a link that leaves your home directory, a file where a folder belongs, or a read-only folder), and install again |

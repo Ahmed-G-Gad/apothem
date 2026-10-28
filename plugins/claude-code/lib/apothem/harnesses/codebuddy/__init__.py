@@ -11,6 +11,10 @@ the operator's own rules files are never clobbered. The ``CODEBUDDY.md``
 memory file and ``.codebuddy/settings.json`` permissions/MCP surface are
 operator-owned and out of apothem's adapter scope.
 
+The install also writes Apothem's agents into the project as CodeBuddy subagents,
+one Markdown file each in ``<project>/.codebuddy/agents/`` (the ``codebuddy_agents``
+mode), per https://www.codebuddy.ai/docs/cli/sub-agents.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.codebuddy/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

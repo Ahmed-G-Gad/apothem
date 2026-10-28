@@ -477,6 +477,21 @@ harnesses:
         mode: sentinel_merge
         ownership_class: operator-owned
         profile_position: first
+      # Copilot reads custom agents from <project>/.github/agents/<name>.agent.md
+      # (https://docs.github.com/en/copilot/reference/custom-agents-configuration,
+      # retrieved 2026-10-27). copilot_agents writes each agent with name,
+      # description and a tools allowlist of Copilot aliases (the source denials
+      # are folded into the allowlist; Copilot has no deny key), one
+      # .agent.md file per agent. The folder is committed with the repository and
+      # is read by the cloud agent and by teammates, not only by this machine.
+      # A same-named file the operator wrote is backed up first. Project scope
+      # only: ~/.copilot/agents/ is a possible user-level follow-up.
+      # TODO(clarify): whether Copilot prefers .github/agents over .claude/agents
+      # when both hold an agent of the same name.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.github/agents/"
+        mode: copilot_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -530,6 +545,25 @@ harnesses:
         target: "${PROJECT_ROOT}/.devin/rules/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Devin Local reads subagents from <project>/.devin/agents/<name>.md
+      # (https://docs.devin.ai/cli/subagents.md, retrieved 2026-10-27); the
+      # legacy Cascade agent has no subagents. devin_agents writes each agent
+      # with name, description and an allowed-tools list of lowercase Devin tool
+      # names (Bash is exec), and never model or max-nesting. The three agents
+      # that need web tools (citation-auditor, fact-checker, research-scout) are
+      # held back, because the allowed-tools names for web tools are
+      # undocumented; no release shipped a Windsurf agents entry, so there is
+      # nothing to retire. Custom subagents are experimental and sit behind the
+      # Subagents (Preview) setting. A same-named file the operator wrote is
+      # backed up first. Project scope only; the shared .agents/agents/ folder,
+      # which Devin also reads, stays unwritten.
+      # TODO(clarify): the allowed-tools names of Devin's web tools, which values
+      # `model` accepts, and whether Devin Desktop applies the CLI's .claude/
+      # subagent import.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.devin/agents/"
+        mode: devin_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -579,6 +613,20 @@ harnesses:
         target: "${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Cursor reads subagents from <project>/.cursor/agents/<name>.md
+      # (https://cursor.com/docs/subagents, retrieved 2026-10-27). cursor_agents
+      # writes each agent with name, description and, for an agent that is
+      # read-only and holds no shell, readonly: true; Cursor has no tools key.
+      # A native .cursor/agents/ file wins over the same name in .claude/agents/
+      # or .codex/agents/ (the documented precedence), so the project copy
+      # supersedes the ~/.claude/agents/ import Claude Code's install feeds.
+      # A same-named file the operator wrote is backed up first.
+      # TODO(clarify): whether Cursor loads both the .cursor/agents/ copy and a
+      # ~/.claude/agents/ copy of one name or drops the lower one.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.cursor/agents/"
+        mode: cursor_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -815,12 +863,13 @@ harnesses:
     # native project skills directory <project>/.kimi-code/skills/ (vendor
     # docs at https://www.kimi.com/code/docs/en/kimi-code-cli/customization/skills.html,
     # snapshot-date 2026-10-24); the tool-specific folder only, never the
-    # cross-tool .agents/skills/. The remaining non-native cohorts stay
+    # cross-tool .agents/skills/. Agents install at the native project agents
+    # directory <project>/.kimi-code/agents/ (vendor docs at
+    # https://moonshotai.github.io/kimi-code/en/customization/agents.md,
+    # retrieved 2026-10-27), also the tool-specific folder only, never the
+    # cross-tool .agents/agents/. The remaining non-native cohorts stay
     # under the Apothem-owned support tree at
     # <project>/.kimi-code/.apothem/support/:
-    #   agents  - the conversion is not scoped: the tool names in the agent
-    #             files are not compared with Kimi Code's, so the agent files
-    #             stay here (TODO(clarify) in the pin);
     #   hooks   - [[hooks]] lives in the user-scope ~/.kimi-code/config.toml,
     #             which this project-scope adapter does not write (the pin
     #             records the gap).
@@ -849,9 +898,19 @@ harnesses:
         target: "${PROJECT_ROOT}/.kimi-code/skills/"
         mode: command_skills
         ownership_class: apothem-owned
+      # kimi_agents writes each agent with the keys Kimi Code reads (name,
+      # description, tools, disallowedTools) and the tool names Kimi Code
+      # matches (WebFetch becomes FetchURL, TodoWrite becomes TodoList), one
+      # <name>.md per agent; it never writes override, model or subagents.
+      # Earlier releases kept the agents in the support tree, which the
+      # stale-sweep below retires. A same-named file the operator wrote is
+      # backed up first.
+      # TODO(clarify): the Kimi Code changelog of 2026-10-25 says it launches
+      # sub-agents only when delegation is requested, while the agents page says
+      # the main agent schedules them automatically.
       - source: "agents/"
-        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/agents/"
-        mode: merge_tree_entries
+        target: "${PROJECT_ROOT}/.kimi-code/agents/"
+        mode: kimi_agents
         ownership_class: apothem-owned
       - source: "templates/"
         target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/templates/"
@@ -873,7 +932,10 @@ harnesses:
     # skills moved from <project>/.kimi-code/.apothem/support/skills/ to the
     # native <project>/.kimi-code/skills/, so the support-tree skills dir is
     # swept too: an update or an uninstall over the earlier layout leaves one
-    # copy of each skill, the native one. Sweeping these paths is safe: none is
+    # copy of each skill, the native one. Agents moved the same way, from
+    # <project>/.kimi-code/.apothem/support/agents/ (shipped by every release
+    # from v1.0.1 to v1.4.0) to the native <project>/.kimi-code/agents/, so the
+    # support-tree agents dir is swept too. Sweeping these paths is safe: none is
     # a live install target any longer, so no remove + recreate churn on a
     # fresh install.
     stale-sweep:
@@ -884,6 +946,7 @@ harnesses:
       - ".kimi-code/apothem/skills"
       - ".kimi-code/apothem/agents"
       - ".kimi-code/.apothem/support/skills"
+      - ".kimi-code/.apothem/support/agents"
 
     # A command sharing a source skill's name is left to the skill; see the
     # claude_code entry.
@@ -926,6 +989,15 @@ harnesses:
         target: "${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # CodeBuddy reads subagents from <project>/.codebuddy/agents/*.md
+      # (https://www.codebuddy.ai/docs/cli/sub-agents, retrieved 2026-10-27).
+      # codebuddy_agents writes each agent with the keys CodeBuddy documents
+      # (name, description, tools, disallowedTools, maxTurns), one file per
+      # agent. A same-named file the operator wrote is backed up first.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.codebuddy/agents/"
+        mode: codebuddy_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -973,6 +1045,27 @@ harnesses:
         target: "${PROJECT_ROOT}/.kiro/steering/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Kiro reads custom agents from <project>/.kiro/agents/<name>.md (Markdown
+      # with YAML frontmatter, the body is the system prompt; IDE 1.0 and CLI V3,
+      # https://kiro.dev/docs/custom-agents/, retrieved 2026-10-27). kiro_agents
+      # writes each agent with name, description and a tools list of Kiro
+      # category tags (read, write, shell, web, subagent) in which the source
+      # tool grant and denials are already folded, and never model, permissions,
+      # excludedTools, resources, mcpServers, hooks or the CLI 2.x allowedTools.
+      # No release shipped a Kiro agents entry (v1.0.1 to v1.4.0), so there is
+      # nothing to retire and the stale-sweep list stays empty. A same-named file
+      # the operator wrote is backed up first. Project scope only: the user folder
+      # ~/.kiro/agents/ stays unwritten. A V3 interactive CLI session loads
+      # project agents only after the operator trusts the folder (CLI 2.33).
+      # The Built-in tools page (https://kiro.dev/docs/tools/, read 2026-10-28)
+      # lists grep_search and file_search, the CLI 2.x grep and glob, under the
+      # read tag, so Grep and Glob map to it.
+      # TODO(clarify): what an omitted tools list selects, and whether CLI 2.x
+      # loads a V3 Markdown agent.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.kiro/agents/"
+        mode: kiro_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"
@@ -995,10 +1088,13 @@ harnesses:
     # and out of apothem's adapter scope. Skills and command skills install at
     # Trae's user-level skills folder ~/.trae/skills/, and the rules and templates
     # corpus at ~/.config/apothem/, ahead of the project rule.
-    # TODO(clarify): Trae's China edition may read ~/.trae-cn/skills/ instead of
-    # ~/.trae/skills/ (its changelog says the global directories are
-    # compatible, which was not read directly). Until a probe settles it, this
-    # block writes ~/.trae/skills/ only.
+    # The English skills page gives ~/.trae/skills and the Chinese-edition page
+    # (docs.trae.cn) gives ~/.trae-cn/skills (read 2026-10-28). The Chinese
+    # changelog's TRAE CN v3.3.63 entry says the global skills directories of
+    # TRAE CN and the international edition are compatible (personal edition
+    # only), so the user skills folder is ~/.trae/skills/.
+    # TODO(clarify): whether a TRAE CN install other than the personal edition
+    # reads ~/.trae/skills.
     # The adapter at src/apothem/harnesses/trae/ opts into the project-scope
     # contract (requires_project = True).
     install:
@@ -1024,6 +1120,18 @@ harnesses:
         target: "${PROJECT_ROOT}/.trae/rules/apothem-rules.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+      # Trae reads subagents from <project>/.trae/agents/*.md
+      # (https://docs.trae.ai/ide/subagents, retrieved 2026-10-27). trae_agents
+      # writes each agent with the keys Trae documents (name, description,
+      # tools, disallowedTools), one file per agent. Project scope only: the
+      # user-level agents path is documented as ~/.trae-cn/agents/ while every
+      # other Trae user path is ~/.trae/, so the user folder waits for a probe.
+      # TODO(clarify): which of ~/.trae/agents/ and ~/.trae-cn/agents/ an
+      # international install reads.
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.trae/agents/"
+        mode: trae_agents
+        ownership_class: apothem-owned
 
     exclude:
       - "__pycache__"

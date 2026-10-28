@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/codebuddy/templates/apothem-rules.md",
     "target": "<ROOT>/.codebuddy/rules/apothem-rules.md"
+  },
+  {
+    "mode": "codebuddy_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.codebuddy/agents"
   }
 ]

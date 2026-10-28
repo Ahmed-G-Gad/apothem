@@ -15,7 +15,7 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — engineering rules applied on every interaction (`trigger: always_on`). This install writes this one rules file in the project; the disciplines below are the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions and hook helpers are not installed by the Windsurf adapter.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as Devin Local subagents in `.devin/agents/` in this project, one file each (the three that need web tools are not installed); Devin Local loads them while Subagents (Preview) is on. Hook helpers are not installed by the Windsurf adapter.
 - **Workflows** — Windsurf's slash-command surface (`.windsurf/workflows/`) is operator-authored, not apothem-managed.
 - **Memories** — Windsurf's memory surface (`~/.codeium/windsurf/memories/`) is machine-local, not apothem-managed.
 

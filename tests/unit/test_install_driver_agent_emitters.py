@@ -23,10 +23,23 @@ from apothem.harnesses._shared import (
     install_driver_planvalidation as planvalidation,
 )
 from apothem.harnesses._shared.install_driver_agent_apply import apply_agent_emitter
+from apothem.harnesses._shared.install_driver_agent_comma_tools import (
+    codebuddy_agent_text,
+    trae_agent_text,
+)
+from apothem.harnesses._shared.install_driver_agent_copilot_cursor import (
+    copilot_agent_text,
+    cursor_agent_text,
+)
 from apothem.harnesses._shared.install_driver_agent_emitters import (
     AGENT_EMITTERS,
     AgentEmitter,
 )
+from apothem.harnesses._shared.install_driver_agent_kimi_devin import (
+    devin_agent_text,
+    kimi_agent_text,
+)
+from apothem.harnesses._shared.install_driver_agent_kiro import kiro_agent_text
 from apothem.harnesses._shared.install_driver_types import _INSTALL_ENTRY_MODES
 from apothem.lib.claude_agent_mcp import claude_agent_text
 from apothem.lib.propagation import HarnessRules, InstallEntry
@@ -38,6 +51,19 @@ _REGISTERED_MODES = {
     "qwen_agents",
     "antigravity_agents",
     "claude_agents",
+    "codebuddy_agents",
+    "trae_agents",
+    "copilot_agents",
+    "cursor_agents",
+    "kimi_agents",
+    "devin_agents",
+    "kiro_agents",
+}
+
+#: The only row that holds source agents back: the three that need web tools, whose
+#: ``allowed-tools`` names Devin does not document.
+_HELD_BACK = {
+    "devin_agents": frozenset({"citation-auditor", "fact-checker", "research-scout"}),
 }
 
 
@@ -62,13 +88,20 @@ def test_rows_keep_the_renderers_and_target_names_they_always_had() -> None:
         "qwen_agents": (converters._qwen_agent_text, None, False),
         "antigravity_agents": (converters._antigravity_agent_text, None, False),
         "claude_agents": (claude_agent_text, None, False),
+        "codebuddy_agents": (codebuddy_agent_text, None, False),
+        "trae_agents": (trae_agent_text, None, False),
+        "copilot_agents": (copilot_agent_text, "agent.md", False),
+        "cursor_agents": (cursor_agent_text, None, False),
+        "kimi_agents": (kimi_agent_text, None, False),
+        "devin_agents": (devin_agent_text, None, False),
+        "kiro_agents": (kiro_agent_text, None, False),
     }
     for mode, (renderer, extension, stale) in expected.items():
         emitter = AGENT_EMITTERS[mode]
         assert emitter.renderer is renderer, mode
         assert emitter.target_extension == extension, mode
         assert emitter.remove_stale_markdown is stale, mode
-        assert emitter.exclude == frozenset(), mode
+        assert emitter.exclude == _HELD_BACK.get(mode, frozenset()), mode
 
 
 def test_target_name_follows_the_extension() -> None:

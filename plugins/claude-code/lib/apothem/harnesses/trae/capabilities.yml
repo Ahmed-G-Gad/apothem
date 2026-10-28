@@ -5,19 +5,20 @@
 # recognizes it but does not author entries). The adapter delivers a
 # project rules file under .trae/rules/, installs skills and command skills at
 # Trae's user-level ~/.trae/skills/ and the rules and templates corpus at
-# ~/.config/apothem/, and does not dispatch sub-agents or author agent/hook
-# cohorts.
+# ~/.config/apothem/, and writes Apothem's agents as Trae subagents in
+# .trae/agents/ (project scope only). Trae's built-in Agent dispatches
+# subagents natively; the adapter authors no hook cohort.
 
 mcp_servers:
   - project-scope-.trae/mcp.json
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
-sub_agent_dispatch: false
+sub_agent_dispatch: true
 custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".trae/rules/*.md directory plus ~/.trae/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".trae/rules/*.md directory plus .trae/agents/*.md subagents, ~/.trae/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
 hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
@@ -51,3 +52,21 @@ conversion_losses:
     version: "native:metadata.version"
     updated: "native:metadata.updated"
     portability: "native:metadata.portability"
+
+# Agents ship as Trae subagents in <project>/.trae/agents/ (see
+# harnesses/_shared/install_driver_agent_comma_tools.py). Trae documents name,
+# description, model, tools, disallowedTools and mcpServers, with comma-string
+# tool fields drawn from its own tool vocabulary; a source name outside it is
+# left out of the field. Trae documents no turn limit, so maxTurns is not
+# written, and version, updated and portability are Apothem metadata Trae does
+# not list. The user-level agents path is unresolved (see the pin), so the
+# install is project scope only.
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:disallowedTools"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

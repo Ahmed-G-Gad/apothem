@@ -104,11 +104,11 @@ def test_capabilities_mcp_is_service_state_not_repo_file() -> None:
 
 
 def test_capabilities_instructions_and_skills_delivery() -> None:
-    # The adapter delivers the repo-wide instructions anchor and installs the
-    # commands as skills in the shared user-level folder; no repo-config
-    # sub-agent dispatch is authored.
+    # The adapter delivers the repo-wide instructions anchor, installs the
+    # commands as skills in the shared user-level folder and writes the agents
+    # as custom agent profiles; Copilot delegates to custom agents natively.
     capabilities = _capabilities()
-    assert capabilities["sub_agent_dispatch"] is False
+    assert capabilities["sub_agent_dispatch"] is True
     assert capabilities["custom_command_support"] == "skills"
 
 

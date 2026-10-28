@@ -22,6 +22,69 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **CodeBuddy and Trae now get Apothem's helpers as their own subagents.** The
+  install writes each Apothem helper into the project as a Markdown subagent
+  file, in `.codebuddy/agents/` for CodeBuddy and `.trae/agents/` for Trae,
+  where before neither tool received the helpers. A file keeps the helper's
+  instructions and carries the keys the tool documents: the name, the
+  description, the allowed and denied tools as the comma-separated strings both
+  tools read, and, for CodeBuddy only, the turn limit. A tool the tool's own
+  documentation does not name is left out of both lists, a helper that could
+  not edit files still cannot, and no model is set. Trae installs for the
+  project only, because its documentation gives the user-level subagent folder
+  as `~/.trae-cn/agents/` while every other Trae user folder is under `~/.trae/`,
+  and which one an international install reads is not confirmed. The two
+  harness pages explain the files, the switch Trae may need, and how an
+  uninstall treats a file of yours with an Apothem helper's name.
+- **GitHub Copilot and Cursor now get Apothem's helpers as their own agents.**
+  The install writes each Apothem helper into the project as a Markdown agent
+  file, in `.github/agents/` as `<name>.agent.md` for GitHub Copilot and in
+  `.cursor/agents/` as `<name>.md` for Cursor, where before neither tool
+  received the helpers. A file keeps the helper's instructions and carries the
+  keys the tool documents. Copilot has no key that denies a tool, so the
+  helper's allowed and denied tools become one list of Copilot tool aliases, and
+  an alias that would let a helper use a tool it is denied is left out. Cursor has
+  no tool list at all, so five read-only helpers that cannot run commands are
+  marked `readonly: true`, and the seven read-only helpers that run commands
+  drop the "read-only" label from their descriptions, since Cursor would not
+  enforce it. No model is set for either tool. Both install for the project
+  only; the Copilot files are part of your repository, so the cloud agent and
+  your teammates see them. The two harness pages explain the files, and how an
+  uninstall treats a file of yours with an Apothem helper's name.
+- **Kimi Code and Windsurf now get Apothem's helpers as their own subagents.**
+  The install writes each Apothem helper into the project as a Markdown subagent
+  file, in `.kimi-code/agents/` for Kimi Code and in `.devin/agents/` for
+  Windsurf's Devin Local agent. Kimi Code kept the helpers in a support folder
+  where it never loaded them; the first update or uninstall after this release
+  removes that old folder, `.kimi-code/.apothem/support/agents/`, after saving a
+  copy under `~/.apothem/backups/`. Windsurf received no helpers before. Both
+  tools spell tools their own way, so the install translates them. Kimi Code
+  gets lists of its own tool names (`WebFetch` becomes `FetchURL`, `TodoWrite`
+  becomes `TodoList`, and a name Kimi Code has no tool for is left out). Devin
+  has no key that denies a tool, so a helper's allowed and denied tools become
+  one lowercase `allowed-tools` list, and `Bash` becomes `exec`. Windsurf gets
+  eleven of the fourteen helpers: Devin documents no tool name for web search
+  or web fetch, so `citation-auditor`, `fact-checker` and `research-scout` wait
+  until it does. No model is set for either tool, and Kimi Code never gets
+  `override`. Both install for the project only. Kimi Code uses a helper when
+  you ask for it by name, since its 2.3.2 release stopped delegating on its own,
+  and Devin labels custom subagents experimental and puts them behind a
+  Subagents (Preview) setting. The two harness pages explain the files, and how
+  an uninstall treats a file of yours with an Apothem helper's name.
+- **Kiro now gets Apothem's helpers as its own custom agents.** The install
+  writes each Apothem helper into the project as a Markdown agent file in
+  `.kiro/agents/`, where before Kiro received no helpers. The files are for Kiro
+  IDE 1.0 and Kiro CLI V3 (`kiro-cli --v3`), the versions that read the Markdown
+  format; no JSON profile and none of the older CLI 2.x keys are written. A file
+  keeps the helper's instructions and carries the name, the description and one
+  list of Kiro tool categories (`read`, `write`, `shell`, `web`, `subagent`).
+  Kiro has a single list for tools, so a helper's allowed and denied tools are
+  folded into it, and a category that would let a helper use a tool it is denied
+  is left out. No model is set. The install is for the project only, and Kiro
+  does not load a project's agents until you trust the workspace. The Kiro page
+  explains the files, the trust step, and how an uninstall treats a file of
+  yours with an Apothem helper's name.
+
 - **The Marketplace publish can sign in with Microsoft Entra ID instead of a
   stored token.** `publish-vscode.yml` now picks its credential in a
   `Select Marketplace credential` step. With the repository variables

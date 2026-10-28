@@ -25,9 +25,9 @@
     "target": "<ROOT>/.kimi-code/skills"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "kimi_agents",
     "source": "<APOTHEM_SRC>/agents",
-    "target": "<ROOT>/.kimi-code/.apothem/support/agents"
+    "target": "<ROOT>/.kimi-code/agents"
   },
   {
     "mode": "merge_tree_entries",

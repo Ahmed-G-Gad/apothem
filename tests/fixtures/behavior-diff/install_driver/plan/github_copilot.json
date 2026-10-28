@@ -23,5 +23,10 @@
     "mode": "sentinel_merge",
     "source": "<APOTHEM_SRC>/harnesses/github_copilot/templates/copilot-instructions.md",
     "target": "<ROOT>/.github/copilot-instructions.md"
+  },
+  {
+    "mode": "copilot_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.github/agents"
   }
 ]
