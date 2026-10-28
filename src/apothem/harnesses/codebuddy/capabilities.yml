@@ -8,7 +8,12 @@
 # command skills at CodeBuddy's user-level ~/.codebuddy/skills/ and the rules
 # and templates corpus at ~/.config/apothem/, and writes Apothem's agents as
 # CodeBuddy subagents in .codebuddy/agents/. CodeBuddy dispatches sub-agents
-# natively through its Agent tool; the adapter authors no hook cohort.
+# natively through its Agent tool. The adapter registers two hooks (SessionStart
+# and PostToolUse, the events whose additionalContext CodeBuddy hands to the
+# model) in the uncommitted .codebuddy/settings.local.json, with the scripts
+# under .apothem/support/hooks/; the PreToolUse guards are not registered
+# because the hooks page documents no additionalContext for PreToolUse. The
+# operator restarts CodeBuddy and reviews the entries in /hooks before they run.
 
 mcp_servers:
   - project-scope-.mcp.json-operator-owned
@@ -20,9 +25,9 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".codebuddy/rules/*.md directory plus .codebuddy/agents/*.md subagents, ~/.codebuddy/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".codebuddy/rules/*.md directory plus .codebuddy/agents/*.md subagents, .codebuddy/settings.local.json hooks with scripts in .apothem/support/hooks/, ~/.codebuddy/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
-hook_learning_capture: "artifact-evolution-cycle"
+hook_learning_capture: "settings.local.json-hooks"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /

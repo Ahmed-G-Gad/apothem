@@ -8,8 +8,14 @@ canonical CodeBuddy rules surface per
 https://www.codebuddy.ai/docs/ide/Rules. The adapter writes a dedicated
 ``apothem-rules.md`` file inside CodeBuddy's documented rules directory so
 the operator's own rules files are never clobbered. The ``CODEBUDDY.md``
-memory file and ``.codebuddy/settings.json`` permissions/MCP surface are
+memory file and the committed ``.codebuddy/settings.json`` permissions/MCP surface are
 operator-owned and out of apothem's adapter scope.
+
+The install registers two hooks (SessionStart and PostToolUse) in the project's
+uncommitted ``.codebuddy/settings.local.json``, running the dispatcher in the
+support tree under ``<project>/.apothem/support/hooks/`` with
+``--contract codebuddy``, per https://www.codebuddy.ai/docs/cli/hooks. CodeBuddy
+asks the operator to restart and review externally added hooks in ``/hooks``.
 
 The install also writes Apothem's agents into the project as CodeBuddy subagents,
 one Markdown file each in ``<project>/.codebuddy/agents/`` (the ``codebuddy_agents``

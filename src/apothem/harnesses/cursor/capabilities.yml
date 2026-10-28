@@ -7,8 +7,12 @@
 # and command skills at the shared user-level ~/.agents/skills/ and the rules
 # and templates corpus at ~/.config/apothem/, and writes Apothem's agents as
 # Cursor subagents in .cursor/agents/ (project scope only). Cursor delegates to
-# subagents natively (cursor.com/docs/subagents); the adapter authors no hook
-# cohort, and the Cursor plugin mechanism is operator-driven.
+# subagents natively (cursor.com/docs/subagents). It registers one hook,
+# sessionStart (the session bootstrap, whose additional_context Cursor adds to
+# the conversation), in the operator's project hook file .cursor/hooks.json,
+# merged by command text, with the scripts under .apothem/support/cursor/hooks/;
+# no tool-event hook is registered in this version. The Cursor plugin mechanism
+# is operator-driven.
 
 mcp_servers:
   - user-scope-~/.cursor/mcp.json
@@ -20,9 +24,9 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".cursor/rules MDC files plus .cursor/agents/*.md subagents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".cursor/rules MDC files plus .cursor/agents/*.md subagents, .cursor/hooks.json hooks with scripts in .apothem/support/cursor/hooks/, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
-hook_learning_capture: "artifact-evolution-cycle"
+hook_learning_capture: "hooks.json-hooks"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /

@@ -21,6 +21,15 @@ agents that need web tools are held back, because Devin documents no
 ``allowed-tools`` name for them. The shared ``.agents/agents/`` folder and the
 user-level agents folders are never written.
 
+The install registers two hooks (SessionStart and PostToolUse) in the project's
+local config file ``<project>/.devin/config.local.json``, which Devin documents as
+gitignored, running the dispatcher in the support tree under
+``<project>/.apothem/support/windsurf/hooks/`` with ``--contract devin``, per
+https://docs.devin.ai/cli/extensibility/hooks/overview.md, retrieved 2026-10-28.
+Devin documents no context channel for PreToolUse, so no guard is registered
+there. Devin loads no hook in Restricted Mode, and also loads the hooks the
+Claude Code install wrote (see :mod:`apothem.lib.install_advisories`).
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

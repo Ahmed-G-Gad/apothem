@@ -1,0 +1,852 @@
+# SPDX-License-Identifier: MIT
+
+"""Session-start bootstrap hook for the apothem ecosystem.
+
+Gathers ecosystem context at SessionStart and emits a single-line JSON
+envelope: ``{"hookSpecificOutput":{"hookEventName":"SessionStart",...}}``.
+
+The bootstrap produces a plaintext `additionalContext` payload composed
+of up to eight blocks, in this order:
+
+* **Plugin posture** — a pointer to the bundled rules when Apothem runs as a
+  plugin alone.
+* **Session bootstrap** — source, model, and agent-type echoed back from
+  the hook's stdin JSON (optional).
+* **Post-compaction recovery** — the recovery read sequence, after a
+  compaction only.
+* **Skill index** — the generated ``hooks/messages/skill-index.md`` (Claude
+  Code only, when the file exists): the shipped skills grouped by task, so
+  discovery survives the harness dropping skill descriptions from its listing.
+* **Memory summary** — first lines of ``## Project Overview``,
+  ``**Latest:**`` value, topic file names, and top bullets from
+  ``## Key Conventions`` in the project's ``MEMORY.md`` index.
+* **Plan summary** — the most recently modified plan suite (if any) and
+  key fields pulled from its ``PROGRESS.md``.
+* **Knowledge-base drift** — one line when the project's knowledge base (made
+  by the ``knowledge-wiki`` skill) changed since its recorded baseline.
+* **Conformity posture** — the standing session-start posture message.
+
+Any unexpected exception is caught at the outermost boundary; a valid
+failure envelope is emitted and the process exits 0.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import sys
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Final
+
+_HOOKS_DIR: Final[Path] = Path(__file__).resolve().parent
+_LIB_DIR: Final[Path] = _HOOKS_DIR / "lib"
+
+# Cap on how many bulleted items (topic files, key conventions) the
+# bootstrap surfaces. Both the display slices in the summary
+# dataclasses and the parser-function defaults below pull from this
+# constant, so the slice acts as a safety belt: if a parser is later
+# called with a wider limit elsewhere, the bootstrap output still
+# stays bounded at this width.
+_BULLET_PREVIEW_LIMIT: Final[int] = 3
+
+# Cap on how many numbered items (critical files for the next phase)
+# the bootstrap surfaces. Larger than the bullet cap because the
+# critical-files list is the manifest a fresh session reads first to
+# pick up where the prior session left off; five items keeps that
+# surface useful without bloating the SessionStart envelope.
+_NUMBERED_PREVIEW_LIMIT: Final[int] = 5
+# Insert both paths so ``from emit_hook_context import …`` works whether
+# this script is invoked directly or via ``dispatch.py`` (which adds
+# ``_HOOKS_DIR`` itself). Without the hooks-dir entry, direct invocation
+# raises ``ModuleNotFoundError`` because ``emit_hook_context`` lives in
+# ``hooks/``, not ``hooks/lib/``.
+for _path in (_HOOKS_DIR, _LIB_DIR):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
+from emit_hook_context import (
+    emit_failure_envelope,
+    emit_hook_envelope,
+    normalize_ascii,
+    read_hook_stdin,
+)
+from log import get_logger
+from message_text import strip_maintainer_text
+
+_logger = get_logger(__name__)
+
+_H2 = re.compile(r"^##\s+(.+?)\s*$")
+_BOLD_FIELD = re.compile(r"^\*\*([^:*]+):\*\*\s*(.*?)\s*$")
+_BULLET = re.compile(r"^\s*-\s+(.+?)\s*$")
+_NUMBERED = re.compile(r"^\s*\d+\.\s+(.+?)\s*$")
+_MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
+
+
+@dataclass(frozen=True)
+class SessionMeta:
+    """Metadata echoed from the hook's stdin payload."""
+
+    source: str = ""
+    model: str = ""
+    agent_type: str = ""
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, object] | None) -> SessionMeta:
+        """Extract session-bootstrap fields from a stdin payload."""
+        if not payload:
+            return cls()
+        return cls(
+            source=_as_str(payload.get("source")),
+            model=_as_str(payload.get("model")),
+            agent_type=_as_str(payload.get("agent_type")),
+        )
+
+    def lines(self) -> list[str]:
+        """Return the bullet-list lines for this metadata block."""
+        rows: list[str] = []
+        if self.source:
+            rows.append(f"- Session source: {self.source}")
+        if self.model:
+            rows.append(f"- Model: {self.model}")
+        if self.agent_type:
+            rows.append(f"- Agent: {self.agent_type}")
+        return rows
+
+
+@dataclass
+class MemorySummary:
+    """Structured view of a ``MEMORY.md`` index file."""
+
+    overview: str = ""
+    latest: str = ""
+    topic_files: list[str] = field(default_factory=list)
+    key_conventions: list[str] = field(default_factory=list)
+
+    def lines(self) -> list[str]:
+        """Return the bullet-list lines for this memory block."""
+        rows: list[str] = []
+        if self.overview:
+            rows.append(f"- Project overview: {self.overview}")
+        if self.latest:
+            rows.append(f"- Latest memory entry: {self.latest}")
+        if self.topic_files:
+            preview = ", ".join(self.topic_files[:_BULLET_PREVIEW_LIMIT])
+            rows.append(f"- Topic files: {preview}")
+        for convention in self.key_conventions[:_BULLET_PREVIEW_LIMIT]:
+            rows.append(f"- Convention: {convention}")
+        return rows
+
+
+@dataclass
+class PlanSummary:
+    """Structured view of an active plan suite."""
+
+    suite_name: str = ""
+    status: str = ""
+    phase_in_progress: str = ""
+    task_in_progress: str = ""
+    next_action: str = ""
+    blockers: str = ""
+    critical_files: list[str] = field(default_factory=list)
+
+    def lines(self) -> list[str]:
+        """Return the bullet-list lines for this plan block."""
+        rows: list[str] = []
+        if self.suite_name:
+            rows.append(f"- Active suite: {self.suite_name}")
+        if self.status:
+            rows.append(f"- Suite status: {self.status}")
+        if self.phase_in_progress:
+            rows.append(f"- Phase in progress: {self.phase_in_progress}")
+        if self.task_in_progress:
+            rows.append(f"- Task in progress: {self.task_in_progress}")
+        if self.next_action:
+            rows.append(f"- Next action: {self.next_action}")
+        if self.blockers:
+            rows.append(f"- Blockers: {self.blockers}")
+        for path in self.critical_files[:_NUMBERED_PREVIEW_LIMIT]:
+            rows.append(f"- Critical file: {path}")
+        return rows
+
+
+def _as_str(value: object) -> str:
+    """Return `value` as a string, or empty when not a string."""
+    return value if isinstance(value, str) else ""
+
+
+def _iter_lines(path: Path) -> Iterator[str]:
+    """Yield stripped lines from `path`, or nothing if unreadable."""
+    try:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for raw in handle:
+                yield raw.rstrip("\r\n")
+    except OSError as exc:
+        _logger.debug("Unable to read %s: %s", path, exc)
+
+
+def _section_lines(path: Path, heading: str) -> Iterator[str]:
+    """Yield lines that appear under `heading` until the next H2."""
+    in_section = False
+    for line in _iter_lines(path):
+        if not in_section:
+            if line.strip() == heading:
+                in_section = True
+            continue
+        if _H2.match(line):
+            return
+        yield line
+
+
+def first_nonblank(path: Path, heading: str) -> str:
+    """Return the first non-blank line under `heading`."""
+    for line in _section_lines(path, heading):
+        stripped = line.strip()
+        if stripped:
+            return stripped
+    return ""
+
+
+def bold_field(path: Path, key: str) -> str:
+    """Return the value of ``**Key:** value`` (first occurrence)."""
+    for line in _iter_lines(path):
+        match = _BOLD_FIELD.match(line)
+        if match and match.group(1).strip() == key:
+            return match.group(2).strip()
+    return ""
+
+
+def heading_value(path: Path, prefix: str) -> str:
+    """Return the tail of the first line starting with `prefix`."""
+    for line in _iter_lines(path):
+        if line.startswith(prefix):
+            return line[len(prefix) :].strip()
+    return ""
+
+
+def topic_file_names(
+    path: Path, heading: str, limit: int = _BULLET_PREVIEW_LIMIT
+) -> list[str]:
+    """Return up to `limit` linked ``.md`` filenames found under `heading`."""
+    names: list[str] = []
+    for line in _section_lines(path, heading):
+        for match in _MARKDOWN_LINK.finditer(line):
+            names.append(match.group(1))
+            if len(names) >= limit:
+                return names
+    return names
+
+
+def bullets_under(
+    path: Path, heading: str, limit: int = _BULLET_PREVIEW_LIMIT
+) -> list[str]:
+    """Return up to `limit` bullet items under `heading`."""
+    out: list[str] = []
+    for line in _section_lines(path, heading):
+        match = _BULLET.match(line)
+        if match:
+            out.append(match.group(1).strip())
+            if len(out) >= limit:
+                break
+    return out
+
+
+def numbered_under(
+    path: Path, heading: str, limit: int = _NUMBERED_PREVIEW_LIMIT
+) -> list[str]:
+    """Return up to `limit` numbered-list items under `heading`."""
+    out: list[str] = []
+    for line in _section_lines(path, heading):
+        match = _NUMBERED.match(line)
+        if match:
+            out.append(match.group(1).strip())
+            if len(out) >= limit:
+                break
+    return out
+
+
+def project_slug(root: Path) -> str:
+    """Convert an absolute path to the canonical project-directory slug.
+
+    The slug deliberately preserves consecutive ``-`` runs that arise from
+    adjacent separators (e.g., ``\\.`` becomes ``--``). This matches the
+    on-disk folder names already created by Claude Code under
+    ``<root>/projects/`` — collapsing runs would break lookup of existing
+    memory directories. The ``find_memory_index`` boundary-anchored
+    leaf-suffix fallback (below) covers any residual slug drift.
+    """
+    text = str(root).rstrip("/\\").lower()
+    for ch in (":", "\\", "/", "."):
+        text = text.replace(ch, "-")
+    return text
+
+
+def _claude_config_dir() -> Path:
+    """Return the Claude Code config root (``CLAUDE_CONFIG_DIR`` or ``~/.claude``)."""
+    override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".claude"
+
+
+def find_memory_index(
+    project: Path, harness_roots: tuple[Path, ...] = ()
+) -> Path | None:
+    """Locate ``MEMORY.md`` for *project* under a harness ``projects/`` tree.
+
+    The memory store is keyed by the slug of the **project** directory under
+    each candidate harness root's ``projects/`` folder (the Claude Code config
+    root first, then any extra roots the caller passes, such as the installed
+    tree). Keying it by the harness root instead, as an earlier version did,
+    could never match the operator's project.
+    """
+    roots = (_claude_config_dir(), *harness_roots)
+    for root in roots:
+        found = _memory_index_under(root / "projects", project)
+        if found is not None:
+            return found
+    return None
+
+
+def _memory_index_under(projects_root: Path, project: Path) -> Path | None:
+    if not projects_root.is_dir():
+        return None
+    direct = projects_root / project_slug(project) / "memory" / "MEMORY.md"
+    if direct.is_file():
+        return direct
+    # Fallback for a project whose on-disk slug does not match ``project_slug``
+    # byte-for-byte (path-separator or drive-letter drift). The project's leaf
+    # directory name is the trailing kebab segment of the slug, so match it as a
+    # boundary-anchored suffix — NEVER a bare substring. A substring test lets a
+    # short leaf ('app') resolve another project's memory dir ('my-app-fork'),
+    # crossing into an unrelated project's memory. Exact first, then a
+    # separator-delimited suffix ('…-<leaf>'), so only a true leaf match wins.
+    leaf = project.name.lower().lstrip(".")
+    if not leaf:
+        return None
+    candidates = sorted(projects_root.glob("*/memory/MEMORY.md"), reverse=True)
+    for candidate in candidates:
+        parent_name = candidate.parent.parent.name.lower()
+        if parent_name == leaf or parent_name.endswith(f"-{leaf}"):
+            return candidate
+    return None
+
+
+def resolve_project_dir(payload: dict[str, object] | None) -> Path:
+    """Return the operator's project directory, as data for plans and memory.
+
+    Order: ``CLAUDE_PROJECT_DIR`` (the project root where the session started),
+    ``LLM_PROJECT_DIR`` (vendor-neutral alias), the payload ``cwd`` ascended to
+    its git root, then the process working directory. The result is only ever
+    read as data; no code is loaded from it.
+    """
+    for name in ("CLAUDE_PROJECT_DIR", "LLM_PROJECT_DIR"):
+        value = os.environ.get(name, "").strip()
+        if value and Path(value).is_dir():
+            return Path(value).resolve()
+    cwd_value = payload.get("cwd") if isinstance(payload, dict) else None
+    start = Path(cwd_value) if isinstance(cwd_value, str) and cwd_value else Path.cwd()
+    start = start.resolve()
+    for candidate in (start, *start.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return start
+
+
+def read_memory_summary(memory_path: Path) -> MemorySummary:
+    """Parse a ``MEMORY.md`` index into a `MemorySummary`."""
+    return MemorySummary(
+        overview=first_nonblank(memory_path, "## Project Overview"),
+        latest=bold_field(memory_path, "Latest"),
+        topic_files=topic_file_names(memory_path, "## Topic Files"),
+        key_conventions=bullets_under(memory_path, "## Key Conventions"),
+    )
+
+
+def _resolve_plan_suites_root(project_root: Path) -> Path:
+    """Resolve the plans-suite root for the session-start Plan summary.
+
+    Mirrors the statusline resolver in :mod:`apothem.statuslines.render`: the
+    ``LLM_PLAN_SUITES_DIR`` override wins when set, else the canonical
+    ``.apothem/plans`` tree, else the legacy ``.plans`` tree — the dual-read
+    compatibility window for a workspace not yet upgraded with
+    ``apothem migrate-workspace``. Defaulting to the legacy name alone would
+    blind this summary to a migrated workspace's suite that the statusline
+    already resolves correctly.
+    """
+    override = os.environ.get("LLM_PLAN_SUITES_DIR")
+    if override:
+        return project_root / override
+    canonical = project_root / ".apothem" / "plans"
+    if canonical.is_dir():
+        return canonical
+    return project_root / ".plans"
+
+
+def find_active_suite(plans_root: Path) -> Path | None:
+    """Return the most recently updated plan suite, or None."""
+    if not plans_root.is_dir():
+        return None
+    best: tuple[float, Path] | None = None
+    for entry in plans_root.iterdir():
+        if not entry.is_dir():
+            continue
+        progress = entry / "PROGRESS.md"
+        notes = entry / "PLAN-NOTES.md"
+        if not (progress.is_file() and notes.is_file()):
+            continue
+        mtime = progress.stat().st_mtime
+        if best is None or mtime > best[0]:
+            best = (mtime, entry)
+    return best[1] if best else None
+
+
+def read_plan_summary(suite_dir: Path) -> PlanSummary:
+    """Parse a plan suite's ``PROGRESS.md`` into a `PlanSummary`."""
+    progress = suite_dir / "PROGRESS.md"
+    return PlanSummary(
+        suite_name=suite_dir.name,
+        status=heading_value(progress, "## Status:"),
+        phase_in_progress=bold_field(progress, "Phase in progress"),
+        task_in_progress=bold_field(progress, "Task in progress"),
+        next_action=bold_field(progress, "Next action"),
+        blockers=bold_field(progress, "Blockers"),
+        critical_files=numbered_under(progress, "### Critical Files for Next Phase"),
+    )
+
+
+def read_conformity_posture(root: Path) -> list[str]:
+    """Read the conformity-posture context message, returning its lines.
+
+    The conformity posture lives at ``hooks/messages/sessionstart.md``
+    and surfaces a standing reminder block (working-trace pickup point,
+    unresolved-inquiry enumeration, host-discovery freshness, gate
+    awareness, trivial threshold). The bootstrap degrades gracefully
+    into a three-block envelope when the file is absent or unreadable;
+    a missing posture file does not break SessionStart.
+    """
+
+    return _message_lines(root / "hooks" / "messages" / "sessionstart.md")
+
+
+def _message_lines(path: Path) -> list[str]:
+    """Return a message file's model-facing lines, or [] when unreadable."""
+    if not path.is_file():
+        return []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return strip_maintainer_text(text).splitlines()
+
+
+def read_compaction_recovery(root: Path) -> list[str]:
+    """Return the post-compaction recovery lines for a ``source: compact`` start.
+
+    Claude Code discards the ``systemMessage`` of ``PreCompact`` and
+    ``PostCompact`` hooks and accepts no ``additionalContext`` from them, so the
+    recovery guidance in ``hooks/messages/postcompact.md`` reaches the model
+    through the ``SessionStart`` event that follows compaction instead.
+    """
+    return _message_lines(root / "hooks" / "messages" / "postcompact.md")
+
+
+#: Prefix the skill index writes before a manual skill's name. Plugin-installed
+#: skills are namespaced; engine-installed ones are not.
+_INDEX_MANUAL_PREFIX: Final[str] = "/apothem:"
+
+#: Under the plugin, every skill is invoked by its namespaced name.
+_PLUGIN_NAME_HINT: Final[str] = (
+    "Each name above is invoked as apothem:<name> under this plugin."
+)
+
+
+def _claude_code_session(root: Path) -> bool:
+    """Return whether this SessionStart runs under Claude Code.
+
+    Claude Code exports ``CLAUDE_PLUGIN_ROOT`` to a plugin's hooks, and an
+    engine install lives under its configuration directory (``~/.claude``, or
+    ``CLAUDE_CONFIG_DIR`` when set). ``CLAUDE_PROJECT_DIR`` is no signal: Qwen
+    Code sets it for every hook as well, and runs this same bootstrap.
+    """
+    if os.environ.get("CLAUDE_PLUGIN_ROOT", "").strip() or ".claude" in root.parts:
+        return True
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    if not config_dir:
+        return False
+    # Windows paths compare case-insensitively; another drive is never inside.
+    return root.absolute().is_relative_to(Path(config_dir).expanduser().absolute())
+
+
+def read_skill_index(root: Path) -> list[str]:
+    """Return the session-start skill index lines, or [] when not applicable.
+
+    The index is generated at build time (``lib/skill_index.py``) into
+    ``hooks/messages/skill-index.md``; this reads it, never scans the catalog.
+    It is emitted only for a Claude Code session and only when the file exists,
+    so a tree without the index, or another harness, is unchanged. Under the
+    plugin a manual skill is typed ``/apothem:<name>``; an engine install has no
+    plugin namespace, so the prefix is dropped there.
+    """
+    if not _claude_code_session(root):
+        return []
+    lines = _message_lines(root / "hooks" / "messages" / "skill-index.md")
+    if not lines:
+        return []
+    if os.environ.get("CLAUDE_PLUGIN_ROOT", "").strip():
+        lines.append(_PLUGIN_NAME_HINT)
+    else:
+        lines = [line.replace(_INDEX_MANUAL_PREFIX, "/") for line in lines]
+    return lines
+
+
+#: File name of the rule that names every rule and when to read it.
+_RULE_INDEX_NAME: Final[str] = "apothem-rule-index.md"
+
+#: The rules that apply in every session, in the order the pointer names them.
+#: ``tests/hooks/test_session_start_bootstrap.py`` holds this tuple to the rules
+#: whose frontmatter sets ``alwaysApply: true``.
+_CORE_RULES: Final[tuple[str, ...]] = (
+    "agnostic-posture",
+    "authority-inquiry",
+    "session-closure",
+    "context-management",
+)
+
+
+def plugin_alone_pointer() -> list[str]:
+    """Return a lean rules-pointer block when running plugin-alone, else [].
+
+    When the SessionStart hook fires from the Claude Code plugin installed
+    *alone* (via the marketplace, with no separate apothem engine install),
+    Claude Code exports ``CLAUDE_PLUGIN_ROOT`` to the spawned hook process and
+    the bundled behavioral rules sit under that root but cannot load as
+    always-on plugin context. The engine install, by contrast, projects the
+    rules through the harness root and leaves ``CLAUDE_PLUGIN_ROOT`` unset — so
+    this block is emitted only for the plugin-alone posture and never regresses
+    the engine-install session-start summary.
+
+    The block is a short POINTER, never the full rule bodies (which are large):
+    it names where the bundled rules live and states that the mechanical
+    conformity hooks remain active. It locates the bundled ``rules/`` directory
+    under the plugin root (``rules/`` in the assembled bundle, or
+    ``src/apothem/rules/`` when the repository root is the plugin root) and
+    cites whichever exists, falling back to the assembled location. When that
+    directory holds the rule index it adds one line that tells the session to
+    read the four core rules first, since nothing loads them in this posture,
+    and names the index, so the session learns which rule to read for a task.
+    The index body is not inlined: the SessionStart context is shared with
+    other blocks.
+
+    Returns:
+        The pointer block's lines, or an empty list when not plugin-alone.
+    """
+    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
+    if not plugin_root:
+        return []
+    base = Path(plugin_root).resolve()
+    for rel in ("rules", "src/apothem/rules"):
+        if (base / rel).is_dir():
+            rules_dir = base / rel
+            break
+    else:
+        rules_dir = base / "rules"
+    lines = [
+        "Apothem plugin posture:",
+        (
+            "- Apothem is installed as a Claude Code plugin alone (no engine "
+            "install). Its behavioral rules are bundled at "
+            f"{rules_dir}{os.sep} (read them with the file tools when a task "
+            "needs them; they are not loaded as always-on context in this posture)."
+        ),
+    ]
+    rule_index = rules_dir / _RULE_INDEX_NAME
+    if rule_index.is_file():
+        lines.append(
+            "- Nothing loads the four core rules in this posture, so you MUST "
+            f"read them first: {', '.join(_CORE_RULES[:-1])} and "
+            f"{_CORE_RULES[-1]} (each is {rules_dir}{os.sep}<name>.md). Then "
+            f"use the rule index, {rule_index}: it names every rule and when "
+            "to read it."
+        )
+    lines.append(
+        "- Advisory hooks remain active on tool use: plan-term leak, "
+        "authorship-header and plans-locality guards on writes, dependency "
+        "and dynamic-eval guards when a write or command matches, a git-"
+        "mutation reminder on shell commands, and post-compaction recovery "
+        "at session start."
+    )
+    return lines
+
+
+#: Directories under the project root where the ``knowledge-wiki`` skill keeps a
+#: knowledge base, in probe order. The skill documents the same list, so the
+#: session-start check looks at these four paths and never searches the tree.
+_KB_LOCATIONS: Final[tuple[str, ...]] = (
+    "knowledge-base",
+    "wiki",
+    "docs/knowledge-base",
+    "docs/wiki",
+)
+
+#: The page directories the fingerprint counts, directly inside the base.
+_KB_PAGE_DIRS: Final[tuple[str, ...]] = ("sources", "entities", "syntheses")
+
+#: How much of the end of ``log.md`` the check reads: the first size covers the
+#: usual case (a baseline within the last hundred or so lines), the second is
+#: the ceiling (about 2,500 lines) for a log that grew since the last baseline.
+_KB_LOG_WINDOWS: Final[tuple[int, ...]] = (16 * 1024, 256 * 1024)
+
+#: Page count past which the check gives up rather than keep counting.
+_KB_PAGE_LIMIT: Final[int] = 20_000
+
+#: A stored fingerprint, as the skill's drift mode writes it into ``log.md``.
+_KB_BASELINE_DETAIL = re.compile(r"pages=(\d{1,7}); last=(\S.*)")
+_KB_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+@dataclass(frozen=True)
+class KbBaseline:
+    """The fingerprint recorded by the newest ``baseline`` line of a ``log.md``."""
+
+    date: str
+    pages: int
+    last: str
+
+
+def _log_fields(raw: str) -> tuple[str, str, str, str] | None:
+    """Split ``- <date> | <operation> | <id> | <detail>`` into its four fields."""
+    if not raw.startswith("- "):
+        return None
+    parts = [part.strip() for part in raw[2:].split(" | ", 3)]
+    if len(parts) < 3:
+        return None
+    return parts[0], parts[1], parts[2], parts[3] if len(parts) > 3 else ""
+
+
+def _log_tail(log: Path, window: int) -> tuple[list[str], bool]:
+    """Return the last *window* bytes of *log* as lines, and whether that is all."""
+    with log.open("rb") as handle:
+        size = handle.seek(0, os.SEEK_END)
+        start = max(0, size - window)
+        handle.seek(start)
+        data = handle.read()
+    lines = data.decode("utf-8", errors="replace").split("\n")
+    if start > 0:
+        lines = lines[1:]  # the first line of a mid-file read is cut off
+    return [line.rstrip("\r") for line in lines], start == 0
+
+
+def _parse_baseline(date: str, detail: str) -> KbBaseline | None:
+    match = _KB_BASELINE_DETAIL.fullmatch(detail)
+    if match is None or _KB_DATE.fullmatch(date) is None:
+        return None
+    return KbBaseline(date=date, pages=int(match.group(1)), last=match.group(2))
+
+
+def _scan_log(lines: list[str]) -> tuple[bool, KbBaseline | None, str | None]:
+    """Scan *lines* from the newest one for the stored baseline and newest entry.
+
+    Returns whether a baseline line was seen, its parsed value (None when that
+    line is malformed), and the ``<date>|<operation>|<id>`` key of the newest
+    line whose operation is neither ``lint`` nor ``baseline`` (None if unseen).
+    """
+    seen_baseline = False
+    baseline: KbBaseline | None = None
+    newest: str | None = None
+    for raw in reversed(lines):
+        fields = _log_fields(raw)
+        if fields is None:
+            continue
+        date, operation, entry_id, detail = fields
+        if operation == "baseline":
+            if entry_id == "all" and not seen_baseline:
+                seen_baseline = True
+                baseline = _parse_baseline(date, detail)
+                if baseline is None:
+                    break
+        elif operation != "lint" and newest is None:
+            newest = f"{date}|{operation}|{entry_id}"
+        if seen_baseline and newest is not None:
+            break
+    return seen_baseline, baseline, newest
+
+
+def _read_log_state(log: Path) -> tuple[KbBaseline, str] | None:
+    """Return the stored baseline and the current newest-entry key of *log*.
+
+    The key is ``none`` when the log has no entry other than ``lint`` and
+    ``baseline`` lines. Returns None when either part cannot be told: no
+    baseline, a malformed newest baseline, or one further back than the
+    largest window read.
+    """
+    for window in _KB_LOG_WINDOWS:
+        lines, complete = _log_tail(log, window)
+        seen, baseline, newest = _scan_log(lines)
+        if seen and baseline is None:
+            return None
+        if baseline is not None and (newest is not None or complete):
+            return baseline, newest if newest is not None else "none"
+        if complete:
+            return None
+    return None
+
+
+def _count_kb_pages(base: Path) -> int | None:
+    """Count ``.md`` files directly inside the page directories, or None if huge."""
+    total = 0
+    for name in _KB_PAGE_DIRS:
+        try:
+            with os.scandir(base / name) as entries:
+                for entry in entries:
+                    if entry.name.endswith(".md") and entry.is_file():
+                        total += 1
+                        if total > _KB_PAGE_LIMIT:
+                            return None
+        except FileNotFoundError:
+            continue
+    return total
+
+
+def _kb_drift_line(project: Path, location: str) -> str:
+    base = project / location
+    log = base / "log.md"
+    if not (log.is_file() and (base / "index.md").is_file()):
+        return ""
+    state = _read_log_state(log)
+    if state is None:
+        return ""
+    baseline, newest = state
+    pages = _count_kb_pages(base)
+    if pages is None or (pages == baseline.pages and newest == baseline.last):
+        return ""
+    if pages != baseline.pages:
+        detail = f"pages {baseline.pages} -> {pages}"
+    else:
+        detail = "newer log entries"
+    return (
+        f"Knowledge base: {location}/ changed since its baseline of "
+        f"{baseline.date} ({detail}). To see what moved, use the knowledge-wiki "
+        f"skill in drift mode: --mode drift --kb {location}."
+    )
+
+
+def read_knowledge_base_drift(project: Path) -> str:
+    """Return one line when a project knowledge base changed since its baseline.
+
+    A knowledge base is a directory the ``knowledge-wiki`` skill created, found
+    only at the conventional paths in ``_KB_LOCATIONS`` (a stat of ``log.md``
+    each, so a project without one pays a few microseconds). Its fingerprint is
+    the page count plus the newest log entry; the stored copy is the newest
+    ``baseline`` line in ``log.md``, which only the skill's drift mode writes.
+    This reads the tail of that one file and lists three flat directories; it
+    never walks the tree and writes nothing. The line carries only the fixed
+    location, a validated date and two integers, never text taken from the base.
+
+    Returns:
+        The line, or an empty string for no base, no baseline, an unchanged
+        fingerprint, or any file that cannot be read. A fault here must not cost
+        the session its other context, so every error is swallowed.
+    """
+    for location in _KB_LOCATIONS:
+        try:
+            line = _kb_drift_line(project, location)
+        except Exception as exc:
+            _logger.debug("Knowledge-base drift check skipped %s: %s", location, exc)
+            continue
+        if line:
+            return line
+    return ""
+
+
+def build_context(
+    root: Path,
+    payload: dict[str, object] | None,
+    project: Path | None = None,
+) -> str:
+    """Assemble the full additionalContext string.
+
+    *root* is the installed tree that ships this hook (its message files are
+    read from there); *project* is the operator's project directory, read as
+    data for the plan and memory summaries. When *project* is omitted it is
+    resolved from the environment and payload.
+    """
+    project_dir = project if project is not None else resolve_project_dir(payload)
+    blocks: list[list[str]] = []
+
+    pointer = plugin_alone_pointer()
+    if pointer:
+        blocks.append(pointer)
+
+    meta = SessionMeta.from_payload(payload)
+    meta_lines = meta.lines()
+    if meta_lines:
+        blocks.append(["Session bootstrap:", *meta_lines])
+
+    if meta.source == "compact":
+        recovery = read_compaction_recovery(root)
+        if recovery:
+            blocks.append(["Post-compaction recovery:", *recovery])
+
+    skill_index = read_skill_index(root)
+    if skill_index:
+        blocks.append(["Skill index:", *skill_index])
+
+    memory_index = find_memory_index(project_dir, (root,))
+    if memory_index is not None:
+        summary = read_memory_summary(memory_index)
+        memory_lines = summary.lines()
+        if memory_lines:
+            blocks.append(["Memory summary:", *memory_lines])
+
+    active_suite = find_active_suite(_resolve_plan_suites_root(project_dir))
+    if active_suite is not None:
+        plan_lines = read_plan_summary(active_suite).lines()
+        blocks.append(["Plan summary:", *plan_lines])
+    else:
+        blocks.append(
+            [
+                "Plan summary:",
+                "- No active plan suite detected. Ready for ad-hoc work.",
+            ]
+        )
+
+    kb_line = read_knowledge_base_drift(project_dir)
+    if kb_line:
+        blocks.append([kb_line])
+
+    posture_lines = read_conformity_posture(root)
+    if posture_lines:
+        blocks.append(["Conformity posture:", *posture_lines])
+
+    flat = [line for block in blocks for line in block]
+    return normalize_ascii("\n".join(flat))
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments."""
+    parser = argparse.ArgumentParser(prog="session_start_bootstrap")
+    parser.add_argument("--quiet", "-q", action="store_true")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Entry point. Emits a hook envelope (success or failure) and returns."""
+    args = parse_args(argv)
+    try:
+        # The installed tree that ships this hook, never the opened project:
+        # message files are injected as guidance, so they must come from the
+        # install, not from a directory the session happens to open.
+        root = _HOOKS_DIR.parent
+        payload = read_hook_stdin()
+        context = build_context(root, payload)
+        emit_hook_envelope("SessionStart", context, args.quiet)
+    except Exception as exc:
+        # Outermost boundary. Emit a failure envelope so the harness
+        # always sees a structurally valid SessionStart response, never
+        # a traceback.
+        emit_failure_envelope("SessionStart", str(exc))
+
+
+if __name__ == "__main__":
+    main()

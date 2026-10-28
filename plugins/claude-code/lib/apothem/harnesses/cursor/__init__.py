@@ -14,6 +14,14 @@ The install also writes Apothem's agents into the project as Cursor subagents, o
 Markdown file each in ``<project>/.cursor/agents/`` (the ``cursor_agents`` mode), per
 https://cursor.com/docs/subagents. It writes no user-level agents folder.
 
+The install registers one hook (sessionStart) in ``<project>/.cursor/hooks.json``,
+the operator's own project hook file, which the merge adds to without disturbing
+their entries (the ``native_hooks`` mode), running the dispatcher in the support
+tree under ``<project>/.apothem/support/cursor/hooks/`` with ``--contract cursor``,
+per https://cursor.com/docs/hooks, retrieved 2026-10-28. Cursor also loads the
+hooks the Claude Code install wrote (see :mod:`apothem.lib.install_advisories`).
+It writes no user-level hooks file.
+
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.agents/skills/``, and the rules and
 templates corpus they cite in ``~/.config/apothem/``. Those folders sit in the

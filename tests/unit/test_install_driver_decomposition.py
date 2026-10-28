@@ -29,6 +29,7 @@ EXPECTED_MODULES = {
     "install_driver_backup",
     "install_driver_datahome",
     "install_driver_converters",
+    "install_driver_hookfile",
     "install_driver_layout",
     "install_driver_merge",
     "install_driver_jsonmerge",

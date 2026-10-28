@@ -28,5 +28,15 @@
     "mode": "copilot_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/.github/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/github-copilot/hooks"
+  },
+  {
+    "mode": "native_hooks",
+    "source": "<APOTHEM_SRC>/harnesses/github_copilot/templates/apothem-hooks.json",
+    "target": "<ROOT>/.github/hooks/apothem.json"
   }
 ]

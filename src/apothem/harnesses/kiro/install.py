@@ -14,7 +14,10 @@ The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``kiro`` key
 (a ``sentinel_merge`` operation targeting
 ``${PROJECT_ROOT}/.kiro/steering/apothem-rules.md`` and an apothem-owned
-``kiro_agents`` operation targeting ``${PROJECT_ROOT}/.kiro/agents/``,
+``kiro_agents`` operation targeting ``${PROJECT_ROOT}/.kiro/agents/``, an
+apothem-owned support tree for the hook scripts at
+``${PROJECT_ROOT}/.apothem/support/kiro/hooks/`` and an apothem-owned
+``native_hooks`` operation targeting ``${PROJECT_ROOT}/.kiro/hooks/apothem.json``,
 preceded by the user-level entries that
 install the skills in ``~/.kiro/skills/`` and the rules and templates corpus in
 ``~/.config/apothem/``) and applied by the
@@ -24,6 +27,15 @@ shared driver at ``apothem.harnesses._shared.install_driver``. The
 ``--project`` is rejected upstream at ``apothem.cli._materialize`` via the
 ``requires_project`` opt-in. The ``${USER_HOME}`` placeholder is the user home, and
 the folders under it are shared with every other install that names them.
+
+The hook registration is the SessionStart bootstrap, the one event whose stdout
+Kiro adds to the context among the events Apothem has a handler for
+(https://kiro.dev/docs/hooks/, retrieved 2026-10-28). The command runs the
+dispatcher with the install-resolved interpreter, the ``${PYTHON_BIN}`` token,
+which :func:`python_bin_tokens` resolves once, before anything is written, so a
+host with no usable CPython aborts the install with nothing on disk. The update
+inherits the same rendering. The uninstall renders without that token, so it
+finds Apothem's hook by the dispatcher its command runs, not by the file's text.
 """
 
 from __future__ import annotations
@@ -31,6 +43,7 @@ from __future__ import annotations
 from apothem.harnesses._shared.wrapper_factories import (
     make_project_scope_install,
     make_project_scope_plan,
+    python_bin_tokens,
 )
 
 # Manifest harness key for this adapter.
@@ -39,6 +52,7 @@ _HARNESS_NAME: str = "kiro"
 install = make_project_scope_install(
     _HARNESS_NAME,
     error_message="kiro adapter requires --project <path>; CLI must thread it through",
+    content_tokens=python_bin_tokens,
 )
 
 plan = make_project_scope_plan(_HARNESS_NAME)

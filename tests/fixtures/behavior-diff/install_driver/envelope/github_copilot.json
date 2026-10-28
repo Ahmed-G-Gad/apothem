@@ -1,12 +1,12 @@
 {
   "changed": true,
   "counts": {
-    "created": 190,
+    "created": 198,
     "error": 0,
     "skipped": 0,
-    "unchanged": 0,
+    "unchanged": 3,
     "updated": 0,
-    "warning": 5
+    "warning": 4
   },
   "dry_run": false,
   "files_written": [
@@ -182,9 +182,16 @@
     "<HOME>/.config/apothem/templates/preservation-audit.md",
     "<HOME>/.config/apothem/templates/question-resolution-audit.md",
     "<HOME>/.config/apothem/templates/trace-matrix-template.md",
-    "<ROOT>/.apothem/contexts/fragments.json",
-    "<ROOT>/.apothem/learning/signals.jsonl",
-    "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.apothem/support/github-copilot/hooks/__init__.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/askuserquestion_validator.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/dispatch.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/emit_hook_context.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/hooks.json",
+    "<ROOT>/.apothem/support/github-copilot/hooks/lib",
+    "<ROOT>/.apothem/support/github-copilot/hooks/messages",
+    "<ROOT>/.apothem/support/github-copilot/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/session_end_gate.py",
+    "<ROOT>/.apothem/support/github-copilot/hooks/session_start_bootstrap.py",
     "<ROOT>/.github/agents/citation-auditor.agent.md",
     "<ROOT>/.github/agents/codebase-explorer.agent.md",
     "<ROOT>/.github/agents/convention-auditor.agent.md",
@@ -199,8 +206,9 @@
     "<ROOT>/.github/agents/research-scout.agent.md",
     "<ROOT>/.github/agents/security-scanner.agent.md",
     "<ROOT>/.github/agents/test-runner.agent.md",
-    "<ROOT>/.github/copilot-instructions.md"
+    "<ROOT>/.github/copilot-instructions.md",
+    "<ROOT>/.github/hooks/apothem.json"
   ],
   "harness": "github_copilot",
-  "warnings": 5
+  "warnings": 4
 }

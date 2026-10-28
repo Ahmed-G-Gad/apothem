@@ -177,8 +177,18 @@ def test_json_warning_count_identical_with_and_without_verbose(
 
 
 def _is_folder_note(line: str) -> bool:
-    """Return True for a note about the shared user-home folders, not a capability."""
-    return "is shared:" in line or "also writes outside --project" in line
+    """Return True for an advisory note, not the capability summary.
+
+    The advisories are the notes about the shared user-home folders and, for a
+    harness that registers hooks, the two hook notes (the hook file, and the hooks
+    Claude Code's settings files add).
+    """
+    return (
+        "is shared:" in line
+        or "also writes outside --project" in line
+        or " registers its " in line
+        or "also loads the hooks Claude Code's settings files hold" in line
+    )
 
 
 def test_single_harness_plain_groups_verbose_expands(
@@ -217,7 +227,8 @@ def test_single_harness_plain_groups_verbose_expands(
     plain = run(plain_proj)
     # Cursor writes the shared ~/.agents/skills/, so every install also carries
     # a note about that folder and one naming the folders it writes outside
-    # --project; the capability summary is the other one.
+    # --project, and two notes about its hook file; the capability summary is the
+    # other one.
     shared = [line for line in plain.splitlines() if "is shared:" in line]
     assert len(shared) == 1
     plain_notes = [

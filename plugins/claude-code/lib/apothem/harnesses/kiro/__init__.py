@@ -9,13 +9,21 @@ directory per https://kiro.dev/docs/steering/. Kiro's foundation
 steering files (``product.md``, ``tech.md``, ``structure.md``) are
 operator-authored; the adapter writes only its own ``apothem-rules.md``
 steering file and never clobbers them. Kiro specs
-(``.kiro/specs/``) and agent hooks are out of apothem's adapter scope.
+(``.kiro/specs/``) are out of apothem's adapter scope.
 
 The install also writes Apothem's agents into the project as Kiro custom agents,
 one Markdown file each in ``<project>/.kiro/agents/`` (the ``kiro_agents`` mode),
 per https://kiro.dev/docs/custom-agents/, retrieved 2026-10-27. Markdown agents
 are the format IDE 1.0 and Kiro CLI V3 (``kiro-cli --v3``) read; no CLI 2.x JSON
 profile is written, and the user folder ``~/.kiro/agents/`` is not.
+
+The install registers one hook (SessionStart) in ``<project>/.kiro/hooks/apothem.json``,
+a version ``v1`` hook file Apothem owns (the ``native_hooks`` mode), running the
+dispatcher in the support tree under ``<project>/.apothem/support/kiro/hooks/``
+with ``--contract kiro``, per https://kiro.dev/docs/hooks/, retrieved 2026-10-28.
+Kiro adds a command's output to the context for SessionStart and UserPromptSubmit
+only, so no tool-event hook is registered. The user folder ``~/.kiro/hooks/`` is not
+written.
 
 Ahead of the project file the install also writes the user-level folders: the
 skills and the commands wrapped as skills in ``~/.kiro/skills/``, and the rules and

@@ -12,7 +12,13 @@
 # Apothem's fourteen agents as Devin Local subagents in .devin/agents/ (project
 # scope only; the legacy Cascade agent has no subagents). Devin Local delegates
 # to subagents natively (docs.devin.ai/cli/subagents), a feature the vendor
-# labels experimental. The adapter authors no workflow or hook cohort.
+# labels experimental. The adapter registers two hooks for Devin Local
+# (SessionStart and PostToolUse, the events whose additionalContext Devin hands
+# to the model) in the local config file .devin/config.local.json, with the
+# scripts under .apothem/support/windsurf/hooks/; the PreToolUse guards are not
+# registered because Devin documents no context channel there. The legacy
+# Cascade agent reads a different hook format (.devin/hooks.json) that the
+# adapter does not write. The adapter authors no workflow cohort.
 
 mcp_servers:
   - user-scope-~/.config/devin/mcp_config.json
@@ -23,9 +29,9 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".devin/rules/*.md directory (preferred; .windsurf/rules/ backward-compat fallback) plus .devin/agents/*.md subagents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".devin/rules/*.md directory (preferred; .windsurf/rules/ backward-compat fallback) plus .devin/agents/*.md subagents, .devin/config.local.json hooks with scripts in .apothem/support/windsurf/hooks/, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
-hook_learning_capture: "artifact-evolution-cycle"
+hook_learning_capture: "config.local.json-hooks"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /

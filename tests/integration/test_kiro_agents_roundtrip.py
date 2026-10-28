@@ -65,7 +65,12 @@ def test_install_writes_one_markdown_file_per_agent_into_the_project(
 def test_no_json_profile_and_no_cli_2x_key_is_written(tmp_path: Path) -> None:
     project = _project(tmp_path)
     _adapter().install({}, project=project)
-    assert list((project / ".kiro").rglob("*.json")) == []
+    # No agent profile in JSON; the one JSON file in the folder is the hook file.
+    assert list(_agents(project).rglob("*.json")) == []
+    assert [
+        path.relative_to(project / ".kiro").as_posix()
+        for path in (project / ".kiro").rglob("*.json")
+    ] == ["hooks/apothem.json"]
     for path in _agents(project).glob("*.md"):
         text = path.read_text(encoding="utf-8")
         head = text[: text.index("\n---\n", 4)]
@@ -111,6 +116,7 @@ def test_no_other_agents_location_is_written(tmp_path: Path) -> None:
     assert {p.name for p in project.iterdir()} <= {".kiro", ".apothem"}
     assert sorted(p.name for p in (project / ".kiro").iterdir()) == [
         "agents",
+        "hooks",
         "steering",
     ]
 

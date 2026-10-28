@@ -27,10 +27,12 @@ The windsurf adapter renders the shared rules into one file,
 `<project>/.devin/rules/apothem-rules.md`; it does not write a single-file
 `.windsurfrules`. It also writes eleven of Apothem's helpers as Devin Local
 subagents in `<project>/.devin/agents/`; the three that need web tools wait until
-Devin documents their tool names. Windsurf documents hooks in `hooks.json`, which
-the adapter does not write, so guardrail intent lives in the rule prose rather than a
-tool-call interception point. Every change to the shared rules re-renders the
-file on the next `apothem update`.
+Devin documents their tool names. It registers two Devin Local hooks, a session
+bootstrap and a context-size advisory, in `<project>/.devin/config.local.json`;
+the older Cascade mode reads a different hook format (`hooks.json`), which the
+adapter does not write. It registers no tool-call guard, so guardrail intent lives
+in the rule prose rather than a tool-call interception point. Every change to the
+shared rules re-renders the file on the next `apothem update`.
 
 ## Migration path
 

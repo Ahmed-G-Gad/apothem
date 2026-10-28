@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "apothem-session-start",
+      "description": "Apothem session bootstrap: adds the skill index and session notes to the context when a session starts.",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "\"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/kiro/hooks/dispatch.py\" --contract kiro SessionStart"
+      },
+      "timeout": 30
+    }
+  ]
+}

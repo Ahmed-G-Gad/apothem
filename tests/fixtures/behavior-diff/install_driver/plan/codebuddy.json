@@ -28,5 +28,15 @@
     "mode": "codebuddy_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/.codebuddy/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/hooks"
+  },
+  {
+    "mode": "write_text",
+    "source": "<APOTHEM_SRC>/harnesses/codebuddy/templates/settings-local.json",
+    "target": "<ROOT>/.codebuddy/settings.local.json"
   }
 ]

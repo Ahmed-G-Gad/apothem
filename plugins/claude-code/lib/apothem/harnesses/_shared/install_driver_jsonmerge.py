@@ -39,6 +39,18 @@ _APOTHEM_HOOK_MODULES: tuple[str, ...] = (
 #: Installed script names Apothem's handlers run, under the harness root.
 _APOTHEM_HOOK_SCRIPTS = r"(?:hooks/dispatch\.py|conformity/gate\.py)"
 
+#: The dispatcher a project-scope hook registration runs, as a path below any
+#: project root: the Apothem-owned support tree, optionally nested under the
+#: harness name (CodeBuddy's tree is not nested), then ``hooks/dispatch.py``.
+_NATIVE_DISPATCHER: Final[re.Pattern[str]] = re.compile(
+    r"(?<![\w.-])\.apothem/support/(?:[\w-]+/)?hooks/dispatch\.py(?=[\s\"'/]|$)"
+)
+
+#: The ``--contract <id>`` argument every native registration passes.
+_CONTRACT_ARGUMENT: Final[re.Pattern[str]] = re.compile(
+    r"(?:^|\s)--contract(?:\s+|=)\S"
+)
+
 
 def _handler_text(handler: dict[object, object]) -> str:
     """Return the command-bearing text of one hook handler."""
@@ -49,7 +61,39 @@ def _handler_text(handler: dict[object, object]) -> str:
     return " ".join(parts)
 
 
-def is_apothem_hook(handler: object, *, harness_root: Path | None = None) -> bool:
+def mentions_native_dispatcher(text: str) -> bool:
+    """Return True when *text* names the native hook dispatcher's path.
+
+    Backslashes read as forward slashes, so a Windows spelling matches too, and
+    so does the same path inside JSON text, where a quote after it is escaped.
+    """
+    return _NATIVE_DISPATCHER.search(text.replace("\\", "/")) is not None
+
+
+def is_apothem_contract_command(command: str) -> bool:
+    """Return True when *command* is a native hook registration Apothem wrote.
+
+    A project-scope hook registration (Cursor, Kiro, GitHub Copilot, CodeBuddy and
+    the Devin Local config) runs ``<project>/.apothem/support/[<harness>/]hooks/
+    dispatch.py --contract <id>``. That path and that argument together are what
+    Apothem writes, so the test reads the command text alone: it does not depend
+    on the project root the command was written under, which a renamed, moved or
+    freshly cloned project changes, and it does not match an operator's own script
+    that merely shares the name ``hooks/dispatch.py``, or the module spellings
+    ``python -m apothem.conformity.gate`` an operator may run on purpose.
+    """
+    return (
+        mentions_native_dispatcher(command)
+        and _CONTRACT_ARGUMENT.search(command) is not None
+    )
+
+
+def is_apothem_hook(
+    handler: object,
+    *,
+    harness_root: Path | None = None,
+    project_scope: bool = False,
+) -> bool:
     """Return True when a hook handler belongs to Apothem's managed surface.
 
     With *harness_root*, ownership is exact: the handler must run one of
@@ -59,10 +103,19 @@ def is_apothem_hook(handler: object, *, harness_root: Path | None = None) -> boo
     or invoke Apothem's hook modules by name. An operator's own
     ``/elsewhere/hooks/dispatch.py`` is not Apothem's and survives install and
     uninstall. Without a root, the legacy substring check applies.
+
+    With *project_scope* (a project-scope install, whose root is the operator's
+    whole repository), the root is not consulted at all: the handler is Apothem's
+    only when :func:`is_apothem_contract_command` says it runs the native
+    dispatcher. The user-scope test would take any ``<project>/**/hooks/
+    dispatch.py`` or ``python -m apothem.conformity.gate`` the operator wrote for
+    their own use.
     """
     if not isinstance(handler, dict):
         return False
     text = _handler_text(handler)
+    if project_scope:
+        return is_apothem_contract_command(text)
     if harness_root is None:
         return any(marker in text for marker in _APOTHEM_HOOK_MARKERS)
     if any(module in text for module in _APOTHEM_HOOK_MODULES):

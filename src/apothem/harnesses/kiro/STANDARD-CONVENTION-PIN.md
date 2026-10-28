@@ -5,6 +5,7 @@
 ## Snapshot
 
 - Snapshot date: 2026-10-28
+- Snapshot note (hooks): the adapter now registers a hook in `<project>/.kiro/hooks/apothem.json`. The hooks, hook-types, hook-actions and hooks-migration pages were re-read on 2026-10-28 (the actions page from its raw Markdown); the IDE 1.0 hooks and permissions pages were read on 2026-10-27. Previous 2026-10-28 (tool categories) and 2026-10-27.
 - Snapshot note (tool categories): the Built-in tools page was read on 2026-10-28 from its raw Markdown, which closes the open question about which tools the `read` tag covers. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as Kiro custom agents in `<project>/.kiro/agents/`, as Markdown files for Kiro IDE 1.0 and Kiro CLI V3. The custom-agents pages, the configuration reference, the sub-agents page, the permissions page, the V3 pages and the changelog were read on 2026-10-27 from the raw Markdown each page serves. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at Kiro's own `~/.kiro/skills/` and the rules and templates corpus at `~/.config/apothem/`. The Kiro skills page was read on 2026-10-24.
@@ -144,9 +145,93 @@
   workspace trust; the docs describe only workspace configuration as gated.
 - TODO(clarify): the frontmatter keys the docs mark required beyond the optional
   `name`, and how Kiro treats a key it does not list.
-- The vendor also documents specs (`.kiro/specs/`), agent hooks (`.kiro/hooks/`
-  and inline `hooks` in an agent), and Kiro powers. The adapter authors none of
-  those.
+- The vendor also documents specs (`.kiro/specs/`) and Kiro powers. The adapter
+  authors neither. It does author a hook (next section).
+
+## Hooks
+
+Read 2026-10-28 (<https://kiro.dev/docs/hooks/>, <https://kiro.dev/docs/hooks/types/>,
+<https://kiro.dev/docs/hooks/actions/> and <https://kiro.dev/docs/cli/v3/hooks-migration/>);
+the IDE 1.0 and permissions pages were read 2026-10-27.
+
+- Files: a project hook file is `<project>/.kiro/hooks/<id>.json`; "any `.json`
+  filename works" and one file may hold several hooks. Hooks "activate
+  automatically when a session starts", with no registration step. Kiro CLI V3
+  also loads global hooks from `~/.kiro/hooks/`, and global and workspace hooks
+  run alongside each other; whether the IDE reads that folder is not stated. An
+  agent profile may also carry an inline `hooks` array (CLI V3). Kiro Web sessions
+  can read the project folder but do not run the event-driven triggers. The
+  adapter writes one file, `apothem.json`, and never `~/.kiro/hooks/`.
+- Schema (version `v1`): `{"version": "v1", "hooks": [{"name": ...,
+  "description": ..., "trigger": ..., "matcher": ..., "action": {"type":
+  "command", "command": ...}, "timeout": ..., "enabled": ...}]}`. `version`,
+  `hooks`, `name`, `trigger` and `action.type` are required; `matcher` defaults to
+  always-match; `action.type` is `command` or `agent` (an agent action injects a
+  prompt and cannot block); `timeout` is in seconds (default 60, `0` disables it)
+  and applies to command actions; `enabled` defaults to true; `confirm` is for
+  Stop command hooks. The adapter writes `name`, `description`, `trigger`,
+  `action` and `timeout`.
+- Triggers: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
+  `PostFileCreate`, `PostFileSave`, `PostFileDelete`, `PreTaskExec`,
+  `PostTaskExec` and `Stop`, plus `SessionEnd` in CLI V3 only. The vendor says to
+  use the PascalCase names in a standalone file; CLI 2.x spellings such as
+  `agentSpawn` are accepted as compatibility input (V3 treats `agentSpawn` as
+  `SessionStart`). The `matcher` of a `SessionStart` hook is not evaluated.
+- Command contract: a command action "runs a shell command in your project
+  root" and receives the event as JSON on stdin (`hook_event_name`, `cwd`,
+  `session_id`; tool events add `tool_name` and `tool_input`, PostToolUse adds
+  `tool_response`, UserPromptSubmit adds `prompt`). Exit 0 succeeds and stdout
+  joins the agent's context for SessionStart and UserPromptSubmit only; exit 2
+  blocks PreToolUse and PreTaskExec (stderr goes back to the model); any other
+  code shows a warning and the run goes on.
+- Why SessionStart only: a PreToolUse or PostToolUse hook's stdout is ignored, so
+  the write, edit and shell guards and the compaction tracker would run on every
+  tool call and deliver nothing. UserPromptSubmit does deliver stdout, but Apothem
+  has no handler for it that is worth a process start on every prompt. The
+  dispatcher never blocks and never uses exit 2 or a Stop decision.
+- Timeout: the schema table, the migration examples, the IDE 1.0 reference and
+  the actions page as read on 2026-10-28 give seconds with a 60-second default
+  (`0` disables it). The actions page as read on 2026-10-27, and the management
+  and best-practices pages, named `timeout_ms` (default 30,000) and
+  `cache_ttl_seconds`, which no schema table defines. The adapter writes `timeout`
+  only, set to 30.
+- Workspace trust: in Kiro CLI 2.33 and later, an interactive V3 session shows
+  "Trust this workspace?" before it loads the folder's hooks, agents, MCP servers,
+  steering and workflows. `--no-interactive` and V1/V2 sessions are not gated, and
+  2.34 adds `--trust-workspace` for one launch. The install prints that step as an
+  advisory. A session of the agent itself cannot write the hooks folder without a
+  prompt (the permissions page), which does not apply to the installer.
+- Files the adapter writes: the dispatcher tree at
+  `<project>/.apothem/support/kiro/hooks/` (Apothem-owned; the project's
+  `.gitignore` snippet ignores `.apothem/*`) and the hook file
+  `<project>/.kiro/hooks/apothem.json` (the `native_hooks` mode, Apothem-owned).
+  An uninstall removes only the hooks whose command runs the Apothem dispatcher (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's), with or without an install record, deletes the file when
+  nothing else is in it, and leaves the operator's own hook files untouched. An
+  update keeps an `enabled` flag the operator set on Apothem's hook (Kiro's field
+  table: "Set `false` to skip the hook without deleting it (default: `true`)",
+  read 2026-10-28), matched by `name`; every other field, `timeout` included, is
+  refreshed because an edited value cannot be told from an earlier release's. An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file. The
+  tree is nested under `kiro/` so that another project-scope hook adapter's
+  uninstall cannot remove this dispatcher.
+- Committed file: the command names an absolute interpreter and project path,
+  which are machine-specific, in a folder a project can share through version
+  control, and the dispatcher sits
+  under the gitignored `.apothem/`. On a machine without that path the hook
+  fails; Kiro shows a warning for a non-zero exit and the session goes on.
+- TODO(clarify): the shell Kiro runs a command action in on Windows is not
+  documented (the V3 tool ids include `execute_pwsh`). The command is written for
+  sh and cmd.exe, with a quoted program path; PowerShell would need a call
+  operator in front of it.
+- TODO(clarify): the Session Start section of the hook-types page gives no
+  payload or output rule; the rule that stdout joins the context is from the
+  actions page and the page's Agent Spawn section, which V3 maps to SessionStart.
+- TODO(clarify): whether the global `~/.kiro/hooks/` is gated by workspace trust,
+  and whether the IDE reads it.
+- TODO(clarify): the stdin fields of the file-change triggers are not documented
+  (not used).
+- TODO(clarify): the IDE 1.0 hooks page lists a shorter schema table (no
+  `description`, `timeout` or `enabled`), while the IDE reference lists those as
+  v1 fields; the adapter writes the keys the main hooks page lists.
 
 ## Vendor Sources
 
@@ -156,7 +241,11 @@ Retrieved 2026-10-03 unless marked.
 - <https://kiro.dev/docs/mcp/> (MCP overview)
 - <https://kiro.dev/docs/mcp/configuration/> (`mcp.json` locations, `.kiro/agents`; agent configs reload when saved, re-read 2026-10-27)
 - <https://kiro.dev/docs/skills/> (skills; retrieved 2026-10-24)
-- <https://kiro.dev/docs/hooks/> (hooks; retrieved 2026-10-02)
+- <https://kiro.dev/docs/hooks/> (hook files, the v1 schema, activation, global hooks; retrieved 2026-10-28)
+- <https://kiro.dev/docs/hooks/types/> (triggers, the SessionStart and Agent Spawn sections, exit codes, matchers; retrieved 2026-10-28)
+- <https://kiro.dev/docs/hooks/actions/> (command actions, exit codes ("STDOUT is added to context (SessionStart, UserPromptSubmit) or ignored (others)"), timeouts; read from the raw Markdown at `https://kiro.dev/docs/hooks/actions.md` on 2026-10-28)
+- <https://kiro.dev/docs/cli/v3/hooks-migration/> (the trigger table, `SessionStart` matcher "Not evaluated", and the PascalCase names; retrieved 2026-10-28)
+- <https://kiro.dev/docs/ide/whats-new-v1/hooks/> (IDE 1.0 hooks and the exit-code rule; retrieved 2026-10-27)
 - <https://kiro.dev/docs/custom-agents/> (agent folders, the two formats, nesting, precedence; retrieved 2026-10-27, the folder the adapter writes agents to)
 - <https://kiro.dev/docs/custom-agents/configuration-reference/> (agent keys, `tools` selectors, `permissions`, the V3 additions, default resources; retrieved 2026-10-27)
 - <https://kiro.dev/docs/custom-agents/creating/> (`kiro-cli agent create` and the global default; retrieved 2026-10-27)
@@ -196,8 +285,10 @@ Retrieved 2026-10-03 unless marked.
 Kiro exposes **no vendor plugin or extension install surface** that Apothem
 ships. The adapter writes a merged steering file at
 `<project>/.kiro/steering/apothem-rules.md` (`inclusion: always`), the agents at
-`<project>/.kiro/agents/`, the skills at `~/.kiro/skills/`, and the rules and
-templates corpus at `~/.config/apothem/`, and authors no other cohort. There is no standalone-installable bundle; every
+`<project>/.kiro/agents/`, the hook file at `<project>/.kiro/hooks/apothem.json`
+with its scripts under `<project>/.apothem/support/kiro/hooks/`, the skills at
+`~/.kiro/skills/`, and the rules and templates corpus at `~/.config/apothem/`, and
+authors no other cohort. There is no standalone-installable bundle; every
 artifact requires the full `apothem install --harness kiro --project <path>`
 engine run.
 
@@ -206,7 +297,8 @@ engine run.
 | Rules (steering-as-text) | No — requires `apothem install` | The merged `apothem-rules.md` steering file (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.kiro/steering/` directory. Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.kiro/skills/`. Nothing persists before that run. |
 | Agents | No — requires `apothem install` | The engine writes them as Markdown custom agents to the project's `.kiro/agents/`. Nothing persists before that run. |
-| Specs / Hooks / MCP / Settings | No — operator-owned | Kiro documents specs (`.kiro/specs/`) and agent hooks; the adapter authors neither. `.kiro/settings/mcp.json` (MCP) and the foundation steering files are operator-owned; the adapter authors no entries. |
+| Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/kiro/hooks/` and registers SessionStart in `<project>/.kiro/hooks/apothem.json`. Nothing persists before that run, and Kiro CLI V3 loads the hook only after the operator trusts the workspace. |
+| Specs / MCP / Settings | No — operator-owned | Kiro documents specs (`.kiro/specs/`); the adapter authors none. `.kiro/settings/mcp.json` (MCP) and the foundation steering files are operator-owned; the adapter authors no entries. |
 
 Kiro documents installable powers, but Apothem ships no Kiro power, so the
 files `apothem install` writes are the sole persistence surface.

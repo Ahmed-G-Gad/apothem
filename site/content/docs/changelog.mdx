@@ -21,6 +21,82 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Windsurf and Cursor now run Apothem's session hooks.** For Windsurf the
+  install registers two Devin Local hooks in the project's
+  `.devin/config.local.json`, the local override Devin documents as gitignored
+  and excludes from git itself: the session bootstrap on `SessionStart` and the
+  context-size advisory on
+  `PostToolUse`. For Cursor it adds one `sessionStart` entry, the session
+  bootstrap, to the project's `.cursor/hooks.json`. The scripts go in
+  `.apothem/support/windsurf/hooks/` and `.apothem/support/cursor/hooks/`. Each
+  vendor hands extra context to the model for those events, and Apothem's write,
+  edit and shell guards are not registered: Devin documents no context channel for
+  `PreToolUse`, and Cursor documents its agent message only for a denied action.
+  Both hooks only add context and never block. Devin runs no hook while a
+  workspace is in Restricted Mode, and the older Cascade mode reads a different
+  format that the install does not write. `.cursor/hooks.json` is your file and
+  Cursor documents project hooks as committed, so the install adds its entry after
+  yours, keeps your entries and keys, reports `config.unparseable` and leaves a
+  file it cannot rewrite without loss, and removes only its own entry on an
+  uninstall; the entry names the interpreter and project path of the machine that
+  ran the install, and on a Windows host it starts with PowerShell's call
+  operator, because Cursor's desktop app runs hook commands through PowerShell
+  there. Cursor and Devin Local also load the hooks Claude Code wrote, so with the
+  Apothem Claude Code install on the same machine two sets can run; the install
+  prints the switch that turns the import off (Cursor's "Include Third-Party
+  Plugins, Skills, and Other Configs", Devin's `read_config_from.claude`), the
+  session bootstrap is delivered once per session whichever copy runs first (the
+  vendor's own command and the Claude Code one share a marker, and a later start
+  of the same session, such as a second compaction, still delivers), and the
+  context-size counter is not de-duplicated. Devin sends no working directory, so
+  its hook reads the project root from `DEVIN_PROJECT_DIR`. The same rules cover
+  all five hook registrations, CodeBuddy, Kiro and Copilot included: an entry is
+  Apothem's when its command runs `.apothem/support/[<harness>/]hooks/dispatch.py`
+  with `--contract <id>`, whichever project path it was written under, so a
+  renamed, moved or cloned project keeps one set of entries and a hook of yours
+  that only shares the file name, or that runs `python -m
+  apothem.conformity.gate`, is never replaced or removed; `apothem verify` fails
+  once none of Apothem's entries is left in the file; an uninstall that cannot
+  read the file reports it as skipped instead of as a success; and a project or
+  interpreter path that holds `$`, a backtick, a double quote or a backslash is
+  refused at install, naming the path, because the quoted command would run a
+  different file.
+- **CodeBuddy now runs Apothem's session and compaction hooks.** The install
+  registers two hooks in the project's `.codebuddy/settings.local.json`, the
+  local settings file CodeBuddy does not commit: the session bootstrap on
+  `SessionStart` and the context-size advisory on `PostToolUse`. The scripts go
+  in `.apothem/support/hooks/`. CodeBuddy hands extra context to the model for
+  those events and documents none for `PreToolUse`, so the write, edit and shell
+  guards are not registered there; both hooks only add context and never block.
+  Each command names the interpreter and the project path of the machine that ran
+  the install, which is why the registration goes in the local file and not the
+  committed `settings.json`. CodeBuddy does not run hooks another tool wrote
+  until you restart it and review them in its `/hooks` panel, and the install
+  prints that step. On Windows CodeBuddy runs hook commands through Git Bash
+  only. The install merges into your file by key, keeps your own hooks and
+  settings, and an uninstall removes only the Apothem handlers. The hook
+  dispatcher also gained a `--contract <id>` option that translates a harness's
+  event and tool names and reshapes the output for it; the harness page and the
+  hooks reference explain both.
+- **Kiro and GitHub Copilot now run Apothem's session hooks.** The install
+  registers the hooks in a hook file Apothem owns, `.kiro/hooks/apothem.json`
+  for Kiro (the session bootstrap on `SessionStart`) and
+  `.github/hooks/apothem.json` for Copilot (the session bootstrap on
+  `sessionStart` and the context-size advisory on `postToolUse`), and puts the
+  scripts in `.apothem/support/kiro/hooks/` and
+  `.apothem/support/github-copilot/hooks/`. Each vendor hands extra context to the
+  model only for those events: Kiro ignores the output of tool events, and
+  Copilot reads only permission fields from `preToolUse`. So the write, edit and
+  shell guards are not registered there, and both hooks only add context and
+  never block. Each command names the interpreter and the project path of the
+  machine that ran the install, and both folders belong to the repository, so the
+  harness pages say when to keep the file out of version control; Copilot's cloud
+  agent runs only the `bash` command and finds no interpreter at that path. Kiro
+  CLI 2.33 and later loads the hook once you trust the workspace, and the install
+  prints that step. Your other hook files in those folders are never touched, a
+  hook you add to `apothem.json` stays, and an uninstall removes only the hooks
+  that run the Apothem dispatcher. A Kiro hook you switch off with `"enabled":
+  false` stays off after an update.
 - **CodeBuddy and Trae now get Apothem's helpers as their own subagents.** The
   install writes each Apothem helper into the project as a Markdown subagent
   file, in `.codebuddy/agents/` for CodeBuddy and `.trae/agents/` for Trae,

@@ -16,8 +16,8 @@ Apothem propagates a shared governance and convention surface across every suppo
 
 - **Rules** — the engineering disciplines below, summarized from Apothem's always-on and path-filtered rules. This install writes this one rules file in the project; the summary below is the rule text in force here, and the full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them).
 - **Skills and commands** — Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/`, in your user home. That folder is one copy for every project and for every tool that reads it, so it is not part of this project. Open the `SKILL.md` of a skill there when a task calls for it.
-- **Agents and hooks** — Apothem's sub-agent definitions are installed as Cursor subagents in `.cursor/agents/` in this project, one file each; Cursor loads them when it delegates a task. Hook helpers are not installed by the Cursor adapter.
-- **Conformity checks** — Apothem's mechanical pre-emission checks run where Apothem's engine is installed; this install registers no hook.
+- **Agents and hooks** — Apothem's sub-agent definitions are installed as Cursor subagents in `.cursor/agents/` in this project, one file each; Cursor loads them when it delegates a task. One hook, a session-start bootstrap, is added to `.cursor/hooks.json`, with its scripts in `.apothem/support/cursor/hooks/`; your own entries in that file are untouched.
+- **Conformity checks** — Apothem's mechanical pre-emission checks run where Apothem's engine is installed; this install registers no tool-call hook.
 
 ## Engineering disciplines in force
 
@@ -42,10 +42,11 @@ Re-run `apothem install --harness cursor --project <this-project-root>` to refre
 
 ## Apothem support files
 
-Apothem's support root is `~/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, and `templates/...`. Resolve each citation against the installed directory for its first segment:
+Apothem's support root is `~/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
 
 - `rules/<path>` is `~/.config/apothem/rules/<path>`
 - `templates/<path>` is `~/.config/apothem/templates/<path>`
+- `hooks/<path>` is `.apothem/support/cursor/hooks/<path>`
 
 Start with the rule index at `~/.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
 

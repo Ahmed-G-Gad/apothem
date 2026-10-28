@@ -9,7 +9,12 @@
 # (a folder on the machine that GitHub-hosted surfaces do not read), and writes
 # Apothem's agents as custom agent profiles in .github/agents/*.agent.md
 # (project scope only; the repository commits them and the cloud agent reads
-# them). Copilot delegates to custom agents natively (the agent tool alias,
+# them). It registers two hooks, sessionStart and postToolUse (the events whose
+# additionalContext Copilot hands to the model), in the Apothem-owned
+# .github/hooks/apothem.json with the scripts under
+# .apothem/support/github-copilot/hooks/; preToolUse is not registered because
+# Copilot reads only its permission fields. The cloud agent runs the bash
+# command only. Copilot delegates to custom agents natively (the agent tool alias,
 # docs.github.com/en/copilot/reference/custom-agents-configuration). The adapter
 # authors no MCP entries, so mcp_servers stays []; no durable memory surface.
 # Universal-deny floor binds.
@@ -22,9 +27,9 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: "copilot-instructions.md plus instructions directory and .github/agents/*.agent.md custom agents, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: "copilot-instructions.md plus instructions directory and .github/agents/*.agent.md custom agents, .github/hooks/apothem.json hooks with scripts in .apothem/support/github-copilot/hooks/, ~/.agents/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
-hook_learning_capture: "artifact-evolution-cycle"
+hook_learning_capture: "hooks/apothem.json-hooks"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /
