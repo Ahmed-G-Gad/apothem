@@ -171,23 +171,30 @@ def test_convention_pin_records_the_skills_surface_and_the_open_probe(
     assert "SHARED_TOPLEVEL_KEYS" in flat or "metadata" in flat
 
 
-def test_trae_records_the_user_agents_folder_as_an_open_question() -> None:
+def test_trae_records_the_user_folder_questions_for_agents_and_skills() -> None:
     """Trae documents ``~/.trae-cn/agents/`` where its other user paths are ``~/.trae/``.
 
-    Both skills pages give ``~/.trae/skills`` (read 2026-10-27), so the earlier
-    open question about a ``~/.trae-cn/skills/`` folder is closed; the user
-    folder for subagents is the open one, and the install writes neither.
+    The China edition's skills page (docs.trae.cn) gives ``~/.trae-cn/skills``
+    where the English page gives ``~/.trae/skills``. Its changelog (TRAE CN
+    v3.3.63, personal edition only) says the global skills directories of the two
+    editions are compatible, so the install writes ``~/.trae/skills/`` only; the
+    pin and the manifest cite that entry and keep the other editions open. The
+    user folder for subagents is open too, and the install writes neither
+    ``.trae-cn`` folder.
     """
     pin = " ".join(
         (_REPO / get_harness_entry("trae").standard_pin_path).read_text("utf-8").split()
     )
     assert "~/.trae-cn/agents/" in pin
+    assert "~/.trae-cn/skills" in pin
+    assert "v3.3.63" in pin
     assert "TODO(clarify)" in pin
-    assert "~/.trae-cn/skills/" not in pin
     manifest = (_PKG / "lib" / "propagation-manifest.yaml").read_text("utf-8")
     block = manifest[manifest.index("\n  trae:\n") : manifest.index("\n  zed:\n")]
     assert "TODO(clarify)" in block
     assert "~/.trae-cn/agents/" in block
+    assert "~/.trae-cn/skills" in block
+    assert "v3.3.63" in block
     assert not any(".trae-cn" in e.target for e in load_manifest()["trae"].install)
     # The cross-tool folder stays out of Trae's block.
     assert ".agents/skills" not in "".join(
