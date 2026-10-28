@@ -90,7 +90,9 @@ flowchart LR
 - **Security lane** — gitleaks in `ci.yml` catches accidental committed
   credentials. The license audit (`license-audit.yml`) fails on a dependency
   license outside its allowlist. It runs weekly and when dependency or license
-  files change. `release.yml` generates the SBOM for each tagged release.
+  files change. The REUSE gate (`reuse.yml`) runs on every change and fails
+  when a file has no license line or an SPDX expression does not parse.
+  `release.yml` generates the SBOM for each tagged release.
 - **Publish lane** — the release workflows are triggered by tag pushes; the npm
   and VS Code publishers can also be re-run by manual dispatch for an existing
   tag. Signed-tag verification confirms release-branch provenance; release notes

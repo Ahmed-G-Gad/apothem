@@ -297,7 +297,9 @@ def test_reference_token_skips_nested_checkouts(
 ) -> None:
     denylist = tmp_path / "_denylist" / "reference-token-denylist.txt"
     entry = reference_token_grep.digest_entry("skivorn")
+    # REUSE-IgnoreStart
     _write(denylist, f"# SPDX-License-Identifier: MIT\n{entry}\n")
+    # REUSE-IgnoreEnd
     monkeypatch.setattr(reference_token_grep, "_DENYLIST_PATH", denylist)
     root = tmp_path / "repo"
     rules = root / "src" / "apothem" / "rules"
