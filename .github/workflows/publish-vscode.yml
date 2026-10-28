@@ -8,23 +8,28 @@
 # it to the Visual Studio Marketplace, so the extension installs across VS Code
 # and GitHub Copilot.
 #
-# Authentication: the `Select Marketplace credential` step chooses one of two
-# credentials, or none. With the repository variable `VSCE_AUTH=entra` and the
-# variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`, the job signs in to
-# Microsoft Entra ID through a GitHub OIDC federated credential (Azure/login,
-# no stored secret) and vsce publishes with `--azure-credential`, using a
-# short-lived token. Otherwise the `VSCE_PAT` personal-access-token secret
-# publishes, as before. Either path needs the repository variable
-# `VSCODE_MARKETPLACE_READY=true`. When no credential is configured the publish
-# steps are SKIPPED — never failed — so a release without one still runs green
-# and produces the packaged `.vsix` artifact. The maintainer adds the
-# publisher (`ahmed-g-gad`) membership or the token before the first publish.
-# The credential is a switch, not a retry: a failed Entra publish does not fall
-# back to the PAT, so flip `VSCE_AUTH` and dispatch again. On the Entra route a
-# manual dispatch with `dry_run` signs in and verifies publisher access without
-# publishing. The PAT route has no dry run: there the dispatch only warns that
-# nothing was verified. The values of `VSCE_AUTH` and `VSCODE_MARKETPLACE_READY`
-# are compared without regard to case, as a GitHub expression would.
+# Authentication: the `Select Marketplace credential` step chooses one of three
+# credentials, or none.
+# - `VSCE_AUTH=oidc` (Marketplace Trusted Publishing): vsce publishes with
+#   `--oidc`, exchanging this job's GitHub OIDC token for a short-lived
+#   Marketplace credential. It needs vsce 4.1.0 or later in .github/vsce and a
+#   Trusted Publishing policy on the publisher page naming this repository,
+#   this workflow file and the `release` environment. No secret, no Azure.
+# - `VSCE_AUTH=entra` with the variables `AZURE_CLIENT_ID` and
+#   `AZURE_TENANT_ID`: the job signs in to Microsoft Entra ID through a GitHub
+#   OIDC federated credential (Azure/login) and vsce publishes with
+#   `--azure-credential`.
+# - Otherwise the `VSCE_PAT` personal-access-token secret publishes, as before.
+# Every route needs the repository variable `VSCODE_MARKETPLACE_READY=true`.
+# When no credential is configured the publish steps are SKIPPED — never
+# failed — so a release without one still runs green and produces the packaged
+# `.vsix` artifact. The credential is a switch, not a retry: a failed publish
+# on one route does not fall back to another, so change `VSCE_AUTH` and
+# dispatch again. On the Entra route a manual dispatch with `dry_run` signs in
+# and verifies publisher access without publishing. The Trusted Publishing and
+# PAT routes have no dry run: there the dispatch only warns that nothing was
+# verified. The values of `VSCE_AUTH` and `VSCODE_MARKETPLACE_READY` are
+# compared without regard to case, as a GitHub expression would.
 #
 # SHA-pinning policy mirrors the other workflows: every action `uses:` reference
 # is pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
@@ -125,14 +130,14 @@ jobs:
       # (GitHub allows env / steps / github / vars / … there, not secrets), so a
       # `if: ${{ secrets.VSCE_PAT != '' }}` gate makes the workflow fail to start.
       # This selection step reads the secret and the variables into a step-scoped
-      # env and exports only a mode (entra, pat or none) — never the token itself
-      # — that the gated steps key their `if:` on, keeping the token scoped to
-      # the single step that consumes it. The Entra steps never receive VSCE_PAT,
-      # because vsce prefers it over --azure-credential, and never receive
-      # AZURE_CLIENT_ID, so vsce reads the token from the Azure CLI session that
-      # Azure/login opened and not from environment credentials. Azure/login runs
-      # directly before the vsce steps because az reuses the GitHub OIDC token
-      # for later token requests.
+      # env and exports only a mode (oidc, entra, pat or none) — never the token
+      # itself — that the gated steps key their `if:` on, keeping the token
+      # scoped to the single step that consumes it. The Trusted Publishing and
+      # Entra steps never receive VSCE_PAT, because vsce's --pat defaults to it.
+      # The Entra steps never receive AZURE_CLIENT_ID either, so vsce reads the
+      # token from the Azure CLI session that Azure/login opened and not from
+      # environment credentials. Azure/login runs directly before the vsce steps
+      # because az reuses the GitHub OIDC token for later token requests.
       - name: Select Marketplace credential
         id: auth
         env:
@@ -151,11 +156,17 @@ jobs:
           auth="$(printf '%s' "${VSCE_AUTH:-}" | tr '[:upper:]' '[:lower:]')"
           mode=none
           if [ "${ready}" = "true" ]; then
-            if [ "${auth}" = "entra" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ]; then
+            if [ "${auth}" = "oidc" ]; then
+              mode=oidc
+            elif [ "${auth}" = "entra" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ]; then
               mode=entra
             else
               if [ "${auth}" = "entra" ]; then
                 echo "::warning title=Entra variables incomplete::VSCE_AUTH=entra but AZURE_CLIENT_ID or AZURE_TENANT_ID is empty, so the Entra route is not used."
+              elif [ -n "${auth}" ]; then
+                # The value itself is not echoed: a workflow command must not
+                # carry text a variable supplies.
+                echo "::warning title=Unknown VSCE_AUTH::VSCE_AUTH is set to a value other than oidc or entra, so it is ignored."
               fi
               if [ -n "${VSCE_PAT:-}" ]; then
                 mode=pat
@@ -191,6 +202,29 @@ jobs:
         if: ${{ steps.auth.outputs.mode == 'pat' && inputs.dry_run }}
         run: |
           echo "::warning title=Dry run verified nothing::The PAT route has no dry run, so nothing was signed in, verified or published. Set VSCE_AUTH=entra with AZURE_CLIENT_ID and AZURE_TENANT_ID to dry-run the Entra route."
+      - name: Check vsce supports Trusted Publishing
+        # The final token exchange (FederatedToken, api-version 7.2-preview.1)
+        # shipped in vsce 4.1.0; an older vsce speaks a pre-release protocol, so
+        # fail here with a plain message rather than in the exchange.
+        if: ${{ steps.auth.outputs.mode == 'oidc' }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('../vsce-tool/.github/vsce/node_modules/@vscode/vsce/package.json').version")"
+          echo "vsce ${version}"
+          if ! node -e "const [a, b] = process.argv[1].split('.').map(Number); process.exit(a > 4 || (a === 4 && b >= 1) ? 0 : 1)" "${version}"; then
+            echo "::error title=vsce too old for Trusted Publishing::Trusted Publishing needs vsce 4.1.0 or later in .github/vsce. Update that lockfile, or unset VSCE_AUTH to publish with VSCE_PAT."
+            exit 1
+          fi
+      - name: Dry run - Trusted Publishing has no dry run
+        # vsce cannot check a Trusted Publishing policy without publishing.
+        if: ${{ steps.auth.outputs.mode == 'oidc' && inputs.dry_run }}
+        run: |
+          echo "::warning title=Dry run verified nothing::Trusted Publishing has no dry run, so nothing was verified or published. The first real publish is the check."
+      - name: Publish to Visual Studio Marketplace (Trusted Publishing)
+        # No VSCE_PAT and no Azure variables: --oidc exchanges this job's GitHub
+        # OIDC token (id-token: write) for a short-lived Marketplace credential.
+        if: ${{ steps.auth.outputs.mode == 'oidc' && !inputs.dry_run }}
+        run: ../vsce-tool/.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix --oidc
       - name: Publish to Visual Studio Marketplace (Entra ID)
         # No VSCE_PAT: vsce prefers it over --azure-credential. No AZURE_CLIENT_ID either.
         if: ${{ steps.auth.outputs.mode == 'entra' && !inputs.dry_run }}
@@ -206,4 +240,4 @@ jobs:
       - name: Marketplace publish skipped (not yet enabled)
         if: ${{ steps.auth.outputs.mode == 'none' }}
         run: |
-          echo "::notice title=Marketplace publish skipped::Set VSCODE_MARKETPLACE_READY=true and either VSCE_AUTH=entra with AZURE_CLIENT_ID and AZURE_TENANT_ID, or the VSCE_PAT secret, to publish ahmed-g-gad.apothem-vscode on the next tag. The packaged apothem.vsix artifact was still produced."
+          echo "::notice title=Marketplace publish skipped::Set VSCODE_MARKETPLACE_READY=true and one of VSCE_AUTH=oidc (with a Trusted Publishing policy), VSCE_AUTH=entra with AZURE_CLIENT_ID and AZURE_TENANT_ID, or the VSCE_PAT secret, to publish ahmed-g-gad.apothem-vscode on the next tag. The packaged apothem.vsix artifact was still produced."

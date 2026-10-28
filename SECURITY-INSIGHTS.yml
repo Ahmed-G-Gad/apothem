@@ -63,9 +63,10 @@ repository:
           DCO. Dependabot security and version updates and secret scanning
           with push protection are enabled. The GitHub Release, npm and VS Code
           Marketplace publishing jobs wait for a maintainer's approval in the
-          release environment. Marketplace publishing can use a short-lived
-          Microsoft Entra ID token, obtained through a GitHub OIDC federated
-          credential, in place of a stored token when the repository is
+          release environment. Marketplace publishing can use Trusted
+          Publishing (the job's GitHub OIDC token exchanged for a
+          short-lived Marketplace credential) or a short-lived Microsoft
+          Entra ID token, in place of a stored token, when the repository is
           configured for it.
           Each tagged release ships a CycloneDX SBOM with cosign signatures and
           SLSA provenance attached to the GitHub Release.

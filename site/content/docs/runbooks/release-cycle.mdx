@@ -211,12 +211,14 @@ Approve the waiting `Publish VS Code Extension` run as well. It packages
 `apothem.vsix` and publishes it to the Visual Studio Marketplace as
 `ahmed-g-gad.apothem-vscode`. The publish step runs only while the repository
 variable `VSCODE_MARKETPLACE_READY` is `true` and one credential is
-configured: either the variables `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` and
+configured: the variable `VSCE_AUTH=oidc` (Marketplace Trusted Publishing, no
+stored secret), the variables `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` and
 `AZURE_TENANT_ID` (a short-lived Microsoft Entra ID token, no stored secret),
-or the `VSCE_PAT` secret. With neither, the run packages the extension and
-skips publication. The credential is a switch, not a retry: a failed Entra
-publish does not fall back to the token by itself. The setup for the Entra
-route is in
+or the `VSCE_PAT` secret. With none, the run packages the extension and skips
+publication. The credential is a switch, not a retry: a failed publish on one
+route does not fall back to another by itself. The setup for each route is in
+[Marketplace publishing with Trusted Publishing](#marketplace-publishing-with-trusted-publishing)
+(preferred) and
 [Marketplace publishing with Microsoft Entra ID](#marketplace-publishing-with-microsoft-entra-id)
 below.
 
@@ -224,6 +226,53 @@ To publish again after a failed run, dispatch the workflow for the same tag
 (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
 when the version is already on the registry, because npm versions are
 immutable.
+
+#### Marketplace publishing with Trusted Publishing
+
+Trusted Publishing lets the Marketplace accept this repository's GitHub OIDC
+token directly: `vsce publish --oidc` exchanges the publish job's token for a
+short-lived Marketplace credential. There is no stored secret and no Azure
+resource, so this is the preferred route. The Entra route below and the
+`VSCE_PAT` secret stay as alternatives that the operator selects.
+
+1. **Use a vsce release that supports it.** On this route the publish job
+   checks the vsce release locked in `.github/vsce` before it publishes, and
+   stops with an error that names the minimum release when the lock is older.
+   Dependabot proposes vsce updates for that lockfile; merge the one that
+   reaches the minimum before you switch.
+2. **Create the policy.** Sign in as an Owner of the publisher, open
+   `https://marketplace.visualstudio.com/manage/publishers/ahmed-g-gad`, and add
+   a policy under **Trusted Publishing**:
+   - Policy name: any name, such as `apothem-release`
+   - Repository owner: `Ahmed-G-Gad`
+   - Repository: `apothem`
+   - Workflow: `publish-vscode.yml`
+   - Environment: `release`
+
+   The field names are the ones the VS Code publishing guide lists, in its
+   section on publishing with GitHub Actions and Trusted Publishing
+   (`https://code.visualstudio.com/api/working-with-extensions/publishing-extension`).
+   Unconfirmed: whether every publisher sees the Trusted Publishing tab yet. If
+   yours does not, use the Entra route.
+3. **Switch the route.** Keep `VSCODE_MARKETPLACE_READY` set to `true` and set
+   the selector. Set it when no tag is waiting, because the next tag push
+   publishes through this route.
+
+   ```bash
+   gh variable set VSCE_AUTH --body oidc
+   ```
+
+4. **Publish.** The next tag push, or a dispatch for an existing tag, publishes
+   through Trusted Publishing. This route has no dry run: the first publish is
+   the check, and a dispatch with `dry_run` only warns that nothing was
+   verified.
+5. **Fall back if it fails.** Delete the selector and dispatch again for the
+   same tag; with the `VSCE_PAT` secret set, the token route publishes. A failed
+   publish published nothing, so the same tag can be dispatched again.
+
+   ```bash
+   gh variable delete VSCE_AUTH
+   ```
 
 #### Marketplace publishing with Microsoft Entra ID
 
@@ -234,11 +283,10 @@ action exchanges it for an Entra sign-in through a federated credential, and
 secret exists. The `VSCE_PAT` secret stays as a fallback that the operator
 selects; the workflow never switches to it on its own.
 
-The vsce release pinned in `.github/vsce` supports this route. Marketplace Trusted
-Publishing (`vsce publish --oidc`) is a different mechanism that would remove
-Azure from the setup, but it needs a newer vsce release than the pinned one and
-its Marketplace rollout is not confirmed, so this procedure does not use it.
-Recheck it before the next change to the publish workflow.
+The vsce release pinned in `.github/vsce` supports this route. It needs an Entra
+tenant, an application registration and publisher membership, which Trusted
+Publishing above does not; use it when Trusted Publishing is unavailable to the
+publisher.
 
 1. **Check the preconditions.** Find the account that owns the publisher
    `ahmed-g-gad` (the Members tab at
