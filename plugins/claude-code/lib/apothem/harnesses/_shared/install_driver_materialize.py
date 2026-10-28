@@ -33,6 +33,7 @@ from .install_driver_backup import (
     _install_lock_path,
     backup_ledger_targets,
 )
+from .install_driver_hookfile import HOOK_FILE_MODE, apply_native_hooks
 from .install_driver_merge import (
     apply_sentinel_merge,
 )
@@ -109,6 +110,13 @@ def _dispatch_install_entry(
             project_root=project_root,
             harness_name=harness_name,
             authorize=authorize,
+        )
+    if entry.mode == HOOK_FILE_MODE:
+        return apply_native_hooks(
+            entry,
+            harness_root=harness_root,
+            project_root=project_root,
+            harness_name=harness_name,
         )
     if entry.mode == "sentinel_merge":
         return apply_sentinel_merge(

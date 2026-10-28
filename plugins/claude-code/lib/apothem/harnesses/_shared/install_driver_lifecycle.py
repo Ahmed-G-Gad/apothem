@@ -35,6 +35,7 @@ from .install_driver_datahome import (
     _other_harness_shares_home,
     _store_boundary,
 )
+from .install_driver_hookfile import HOOK_FILE_MODE, release_native_hooks
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -121,7 +122,7 @@ def verify_install(
         target = resolve_target(
             entry.target, harness_root=harness_root, project_root=project_root
         )
-        if entry.mode in {"write_text", "sentinel_merge"}:
+        if entry.mode in {"write_text", "sentinel_merge", HOOK_FILE_MODE}:
             if not target.is_file() or target.stat().st_size <= 0:
                 return False
             if not _native_config_parses(target):
@@ -556,13 +557,24 @@ def run_uninstall(
                 )
             )
             continue
-        if entry.mode in {"write_text", "sentinel_merge"}:
+        if entry.mode in {"write_text", "sentinel_merge", HOOK_FILE_MODE}:
             target = resolve_target(
                 entry.target,
                 harness_root=harness_root,
                 project_root=project_root,
             )
             if recorded_paths is not None and _path_text(target) not in recorded_paths:
+                continue
+            if entry.mode == HOOK_FILE_MODE:
+                removed = release_native_hooks(
+                    entry,
+                    harness_root=harness_root,
+                    project_root=project_root,
+                    harness_name=harness_name,
+                )
+                if removed is not None:
+                    results.append(removed)
+                handled.add(_path_text(target))
                 continue
             template_text = _rendered_template_text(
                 entry, harness_root=harness_root, project_root=project_root
