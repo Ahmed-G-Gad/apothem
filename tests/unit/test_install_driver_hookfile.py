@@ -19,6 +19,7 @@ import pytest
 
 from apothem.harnesses._shared.install_driver_hookfile import (
     HOOK_FILE_MODE,
+    _UnmergeableError,
     merge_registration,
     strip_registration,
 )
@@ -281,3 +282,89 @@ def test_removal_leaves_what_it_cannot_read_exactly_as_it_is(text: str) -> None:
 def test_removal_is_a_no_op_when_nothing_of_apothems_is_there() -> None:
     text = _text({"version": "v1", "hooks": [_theirs()]})
     assert strip_registration(text, root=_PROJECT) == text
+
+
+# --- an operator-owned file (Cursor's .cursor/hooks.json) -----------------------
+
+_CURSOR_DISPATCHER = "/work/project/.apothem/support/cursor/hooks/dispatch.py"
+
+
+def _cursor_ours() -> dict[str, object]:
+    command = (
+        f'"/usr/bin/python3" "{_CURSOR_DISPATCHER}" --contract cursor sessionStart'
+    )
+    return {"type": "command", "command": command, "timeout": 30}
+
+
+def _cursor_rendered() -> str:
+    return _text({"version": 1, "hooks": {"sessionStart": [_cursor_ours()]}})
+
+
+def _merge_owned(existing: str | None) -> str:
+    return merge_registration(
+        existing, _cursor_rendered(), root=_PROJECT, operator_owned=True
+    )
+
+
+def test_an_operator_owned_file_keeps_every_entry_and_key_the_operator_wrote() -> None:
+    mine = {"command": "./audit.sh", "matcher": "Shell", "failClosed": True}
+    existing = _text(
+        {
+            "version": 1,
+            "x-team": {"owner": "platform"},
+            "hooks": {"stop": [mine], "sessionStart": [mine, _cursor_ours()]},
+        }
+    )
+
+    merged = json.loads(_merge_owned(existing))
+
+    assert merged["x-team"] == {"owner": "platform"}
+    assert merged["hooks"]["stop"] == [mine]
+    assert merged["hooks"]["sessionStart"] == [mine, _cursor_ours()]
+    # A flat entry is never given a Claude-style handler list.
+    assert all("hooks" not in h for hs in merged["hooks"].values() for h in hs)
+
+
+def test_an_operator_owned_merge_is_idempotent() -> None:
+    once = _merge_owned(_text({"version": 1, "hooks": {"stop": [{"command": "x"}]}}))
+    assert _merge_owned(once) == once
+
+
+def test_an_operator_owned_file_with_no_hooks_key_gets_one() -> None:
+    merged = json.loads(_merge_owned(_text({"version": 1, "x-team": True})))
+    assert merged["x-team"] is True
+    assert merged["hooks"] == {"sessionStart": [_cursor_ours()]}
+
+
+def test_an_operator_owned_file_of_only_apothems_hooks_takes_the_template() -> None:
+    assert _merge_owned(None) == _cursor_rendered()
+    assert _merge_owned("") == _cursor_rendered()
+    assert _merge_owned(_cursor_rendered()) == _cursor_rendered()
+    stale = _text(
+        {"version": 1, "hooks": {"sessionStart": [{**_cursor_ours(), "timeout": 5}]}}
+    )
+    assert _merge_owned(stale) == _cursor_rendered()
+
+
+@pytest.mark.parametrize(
+    "existing",
+    [
+        '{\n  // team notes\n  "version": 1, "hooks": {}\n}\n',
+        '{"version": 1, "hooks": {},}',
+        "[]",
+        '"hooks"',
+        '{"version": 1, "hooks": "x"}',
+        # The other vendor's shape: a list of hooks where a map belongs.
+        '{"version": 1, "hooks": [{"command": "x"}]}',
+    ],
+)
+def test_an_operator_owned_file_apothem_would_have_to_damage_is_refused(
+    existing: str,
+) -> None:
+    with pytest.raises(_UnmergeableError):
+        _merge_owned(existing)
+    # The same text in an Apothem-owned file is replaced, after the backup.
+    assert (
+        merge_registration(existing, _cursor_rendered(), root=_PROJECT)
+        == _cursor_rendered()
+    )

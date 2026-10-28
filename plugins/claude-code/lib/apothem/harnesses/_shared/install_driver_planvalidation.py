@@ -616,11 +616,16 @@ def _dry_run_results(
             entry.mode == "write_text" and entry.ownership_class == "operator-owned"
         )
         if entry.mode == HOOK_FILE_MODE:
-            outcome, hook_diff = preview_native_hooks(
+            hooks = preview_native_hooks(
                 entry, harness_root=harness_root, project_root=project_root
             )
-            if hook_diff:
-                detail["diff"] = hook_diff
+            outcome = hooks.outcome
+            if hooks.diff:
+                detail["diff"] = hooks.diff
+            if hooks.refusal is not None:
+                message = hooks.refusal.reason
+                detail["code"] = CONFIG_UNPARSEABLE_CODE
+                detail["fix"] = hooks.refusal.fix
         elif operator_owned_write:
             preview = _operator_owned_preview(
                 entry,

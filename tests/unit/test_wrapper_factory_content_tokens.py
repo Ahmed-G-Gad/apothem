@@ -19,9 +19,11 @@ import pytest
 from apothem.harnesses._shared import install_driver, wrapper_factories
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses._shared.wrapper_factories import (
+    call_operator,
     make_project_scope_install,
     make_update_project,
     python_bin_tokens,
+    python_call_tokens,
 )
 
 _TEMPLATE = '"${PYTHON_BIN}" "${PROJECT_ROOT}/hooks/dispatch.py" SessionStart'
@@ -170,3 +172,25 @@ def test_python_bin_tokens_name_the_interpreter_the_resolver_found(
     )
 
     assert python_bin_tokens() == {"PYTHON_BIN": "C:/Py/python.exe"}
+
+
+def test_the_call_operator_is_added_for_a_windows_host_only() -> None:
+    # PowerShell needs "& " before a quoted program path; sh reads it as a syntax
+    # error, so a POSIX host renders nothing.
+    assert call_operator(windows=True) == "& "
+    assert call_operator(windows=False) == ""
+
+
+@pytest.mark.parametrize(("windows", "operator"), [(True, "& "), (False, "")])
+def test_python_call_tokens_add_the_operator_for_the_host(
+    monkeypatch: pytest.MonkeyPatch, windows: bool, operator: str
+) -> None:
+    monkeypatch.setattr(
+        wrapper_factories, "resolve_python_bin", lambda: Path("C:/Py/python.exe")
+    )
+    monkeypatch.setattr(wrapper_factories, "_on_windows", lambda: windows)
+
+    assert python_call_tokens() == {
+        "PYTHON_BIN": "C:/Py/python.exe",
+        "CALL_OP": operator,
+    }

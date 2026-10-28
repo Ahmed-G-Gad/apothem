@@ -18,6 +18,7 @@ in the same order, so no rendered install output changes.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
@@ -382,6 +383,35 @@ def python_bin_tokens() -> dict[str, str]:
     invokes (see :data:`ContentTokens`) and never a value read at import.
     """
     return {"PYTHON_BIN": resolve_python_bin().as_posix()}
+
+
+def call_operator(*, windows: bool) -> str:
+    """Return what a PowerShell command line needs before a quoted program path.
+
+    PowerShell reads a line that starts with a quoted string as an expression, so
+    ``"C:/py/python.exe" "script.py"`` is a parse error and ``& "C:/py/python.exe"
+    "script.py"`` runs the program. ``sh`` reads that call operator as a syntax
+    error, so the prefix is added only for a Windows host: Cursor's desktop app
+    runs hook commands through PowerShell there
+    (https://cursor.com/docs/hooks, retrieved 2026-10-28).
+    """
+    return "& " if windows else ""
+
+
+def _on_windows() -> bool:
+    """Return True on Windows; the platform seam the tests monkeypatch."""
+    return os.name == "nt"
+
+
+def python_call_tokens() -> dict[str, str]:
+    """Return ``${PYTHON_BIN}`` and the ``${CALL_OP}`` that precedes it on this host.
+
+    For a harness whose hook file holds a single command string that its Windows
+    build hands to PowerShell (Cursor). The two tokens are rendered once per
+    install, so the file is written in its final form for the host that wrote it,
+    as the interpreter path is.
+    """
+    return {**python_bin_tokens(), "CALL_OP": call_operator(windows=_on_windows())}
 
 
 @contextmanager

@@ -33,6 +33,17 @@ holds operator entries, they are kept ahead of Apothem's. A previous file that i
 replaced is copied to the Apothem backup root first. An uninstall removes
 Apothem's entries, deletes the file when nothing else is left in it, and leaves
 a file it cannot read exactly as it is.
+
+The ownership class of the manifest entry sets how a file Apothem cannot merge
+into is treated. An ``apothem-owned`` entry (Kiro's and Copilot's ``apothem.json``)
+is a file only Apothem writes, so a file that is not a hook registration is
+replaced, after the backup. An ``operator-owned`` entry (Cursor's
+``.cursor/hooks.json``, the one project hook file, which a team edits and commits)
+is the operator's file: a registration with no ``hooks`` key gets one, and a file
+Apothem would have to damage to merge into (one that does not parse, such as JSON
+with comments, that is not a JSON object, or whose ``hooks`` is the other shape)
+is refused with ``config.unparseable`` and left exactly as it is, the way the
+key-merge of a settings file refuses.
 """
 
 from __future__ import annotations
@@ -40,12 +51,16 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from typing import Final
+from typing import Final, NamedTuple
 
 from apothem.lib.propagation import InstallEntry, resolve_target
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
-from .install_driver_jsonmerge import is_apothem_hook
+from .install_driver_jsonmerge import (
+    _LossyRewriteError,
+    _refused_result,
+    is_apothem_hook,
+)
 from .install_driver_merge import _unified_diff, render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -135,14 +150,66 @@ def _combine(
     return merged
 
 
-def merge_registration(existing: str | None, rendered: str, *, root: Path) -> str:
+class _UnmergeableError(Exception):
+    """An operator-owned hook file Apothem would have to damage to merge into."""
+
+    def __init__(self, what: str) -> None:
+        """Record *what* is wrong with the file, as the end of a sentence."""
+        super().__init__(what)
+        self.what = what
+
+
+def _merge_operator_file(
+    existing: str, rendered: str, incoming: dict[str, object], *, root: Path
+) -> str:
+    """Return an operator's hook file with Apothem's hooks added after theirs.
+
+    Raises:
+        _UnmergeableError: When the file does not parse, is not a JSON object, or
+            holds ``hooks`` in a shape other than the template's.
+    """
+    try:
+        parsed = json.loads(existing)
+    except ValueError:
+        raise _UnmergeableError(
+            "does not parse as JSON (comments and trailing commas are not JSON)"
+        ) from None
+    if not isinstance(parsed, dict):
+        raise _UnmergeableError("is not a JSON object")
+    if "hooks" not in parsed:
+        parsed = {**parsed, "hooks": type(incoming["hooks"])()}
+    kept = _without_ours(parsed, root)
+    if kept is None or type(kept[0].get("hooks")) is not type(incoming.get("hooks")):
+        raise _UnmergeableError("holds hooks in a shape other than the one it should")
+    doc, remaining = kept
+    if remaining == 0 and set(doc) <= {"version", "hooks"}:
+        return rendered
+    return _dump(_combine(doc, incoming))
+
+
+def merge_registration(
+    existing: str | None,
+    rendered: str,
+    *,
+    root: Path,
+    operator_owned: bool = False,
+) -> str:
     """Return the file text an install writes over *existing*.
 
     *rendered* is the template with its tokens resolved. It is returned as is
     unless *existing* holds hooks the operator added, in which case those stay
-    ahead of Apothem's.
+    ahead of Apothem's. With *operator_owned*, a file that cannot be merged into
+    without damage is refused instead of replaced (see the module docstring).
+
+    Raises:
+        _UnmergeableError: Only with *operator_owned*, as described above.
     """
     if existing is None or not existing.strip():
+        return rendered
+    if operator_owned:
+        incoming = json.loads(rendered)
+        if isinstance(incoming, dict) and "hooks" in incoming:
+            return _merge_operator_file(existing, rendered, incoming, root=root)
         return rendered
     try:
         kept = _without_ours(json.loads(existing), root)
@@ -189,6 +256,40 @@ def _read(target: Path) -> str | None:
         return None
 
 
+def _is_operator_owned(entry: InstallEntry) -> bool:
+    return entry.ownership_class == "operator-owned"
+
+
+def _merged_text(
+    entry: InstallEntry, target: Path, rendered: str, *, root: Path
+) -> tuple[str, str | None]:
+    """Return the text an install writes to *target* and the text it replaces.
+
+    Raises:
+        _LossyRewriteError: For an ``operator-owned`` entry whose file cannot be
+            merged into without damage (see the module docstring).
+    """
+    before = _read(target)
+    operator_owned = _is_operator_owned(entry)
+    if operator_owned and before is None and target.exists():
+        raise _LossyRewriteError(
+            f"{target} cannot be read as UTF-8 text",
+            f"Check that {target.name} is a readable UTF-8 file, then re-run.",
+        )
+    try:
+        merged = merge_registration(
+            before, rendered, root=root, operator_owned=operator_owned
+        )
+    except _UnmergeableError as refused:
+        raise _LossyRewriteError(
+            f"{target} {refused.what}, so Apothem cannot add its hooks without "
+            "rewriting it",
+            f'Make {target.name} plain JSON with a "hooks" object, or add '
+            "Apothem's hook entries to it yourself, then re-run.",
+        ) from None
+    return merged, before
+
+
 def _rendered(
     entry: InstallEntry, *, harness_root: Path | None, project_root: Path | None
 ) -> str | None:
@@ -225,7 +326,15 @@ def apply_native_hooks(
             )
         ]
     root = _root_for(harness_root, project_root)
-    merged = merge_registration(_read(target), text, root=root)
+    detail = {"ownership_class": entry.ownership_class}
+    try:
+        merged, _before = _merged_text(entry, target, text, root=root)
+    except _LossyRewriteError as refusal:
+        return [
+            _refused_result(
+                entry.mode, target, refusal, detail, source=resolve_source(entry.source)
+            )
+        ]
     result = write_bytes_safely(
         target,
         merged.encode("utf-8"),
@@ -235,7 +344,15 @@ def apply_native_hooks(
         source=resolve_source(entry.source),
         allowed_root=_allowed_write_root(harness_root, project_root),
     )
-    return [_with_detail(result, {"ownership_class": entry.ownership_class})]
+    return [_with_detail(result, detail)]
+
+
+class HookPreview(NamedTuple):
+    """What :func:`apply_native_hooks` would do: the outcome, its diff, any refusal."""
+
+    outcome: MaterializationOutcome
+    diff: str
+    refusal: _LossyRewriteError | None = None
 
 
 def preview_native_hooks(
@@ -243,21 +360,25 @@ def preview_native_hooks(
     *,
     harness_root: Path | None,
     project_root: Path | None,
-) -> tuple[MaterializationOutcome, str]:
+) -> HookPreview:
     """Return the outcome and unified diff :func:`apply_native_hooks` would produce."""
     target = resolve_target(
         entry.target, harness_root=harness_root, project_root=project_root
     )
     text = _rendered(entry, harness_root=harness_root, project_root=project_root)
     if text is None:
-        return "skipped", ""
-    before = _read(target)
-    after = merge_registration(before, text, root=_root_for(harness_root, project_root))
+        return HookPreview("skipped", "")
+    try:
+        after, before = _merged_text(
+            entry, target, text, root=_root_for(harness_root, project_root)
+        )
+    except _LossyRewriteError as refusal:
+        return HookPreview("error", "", refusal)
     if before is None:
-        return "created", _unified_diff("", after, target)
+        return HookPreview("created", _unified_diff("", after, target))
     if before == after:
-        return "unchanged", ""
-    return "updated", _unified_diff(before, after, target)
+        return HookPreview("unchanged", "")
+    return HookPreview("updated", _unified_diff(before, after, target))
 
 
 def release_native_hooks(
