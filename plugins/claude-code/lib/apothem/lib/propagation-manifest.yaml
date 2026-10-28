@@ -957,11 +957,12 @@ harnesses:
     # format at <project>/.codebuddy/rules/*.md (per
     # https://www.codebuddy.ai/docs/ide/Rules). The adapter writes a
     # dedicated apothem-rules.md file so operator-authored rules are never
-    # clobbered. CodeBuddy's CODEBUDDY.md memory file and
+    # clobbered. CodeBuddy's CODEBUDDY.md memory file and the committed
     # .codebuddy/settings.json (permissions/MCP) are operator-owned and out
-    # of apothem's adapter scope. The adapter at
-    # src/apothem/harnesses/codebuddy/ opts into the project-scope contract
-    # (requires_project = True). Skills and command skills install at
+    # of apothem's adapter scope; the hooks go in the uncommitted
+    # .codebuddy/settings.local.json (see the hooks entries below). The
+    # adapter at src/apothem/harnesses/codebuddy/ opts into the project-scope
+    # contract (requires_project = True). Skills and command skills install at
     # CodeBuddy's user-level skills folder ~/.codebuddy/skills/ (CodeBuddy
     # documents ~/.codebuddy/skills/ and does not document ~/.agents/skills/),
     # and the rules and templates corpus at ~/.config/apothem/, ahead of the
@@ -998,6 +999,38 @@ harnesses:
         target: "${PROJECT_ROOT}/.codebuddy/agents/"
         mode: codebuddy_agents
         ownership_class: apothem-owned
+      # CodeBuddy runs hook commands from the `hooks` key of its settings files
+      # (https://www.codebuddy.ai/docs/cli/hooks, retrieved 2026-10-28). The
+      # dispatcher and its messages sit in the Apothem-owned support tree under
+      # <project>/.apothem/, which a project's gitignore snippet keeps out of
+      # version control. The registration goes in the uncommitted
+      # <project>/.codebuddy/settings.local.json, never the committed
+      # settings.json, because each command names the install-resolved
+      # interpreter and the project path, which are machine-specific. The
+      # template is key-merged: an operator's own hooks and keys stay, Apothem's
+      # handlers are told apart by the dispatcher path in their command, and an
+      # uninstall removes only those. Only the two events whose output CodeBuddy
+      # hands to the model are registered (SessionStart and PostToolUse): the
+      # hooks page documents no additionalContext for PreToolUse, so the
+      # PreToolUse guards are not registered. CodeBuddy does not hot-load a
+      # settings file edited from outside: the operator restarts it and
+      # reviews the entries in the /hooks panel (the install prints that note).
+      # TODO(clarify): this is the first support tree directly under the
+      # project's .apothem/ (Kimi Code and Gemini CLI nest theirs under their own
+      # harness folder). A second project-scope adapter at this target needs
+      # ledger-counted sharing or a per-harness nest, or one uninstall would
+      # remove the other's dispatcher.
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      # The source is settings-local.json: the repository's .gitignore ignores
+      # any file named settings.local.json, so a template under that name would
+      # never be committed.
+      - source: "harnesses/codebuddy/templates/settings-local.json"
+        target: "${PROJECT_ROOT}/.codebuddy/settings.local.json"
+        mode: write_text
+        ownership_class: operator-owned
 
     exclude:
       - "__pycache__"

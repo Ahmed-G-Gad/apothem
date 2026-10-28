@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PYTHON_BIN}\" \"${PROJECT_ROOT}/.apothem/support/hooks/dispatch.py\" --contract codebuddy PostToolUse posttooluse-proactive-compaction",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

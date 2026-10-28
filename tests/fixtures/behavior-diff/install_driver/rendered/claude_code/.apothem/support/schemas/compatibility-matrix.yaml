@@ -220,7 +220,7 @@ harnesses:
   - name: codebuddy
     display: CodeBuddy
     config_format: markdown
-    supports_hooks: false
+    supports_hooks: true
     supports_agents: true
     supports_skills: true
     supports_custom_rules: true
@@ -229,9 +229,12 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       Project rules via <project>/.codebuddy/rules/apothem-rules.md, a
-      dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file,
-      .codebuddy/settings.json, and the project .mcp.json (MCP servers) are
-      operator-owned. Skills and commands (as skills) go to the user-level
+      dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file, the
+      committed .codebuddy/settings.json, and the project .mcp.json (MCP
+      servers) are operator-owned. Hooks (SessionStart and PostToolUse) are
+      registered in the uncommitted <project>/.codebuddy/settings.local.json,
+      with the scripts under <project>/.apothem/support/hooks/; CodeBuddy
+      asks the operator to restart and review them in /hooks. Skills and commands (as skills) go to the user-level
       ~/.codebuddy/skills/, and the rules and templates corpus to
       ~/.config/apothem/. Agents are rewritten as CodeBuddy subagents in
       <project>/.codebuddy/agents/.
@@ -382,6 +385,7 @@ asset_classes:
       - claude-code
       - codex
       - antigravity
+      - codebuddy
       - gemini-cli
       - hermes
       - open-claw
@@ -391,6 +395,7 @@ asset_classes:
       claude-code: "register in settings.json; support material under ~/.claude/.apothem/support/hooks/"
       codex: "copy to ~/.codex/hooks/ + register in ~/.codex/hooks.json"
       antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/; no active hook wiring until schema adapter exists"
+      codebuddy: "register SessionStart and PostToolUse in <project>/.codebuddy/settings.local.json; support material under <project>/.apothem/support/hooks/"
       gemini-cli: "support cohort under <project>/.gemini/.apothem/support/hooks/"
       hermes: "support cohort under ~/.hermes/.apothem/support/hooks/"
       open-claw: "support cohort under ~/.openclaw/.apothem/support/hooks/"

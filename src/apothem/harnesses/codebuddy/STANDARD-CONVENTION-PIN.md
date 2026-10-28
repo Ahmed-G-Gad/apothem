@@ -5,12 +5,13 @@
 ## Snapshot
 
 - Snapshot date: 2026-10-28
+- Snapshot note (hooks): the adapter now registers hooks. The CLI hooks and hooks-guide pages were re-read on 2026-10-28 (the hooks page through its official Chinese mirror, as raw Markdown, and through the vendor site) to settle which events deliver `additionalContext`. Previous 2026-10-27.
 - Snapshot note (review): the Settings page was read on 2026-10-28 for the complete tool list. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as CodeBuddy subagents in `<project>/.codebuddy/agents/`. The CLI sub-agents, directory-structure, hooks and plugins-reference pages were read on 2026-10-27, and the IDE Subagents page the same day. The other sections below keep their earlier read dates. Previous 2026-10-24.
 - Snapshot note (skills): the adapter now installs skills and command skills at CodeBuddy's own `~/.codebuddy/skills/` and the rules and templates corpus at `~/.config/apothem/`. The CodeBuddy skills page was read on 2026-10-24.
 - Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codebuddy/`
-- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The CLI sub-agents, directory-structure, hooks and plugins-reference pages and the IDE Subagents page were read on 2026-10-27; the IDE Rules page was re-read on 2026-10-03; the CLI memory and MCP pages were read on 2026-10-02. No CodeBuddy source code was read, so runtime behavior the docs do not state is unverified. No vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The CLI sub-agents, directory-structure, hooks and plugins-reference pages and the IDE Subagents page were read on 2026-10-27; the IDE Rules page was re-read on 2026-10-03; the CLI memory and MCP pages were read on 2026-10-02. The CLI hooks and hooks-guide pages were read on 2026-10-28. No CodeBuddy source code was read, so runtime behavior the docs do not state is unverified. No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
@@ -82,9 +83,9 @@
 - The IDE Subagents page uses the same two folders but its example shows the
   keys `agentMode`, `enabled` and `enabledAutoRun`, and none of `permissionMode`,
   `skills`, `mcpServers` or `disallowedTools`. The adapter writes the CLI keys.
-- The vendor also documents slash commands, hooks, and plugins. The adapter
-  authors none of them. Hooks and the Mods middleware layer are separate
-  surfaces that Apothem does not write.
+- The vendor also documents slash commands and plugins. The adapter authors
+  neither. It does author hooks (next section). The Mods middleware layer is a
+  separate TypeScript surface that Apothem does not write.
 - TODO(clarify): how CodeBuddy treats an agent-file frontmatter key it does not
   list is not documented.
 - TODO(clarify): whether the IDE accepts the CLI keys the adapter writes
@@ -97,6 +98,107 @@
   adapter writes it only when a source allowlist loses every name, which no
   current Apothem agent does.
 
+## Hooks
+
+Read 2026-10-28 (<https://www.codebuddy.ai/docs/cli/hooks>,
+<https://www.codebuddy.ai/docs/cli/hooks-guide>). Hooks are Beta and need
+CodeBuddy Code v1.16.0 or later.
+
+- Files: hooks live in the `hooks` key of `~/.codebuddy/settings.json` (user),
+  `<project>/.codebuddy/settings.json` (shared) and
+  `<project>/.codebuddy/settings.local.json` (local, not committed); an
+  enterprise policy bundle and a plugin's `hooks/hooks.json` are the other
+  sources. The scopes merge, and every matching hook runs in parallel.
+- Schema: `{"hooks": {"<Event>": [{"matcher": "<regex, optional>", "hooks":
+  [{"type": "command", "command": "<bash string>", "timeout": <seconds>}]}]}}`.
+  `type` is `command` or `prompt`. The page documents a single `command`
+  string and no `args` array, so the adapter writes the command form only, with
+  no `statusMessage` and no `async`. The default timeout is 60 s, and `timeout`
+  is in seconds. Identical commands are deduplicated. `disableAllHooks` in the
+  settings turns every hook off; it is the vendor's kill switch, beside
+  Apothem's `APOTHEM_HOOKS_DISABLE=1`.
+- Events: 27 names. Only ten have a documented stdin payload and exit-code row
+  (PreToolUse, PostToolUse, Notification, UserPromptSubmit, Stop, SubagentStop,
+  PreCompact, PostCompact, SessionStart, SessionEnd). The other seventeen are
+  named only.
+- Command contract: JSON on stdin (`session_id`, `transcript_path`, `cwd`,
+  `permission_mode`, `hook_event_name`, plus `tool_name`, `tool_input` and, for
+  PostToolUse, `tool_response`; SessionStart adds `source`). Exit 0 succeeds,
+  exit 2 blocks (stdout message first, stderr as the fallback), and any other
+  code is non-blocking. Stdout JSON may carry `continue`, `stopReason`,
+  `suppressOutput`, `systemMessage` (shown to the operator, not the model) and
+  `hookSpecificOutput`. A stdout that parses as a JSON object is read field by
+  field; only text that does not parse is used as plain context, and only for
+  UserPromptSubmit and SessionStart.
+- Where `additionalContext` reaches the model: SessionStart, UserPromptSubmit
+  and PostToolUse document `hookSpecificOutput.additionalContext`. PreToolUse
+  documents only `permissionDecision`, `permissionDecisionReason` and
+  `modifiedInput`, so a guard that speaks through `additionalContext` there is
+  not known to be delivered. Apothem registers SessionStart (the bootstrap) and
+  PostToolUse (the proactive-compaction tracker), and registers no PreToolUse
+  guard, no Stop gate, no compaction hook, no NotebookEdit or AskUserQuestion
+  guard and no conformity-gate hook. The envelope the dispatcher writes is
+  Claude's, which CodeBuddy reads (`--contract codebuddy` changes no byte of it).
+- Matcher: a case-sensitive regex over the tool name for PreToolUse and
+  PostToolUse; `*`, an empty string or an omitted field matches all tools. The
+  adapter writes `"matcher": "*"` for PostToolUse and omits the field for
+  SessionStart, which the page lists with the sources
+  `startup|resume|clear|compact` and which has no tool name to match.
+- Shell: commands run through `$SHELL` on macOS and Linux and through Git Bash
+  on Windows (cmd.exe and PowerShell are not supported), so the adapter writes
+  bash quoting: `"<interpreter>" "<script>" ...`. The page recommends calling
+  Python as `python3 script.py` because a shebang is unreliable under Git Bash;
+  the adapter names the interpreter Apothem resolved at install time (an absolute
+  path, version-probed), not `python3`. `$CODEBUDDY_PROJECT_DIR` is the project
+  root.
+- Activation: settings are snapshotted at startup and are not hot-loaded, and
+  an externally edited settings file needs review in the `/hooks` panel before
+  its hooks apply (the page says the change "Requires review in the `/hooks`
+  panel before changes apply"). The install prints that step as an advisory.
+  The only pre-approval setting the docs name is
+  `allowUntrustedFrontmatterHooks`, which covers agent and skill frontmatter,
+  not settings files.
+- Files the adapter writes: the dispatcher tree at
+  `<project>/.apothem/support/hooks/` (Apothem-owned; the project's
+  `.gitignore` snippet ignores `.apothem/*`) and the registration in the
+  uncommitted `<project>/.codebuddy/settings.local.json`, key-merged: the
+  operator's own hooks and keys stay, and an uninstall removes only the handlers
+  whose command runs the Apothem dispatcher under the project. Each command
+  names an absolute interpreter and project path, which are machine-specific;
+  that is why the registration goes in the local file and not the committed
+  `settings.json`. The adapter never edits `settings.json`, never writes
+  frontmatter hooks (denied by default, `allowUntrustedFrontmatterHooks` false)
+  and ships no plugin.
+- TODO(clarify): whether the `/hooks` review is a one-time trust prompt or
+  recurs on every change, and whether it can be pre-approved or skipped
+  non-interactively, are not documented.
+- TODO(clarify): whether PreToolUse consumes `additionalContext` is not
+  documented; until a probe shows it does, the PreToolUse guards stay
+  unregistered.
+- TODO(clarify): the matcher for a sub-agent spawn is `Task` on the hooks page
+  and the spawning tool is named `Agent` on the sub-agents page; no sub-agent
+  matcher is registered.
+- TODO(clarify): the payload, matcher and blocking behavior of the seventeen
+  name-only events, and whether the IDE (which documents seven events and says
+  project configuration overrides user configuration, against the CLI's
+  "merged") reads a CLI settings file the same way.
+- TODO(clarify): whether CodeBuddy trims or caps `additionalContext` is not
+  documented; the SessionStart bootstrap is a few kilobytes.
+- TODO(clarify): the support tree at `<project>/.apothem/support/hooks/` is the
+  first one to sit directly under the project's `.apothem/` folder (the Kimi Code
+  and Gemini CLI trees nest under their own harness folder). A second project-scope
+  adapter that writes the same path would share it with no install-ledger count,
+  so one uninstall would remove the other's dispatcher. Either give the shared
+  project tree ledger-counted sharing, as the `${USER_HOME}` folders have, or nest
+  one tree per harness, before another adapter targets this path.
+- TODO(clarify): Apothem's `.gitignore` snippet ignores `.apothem/*` but not
+  `.codebuddy/settings.local.json`. CodeBuddy documents that file as not
+  committed and the install does not edit `.gitignore`; whether the snippet
+  should list hook registration files is undecided.
+- TODO(clarify): the format of the file `transcript_path` names is not documented. The
+  PostToolUse tracker reads the context size from a Claude-style usage record in it;
+  where it finds none it counts tool calls and output bytes instead.
+
 ## Vendor Sources
 
 Retrieved 2026-10-03 unless marked.
@@ -105,7 +207,10 @@ Retrieved 2026-10-03 unless marked.
 - <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02)
 - <https://www.codebuddy.ai/docs/cli/skills> (skills; retrieved 2026-10-24)
 - <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
-- <https://www.codebuddy.ai/docs/cli/hooks> (hooks and sub-agent events; retrieved 2026-10-02; frontmatter-hooks gate re-read 2026-10-27)
+- <https://www.codebuddy.ai/docs/cli/hooks> (hook files, schema, events, command contract, matcher, Windows shell, `additionalContext` per event; retrieved 2026-10-28; frontmatter-hooks gate read 2026-10-27)
+- <https://www.codebuddy.ai/docs/cli/hooks-guide> (the `/hooks` panel review of externally edited files, the `python3` and `$CODEBUDDY_PROJECT_DIR` command forms; retrieved 2026-10-28)
+- <https://cnb.cool/codebuddy/codebuddy-code/-/git/raw/main/docs/hooks.md> (the official project mirror of the hooks page, raw Markdown in Chinese, read 2026-10-28 for the `additionalContext` rules; corroboration only)
+- <https://www.codebuddy.ai/docs/ide/Features/hooks> (the IDE hooks page, seven events; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/sub-agents> (sub-agent folders, frontmatter keys, precedence, model fallback; retrieved 2026-10-27)
 - <https://www.codebuddy.ai/docs/cli/settings> (the "Tools Available to CodeBuddy" table, the complete tool list the sub-agents page points to; retrieved 2026-10-28)
 - <https://www.codebuddy.ai/docs/cli/codebuddy-dir> (project and user `agents/` folders and the project-over-user rule; retrieved 2026-10-27)
@@ -139,8 +244,10 @@ Retrieved 2026-10-03 unless marked.
 CodeBuddy exposes **no vendor plugin or extension install surface** that Apothem
 ships. The adapter writes a merged rules file at
 `<project>/.codebuddy/rules/apothem-rules.md`, the agents at
-`<project>/.codebuddy/agents/`, the skills at `~/.codebuddy/skills/`, and the
-rules and templates corpus at `~/.config/apothem/`, and authors no other
+`<project>/.codebuddy/agents/`, the hook registration at
+`<project>/.codebuddy/settings.local.json` with its scripts under
+`<project>/.apothem/support/hooks/`, the skills at `~/.codebuddy/skills/`, and
+the rules and templates corpus at `~/.config/apothem/`, and authors no other
 cohort. There is no standalone-installable bundle; every artifact requires the
 full `apothem install --harness codebuddy --project <path>` engine run.
 
@@ -149,7 +256,8 @@ full `apothem install --harness codebuddy --project <path>` engine run.
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.codebuddy/rules/` directory. Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.codebuddy/skills/`. Nothing persists before that run. |
 | Agents | No — requires `apothem install` | The engine writes them as subagents to the project's `.codebuddy/agents/`. Nothing persists before that run. |
-| Hooks / MCP / Tools / Settings | No — operator-owned | `.mcp.json` (MCP servers), `.codebuddy/settings.json`, and `CODEBUDDY.md` memory are operator-owned; the adapter authors no entries. CodeBuddy documents hooks and slash commands; the adapter authors neither. |
+| Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/hooks/` and registers SessionStart and PostToolUse in `<project>/.codebuddy/settings.local.json`. Nothing persists before that run, and CodeBuddy applies the entries only after the operator restarts it and reviews them in `/hooks`. |
+| MCP / Tools / Settings | No — operator-owned | `.mcp.json` (MCP servers), `.codebuddy/settings.json`, and `CODEBUDDY.md` memory are operator-owned; the adapter authors no entries. CodeBuddy documents slash commands; the adapter authors none. |
 
 CodeBuddy documents a plugin surface, but Apothem ships no CodeBuddy plugin, so
 the files `apothem install` writes are the sole persistence surface.

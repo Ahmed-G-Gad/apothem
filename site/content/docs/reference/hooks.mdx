@@ -8,7 +8,8 @@ Hooks fire on tool events and load message contexts that the
 assistant treats as additional system prompts. Wiring lives in
 the Claude Code `settings.json` hook block (engine install) or the plugin's
 `hooks.json` (plugin install), the Codex `hooks.json` hook file,
-and the Qwen Code `settings.json` hooks map.
+the Qwen Code `settings.json` hooks map, and the CodeBuddy
+`.codebuddy/settings.local.json` hooks key (SessionStart and PostToolUse only).
 
 | Event | Timeout | Purpose |
 |-------|--------:|---------|
@@ -52,6 +53,38 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 `PYTHONPATH=src`) runs the same code for development. The dispatcher loads
 `hooks/lib/resolve_root.py` for ecosystem-root resolution and delegates to
 `hooks/emit_hook_context.py` and `hooks/session_start_bootstrap.py`.
+
+## Vendor contracts
+
+A harness that is not Claude Code runs the same dispatcher with
+`--contract <id>` after the script, for example
+`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+The contract (`hooks/lib/vendor_contract.py`) translates the vendor's event and
+tool-name spellings and payload keys into the Claude shape the handlers read,
+rewrites the envelope into the shape the vendor reads, and drops an event the
+vendor does not hand to the model. Without the flag nothing is translated and
+the output is the Claude envelope, byte for byte. The flag is part of the
+documented command line of the dispatcher: `dispatch.py [--contract <id>]
+<Event> [<message> ...]`.
+
+| Contract | Reads | Output | Delivered events |
+| --- | --- | --- | --- |
+| `codebuddy` | Claude's stdin | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+| `devin` | Claude's stdin with lowercase tool names (`exec`, `write`, `edit`) | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+| `cursor` | camelCase events, `conversation_id`, `workspace_roots` | `{"additional_context": ...}` | SessionStart |
+| `copilot` | camelCase `sessionId`, `toolName`, `toolArgs`, or the PascalCase snake_case form | `{"additionalContext": ...}` | SessionStart, PostToolUse, Notification |
+| `kiro` | Claude-like stdin, Kiro tool ids (`execute_bash`, `fs_write`, `str_replace`) | bare text | SessionStart, UserPromptSubmit |
+| `trae` | Claude-like stdin, `RunCommand` | bare text on SessionStart and UserPromptSubmit, the envelope on tool events | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse |
+| `claude` | Claude's stdin | the Claude envelope | every event |
+
+Only `codebuddy` is installed by an Apothem adapter today; the other rows are
+the contracts the adapters that follow register against. The dispatcher stays
+advisory under every contract: no shape carries a permission, a decision, a
+block or a rewritten tool input. A contract for a harness that also imports the
+Claude Code settings file (`cursor`, `devin`, `trae`) keeps one SessionStart
+marker per contract, session and source in the hook state directory, so the
+second run of the same session is silent; the default command line never reads
+the marker, so Claude Code's post-compaction SessionStart still delivers.
 
 ## Message contexts
 
@@ -123,7 +156,7 @@ is installed in.
 
 Every registered hook command meets the same contract, checked by
 `tests/hooks/test_hook_contract.py` on the plugin, the Claude Code engine
-install, Codex, and Qwen Code:
+install, Codex, Qwen Code, and the CodeBuddy install:
 
 - **Runs from a plain checkout.** Exit 0, and standard output is empty or one
   JSON object. No hook depends on a file's executable bit.

@@ -199,6 +199,13 @@ def _snapshot_rendered_tree(
         # platform.
         if "memory" in rel.parts:
             continue
+        # CodeBuddy's hook registration is `.codebuddy/settings.local.json`, and
+        # the repository's .gitignore ignores that file name everywhere, so its
+        # golden cannot be committed either. The registration's exact bytes are
+        # asserted by tests/integration/test_codebuddy_hooks_roundtrip.py, and the
+        # dry-run golden carries its rendered diff.
+        if path.name == "settings.local.json":
+            continue
         dest = dest_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         raw = path.read_bytes()

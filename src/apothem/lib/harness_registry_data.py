@@ -670,6 +670,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/.codebuddy/rules/apothem-rules.md",
             "<project>/.codebuddy/agents/",
+            "<project>/.codebuddy/settings.local.json",
+            "<project>/.apothem/support/hooks/",
             "~/.codebuddy/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -681,11 +683,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         fixture_tests=("tests/unit/test_codebuddy_adapter.py",),
         package_data_key="apothem.harnesses.codebuddy",
-        template_sources=("harnesses/codebuddy/templates/apothem-rules.md",),
+        template_sources=(
+            "harnesses/codebuddy/templates/apothem-rules.md",
+            "harnesses/codebuddy/templates/settings-local.json",
+        ),
         capability_status=_matrix(
             commands="converted",
             skills="native",
-            hooks="unsupported",
+            hooks="native",
             agents="converted",
             rules="native",
             templates="support-tree",
@@ -699,7 +704,6 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            hooks="The CodeBuddy adapter does not author a CodeBuddy hook cohort; it delivers the rules file and the skills.",
             statuslines="No CodeBuddy statusline file surface is pinned.",
             output_styles="No CodeBuddy output-style file surface is pinned.",
         ),

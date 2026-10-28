@@ -49,6 +49,11 @@ _WITH_AGENTS = frozenset(
     {"codebuddy", "cursor", "github-copilot", "kiro", "trae", "windsurf"}
 )
 
+#: The adapters that also register hooks natively, and the manifest modes of the
+#: project entries that carry them (the dispatcher's support tree and the
+#: key-merged registration), which follow the instruction anchor.
+_HOOK_MODES = {"codebuddy": ["merge_tree_entries", "write_text"]}
+
 #: The harnesses that write ``~/.agents/skills/`` with the registered owner.
 _SHARED_AGENTS_SKILLS = ("cursor", "github-copilot", "windsurf", "zed")
 
@@ -75,8 +80,9 @@ def test_manifest_has_the_four_user_level_entries_before_the_project_anchor(
     # aborts the install before anything in the project changes.
     assert install[: len(user)] == user
     anchors = [e for e in install[len(user) :] if e.mode not in AGENT_EMITTERS]
-    assert [e.mode for e in anchors] == ["sentinel_merge"]
-    assert "${PROJECT_ROOT}" in anchors[0].target
+    expected = ["sentinel_merge", *_HOOK_MODES.get(public_id, [])]
+    assert [e.mode for e in anchors] == expected
+    assert all("${PROJECT_ROOT}" in e.target for e in anchors)
 
 
 @pytest.mark.parametrize("public_id", _IDS)
@@ -100,8 +106,12 @@ def test_registry_lists_the_user_level_folders_and_cells(public_id: str) -> None
     for cell in ("skills", "commands", "templates"):
         assert cell not in entry.unsupported_rationale
     # The cohorts the adapter still does not write keep an honest rationale.
-    assert status["hooks"] == "unsupported"
-    assert entry.unsupported_rationale["hooks"].strip()
+    if public_id in _HOOK_MODES:
+        assert status["hooks"] == "native"
+        assert "hooks" not in entry.unsupported_rationale
+    else:
+        assert status["hooks"] == "unsupported"
+        assert entry.unsupported_rationale["hooks"].strip()
     if public_id in _WITH_AGENTS:
         assert status["agents"] == "converted"
         assert status["sub_agent_dispatch"] == "native"

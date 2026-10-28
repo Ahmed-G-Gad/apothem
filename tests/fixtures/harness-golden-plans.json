@@ -473,6 +473,16 @@
       "mode": "codebuddy_agents",
       "source": "agents",
       "target": "<ROOT>/.codebuddy/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/codebuddy/templates/settings-local.json",
+      "target": "<ROOT>/.codebuddy/settings.local.json"
     }
   ],
   "kiro": [

@@ -20,6 +20,7 @@ from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
 from apothem.lib.install_advisories import (
+    hook_review_advisories,
     mcp_profile_advisories,
     owner_of_record,
     shared_root_advisories,
@@ -329,6 +330,86 @@ def test_cli_codex_install_lists_the_readers(cli_env: tuple[Path, Path]) -> None
     assert {w["owner"] for w in shared} == {"codex"}
     assert len(shared) == 2  # ~/.agents/skills/ and ~/.codex/agents/
     assert {w["outcome"] for w in shared} == {"advisory"}
+
+
+# --- Hook review advisories ---------------------------------------------------
+
+
+def test_codebuddy_hook_registration_asks_for_a_restart_and_a_review(
+    tmp_path: Path,
+) -> None:
+    [advisory] = hook_review_advisories("codebuddy", project=tmp_path)
+    assert advisory["harness"] == "codebuddy"
+    assert advisory["outcome"] == "advisory"
+    assert advisory["operation"] == "hook_review"
+    path = tmp_path / ".codebuddy" / "settings.local.json"
+    assert advisory["path"] == str(path)
+    message = " ".join(str(advisory["message"]).split())
+    assert str(path) in message
+    assert "restart CodeBuddy" in message
+    assert "/hooks panel" in message
+    assert "Git Bash" in message
+
+
+def test_a_harness_with_no_review_step_gets_no_hook_advisory(tmp_path: Path) -> None:
+    for harness in ("claude-code", "codex", "kiro", "cursor", "glm"):
+        assert hook_review_advisories(harness, project=tmp_path) == []
+
+
+def test_a_hook_advisory_needs_a_project() -> None:
+    assert hook_review_advisories("codebuddy", project=None) == []
+
+
+def test_cli_codebuddy_install_prints_the_hook_review_note(
+    cli_env: tuple[Path, Path], tmp_path: Path
+) -> None:
+    _home, profile = cli_env
+    project = tmp_path / "project"
+    project.mkdir()
+    runner = CliRunner()
+    args = [
+        "install",
+        "--harness",
+        "codebuddy",
+        "--project",
+        str(project),
+        "--profile",
+        str(profile),
+        "--no-color",
+    ]
+
+    plain = runner.invoke(main, args)
+    assert plain.exit_code == 0, plain.output
+    flat = " ".join(plain.output.split())
+    assert (
+        "Note: codebuddy - Apothem registers its SessionStart and PostToolUse" in flat
+    )
+    assert "/hooks panel" in flat
+
+    payload = json.loads(runner.invoke(main, [*args, "--format", "json"]).output)
+    review = [w for w in payload["warnings"] if w.get("operation") == "hook_review"]
+    assert len(review) == 1
+    assert review[0]["harness"] == "codebuddy"
+    assert review[0]["outcome"] == "advisory"
+
+    # A dry run lists the note too, and writes nothing.
+    other = tmp_path / "dry-project"
+    other.mkdir()
+    dry_args = [
+        "install",
+        "--harness",
+        "codebuddy",
+        "--project",
+        str(other),
+        "--profile",
+        str(profile),
+        "--no-color",
+        "--dry-run",
+    ]
+    dry = runner.invoke(main, dry_args)
+    assert dry.exit_code == 0, dry.output
+    assert "/hooks panel" in " ".join(dry.output.split())
+    assert not (other / ".codebuddy" / "settings.local.json").exists()
 
 
 # --- MCP profile advisories ---------------------------------------------------

@@ -23,6 +23,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **CodeBuddy now runs Apothem's session and compaction hooks.** The install
+  registers two hooks in the project's `.codebuddy/settings.local.json`, the
+  local settings file CodeBuddy does not commit: the session bootstrap on
+  `SessionStart` and the context-size advisory on `PostToolUse`. The scripts go
+  in `.apothem/support/hooks/`. CodeBuddy hands extra context to the model for
+  those events and documents none for `PreToolUse`, so the write, edit and shell
+  guards are not registered there; both hooks only add context and never block.
+  Each command names the interpreter and the project path of the machine that ran
+  the install, which is why the registration goes in the local file and not the
+  committed `settings.json`. CodeBuddy does not run hooks another tool wrote
+  until you restart it and review them in its `/hooks` panel, and the install
+  prints that step. On Windows CodeBuddy runs hook commands through Git Bash
+  only. The install merges into your file by key, keeps your own hooks and
+  settings, and an uninstall removes only the Apothem handlers. The hook
+  dispatcher also gained a `--contract <id>` option that translates a harness's
+  event and tool names and reshapes the output for it; the harness page and the
+  hooks reference explain both.
 - **CodeBuddy and Trae now get Apothem's helpers as their own subagents.** The
   install writes each Apothem helper into the project as a Markdown subagent
   file, in `.codebuddy/agents/` for CodeBuddy and `.trae/agents/` for Trae,

@@ -21,6 +21,9 @@ folder, else the oldest install that does (:func:`owner_of_record`). The caller
 passes the installs that hold each folder, read from the install ledger, and the
 advisories name those instead of assuming the registered owner wrote the folder.
 
+Hook review. :func:`hook_review_advisories` names the step a harness requires
+before hooks written to its settings file by another tool take effect.
+
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
 and literal credentials in ``headers`` or ``env``, which an install would copy
@@ -252,6 +255,53 @@ def shared_root_advisories(
     return advisories
 
 
+# --- Hook review advisories ---------------------------------------------------
+
+#: Harnesses that load a hook registration an install wrote only after the
+#: operator reviews it, mapped to the project-relative file the install wrote
+#: and the note the advisory carries. CodeBuddy snapshots its settings at
+#: startup and applies an externally edited file only after the entries are
+#: confirmed in the /hooks panel (https://www.codebuddy.ai/docs/cli/hooks and
+#: /hooks-guide, retrieved 2026-10-28).
+_HOOK_REVIEW: dict[str, tuple[str, str]] = {
+    "codebuddy": (
+        ".codebuddy/settings.local.json",
+        "Apothem registers its SessionStart and PostToolUse hooks in "
+        "{path}. CodeBuddy does not hot-load a settings file edited from "
+        "outside: restart CodeBuddy, then confirm the new entries in the "
+        "/hooks panel, and the hooks apply after that review. The docs do not "
+        "say whether the review repeats after each change, so check /hooks "
+        "again after an update. CodeBuddy documents hooks as Beta, and on "
+        "Windows it runs hook commands through Git Bash only.",
+    ),
+}
+
+
+def hook_review_advisories(
+    public_id: str, *, project: Path | None
+) -> list[dict[str, object]]:
+    """Return the review note for *public_id*'s hook registration, if it has one.
+
+    Names the file the install wrote and the step the operator takes before the
+    hooks run. A harness with no such step, or an install with no *project*,
+    gets none. Reads nothing; writes nothing.
+    """
+    review = _HOOK_REVIEW.get(public_id)
+    if review is None or project is None:
+        return []
+    relative, template = review
+    path = project / relative
+    return [
+        {
+            "harness": public_id,
+            "outcome": "advisory",
+            "operation": "hook_review",
+            "path": str(path),
+            "message": template.format(path=path),
+        }
+    ]
+
+
 # --- MCP profile advisories ---------------------------------------------------
 
 # The MCP specification deprecates the HTTP+SSE transport in favour of
@@ -393,4 +443,9 @@ def mcp_profile_advisories(
     return advisories
 
 
-__all__ = ["mcp_profile_advisories", "owner_of_record", "shared_root_advisories"]
+__all__ = [
+    "hook_review_advisories",
+    "mcp_profile_advisories",
+    "owner_of_record",
+    "shared_root_advisories",
+]

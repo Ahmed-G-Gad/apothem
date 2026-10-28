@@ -29,7 +29,7 @@ whether the adapter renders a native config via a materializer.
 |---------|-------------------------|------------------------|---------------|--------------|
 | antigravity | Native hook surface exists; Apothem support material only | `GEMINI.md` plus Antigravity CLI plugin rules | Class I | none |
 | claude-code | Native PreToolUse / PostToolUse / Stop / SessionStart | `.md` flat rules under `rules/` | Class II-A | none (vendor settings templates) |
-| codebuddy | Vendor hooks exist; the adapter registers none | `.codebuddy/rules/apothem-rules.md` project rules file | Class I | none |
+| codebuddy | Native SessionStart and PostToolUse in `.codebuddy/settings.local.json`; no PreToolUse guard (the vendor documents no `additionalContext` there) | `.codebuddy/rules/apothem-rules.md` project rules file | Class I | none |
 | codex | Native `hooks.json` lifecycle hooks | `AGENTS.md` plus support rules referenced by installed skills | Class I | none |
 | cursor | Plugin hooks exist; the adapter registers none | One `.mdc` workspace rules file (MDC frontmatter: `description` / `globs` / `alwaysApply`) | Class I | none |
 | gemini-cli | Native hook surface exists; Apothem support material only | Rules embedded in single `GEMINI.md` | Class I | none |
@@ -136,7 +136,7 @@ in the matrix reduces to one of these.
 
 | Axis | Range observed across the seventeen harnesses |
 |------|---------------------------------------------|
-| Hook surface | Native multi-event (claude-code, codex, qwen-code) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → no hook registered by the adapter (codebuddy, cursor, github-copilot, glm, kiro, trae, windsurf, zed; the vendors of codebuddy, cursor, github-copilot, kiro, and windsurf document hooks that are out of adapter scope) |
+| Hook surface | Native multi-event (claude-code, codex, qwen-code) → native on the events the vendor delivers to the model (codebuddy: SessionStart and PostToolUse) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → no hook registered by the adapter (cursor, github-copilot, glm, kiro, trae, windsurf, zed; the vendors of cursor, github-copilot, kiro, and windsurf document hooks that are out of adapter scope) |
 | Rule-activation format | Flat `.md` (claude-code) → plugin rules (antigravity) → `.mdc` workspace (cursor) → directory rules (codebuddy, trae, windsurf) → steering file (kiro) → project-root flat file (zed) → single embedded file (codex, gemini-cli, github-copilot, kimi-code) → config-referenced support material (hermes, open-claw, opencode, qwen-code) → backend provider config (glm) |
 | Adapter class | Class I raw-propagation → Class II-A raw + vendor settings → Class II-B profile-rendered single-surface |
 
