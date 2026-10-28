@@ -44,6 +44,7 @@ flowchart TD
 | `find-python.sh` / `find-python.ps1` | Python interpreter locators. |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary. |
+| `vendor_contract.py` | The per-vendor hook contracts behind `dispatch.py --contract <id>`: event and tool-name aliases, payload-key fill-in, output shaping, per-vendor delivery, and the per-session SessionStart marker. See the table below. |
 | `stdin_json.py` | The one canonical reader for a hook's stdin payload, so the read path cannot drift between handlers. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the Apothem ecosystem. |
@@ -78,6 +79,19 @@ Markdown context files emitted into the conversation for each hook event:
 - The authorship-header guards run under a plugin install, where the `apothem` package is not importable: `lib/header_check.py` imports only the standard library, so the guard never pays for that import. It judges only a git project that carries the header fixture (`src/apothem/schemas/authorship-header.txt`), since the SPDX line is Apothem's own convention; a project without it and a directory with no `.git` stay silent. In such a project it judges files inside the project (the git root above the tool call's working directory) against the exemption globs as project-relative paths, and stays silent for an exempt path, an unknown extension, a path outside the project, or a fixture it cannot read. The Write guard checks the content written; the Edit guard fires only when an edit creates a file without the header (an empty `old_string` on a missing file) or strips it from a file that has it.
 - The session-start knowledge-base check (`read_knowledge_base_drift` in `session_start_bootstrap.py`) flags a base the `knowledge-wiki` skill made when its fingerprint (page count plus newest log entry) no longer matches the newest `baseline` line in the base's `log.md`. It stats `log.md` at four fixed paths under the project root (`knowledge-base/`, `wiki/`, `docs/knowledge-base/`, `docs/wiki/`), so a project without a base pays a fraction of a millisecond; with a base it reads at most the last 256 KiB of `log.md` and lists three flat directories, and it never walks the tree. It writes nothing (the skill's drift mode records the baseline, so the line repeats each session until that mode has run), emits one line holding only a fixed path, a date and two numbers (never text from the base), and stays silent for no base, no baseline, an unchanged fingerprint, or any file it cannot read. The fingerprint and the paths are defined in `skills/knowledge-wiki/references/drift-and-hubs.md`; the tests are `tests/hooks/test_session_start_kb_drift.py`.
 - Every registered command meets the runtime contract in `tests/hooks/test_hook_contract.py`: exit 0, empty or single-JSON-object output, registered once, bounded output, delivered on a channel the harness reads, and no code taken from the opened project.
+- A harness that is not Claude Code runs the same dispatcher with `--contract <id>` after the interpreter and script, for example `"<python>" "<support>/hooks/dispatch.py" --contract codebuddy SessionStart`. The contract translates the vendor's event and tool spellings in and reshapes the envelope out; without the flag nothing is translated and the output is the Claude envelope. Hooks are registered only on an event whose output the vendor hands to the model, because a hook elsewhere costs a process start and delivers nothing. The contract table is `lib/vendor_contract.py`, and each row's sources are in its docstring and in the harness's `STANDARD-CONVENTION-PIN.md`.
+
+  | Contract | Reads | Output shape | Delivered events |
+  |---|---|---|---|
+  | `codebuddy` | Claude's stdin | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+  | `devin` | Claude's stdin, lowercase tool names | the Claude envelope | SessionStart, UserPromptSubmit, PostToolUse |
+  | `cursor` | camelCase events, `conversation_id`, `workspace_roots` | `{"additional_context": ...}` | SessionStart |
+  | `copilot` | camelCase `sessionId`, `toolName`, `toolArgs`, or the PascalCase snake_case form | `{"additionalContext": ...}` | SessionStart, PostToolUse, Notification |
+  | `kiro` | Claude-like stdin, Kiro tool ids | bare text | SessionStart, UserPromptSubmit |
+  | `trae` | Claude-like stdin, `RunCommand` | bare text on SessionStart and UserPromptSubmit, the envelope on tool events | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse |
+  | `claude` | Claude's stdin | the Claude envelope | every event (used to prove the default line is unchanged) |
+
+  The dispatcher still only emits advisory context: no shape carries a permission, a decision or a rewritten input. A contract that also imports the Claude Code settings file (`cursor`, `devin`, `trae`) keeps one SessionStart marker per (contract, session, source) in the hook state directory, so a second run of the same session is silent; the default command line never reads the marker, so Claude Code's post-compaction SessionStart still delivers.
 - `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook, and `conformity/gate.py --hook` honors the same switch.
 
 ## Operating in this folder

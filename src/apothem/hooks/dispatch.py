@@ -7,6 +7,10 @@ whitelisted events to `emit_hook_context.main()` (hook mode).
 
 Contract: always exits 0. Any uncaught exception is converted to a valid
 failure envelope on stdout so the hook runtime never sees a raw traceback.
+
+``--contract <id>`` runs the same routing under a vendor's hook contract (see
+``lib/vendor_contract.py``): event and tool spellings are translated in, the
+envelope is reshaped out, and the command stays advisory.
 """
 
 from __future__ import annotations
@@ -116,6 +120,7 @@ _FAST_FLAGS: Final[dict[str, str]] = {
     "-e": "event",
     "--context-file": "context",
     "-c": "context",
+    "--contract": "contract",
 }
 
 
@@ -134,6 +139,7 @@ def fast_parse(argv: list[str]) -> SimpleNamespace | None:
     files: list[str] = []
     names: list[str] = []
     positionals: list[str] = []
+    contract = ""
     quiet = False
     index = 0
     while index < len(argv):
@@ -145,8 +151,11 @@ def fast_parse(argv: list[str]) -> SimpleNamespace | None:
                 return None
             value = argv[index + 1]
             index += 1
-            if _FAST_FLAGS[token] == "event":
+            kind = _FAST_FLAGS[token]
+            if kind == "event":
                 event = value
+            elif kind == "contract":
+                contract = value
             else:
                 files.append(value)
         elif token.startswith("-"):
@@ -170,6 +179,7 @@ def fast_parse(argv: list[str]) -> SimpleNamespace | None:
         context_files=files,
         context_file=files[0] if files else "",
         quiet=quiet,
+        contract=contract,
     )
 
 
@@ -190,6 +200,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     Several messages in one invocation are evaluated against one payload and
     answered with one envelope.
 
+    ``--contract <id>`` (either shape) names a vendor hook contract from
+    ``hooks/lib/vendor_contract.py``: the vendor's event and tool spellings are
+    translated on the way in and the envelope is reshaped on the way out. Left
+    out, the command speaks Claude Code's contract and nothing is translated.
+
     When the positional form is used, ``<message-name>`` resolves to
     ``<apothem-hooks-package-dir>/messages/<name>.md`` so the file is
     located regardless of where the dispatcher lives on disk (a source
@@ -204,6 +219,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--event-name", "-e", default=None)
     parser.add_argument("--context-file", "-c", action="append", default=[])
     parser.add_argument("--quiet", "-q", action="store_true")
+    parser.add_argument("--contract", default="")
     args = parser.parse_args(argv)
     if args.event_positional and not args.event_name:
         args.event_name = args.event_positional
@@ -376,6 +392,31 @@ def dispatch(
     _run_emit(event_name, files, quiet)
 
 
+def run(
+    event_name: str,
+    context_file: str,
+    quiet: bool,
+    context_files: list[str] | None = None,
+    contract: str = "",
+) -> None:
+    """Dispatch *event_name*, under the vendor *contract* when one is named.
+
+    Without a contract this is :func:`dispatch` and nothing else runs: the
+    contract module is not even imported, so the default command line pays no
+    cost for the shim.
+    """
+    if not contract:
+        dispatch(event_name, context_file, quiet, context_files)
+        return
+    import vendor_contract
+
+    vendor_contract.run_contracted(
+        contract,
+        event_name,
+        lambda event: dispatch(event, context_file, quiet, context_files),
+    )
+
+
 def _best_effort_event_name(argv: list[str] | None) -> str:
     """Recover the event name from *argv* without enforcing the full grammar.
 
@@ -417,7 +458,13 @@ def main(argv: list[str] | None = None) -> None:
     fast = fast_parse(sys.argv[1:] if argv is None else argv)
     if fast is not None:
         try:
-            dispatch(fast.event_name, fast.context_file, fast.quiet, fast.context_files)
+            run(
+                fast.event_name,
+                fast.context_file,
+                fast.quiet,
+                fast.context_files,
+                fast.contract,
+            )
         except Exception as exc:
             _emit_failure(fast.event_name, str(exc))
         return
@@ -425,7 +472,13 @@ def main(argv: list[str] | None = None) -> None:
     try:
         args = parse_args(argv)
         event_name = args.event_name
-        dispatch(event_name, args.context_file, args.quiet, args.context_files)
+        run(
+            event_name,
+            args.context_file,
+            args.quiet,
+            args.context_files,
+            args.contract,
+        )
     except SystemExit as exc:
         if exc.code in (0, None):
             raise
