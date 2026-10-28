@@ -157,6 +157,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `reference-token-grep` now list their findings in directory order instead of
   one pass per file suffix.
 
+### Security
+
+- **The VS Code packaging tool's lockfile takes the `qs` fix.** The locked
+  `vsce` toolchain (`.github/vsce`) moves its transitive `qs` from 6.16.0 to
+  6.16.1, which fixes GHSA-6pq8-jhm2-2vcw (an uncaught error in
+  `qs.stringify` with the comma array format). The tool runs only in the
+  release and publish jobs; the packaged extension is unchanged.
+
 ## [1.4.0] - 2026-10-26
 
 ### Added
