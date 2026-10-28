@@ -39,7 +39,7 @@ _STRUCTURED_SUFFIXES = {".json", ".yaml", ".yml"}
 #: template as that release shipped it, keyed by (harness, manifest source).
 #: Refresh both when a release is cut; the git-backed test below checks every
 #: digest here against the tag.
-_LATEST_RELEASE = "v1.4.0"
+_LATEST_RELEASE = "v1.5.0"
 _LATEST_RELEASE_DIGESTS = {
     ("glm", "harnesses/glm/templates/glm.toml"): (
         "bbea03200583fb815a36c50fd0b093ea120b1bdcf7e79d85fbf404b2ff261a31"
