@@ -625,8 +625,10 @@ harnesses:
       # documented; the command is quoted for sh and would need a call operator
       # under PowerShell.
       # TODO(clarify): whether Devin Desktop's Local agent applies the CLI's
-      # read_config_from defaults, and whether Devin adds config.local.json to a
-      # gitignore itself (the page only calls the file gitignored).
+      # read_config_from defaults. Devin excludes local config files from git
+      # itself, through .git/info/exclude
+      # (https://docs.devin.ai/cli/reference/configuration/global-vs-local.md,
+      # retrieved 2026-10-28), so the registration stays out of the repository.
       - source: "hooks/"
         target: "${PROJECT_ROOT}/.apothem/support/windsurf/hooks/"
         mode: merge_tree_entries
@@ -729,8 +731,13 @@ harnesses:
       # fail-open). Cursor also imports the hooks the Claude Code install wrote
       # to ~/.claude/settings.json (Third-Party Imports, on by default) and runs
       # every matching hook from every source, so the install prints an advisory
-      # naming that switch; the SessionStart command records one marker per
-      # session so the same command firing twice speaks once.
+      # naming that switch; the SessionStart command and the Claude Code copy of
+      # it share one marker per session (the default command line takes part when
+      # CURSOR_PROJECT_DIR or CURSOR_VERSION is set), so whichever runs second is
+      # silent. An entry is Apothem's when its command runs
+      # .apothem/support/cursor/hooks/dispatch.py with --contract, whichever
+      # project path it was written under. A project or interpreter path holding
+      # $, a backtick, a double quote or a backslash is refused at install.
       # TODO(clarify): how Cursor's CLI and other non-desktop surfaces run hook
       # commands on Windows, and whether any one command string is valid under
       # both sh and PowerShell.

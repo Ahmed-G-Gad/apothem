@@ -7,6 +7,10 @@ payload shaped like the one that vendor documents (design note section 1b,
 vendor pages retrieved 2026-10-28), so a change to a spelling, a shape or a
 delivery rule fails here. The default command line, which Claude Code, Codex and
 Qwen Code run, must not change by one byte, and no shape may carry a decision.
+
+Cursor and Devin Local also run the Claude Code copy of the SessionStart command,
+which they import from ``~/.claude/settings.json``. The sessions section pins that
+the vendor's own registration and that copy share one per-session marker.
 """
 
 from __future__ import annotations
@@ -52,11 +56,15 @@ def project(tmp_path: Path) -> Path:
     return root
 
 
-def _env(tmp_path: Path) -> dict[str, str]:
+def _env(tmp_path: Path, extra: dict[str, str] | None = None) -> dict[str, str]:
     env = dict(os.environ)
     env["PYTHONUTF8"] = "1"
     env["APOTHEM_HOOK_STATE_DIR"] = str(tmp_path / "state")
     env.pop("APOTHEM_HOOKS_DISABLE", None)
+    # A run inside Cursor or Devin must not make the default line look hosted.
+    for name in (*vc.HOST_CONTRACT_BY_ENV, "CLAUDE_PROJECT_DIR", "LLM_PROJECT_DIR"):
+        env.pop(name, None)
+    env.update(extra or {})
     return env
 
 
@@ -65,6 +73,7 @@ def _run(
     project: Path,
     args: list[str],
     payload: dict[str, object] | str,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     text = payload if isinstance(payload, str) else json.dumps(payload)
     return subprocess.run(
@@ -72,7 +81,7 @@ def _run(
         input=text,
         capture_output=True,
         text=True,
-        env=_env(tmp_path),
+        env=_env(tmp_path, env),
         cwd=str(project),
         timeout=60,
         check=False,
@@ -109,15 +118,11 @@ def test_every_contract_names_only_supported_events() -> None:
     for contract in vc.CONTRACTS.values():
         assert contract.delivers <= SUPPORTED_EVENTS, contract.contract_id
         assert set(contract.events.values()) <= SUPPORTED_EVENTS, contract.contract_id
-        assert contract.shape_for("SessionStart") in {
-            vc.ENVELOPE,
-            vc.PLAIN,
-            vc.FLAT,
-            vc.SNAKE,
-        }
+        assert contract.output in {vc.ENVELOPE, vc.PLAIN, vc.FLAT, vc.SNAKE}
 
 
-def test_the_seven_contract_ids() -> None:
+def test_the_six_contract_ids() -> None:
+    # Trae hooks are deferred until the pickup probe passes, so no contract names it.
     assert set(vc.CONTRACTS) == {
         "claude",
         "codebuddy",
@@ -125,8 +130,11 @@ def test_the_seven_contract_ids() -> None:
         "cursor",
         "copilot",
         "kiro",
-        "trae",
     }
+
+
+def test_the_claude_contract_delivers_every_event_the_dispatcher_routes() -> None:
+    assert vc.CONTRACTS["claude"].delivers == SUPPORTED_EVENTS
 
 
 def test_unknown_contract_raises() -> None:
@@ -138,7 +146,17 @@ def test_only_the_claude_importers_deduplicate() -> None:
     deduplicated = {
         c.contract_id for c in vc.CONTRACTS.values() if c.dedupe_session_start
     }
-    assert deduplicated == {"cursor", "devin", "trae"}
+    assert deduplicated == {"cursor", "devin"}
+
+
+def test_the_host_environment_names_match_the_dispatcher_and_the_contracts() -> None:
+    # dispatch.py tests these without importing the shim, so the two must agree.
+    assert tuple(vc.HOST_CONTRACT_BY_ENV) == dispatch._IMPORTING_HOST_ENV
+    assert set(vc.HOST_CONTRACT_BY_ENV.values()) <= {
+        c.contract_id for c in vc.CONTRACTS.values() if c.dedupe_session_start
+    }
+    # CLAUDE_PROJECT_DIR is Cursor's alias, so it must never identify a host.
+    assert "CLAUDE_PROJECT_DIR" not in vc.HOST_CONTRACT_BY_ENV
 
 
 # --------------------------------------------------------------------------- #
@@ -164,8 +182,6 @@ _TOOL_CASES = [
     ("kiro", "execute_pwsh", "PowerShell"),
     ("kiro", "fs_write", "Write"),
     ("kiro", "str_replace", "Edit"),
-    ("trae", "RunCommand", "Bash"),
-    ("trae", "Write", "Write"),
 ]
 
 
@@ -189,7 +205,6 @@ _EVENT_CASES = [
     ("copilot", "SessionStart", "SessionStart"),
     ("devin", "PostCompaction", "PostCompact"),
     ("kiro", "SessionStart", "SessionStart"),
-    ("trae", "PostToolUse", "PostToolUse"),
     ("codebuddy", "SessionStart", "SessionStart"),
 ]
 
@@ -287,19 +302,31 @@ def test_devin_payload() -> None:
     assert out["tool_name"] == "Bash"
 
 
-def test_trae_payload() -> None:
-    # Trae: session_id, cwd, hook_event_name, workspace_roots, tool_name, tool_input.
-    payload = {
-        "session_id": "t-1",
-        "cwd": "/work/app",
-        "hook_event_name": "PreToolUse",
-        "workspace_roots": ["/work/app"],
-        "tool_name": "RunCommand",
-        "tool_input": {"command": "ls"},
-    }
-    out = vc.normalise_payload(vc.get_contract("trae"), payload, "PreToolUse")
-    assert out["tool_name"] == "Bash"
-    assert out["cwd"] == "/work/app"
+def test_devin_learns_the_project_directory_from_its_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # lifecycle-hooks.md documents no cwd on stdin; overview.md says
+    # DEVIN_PROJECT_DIR is set to the project root.
+    monkeypatch.setenv("DEVIN_PROJECT_DIR", "/work/devin-app")
+    devin = vc.get_contract("devin")
+    bare = {"hook_event_name": "SessionStart", "session_id": "d-1", "source": "startup"}
+    assert vc.normalise_payload(devin, bare, "SessionStart")["cwd"] == "/work/devin-app"
+    # A cwd the payload does carry, and Cursor's workspace_roots, still win.
+    own = {**bare, "cwd": "/elsewhere"}
+    assert vc.normalise_payload(devin, own, "SessionStart")["cwd"] == "/elsewhere"
+    roots = {**bare, "workspace_roots": ["/work/roots"]}
+    assert vc.normalise_payload(devin, roots, "SessionStart")["cwd"] == "/work/roots"
+    monkeypatch.delenv("DEVIN_PROJECT_DIR")
+    assert "cwd" not in vc.normalise_payload(devin, bare, "SessionStart")
+
+
+def test_only_devin_reads_a_project_directory_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEVIN_PROJECT_DIR", "/work/devin-app")
+    for contract_id in ("codebuddy", "kiro", "copilot", "cursor"):
+        contract = vc.get_contract(contract_id)
+        assert "cwd" not in vc.normalise_payload(contract, {}, "SessionStart")
 
 
 def test_codebuddy_payload_passes_through_unchanged() -> None:
@@ -351,7 +378,6 @@ def test_envelope_shape_is_left_byte_for_byte() -> None:
         ("kiro", "Be brief.\n"),
         ("copilot", '{"additionalContext":"Be brief."}\n'),
         ("cursor", '{"additional_context":"Be brief."}\n'),
-        ("trae", "Be brief.\n"),
     ],
 )
 def test_session_start_shapes(contract_id: str, expected: str) -> None:
@@ -359,24 +385,11 @@ def test_session_start_shapes(contract_id: str, expected: str) -> None:
     assert vc.shape_output(contract, "SessionStart", _ENVELOPE + "\n") == expected
 
 
-@pytest.mark.parametrize("contract_id", ["kiro", "copilot", "cursor", "trae"])
+@pytest.mark.parametrize("contract_id", ["kiro", "copilot", "cursor"])
 def test_a_silent_handler_stays_silent_in_every_shape(contract_id: str) -> None:
     contract = vc.get_contract(contract_id)
     for captured in ("", "{}\n", _SILENT + "\n"):
         assert vc.shape_output(contract, "SessionStart", captured) == ""
-
-
-def test_trae_tool_events_keep_the_envelope() -> None:
-    trae = vc.get_contract("trae")
-    post = json.dumps(
-        {
-            "hookSpecificOutput": {
-                "hookEventName": "PostToolUse",
-                "additionalContext": "c",
-            }
-        }
-    )
-    assert vc.shape_output(trae, "PostToolUse", post + "\n") == post + "\n"
 
 
 def test_system_message_is_not_model_context() -> None:
@@ -401,7 +414,7 @@ def test_no_shape_carries_a_decision(contract_id: str) -> None:
     )
     for event in ("SessionStart", "PostToolUse", "UserPromptSubmit"):
         shaped = vc.shape_output(contract, event, hostile)
-        if contract.shape_for(event) == vc.ENVELOPE:
+        if contract.output == vc.ENVELOPE:
             continue  # left as the handler wrote it; the handlers never write a decision
         keys = _keys(json.loads(shaped)) if shaped.startswith("{") else set()
         assert not keys & _DECISION_KEYS, (contract_id, event, keys)
@@ -477,13 +490,81 @@ def test_session_start_runs_once_per_session_and_source(
 ) -> None:
     monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
     first = {"session_id": "s1", "source": "startup"}
-    assert vc.first_session_start("cursor", first) is True
-    assert vc.first_session_start("cursor", first) is False
+    assert vc.first_session_start(first) is True
+    assert vc.first_session_start(first) is False
     # The compaction firing of the same session still delivers its recovery text.
-    assert vc.first_session_start("cursor", {"session_id": "s1", "source": "compact"})
-    assert vc.first_session_start("cursor", {"session_id": "s2", "source": "startup"})
-    # Contracts do not share a marker.
-    assert vc.first_session_start("devin", first) is True
+    assert vc.first_session_start({"session_id": "s1", "source": "compact"})
+    assert vc.first_session_start({"session_id": "s2", "source": "startup"})
+
+
+def test_the_marker_is_shared_whichever_registration_runs_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The key names the session and the source, not the contract: the vendor's
+    # own registration and the Claude Code copy it imports are one start.
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    payload = {"session_id": "shared", "source": "startup"}
+    assert vc.first_session_start(payload) is True
+    assert vc.first_session_start(dict(payload)) is False
+    markers = list((tmp_path / "state" / "session-start").glob("*.seen"))
+    assert [m.name for m in markers] == ["shared--start.seen"]
+
+
+def test_a_missing_source_and_startup_are_the_same_first_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Cursor's sessionStart has no source; the Claude Code copy may say "startup".
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    assert vc.first_session_start({"session_id": "s1"}) is True
+    assert vc.first_session_start({"session_id": "s1", "source": "startup"}) is False
+    assert vc.first_session_start({"session_id": "s1", "source": "compact"}) is True
+
+
+def test_a_repeat_after_the_window_is_a_new_start_not_a_duplicate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A second compaction (or resume, or clear) of one session delivers again; only
+    # a start inside the duplicate window is silenced.
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    compact = {"session_id": "s1", "source": "compact"}
+    assert vc.first_session_start(compact) is True
+    assert vc.first_session_start(compact) is False
+    marker = next((tmp_path / "state" / "session-start").glob("*.seen"))
+    aged = marker.stat().st_mtime - (vc._DUPLICATE_WINDOW_SECONDS + 5)
+    os.utime(marker, (aged, aged))
+    assert vc.first_session_start(compact) is True
+    # The second compaction's own duplicate is silent again.
+    assert vc.first_session_start(compact) is False
+
+
+def test_a_payload_with_no_session_id_is_never_suppressed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    for payload in (None, {}, {"source": "startup"}, {"session_id": "  "}):
+        assert vc.first_session_start(payload) is True
+        assert vc.first_session_start(payload) is True
+
+
+def _record_starts(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, object], contract_id: str
+) -> int:
+    calls: list[str] = []
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    vc.run_contracted(contract_id, "sessionStart", calls.append)
+    return len(calls)
+
+
+def test_two_conversations_that_send_only_a_conversation_id_both_deliver(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The key is built from the normalised payload, so conversation_id (and
+    # sessionId) separate conversations that the parent-process fallback would merge.
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    assert _record_starts(monkeypatch, {"conversation_id": "convA"}, "cursor") == 1
+    assert _record_starts(monkeypatch, {"conversation_id": "convB"}, "cursor") == 1
+    # The same conversation's duplicate is the one that is silent.
+    assert _record_starts(monkeypatch, {"conversation_id": "convA"}, "cursor") == 0
 
 
 def test_a_state_directory_that_cannot_be_written_never_suppresses(
@@ -492,20 +573,65 @@ def test_a_state_directory_that_cannot_be_written_never_suppresses(
     blocker = tmp_path / "file"
     blocker.write_text("x", encoding="utf-8")
     monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(blocker / "sub"))
-    assert vc.first_session_start("cursor", {"session_id": "s1"}) is True
-    assert vc.first_session_start("cursor", {"session_id": "s1"}) is True
+    assert vc.first_session_start({"session_id": "s1"}) is True
+    assert vc.first_session_start({"session_id": "s1"}) is True
 
 
 def test_stale_markers_are_purged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
-    assert vc.first_session_start("cursor", {"session_id": "old"})
+    assert vc.first_session_start({"session_id": "old"})
     marker = next((tmp_path / "state" / "session-start").glob("*.seen"))
-    ancient = marker.stat().st_mtime - 30 * 24 * 3600
+    ancient = marker.stat().st_mtime - (vc._MARKER_MAX_AGE_SECONDS + 60)
     os.utime(marker, (ancient, ancient))
-    assert vc.first_session_start("cursor", {"session_id": "new"})
+    assert vc.first_session_start({"session_id": "new"})
     assert not marker.exists()
+
+
+def test_the_default_start_under_a_host_hands_the_handler_the_vendor_spellings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("CURSOR_PROJECT_DIR", "/work/app")
+    seen: list[dict[str, object]] = []
+    payload = {"conversation_id": "c1", "workspace_roots": ["/work/app"]}
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    original = sys.stdin
+    vc.run_session_start_once(lambda: seen.append(json.loads(sys.stdin.read())))
+    assert seen[0]["session_id"] == "c1"
+    assert seen[0]["cwd"] == "/work/app"
+    assert sys.stdin is original
+
+
+def test_the_default_start_off_a_host_is_passed_through_untouched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("APOTHEM_HOOK_STATE_DIR", str(tmp_path / "state"))
+    for name in vc.HOST_CONTRACT_BY_ENV:
+        monkeypatch.delenv(name, raising=False)
+    seen: list[str] = []
+    raw = '{"session_id": "s", "x":   1}'
+    for _ in range(2):  # no marker is ever consulted, so both runs deliver
+        monkeypatch.setattr(sys, "stdin", io.StringIO(raw))
+        vc.run_session_start_once(lambda: seen.append(sys.stdin.read()))
+    assert seen == [raw, raw]
+    assert not (tmp_path / "state" / "session-start").exists()
+
+
+def test_a_marker_failure_never_suppresses_the_default_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CURSOR_PROJECT_DIR", "/work/app")
+
+    def broken(_payload: object) -> bool:
+        raise RuntimeError("marker broke")
+
+    monkeypatch.setattr(vc, "first_session_start", broken)
+    seen: list[str] = []
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"session_id": "s"}'))
+    vc.run_session_start_once(lambda: seen.append(sys.stdin.read()))
+    assert seen == ['{"session_id": "s"}']
 
 
 # --------------------------------------------------------------------------- #
@@ -548,6 +674,38 @@ def test_the_default_command_line_never_imports_the_shim(
     assert result.stdout.strip().splitlines()[-1] == "False"
 
 
+def _imports_shim(project: Path, tmp_path: Path, argv: str, env: dict[str, str]):
+    code = (
+        f"import sys; sys.path.insert(0, {str(_HOOKS_DIR)!r}); import dispatch; "
+        f"dispatch.main({argv}); print('vendor_contract' in sys.modules)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path, env),
+        cwd=str(project),
+        check=False,
+        input="",
+    )
+    return result.stdout.strip().splitlines()[-1]
+
+
+def test_the_default_session_start_imports_the_shim_only_under_a_host(
+    project: Path, tmp_path: Path
+) -> None:
+    assert _imports_shim(project, tmp_path, "['SessionStart']", {}) == "False"
+    hosted = {"CURSOR_PROJECT_DIR": str(project)}
+    assert _imports_shim(project, tmp_path, "['SessionStart']", hosted) == "True"
+    hosted = {"DEVIN_PROJECT_DIR": str(project)}
+    assert _imports_shim(project, tmp_path, "['SessionStart']", hosted) == "True"
+    # Only SessionStart takes part; a tool event never does.
+    assert (
+        _imports_shim(project, tmp_path, "['PreToolUse', 'pretooluse-bash']", hosted)
+        == "False"
+    )
+
+
 def test_an_unknown_contract_fails_open(project: Path, tmp_path: Path) -> None:
     result = _run(tmp_path, project, ["--contract", "nope", "SessionStart"], {})
     assert result.returncode == 0
@@ -588,6 +746,21 @@ def test_claude_contract_is_byte_identical_to_the_default(
     assert plain.stdout
     assert plain.stdout == contracted.stdout
     assert plain.returncode == contracted.returncode == 0
+
+
+@pytest.mark.parametrize(
+    ("event", "message"), [("PreCompact", "precompact"), ("PostCompact", "postcompact")]
+)
+def test_claude_contract_delivers_the_compaction_events_like_the_default(
+    project: Path, tmp_path: Path, event: str, message: str
+) -> None:
+    payload = {"session_id": "cl-c", "hook_event_name": event, "cwd": str(project)}
+    plain = _run(tmp_path, project, [event, message], payload)
+    contracted = _run(
+        tmp_path, project, ["--contract", "claude", event, message], payload
+    )
+    assert plain.stdout
+    assert plain.stdout == contracted.stdout
 
 
 def test_codebuddy_session_start_is_byte_identical_to_the_default(
@@ -673,15 +846,21 @@ def test_copilot_camel_case_session_start_is_a_flat_object(
     assert parsed["additionalContext"]
 
 
+_START = {
+    "session_id": "dup-1",
+    "hook_event_name": "SessionStart",
+    "source": "startup",
+}
+
+
+def _start_payload(project: Path, **extra: object) -> dict[str, object]:
+    return {**_START, "cwd": str(project), "workspace_roots": [str(project)], **extra}
+
+
 def test_cursor_session_start_is_idempotent_per_session(
     project: Path, tmp_path: Path
 ) -> None:
-    payload = {
-        "session_id": "cu-1",
-        "conversation_id": "conv-1",
-        "workspace_roots": [str(project)],
-        "hook_event_name": "sessionStart",
-    }
+    payload = _start_payload(project, hook_event_name="sessionStart")
     args = ["--contract", "cursor", "sessionStart"]
     first = _run(tmp_path, project, args, payload)
     second = _run(tmp_path, project, args, payload)
@@ -689,7 +868,73 @@ def test_cursor_session_start_is_idempotent_per_session(
     assert (second.returncode, second.stdout) == (0, "")
 
 
-def test_default_session_start_is_not_deduplicated(
+_HOSTS = [
+    pytest.param("cursor", "sessionStart", "CURSOR_PROJECT_DIR", id="cursor"),
+    pytest.param("cursor", "sessionStart", "CURSOR_VERSION", id="cursor-version"),
+    pytest.param("devin", "SessionStart", "DEVIN_PROJECT_DIR", id="devin"),
+]
+
+
+@pytest.mark.parametrize(("contract", "event", "host_var"), _HOSTS)
+def test_the_claude_copy_first_silences_the_vendor_copy(
+    project: Path, tmp_path: Path, contract: str, event: str, host_var: str
+) -> None:
+    # Cursor and Devin Local run the hook registered natively and the Claude Code
+    # copy they import from ~/.claude/settings.json: the bootstrap reaches the
+    # model once, whichever of the two runs first.
+    payload = _start_payload(project, hook_event_name=event)
+    host = {host_var: str(project)}
+    claude_copy = _run(tmp_path, project, ["SessionStart"], payload, host)
+    vendor_copy = _run(
+        tmp_path, project, ["--contract", contract, event], payload, host
+    )
+    assert claude_copy.stdout.strip()
+    assert (vendor_copy.returncode, vendor_copy.stdout) == (0, "")
+
+
+@pytest.mark.parametrize(("contract", "event", "host_var"), _HOSTS)
+def test_the_vendor_copy_first_silences_the_claude_copy(
+    project: Path, tmp_path: Path, contract: str, event: str, host_var: str
+) -> None:
+    payload = _start_payload(project, hook_event_name=event)
+    host = {host_var: str(project)}
+    vendor_copy = _run(
+        tmp_path, project, ["--contract", contract, event], payload, host
+    )
+    claude_copy = _run(tmp_path, project, ["SessionStart"], payload, host)
+    assert vendor_copy.stdout.strip()
+    assert (claude_copy.returncode, claude_copy.stdout) == (0, "")
+
+
+def test_a_different_session_is_delivered_by_both_copies(
+    project: Path, tmp_path: Path
+) -> None:
+    host = {"CURSOR_PROJECT_DIR": str(project)}
+    one = _start_payload(project, hook_event_name="sessionStart", session_id="a")
+    two = _start_payload(project, hook_event_name="sessionStart", session_id="b")
+    native = ["--contract", "cursor", "sessionStart"]
+    assert _run(tmp_path, project, native, one, host).stdout.strip()
+    assert _run(tmp_path, project, ["SessionStart"], two, host).stdout.strip()
+
+
+def test_the_default_session_start_under_a_host_is_the_handlers_own_output(
+    project: Path, tmp_path: Path
+) -> None:
+    # Taking part in the marker changes who speaks, never what is said.
+    payload = _start_payload(project)
+    bare = _run(tmp_path / "off", project, ["SessionStart"], payload)
+    hosted = _run(
+        tmp_path / "on",
+        project,
+        ["SessionStart"],
+        payload,
+        {"CURSOR_PROJECT_DIR": str(project)},
+    )
+    assert bare.stdout
+    assert bare.stdout == hosted.stdout
+
+
+def test_default_session_start_is_not_deduplicated_off_a_host(
     project: Path, tmp_path: Path
 ) -> None:
     payload = {
@@ -704,21 +949,31 @@ def test_default_session_start_is_not_deduplicated(
     assert first.stdout == second.stdout
 
 
-def test_trae_run_command_reaches_the_shell_guard(
+def test_a_devin_session_start_resolves_the_project_from_its_environment(
     project: Path, tmp_path: Path
 ) -> None:
-    # RunCommand is Trae's shell tool; the git reminder fires only for a shell
-    # tool, so the alias is what makes the guard see the command.
-    result = _run(
-        tmp_path,
-        project,
-        ["--contract", "trae", *_BASH_PRE],
-        _git_commit(project, "RunCommand", "PreToolUse"),
+    # Devin sends no cwd; the project root is DEVIN_PROJECT_DIR. The plan summary
+    # in the bootstrap names the suite that lives in that project, even though the
+    # process was spawned in a directory that is not it.
+    suite = project / ".apothem" / "plans" / "devin-suite-marker"
+    suite.mkdir(parents=True)
+    (suite / "PROGRESS.md").write_text("## Status: in-progress\n", encoding="utf-8")
+    (suite / "PLAN-NOTES.md").write_text("# Notes\n", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    payload = {"session_id": "dv-1", "hook_event_name": "SessionStart"}
+    result = subprocess.run(
+        [sys.executable, str(_DISPATCH), "--contract", "devin", "SessionStart"],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path, {"DEVIN_PROJECT_DIR": str(project)}),
+        cwd=str(elsewhere),
+        timeout=60,
+        check=False,
     )
-    parsed = json.loads(result.stdout)
-    assert parsed["hookSpecificOutput"]["additionalContext"]
-    assert "tool=Bash" in parsed["hookSpecificOutput"]["additionalContext"]
-    assert not _keys(parsed) & _DECISION_KEYS
+    assert result.returncode == 0
+    assert "devin-suite-marker" in result.stdout
 
 
 def test_malformed_and_empty_stdin_fail_open(project: Path, tmp_path: Path) -> None:

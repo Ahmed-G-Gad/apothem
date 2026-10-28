@@ -188,13 +188,22 @@ install does not edit `.gitignore`.
 
 **Your own hooks.** Hook files of yours in `.kiro/hooks/` are never read or
 changed. A hook you add to `apothem.json` itself stays: an update and an uninstall
-replace or remove only the hooks whose command runs the Apothem dispatcher under
-this project. A file that is not valid JSON is saved under `~/.apothem/backups/`
-and replaced.
+replace or remove only the hooks whose command runs the Apothem dispatcher
+(`.apothem/support/kiro/hooks/dispatch.py` with `--contract kiro`, whichever
+project path it was written under). A hook of yours that only shares the name, or
+that runs `python -m apothem.conformity.gate`, is never taken for Apothem's. A file
+that is not valid JSON is saved under `~/.apothem/backups/` and replaced.
+
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
 
 **Turning the hook off.** Set `APOTHEM_HOOKS_DISABLE=1` in Kiro's environment to
 silence the Apothem hook. An update rewrites the Apothem entry, so an edit to it
-does not last.
+does not last, with one exception: set `"enabled": false` on it, which Kiro
+documents as skipping a hook without deleting it, and an update keeps that.
 
 ## Profile-to-native-config mapping
 
@@ -239,8 +248,8 @@ The verify command confirms that:
    file is in it; `apothem diff --harness kiro --project /path/to/project`
    lists the helper files that are missing or out of date.
    The hook file `.kiro/hooks/apothem.json` must exist, be non-empty and parse
-   as JSON, and the hook scripts must be in `.apothem/support/kiro/hooks/`. The
-   check does not read the hook or run it.
+   as JSON and hold a hook that runs the Apothem dispatcher, and the hook scripts
+   must be in `.apothem/support/kiro/hooks/`. The check does not run the hook.
 3. Every Apothem skill folder is in place with a `SKILL.md`, whichever
    install wrote it, and no skill folder with an Apothem name belongs to
    something Apothem did not write. A failed check names the missing or
@@ -279,7 +288,9 @@ and keeps any other file there; the folder is removed when it is left empty.
 It removes the Apothem hook from `<project>/.kiro/hooks/apothem.json`, recognising
 it by the dispatcher path in its command, so it works without an install record, and
 keeps any hook of yours in that file. The file is deleted when nothing else is in it,
-and your other hook files are not touched. The hook scripts in
+and your other hook files are not touched. If the file has comments the
+uninstall cannot read, it leaves the file as it is and reports the hook as
+skipped, with the reason; remove the Apothem hook by hand. The hook scripts in
 `<project>/.apothem/support/kiro/hooks/` go too.
 It removes the skill folders it wrote in `~/.kiro/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem

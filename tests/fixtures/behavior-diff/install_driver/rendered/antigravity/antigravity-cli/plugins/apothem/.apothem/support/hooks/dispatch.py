@@ -11,6 +11,12 @@ failure envelope on stdout so the hook runtime never sees a raw traceback.
 ``--contract <id>`` runs the same routing under a vendor's hook contract (see
 ``lib/vendor_contract.py``): event and tool spellings are translated in, the
 envelope is reshaped out, and the command stays advisory.
+
+The default command line (no ``--contract``) is what Claude Code, Codex and Qwen
+Code run, and what Cursor and Devin Local import from ``~/.claude/settings.json``.
+Under those two hosts a SessionStart would reach the model twice, so there (and
+only there, judged from the vendor's own environment variables) the default
+SessionStart shares the vendor registration's per-session marker.
 """
 
 from __future__ import annotations
@@ -48,6 +54,16 @@ from events import (
 #: configuration, which the harness snapshots at session start.
 DISABLE_ENV: Final[str] = "APOTHEM_HOOKS_DISABLE"
 _TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+#: Environment variables that mark a host that runs the Claude Code settings file's
+#: hooks next to its own (Cursor, Devin Local). Kept equal to the keys of
+#: ``vendor_contract.HOST_CONTRACT_BY_ENV`` (a test pins that), so the default
+#: command line can tell it needs the shim without importing it.
+_IMPORTING_HOST_ENV: Final[tuple[str, ...]] = (
+    "CURSOR_PROJECT_DIR",
+    "CURSOR_VERSION",
+    "DEVIN_PROJECT_DIR",
+)
 
 
 def hooks_disabled() -> bool:
@@ -403,9 +419,20 @@ def run(
 
     Without a contract this is :func:`dispatch` and nothing else runs: the
     contract module is not even imported, so the default command line pays no
-    cost for the shim.
+    cost for the shim. The one exception is a SessionStart under Cursor or Devin
+    Local (named by their environment variables), which shares the vendor
+    registration's per-session marker so the session start is delivered once.
     """
     if not contract:
+        if event_name == "SessionStart" and any(
+            os.environ.get(name, "").strip() for name in _IMPORTING_HOST_ENV
+        ):
+            import vendor_contract
+
+            vendor_contract.run_session_start_once(
+                lambda: dispatch(event_name, context_file, quiet, context_files)
+            )
+            return
         dispatch(event_name, context_file, quiet, context_files)
         return
     import vendor_contract

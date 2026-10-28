@@ -144,7 +144,12 @@ Read 2026-10-28 (<https://cursor.com/docs/hooks>, raw Markdown) and 2026-10-27
   agent loop does not wait for or enforce a blocking response, and the context goes
   into the conversation's initial system context. Exit 0 uses the JSON output,
   exit 2 blocks, and any other code is a failure that lets the action proceed.
-  `CURSOR_PROJECT_DIR` (alias `CLAUDE_PROJECT_DIR`) is the workspace root.
+  `CURSOR_PROJECT_DIR` (alias `CLAUDE_PROJECT_DIR`) is the workspace root. The
+  page's Environment Variables table lists `CURSOR_PROJECT_DIR`,
+  `CURSOR_VERSION` and the `CLAUDE_PROJECT_DIR` alias as set for every hook
+  command (read 2026-10-28); `CURSOR_VERSION` and `CURSOR_PROJECT_DIR` are how
+  the dispatcher knows it runs under Cursor, and `CLAUDE_PROJECT_DIR` is no
+  signal because Cursor exports it as an alias.
 - Where the adapter's context can land: `additional_context` is documented for
   sessionStart and, on the page read 2026-10-28, for postToolUse and
   postToolUseFailure as well. Version 1 of the adapter registers sessionStart only,
@@ -182,17 +187,24 @@ Read 2026-10-28 (<https://cursor.com/docs/hooks>, raw Markdown) and 2026-10-27
   from every source. If the Apothem Claude Code install wrote its hooks to
   `~/.claude/settings.json`, Cursor can run both sets. The install prints a note
   naming the switch and what turning it off also stops. The sessionStart command
-  the adapter registers records one marker per (contract, session, source), so a
-  repeat of that command is silent; the Claude Code copy is a different command and
-  is not covered, and no PostToolUse counter is de-duplicated.
+  the adapter registers and the Claude Code copy of it (the default command line)
+  share one marker per (session, source) in the hook state directory, so whichever
+  runs second is silent. The default command line takes part only when
+  `CURSOR_PROJECT_DIR` or `CURSOR_VERSION` is set; the marker binds for ten
+  seconds, so a later start of the same session delivers; no PostToolUse counter
+  is de-duplicated.
+- TODO(clarify): whether the environment variables above are also set for a hook
+  Cursor imports from `~/.claude/settings.json`; the page lists them for hook
+  commands without distinguishing the source. If they are not, the Claude Code
+  copy runs unmarked and the bootstrap can be delivered twice.
 - Files the adapter writes: the dispatcher tree at
   `<project>/.apothem/support/cursor/hooks/` (Apothem-owned; nested under the
   harness name; the project's `.gitignore` snippet ignores `.apothem/*`) and one
   entry in `<project>/.cursor/hooks.json`, which is the operator's file: the
   `native_hooks` mode (operator-owned) keeps their entries and other keys ahead of
-  Apothem's, tells Apothem's entry apart by the dispatcher path in its command, and
-  on an uninstall removes only that entry (deleting the file only when nothing else
-  remains). A file with comments, trailing commas, a non-object value or the
+  Apothem's, tells Apothem's entry apart by what its command runs (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's), and
+  on an uninstall removes only that entry (deleting the file, after a backup, when
+  nothing else remains: `native_hooks` does not record who created the file). An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file. A file with comments, trailing commas, a non-object value or the
   other vendor's `hooks` shape is refused with `config.unparseable` and left as it
   is. The user file `~/.cursor/hooks.json` is never written. The registration names
   an absolute interpreter and project path, which are machine-specific, in a file
@@ -234,7 +246,7 @@ Retrieved 2026-10-03 unless marked.
 - <https://cursor.com/docs/cli/changelog> (model fallback for a pinned subagent model, no descent into hidden directories; retrieved 2026-10-27)
 - <https://cursor.com/docs/reference/plugins> (the plugin `agents/` folder, a separate surface; retrieved 2026-10-27)
 - <https://cursor.com/docs/reference/third-party-hooks> (the Third-Party Imports switch and the Claude Code hook import, priority order and response compatibility; retrieved 2026-10-27)
-- <https://cursor.com/docs/hooks> (hook files, schema, events, the sessionStart contract, exit codes, the Windows PowerShell note, cloud agents; retrieved 2026-10-28)
+- <https://cursor.com/docs/hooks> (hook files, schema, events, the sessionStart contract, exit codes, the Windows PowerShell note, cloud agents, the Environment Variables table; retrieved 2026-10-28)
 - <https://cursor.com/docs/agent/tools/browser> (Browser tool)
 
 ## Discovery Targets

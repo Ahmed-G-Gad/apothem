@@ -156,9 +156,13 @@ session-end protocol stay on the tools that deliver them.
 `hooks.json` is your file, and Cursor documents project hooks as checked into
 version control. The install adds Apothem's entry after yours and leaves your
 entries and other keys as they were; an update replaces only the entry whose
-command runs the Apothem dispatcher under this project, and an uninstall removes
-only that entry (the file is deleted only when Apothem created it and nothing else
-remains in it). A file with comments, a trailing comma or a `hooks` value of the
+command runs the Apothem dispatcher (`.apothem/support/cursor/hooks/dispatch.py`
+with `--contract cursor`, whichever project path it was written under), and an
+uninstall removes only that entry. A hook of yours that only shares the name, such
+as `tools/hooks/dispatch.py` in your project, or that runs `python -m
+apothem.conformity.gate`, is never taken for Apothem's. The uninstall deletes the
+file when nothing else remains in it, after saving a copy under
+`~/.apothem/backups/`. A file with comments, a trailing comma or a `hooks` value of the
 wrong shape cannot be rewritten without losing something, so the install reports a
 `config.unparseable` error for that file, leaves it untouched and stops, with the
 other files it had begun to write removed again: fix the file, or add the entry
@@ -189,15 +193,25 @@ the quoting, so this is Apothem's reading of PowerShell's syntax.
 `--contract cursor` reads Cursor's `conversation_id` and `workspace_roots` and
 answers with `{"additional_context": ...}` and nothing else.
 
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
+
 **Cursor also runs the hooks Claude Code wrote.** Cursor loads the hooks in
 `~/.claude/settings.json`, `.claude/settings.json` and `.claude/settings.local.json`
 while "Include Third-Party Plugins, Skills, and Other Configs" is on (in Cursor
 Settings, under Third-Party Imports), which is the default, and it runs every
 matching hook from every source. If you also installed Apothem for Claude Code,
-both sets of hooks can run. The `sessionStart` command here records one marker per
-session, so a repeat of that same command is silent, but the Claude Code copy is a
-separate command, and its context-size counter runs in addition. Apothem does not
-de-duplicate the counters. To run only the hook here, turn that setting off; it also
+both sets of hooks can run. The `sessionStart` command here and the Claude Code
+copy of it share one marker per session in Apothem's hook state folder, so
+whichever runs second is silent and the bootstrap reaches the model once; Apothem
+finds Cursor from the `CURSOR_PROJECT_DIR` and `CURSOR_VERSION` variables Cursor
+sets for its hooks. The marker covers ten seconds, so a later start of the same
+session, such as a second compaction, still delivers. The Claude Code copy's
+context-size counter runs in addition, and Apothem does not de-duplicate the
+counters. To run only the hook here, turn that setting off; it also
 stops Cursor importing third-party plugins, skills and other configs. The install
 prints this as a note.
 
@@ -250,8 +264,9 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.cursor/agents/` folder and the hook file
    `.cursor/hooks.json` included; managed
-   files are non-empty, and JSON or YAML configs parse. The check does not read
-   the hook entry or run it. Add `--profile PATH` to
+   files are non-empty, and JSON or YAML configs parse. The hook file must hold
+   an entry that runs the Apothem dispatcher (the check does not run it), so a
+   file that was reverted or emptied no longer verifies. Add `--profile PATH` to
    also confirm that the installed files match that profile. For
    `.cursor/agents/` the check is that the folder exists, not that each helper
    file is in it; `apothem diff --harness cursor --project /path/to/project`
@@ -295,6 +310,9 @@ It removes the Apothem entry from `<project>/.cursor/hooks.json`, recognising it
 the dispatcher path in its command, and keeps your own entries and keys. The file is
 deleted only when nothing else remains in it. The hook scripts in
 `<project>/.apothem/support/cursor/hooks/` go too.
+If a file has comments that the uninstall cannot read, it leaves that file as it
+is and reports the entry as skipped, with the reason; remove the Apothem entry by
+hand.
 It removes the skill folders it wrote in `~/.agents/skills/` and the
 rules and templates in `~/.config/apothem/`, but only when no other Apothem
 install still uses them. Another project, or another tool that shares the

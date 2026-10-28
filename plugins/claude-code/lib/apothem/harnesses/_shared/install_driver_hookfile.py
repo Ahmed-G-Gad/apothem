@@ -7,11 +7,15 @@ author, rather than from a settings file the operator shares with the tool.
 Apothem writes one of those files, named ``apothem.json``, and the file is the
 Apothem-owned place its hook entries live. The mode renders a template into
 that file, and tells Apothem's entries from any entry the operator added to the
-same file by what each entry's command runs: the dispatcher under the project
-(``.../hooks/dispatch.py``), the same test :func:`is_apothem_hook` applies to a
-shared settings file. The test reads the command text, so it holds whether or
-not the install ledger has a record, and whether or not the interpreter token
-in the template can be rendered again (an uninstall renders without it).
+same file by what each entry's command runs: the native dispatcher,
+``.apothem/support/[<harness>/]hooks/dispatch.py``, with a ``--contract <id>``
+argument (:func:`is_apothem_contract_command`). The test reads the command text
+and nothing else, so it holds whether or not the install ledger has a record,
+whether or not the interpreter token in the template can be rendered again (an
+uninstall renders without it), and whichever project path the entry was written
+under: a project that was renamed, moved or cloned again keeps one set of
+entries, and an operator's own ``hooks/dispatch.py`` or ``python -m
+apothem.conformity.gate`` hook is never taken for Apothem's.
 
 Two document shapes are understood, because the two vendors use them:
 
@@ -29,7 +33,10 @@ stray ``"hooks": []`` to every entry.
 An install writes the rendered template as the whole file when the file is
 absent, empty, unreadable as JSON, not a hook registration, or holds nothing but
 Apothem's own entries, so a repeat install is byte-identical. When the file also
-holds operator entries, they are kept ahead of Apothem's. A previous file that is
+holds operator entries, they are kept ahead of Apothem's. The one thing an
+operator sets on an Apothem entry, Kiro's ``enabled`` flag, which Kiro's own hook
+management writes, is carried over to the entry the install writes; every other
+field of an Apothem entry is Apothem's and is refreshed. A previous file that is
 replaced is copied to the Apothem backup root first. An uninstall removes
 Apothem's entries, deletes the file when nothing else is left in it, and leaves
 a file it cannot read exactly as it is.
@@ -59,9 +66,14 @@ from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes
 from .install_driver_jsonmerge import (
     _LossyRewriteError,
     _refused_result,
-    is_apothem_hook,
+    is_apothem_contract_command,
+    mentions_native_dispatcher,
 )
-from .install_driver_merge import _unified_diff, render_content_tokens
+from .install_driver_merge import (
+    _unified_diff,
+    content_token_values,
+    render_content_tokens,
+)
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _root_for,
@@ -94,13 +106,12 @@ def _command_text(hook: object) -> str:
     return " ".join(part for part in parts if isinstance(part, str))
 
 
-def _is_ours(hook: object, root: Path) -> bool:
-    """Return True when *hook* runs the Apothem dispatcher installed under *root*."""
-    text = _command_text(hook)
-    return bool(text) and is_apothem_hook({"command": text}, harness_root=root)
+def _is_ours(hook: object) -> bool:
+    """Return True when *hook* runs Apothem's native dispatcher, whatever the root."""
+    return is_apothem_contract_command(_command_text(hook))
 
 
-def _without_ours(doc: object, root: Path) -> tuple[dict[str, object], int] | None:
+def _without_ours(doc: object) -> tuple[dict[str, object], int] | None:
     """Return *doc* without Apothem's hooks, plus how many hooks remain.
 
     ``None`` when *doc* is not a hook registration of either shape.
@@ -109,7 +120,7 @@ def _without_ours(doc: object, root: Path) -> tuple[dict[str, object], int] | No
         return None
     hooks = doc.get("hooks")
     if isinstance(hooks, list):
-        kept = [hook for hook in hooks if not _is_ours(hook, root)]
+        kept = [hook for hook in hooks if not _is_ours(hook)]
         return {**doc, "hooks": kept}, len(kept)
     if isinstance(hooks, dict):
         events: dict[str, object] = {}
@@ -119,7 +130,7 @@ def _without_ours(doc: object, root: Path) -> tuple[dict[str, object], int] | No
                 events[event] = listed
                 remaining += 1
                 continue
-            survivors = [hook for hook in listed if not _is_ours(hook, root)]
+            survivors = [hook for hook in listed if not _is_ours(hook)]
             if survivors or not listed:
                 events[event] = survivors
                 remaining += len(survivors)
@@ -150,6 +161,46 @@ def _combine(
     return merged
 
 
+def _restore_enabled(
+    before: object, incoming: dict[str, object], rendered: str
+) -> tuple[dict[str, object], str]:
+    """Carry the operator's ``enabled`` flag from Apothem's old hooks to the new ones.
+
+    Kiro documents ``hooks[].enabled`` ("Set false to skip the hook without
+    deleting it", https://kiro.dev/docs/hooks/, retrieved 2026-10-28) and its own
+    hook management writes it, so a hook the operator switched off must stay off
+    when an update rewrites the entry. Hooks are matched by ``name`` (the list
+    shape only; the event-map shape has no such flag). Every other field of an
+    Apothem hook is Apothem's: a changed ``timeout`` is indistinguishable from an
+    earlier release's, so it is refreshed, not kept. Returns the incoming
+    registration and its text, both unchanged when no flag is carried.
+    """
+    old, new = (
+        before.get("hooks") if isinstance(before, dict) else None,
+        incoming.get("hooks"),
+    )
+    if not (isinstance(old, list) and isinstance(new, list)):
+        return incoming, rendered
+    flags = {
+        hook["name"]: hook["enabled"]
+        for hook in old
+        if isinstance(hook, dict)
+        and _is_ours(hook)
+        and isinstance(hook.get("name"), str)
+        and "enabled" in hook
+    }
+    carried = [
+        {**hook, "enabled": flags[hook["name"]]}
+        if isinstance(hook, dict) and hook.get("name") in flags
+        else hook
+        for hook in new
+    ]
+    if carried == new:
+        return incoming, rendered
+    restored = {**incoming, "hooks": carried}
+    return restored, _dump(restored)
+
+
 class _UnmergeableError(Exception):
     """An operator-owned hook file Apothem would have to damage to merge into."""
 
@@ -160,7 +211,7 @@ class _UnmergeableError(Exception):
 
 
 def _merge_operator_file(
-    existing: str, rendered: str, incoming: dict[str, object], *, root: Path
+    existing: str, rendered: str, incoming: dict[str, object]
 ) -> str:
     """Return an operator's hook file with Apothem's hooks added after theirs.
 
@@ -178,10 +229,11 @@ def _merge_operator_file(
         raise _UnmergeableError("is not a JSON object")
     if "hooks" not in parsed:
         parsed = {**parsed, "hooks": type(incoming["hooks"])()}
-    kept = _without_ours(parsed, root)
+    kept = _without_ours(parsed)
     if kept is None or type(kept[0].get("hooks")) is not type(incoming.get("hooks")):
         raise _UnmergeableError("holds hooks in a shape other than the one it should")
     doc, remaining = kept
+    incoming, rendered = _restore_enabled(parsed, incoming, rendered)
     if remaining == 0 and set(doc) <= {"version", "hooks"}:
         return rendered
     return _dump(_combine(doc, incoming))
@@ -191,7 +243,6 @@ def merge_registration(
     existing: str | None,
     rendered: str,
     *,
-    root: Path,
     operator_owned: bool = False,
 ) -> str:
     """Return the file text an install writes over *existing*.
@@ -209,16 +260,18 @@ def merge_registration(
     if operator_owned:
         incoming = json.loads(rendered)
         if isinstance(incoming, dict) and "hooks" in incoming:
-            return _merge_operator_file(existing, rendered, incoming, root=root)
+            return _merge_operator_file(existing, rendered, incoming)
         return rendered
     try:
-        kept = _without_ours(json.loads(existing), root)
+        parsed = json.loads(existing)
         incoming = json.loads(rendered)
     except ValueError:
         return rendered
+    kept = _without_ours(parsed)
     if kept is None or not isinstance(incoming, dict):
         return rendered
     doc, remaining = kept
+    incoming, rendered = _restore_enabled(parsed, incoming, rendered)
     if remaining == 0 and set(doc) <= {"version", "hooks"}:
         return rendered
     if type(doc.get("hooks")) is not type(incoming.get("hooks")):
@@ -227,7 +280,7 @@ def merge_registration(
     return _dump(_combine(doc, incoming))
 
 
-def strip_registration(existing: str, *, root: Path) -> str | None:
+def strip_registration(existing: str) -> str | None:
     """Return *existing* without Apothem's hooks; ``None`` means delete the file.
 
     Text that is not a readable hook registration comes back unchanged, so an
@@ -238,7 +291,7 @@ def strip_registration(existing: str, *, root: Path) -> str | None:
         before = json.loads(existing)
     except ValueError:
         return existing
-    stripped = _without_ours(before, root)
+    stripped = _without_ours(before)
     if stripped is None:
         return existing
     doc, remaining = stripped
@@ -247,6 +300,16 @@ def strip_registration(existing: str, *, root: Path) -> str | None:
     if remaining == 0 and set(doc) <= {"version", "hooks"}:
         return None
     return _dump(doc)
+
+
+def _unreadable_with_dispatcher(text: str) -> bool:
+    """Return True when *text* names Apothem's dispatcher but is no readable registration."""
+    if not mentions_native_dispatcher(text):
+        return False
+    try:
+        return _without_ours(json.loads(text)) is None
+    except ValueError:
+        return True
 
 
 def _read(target: Path) -> str | None:
@@ -261,7 +324,7 @@ def _is_operator_owned(entry: InstallEntry) -> bool:
 
 
 def _merged_text(
-    entry: InstallEntry, target: Path, rendered: str, *, root: Path
+    entry: InstallEntry, target: Path, rendered: str
 ) -> tuple[str, str | None]:
     """Return the text an install writes to *target* and the text it replaces.
 
@@ -277,9 +340,7 @@ def _merged_text(
             f"Check that {target.name} is a readable UTF-8 file, then re-run.",
         )
     try:
-        merged = merge_registration(
-            before, rendered, root=root, operator_owned=operator_owned
-        )
+        merged = merge_registration(before, rendered, operator_owned=operator_owned)
     except _UnmergeableError as refused:
         raise _LossyRewriteError(
             f"{target} {refused.what}, so Apothem cannot add its hooks without "
@@ -328,7 +389,7 @@ def apply_native_hooks(
     root = _root_for(harness_root, project_root)
     detail = {"ownership_class": entry.ownership_class}
     try:
-        merged, _before = _merged_text(entry, target, text, root=root)
+        merged, _before = _merged_text(entry, target, text)
     except _LossyRewriteError as refusal:
         return [
             _refused_result(
@@ -369,9 +430,7 @@ def preview_native_hooks(
     if text is None:
         return HookPreview("skipped", "")
     try:
-        after, before = _merged_text(
-            entry, target, text, root=_root_for(harness_root, project_root)
-        )
+        after, before = _merged_text(entry, target, text)
     except _LossyRewriteError as refusal:
         return HookPreview("error", "", refusal)
     if before is None:
@@ -404,8 +463,18 @@ def release_native_hooks(
     error = _validate_target_path(target, allowed_root=allowed, operation=entry.mode)
     if error is not None:
         return error
-    remainder = strip_registration(existing, root=root)
+    remainder = strip_registration(existing)
     if remainder == existing:
+        if _unreadable_with_dispatcher(existing):
+            return _result(
+                "skipped",
+                "surgical_uninstall",
+                target,
+                f"{target} is not a hook registration Apothem can read (it may "
+                "carry comments or trailing commas) and it still names Apothem's "
+                "dispatcher; remove the entry that runs "
+                ".apothem/support/<harness>/hooks/dispatch.py from it by hand",
+            )
         return _result(
             "unchanged", "surgical_uninstall", target, "no Apothem hook to remove"
         )
@@ -428,3 +497,113 @@ def release_native_hooks(
     return replace(
         result, backup_path=_path_text(backup) if backup is not None else None
     )
+
+
+def _registers_hooks(entry: InstallEntry, *, project_scope: bool) -> bool:
+    """Return True when *entry*'s template is a hook registration Apothem writes.
+
+    A ``native_hooks`` entry always is. A ``write_text`` entry is when the install
+    is project-scope and its template is a JSON object with a ``hooks`` key (the
+    CodeBuddy ``settings.local.json`` and the Devin ``config.local.json``); the
+    same template under a user-scope root (Claude Code's ``settings.json``) is
+    not this module's to judge.
+    """
+    if entry.mode == HOOK_FILE_MODE:
+        return True
+    if entry.mode != "write_text" or not project_scope:
+        return False
+    try:
+        template = json.loads(resolve_source(entry.source).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(template, dict) and "hooks" in template
+
+
+def _holds_apothem_hook(node: object) -> bool:
+    """Return True when any hook anywhere in *node* runs Apothem's native dispatcher."""
+    if isinstance(node, dict):
+        return _is_ours(node) or any(_holds_apothem_hook(v) for v in node.values())
+    if isinstance(node, list):
+        return any(_holds_apothem_hook(item) for item in node)
+    return False
+
+
+def registration_present(
+    entry: InstallEntry, target: Path, *, project_scope: bool
+) -> bool:
+    """Return False when *entry* should register Apothem's hooks and *target* holds none.
+
+    ``verify`` uses it, so an install whose hook entries were reverted, deleted by
+    hand or lost in a fresh clone of an operator-owned file no longer reads as
+    installed. An entry that registers no hooks, or a file that does not parse
+    (reported on its own), passes.
+    """
+    if not _registers_hooks(entry, project_scope=project_scope):
+        return True
+    from apothem.lib import lenient_json
+
+    text = _read(target)
+    if text is None:
+        return True
+    try:
+        parsed = lenient_json.loads(text)
+    except lenient_json.LenientJSONError:
+        return True
+    return _holds_apothem_hook(parsed)
+
+
+#: Characters that change what a shell runs inside a double-quoted hook command
+#: (``$`` expands, a backtick substitutes, ``"`` and ``\`` end or escape the
+#: quoting) and that also break the JSON string the path is rendered into.
+_UNSAFE_IN_COMMAND: Final[frozenset[str]] = frozenset('"\\$`')
+
+
+def unsafe_command_path(
+    entry: InstallEntry,
+    *,
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> MaterializationResult | None:
+    """Return an error when a path rendered into a hook command cannot be quoted.
+
+    A hook registration puts the project path and the interpreter path inside a
+    double-quoted command that ``sh``, Git Bash and PowerShell each read. One
+    escape rule cannot serve all of them, so a path holding ``$``, a backtick, a
+    double quote, a backslash or a control character is refused before anything
+    is written, naming the path, instead of registering a command that runs the
+    wrong file and exits 2. A space or an apostrophe is fine inside the quotes.
+    """
+    if not _registers_hooks(entry, project_scope=harness_root is None):
+        return None
+    src = resolve_source(entry.source)
+    try:
+        template = src.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    values = content_token_values(harness_root, project_root)
+    for name in sorted(values):
+        value = values[name]
+        if f"${{{name}}}" not in template:
+            continue
+        bad = sorted(ch for ch in set(value) if ch in _UNSAFE_IN_COMMAND or ch < " ")
+        if not bad:
+            continue
+        shown = " ".join(repr(ch) for ch in bad)
+        target = resolve_target(
+            entry.target, harness_root=harness_root, project_root=project_root
+        )
+        return _with_detail(
+            _result(
+                "error",
+                entry.mode,
+                target,
+                f"{name} is {value!r}; the character {shown} in it would change "
+                "what the shell runs inside the quoted hook command",
+                source=src,
+            ),
+            {
+                "fix": f"Use a path for {name} without those characters (for a "
+                "project, move or rename it), then re-run. Nothing was written."
+            },
+        )
+    return None

@@ -159,9 +159,8 @@ VS Code hooks pages and the CLI changelog were read 2026-10-27.
   `<project>/.apothem/support/github-copilot/hooks/` (Apothem-owned; the project's
   `.gitignore` snippet ignores `.apothem/*`) and the hook file
   `<project>/.github/hooks/apothem.json` (the `native_hooks` mode, Apothem-owned).
-  An uninstall removes only the entries whose command runs the Apothem dispatcher
-  under the project, with or without an install record, deletes the file when
-  nothing else is in it, and leaves the operator's own hook files untouched. The
+  An uninstall removes only the entries whose command runs the Apothem dispatcher (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's), with or without an install record, deletes the file when
+  nothing else is in it, and leaves the operator's own hook files untouched. An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file. The
   tree is nested under `github-copilot/` so that another project-scope hook
   adapter's uninstall cannot remove this dispatcher.
 - Committed file: `.github/hooks/` is part of the repository, and the cloud agent

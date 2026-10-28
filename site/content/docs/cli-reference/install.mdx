@@ -143,6 +143,13 @@ the tool's own switch for turning that import off and what the switch also stops
 `"outcome": "advisory"`, the `harness`, the `path` of the hook file and a
 `message`.
 
+A hook command holds the project path and the interpreter path inside double
+quotes, which `sh`, Git Bash and PowerShell each read. A path that contains `$`, a
+backtick, a double quote or a backslash would make the command run a different
+file, so the install (and `--dry-run`) stops with an error that names the path and
+writes nothing; move or rename the project and run it again. A space or an
+apostrophe in a path is fine.
+
 The profile's MCP servers get three advisories, each naming the profile field:
 
 | Operation | Condition | Fix |

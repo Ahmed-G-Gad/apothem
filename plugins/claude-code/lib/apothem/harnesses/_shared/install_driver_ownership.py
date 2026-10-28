@@ -348,6 +348,7 @@ def _merge_mapping(
     *,
     prior: PriorOwnership,
     harness_root: Path | None,
+    project_scope: bool = False,
 ) -> tuple[dict[str, object], tuple[OwnedEntry, ...]]:
     """Return the merged mapping and the entries Apothem owns in it.
 
@@ -361,7 +362,7 @@ def _merge_mapping(
             the entry it wrote in its place.
     """
     operator_only = copy.deepcopy(existing)
-    _strip_hook_handlers(operator_only, harness_root)
+    _strip_hook_handlers(operator_only, harness_root, project_scope=project_scope)
     if isinstance(prior, _LegacyOwnership):
         if operator_only.get("hooks") == {}:
             del operator_only["hooks"]
@@ -384,6 +385,7 @@ def _operator_json_merge(
     *,
     harness_root: Path | None = None,
     prior: PriorOwnership = (),
+    project_scope: bool = False,
 ) -> MergeOutcome:
     """Merge Apothem's JSON *content* into an existing operator JSON config.
 
@@ -411,7 +413,12 @@ def _operator_json_merge(
     if not isinstance(existing, dict) or not isinstance(incoming, dict):
         return MergeOutcome(existing_text, ())
     merged, owned = _merge_mapping(
-        target, existing, incoming, prior=prior, harness_root=harness_root
+        target,
+        existing,
+        incoming,
+        prior=prior,
+        harness_root=harness_root,
+        project_scope=project_scope,
     )
     if merged == existing:
         return MergeOutcome(existing_text, owned)
@@ -433,6 +440,7 @@ def _operator_yaml_merge(
     *,
     harness_root: Path | None = None,
     prior: PriorOwnership = (),
+    project_scope: bool = False,
 ) -> MergeOutcome:
     """Merge Apothem's YAML *content* into an existing operator YAML config.
 
@@ -462,7 +470,12 @@ def _operator_yaml_merge(
             f"Repair {target.name} (or move it aside) and re-run.",
         )
     merged, owned = _merge_mapping(
-        target, existing, incoming, prior=prior, harness_root=harness_root
+        target,
+        existing,
+        incoming,
+        prior=prior,
+        harness_root=harness_root,
+        project_scope=project_scope,
     )
     if merged == existing:
         return MergeOutcome(existing_text, owned)
@@ -497,6 +510,7 @@ def _merge_native_content(
     before: str | None,
     harness_root: Path | None = None,
     prior: PriorOwnership = (),
+    project_scope: bool = False,
 ) -> MergeOutcome:
     """Return the prospective merged text (and ownership) for a config file.
 
@@ -513,16 +527,31 @@ def _merge_native_content(
     suffix = target.suffix.lower()
     if suffix == ".json":
         return _operator_json_merge(
-            target, before, content, harness_root=harness_root, prior=prior
+            target,
+            before,
+            content,
+            harness_root=harness_root,
+            prior=prior,
+            project_scope=project_scope,
         )
     if suffix in {".yaml", ".yml"}:
         return _operator_yaml_merge(
-            target, before, content, harness_root=harness_root, prior=prior
+            target,
+            before,
+            content,
+            harness_root=harness_root,
+            prior=prior,
+            project_scope=project_scope,
         )
     return MergeOutcome(content, None)
 
 
-def _strip_hook_handlers(doc: dict[str, object], harness_root: Path | None) -> None:
+def _strip_hook_handlers(
+    doc: dict[str, object],
+    harness_root: Path | None,
+    *,
+    project_scope: bool = False,
+) -> None:
     """Remove Apothem's hook handlers from *doc* in place.
 
     A matcher entry left with no handler is dropped, then an event left with
@@ -545,7 +574,9 @@ def _strip_hook_handlers(doc: dict[str, object], harness_root: Path | None) -> N
             survivors = [
                 handler
                 for handler in handlers
-                if not is_apothem_hook(handler, harness_root=harness_root)
+                if not is_apothem_hook(
+                    handler, harness_root=harness_root, project_scope=project_scope
+                )
             ]
             if survivors:
                 kept.append({**entry, "hooks": survivors})
@@ -563,6 +594,7 @@ def remove_owned_text(
     created: bool | None,
     harness_root: Path | None,
     managed_header: str = "",
+    project_scope: bool = False,
 ) -> str | None:
     """Return *existing_text* with Apothem's owned entries removed.
 
@@ -597,7 +629,7 @@ def remove_owned_text(
     if not isinstance(doc, dict):
         return existing_text
     working = copy.deepcopy(doc)
-    _strip_hook_handlers(working, harness_root)
+    _strip_hook_handlers(working, harness_root, project_scope=project_scope)
     reduced = strip_owned(working, owned)
     if not reduced and (created is True or (created is None and reduced != doc)):
         return None

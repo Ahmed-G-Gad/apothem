@@ -163,7 +163,7 @@ CodeBuddy Code v1.16.0 or later.
   `.gitignore` snippet ignores `.apothem/*`) and the registration in the
   uncommitted `<project>/.codebuddy/settings.local.json`, key-merged: the
   operator's own hooks and keys stay, and an uninstall removes only the handlers
-  whose command runs the Apothem dispatcher under the project. Each command
+  that tells Apothem's entry apart by what its command runs (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's). An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file. Each command
   names an absolute interpreter and project path, which are machine-specific;
   that is why the registration goes in the local file and not the committed
   `settings.json`. The adapter never edits `settings.json`, never writes

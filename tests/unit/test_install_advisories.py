@@ -368,6 +368,10 @@ def test_windsurf_hook_registration_names_restricted_mode_and_the_local_file(
     assert str(path) in message
     assert "Restricted Mode" in message
     assert "gitignored" in message
+    # Devin excludes local config files from git itself (global-vs-local.md,
+    # retrieved 2026-10-28), so the note no longer tells the operator to do it.
+    assert ".git/info/exclude" in message
+    assert "keep it out of version control" not in message
     assert "Windows" in message
 
 
@@ -398,9 +402,11 @@ def test_windsurf_names_the_switch_that_stops_the_claude_code_hooks_running_too(
     assert '"claude": false' in message
     assert "~/.config/devin/config.json" in message
     assert "%APPDATA%/devin/config.json" in message
-    # The marker silences a repeat of this command only; nothing is de-duplicated
-    # across the Claude Code copy or the PostToolUse counter.
-    assert "records one marker per session" in message
+    # The vendor command and the Claude Code copy share one marker; the
+    # PostToolUse counter is not de-duplicated.
+    assert "the Claude Code copy of it share one marker per session" in message
+    assert "whichever runs second is silent" in message
+    assert "separate command" not in message
     assert "PostToolUse counter runs in both places" in message
     assert "rules, skills, commands and MCP servers" in message
 
@@ -414,7 +420,9 @@ def test_cursor_names_the_switch_that_stops_the_claude_code_hooks_running_too(
     assert "Include Third-Party Plugins, Skills, and Other Configs" in message
     assert "Third-Party Imports" in message
     assert "runs every matching hook from every source" in message
-    assert "records one marker per session" in message
+    assert "the Claude Code copy of it share one marker per session" in message
+    assert "whichever runs second is silent" in message
+    assert "separate command" not in message
     assert "PostToolUse counters" in message
 
 

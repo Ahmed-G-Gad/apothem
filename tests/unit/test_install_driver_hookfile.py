@@ -6,14 +6,15 @@ Kiro's hook file is a list of hooks (``action.command``) and Copilot's is a map
 from event to hooks (``bash`` / ``powershell``). Neither nests handlers under a
 matcher, which is the one shape the Claude-shaped merge understands, so the mode
 carries its own ownership test: a hook is Apothem's when its command runs the
-dispatcher under the project. These tests pin that test, the merge that keeps an
-operator's hooks, and the removal that works from the file's text alone.
+native dispatcher (``.apothem/support/[<harness>/]hooks/dispatch.py``) with a
+``--contract`` argument, whichever project path it was written under. These tests
+pin that test, the merge that keeps an operator's hooks, and the removal that works
+from the file's text alone.
 """
 
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -24,7 +25,6 @@ from apothem.harnesses._shared.install_driver_hookfile import (
     strip_registration,
 )
 
-_PROJECT = Path("/work/project")
 _DISPATCHER = "/work/project/.apothem/support/kiro/hooks/dispatch.py"
 
 
@@ -81,8 +81,21 @@ def test_the_mode_name_is_registered_with_a_label() -> None:
         _ours(),
         # A Copilot hook is Apothem's by either of its two command fields.
         {"type": "command", "bash": f'"py" "{_DISPATCHER}" --contract copilot x'},
-        {"type": "command", "powershell": f'& "py" "{_DISPATCHER}" x'},
-        {"type": "command", "command": f'"py" "{_DISPATCHER}" x'},
+        {"type": "command", "powershell": f'& "py" "{_DISPATCHER}" --contract x y'},
+        {"type": "command", "command": f'"py" "{_DISPATCHER}" --contract=x y'},
+        # The root it was written under is not consulted: another checkout's entry,
+        # a renamed or moved project, and a Windows spelling are all Apothem's.
+        {
+            "type": "command",
+            "command": '"py" "/other/proj/.apothem/support/kiro/hooks/dispatch.py"'
+            " --contract kiro x",
+        },
+        {
+            "type": "command",
+            "command": '"C:\\py\\python.exe" '
+            '"C:\\Users\\me\\proj\\.apothem\\support\\hooks\\dispatch.py" '
+            "--contract codebuddy x",
+        },
     ],
 )
 def test_a_hook_that_runs_the_project_dispatcher_is_apothems(
@@ -93,7 +106,7 @@ def test_a_hook_that_runs_the_project_dispatcher_is_apothems(
         if "action" in hook
         else {"version": 1, "hooks": {"sessionStart": [hook]}}
     )
-    assert strip_registration(_text(doc), root=_PROJECT) is None
+    assert strip_registration(_text(doc)) is None
 
 
 @pytest.mark.parametrize(
@@ -101,7 +114,20 @@ def test_a_hook_that_runs_the_project_dispatcher_is_apothems(
     [
         '"/usr/bin/python3" "/opt/team/hooks/dispatch.py" SessionStart',
         "npm run lint",
-        '"py" "/work/other-project/.apothem/support/kiro/hooks/dispatch.py" x',
+        # An operator's own script that shares the dispatcher's file name, inside
+        # the project, with and without a contract argument of its own.
+        '"py" "/work/project/tools/hooks/dispatch.py" start',
+        '"py" "/work/project/tools/hooks/dispatch.py" --contract mine start',
+        '"py" "/work/project/scripts/conformity/gate.py" --check',
+        # The module spellings an operator runs on purpose (a conformity gate on Stop).
+        "python -m apothem.conformity.gate --all --strict .",
+        "python -m apothem.hooks.dispatch SessionStart",
+        # The support-tree path with no contract argument is not a registration
+        # Apothem writes here.
+        f'"py" "{_DISPATCHER}" x',
+        # Nor a path that only ends in the same words.
+        '"py" "/work/project/vendor.apothem/support/kiro/hooks/dispatch.pyc" '
+        "--contract kiro x",
     ],
 )
 def test_a_hook_that_runs_something_else_is_not_apothems(command: str) -> None:
@@ -112,7 +138,7 @@ def test_a_hook_that_runs_something_else_is_not_apothems(command: str) -> None:
         ],
     }
     text = _text(doc)
-    assert strip_registration(text, root=_PROJECT) == text
+    assert strip_registration(text) == text
 
 
 def test_ownership_needs_no_interpreter_token() -> None:
@@ -120,11 +146,11 @@ def test_ownership_needs_no_interpreter_token() -> None:
     # hold for any interpreter spelling.
     for python in ("py", "C:/Python314/python.exe", "/usr/bin/python3"):
         hook = _ours()
-        hook["action"] = {"type": "command", "command": f'"{python}" "{_DISPATCHER}" x'}
-        assert (
-            strip_registration(_text({"version": "v1", "hooks": [hook]}), root=_PROJECT)
-            is None
-        )
+        hook["action"] = {
+            "type": "command",
+            "command": f'"{python}" "{_DISPATCHER}" --contract kiro x',
+        }
+        assert strip_registration(_text({"version": "v1", "hooks": [hook]})) is None
 
 
 # --- merge ---------------------------------------------------------------------
@@ -132,22 +158,22 @@ def test_ownership_needs_no_interpreter_token() -> None:
 
 def test_an_absent_or_blank_file_takes_the_template_verbatim() -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
-    assert merge_registration(None, rendered, root=_PROJECT) == rendered
-    assert merge_registration("  \n", rendered, root=_PROJECT) == rendered
+    assert merge_registration(None, rendered) == rendered
+    assert merge_registration("  \n", rendered) == rendered
 
 
 def test_a_file_of_only_apothems_hooks_is_replaced_by_the_template() -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
     stale = _text({"version": "v1", "hooks": [{**_ours(), "timeout": 5}]})
-    assert merge_registration(stale, rendered, root=_PROJECT) == rendered
-    assert merge_registration(rendered, rendered, root=_PROJECT) == rendered
+    assert merge_registration(stale, rendered) == rendered
+    assert merge_registration(rendered, rendered) == rendered
 
 
 def test_a_list_file_keeps_the_operators_hooks_ahead_of_apothems() -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
     existing = _text({"version": "v1", "hooks": [_theirs("a"), _ours(), _theirs("b")]})
 
-    merged = json.loads(merge_registration(existing, rendered, root=_PROJECT))
+    merged = json.loads(merge_registration(existing, rendered))
 
     assert [h["name"] for h in merged["hooks"]] == ["a", "b", "apothem-session-start"]
     assert merged["version"] == "v1"
@@ -175,7 +201,7 @@ def test_a_map_file_keeps_the_operators_hooks_per_event() -> None:
         }
     )
 
-    merged = json.loads(merge_registration(existing, rendered, root=_PROJECT))
+    merged = json.loads(merge_registration(existing, rendered))
 
     assert merged["disableAllHooks"] is False
     assert merged["hooks"]["preToolUse"] == [mine]
@@ -188,28 +214,26 @@ def test_a_map_file_keeps_the_operators_hooks_per_event() -> None:
 
 def test_a_second_merge_changes_nothing() -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
-    once = merge_registration(
-        _text({"version": "v1", "hooks": [_theirs()]}), rendered, root=_PROJECT
-    )
-    assert merge_registration(once, rendered, root=_PROJECT) == once
+    once = merge_registration(_text({"version": "v1", "hooks": [_theirs()]}), rendered)
+    assert merge_registration(once, rendered) == once
 
 
 @pytest.mark.parametrize("existing", ["{ not json", "[]", '{"hooks": "x"}', '{"a": 1}'])
 def test_a_file_that_is_not_a_hook_registration_is_replaced(existing: str) -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
-    assert merge_registration(existing, rendered, root=_PROJECT) == rendered
+    assert merge_registration(existing, rendered) == rendered
 
 
 def test_a_file_in_the_other_vendor_shape_is_replaced_not_mixed() -> None:
     rendered = _text({"version": "v1", "hooks": [_ours()]})
     other = _text({"version": 1, "hooks": {"stop": [{"type": "command", "bash": "x"}]}})
-    assert merge_registration(other, rendered, root=_PROJECT) == rendered
+    assert merge_registration(other, rendered) == rendered
 
 
 def test_an_operator_top_level_key_is_kept_even_with_no_operator_hooks() -> None:
     rendered = _text({"version": 1, "hooks": {"sessionStart": [_copilot_ours()]}})
     existing = _text({"version": 1, "disableAllHooks": True, "hooks": {}})
-    merged = json.loads(merge_registration(existing, rendered, root=_PROJECT))
+    merged = json.loads(merge_registration(existing, rendered))
     assert merged["disableAllHooks"] is True
     assert merged["hooks"]["sessionStart"] == [_copilot_ours()]
 
@@ -218,17 +242,14 @@ def test_an_operator_top_level_key_is_kept_even_with_no_operator_hooks() -> None
 
 
 def test_removal_deletes_a_file_of_only_apothems_hooks() -> None:
-    assert (
-        strip_registration(_text({"version": "v1", "hooks": [_ours()]}), root=_PROJECT)
-        is None
-    )
+    assert strip_registration(_text({"version": "v1", "hooks": [_ours()]})) is None
     mapped = {"version": 1, "hooks": {"sessionStart": [_copilot_ours()]}}
-    assert strip_registration(_text(mapped), root=_PROJECT) is None
+    assert strip_registration(_text(mapped)) is None
 
 
 def test_removal_keeps_the_operators_hooks_and_the_version() -> None:
     existing = _text({"version": "v1", "hooks": [_theirs(), _ours()]})
-    remainder = strip_registration(existing, root=_PROJECT)
+    remainder = strip_registration(existing)
     assert remainder is not None
     assert json.loads(remainder) == {"version": "v1", "hooks": [_theirs()]}
 
@@ -244,21 +265,21 @@ def test_removal_drops_an_event_it_emptied_and_keeps_the_rest() -> None:
             },
         }
     )
-    remainder = strip_registration(existing, root=_PROJECT)
+    remainder = strip_registration(existing)
     assert remainder is not None
     assert json.loads(remainder) == {"version": 1, "hooks": {"postToolUse": [mine]}}
 
 
 def test_removal_leaves_an_operators_empty_event_list_alone() -> None:
     text = _text({"version": 1, "hooks": {"stop": []}})
-    assert strip_registration(text, root=_PROJECT) == text
+    assert strip_registration(text) == text
 
 
 def test_removal_deletes_a_file_left_with_only_empty_event_lists() -> None:
     existing = _text(
         {"version": 1, "hooks": {"stop": [], "sessionStart": [_copilot_ours()]}}
     )
-    assert strip_registration(existing, root=_PROJECT) is None
+    assert strip_registration(existing) is None
 
 
 def test_removal_keeps_a_file_with_operator_top_level_keys() -> None:
@@ -269,19 +290,19 @@ def test_removal_keeps_a_file_with_operator_top_level_keys() -> None:
             "hooks": {"sessionStart": [_copilot_ours()]},
         }
     )
-    remainder = strip_registration(existing, root=_PROJECT)
+    remainder = strip_registration(existing)
     assert remainder is not None
     assert json.loads(remainder) == {"version": 1, "disableAllHooks": True, "hooks": {}}
 
 
 @pytest.mark.parametrize("text", ["{ not json", "// c\n{}", "[]", '{"version": "v1"}'])
 def test_removal_leaves_what_it_cannot_read_exactly_as_it_is(text: str) -> None:
-    assert strip_registration(text, root=_PROJECT) == text
+    assert strip_registration(text) == text
 
 
 def test_removal_is_a_no_op_when_nothing_of_apothems_is_there() -> None:
     text = _text({"version": "v1", "hooks": [_theirs()]})
-    assert strip_registration(text, root=_PROJECT) == text
+    assert strip_registration(text) == text
 
 
 # --- an operator-owned file (Cursor's .cursor/hooks.json) -----------------------
@@ -301,9 +322,7 @@ def _cursor_rendered() -> str:
 
 
 def _merge_owned(existing: str | None) -> str:
-    return merge_registration(
-        existing, _cursor_rendered(), root=_PROJECT, operator_owned=True
-    )
+    return merge_registration(existing, _cursor_rendered(), operator_owned=True)
 
 
 def test_an_operator_owned_file_keeps_every_entry_and_key_the_operator_wrote() -> None:
@@ -364,7 +383,69 @@ def test_an_operator_owned_file_apothem_would_have_to_damage_is_refused(
     with pytest.raises(_UnmergeableError):
         _merge_owned(existing)
     # The same text in an Apothem-owned file is replaced, after the backup.
-    assert (
-        merge_registration(existing, _cursor_rendered(), root=_PROJECT)
-        == _cursor_rendered()
+    assert merge_registration(existing, _cursor_rendered()) == _cursor_rendered()
+
+
+# --- identity: the project was renamed, moved or cloned again -------------------
+
+
+def test_an_install_from_another_path_replaces_the_old_set_not_adds_to_it() -> None:
+    moved = _ours()
+    moved["action"] = {
+        "type": "command",
+        "command": '"py" "/home/mate/clone/.apothem/support/kiro/hooks/dispatch.py" '
+        "--contract kiro SessionStart",
+    }
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    existing = _text({"version": "v1", "hooks": [_theirs(), moved]})
+
+    merged = json.loads(merge_registration(existing, rendered))
+
+    assert [h["name"] for h in merged["hooks"]] == ["lint", "apothem-session-start"]
+    assert "/work/project/" in merged["hooks"][1]["action"]["command"]
+    assert strip_registration(_text(merged)) is not None
+    assert json.loads(strip_registration(_text(merged)) or "{}")["hooks"] == [_theirs()]
+
+
+# --- Kiro's enabled flag --------------------------------------------------------
+
+
+def test_an_operator_who_disabled_the_hook_keeps_it_disabled_on_update() -> None:
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    existing = _text({"version": "v1", "hooks": [{**_ours(), "enabled": False}]})
+
+    merged = json.loads(merge_registration(existing, rendered))
+
+    assert merged["hooks"] == [{**_ours(), "enabled": False}]
+    # Idempotent: a second update changes nothing.
+    again = merge_registration(_text(merged), rendered)
+    assert json.loads(again) == merged
+
+
+def test_only_the_enabled_flag_is_carried_over_the_rest_is_refreshed() -> None:
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    edited = {**_ours(), "enabled": True, "timeout": 5, "description": "mine"}
+
+    merged = json.loads(
+        merge_registration(_text({"version": "v1", "hooks": [edited]}), rendered)
     )
+
+    assert merged["hooks"] == [{**_ours(), "enabled": True}]
+
+
+def test_the_enabled_flag_of_an_operators_own_hook_is_left_alone() -> None:
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    mine = {**_theirs(), "enabled": False}
+
+    merged = json.loads(
+        merge_registration(_text({"version": "v1", "hooks": [mine]}), rendered)
+    )
+
+    assert merged["hooks"] == [mine, _ours()]
+
+
+def test_a_template_without_the_flag_and_a_file_without_it_stay_byte_identical() -> (
+    None
+):
+    rendered = _text({"version": "v1", "hooks": [_ours()]})
+    assert merge_registration(rendered, rendered) == rendered

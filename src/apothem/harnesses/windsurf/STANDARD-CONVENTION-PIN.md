@@ -197,7 +197,9 @@ does not write.
   `prompt_id` that is absent before the first prompt, plus `tool_name` and
   `tool_input` for tool events; PostToolUse adds `tool_response` with `success`,
   `output` and `error`; SessionStart adds `source`). `DEVIN_PROJECT_DIR` is set to
-  the project root. Exit 0 succeeds, exit 2 blocks, and any other code, a timeout
+  the project root; the stdin payload carries no working directory, so the
+  `devin` contract fills `cwd` from that variable and the SessionStart summaries
+  (plan, memory, knowledge base) resolve against the project. Exit 0 succeeds, exit 2 blocks, and any other code, a timeout
   or unreadable output is logged and does not block. Stdout JSON may carry
   `decision` (`approve` or `block`) with `reason`, `hookSpecificOutput.updatedInput`
   (PreToolUse) and `hookSpecificOutput.additionalContext`.
@@ -233,20 +235,25 @@ does not write.
   naming the switch (`"claude": false` under `read_config_from` in the user config
   or the project's `.devin/config.json`) and what turning it off also stops
   (Claude Code's rules, skills, commands and MCP servers). The SessionStart
-  command the adapter registers records one marker per (contract, session,
-  source), so a repeat of that command is silent; the Claude Code copy is a
-  different command and is not covered, and no PostToolUse counter is
+  command the adapter registers and the Claude Code copy of it (the default
+  command line) share one marker per (session, source) in the hook state
+  directory, so whichever runs second is silent. The default command line takes
+  part only when `DEVIN_PROJECT_DIR` is set; the marker binds for ten seconds, so
+  a later start of the same session delivers; no PostToolUse counter is
   de-duplicated.
+- TODO(clarify): whether `DEVIN_PROJECT_DIR` is also set for a hook Devin imports
+  from `~/.claude/settings.json`; the overview page states it for hooks without
+  distinguishing the source. If it is not, the Claude Code copy runs unmarked and
+  the bootstrap can be delivered twice.
 - Files the adapter writes: the dispatcher tree at
   `<project>/.apothem/support/windsurf/hooks/` (Apothem-owned; nested under the
   harness name so another project-scope adapter's uninstall cannot remove it; the
   project's `.gitignore` snippet ignores `.apothem/*`) and the registration in
   `<project>/.devin/config.local.json`, key-merged: the operator's own hooks and
-  keys stay, and an uninstall removes only the handlers whose command runs the
-  Apothem dispatcher under the project. The shared `.devin/config.json`, the
+  keys stay, and an uninstall removes only the handlers that tells Apothem's entry apart by what its command runs (the `.apothem/support/<harness>/hooks/dispatch.py` path with a `--contract` argument, read from the command text alone, so the project path it was written under does not matter and an operator's own `hooks/dispatch.py` or `python -m apothem.conformity.gate` is never taken for Apothem's). The shared `.devin/config.json`, the
   standalone `.devin/hooks.v1.json`, the user config and the `.claude/` files are
   never written. A file with comments is refused with `config.unparseable` and
-  left as it is.
+  left as it is. An uninstall that finds the file unreadable (comments, trailing commas) while it still names the dispatcher leaves it as it is and reports the entry as skipped, with the reason, instead of a success. `verify` requires the file to hold at least one such entry. A project or interpreter path holding `$`, a backtick, a double quote, a backslash or a control character is refused at install (the plan validation reports it before anything is written): one escape rule cannot serve `sh`, Git Bash and PowerShell, and inside the quoted command such a path runs a different file.
 - TODO(clarify): which shell Devin runs a hook command in on Windows. The
   Cascade page names `bash -c` and `powershell -Command`, and the Local pages name
   none (the changelog's PowerShell default is for the `exec` tool). The adapter
@@ -258,9 +265,12 @@ does not write.
   of an ancestor directory the way the CLI does.
 - TODO(clarify): where `fail_closed` sits in the schema; the adapter relies on
   the default (fail open).
-- TODO(clarify): whether Devin adds `.devin/config.local.json` to a gitignore by
-  itself; the page calls the file "gitignored" and Apothem does not edit
-  `.gitignore`. Whether Apothem's snippet should list it is undecided.
+- Local config is excluded from git by Devin itself: "Local config files are
+  automatically excluded from git via `.git/info/exclude`"
+  (<https://docs.devin.ai/cli/reference/configuration/global-vs-local.md>, read
+  2026-10-28), and the precedence table calls `.devin/config.local.json`
+  "Personal, gitignored". The registration therefore stays out of the
+  repository without any edit to `.gitignore`, which Apothem does not make.
 - TODO(clarify): whether the Local agent also reads Cascade-format hook files
   (`.devin/hooks.json`, `.windsurf/hooks.json`, `~/.codeium/windsurf/hooks.json`).
   The changelog says Windsurf-format command and write hooks fire on GPT models
@@ -291,6 +301,8 @@ Retrieved 2026-10-28 (the hooks the adapter writes).
   stdin, the matcher regex, the lowercase tool names)
 - <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (the
   `claude` import option and its default, the project and user config examples)
+- <https://docs.devin.ai/cli/reference/configuration/global-vs-local.md> (local
+  config files, `.devin/config.local.json`, and their exclusion from git)
 - <https://docs.devin.ai/desktop/devin-local.md> (Restricted Mode, the
   Customizations surface that lists hooks)
 

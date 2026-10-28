@@ -314,10 +314,11 @@ _HOOK_REVIEW: dict[str, tuple[str, str]] = {
         ".devin/config.local.json",
         "Apothem registers its SessionStart and PostToolUse hooks in {path}, "
         "the local override Devin documents as gitignored; your own hooks and "
-        "keys in it stay. Devin loads no hook while the workspace is in "
-        "Restricted Mode, so trust the workspace first. The file names this "
-        "machine's Python interpreter and this project's path, so keep it out "
-        "of version control. The Devin docs name no shell for hook commands on "
+        "keys in it stay. Devin excludes local config files from git itself "
+        "(through .git/info/exclude), so the machine-specific interpreter and "
+        "project path the file names stay out of the repository. Devin loads "
+        "no hook while the workspace is in Restricted Mode, so trust the "
+        "workspace first. The Devin docs name no shell for hook commands on "
         "Windows and the command is quoted for sh: open the Hooks tab in Devin "
         "Local's Customizations (or run /hooks in the Devin CLI) to confirm "
         "the hooks loaded.",
@@ -347,9 +348,9 @@ _HOOK_REVIEW: dict[str, tuple[str, str]] = {
 #: (https://docs.devin.ai/cli/extensibility/hooks/overview.md and
 #: /cli/reference/configuration/read-config-from.md, retrieved 2026-10-28); the
 #: Desktop pages do not say whether the Local agent applies that default. The
-#: SessionStart command each install registers records one marker per session,
-#: so that command run twice speaks once; the Claude Code copy is a different
-#: command, and no PostToolUse counter is de-duplicated.
+#: SessionStart command each install registers and the Claude Code copy of it
+#: share one per-session marker, so whichever runs second is silent; no
+#: PostToolUse counter is de-duplicated.
 _HOOK_IMPORT: dict[str, tuple[str, str]] = {
     "windsurf": (
         ".devin/config.local.json",
@@ -359,9 +360,10 @@ _HOOK_IMPORT: dict[str, tuple[str, str]] = {
         "which is its default for the Devin CLI; the Desktop docs do not say "
         "whether the Local agent applies it. If this machine also has the "
         "Apothem Claude Code install, both sets can run: the SessionStart "
-        "command in {path} records one marker per session, so a repeat of it "
-        "is silent, but the Claude Code copy is a separate command, and each "
-        "PostToolUse counter runs in both places, so its thresholds are "
+        "command in {path} and the Claude Code copy of it share one marker per "
+        "session, so whichever runs second is silent and the bootstrap reaches "
+        "the model once, but each PostToolUse counter runs in both places, so "
+        "its thresholds are "
         'reached early. To load only the hooks in {path}, set "claude": false '
         'under "read_config_from" in ~/.config/devin/config.json '
         "(%APPDATA%/devin/config.json on Windows) or in the project's "
@@ -377,9 +379,10 @@ _HOOK_IMPORT: dict[str, tuple[str, str]] = {
         "Third-Party Imports), which is its default, and it runs every "
         "matching hook from every source. If this machine also has the Apothem "
         "Claude Code install, both sets can run: the sessionStart command in "
-        "{path} records one marker per session, so a repeat of it is silent, "
-        "but the Claude Code copy is a separate command, and each of its "
-        "PostToolUse counters runs in addition. To run only the hook in "
+        "{path} and the Claude Code copy of it share one marker per session, "
+        "so whichever runs second is silent and the bootstrap reaches the "
+        "model once, but each of its PostToolUse counters runs in addition. "
+        "To run only the hook in "
         "{path}, turn that setting off; it also stops Cursor importing "
         "third-party plugins, skills and other configs.",
     ),

@@ -149,6 +149,12 @@ The install does not edit `.gitignore`: check that yours lists
 `.codebuddy/settings.local.json` and `.apothem/`, so a teammate's checkout does
 not receive commands that point at your machine.
 
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
+
 A command looks like this, with your interpreter and project path in place of the
 two paths:
 
@@ -173,7 +179,11 @@ after each change, so open `/hooks` again after an update.
 **Your own hooks.** The registration is merged into your file by key. Hooks and
 other keys you wrote stay as they were, a handler of yours under the same event
 and matcher stays beside Apothem's, and an update replaces only the handlers
-whose command runs the Apothem dispatcher under this project. A file with
+whose command runs the Apothem dispatcher (`.apothem/support/hooks/dispatch.py`
+with `--contract codebuddy`, whichever project path it was written under). A
+hook of yours that only shares the name, such as `tools/hooks/dispatch.py` in
+your project, or that runs `python -m apothem.conformity.gate`, is never taken
+for Apothem's. A file with
 comments or other JSON5 syntax cannot be rewritten without losing them, so the
 install reports a `config.unparseable` error for that file and leaves it
 untouched: remove the comments, or add the two entries yourself.
@@ -234,7 +244,9 @@ The verify command confirms that:
 2. The managed rules file is present and non-empty.
 3. The hook registration `.codebuddy/settings.local.json` exists, is non-empty
    and parses as JSON, and the hook scripts are in
-   `.apothem/support/hooks/`. The check does not read the entries or run them.
+   `.apothem/support/hooks/`. The file must hold a handler that runs the Apothem
+   dispatcher (the check does not run it), so a file that was reverted or
+   emptied no longer verifies.
 4. The `.codebuddy/agents/` folder exists. The check is on the folder, not on
    each helper file in it; the command
    `apothem diff --harness codebuddy --project /path/to/project` lists the

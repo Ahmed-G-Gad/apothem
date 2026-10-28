@@ -153,16 +153,22 @@ These are Devin Local hooks. The older Cascade mode reads a different hook forma
 
 | File | What it holds |
 | --- | --- |
-| `<project>/.devin/config.local.json` | The two hook registrations, merged into the file's `hooks` key. Devin documents this file as the local override and gitignored. |
+| `<project>/.devin/config.local.json` | The two hook registrations, merged into the file's `hooks` key. Devin documents this file as the local override and gitignored, and excludes local config files from git itself through `.git/info/exclude`. |
 | `<project>/.apothem/support/windsurf/hooks/` | The dispatcher script, its helpers and its message files. |
 
 Each registered command names the interpreter Apothem found when it ran, and the
 absolute path of the project, so it is machine-specific. That is why the install
 writes the local file and never the shared `<project>/.devin/config.json`, the
 standalone `.devin/hooks.v1.json` or the `.claude/` settings. The install does not
-edit `.gitignore`: check that yours lists `.devin/config.local.json` and
-`.apothem/`, so a teammate's checkout does not receive commands that point at your
-machine.
+edit `.gitignore`. Devin excludes its local config files from git itself (through
+`.git/info/exclude`), so a teammate's checkout does not receive commands that
+point at your machine; check that your `.gitignore` lists `.apothem/`.
+
+**Paths the shell would misread.** A project or interpreter path that contains
+`$`, a backtick, a double quote or a backslash is refused before anything is
+written: inside the quoted command it would run a different file, or break the
+JSON the command is written into. The error names the path; move or rename the
+project and run the install again. A space or an apostrophe in a path is fine.
 
 A command looks like this, with your interpreter and project path in place of the
 two paths:
@@ -194,10 +200,13 @@ matcher is a regular expression, an omitted one matches every tool, and
 `.claude/settings.local.json` while `read_config_from.claude` is on, which is its
 default for the Devin CLI; the Desktop pages do not say whether Devin Local
 applies it. If you also installed Apothem for Claude Code, both sets of hooks can
-run. The `SessionStart` command here records one marker per session, so a repeat
-of that same command is silent, but the Claude Code copy is a separate command, and
-the context-size counter runs in both places, so its thresholds are reached early.
-Apothem does not de-duplicate the counters. To load only these hooks, set
+run. The `SessionStart` command here and the Claude Code copy of it share one
+marker per session in Apothem's hook state folder, so whichever runs second is
+silent and the bootstrap reaches the model once; Apothem finds Devin from the
+`DEVIN_PROJECT_DIR` variable Devin sets for its hooks. The marker covers ten
+seconds, so a later start of the same session still delivers. The context-size
+counter runs in both places, so its thresholds are reached early, and Apothem does
+not de-duplicate the counters. To load only these hooks, set
 `"claude": false` under `"read_config_from"` in your user config
 (`~/.config/devin/config.json`, or `%APPDATA%\devin\config.json` on Windows) or in
 the project's `.devin/config.json`; that also stops Devin importing Claude Code's
@@ -206,7 +215,10 @@ rules, skills, commands and MCP servers. The install prints this as a note.
 **Your own hooks.** The registration is merged into your file by key. Hooks and
 other keys you wrote stay as they were, a handler of yours under the same event
 stays beside Apothem's, and an update replaces only the handlers whose command runs
-the Apothem dispatcher under this project. A file with comments or other JSON5
+the Apothem dispatcher (`.apothem/support/windsurf/hooks/dispatch.py` with
+`--contract devin`, whichever project path it was written under). A hook of yours
+that only shares the name, or that runs `python -m apothem.conformity.gate`, is
+never taken for Apothem's. A file with comments or other JSON5
 syntax cannot be rewritten without losing them, so the install reports a
 `config.unparseable` error for that file, leaves it untouched and stops, with the
 other files it had begun to write removed again: remove the comments, or add the
@@ -217,7 +229,7 @@ silence the Apothem hooks.
 
 {/* TODO(clarify): the shell Devin Local runs hook commands in on Windows, whether
 Devin Desktop applies read_config_from.claude by default, where fail_closed sits in
-the schema, and whether Devin gitignores config.local.json itself; see the Hooks
+the schema; see the Hooks
 section of src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. */}
 
 ## Profile-to-native-config mapping
@@ -260,8 +272,9 @@ The verify command confirms that:
 1. The native config exists at the expected path.
 2. Each managed target exists, the `.devin/agents/` folder and the hook
    registration `.devin/config.local.json` included; managed
-   files are non-empty, and JSON or YAML configs parse. The check does not read
-   the hook entries or run them. Add `--profile PATH` to
+   files are non-empty, and JSON or YAML configs parse. The hook file must hold
+   a handler that runs the Apothem dispatcher (the check does not run it), so a
+   file that was reverted or emptied no longer verifies. Add `--profile PATH` to
    also confirm that the installed files match that profile. For
    `.devin/agents/` the check is that the folder exists, not that each helper
    file is in it; `apothem diff --harness windsurf --project /path/to/project`

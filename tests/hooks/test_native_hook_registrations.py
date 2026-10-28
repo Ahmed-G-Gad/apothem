@@ -87,8 +87,7 @@ def test_kiro_registers_session_start_only() -> None:
 
 def test_copilot_registers_the_camel_case_events_whose_output_is_documented() -> None:
     contract = vc.get_contract("copilot")
-    assert contract.shape_for("SessionStart") == vc.FLAT
-    assert contract.shape_for("PostToolUse") == vc.FLAT
+    assert contract.output == vc.FLAT
     doc = json.loads(_COPILOT.read_text(encoding="utf-8"))
     assert doc["version"] == 1
     # camelCase names carry the documented additionalContext output fields; the
@@ -119,8 +118,6 @@ def test_the_dispatcher_stays_advisory_for_both_vendors() -> None:
     for contract_id in ("kiro", "copilot"):
         contract = vc.get_contract(contract_id)
         assert contract.output in {vc.PLAIN, vc.FLAT}
-        for event in contract.delivers:
-            assert contract.shape_for(event) in {vc.PLAIN, vc.FLAT}
 
 
 # --- Cursor (a flat map) and Devin Local (Claude-shaped), the other two vendors ----
@@ -163,7 +160,7 @@ def test_cursor_registers_session_start_with_the_snake_case_output() -> None:
     contract = vc.get_contract("cursor")
     assert contract.canonical_event("sessionStart") == "SessionStart"
     assert contract.delivers == {"SessionStart"}
-    assert contract.shape_for("SessionStart") == vc.SNAKE
+    assert contract.output == vc.SNAKE
     assert "matcher" not in hook, "sessionStart is not matched"
     assert "failClosed" not in hook, "a failing hook must not block"
     assert "preToolUse" not in doc["hooks"], "agent_message is read on a deny only"
@@ -178,7 +175,7 @@ def test_devin_registers_the_events_whose_context_reaches_the_model() -> None:
         assert contract.canonical_event(event) in contract.delivers, event
         # Devin's matcher is a regex; an omitted one matches all and "*" is invalid.
         assert "matcher" not in group
-        assert contract.shape_for(event) == vc.ENVELOPE
+        assert contract.output == vc.ENVELOPE
     assert "PreToolUse" not in json.loads(_DEVIN.read_text(encoding="utf-8"))["hooks"]
 
 
@@ -200,5 +197,3 @@ def test_the_dispatcher_stays_advisory_for_cursor_and_devin() -> None:
     for contract_id in ("cursor", "devin"):
         contract = vc.get_contract(contract_id)
         assert contract.output in {vc.SNAKE, vc.ENVELOPE}
-        for event in contract.delivers:
-            assert contract.shape_for(event) in {vc.SNAKE, vc.ENVELOPE}

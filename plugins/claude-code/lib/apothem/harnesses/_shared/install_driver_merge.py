@@ -334,6 +334,23 @@ def content_tokens(**tokens: str) -> Iterator[None]:
         _EXTRA_TOKENS.reset(reset)
 
 
+def content_token_values(
+    harness_root: Path | None, project_root: Path | None = None
+) -> dict[str, str]:
+    """Return the ``${NAME}`` values :func:`render_content_tokens` substitutes.
+
+    The tokens an enclosing :func:`content_tokens` block set, then the resolved
+    ``HARNESS_ROOT`` and ``PROJECT_ROOT`` in forward-slash form for each root
+    given.
+    """
+    mapping: dict[str, str] = dict(_EXTRA_TOKENS.get() or {})
+    if harness_root is not None:
+        mapping["HARNESS_ROOT"] = harness_root.resolve().as_posix()
+    if project_root is not None:
+        mapping["PROJECT_ROOT"] = project_root.resolve().as_posix()
+    return mapping
+
+
 def render_content_tokens(
     content: str,
     *,
@@ -355,11 +372,7 @@ def render_content_tokens(
     """
     if "${" not in content:
         return content
-    mapping: dict[str, str] = dict(_EXTRA_TOKENS.get() or {})
-    if harness_root is not None:
-        mapping["HARNESS_ROOT"] = harness_root.resolve().as_posix()
-    if project_root is not None:
-        mapping["PROJECT_ROOT"] = project_root.resolve().as_posix()
+    mapping = content_token_values(harness_root, project_root)
     if not mapping:
         return content
     return Template(content).safe_substitute(mapping)
@@ -419,6 +432,7 @@ def _operator_owned_merge_text(
     before: str | None,
     hook_root: Path | None = None,
     prior: tuple[OwnedEntry, ...] | _LegacyOwnership = (),
+    project_scope: bool = False,
 ) -> MergeOutcome:
     """Return the prospective merged text (and ownership) for a target.
 
@@ -446,7 +460,12 @@ def _operator_owned_merge_text(
         return MergeOutcome(content if before is None else before, None)
     if before is not None and before.strip():
         return _operator_json_merge(
-            target, before, content, harness_root=hook_root, prior=prior
+            target,
+            before,
+            content,
+            harness_root=hook_root,
+            prior=prior,
+            project_scope=project_scope,
         )
     return _merge_native_content(target, content, before=None)
 
@@ -520,6 +539,7 @@ def _operator_owned_preview(
             prior=prior_ownership(
                 harness_name, _root_for(harness_root, project_root), target
             ),
+            project_scope=harness_root is None,
         ).text
     except _LossyRewriteError as refusal:
         return _OperatorOwnedPreview(target, "error", "", False, refusal)
@@ -578,6 +598,7 @@ def _apply_operator_owned_file(
             before=existing_text,
             hook_root=harness_root or project_root,
             prior=prior_ownership(harness_name, root, target),
+            project_scope=harness_root is None,
         )
     except _LossyRewriteError as refusal:
         return [_refused_result(entry.mode, target, refusal, detail, source=src)]
