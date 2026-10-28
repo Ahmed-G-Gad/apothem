@@ -36,7 +36,7 @@ Configured MCP servers (materialized into the harnesses with a native MCP config
 
 Apothem wrote this block with `apothem install --harness github-copilot`. It lands at `<project>/.github/copilot-instructions.md`, the repository-wide custom instructions file (<https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions>), which Copilot applies to requests made in this repository, including chat, the cloud agent, and code review. Other coding tools can read the same file, so this block carries project-wide guidance only and names no single tool as its reader. GitHub notes that shorter instruction files are more likely to be processed in full, so the shared-profile section, when the profile sets one, comes first in this block.
 
-This install writes this one file and, in `.github/agents/`, Apothem's sub-agent definitions as Copilot custom agents, one `.agent.md` file each; they are part of the repository, so teammates and the cloud agent see them too. Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/` in your user home, one copy for every project and for every tool that reads that folder, and its full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them). Surfaces that run outside this machine, such as the cloud agent and code review on GitHub, do not see those folders, so the disciplines below are the Apothem rule text in force there.
+This install writes this one file and, in `.github/agents/`, Apothem's sub-agent definitions as Copilot custom agents, one `.agent.md` file each; they are part of the repository, so teammates and the cloud agent see them too. It also registers two hooks, a session-start bootstrap and a context-size advisory after tool use, in `.github/hooks/apothem.json`, with their scripts in `.apothem/support/github-copilot/hooks/`; that file names this machine's interpreter, so commit it only if your team shares that layout. Apothem's skills and slash-style command prompts are installed as skills in `~/.agents/skills/` in your user home, one copy for every project and for every tool that reads that folder, and its full rule and template files are installed in `~/.config/apothem/` (the Apothem support files section below names them). Surfaces that run outside this machine, such as the cloud agent and code review on GitHub, do not see those folders, so the disciplines below are the Apothem rule text in force there.
 
 ## Engineering disciplines in force
 
@@ -62,10 +62,11 @@ Text outside the Apothem managed block is operator-owned and survives every re-i
 
 ## Apothem support files
 
-Apothem's support root is `~/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, and `templates/...`. Resolve each citation against the installed directory for its first segment:
+Apothem's support root is `~/.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
 
 - `rules/<path>` is `~/.config/apothem/rules/<path>`
 - `templates/<path>` is `~/.config/apothem/templates/<path>`
+- `hooks/<path>` is `.apothem/support/github-copilot/hooks/<path>`
 
 Start with the rule index at `~/.config/apothem/rules/apothem-rule-index.md`: it names every rule and when to read it.
 

@@ -5,6 +5,7 @@
 ## Snapshot
 
 - Snapshot date: 2026-10-28
+- Snapshot note (hooks): the adapter now registers hooks in `<project>/.github/hooks/apothem.json`. The hooks reference was re-read on 2026-10-28, and the VS Code hooks pages and the Copilot CLI changelog on 2026-10-27. Previous 2026-10-28 (review) and 2026-10-27.
 - Snapshot note (review): the tool aliases table of the custom-agents reference was re-read on 2026-10-28 for the `web` and `todo` cloud-agent notes and the `agent` alias. Previous 2026-10-27.
 - Snapshot note (agents): the adapter now installs Apothem's agents as custom agent profiles in `<project>/.github/agents/`. The custom-agents reference and how-to pages, the CLI config-directory reference, the VS Code agent pages and the Copilot CLI changelog were read on 2026-10-27 (the changelog from its raw file, whole). Previous 2026-10-24.
 - Snapshot note: the adapter now installs skills and command skills at the shared `~/.agents/skills/` and the rules and templates corpus at `~/.config/apothem/`. Refreshed against `docs.github.com/en/copilot`. Corrections: Copilot has user-defined commands (prompt files in `.github/prompts/*.prompt.md`, run as `/name` in Copilot Chat) and repository agent files (`.github/agents/*.agent.md`), and MCP can be configured in a custom agent profile as well as in repository settings, the IDE, and the Copilot CLI. Code review reads instructions from the pull request's head branch and no longer documents a fixed character cap. Previous 2026-06-25.
@@ -28,7 +29,8 @@
   `/name` slash commands in Copilot Chat in VS Code, and custom agents are
   `.github/agents/*.agent.md` profiles. Skills (`.github/skills/<name>/SKILL.md`),
   hooks, and CLI plugins are also documented. The adapter authors no prompt
-  file, hook, or plugin; it writes the agent profiles described next.
+  file or plugin; it writes the agent profiles described next and the hook file
+  described in the hooks section.
 - Agent profiles (read 2026-10-27): the repository folder is
   `.github/agents/<name>.agent.md`; the CLI and VS Code also accept a plain `.md`.
   The user folder is `~/.copilot/agents/` (`$COPILOT_HOME/agents/` when that is
@@ -100,6 +102,83 @@
   configuration, in the Copilot CLI, or in a custom agent profile. The adapter
   authors no entries, so `capabilities.yml` `mcp_servers` stays `[]`.
 
+## Hooks
+
+Read 2026-10-28 (<https://docs.github.com/en/copilot/reference/hooks-reference>); the
+VS Code hooks pages and the CLI changelog were read 2026-10-27.
+
+- Files: `.github/hooks/*.json` at the repository root, read by the Copilot CLI,
+  the cloud agent and VS Code; the cloud agent reads no other source by default.
+  The CLI also reads `~/.copilot/hooks/*.json` (`$COPILOT_HOME/hooks/`), an inline
+  `hooks` field in `.github/copilot/settings.json`, its `settings.local.json` and
+  `~/.copilot/settings.json`, the repository's `.claude/settings.json` and
+  `.claude/settings.local.json`, and machine-wide policy files. Entries for one
+  event from all sources all run. The adapter writes one file,
+  `.github/hooks/apothem.json`, and never a user folder.
+- Schema: `{"version": 1, "hooks": {"<event>": [<entry>, ...]}}`, with an
+  optional `disableAllHooks` that skips that one file. A command entry is
+  `{"type": "command", "bash": ..., "powershell": ..., "command": ...,
+  "cwd": ..., "env": ..., "timeoutSec": ..., "matcher": ...}`; `command` is a
+  cross-platform fallback copied to `bash` and `powershell` when those are absent,
+  `timeoutSec` defaults to 30, and `exec` with `args` is CLI-only. A malformed
+  item in a hooks-folder file is dropped alone; a bad `version` rejects the file.
+  The agent-scoped `hooks` of a custom agent's frontmatter use a different entry
+  schema (`command`, `windows`, `linux`, `osx`) and are CLI-only; the adapter
+  writes none. VS Code's Local harness has its own legacy contract (the
+  "Legacy Local hooks reference"), which a version 1 file here does not target.
+- Events: fourteen camelCase names (`sessionStart`, `sessionEnd`,
+  `userPromptSubmitted`, `userPromptTransformed`, `preToolUse`, `postToolUse`,
+  `postToolUseFailure`, `agentStop`, `subagentStart`, `subagentStop`,
+  `errorOccurred`, `preCompact`, `permissionRequest`, `notification`) and
+  PascalCase spellings of most of them. A PascalCase name switches the stdin to
+  VS Code's snake_case form and Claude's tool names.
+- Command contract (camelCase events): one JSON object on stdin with `sessionId`,
+  `timestamp` (Unix ms) and `cwd`; `sessionStart` adds `source` and
+  `initialPrompt`, `preToolUse` adds `toolName` and `toolArgs`, `postToolUse` adds
+  `toolResult`. Stdout is at most one JSON decision object; empty or invalid output
+  means no output. Only `additionalContext` is consumed for `sessionStart`, and
+  `postToolUse` reads `additionalContext` (appended to the tool result the model
+  sees) and `modifiedResult`. `preToolUse` reads only `permissionDecision`,
+  `permissionDecisionReason` and `modifiedArgs`. Exit 0 succeeds; exit 2 is a
+  warning, and a denial only for `preToolUse` and `permissionRequest`; any other
+  non-zero code is logged and fail-open, except `preToolUse`, which denies. A
+  timeout kills the hook and fails open for every event.
+- Why `sessionStart` and `postToolUse`: those are the events whose
+  `additionalContext` reaches the model. A `preToolUse` guard that speaks through
+  `additionalContext` would run on every tool call and be ignored, so no guard is
+  registered. The adapter registers the bootstrap on `sessionStart` and the
+  compaction tracker on `postToolUse`, with no `matcher` (the matcher is compiled as
+  `^(?:PATTERN)$` and an invalid one skips the entry). The dispatcher never emits
+  a permission, a decision or a rewritten result, and never exits 2.
+- Shells: `bash` runs on macOS and Linux and `powershell` on Windows. The cloud
+  agent runs `bash` only and ignores `powershell`. The adapter writes both. The
+  `powershell` command is the `bash` command with a leading call operator (`& `),
+  which PowerShell needs before a quoted program path; that is PowerShell syntax,
+  not vendor text.
+- Files the adapter writes: the dispatcher tree at
+  `<project>/.apothem/support/github-copilot/hooks/` (Apothem-owned; the project's
+  `.gitignore` snippet ignores `.apothem/*`) and the hook file
+  `<project>/.github/hooks/apothem.json` (the `native_hooks` mode, Apothem-owned).
+  An uninstall removes only the entries whose command runs the Apothem dispatcher
+  under the project, with or without an install record, deletes the file when
+  nothing else is in it, and leaves the operator's own hook files untouched. The
+  tree is nested under `github-copilot/` so that another project-scope hook
+  adapter's uninstall cannot remove this dispatcher.
+- Committed file: `.github/hooks/` is part of the repository, and the cloud agent
+  and teammates read the same file. The commands name an absolute interpreter and
+  project path of the machine that ran the install, and the dispatcher sits under
+  the gitignored `.apothem/`. Anywhere else the command finds nothing to run; for
+  these two events Copilot logs the failure and the run goes on.
+- TODO(clarify): whether Copilot reads `additionalContext` from the output of a
+  PascalCase event. The reference states the output field names only for
+  `agentStop`, so the adapter registers the camelCase names, whose output fields
+  the reference lists.
+- TODO(clarify): whether `Notification`, `subagentStart` and `userPromptTransformed`
+  have PascalCase aliases (the reference is silent).
+- TODO(clarify): the CLI load order. The reference says policy, user, project,
+  plugins in one place and lists repository files before user files in another;
+  because every entry runs, the adapter does not depend on the order.
+
 ## Web-Fetch / Browser-Retrieval Surface
 
 - Capability: `web_fetch` = **yes**. The backing dimension for
@@ -132,6 +211,9 @@ Retrieved 2026-10-03 unless marked.
 - <https://raw.githubusercontent.com/github/copilot-cli/main/changelog.md> (custom agents 0.0.353, unknown keys warn 0.0.415, `~/.claude/` agents dropped 1.0.36, `.claude/agents` discovery 1.0.62; retrieved 2026-10-27)
 - <https://code.visualstudio.com/docs/agent-customization/custom-agents> (VS Code agent folders; retrieved 2026-10-27)
 - <https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference> (VS Code agent keys; retrieved 2026-10-27)
+- <https://docs.github.com/en/copilot/reference/hooks-reference> (hook files, the version 1 schema, events, stdin and stdout per event, exit codes, matchers, the cloud agent environment; retrieved 2026-10-28)
+- <https://code.visualstudio.com/docs/agent-customization/hooks> (VS Code hook locations and the shared Copilot harness; retrieved 2026-10-27)
+- <https://code.visualstudio.com/docs/agents/reference/hooks-reference> (the legacy Local harness contract, not targeted; retrieved 2026-10-27)
 
 ## Discovery Targets
 
@@ -161,8 +243,11 @@ GitHub Copilot documents skills (`.github/skills/<name>/SKILL.md`), hooks
 (`.github/hooks/*.json`), and CLI plugins (`plugin.json`), but **Apothem ships no
 Copilot plugin bundle** — the adapter writes a merged file at
 `<project>/.github/copilot-instructions.md`, the agents at
-`<project>/.github/agents/`, the skills at `~/.agents/skills/`, and
-the rules and templates corpus at `~/.config/apothem/`, and authors no other cohort. There is no Apothem-distributable standalone bundle; every
+`<project>/.github/agents/`, the hook file at
+`<project>/.github/hooks/apothem.json` with its scripts under
+`<project>/.apothem/support/github-copilot/hooks/`, the skills at
+`~/.agents/skills/`, and the rules and templates corpus at `~/.config/apothem/`,
+and authors no other cohort. There is no Apothem-distributable standalone bundle; every
 artifact requires the full
 `apothem install --harness github-copilot --project <path>` engine run.
 
@@ -171,7 +256,8 @@ artifact requires the full
 | Rules (instructions-as-text) | No — requires `apothem install` | The merged `copilot-instructions.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.github/` directory. Nothing persists before that run. |
 | Skills and commands | No — requires `apothem install` | The engine writes them as skills to the user-level `~/.agents/skills/`, one copy shared by every project and every tool that reads that folder. Nothing persists before that run, and GitHub-hosted surfaces do not read it. |
 | Agents | No — requires `apothem install` | The engine writes them as custom agent profiles to the project's `.github/agents/`. Nothing persists before that run. |
-| Hooks | No — Apothem ships no bundle | Copilot's `plugin.json`, prompt files (`.github/prompts/`), and hooks accept these cohorts, but Apothem authors none of them. |
+| Hooks | No — requires `apothem install` | The engine writes the dispatcher to `<project>/.apothem/support/github-copilot/hooks/` and registers sessionStart and postToolUse in `<project>/.github/hooks/apothem.json`. Nothing persists before that run, and the cloud agent cannot run the entries (they name this machine's interpreter). |
+| Plugins / prompt files | No — Apothem ships no bundle | Copilot's `plugin.json` and prompt files (`.github/prompts/`) accept these cohorts, but Apothem authors none of them. |
 | MCP / Settings | No — operator-owned | MCP lives in repository settings, IDE configuration, the Copilot CLI, or a custom agent profile; the adapter authors no entries (`mcp_servers` stays `[]`). |
 
 Platform note: the vendor plugin surface exists; the Apothem-distributable

@@ -28,5 +28,15 @@
     "mode": "kiro_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/.kiro/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/kiro/hooks"
+  },
+  {
+    "mode": "native_hooks",
+    "source": "<APOTHEM_SRC>/harnesses/kiro/templates/apothem-hooks.json",
+    "target": "<ROOT>/.kiro/hooks/apothem.json"
   }
 ]

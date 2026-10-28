@@ -376,6 +376,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/.github/copilot-instructions.md",
             "<project>/.github/agents/",
+            "<project>/.github/hooks/apothem.json",
+            "<project>/.apothem/support/github-copilot/hooks/",
             "~/.agents/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -389,11 +391,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         package_data_key="apothem.harnesses.github_copilot",
         template_sources=(
             "harnesses/github_copilot/templates/copilot-instructions.md",
+            "harnesses/github_copilot/templates/apothem-hooks.json",
         ),
         capability_status=_matrix(
             commands="converted",
             skills="native",
-            hooks="unsupported",
+            hooks="native",
             agents="converted",
             rules="native",
             templates="support-tree",
@@ -406,7 +409,6 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
-            hooks="The Copilot adapter does not author a Copilot hook cohort; it delivers the rules file and the skills.",
             statuslines="No Copilot statusline file surface is pinned.",
             output_styles="No Copilot output-style file surface is pinned.",
             mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
@@ -718,6 +720,8 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         target_paths=(
             "<project>/.kiro/steering/apothem-rules.md",
             "<project>/.kiro/agents/",
+            "<project>/.kiro/hooks/apothem.json",
+            "<project>/.apothem/support/kiro/hooks/",
             "~/.kiro/skills/",
             "~/.config/apothem/{rules,templates}/",
         ),
@@ -727,11 +731,14 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         standard_pin_path="src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md",
         fixture_tests=("tests/unit/test_kiro_adapter.py",),
         package_data_key="apothem.harnesses.kiro",
-        template_sources=("harnesses/kiro/templates/apothem-rules.md",),
+        template_sources=(
+            "harnesses/kiro/templates/apothem-rules.md",
+            "harnesses/kiro/templates/apothem-hooks.json",
+        ),
         capability_status=_matrix(
             commands="converted",
             skills="native",
-            hooks="unsupported",
+            hooks="native",
             agents="converted",
             rules="native",
             templates="support-tree",
@@ -745,7 +752,6 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
-            hooks="The Kiro adapter does not author a Kiro hook cohort; it delivers the rules file and the skills.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
         ),

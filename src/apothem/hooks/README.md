@@ -92,6 +92,8 @@ Markdown context files emitted into the conversation for each hook event:
   | `claude` | Claude's stdin | the Claude envelope | every event (used to prove the default line is unchanged) |
 
   The dispatcher still only emits advisory context: no shape carries a permission, a decision or a rewritten input. A contract that also imports the Claude Code settings file (`cursor`, `devin`, `trae`) keeps one SessionStart marker per (contract, session, source) in the hook state directory, so a second run of the same session is silent; the default command line never reads the marker, so Claude Code's post-compaction SessionStart still delivers.
+
+  Adapters that register a contract today: `codebuddy` (the `hooks` key of `.codebuddy/settings.local.json`: SessionStart, PostToolUse), `kiro` (the Apothem-owned `.kiro/hooks/apothem.json`: SessionStart) and `copilot` (the Apothem-owned `.github/hooks/apothem.json`: `sessionStart` and `postToolUse`, each with a `bash` and a `powershell` command). Each keeps its dispatcher in a support tree under `<project>/.apothem/support/`.
 - `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook, and `conformity/gate.py --hook` honors the same switch.
 
 ## Operating in this folder

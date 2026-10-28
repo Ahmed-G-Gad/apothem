@@ -352,12 +352,41 @@ def test_codebuddy_hook_registration_asks_for_a_restart_and_a_review(
 
 
 def test_a_harness_with_no_review_step_gets_no_hook_advisory(tmp_path: Path) -> None:
-    for harness in ("claude-code", "codex", "kiro", "cursor", "glm"):
+    for harness in ("claude-code", "codex", "cursor", "glm"):
         assert hook_review_advisories(harness, project=tmp_path) == []
+
+
+def test_kiro_hook_registration_asks_for_the_workspace_trust(tmp_path: Path) -> None:
+    [advisory] = hook_review_advisories("kiro", project=tmp_path)
+    assert advisory["harness"] == "kiro"
+    assert advisory["operation"] == "hook_review"
+    path = tmp_path / ".kiro" / "hooks" / "apothem.json"
+    assert advisory["path"] == str(path)
+    message = " ".join(str(advisory["message"]).split())
+    assert str(path) in message
+    assert "Trust this workspace?" in message
+    assert "kiro-cli --v3" in message
+    assert "Web sessions run no hooks" in message
+
+
+def test_copilot_hook_registration_names_the_committed_file_hazard(
+    tmp_path: Path,
+) -> None:
+    [advisory] = hook_review_advisories("github-copilot", project=tmp_path)
+    assert advisory["harness"] == "github-copilot"
+    path = tmp_path / ".github" / "hooks" / "apothem.json"
+    assert advisory["path"] == str(path)
+    message = " ".join(str(advisory["message"]).split())
+    assert str(path) in message
+    assert "commit it only if your team shares that layout" in message
+    assert "cloud agent" in message
+    assert "bash command" in message
 
 
 def test_a_hook_advisory_needs_a_project() -> None:
     assert hook_review_advisories("codebuddy", project=None) == []
+    assert hook_review_advisories("kiro", project=None) == []
+    assert hook_review_advisories("github-copilot", project=None) == []
 
 
 def test_cli_codebuddy_install_prints_the_hook_review_note(

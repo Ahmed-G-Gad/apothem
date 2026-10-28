@@ -52,7 +52,11 @@ _WITH_AGENTS = frozenset(
 #: The adapters that also register hooks natively, and the manifest modes of the
 #: project entries that carry them (the dispatcher's support tree and the
 #: key-merged registration), which follow the instruction anchor.
-_HOOK_MODES = {"codebuddy": ["merge_tree_entries", "write_text"]}
+_HOOK_MODES = {
+    "codebuddy": ["merge_tree_entries", "write_text"],
+    "github-copilot": ["merge_tree_entries", "native_hooks"],
+    "kiro": ["merge_tree_entries", "native_hooks"],
+}
 
 #: The harnesses that write ``~/.agents/skills/`` with the registered owner.
 _SHARED_AGENTS_SKILLS = ("cursor", "github-copilot", "windsurf", "zed")

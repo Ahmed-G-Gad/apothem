@@ -18,6 +18,10 @@
 #                      template, `sentinel_merge` for an operator-owned
 #                      Markdown instruction anchor whose Apothem content is
 #                      folded into a sentinel-delimited managed block,
+#                      `native_hooks` for the one hook-registration JSON file
+#                      Apothem owns in a harness's hooks folder (its hooks are
+#                      told apart from the operator's by the dispatcher their
+#                      command runs, and the operator's stay),
 #                      `replace_tree` for an exact Apothem-owned directory,
 #                      `merge_tree_entries` for discovery dirs that may also
 #                      contain operator files, or a harness-specific
@@ -491,6 +495,35 @@ harnesses:
       - source: "agents/"
         target: "${PROJECT_ROOT}/.github/agents/"
         mode: copilot_agents
+        ownership_class: apothem-owned
+      # Copilot runs hooks from the JSON files in <project>/.github/hooks/ (CLI,
+      # cloud agent and VS Code), https://docs.github.com/en/copilot/reference/hooks-reference
+      # (retrieved 2026-10-28). native_hooks writes one Apothem-owned file there,
+      # apothem.json, and no other: an operator's own hook files in the folder are
+      # never read or changed, and an entry an operator added to apothem.json is
+      # kept (the entries Apothem wrote are told apart by the dispatcher path in
+      # their command, which holds with or without an install record). The file
+      # registers two camelCase events, the ones whose additionalContext Copilot
+      # hands to the model: sessionStart and postToolUse. preToolUse is not
+      # registered, because Copilot reads only its permission fields. Each entry
+      # carries a bash and a powershell command (the cloud agent runs bash only).
+      # The commands name the install-resolved interpreter and the project path,
+      # which are machine-specific, in a file inside the repository; the
+      # dispatcher sits in the Apothem-owned support tree under the project's
+      # gitignored .apothem/, so a fresh clone has a hook that points at nothing
+      # and Copilot ignores the failure (a non-2 exit is fail-open for these
+      # events). The support tree is nested under the harness name, so another
+      # project-scope hook adapter's uninstall cannot remove this dispatcher.
+      # TODO(clarify): whether Copilot reads additionalContext from a PascalCase
+      # event's output; the file uses the camelCase names, whose output fields the
+      # hooks reference lists.
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.apothem/support/github-copilot/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "harnesses/github_copilot/templates/apothem-hooks.json"
+        target: "${PROJECT_ROOT}/.github/hooks/apothem.json"
+        mode: native_hooks
         ownership_class: apothem-owned
 
     exclude:
@@ -1098,6 +1131,34 @@ harnesses:
       - source: "agents/"
         target: "${PROJECT_ROOT}/.kiro/agents/"
         mode: kiro_agents
+        ownership_class: apothem-owned
+      # Kiro runs hooks from the JSON files in <project>/.kiro/hooks/ (version v1,
+      # several hooks per file; IDE 1.0 and CLI V3), https://kiro.dev/docs/hooks/
+      # (retrieved 2026-10-28). native_hooks writes one Apothem-owned file there,
+      # apothem.json, and no other: an operator's own hook files in the folder are
+      # never read or changed, and a hook an operator added to apothem.json is
+      # kept (the hooks Apothem wrote are told apart by the dispatcher path in their
+      # command, which holds with or without an install record). The file registers
+      # SessionStart only: Kiro adds a command's stdout to the context for
+      # SessionStart and UserPromptSubmit and ignores it for the tool events, so
+      # a PreToolUse or PostToolUse hook could deliver nothing. The user folder
+      # ~/.kiro/hooks/ is not written. The command names the install-resolved
+      # interpreter and the project path, which are machine-specific, in a file
+      # the project can share through version control; the dispatcher sits in the Apothem-owned
+      # support tree under the project's gitignored .apothem/, so a fresh clone has
+      # a hook that points at nothing, and Kiro shows a warning for the failure.
+      # The support tree is nested under the harness name, so another
+      # project-scope hook adapter's uninstall cannot remove this dispatcher.
+      # TODO(clarify): the shell Kiro runs a command action in on Windows is not
+      # documented; the command is quoted for sh and cmd.exe and would need a
+      # call operator under PowerShell.
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.apothem/support/kiro/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "harnesses/kiro/templates/apothem-hooks.json"
+        target: "${PROJECT_ROOT}/.kiro/hooks/apothem.json"
+        mode: native_hooks
         ownership_class: apothem-owned
 
     exclude:

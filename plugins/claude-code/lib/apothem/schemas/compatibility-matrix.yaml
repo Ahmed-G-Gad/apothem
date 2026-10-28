@@ -64,7 +64,7 @@ harnesses:
   - name: github-copilot
     display: GitHub Copilot
     config_format: markdown
-    supports_hooks: false
+    supports_hooks: true
     supports_agents: true
     supports_skills: true
     supports_custom_rules: true
@@ -79,7 +79,11 @@ harnesses:
       ~/.config/apothem/; GitHub-hosted surfaces do not read those folders.
       Agents are rewritten as custom agent profiles in
       <project>/.github/agents/*.agent.md (project scope only), which the
-      repository commits and the cloud agent also reads.
+      repository commits and the cloud agent also reads. Hooks (sessionStart
+      and postToolUse) are registered in the Apothem-owned
+      <project>/.github/hooks/apothem.json, with the scripts under
+      <project>/.apothem/support/github-copilot/hooks/; the file names this
+      machine's interpreter, and the cloud agent runs only its bash command.
 
   - name: codex
     display: Codex
@@ -242,7 +246,7 @@ harnesses:
   - name: kiro
     display: Kiro
     config_format: markdown
-    supports_hooks: false
+    supports_hooks: true
     supports_agents: true
     supports_skills: true
     supports_custom_rules: true
@@ -256,7 +260,11 @@ harnesses:
       skills) go to the user-level ~/.kiro/skills/, and the rules and
       templates corpus to ~/.config/apothem/. Agents are rewritten as Kiro
       custom agents (Markdown, IDE 1.0 and CLI V3) in <project>/.kiro/agents/
-      (project scope only).
+      (project scope only). The SessionStart hook is registered in the
+      Apothem-owned <project>/.kiro/hooks/apothem.json (a v1 hook file), with
+      the scripts under <project>/.apothem/support/kiro/hooks/; the file names
+      this machine's interpreter, and Kiro CLI V3 runs it after the workspace is
+      trusted.
 
   - name: trae
     display: Trae
@@ -387,7 +395,9 @@ asset_classes:
       - antigravity
       - codebuddy
       - gemini-cli
+      - github-copilot
       - hermes
+      - kiro
       - open-claw
       - opencode
       - qwen-code
@@ -397,7 +407,9 @@ asset_classes:
       antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/; no active hook wiring until schema adapter exists"
       codebuddy: "register SessionStart and PostToolUse in <project>/.codebuddy/settings.local.json; support material under <project>/.apothem/support/hooks/"
       gemini-cli: "support cohort under <project>/.gemini/.apothem/support/hooks/"
+      github-copilot: "register sessionStart and postToolUse in <project>/.github/hooks/apothem.json; support material under <project>/.apothem/support/github-copilot/hooks/"
       hermes: "support cohort under ~/.hermes/.apothem/support/hooks/"
+      kiro: "register SessionStart in <project>/.kiro/hooks/apothem.json; support material under <project>/.apothem/support/kiro/hooks/"
       open-claw: "support cohort under ~/.openclaw/.apothem/support/hooks/"
       opencode: "support cohort under ~/.config/opencode/.apothem/support/hooks/"
       qwen-code: "register in settings.json; support material under ~/.qwen/.apothem/support/hooks/"

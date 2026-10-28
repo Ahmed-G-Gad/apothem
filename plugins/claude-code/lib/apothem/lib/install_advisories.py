@@ -22,7 +22,8 @@ passes the installs that hold each folder, read from the install ledger, and the
 advisories name those instead of assuming the registered owner wrote the folder.
 
 Hook review. :func:`hook_review_advisories` names the step a harness requires
-before hooks written to its settings file by another tool take effect.
+before hooks written to its settings file by another tool take effect, or the
+hazard of a hook file a repository commits.
 
 MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
 inventory and flags a deprecated transport, plain ``http://`` to a remote host,
@@ -262,7 +263,14 @@ def shared_root_advisories(
 #: and the note the advisory carries. CodeBuddy snapshots its settings at
 #: startup and applies an externally edited file only after the entries are
 #: confirmed in the /hooks panel (https://www.codebuddy.ai/docs/cli/hooks and
-#: /hooks-guide, retrieved 2026-10-28).
+#: /hooks-guide, retrieved 2026-10-28). Kiro CLI loads a workspace's hooks only
+#: after the operator trusts the workspace (https://kiro.dev/docs/permissions/,
+#: retrieved 2026-10-27), and its Web sessions run none
+#: (https://kiro.dev/docs/hooks/, retrieved 2026-10-28). Copilot has no review
+#: step; its note names the committed-file hazard instead, because the file
+#: lives in a folder repositories commit and holds this machine's paths
+#: (https://docs.github.com/en/copilot/reference/hooks-reference, retrieved
+#: 2026-10-28).
 _HOOK_REVIEW: dict[str, tuple[str, str]] = {
     "codebuddy": (
         ".codebuddy/settings.local.json",
@@ -273,6 +281,26 @@ _HOOK_REVIEW: dict[str, tuple[str, str]] = {
         "say whether the review repeats after each change, so check /hooks "
         "again after an update. CodeBuddy documents hooks as Beta, and on "
         "Windows it runs hook commands through Git Bash only.",
+    ),
+    "kiro": (
+        ".kiro/hooks/apothem.json",
+        "Apothem registers its SessionStart hook in {path}. Kiro CLI 2.33 and "
+        "later loads a workspace's hooks only after you trust the workspace: "
+        "accept the 'Trust this workspace?' screen the first time you start an "
+        "interactive V3 session (kiro-cli --v3) in this folder. Kiro Web "
+        "sessions run no hooks. The file names this machine's Python "
+        "interpreter and this project's path, so commit it only if your team "
+        "shares that layout; where the command is missing, Kiro shows a "
+        "warning and the session goes on.",
+    ),
+    "github-copilot": (
+        ".github/hooks/apothem.json",
+        "Apothem registers its sessionStart and postToolUse hooks in {path}. "
+        "The file names this machine's Python interpreter and this project's "
+        "path, and .github/hooks/ is part of the repository, so commit it "
+        "only if your team shares that layout. Copilot's cloud agent reads the "
+        "file and runs only its bash command, which finds no interpreter "
+        "there; Copilot logs the failure and the run goes on.",
     ),
 }
 

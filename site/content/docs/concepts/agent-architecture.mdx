@@ -33,11 +33,11 @@ whether the adapter renders a native config via a materializer.
 | codex | Native `hooks.json` lifecycle hooks | `AGENTS.md` plus support rules referenced by installed skills | Class I | none |
 | cursor | Plugin hooks exist; the adapter registers none | One `.mdc` workspace rules file (MDC frontmatter: `description` / `globs` / `alwaysApply`) | Class I | none |
 | gemini-cli | Native hook surface exists; Apothem support material only | Rules embedded in single `GEMINI.md` | Class I | none |
-| github-copilot | Vendor hooks exist; the adapter registers none | Rules in `.github/copilot-instructions.md` | Class I | none |
+| github-copilot | Native sessionStart and postToolUse in `.github/hooks/apothem.json`; no preToolUse guard (the vendor reads only permission fields there) | Rules in `.github/copilot-instructions.md` | Class I | none |
 | glm | None (model backend; no agent tool surface) | `.apothem/providers/glm.toml` backend provider config (no rule cohort) | Class I | none |
 | hermes | Support material only | `config.yaml` plus external skill directory | Class II-B | `config.yaml` |
 | kimi-code | Support material only | `AGENTS.md` plus support rules under `.kimi-code/.apothem/support/` | Class I | none |
-| kiro | Agent hooks exist; out of adapter scope | `.kiro/steering/apothem-rules.md` steering file | Class I | none |
+| kiro | Native SessionStart in `.kiro/hooks/apothem.json`; no tool-event hook (the vendor ignores their output) | `.kiro/steering/apothem-rules.md` steering file | Class I | none |
 | open-claw | Support material only | `openclaw.json` plus extra skill directory | Class II-B | `openclaw.json` |
 | opencode | Support material only | Profile-rendered JSON plus native commands, skills, and agents | Class II-B | `opencode.json` |
 | qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus native commands, skills, and agents | Class II-B | `settings.json` / `QWEN.md` |
@@ -136,7 +136,7 @@ in the matrix reduces to one of these.
 
 | Axis | Range observed across the seventeen harnesses |
 |------|---------------------------------------------|
-| Hook surface | Native multi-event (claude-code, codex, qwen-code) → native on the events the vendor delivers to the model (codebuddy: SessionStart and PostToolUse) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → no hook registered by the adapter (cursor, github-copilot, glm, kiro, trae, windsurf, zed; the vendors of cursor, github-copilot, kiro, and windsurf document hooks that are out of adapter scope) |
+| Hook surface | Native multi-event (claude-code, codex, qwen-code) → native on the events the vendor delivers to the model (codebuddy: SessionStart and PostToolUse; github-copilot: sessionStart and postToolUse; kiro: SessionStart) → support-only hook material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → no hook registered by the adapter (cursor, glm, trae, windsurf, zed; the vendors of cursor and windsurf document hooks that are out of adapter scope) |
 | Rule-activation format | Flat `.md` (claude-code) → plugin rules (antigravity) → `.mdc` workspace (cursor) → directory rules (codebuddy, trae, windsurf) → steering file (kiro) → project-root flat file (zed) → single embedded file (codex, gemini-cli, github-copilot, kimi-code) → config-referenced support material (hermes, open-claw, opencode, qwen-code) → backend provider config (glm) |
 | Adapter class | Class I raw-propagation → Class II-A raw + vendor settings → Class II-B profile-rendered single-surface |
 

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "\"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/github-copilot/hooks/dispatch.py\" --contract copilot sessionStart",
+        "powershell": "& \"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/github-copilot/hooks/dispatch.py\" --contract copilot sessionStart",
+        "timeoutSec": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "\"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/github-copilot/hooks/dispatch.py\" --contract copilot postToolUse posttooluse-proactive-compaction",
+        "powershell": "& \"${PYTHON_BIN}\" \"<ROOT>/.apothem/support/github-copilot/hooks/dispatch.py\" --contract copilot postToolUse posttooluse-proactive-compaction",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

@@ -239,6 +239,16 @@
       "mode": "copilot_agents",
       "source": "agents",
       "target": "<ROOT>/.github/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/github-copilot/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/github_copilot/templates/apothem-hooks.json",
+      "target": "<ROOT>/.github/hooks/apothem.json"
     }
   ],
   "hermes": [
@@ -515,6 +525,16 @@
       "mode": "kiro_agents",
       "source": "agents",
       "target": "<ROOT>/.kiro/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/kiro/hooks"
+    },
+    {
+      "mode": "native_hooks",
+      "source": "harnesses/kiro/templates/apothem-hooks.json",
+      "target": "<ROOT>/.kiro/hooks/apothem.json"
     }
   ],
   "trae": [

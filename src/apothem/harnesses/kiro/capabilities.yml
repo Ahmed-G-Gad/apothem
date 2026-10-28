@@ -10,8 +10,13 @@
 # agents as Kiro custom agents (Markdown, IDE 1.0 and CLI V3) in
 # .kiro/agents/ (project scope only), installs skills and command skills at
 # Kiro's user-level ~/.kiro/skills/ and the rules and templates corpus at
-# ~/.config/apothem/, and does not author spec/hook cohorts. Kiro documents
-# custom agents invoked as sub-agents, so sub_agent_dispatch is true.
+# ~/.config/apothem/, and does not author spec cohorts. It registers one hook,
+# SessionStart, in the Apothem-owned .kiro/hooks/apothem.json (a v1 hook file)
+# with the scripts under .apothem/support/kiro/hooks/; Kiro adds a hook's stdout
+# to the context for SessionStart and UserPromptSubmit only, so no tool-event
+# hook is registered. Kiro CLI V3 loads the hook after the workspace is trusted.
+# Kiro documents custom agents invoked as sub-agents, so sub_agent_dispatch is
+# true.
 
 mcp_servers:
   - workspace-scope-.kiro/settings/mcp.json
@@ -23,9 +28,9 @@ custom_command_support: "skills"
 recommended_postfix_rendering: "plain-text"
 long_context_compaction: "profile-managed"
 context_ignore_surface: "not-documented-in-current-pin"
-layered_context_surface: ".kiro/steering/*.md directory plus .kiro/agents/*.md custom agents, ~/.kiro/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
+layered_context_surface: ".kiro/steering/*.md directory plus .kiro/agents/*.md custom agents, .kiro/hooks/apothem.json hooks with scripts in .apothem/support/kiro/hooks/, ~/.kiro/skills (skills and command skills) and ~/.config/apothem/{rules,templates}"
 lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
-hook_learning_capture: "artifact-evolution-cycle"
+hook_learning_capture: "hooks/apothem.json-hooks"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /

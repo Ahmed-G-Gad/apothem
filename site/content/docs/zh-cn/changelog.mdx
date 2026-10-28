@@ -39,6 +39,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   dispatcher also gained a `--contract <id>` option that translates a harness's
   event and tool names and reshapes the output for it; the harness page and the
   hooks reference explain both.
+- **Kiro and GitHub Copilot now run Apothem's session hooks.** The install
+  registers the hooks in a hook file Apothem owns, `.kiro/hooks/apothem.json`
+  for Kiro (the session bootstrap on `SessionStart`) and
+  `.github/hooks/apothem.json` for Copilot (the session bootstrap on
+  `sessionStart` and the context-size advisory on `postToolUse`), and puts the
+  scripts in `.apothem/support/kiro/hooks/` and
+  `.apothem/support/github-copilot/hooks/`. Each vendor hands extra context to the
+  model only for those events: Kiro ignores the output of tool events, and
+  Copilot reads only permission fields from `preToolUse`. So the write, edit and
+  shell guards are not registered there, and both hooks only add context and
+  never block. Each command names the interpreter and the project path of the
+  machine that ran the install, and both folders belong to the repository, so the
+  harness pages say when to keep the file out of version control; Copilot's cloud
+  agent runs only the `bash` command and finds no interpreter at that path. Kiro
+  CLI 2.33 and later loads the hook once you trust the workspace, and the install
+  prints that step. Your other hook files in those folders are never touched, a
+  hook you add to `apothem.json` stays, and an uninstall removes only the hooks
+  that run the Apothem dispatcher.
 - **CodeBuddy and Trae now get Apothem's helpers as their own subagents.** The
   install writes each Apothem helper into the project as a Markdown subagent
   file, in `.codebuddy/agents/` for CodeBuddy and `.trae/agents/` for Trae,
