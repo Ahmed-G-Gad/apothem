@@ -86,6 +86,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   explains the files, the trust step, and how an uninstall treats a file of
   yours with an Apothem helper's name.
 
+- **The Marketplace publish can sign in with Microsoft Entra ID instead of a
+  stored token.** `publish-vscode.yml` now picks its credential in a
+  `Select Marketplace credential` step. With the repository variables
+  `VSCODE_MARKETPLACE_READY=true`, `VSCE_AUTH=entra`, `AZURE_CLIENT_ID` and
+  `AZURE_TENANT_ID` set, the job signs in through a GitHub OIDC federated
+  credential (`Azure/login`, pinned by commit, no client secret) and
+  `vsce publish --azure-credential` publishes with a short-lived token; the
+  Entra steps never receive `VSCE_PAT`. Without those variables the `VSCE_PAT`
+  secret publishes as before, and the credential is a switch, not an automatic
+  retry. When `VSCE_AUTH=entra` is set but the client or tenant id is empty,
+  the run logs a warning whether or not `VSCE_PAT` is set. The two switch
+  variables are compared without regard to case. On the Entra route, a manual
+  dispatch with the new `dry_run` input signs in and verifies publisher access
+  without publishing; on the token route it warns that nothing was verified.
+  The publish job now holds `id-token: write`. The release-cycle runbook gains
+  the Azure and Marketplace setup procedure, which marks the facts no primary
+  source confirms.
+
 ### Changed
 
 - **The docs site's Node type definitions match the Node it runs on.**
@@ -114,6 +132,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and laid out left to right. A client component now applies the new page's
   language tag and direction after every navigation, before the page paints.
   Search already followed the switch.
+- **The conformity gate no longer reports on files that belong to another
+  checkout.** Validators that walk the repository from its root descended into
+  nested git checkouts (a worktree under `.claude/worktrees/`, a submodule, a
+  nested clone), so `agnosticism-grep` failed the strict gate on the
+  `AGENTS.md` copies inside a worktree, and the same walk entered
+  `site/node_modules`, which stretched a strict run past ten minutes. One
+  shared tree walk in `_grep_base.py` now skips any directory that holds a
+  `.git` file or directory, plus the vendored, virtual-environment, cache and
+  build-output trees (`node_modules`, `_vendor`, `venv`, `dist`, `.next` and
+  similar), wherever they sit. `agnosticism-grep`, `agents-md-coverage-grep`,
+  `dynamism-grep`, `freshness-token-grep`, `plain-language-grep` and
+  `reference-token-grep` use it; the stray-suite sweep in `no-global-plans-grep`
+  keeps its own walk and now also stops at a nested checkout. Validators that
+  read one fixed folder, such as `naming-grep`, are unchanged. In a single
+  checkout the findings are the same, except that a file under one of the pruned
+  directory names is no longer read. `freshness-token-grep` and
+  `reference-token-grep` now list their findings in directory order instead of
+  one pass per file suffix.
 
 ## [1.4.0] - 2026-10-26
 

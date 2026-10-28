@@ -30,12 +30,21 @@ root-based validator resolves its root to an absolute path before scanning, so
 ``.`` and the absolute form inspect the same tree, and its report carries an
 ``inspected`` count (:func:`finish_root_report`). A validator that inspected
 nothing cannot pass unless it declares that an empty scope is expected.
+
+Tree walks. A validator that walks the repository from its root uses
+:func:`iter_tree_files`, which prunes every nested checkout (a worktree, a
+submodule, or a nested clone, each marked by a ``.git`` entry) and the
+vendored, virtual-environment, cache and build-output trees in
+:data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
+repository, so a root-level finding on one is a false positive, and a walk that
+descends into ``node_modules`` or a built site costs minutes.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections.abc import Callable, Iterable, Iterator
@@ -212,6 +221,98 @@ def finish_root_report(
     if advisory or passed:
         return EXIT_PASS
     return EXIT_FAIL
+
+
+# ---------------------------------------------------------------------------
+# Shared tree walk
+# ---------------------------------------------------------------------------
+#
+# ``Path.rglob`` cannot prune: it lists every file below the root, including
+# the files of a nested checkout (a Claude Code worktree under
+# ``.claude/worktrees/``, a submodule, a nested clone) and the tens of
+# thousands under ``node_modules``. The root-level validators walk with
+# :func:`iter_tree_files` instead, which drops those subtrees before listing
+# them.
+
+# The marker of a checkout: a file in a linked worktree or a submodule, a
+# directory in a clone.
+GIT_ENTRY: Final[str] = ".git"
+
+# Directory names no validator scans, wherever they sit below the root: VCS
+# state, vendored dependencies, virtual environments, caches, and build output
+# (``dist``, ``.next``, ``.audit``). The repository's ``.gitignore`` lists the
+# build-output names, so none of them holds authored content. A validator with
+# exclusions of its own keeps them and passes any further names as
+# ``extra_prune``.
+PRUNED_SEGMENTS: Final[frozenset[str]] = frozenset(
+    {
+        GIT_ENTRY,
+        "node_modules",
+        "_vendor",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".hypothesis",
+        ".audit",
+        ".next",
+        "dist",
+    }
+)
+
+
+def has_git_entry(directory: Path) -> bool:
+    """Return True iff ``directory`` holds a ``.git`` file or directory.
+
+    A broken symbolic link named ``.git`` counts: the entry exists, so the
+    directory is a checkout root.
+    """
+    return os.path.lexists(directory / GIT_ENTRY)
+
+
+def iter_tree_files(
+    root: Path,
+    suffixes: Iterable[str] = (),
+    *,
+    names: Iterable[str] = (),
+    extra_prune: Iterable[str] = (),
+) -> Iterator[Path]:
+    """Yield the matching files below ``root``, skipping pruned subtrees.
+
+    Pre-conditions: ``root`` is an existing directory. ``suffixes`` are file
+    name endings (``".md"``) and ``names`` exact file names (``"README.md"``);
+    a file matching either is yielded, and with both empty every file is.
+    Matching follows the host's file-name case rules, as ``Path.rglob`` does.
+    ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
+    Post-conditions: yields existing regular files as ``root``-prefixed paths,
+    directory by directory in name order, so a run is deterministic. The walk
+    never enters a nested checkout (a directory below ``root`` that holds a
+    ``.git`` file or directory; ``root`` itself is never nested, even when its
+    ``.git`` is a file), a directory named in the pruned set, or a symbolic
+    link to a directory. A directory it cannot read is skipped.
+    """
+    pruned = PRUNED_SEGMENTS.union(extra_prune)
+    wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
+    wanted_names = frozenset(os.path.normcase(name) for name in names)
+    match_all = not wanted_suffixes and not wanted_names
+    for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
+        # Position 0 is the root itself; its own ``.git`` marks the checkout
+        # being inspected, not a nested one.
+        if position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
+            dirnames.clear()
+            continue
+        dirnames[:] = sorted(name for name in dirnames if name not in pruned)
+        for filename in sorted(filenames):
+            folded = os.path.normcase(filename)
+            if not (
+                match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
+            ):
+                continue
+            candidate = Path(dirpath, filename)
+            if candidate.is_file():
+                yield candidate
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,11 @@ supplied root and inspects ONLY the four shipped-surface directories:
 
 Every other path is out of scope: tests, plans, harness adapter packages
 (whose per-harness catalog content legitimately names every harness), and
-all source code outside the four prose surfaces.
+all source code outside the four prose surfaces. A nested git checkout below
+the root (a Claude Code worktree under ``.claude/worktrees/``, a submodule, a
+nested clone) is another repository and is skipped, as are the vendored,
+virtual-environment, cache and build-output trees (``node_modules``,
+``_vendor``, ``dist``), where no shipped surface lives.
 
 Detection — two closed classes.
 
@@ -57,6 +61,7 @@ from typing import Final
 from apothem.conformity._grep_base import (
     finish_root_report,
     iter_prose_lines,
+    iter_tree_files,
     parse_root_args,
 )
 
@@ -283,13 +288,13 @@ def check(root: Path) -> GrepResult:
     containing ``src/apothem/{rules,commands,output-styles,statuslines}/``).
     Post-conditions: ``result.passed`` is True iff every in-scope shipped
     surface is free of privileging harness-brand references (outside fenced
-    code) and re-introduced enforcement presets.
+    code) and re-introduced enforcement presets. Files inside a nested git
+    checkout, or below a directory the shared walk prunes (``node_modules``,
+    ``_vendor``, ``dist``), are never read.
     """
     findings: list[Finding] = []
     scanned = 0
-    for path in sorted(root.rglob(f"*{_MARKDOWN_SUFFIX}")):
-        if not path.is_file():
-            continue
+    for path in sorted(iter_tree_files(root, (_MARKDOWN_SUFFIX,))):
         rel_posix = _relative_posix(path, root)
         if rel_posix is None:
             continue
