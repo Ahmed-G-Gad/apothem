@@ -10,22 +10,26 @@ Preguntas habituales, en orden de frecuencia.
 
 ## ¿Qué es `apothem`?
 
-Una configuración portátil y agnóstica respecto al host que convierte tu directorio
-personal en un marco de gobernanza, ideación y automatización
-para el desarrollo guiado por entorno. Combina reglas de comportamiento, estándares
-creativos, comandos de barra, trabajadores delegados persistentes, hooks y skills
-en una única superficie coherente.
+Apothem es un gestor de configuración agnóstico respecto al host para entornos de
+asistente de programación. Defines un único perfil compartido y Apothem lo
+materializa en la superficie de configuración nativa de cada herramienta —
+combinando reglas de comportamiento, estándares creativos, comandos de barra,
+trabajadores delegados persistentes, hooks y skills en un único corpus gobernado
+que se mantiene coherente en todos los entornos.
 
-## ¿Con qué CLI de entorno funciona?
+## ¿Con qué entornos de asistente funciona?
 
 Apothem es agnóstico respecto al entorno. Los adaptadores por entorno bajo
 `src/apothem/harnesses/<harness>/` proyectan el perfil compartido en
-el directorio de configuración nativo de cada herramienta; la lista canónica vive en
-[`site/content/docs/harnesses/`](/docs/harnesses) y actualmente cubre los siguientes entornos compatibles:
+el directorio de configuración nativo de cada herramienta. El registro de entornos
+usado en tiempo de ejecución es la fuente autoritativa del conjunto de entornos
+compatibles; las [páginas de entornos](/docs/harnesses) documentan cada uno.
+Actualmente, el registro cubre los siguientes entornos compatibles:
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
-Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, y Zed
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai) y Kimi Code
 ```
 
 El adaptador de Claude Code se materializa en `~/.claude/`; su despachador de hooks es neutral respecto al anfitrión: primero resuelve la raíz del ecosistema a partir de `$CLAUDE_PROJECT_DIR`, después de `$LLM_PROJECT_DIR`, luego prueba búsquedas relativas al script y al directorio de trabajo, y por último recurre a `$HOME/.claude`.
@@ -65,8 +69,9 @@ Advisories y `me@ahmedgad.com`.
 
 Consulta [Contribuir](/docs/developer-guide). En resumen: lee
 `CONTRIBUTING.md`, bifurca el repositorio, abre un PR con la
-plantilla de PR canónica rellenada y asegúrate de que las diez clases de
-comprobaciones de CI pasen.
+plantilla de PR canónica rellenada y asegúrate de que las comprobaciones de CI
+pasen — la [guía del desarrollador](/docs/developer-guide) enumera las puertas que
+un PR debe superar.
 
 ## ¿Dónde vive el estado del ecosistema?
 

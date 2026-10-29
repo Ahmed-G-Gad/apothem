@@ -10,22 +10,25 @@ Questions courantes, par ordre de fréquence.
 
 ## Qu'est-ce qu'`apothem` ?
 
-Une configuration portable et indépendante de l'hôte qui transforme votre répertoire
-personnel en un cadre de gouvernance, d'idéation et d'automatisation
-pour le développement piloté par environnement. Elle associe règles comportementales,
+Apothem est un gestionnaire de configuration indépendant de l'hôte pour les environnements
+d'assistant de programmation. Vous rédigez un seul profil partagé, et Apothem le matérialise
+dans la surface de configuration native de chaque outil — en associant règles comportementales,
 standards créatifs, commandes slash, travailleurs délégués persistants, hooks et compétences
-en une seule surface cohérente.
+en un seul corpus gouverné qui reste cohérent dans tous les environnements.
 
-## Avec quelles CLI d'environnement fonctionne-t-il ?
+## Avec quels environnements d'assistant fonctionne-t-il ?
 
 Apothem est indépendant de l'environnement. Des adaptateurs par environnement sous
 `src/apothem/harnesses/<harness>/` projettent le profil partagé dans
-le répertoire de configuration natif de chaque outil ; la liste canonique se trouve à
-[`site/content/docs/harnesses/`](/docs/harnesses) et couvre actuellement les environnements pris en charge suivants :
+le répertoire de configuration natif de chaque outil. Le registre des environnements utilisé
+à l'exécution est la source qui fait autorité pour l'ensemble des environnements pris en
+charge ; les [pages d'environnements](/docs/harnesses) documentent chacun d'eux. Le registre
+couvre actuellement les environnements pris en charge suivants :
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
-Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
 ```
 
 L'adaptateur Claude Code se matérialise dans `~/.claude/` ; son répartiteur de hooks est neutre vis-à-vis de l'hôte : il résout la racine de l'écosystème d'abord depuis `$CLAUDE_PROJECT_DIR`, puis depuis `$LLM_PROJECT_DIR`, essaie ensuite des recherches relatives au script et au répertoire de travail, et se rabat enfin sur `$HOME/.claude`.
@@ -64,8 +67,9 @@ Advisories et `me@ahmedgad.com`.
 
 Voir [Contribuer](/docs/developer-guide). En bref : lisez
 `CONTRIBUTING.md`, forkez le dépôt, ouvrez une PR avec le
-modèle de PR canonique renseigné, et assurez-vous que les dix classes de
-vérifications CI réussissent.
+modèle de PR canonique renseigné, et assurez-vous que les vérifications CI
+réussissent — le [guide du développeur](/docs/developer-guide) liste les portails
+qu'une PR doit franchir.
 
 ## Où se trouve l'état de l'écosystème ?
 

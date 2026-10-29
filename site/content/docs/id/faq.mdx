@@ -10,18 +10,19 @@ Pertanyaan umum, dalam urutan frekuensi.
 
 ## Apa itu `apothem`?
 
-Sebuah konfigurasi portabel dan agnostik-host yang mengubah direktori home
-Anda menjadi kerangka kerja tata kelola, ideasi, dan otomasi
-untuk pengembangan yang dikendalikan asisten-pengkodean. Ia memadukan aturan perilaku,
-standar kreatif, perintah garis-miring, pekerja terdelegasi yang persisten, hook, dan skill
-menjadi satu permukaan yang koheren.
+Apothem adalah pengelola konfigurasi agnostik-host untuk harness asisten-pengkodean.
+Anda menulis satu profil bersama, dan Apothem mematerialisasikannya ke permukaan
+konfigurasi native setiap peralatan — memadukan aturan perilaku, standar kreatif,
+perintah garis-miring, pekerja terdelegasi yang persisten, hook, dan skill
+menjadi satu korpus yang diatur dan tetap konsisten di setiap harness.
 
-## CLI asisten-pengkodean mana saja yang didukungnya?
+## Harness asisten mana saja yang didukungnya?
 
 Apothem bersifat agnostik-harness. Adaptor per-harness di bawah
 `src/apothem/harnesses/<harness>/` memproyeksikan profil bersama ke dalam
-direktori konfigurasi native setiap peralatan; daftar kanonis berada di
-[`site/content/docs/harnesses/`](/docs/harnesses) dan saat ini mencakup harness yang didukung berikut:
+direktori konfigurasi native setiap peralatan. Registri harness yang digunakan saat runtime
+adalah sumber otoritatif untuk kumpulan yang didukung; [halaman harness](/docs/harnesses)
+mendokumentasikan setiap harness. Registri tersebut saat ini mencakup harness yang didukung berikut:
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
@@ -66,8 +67,8 @@ Advisories dan `me@ahmedgad.com`.
 
 Lihat [Kontribusi](/docs/developer-guide). Versi singkatnya: baca
 `CONTRIBUTING.md`, fork repositori, buka PR dengan
-templat PR kanonis terisi, dan pastikan sepuluh kelas pemeriksaan CI
-lolos.
+templat PR kanonis terisi, dan pastikan pemeriksaan CI
+lolos — [panduan pengembang](/docs/developer-guide) mencantumkan gerbang yang harus dilalui sebuah PR.
 
 ## Di mana state ekosistem berada?
 

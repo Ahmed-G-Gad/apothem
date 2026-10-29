@@ -46,3 +46,7 @@ flowchart TD
 | [تخطيط المصدر](/docs/architecture/source-layout) | لماذا يستخدم <bdi>Apothem</bdi> تخطيط <bdi>`src/`</bdi> وكيف تُنظَّم الشجرة. |
 | [سير عمل التثبيت](/docs/architecture/installation-workflow) | كيف تعمل <bdi>`apothem install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> من البداية إلى النهاية. |
 | [العمّال المُفوَّضون](/docs/architecture/agents) | تعليمات بنطاق المستودع لبيئات تشغيل متعدّدة العمّال تعمل داخل هذا المستودع. |
+| [زمن التشغيل المكتفي ذاتيًا](/docs/architecture/self-contained-runtime) | كيف يعمل المحرّك من أي نسخة مسحوبة — الاعتماديات المُضمَّنة، ونموذج الاستدعاء <bdi>`PYTHONPATH=src`</bdi>، وتمهيد شجرة الإضافة. |
+| [استراتيجية إدماج التبعيات](/docs/architecture/vendoring-strategy) | ما حزم الطرف الثالث التي يُدمِجها <bdi>Apothem</bdi> تحت <bdi>`src/apothem/_vendor/`</bdi>، وأيّها يبقى متطلّبًا مسبقًا للنظام، وكيف تُحدَّث النسخ المُدمَجة. |
+| [عقد تحزيم الحزم](/docs/architecture/cohort-packaging-contract) | العقد القابل للاستهلاك من الجهات اللاحقة الذي يُعدِّد الحزم ويحلّ أهدافها الأصلية لكل إطار عمل دون إعادة اشتقاق التعيين. |
+| [مخطّط خط أنابيب <bdi>CI/CD</bdi>](/docs/architecture/cicd-pipeline) | خريطة بصرية لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي يُشترَط اجتيازها لكلّ تغيير في الشيفرة وكلّ إصدار. |
