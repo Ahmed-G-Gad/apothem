@@ -35,11 +35,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Single-sourced pip pin; scripts/dev/check_pip_pin_drift.py keeps it equal
-  # across every workflow that installs pip.
-  PIP_PIN_VERSION: "26.2.1"
-
 concurrency:
   group: markdown-lint-${{ github.ref }}
   cancel-in-progress: true
@@ -70,10 +65,11 @@ jobs:
           node-version: "22"
           package-manager-cache: false
       - name: Install pre-commit
-        # Exact pin, like the other workflow-only pip tools
-        # (dependency-pinning manifest, CI-only tools row).
+        # pre-commit is an exact pin, like the other workflow-only pip tools
+        # (dependency-pinning manifest, CI-only tools row); pip itself is
+        # hash-locked in scripts/ci/requirements-ci-pip.txt.
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install "pre-commit==4.7.0"
       - name: Run the markdownlint hook
         run: pre-commit run markdownlint --all-files --show-diff-on-failure

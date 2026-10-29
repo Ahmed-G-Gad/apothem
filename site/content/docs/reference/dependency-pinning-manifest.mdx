@@ -21,7 +21,8 @@ version comments and are bumped by Dependabot.
 | Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges; no committed Python runtime lock |
 | Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs current matching versions |
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
-| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
+| CI pip | `scripts/ci/requirements-ci-pip.txt` | Hash-locked: one `pip==X.Y.Z` pin with the hashes of its wheel and sdist, installed with `--require-hashes -r` by every workflow that upgrades pip. Dependabot proposes the upgrades and rewrites the hashes; `scripts/dev/check_pip_pin_drift.py` holds the pin at pip 26.2 or later |
+| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
 | VS Code packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
 | Channel-smoke harness CLIs | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` committed and consumed by `npm ci` |
@@ -35,6 +36,7 @@ version comments and are bumped by Dependabot.
 | Dev tooling | Current lower bounds live in `pyproject.toml` `dev` extra | Latest stable floors ratified before release |
 | Security tooling | Current lower bounds live in `pyproject.toml` `security` extra | Current scanner floors ratified before release |
 | Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
+| CI pip | Hash-locked pin lives in `scripts/ci/requirements-ci-pip.txt` | pip 26.2 or later closes CVE-2026-13346; workflows install it with `--require-hashes`, so the download is checked against its published hash |
 | Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
 | GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception, marked with an `action-pinning-exempt:` comment in `release.yml` | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
 | npm packaging | `publish-npm.yml` workflow runs on the `v*.*.*` tag push, with `workflow_dispatch` as the fallback | The single public npm package is `@ahmed-g-gad/apothem`; publication waits for the operator's approval of the `release` environment, given after `scripts/release/check-release-ready.sh` passes |
@@ -75,9 +77,9 @@ The website is different: `site/package-lock.json` is committed and CI uses
 - **What the update bot does not touch.** Dependabot version updates
   (`.github/dependabot.yml`) cover the GitHub Actions pins, the website
   lockfile, the vsce packager lockfile (`tools/vsce`), the harness-CLI
-  lockfile the channel smoke installs (`tools/channel-smoke`) and the
-  pre-commit hooks. The runtime floors in `pyproject.toml`, the hash-locked
-  release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
+  lockfile the channel smoke installs (`tools/channel-smoke`), the hash-locked
+  pip that CI installs (`scripts/ci`) and the pre-commit hooks.
+  The runtime floors in `pyproject.toml`, the hash-locked release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
   and the pre-commit hooks pinned in lockstep with `pyproject.toml` move by
   hand, because a single-pin bump would break the files they agree with.
   The website's `@types/node` major follows its Node floor (`engines` and

@@ -7,14 +7,17 @@
 # Version updates cover GitHub Actions (SHA pins; Dependabot moves the SHA and
 # rewrites the same-line "# vX.Y.Z" comment), the docs site, the vsce packager
 # lockfile (tools/vsce), the harness-CLI lockfile the channel smoke installs
-# (tools/channel-smoke), and the pre-commit hooks. These stay hand edits for
-# version updates, because a single-pin bump would be wrong (a security update
-# can still open a pull request for one; adapt it by hand or close it):
+# (tools/channel-smoke), the hash-locked CI pip (scripts/ci), and the pre-commit
+# hooks. These stay hand edits for version updates, because a single-pin bump
+# would be wrong (a security update can still open a pull request for one;
+# adapt it by hand or close it):
 #   - pyproject.toml: deliberate floors, and click is pinned exactly for the
 #     completion golden (comment beside it).
 #   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
 #     regenerated whole with `pip download`; setuptools must equal pyproject's
-#     build-system pin (tests/scripts/test_normalize_sdist.py).
+#     build-system pin (tests/scripts/test_normalize_sdist.py). The single-
+#     package pip lock beside it (scripts/ci/requirements-ci-pip.txt) is the
+#     opposite case and is Dependabot's: one pin, rewritten with its hashes.
 #   - src/apothem/_vendor/vendor.txt: records the vendored source tree beside
 #     it; a bump means re-vendoring (docs: architecture/vendoring-strategy).
 #   - npm `overrides` blocks. Version updates leave them alone; a security
@@ -173,6 +176,24 @@ updates:
       - dependency-name: "pyyaml"
       - dependency-name: "jsonschema"
       - dependency-name: "types-*"
+
+  # The hash-locked pip that every workflow installs with --require-hashes
+  # (scripts/ci/requirements-ci-pip.txt). Dependabot rewrites the version and
+  # both --hash lines in one pull request. The drift check keeps the pin at
+  # pip 26.2 or later (scripts/dev/check_pip_pin_drift.py).
+  - package-ecosystem: pip
+    directory: /scripts/ci
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
+    labels: [dependencies]
+    assignees: [Ahmed-G-Gad]
 
   # Security updates only: version updates are off (limit 0), so these entries
   # just give Dependabot's security pull requests the labels, prefix and

@@ -37,12 +37,6 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
-env:
-  PIP_PIN_VERSION: "26.2.1"
-
 concurrency:
   group: license-audit-${{ github.ref }}
   cancel-in-progress: true  # scan-class cadence: cancel stale runs on rebase
@@ -78,7 +72,8 @@ jobs:
 
       - name: Install pip-licenses + apothem runtime deps
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install pip-licenses==5.5.5
           # Runtime deps only — the license gate covers what apothem ships,
           # not dev/docs/test tooling (which is not distributed in the wheel).

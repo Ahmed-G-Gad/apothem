@@ -121,12 +121,6 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
-env:
-  PIP_PIN_VERSION: "26.2.1"
-
 jobs:
   setup-and-run:
     name: setup-and-run / ${{ inputs.runs-on }} / py${{ inputs.python-version }}
@@ -159,7 +153,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "::group::pip pin"
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           echo "::endgroup::"
           echo "::group::editable install (extras='${INSTALL_EXTRAS}', suffix='${CACHE_KEY_SUFFIX}')"
           if [ -z "${INSTALL_EXTRAS}" ]; then

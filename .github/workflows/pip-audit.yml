@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
 
 # Weekly dependency audit (pip-audit) — runs on a weekly cadence so new
-# CVEs are surfaced even when no code changes. It audits three closures:
-# the resolved apothem tree, the frozen vendored closure, and the
-# hash-locked release build tooling.
+# CVEs are surfaced even when no code changes. It audits four closures:
+# the resolved apothem tree, the frozen vendored closure, the hash-locked
+# release build tooling, and the hash-locked CI pip.
 #
 # Distinct from ci.yml's supply-chain-scan job:
 #   - ci.yml's pip-audit blocks merges on every PR (latest deps).
@@ -26,6 +26,7 @@ on:
       - "Pipfile*"
       - "src/apothem/_vendor/**"
       - "scripts/release/requirements-build-linux.txt"
+      - "scripts/ci/requirements-ci-pip.txt"
       - ".github/workflows/pip-audit.yml"
   pull_request:
     paths:
@@ -34,17 +35,12 @@ on:
       - "Pipfile*"
       - "src/apothem/_vendor/**"
       - "scripts/release/requirements-build-linux.txt"
+      - "scripts/ci/requirements-ci-pip.txt"
       - ".github/workflows/pip-audit.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
-env:
-  PIP_PIN_VERSION: "26.2.1"
 
 concurrency:
   group: pip-audit-${{ github.ref }}
@@ -76,7 +72,8 @@ jobs:
 
       - name: Install pip-audit
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install "pip-audit==2.10.1"
 
       - name: Resolve apothem dependency tree
@@ -124,8 +121,19 @@ jobs:
           # version fails this step and the run.
           pip-audit --desc --disable-pip -r scripts/release/requirements-build-linux.txt
 
-      - name: Surface failure as workflow status
-        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure' || steps.audit_release.outcome == 'failure'
+      - name: Run pip-audit (CI pip)
+        id: audit_ci_pip
+        continue-on-error: true
         run: |
-          echo "::error::pip-audit found vulnerable dependencies (resolved tree, frozen vendored closure, and/or release build tooling). See this run's log for details."
+          # Audit the hash-locked pip that every workflow installs with
+          # --require-hashes. The file pins one package with hashes, so
+          # --disable-pip audits exactly that pin without resolving or
+          # installing anything. A CVE disclosed against the pinned pip fails
+          # this step and the run.
+          pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-pip.txt
+
+      - name: Surface failure as workflow status
+        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure' || steps.audit_release.outcome == 'failure' || steps.audit_ci_pip.outcome == 'failure'
+        run: |
+          echo "::error::pip-audit found vulnerable dependencies (resolved tree, frozen vendored closure, release build tooling, and/or CI pip). See this run's log for details."
           exit 1

@@ -9,8 +9,8 @@ silently: nothing breaks, no test fails, and the site simply advertises a
 release the project is no longer shipping. The failure is invisible precisely
 because it is cosmetic.
 
-This is the same shape as ``check_pip_pin_drift.py`` — one canonical value,
-several files that must agree, and a cheap assertion that says so out loud.
+This is the same shape as ``check_pip_pin_drift.py`` — one canonical source,
+files that must follow it, and a cheap assertion that says so out loud.
 ``pyproject.toml`` is the source of truth; the site follows it.
 
 Exit codes: ``0`` when the two agree, ``1`` on drift or an unreadable file.

@@ -79,12 +79,6 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
-env:
-  PIP_PIN_VERSION: "26.2.1"
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -137,13 +131,14 @@ jobs:
           allow-prereleases: ${{ matrix.prerelease || false }}
           cache: pip
       - name: Install dependencies
-        # Force bash so ${PIP_PIN_VERSION} is env expansion on every matrix OS.
-        # Without this the windows-latest cell defaults to pwsh, where
-        # ${PIP_PIN_VERSION} is PowerShell variable syntax that expands to
-        # empty — installing an unpinned pip and silently voiding the pin.
+        # Force bash on every matrix OS. The windows-latest cell defaults to
+        # pwsh, which keeps going after a failed native command, so a failed
+        # hash check on the pip line would not stop the step. Bash runs with
+        # -e and fails it.
         shell: bash
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install -e ".[dev]"
       - name: Ruff (lint)
         run: python -m ruff check .
@@ -221,7 +216,7 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install -e ".[dev]"
       - name: Pytest with coverage
         # Bare --cov uses the engine-scoped source set in pyproject
@@ -333,11 +328,12 @@ jobs:
           sarif_file: trivy-results.sarif
           category: trivy
       - name: Upgrade pip
-        # Upgrade the runner-bundled pip before pip-audit runs so the audit
+        # Upgrade the runner-bundled pip from the hash-locked
+        # scripts/ci/requirements-ci-pip.txt before pip-audit runs so the audit
         # scans against a current pip version (CVE-2026-13346 closes on pip
         # >=26.2; earlier pip mishandles doubly-encoded package URLs from
         # indexes). The fix-the-vuln approach is preferred over --ignore-vuln.
-        run: python -m pip install "pip==${PIP_PIN_VERSION}"
+        run: python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
       - name: pip-audit
         run: |
           python -m pip install "pip-audit==2.10.1"
@@ -476,7 +472,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install -e ".[dev]"
       - name: Check template digests against every release tag
         # An unedited copy of an earlier release's plain-text template is
@@ -488,9 +484,10 @@ jobs:
         # tests/unit/test_template_digests.py.
         run: python -m pytest tests/unit/test_template_digests.py -n 0 -p no:cacheprovider
       - name: Check pip-pin single-source coherence
-        # The pip pin (CVE-2026-13346) is single-sourced per workflow via the
-        # PIP_PIN_VERSION env var; this gate fails if any workflow's pin drifts
-        # or a raw `pip==<version>` literal is reintroduced.
+        # The pip pin (CVE-2026-13346) is single-sourced in the hash-locked
+        # scripts/ci/requirements-ci-pip.txt; this gate fails if that file
+        # drops below the floor or loses its hashes, or if a workflow installs
+        # pip any other way.
         run: python scripts/dev/check_pip_pin_drift.py
       - name: Check site version parity
         # site/package.json's version is rendered in the landing footer and is
@@ -601,7 +598,7 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install -e ".[dev]"
       - name: Pytest with coverage over every package
         # One run measures src/apothem whole, so the engine, conformity and

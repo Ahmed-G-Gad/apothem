@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT
+
+# Hash-locked pip for CI. Every workflow that upgrades the runner's pip installs
+# this file with the command below, so the download is checked against the
+# hashes below:
+#   python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
+#
+# pip checks hashes only when it downloads: a runner that already
+# has this version reports "Requirement already satisfied" and verifies nothing.
+#
+# Floor: pip 26.2 or later fixes CVE-2026-13346 (earlier pip mishandles
+# doubly-encoded package URLs from indexes). scripts/dev/check_pip_pin_drift.py
+# fails the build when this file pins a pip below that floor.
+#
+# Dependabot (the pip entry for /scripts/ci in .github/dependabot.yml) proposes
+# upgrades and rewrites the hashes. To regenerate by hand, put the one-line
+# input `pip==<version>` in a scratch file, run the command below, and paste its
+# output beneath this comment block (the hashes cover the wheel and the sdist):
+#   uv pip compile <scratch>/in.txt --generate-hashes --no-header --no-annotate -o <scratch>/out.txt
+pip==26.2.1 \
+    --hash=sha256:71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e \
+    --hash=sha256:f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f

@@ -46,11 +46,6 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin; scripts/dev/check_pip_pin_drift.py keeps it equal
-# across every workflow.
-env:
-  PIP_PIN_VERSION: "26.2.1"
-
 concurrency:
   group: npm-shim-${{ github.ref }}
   cancel-in-progress: true
@@ -111,7 +106,8 @@ jobs:
           APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
         run: |
           set -euo pipefail
-          "$APOTHEM_PYTHON" -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          "$APOTHEM_PYTHON" -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           # The specs come from the engine itself (HOST_PREREQUISITES), which a
           # unit test pins to pyproject.toml, so the pins live in one place.
           mapfile -t specs < <(PYTHONPATH=src "$APOTHEM_PYTHON" -c \
