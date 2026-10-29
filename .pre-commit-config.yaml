@@ -37,14 +37,21 @@ repos:
   # Python — ruff (lint + format)
   # ---------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Lockstep: keep in sync with the ruff floor in pyproject.toml [project.optional-dependencies].dev.
-    rev: v0.15.20
+    # Lockstep: keep equal to the exact ruff pin in pyproject.toml
+    # [project.optional-dependencies].dev, scripts/ci/requirements-ci-ruff.txt and
+    # scripts/ci/requirements-ci-dev.txt; tests/scripts/test_ci_tool_locks.py
+    # fails when they differ. Dependabot ignores this hook (dependabot.yml).
+    rev: v0.17.1
     hooks:
       - id: ruff
         args: [--fix]
         types_or: [python, pyi]
       - id: ruff-format
-        types_or: [python, pyi]
+        # Markdown too: ruff 0.17 formats the Python code blocks in Markdown
+        # files, and CI runs `ruff format --check .` over the whole tree, so the
+        # hook has to format the same files or a commit passes here and fails
+        # the required quality checks.
+        types_or: [python, pyi, markdown]
 
   # ---------------------------------------------------------------------------
   # Python — mypy (type checking)

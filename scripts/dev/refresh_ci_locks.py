@@ -6,28 +6,44 @@ CI installs its Python dependencies from the files in ``scripts/ci/`` with
 ``python -m pip install --require-hashes -r <lock>``. OpenSSF Scorecard counts a
 ``pip install`` as pinned only when it carries ``--require-hashes``, and a
 hash-locked file also makes pip verify every download. The files are produced by
-``uv pip compile`` from ``pyproject.toml`` and are never edited by hand.
+``uv pip compile`` and are never edited by hand. The table of files, with their
+inputs and Python floors, is ``scripts/dev/ci_lock_table.py``: four project locks
+(``dev``, ``runtime``, ``test``, ``prereqs``) and one lock per CI tool
+(``ruff``, ``bandit``, ``pip-audit``, ``pip-licenses``, ``pre-commit``).
 
 Default mode compiles every lock against the package index as of a lock date
-(today at 00:00 UTC unless ``--date`` names another day) and rewrites the files.
-Run it weekly and whenever ``pyproject.toml`` changes a dependency. ``--check``
-compiles every lock again in a temporary directory, with the date recorded in
-the committed file, and exits 1 with a summary of the differing packages when a
-committed file does not match. ``--check`` needs uv and network access, so it is
-an operator command and does not run in the required CI jobs.
+(today at 00:00 UTC unless ``--date`` names another day) minus a cooldown, and
+rewrites the files. The cooldown is 7 days, the same as Dependabot's, so a
+release is not locked until it has been public for a week; ``--cooldown-days N``
+changes it. ``--cooldown-days 0`` locks every file uploaded before 00:00 UTC of
+the lock date, for an urgent security fix; a fix uploaded that day needs a
+cooldown exception, an entry in ``cooldown_exceptions`` of the lock's row that
+lets one package take files up to its timestamp (``--exclude-newer-package``; see
+the table). The refresh refuses an exception the cutoff has already passed. The
+cutoff handed to uv (``--exclude-newer``) is the lock date minus the cooldown at
+00:00 UTC. Run the script weekly and whenever ``pyproject.toml`` changes a
+dependency. ``--check`` compiles every lock again in a temporary directory, with
+the cutoff recorded in the committed file, and exits 1 with a summary of the
+differing packages when a committed file does not match. It also reports a header
+whose cutoff is not its lock date minus its cooldown, or whose cooldown
+exceptions differ from the table's. ``--check`` needs uv and network access, so
+it is an operator command and does not run in the required CI jobs.
 ``tests/scripts/test_ci_locks_fresh.py`` is the offline test that holds each
-lock to ``pyproject.toml``.
+lock to its inputs.
 
-Each lock records ``Locked as of:`` (the ``--exclude-newer`` timestamp) and the
-uv version that wrote it. A different uv version can normalise environment
-markers differently, so ``--check`` compares the requirement lines only and says
-when the uv version differs.
+Each lock records ``Locked as of:`` (the lock date), ``Cooldown:``, ``Cutoff:``
+(the ``--exclude-newer`` timestamp), one ``Cooldown exception:`` line per
+exception and the uv version that wrote it. A different uv version can normalise
+environment markers differently, so ``--check`` compares the requirement lines
+only and says when the uv version differs. Every compile passes
+``--no-emit-package pip``: only ``requirements-ci-pip.txt`` pins pip, so
+Dependabot owns the one pip pin.
 
 The script needs only the standard library and ``uv`` on ``PATH``.
 
 Exit codes: 0 success (or every lock matches under ``--check``), 1 a lock
 differs under ``--check`` or a compile failed, 2 a usage error (uv missing,
-bad date).
+bad date, bad cooldown).
 """
 
 from __future__ import annotations
@@ -39,117 +55,84 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-CI_DIR = "scripts/ci"
-SCRIPT_RELPATH = "scripts/dev/refresh_ci_locks.py"
+from ci_lock_table import (
+    CI_DIR,
+    EXCEPTION_PREFIX,
+    LOCKS,
+    PYTHON_FLOOR,
+    Lock,
+    lock_by_filename,
+)
 
-# The oldest supported Python. The locks are universal (one file for every
-# interpreter and platform) and keep the lines that older interpreters need.
-PYTHON_FLOOR = "3.10"
+__all__ = [
+    "CI_DIR",
+    "DEFAULT_COOLDOWN_DAYS",
+    "EXCEPTION_PREFIX",
+    "LOCKS",
+    "PYTHON_FLOOR",
+    "Lock",
+    "ParsedHeader",
+    "Stamp",
+    "lock_by_filename",
+]
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_RELPATH = "scripts/dev/refresh_ci_locks.py"
+TABLE_RELPATH = "scripts/dev/ci_lock_table.py"
+
+# Dependabot's cooldown in .github/dependabot.yml (`default-days: 7`): a locked
+# release has been public at least this long.
+DEFAULT_COOLDOWN_DAYS = 7
 
 _SPDX = "SPDX-License-" + "Identifier: MIT"
 _LOCKED_AS_OF_PREFIX = "# Locked as of: "
+_COOLDOWN_PREFIX = "# Cooldown: "
+_CUTOFF_PREFIX = "# Cutoff: "
 _UV_PREFIX = "# Compiled with: uv "
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T00:00:00Z$")
+_COOLDOWN_RE = re.compile(r"^(?P<days>\d+) days?$")
 _UV_VERSION_RE = re.compile(r"^uv (?P<version>\S+)")
 
 
 @dataclass(frozen=True)
-class Lock:
-    """One lock file: where it lands, what it resolves and who installs it."""
+class Stamp:
+    """When and how a lock was compiled: the facts its header records."""
 
-    filename: str
-    purpose: str
-    installed_by: str
-    # Positional inputs for `uv pip compile`; "-" reads `stdin_requirements`.
-    sources: tuple[str, ...]
-    extras: tuple[str, ...] = ()
-    stdin_requirements: tuple[str, ...] = ()
-    # Why the lock exists beside the others, one sentence for the header.
-    note: str = ""
-
-    @property
-    def relpath(self) -> str:
-        return f"{CI_DIR}/{self.filename}"
+    locked_as_of: str
+    cooldown_days: int
+    cutoff: str
+    uv_version: str
 
 
-# One row per lock. The test lock reads its extra requirements from stdin, so no
-# `.in` file exists for Dependabot to find (Dependabot's pip support rewrites a
-# universal lock for one platform when it finds a sibling `.in` file).
-LOCKS: tuple[Lock, ...] = (
-    Lock(
-        filename="requirements-ci-dev.txt",
-        purpose=(
-            "the runtime dependencies and the dev extra of pyproject.toml "
-            "(the set that `pip install -e .[dev]` resolves, held at the lock date)"
-        ),
-        installed_by=(
-            "ci.yml (quality, coverage, release-preflight, metrics), "
-            "harness-convention-monitor.yml, npm-audit.yml (tool-lockfile-tests) "
-            "and, through reusable-python-setup.yml, ci-matrix.yml"
-        ),
-        sources=("pyproject.toml",),
-        extras=("dev",),
-    ),
-    Lock(
-        filename="requirements-ci-runtime.txt",
-        purpose="the runtime dependencies of pyproject.toml, with no extras",
-        installed_by=(
-            "ci.yml (docs-build), clean-install-gate.yml (installer and shim smokes), "
-            "docs-drift.yml, license-audit.yml and publish-static-site.yml"
-        ),
-        sources=("pyproject.toml",),
-    ),
-    Lock(
-        filename="requirements-ci-test.txt",
-        purpose=(
-            "the runtime dependencies of pyproject.toml plus pytest, pytest-xdist "
-            "and build"
-        ),
-        installed_by="clean-install-gate.yml (clean-install-gate and wheel-smoke)",
-        sources=("pyproject.toml", "-"),
-        stdin_requirements=("pytest", "pytest-xdist", "build"),
-        note=(
-            "Those jobs run the tests against src/ without installing the package, "
-            "so they need the test tools but not the rest of the dev extra."
-        ),
-    ),
-    Lock(
-        filename="requirements-ci-prereqs.txt",
-        purpose=(
-            "the host prerequisites of the engine (click and rich), exactly as "
-            "the installers pin them"
-        ),
-        installed_by="channel-smoke.yml",
-        sources=("-",),
-        stdin_requirements=("click==8.4.2", "rich>=15.0.0"),
-        note=(
-            "src/apothem/__main__.py (HOST_PREREQUISITES) and the installers pin "
-            "these two specs and vendor every other runtime dependency, so the "
-            "channel smoke installs only this closure and a broken vendored copy "
-            "is not masked by a package in site-packages."
-        ),
-    ),
-)
+@dataclass(frozen=True)
+class ParsedHeader:
+    """The header facts read back from a lock file; ``None`` marks a missing line."""
 
+    locked_as_of: str | None = None
+    cooldown_days: int | None = None
+    cutoff: str | None = None
+    uv_version: str | None = None
 
-def lock_by_filename(filename: str) -> Lock:
-    """Return the table row for ``filename``; raise ``KeyError`` when absent."""
-    for lock in LOCKS:
-        if lock.filename == filename:
-            return lock
-    raise KeyError(filename)
+    def missing(self) -> list[str]:
+        """Return the labels of the header lines the file does not carry."""
+        found = {
+            "Locked as of": self.locked_as_of,
+            "Cooldown": self.cooldown_days,
+            "Cutoff": self.cutoff,
+            "Compiled with": self.uv_version,
+        }
+        return [label for label, value in found.items() if value is None]
 
 
 # --- pure helpers -------------------------------------------------------------
 
 
 def timestamp_for_date(date_text: str) -> str:
-    """Return the ``--exclude-newer`` timestamp for ``YYYY-MM-DD`` (midnight UTC).
+    """Return the lock-date timestamp for ``YYYY-MM-DD`` (midnight UTC).
 
     A full UTC timestamp is recorded because uv reads a bare date in the host's
     local time zone.
@@ -161,6 +144,24 @@ def timestamp_for_date(date_text: str) -> str:
     except ValueError as exc:
         raise ValueError(f"lock date {date_text!r} is not a calendar date") from exc
     return f"{date_text}T00:00:00Z"
+
+
+def cutoff_timestamp(locked_as_of: str, cooldown_days: int) -> str:
+    """Return the ``--exclude-newer`` timestamp: the lock date minus the cooldown.
+
+    ``locked_as_of`` is a lock-date timestamp from ``timestamp_for_date``; the
+    result is the same kind of timestamp, ``cooldown_days`` earlier.
+    """
+    if cooldown_days < 0:
+        raise ValueError(f"cooldown {cooldown_days} is negative; use 0 or more days")
+    if not _TIMESTAMP_RE.match(locked_as_of):
+        raise ValueError(f"lock timestamp {locked_as_of!r} is not YYYY-MM-DDT00:00:00Z")
+    locked = datetime.strptime(locked_as_of[:10], "%Y-%m-%d")
+    try:
+        cutoff = locked - timedelta(days=cooldown_days)
+    except OverflowError as exc:
+        raise ValueError(f"a cooldown of {cooldown_days} days is out of range") from exc
+    return f"{cutoff:%Y-%m-%d}T00:00:00Z"
 
 
 def today_utc() -> str:
@@ -176,8 +177,9 @@ def uv_version_from_output(output: str) -> str:
     return match.group("version")
 
 
-def render_header(lock: Lock, timestamp: str, uv_version: str) -> str:
+def render_header(lock: Lock, stamp: Stamp) -> str:
     """Return the comment header written above the compiled requirements."""
+    days = f"{stamp.cooldown_days} day" + ("" if stamp.cooldown_days == 1 else "s")
     lines = [
         f"# {_SPDX}",
         "",
@@ -188,29 +190,59 @@ def render_header(lock: Lock, timestamp: str, uv_version: str) -> str:
     if lock.note:
         lines.append("#")
         lines.extend(_wrap_comment(lock.note))
+    lines.append("#")
+    lines.extend(
+        _wrap_comment(
+            f"One universal lock for Python {lock.python_floor} and later on every "
+            "platform: a line that carries an environment marker applies only where "
+            "the marker is true. Every package carries the hashes of all its files, "
+            "wheels and sdist, so an interpreter without a wheel yet (the advisory "
+            "pre-release cell) builds from the hashed sdist; pip prefers a wheel "
+            "wherever one exists. pip checks hashes only when it downloads: a runner "
+            'that already has a version reports "Requirement already satisfied" and '
+            "verifies nothing."
+        )
+    )
+    lines.append("#")
+    lines.extend(
+        _wrap_comment(
+            "The lock holds only files uploaded before the cutoff below, the lock "
+            "date minus the cooldown, so a release younger than the cooldown is not "
+            "installed until a later refresh. Only requirements-ci-pip.txt pins pip."
+        )
+    )
+    lines.append("#")
+    lines.extend(
+        _wrap_comment(
+            "Do not edit by hand and do not bump a single pin: every lock in this "
+            f"folder is a closure, regenerated whole from the table in {TABLE_RELPATH}. "
+            "To refresh them all:"
+        )
+    )
     lines.extend(
         [
-            "#",
-            "# One universal lock for every supported interpreter and platform: a line",
-            "# that carries an environment marker applies only where the marker is true.",
-            "# Every package carries the hashes of all its files, wheels and sdist, so an",
-            "# interpreter without a wheel yet (the advisory pre-release cell) builds",
-            "# from the hashed sdist; pip prefers a wheel wherever one exists. pip",
-            "# checks hashes only when it downloads: a runner that already has a version",
-            '# reports "Requirement already satisfied" and verifies nothing. The lock',
-            "# holds only files uploaded before the lock date, so a release newer than",
-            "# that date is not installed until the next refresh.",
-            "#",
-            "# Do not edit by hand and do not bump a single pin: every lock in this folder",
-            "# is a closure, regenerated whole. To refresh them all:",
             f"#   python {SCRIPT_RELPATH}",
-            "# To verify a committed lock against its recorded date (needs uv and network):",
+            *_wrap_comment(
+                "A security fix younger than the cooldown needs --cooldown-days 0, "
+                "which takes files uploaded before 00:00 UTC of the lock date, or, "
+                "for a fix uploaded on that day, a cooldown exception for its "
+                "package in the table."
+            ),
+            *_wrap_comment(
+                "To verify a committed lock against its recorded dates (needs uv and "
+                "network):"
+            ),
             f"#   python {SCRIPT_RELPATH} --check",
-            "# tests/scripts/test_ci_locks_fresh.py fails when pyproject.toml asks for a",
-            "# version this lock does not pin.",
+            *_wrap_comment(
+                "tests/scripts/test_ci_locks_fresh.py fails when a lock drifts from "
+                "its inputs."
+            ),
             "#",
-            f"{_LOCKED_AS_OF_PREFIX}{timestamp}",
-            f"{_UV_PREFIX}{uv_version}",
+            f"{_LOCKED_AS_OF_PREFIX}{stamp.locked_as_of}",
+            f"{_COOLDOWN_PREFIX}{days}",
+            f"{_CUTOFF_PREFIX}{stamp.cutoff}",
+            *lock.exception_lines,
+            f"{_UV_PREFIX}{stamp.uv_version}",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -230,18 +262,31 @@ def _wrap_comment(text: str, width: int = 80) -> list[str]:
     return lines
 
 
-def parse_header(text: str) -> tuple[str | None, str | None]:
-    """Return ``(timestamp, uv version)`` recorded in a lock header, or ``None``."""
-    timestamp: str | None = None
+def parse_header(text: str) -> ParsedHeader:
+    """Return the dates and the uv version recorded in a lock header.
+
+    A line that is missing, or whose value is malformed, reads as ``None``.
+    """
+    locked_as_of: str | None = None
+    cooldown_days: int | None = None
+    cutoff: str | None = None
     uv_version: str | None = None
     for line in text.splitlines():
         if line.startswith(_LOCKED_AS_OF_PREFIX):
             candidate = line[len(_LOCKED_AS_OF_PREFIX) :].strip()
             if _TIMESTAMP_RE.match(candidate):
-                timestamp = candidate
+                locked_as_of = candidate
+        elif line.startswith(_COOLDOWN_PREFIX):
+            match = _COOLDOWN_RE.match(line[len(_COOLDOWN_PREFIX) :].strip())
+            if match is not None:
+                cooldown_days = int(match.group("days"))
+        elif line.startswith(_CUTOFF_PREFIX):
+            candidate = line[len(_CUTOFF_PREFIX) :].strip()
+            if _TIMESTAMP_RE.match(candidate):
+                cutoff = candidate
         elif line.startswith(_UV_PREFIX):
             uv_version = line[len(_UV_PREFIX) :].strip() or None
-    return timestamp, uv_version
+    return ParsedHeader(locked_as_of, cooldown_days, cutoff, uv_version)
 
 
 def requirement_entries(text: str) -> dict[str, tuple[str, ...]]:
@@ -317,18 +362,25 @@ def _slot(key: str) -> tuple[str, str]:
     return name, marker
 
 
-def compose_lock(lock: Lock, body: str, timestamp: str, uv_version: str) -> str:
+def compose_lock(lock: Lock, body: str, stamp: Stamp) -> str:
     """Return the full file text: the header, a blank line and the requirements."""
     normalised = body.replace("\r\n", "\n").lstrip("\n")
     if not normalised.endswith("\n"):
         normalised += "\n"
-    return render_header(lock, timestamp, uv_version) + normalised
+    return render_header(lock, stamp) + normalised
 
 
 def compile_command(
-    lock: Lock, timestamp: str, output: Path, *, uv: str = "uv"
+    lock: Lock, cutoff: str, output: Path, *, uv: str = "uv"
 ) -> list[str]:
-    """Return the ``uv pip compile`` command line for ``lock``."""
+    """Return the ``uv pip compile`` command line for ``lock``.
+
+    ``--no-emit-package pip`` keeps pip out of every closure: pip-api, a
+    dependency of pip-audit, would otherwise pin a pip of its own beside
+    ``requirements-ci-pip.txt`` and replace it on install. Each cooldown exception
+    of the row goes to uv as ``--exclude-newer-package``; ``refresh`` and ``check``
+    refuse one the cutoff has passed before they get here.
+    """
     command = [
         uv,
         "pip",
@@ -336,18 +388,22 @@ def compile_command(
         *lock.sources,
         "--universal",
         "--python-version",
-        PYTHON_FLOOR,
+        lock.python_floor,
         "--generate-hashes",
         "--no-annotate",
         "--no-header",
         "--upgrade",
+        "--no-emit-package",
+        "pip",
         "--exclude-newer",
-        timestamp,
+        cutoff,
         "-o",
         str(output),
     ]
     for extra in lock.extras:
         command.extend(["--extra", extra])
+    for name, until in lock.cooldown_exceptions:
+        command.extend(["--exclude-newer-package", f"{name}={until}"])
     return command
 
 
@@ -378,15 +434,16 @@ def read_uv_version(uv: str) -> str:
 
 
 def compile_lock(
-    lock: Lock, timestamp: str, uv: str, work_dir: Path, repo_root: Path
+    lock: Lock, cutoff: str, uv: str, work_dir: Path, repo_root: Path
 ) -> str:
     """Compile ``lock`` into a fresh file under ``work_dir`` and return its text.
 
     The output path is new on every call, so uv has no earlier pins to reuse as
-    preferences and resolves every package to the newest release as of the date.
+    preferences and resolves every package to the newest release uploaded before
+    ``cutoff``.
     """
     output = work_dir / lock.filename
-    command = compile_command(lock, timestamp, output, uv=uv)
+    command = compile_command(lock, cutoff, output, uv=uv)
     stdin = "\n".join(lock.stdin_requirements) + "\n" if "-" in lock.sources else None
     result = subprocess.run(  # noqa: S603 - argv built from the LOCKS table
         command,
@@ -399,7 +456,11 @@ def compile_lock(
     if result.returncode != 0:
         raise RuntimeError(
             f"uv failed for {lock.relpath} (exit {result.returncode}):\n"
-            f"{result.stderr.strip()}"
+            f"{result.stderr.strip()}\n"
+            f"A pinned release uploaded after the cutoff {cutoff} cannot resolve: "
+            "wait until it is older than the cooldown, refresh with "
+            "--cooldown-days 0, or add a cooldown exception for its package to "
+            f"{TABLE_RELPATH}."
         )
     return output.read_bytes().decode("utf-8")
 
@@ -410,25 +471,87 @@ def write_lf(path: Path, text: str) -> None:
     path.write_bytes(text.replace("\r\n", "\n").encode("utf-8"))
 
 
-def refresh(repo_root: Path, date_text: str, uv: str) -> list[Path]:
-    """Compile every lock as of ``date_text`` and write it; return the paths."""
-    timestamp = timestamp_for_date(date_text)
-    uv_version = read_uv_version(uv)
+def refresh(
+    repo_root: Path,
+    date_text: str,
+    uv: str,
+    cooldown_days: int = DEFAULT_COOLDOWN_DAYS,
+) -> list[Path]:
+    """Compile every lock as of ``date_text`` less the cooldown and write it."""
+    locked_as_of = timestamp_for_date(date_text)
+    cutoff = cutoff_timestamp(locked_as_of, cooldown_days)
+    for lock in LOCKS:
+        if stale := lock.stale_exceptions(cutoff):
+            raise RuntimeError(_stale_message(lock, stale, cutoff))
+    stamp = Stamp(locked_as_of, cooldown_days, cutoff, read_uv_version(uv))
     # Compile every lock before writing any: a uv failure part-way leaves the
     # working tree untouched instead of holding locks from two different dates.
     texts: list[tuple[Path, str]] = []
     with tempfile.TemporaryDirectory(prefix="apothem-ci-locks-") as tmp:
         for lock in LOCKS:
-            body = compile_lock(lock, timestamp, uv, Path(tmp), repo_root)
-            texts.append(
-                (
-                    repo_root / lock.relpath,
-                    compose_lock(lock, body, timestamp, uv_version),
-                )
-            )
+            body = compile_lock(lock, cutoff, uv, Path(tmp), repo_root)
+            texts.append((repo_root / lock.relpath, compose_lock(lock, body, stamp)))
     for target, text in texts:
         write_lf(target, text)
     return [target for target, _ in texts]
+
+
+def _stale_message(lock: Lock, stale: list[str], cutoff: str) -> str:
+    return (
+        f"{lock.relpath} lists a cooldown exception for {', '.join(stale)}, but the "
+        f"cutoff {cutoff} already reaches its timestamp: the exception lifts nothing "
+        f"and uv would hold the package back. Remove it from {TABLE_RELPATH} and "
+        f"run `python {SCRIPT_RELPATH}`"
+    )
+
+
+def _exception_drift(lock: Lock, text: str, cutoff: str) -> str | None:
+    """Return why the cooldown exceptions of ``lock`` cannot be replayed, if so."""
+    if stale := lock.stale_exceptions(cutoff):
+        return _stale_message(lock, stale, cutoff)
+    found = [line for line in text.splitlines() if line.startswith(EXCEPTION_PREFIX)]
+    if found == lock.exception_lines:
+        return None
+    return (
+        f"{lock.relpath} records the cooldown exceptions {found or 'none'}, but "
+        f"{TABLE_RELPATH} lists {lock.exception_lines or 'none'}; run "
+        f"`python {SCRIPT_RELPATH}`"
+    )
+
+
+def _recorded_stamp(lock: Lock, text: str) -> Stamp | str:
+    """Return the stamp a lock records, or why the header cannot be trusted.
+
+    A header that lacks a line, or whose cutoff is not its lock date less its
+    cooldown, was edited by hand or written by an older script; ``--check``
+    reports it instead of normalising it.
+    """
+    header = parse_header(text)
+    if (
+        header.locked_as_of is None
+        or header.cooldown_days is None
+        or header.cutoff is None
+        or header.uv_version is None
+    ):
+        names = ", ".join(f"`{label}:`" for label in header.missing())
+        return f"{lock.relpath} records no {names} line; run `python {SCRIPT_RELPATH}`"
+    try:
+        expected = cutoff_timestamp(header.locked_as_of, header.cooldown_days)
+    except ValueError as exc:
+        return (
+            f"{lock.relpath} records a cooldown it cannot use ({exc}); "
+            f"run `python {SCRIPT_RELPATH}`"
+        )
+    if header.cutoff != expected:
+        return (
+            f"{lock.relpath} records `Cutoff: {header.cutoff}`, but its lock date "
+            f"{header.locked_as_of} less its {header.cooldown_days}-day cooldown is "
+            f"{expected}; the header was edited by hand or written by an older "
+            f"script; run `python {SCRIPT_RELPATH}`"
+        )
+    return Stamp(
+        header.locked_as_of, header.cooldown_days, header.cutoff, header.uv_version
+    )
 
 
 def check(repo_root: Path, uv: str) -> list[str]:
@@ -449,20 +572,22 @@ def check(repo_root: Path, uv: str) -> list[str]:
                     f"{lock.relpath} has CRLF line endings; rewrite it with LF "
                     f"(`python {SCRIPT_RELPATH}` writes LF)"
                 )
-            timestamp, recorded_uv = parse_header(committed)
-            if timestamp is None:
-                problems.append(
-                    f"{lock.relpath} records no `Locked as of:` timestamp; "
-                    f"run `python {SCRIPT_RELPATH}`"
-                )
+            recorded = _recorded_stamp(lock, committed)
+            if isinstance(recorded, str):
+                problems.append(recorded)
                 continue
-            body = compile_lock(lock, timestamp, uv, Path(tmp), repo_root)
+            drift = _exception_drift(lock, committed, recorded.cutoff)
+            if drift is not None:
+                problems.append(drift)
+                continue
+            # The recorded cutoff goes to uv as written, never recomputed.
+            body = compile_lock(lock, recorded.cutoff, uv, Path(tmp), repo_root)
             differences = diff_summary(committed, body)
             if differences:
                 note = ""
-                if recorded_uv != uv_version:
+                if recorded.uv_version != uv_version:
                     note = (
-                        f" (written by uv {recorded_uv}, compared with uv "
+                        f" (written by uv {recorded.uv_version}, compared with uv "
                         f"{uv_version}; a different uv can normalise markers "
                         "differently)"
                     )
@@ -473,8 +598,8 @@ def check(repo_root: Path, uv: str) -> list[str]:
                     else ""
                 )
                 problems.append(
-                    f"{lock.relpath} differs from a fresh compile as of "
-                    f"{timestamp}{note}:\n{detail}{more}"
+                    f"{lock.relpath} differs from a fresh compile with cutoff "
+                    f"{recorded.cutoff}{note}:\n{detail}{more}"
                 )
     return problems
 
@@ -487,22 +612,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="compile into a temporary directory with each recorded lock date and "
+        help="compile into a temporary directory with each recorded cutoff and "
         "exit 1 when a committed lock differs (needs uv and network access)",
     )
     parser.add_argument(
         "--date",
         metavar="YYYY-MM-DD",
-        help="lock date for a refresh: only releases uploaded before this day "
-        "(00:00 UTC) are used; default today (UTC). Ignored by --check.",
+        help="lock date for a refresh, recorded in each lock; default today (UTC). "
+        "Not used by --check.",
+    )
+    parser.add_argument(
+        "--cooldown-days",
+        metavar="N",
+        type=int,
+        help="days a release must be public before it is locked: the cutoff is the "
+        f"lock date minus N days (00:00 UTC); default {DEFAULT_COOLDOWN_DAYS}, "
+        "the Dependabot cooldown. 0 locks every file uploaded before 00:00 UTC of "
+        "the lock date, for an urgent security fix; a fix uploaded on the lock "
+        "date itself needs a cooldown exception in the table. Not used by "
+        "--check.",
     )
     args = parser.parse_args(argv)
 
-    if args.check and args.date:
-        parser.error("--date does not apply to --check, which reads each lock's date")
+    if args.check and (args.date is not None or args.cooldown_days is not None):
+        parser.error(
+            "--date and --cooldown-days do not apply to --check, which reads the "
+            "dates each lock records"
+        )
+    cooldown_days = (
+        DEFAULT_COOLDOWN_DAYS if args.cooldown_days is None else args.cooldown_days
+    )
     date_text = args.date or today_utc()
     try:
-        timestamp_for_date(date_text)
+        cutoff = cutoff_timestamp(timestamp_for_date(date_text), cooldown_days)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -522,7 +664,20 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             print(f"{len(LOCKS)} CI lock(s) match a fresh compile")
             return 0
-        written = refresh(_REPO_ROOT, date_text, uv)
+        if cooldown_days == 0:
+            print(
+                "note: a cooldown of 0 days locks releases younger than the "
+                "Dependabot cooldown, up to 00:00 UTC of the lock date; use it for "
+                "an urgent security fix, and refresh again with the default "
+                "cooldown afterwards. A fix uploaded on the lock date itself needs "
+                "a cooldown exception.",
+                file=sys.stderr,
+            )
+        print(
+            f"Locking as of {date_text} with a {cooldown_days}-day cooldown: "
+            f"only files uploaded before {cutoff} are used"
+        )
+        written = refresh(_REPO_ROOT, date_text, uv, cooldown_days)
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

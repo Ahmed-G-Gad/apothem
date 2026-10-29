@@ -192,10 +192,15 @@ where = ["src"]
 
 [project.optional-dependencies]
 dev = [
-    # Floor at 0.15.20: 0.15.17 introduced (and 0.15.20 removed) rule RUF076,
-    # so pinning past the removal keeps selector behavior stable across
-    # contributor environments.
-    "ruff>=0.15.20",
+    # Pinned exactly so a contributor install, the pre-commit hook and CI lint and
+    # format alike. The ruff-pre-commit rev in .pre-commit-config.yaml, the ruff
+    # lock (scripts/ci/requirements-ci-ruff.txt, whose spec is in
+    # scripts/dev/ci_lock_table.py) and the dev lock carry the same version, and
+    # tests/scripts/test_ci_tool_locks.py fails when one differs, so move them
+    # together. The release must be older than the lock cooldown
+    # (scripts/ci/README.md). 0.15.17 added rule RUF076 and 0.15.20 removed it, so
+    # a pin past the removal keeps selector behavior stable.
+    "ruff==0.17.1",
     "mypy>=2.1.0",
     "types-PyYAML>=6.0.12.20260518",
     "types-jsonschema>=4.26.0.20260518",

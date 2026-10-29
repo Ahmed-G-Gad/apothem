@@ -3,9 +3,11 @@
 # Weekly dependency audit (pip-audit) — runs on a weekly cadence so new
 # CVEs are surfaced even when no code changes. It audits these closures:
 # the resolved-latest apothem tree, the frozen vendored closure, the
-# hash-locked release build tooling, the hash-locked CI pip, and the
-# hash-locked CI dependency locks (scripts/ci/requirements-ci-dev.txt,
-# -runtime.txt, -test.txt and -prereqs.txt).
+# hash-locked release build tooling, the hash-locked CI pip, the hash-locked
+# CI dependency locks (scripts/ci/requirements-ci-dev.txt, -runtime.txt,
+# -test.txt and -prereqs.txt) and the hash-locked CI tool locks
+# (scripts/ci/requirements-ci-ruff.txt, -bandit.txt, -pip-audit.txt,
+# -pip-licenses.txt and -pre-commit.txt).
 #
 # Two views of the same dependencies, on purpose. CI installs the locked
 # versions as of the lock date (scripts/ci/README.md), so a green CI run says
@@ -14,17 +16,37 @@
 # pip-audit to resolve `.[dev]` itself (requirements mode, below) instead of
 # running a `pip install`, which OpenSSF Scorecard's Pinned-Dependencies check
 # would flag. The lock audit then covers the versions CI actually installs.
+# Each lock holds the releases that were at least seven days old on its lock
+# date, so a fix younger than that reaches CI with the next refresh of the
+# locks (`--cooldown-days 0`, or a cooldown exception for one package, for an
+# urgent one; scripts/ci/README.md).
+#
+# Every audit asks the OSV service (`-s osv`) instead of pip-audit's default,
+# the PyPI advisory feed. OSV carries the GitHub advisories that Dependabot
+# alerts, Dependency review and the OpenSSF "Vulnerabilities" check read, and
+# the PyPI feed lags them: a high advisory against virtualenv 21.14.12,
+# published 2026-10-23, was still missing from it on 2026-10-29.
+#
+# One interpreter, Python 3.12. --disable-pip evaluates each line's environment
+# marker against the runner's interpreter, so the lock audits skip the lines
+# that apply only below Python 3.11 (exceptiongroup, hypothesis, rpds-py,
+# stevedore, tomli). Three of those pin the last release that supports Python
+# 3.10, so a fix released only for 3.11 or later cannot reach them. That is how
+# filelock 4.1.0 collected seventeen advisories, and why the pip-audit lock is
+# compiled for 3.11 and pins no filelock below 4.2. Dependabot alerts,
+# Dependency review and Scorecard still read the below-3.11 lines.
 #
 # Distinct from ci.yml's supply-chain-scan job:
 #   - ci.yml's pip-audit blocks merges on every PR. It audits the runner
-#     environment that holds pip (the hash-locked pip) and pip-audit itself;
-#     it installs no project dependency, so the dependency views are the ones
-#     in this workflow.
+#     environment that holds pip (the hash-locked pip) and pip-audit with its
+#     hash-locked closure; it installs no project dependency, so the dependency
+#     views are the ones in this workflow. It keeps pip-audit's default PyPI
+#     feed, so it fails a PR only for an advisory that PyPI lists.
 #   - This workflow's weekly cron catches new CVEs disclosed against
 #     already-resolved deps and fails the run when a CVE surfaces. The
-#     OpenSSF "Vulnerabilities" check is OSV-database-backed (not
-#     SARIF-backed), so the workflow's pass/fail status alone is the
-#     canonical Scorecard feed.
+#     OpenSSF "Vulnerabilities" check does not read this workflow's status: it
+#     looks the dependencies it finds in the repository's manifests up in OSV,
+#     which is why every audit here asks OSV too.
 
 name: Pip Audit (Weekly)
 
@@ -66,16 +88,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        # The lock audits run on both interpreters: --disable-pip evaluates each
-        # line's environment marker against the runner's interpreter, so 3.10
-        # reaches the pins that exist only below Python 3.11 (rpds-py, coverage,
-        # hypothesis, tomli, exceptiongroup) and 3.12 the pins CI installs on
-        # 3.11 and later. The other four audits do not depend on the
-        # interpreter and run once, on 3.12.
-        python-version: ["3.10", "3.12"]
 
     steps:
       - name: Harden runner
@@ -90,42 +102,39 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
           cache: pip
           # The audits install only pip and pip-audit from locks and resolve
-          # the rest inside pip-audit, so the pip lock is the cache key.
-          cache-dependency-path: scripts/ci/requirements-ci-pip.txt
+          # the rest inside pip-audit, so those two locks are the cache key.
+          cache-dependency-path: |
+            scripts/ci/requirements-ci-pip.txt
+            scripts/ci/requirements-ci-pip-audit.txt
 
       - name: Install pip-audit
         run: |
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install "pip-audit==2.10.1"
+          # Hash-locked pip-audit and its dependencies (compiled for Python 3.11
+          # and later). The lock leaves pip out, so the pip above stays.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip-audit.txt
 
       - name: Run pip-audit (resolved-latest tree)
         id: audit
-        if: matrix.python-version == '3.12'
         continue-on-error: true
         run: |
           # Audit what `pip install -e .[dev]` resolves today: the newest
           # release each floor in pyproject.toml allows, runtime and dev extra.
           # pip-audit resolves a requirements file itself (a pip dry run into a
           # temporary environment), so nothing is installed into this runner.
-          # The apothem project is reported as a skip ("Dependency not found on
-          # PyPI"), which does not cause a non-zero exit at default severity —
-          # only actual CVEs do. `--strict` was dropped because it treats
-          # unaudited deps (including apothem itself) as hard failures, drowning
-          # real CVE signal in environment noise.
-          # The OpenSSF Scorecard "Vulnerabilities" check is OSV-database-
-          # backed (not SARIF-backed), so feeds correctly from the workflow's
-          # pass/fail status alone — which is exactly pip-audit's default
-          # exit semantics.
+          # `--strict` is left off because it treats unaudited deps (including
+          # apothem itself) as hard failures, drowning real CVE signal in
+          # environment noise; only a finding fails this step and, through the
+          # last step, the run.
           printf '.[dev]\n' > "$RUNNER_TEMP/resolve.txt"
-          pip-audit --desc -r "$RUNNER_TEMP/resolve.txt"
+          pip-audit -s osv --desc -r "$RUNNER_TEMP/resolve.txt"
 
       - name: Run pip-audit (frozen vendored closure)
         id: audit_vendor
-        if: matrix.python-version == '3.12'
         continue-on-error: true
         run: |
           # Audit the EXACT versions vendored under src/apothem/_vendor/ — the
@@ -135,11 +144,10 @@ jobs:
           # requirements file (inline `#` comments, e.g. on the rpds-py anchor
           # line, are stripped by the requirements parser). A CVE disclosed
           # against any pinned vendored version fails this step and the run.
-          pip-audit --desc -r src/apothem/_vendor/vendor.txt
+          pip-audit -s osv --desc -r src/apothem/_vendor/vendor.txt
 
       - name: Run pip-audit (release build tooling)
         id: audit_release
-        if: matrix.python-version == '3.12'
         continue-on-error: true
         run: |
           # Audit the hash-locked build tooling that release.yml, ci.yml, and
@@ -148,11 +156,10 @@ jobs:
           # hashes, so --disable-pip audits exactly those pins without
           # resolving or installing anything. A CVE disclosed against a pinned
           # version fails this step and the run.
-          pip-audit --desc --disable-pip -r scripts/release/requirements-build-linux.txt
+          pip-audit -s osv --desc --disable-pip -r scripts/release/requirements-build-linux.txt
 
       - name: Run pip-audit (CI pip)
         id: audit_ci_pip
-        if: matrix.python-version == '3.12'
         continue-on-error: true
         run: |
           # Audit the hash-locked pip that every workflow installs with
@@ -160,7 +167,7 @@ jobs:
           # --disable-pip audits exactly that pin without resolving or
           # installing anything. A CVE disclosed against the pinned pip fails
           # this step and the run.
-          pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-pip.txt
+          pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-pip.txt
 
       - name: Run pip-audit (CI dev lock)
         id: audit_ci_dev
@@ -171,25 +178,66 @@ jobs:
           # resolving or installing anything. A CVE disclosed against a pinned
           # version fails the step and the run; regenerate the locks with
           # scripts/dev/refresh_ci_locks.py to move past it.
-          pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-dev.txt
+          pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-dev.txt
 
       - name: Run pip-audit (CI runtime lock)
         id: audit_ci_runtime
         continue-on-error: true
-        run: pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-runtime.txt
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-runtime.txt
 
       - name: Run pip-audit (CI test lock)
         id: audit_ci_test
         continue-on-error: true
-        run: pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-test.txt
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-test.txt
 
       - name: Run pip-audit (CI prereqs lock)
         id: audit_ci_prereqs
         continue-on-error: true
-        run: pip-audit --desc --disable-pip -r scripts/ci/requirements-ci-prereqs.txt
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-prereqs.txt
+
+      # The CI tool locks. Each holds one tool and its closure. The pip-audit and
+      # pre-commit locks are compiled for Python 3.11, so this runner reaches
+      # every pin of them.
+      - name: Run pip-audit (CI ruff lock)
+        id: audit_ci_ruff
+        continue-on-error: true
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-ruff.txt
+
+      - name: Run pip-audit (CI bandit lock)
+        id: audit_ci_bandit
+        continue-on-error: true
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-bandit.txt
+
+      - name: Run pip-audit (CI pip-audit lock)
+        id: audit_ci_pip_audit
+        continue-on-error: true
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-pip-audit.txt
+
+      - name: Run pip-audit (CI pip-licenses lock)
+        id: audit_ci_pip_licenses
+        continue-on-error: true
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-pip-licenses.txt
+
+      - name: Run pip-audit (CI pre-commit lock)
+        id: audit_ci_pre_commit
+        continue-on-error: true
+        run: pip-audit -s osv --desc --disable-pip -r scripts/ci/requirements-ci-pre-commit.txt
 
       - name: Surface failure as workflow status
-        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure' || steps.audit_release.outcome == 'failure' || steps.audit_ci_pip.outcome == 'failure' || steps.audit_ci_dev.outcome == 'failure' || steps.audit_ci_runtime.outcome == 'failure' || steps.audit_ci_test.outcome == 'failure' || steps.audit_ci_prereqs.outcome == 'failure'
+        if: >-
+          steps.audit.outcome == 'failure' ||
+          steps.audit_vendor.outcome == 'failure' ||
+          steps.audit_release.outcome == 'failure' ||
+          steps.audit_ci_pip.outcome == 'failure' ||
+          steps.audit_ci_dev.outcome == 'failure' ||
+          steps.audit_ci_runtime.outcome == 'failure' ||
+          steps.audit_ci_test.outcome == 'failure' ||
+          steps.audit_ci_prereqs.outcome == 'failure' ||
+          steps.audit_ci_ruff.outcome == 'failure' ||
+          steps.audit_ci_bandit.outcome == 'failure' ||
+          steps.audit_ci_pip_audit.outcome == 'failure' ||
+          steps.audit_ci_pip_licenses.outcome == 'failure' ||
+          steps.audit_ci_pre_commit.outcome == 'failure'
         run: |
-          echo "::error::pip-audit found vulnerable dependencies (resolved-latest tree, frozen vendored closure, release build tooling, CI pip, and/or a CI dependency lock). See this run's log for details."
+          echo "::error::pip-audit found vulnerable dependencies (resolved-latest tree, frozen vendored closure, release build tooling, CI pip, and/or a CI dependency or tool lock). See this run's log for details."
           exit 1

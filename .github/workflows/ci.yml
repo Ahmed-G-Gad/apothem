@@ -274,7 +274,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install bandit
-        run: python -m pip install "bandit[toml]==1.9.4"
+        # bandit and its dependencies, hash-locked in
+        # scripts/ci/requirements-ci-bandit.txt (spec in scripts/dev/ci_lock_table.py).
+        run: python -m pip install --require-hashes -r scripts/ci/requirements-ci-bandit.txt
       - name: Bandit static analysis
         run: python -m bandit -c pyproject.toml -r src/apothem scripts
 
@@ -342,7 +344,11 @@ jobs:
         run: python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
       - name: pip-audit
         run: |
-          python -m pip install "pip-audit==2.10.1"
+          # pip-audit and its dependencies, hash-locked in
+          # scripts/ci/requirements-ci-pip-audit.txt. That lock leaves pip out, so
+          # the pip installed above stays, and the audit below covers it and this
+          # closure.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip-audit.txt
           # Use the CLI binary (the import name uses an underscore —
           # `python -m pip-audit` raises ModuleNotFoundError). `--desc`
           # surfaces advisory descriptions; `--strict` is intentionally

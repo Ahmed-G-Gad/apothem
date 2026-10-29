@@ -21,6 +21,7 @@ on:
       - "pyproject.toml"
       - "requirements*.txt"
       - "scripts/ci/requirements-ci-runtime.txt"
+      - "scripts/ci/requirements-ci-pip-licenses.txt"
       - "REUSE.toml"
       - "LICENSES/**"
       - "src/apothem/_vendor/**"
@@ -30,6 +31,7 @@ on:
       - "pyproject.toml"
       - "requirements*.txt"
       - "scripts/ci/requirements-ci-runtime.txt"
+      - "scripts/ci/requirements-ci-pip-licenses.txt"
       - "REUSE.toml"
       - "LICENSES/**"
       - "src/apothem/_vendor/**"
@@ -71,13 +73,18 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: scripts/ci/requirements-ci-runtime.txt
+          # Both locks this job installs (after the pip lock), one path per line.
+          cache-dependency-path: |
+            scripts/ci/requirements-ci-runtime.txt
+            scripts/ci/requirements-ci-pip-licenses.txt
 
       - name: Install pip-licenses + the locked apothem runtime deps
         run: |
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install pip-licenses==5.5.5
+          # pip-licenses and its dependencies, hash-locked in
+          # scripts/ci/requirements-ci-pip-licenses.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip-licenses.txt
           # Runtime deps only — the license gate covers what apothem ships,
           # not dev/docs/test tooling (which is not distributed in the wheel).
           # The hash-locked closure of [project.dependencies]; the apothem

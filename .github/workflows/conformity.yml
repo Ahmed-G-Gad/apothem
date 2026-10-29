@@ -96,16 +96,19 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: scripts/ci/requirements-ci-ruff.txt
 
       - name: Install ruff for verifier lint corroboration
         run: |
-          # Lockstep: keep in sync with the ruff floor in pyproject.toml
-          # [project.optional-dependencies].dev and the ruff-pre-commit rev in
-          # .pre-commit-config.yaml. Linting the driver with an older ruff than
-          # the ratified config would pass rules here that fail locally.
+          # Lockstep: scripts/ci/requirements-ci-ruff.txt carries the same ruff as
+          # the exact pin in pyproject.toml [project.optional-dependencies].dev,
+          # the ruff-pre-commit rev in .pre-commit-config.yaml and the dev lock;
+          # tests/scripts/test_ci_tool_locks.py fails when they differ. Linting the
+          # driver with an older ruff than the ratified config would pass rules
+          # here that fail locally.
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install ruff==0.15.20
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-ruff.txt
 
       - name: Lint the verification driver
         run: |
