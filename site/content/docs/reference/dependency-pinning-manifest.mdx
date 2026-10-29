@@ -18,10 +18,11 @@ version comments and are bumped by Dependabot.
 
 | Class | Declaration | Lock policy |
 |---|---|---|
-| Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges; no committed Python runtime lock |
-| Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs current matching versions |
+| Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges for users; no Python runtime lock ships with the package. CI installs a hash-locked closure of them (see CI dependency locks) |
+| Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs the dev extra from a hash-locked closure (see CI dependency locks) |
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
 | CI pip | `scripts/ci/requirements-ci-pip.txt` | Hash-locked: one `pip==X.Y.Z` pin with the hashes of its wheel and sdist, installed with `--require-hashes -r` by every workflow that upgrades pip. Dependabot proposes the upgrades and rewrites the hashes; `scripts/dev/check_pip_pin_drift.py` holds the pin at pip 26.2 or later |
+| CI dependency locks | `scripts/ci/requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` and `-prereqs.txt` | Hash-locked universal closures compiled with `uv pip compile` from `pyproject.toml` as of a lock date recorded in each file, installed with `--require-hashes -r` (the package itself with `--no-deps -e .`). CI tests the locked versions until `scripts/dev/refresh_ci_locks.py` regenerates them; `pip-audit.yml` audits the newest allowed versions weekly and audits the locks. `tests/scripts/test_ci_locks_fresh.py` fails when a lock no longer satisfies `pyproject.toml` |
 | CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
 | VS Code packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
@@ -37,16 +38,22 @@ version comments and are bumped by Dependabot.
 | Security tooling | Current lower bounds live in `pyproject.toml` `security` extra | Current scanner floors ratified before release |
 | Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
 | CI pip | Hash-locked pin lives in `scripts/ci/requirements-ci-pip.txt` | pip 26.2 or later closes CVE-2026-13346; workflows install it with `--require-hashes`, so the download is checked against its published hash |
+| CI dependency locks | Hash-locked closures live in `scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt` | Workflows install them with `--require-hashes`; each records its lock date, and the freshness test keeps them in step with `pyproject.toml` |
 | Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
 | GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception, marked with an `action-pinning-exempt:` comment in `release.yml` | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
 | npm packaging | `publish-npm.yml` workflow runs on the `v*.*.*` tag push, with `workflow_dispatch` as the fallback | The single public npm package is `@ahmed-g-gad/apothem`; publication waits for the operator's approval of the `release` environment, given after `scripts/release/check-release-ready.sh` passes |
 
 ## Locking
 
-Python lock files are generated on demand by the contributor. They are not
-committed because Apothem's runtime closure is small, the CLI supports multiple
-Python minor versions, and CI intentionally exercises the latest matching
-tooling versions.
+Contributors' own Python lock files are generated on demand and are not
+committed: Apothem's runtime closure is small and the CLI supports multiple
+Python minor versions. CI is the exception. It installs the hash-locked files
+in `scripts/ci/` (`requirements-ci-dev.txt`, `-runtime.txt`, `-test.txt` and
+`-prereqs.txt`), which `python scripts/dev/refresh_ci_locks.py` compiles from
+`pyproject.toml` as of a lock date, so CI tests the versions locked on that
+date and refreshing the files moves them forward. The weekly `pip-audit.yml`
+run audits the newest versions `pyproject.toml` allows as well as the locks.
+Contributors keep installing with `pip install -e ".[dev]"`.
 
 ```sh
 # Astral uv:
@@ -66,9 +73,12 @@ The website is different: `site/package-lock.json` is committed and CI uses
 
 ## Rationale
 
-- **Why range pins for Python?** The CLI supports a broad Python matrix and CI
-  should reveal compatibility issues with current tooling before users hit
-  them.
+- **Why range pins for Python?** The CLI supports a broad Python matrix, so
+  `pyproject.toml` keeps conservative floors. CI installs hash-locked closures
+  of those ranges, which the maintainer refreshes with
+  `scripts/dev/refresh_ci_locks.py` (weekly is the intended cadence), and the
+  weekly `pip-audit.yml` run resolves the newest allowed versions to reveal
+  problems with current tooling.
 - **Why a committed Node lock?** The website is a deployed static artifact; the
   lockfile gives deterministic `npm ci` builds for that public surface.
 - **Why SHA-pinned Actions?** Tags are mutable; SHAs are immutable. Dependabot
@@ -78,7 +88,10 @@ The website is different: `site/package-lock.json` is committed and CI uses
   (`.github/dependabot.yml`) cover the GitHub Actions pins, the website
   lockfile, the vsce packager lockfile (`tools/vsce`), the harness-CLI
   lockfile the channel smoke installs (`tools/channel-smoke`), the hash-locked
-  pip that CI installs (`scripts/ci`) and the pre-commit hooks.
+  pip that CI installs (`scripts/ci/requirements-ci-pip.txt`) and the pre-commit
+  hooks. The other four files in `scripts/ci` are closures regenerated whole
+  with `scripts/dev/refresh_ci_locks.py`, and Dependabot's version updates for
+  that folder are limited to pip.
   The runtime floors in `pyproject.toml`, the hash-locked release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
   and the pre-commit hooks pinned in lockstep with `pyproject.toml` move by
   hand, because a single-pin bump would break the files they agree with.

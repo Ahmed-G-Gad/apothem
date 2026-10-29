@@ -161,7 +161,8 @@ jobs:
         run: |
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install -e ".[dev]"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-dev.txt
+          python -m pip install --no-deps -e .
       - name: Run the tool lockfile tests
         # The vsce release tests (hash pins, engines against the Node the vsce
         # jobs set up, the Trusted Publishing guard) and the lockfile-location

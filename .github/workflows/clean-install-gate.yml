@@ -14,7 +14,10 @@
 # 2. clean-install-gate + wheel-smoke — provision a clean runner with ONLY the
 #    documented runtime prereqs (click rich pyyaml jsonschema) plus the test
 #    runner — deliberately NOT apothem itself — then exercise the hermetic
-#    install gate and the built-wheel clean-venv smoke.
+#    install gate and the built-wheel clean-venv smoke. The prereqs install
+#    from hash-locked files (scripts/ci/requirements-ci-runtime.txt for the
+#    shell and shim smokes, requirements-ci-test.txt for the two test jobs),
+#    so the versions are those locked at the date recorded in each file.
 #
 # REQUIRED-CHECK POLICY (tracked note, not asserted against live GitHub):
 # This workflow MUST be configured as a branch-protection required status check
@@ -114,7 +117,7 @@ jobs:
           set -euo pipefail
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install click rich pyyaml jsonschema
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
           if command -v dash >/dev/null 2>&1; then SH='dash'; else SH='sh'; fi
           "$SH" scripts/installer/install.sh --dry-run --yes
 
@@ -151,7 +154,8 @@ jobs:
           }
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pip install click rich pyyaml jsonschema
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           powershell -NoProfile -File scripts/installer/install.ps1 -DryRun -Yes
 
       - name: POSIX entry-point shim smoke (Linux/macOS)
@@ -167,7 +171,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install click rich pyyaml jsonschema
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
           mkdir -p "$HOME/.config/apothem"
           cp src/apothem/schemas/profile.example.yaml "$HOME/.config/apothem/profile.yaml"
           sh scripts/installer/install.sh --yes
@@ -195,7 +199,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pip install click rich pyyaml jsonschema
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Force -Path (Join-Path $HOME '.config\apothem') | Out-Null
           Copy-Item src/apothem/schemas/profile.example.yaml (Join-Path $HOME '.config\apothem\profile.yaml')
           powershell -NoProfile -File scripts/installer/install.ps1 -Yes
@@ -232,7 +237,7 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: "3.12"
-      - name: Install runtime prereqs (no apothem package)
+      - name: Install locked runtime prereqs and pytest (no apothem package)
         shell: bash
         run: |
           set -euo pipefail
@@ -240,7 +245,7 @@ jobs:
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           echo "::endgroup::"
           echo "::group::runtime prereqs + pytest (NOT apothem)"
-          python -m pip install click rich pyyaml jsonschema pytest pytest-xdist
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-test.txt
           echo "::endgroup::"
       - name: Run clean-machine install gate
         shell: bash
@@ -276,7 +281,7 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: "3.12"
-      - name: Install build + test runner (NOT apothem)
+      - name: Install locked build + test runner (NOT apothem)
         shell: bash
         run: |
           set -euo pipefail
@@ -284,7 +289,8 @@ jobs:
           # build/pytest drive the gate; the apothem runtime deps let the outer
           # pytest import the source-tree test helpers (conftest) — the built
           # wheel is still installed into its own isolated venv inside the test.
-          python -m pip install build pytest pytest-xdist click rich pyyaml jsonschema
+          # All of them come from the hash-locked test file.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-test.txt
       - name: Build wheel + clean-venv install/validate smoke
         # Builds the wheel, installs it into an isolated fresh venv (off the
         # source tree), validates a real profile end-to-end, and asserts the

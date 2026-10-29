@@ -15,9 +15,12 @@
 #   cache-key-suffix     Optional discriminator appended to the pip cache key
 #                        so callers with divergent dependency sets do not
 #                        collide on a shared cache entry. Defaults to "default".
-#   install-extras       Optional extras spec for the editable install
-#                        (e.g. "dev", "dev,docs"). Defaults to "dev". An
-#                        empty string installs without extras.
+#   requirements-file    Optional hash-locked requirements file the job
+#                        installs with `--require-hashes -r` before it installs
+#                        the package itself with `--no-deps -e .`. Must be a
+#                        scripts/ci/requirements-ci-*.txt file. Defaults to
+#                        scripts/ci/requirements-ci-dev.txt (runtime + dev
+#                        extra). It is also the setup-python pip cache key.
 #   runs-on              Optional runner label override (e.g. "macos-latest").
 #                        Defaults to "ubuntu-latest".
 #   run-command          Optional shell command executed after dependency
@@ -54,11 +57,11 @@ on:
         required: false
         type: string
         default: default
-      install-extras:
-        description: Extras spec for the editable install (e.g. "dev,docs").
+      requirements-file:
+        description: Hash-locked requirements file under scripts/ci/ installed before the editable package.
         required: false
         type: string
-        default: dev
+        default: scripts/ci/requirements-ci-dev.txt
       runs-on:
         description: Runner label.
         required: false
@@ -85,11 +88,11 @@ on:
         required: false
         type: string
         default: default
-      install-extras:
-        description: Extras spec for the editable install (e.g. "dev,docs").
+      requirements-file:
+        description: Hash-locked requirements file under scripts/ci/ installed before the editable package.
         required: false
         type: string
-        default: dev
+        default: scripts/ci/requirements-ci-dev.txt
       runs-on:
         description: Runner label.
         required: false
@@ -144,24 +147,30 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
-          cache-dependency-path: pyproject.toml
+          cache-dependency-path: ${{ inputs.requirements-file }}
       - name: Install dependencies
         shell: bash
         env:
-          INSTALL_EXTRAS: ${{ inputs.install-extras }}
+          REQUIREMENTS_FILE: ${{ inputs.requirements-file }}
           CACHE_KEY_SUFFIX: ${{ inputs.cache-key-suffix }}
         run: |
           set -euo pipefail
+          # The path reaches the shell through an env var, never the run body,
+          # and must name one of the repository's hash-locked CI files.
+          case "$REQUIREMENTS_FILE" in
+            *..*|*' '*) echo "::error::requirements-file must not contain '..' or spaces" >&2; exit 1 ;;
+            scripts/ci/requirements-ci-*.txt) ;;
+            *) echo "::error::requirements-file must be a scripts/ci/requirements-ci-*.txt lock" >&2; exit 1 ;;
+          esac
           echo "::group::pip pin"
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           echo "::endgroup::"
-          echo "::group::editable install (extras='${INSTALL_EXTRAS}', suffix='${CACHE_KEY_SUFFIX}')"
-          if [ -z "${INSTALL_EXTRAS}" ]; then
-            python -m pip install -e "."
-          else
-            python -m pip install -e ".[${INSTALL_EXTRAS}]"
-          fi
+          echo "::group::hash-locked dependencies (${REQUIREMENTS_FILE}, suffix='${CACHE_KEY_SUFFIX}')"
+          python -m pip install --require-hashes -r "$REQUIREMENTS_FILE"
+          echo "::endgroup::"
+          echo "::group::editable install (no dependency resolution)"
+          python -m pip install --no-deps -e .
           echo "::endgroup::"
       - name: Run caller command
         if: ${{ inputs.run-command != '' }}

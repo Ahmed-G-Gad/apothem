@@ -18,6 +18,13 @@
 #     build-system pin (tests/scripts/test_normalize_sdist.py). The single-
 #     package pip lock beside it (scripts/ci/requirements-ci-pip.txt) is the
 #     opposite case and is Dependabot's: one pin, rewritten with its hashes.
+#   - scripts/ci/requirements-ci-{dev,runtime,test,prereqs}.txt: closures that
+#     CI installs with --require-hashes, regenerated whole with
+#     `python scripts/dev/refresh_ci_locks.py` (like the release closure). The
+#     /scripts/ci entry below limits version updates to pip, so Dependabot
+#     never bumps one pin inside a closure. A security alert against a locked
+#     package is answered by running that script, not by merging a single-pin
+#     pull request.
 #   - src/apothem/_vendor/vendor.txt: records the vendored source tree beside
 #     it; a bump means re-vendoring (docs: architecture/vendoring-strategy).
 #   - npm `overrides` blocks. Version updates leave them alone; a security
@@ -181,6 +188,15 @@ updates:
   # (scripts/ci/requirements-ci-pip.txt). Dependabot rewrites the version and
   # both --hash lines in one pull request. The drift check keeps the pin at
   # pip 26.2 or later (scripts/dev/check_pip_pin_drift.py).
+  #
+  # The other files in this folder (requirements-ci-dev.txt and its siblings)
+  # are universal closures that scripts/dev/refresh_ci_locks.py regenerates
+  # whole. `allow` limits version updates to pip, so Dependabot opens no pull
+  # request for a single pin inside a closure, which it would rewrite for one
+  # platform. Dependabot alerts can list the locked packages. Answer one by
+  # running the refresh script. If Dependabot opens single-pin pull requests
+  # anyway, move the closures to a sibling folder with a limit-0 entry like
+  # /scripts/release below.
   - package-ecosystem: pip
     directory: /scripts/ci
     schedule:
@@ -194,6 +210,8 @@ updates:
       prefix: chore(deps)
     labels: [dependencies]
     assignees: [Ahmed-G-Gad]
+    allow:
+      - dependency-name: pip
 
   # Security updates only: version updates are off (limit 0), so these entries
   # just give Dependabot's security pull requests the labels, prefix and

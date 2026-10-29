@@ -33,6 +33,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
+      - 'scripts/ci/requirements-ci-dev.txt'
       - '.github/workflows/ci-matrix.yml'
       - '.github/workflows/reusable-python-setup.yml'
   pull_request:
@@ -41,6 +42,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
+      - 'scripts/ci/requirements-ci-dev.txt'
       - '.github/workflows/ci-matrix.yml'
       - '.github/workflows/reusable-python-setup.yml'
   workflow_dispatch:
@@ -82,7 +84,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       runs-on: ${{ matrix.os }}
-      install-extras: dev
+      requirements-file: scripts/ci/requirements-ci-dev.txt
       cache-key-suffix: ci-matrix
       run-command: python -m pytest -n auto --color=yes
       egress-policy: audit
