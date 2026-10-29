@@ -39,6 +39,7 @@ on:
       - 'src/**'
       - 'site/**'
       - 'CHANGELOG.md'
+      - 'scripts/ci/requirements-ci-runtime.txt'
       - '.github/workflows/docs-drift.yml'
   pull_request:
     branches: [main]
@@ -46,6 +47,7 @@ on:
       - 'src/**'
       - 'site/**'
       - 'CHANGELOG.md'
+      - 'scripts/ci/requirements-ci-runtime.txt'
       - '.github/workflows/docs-drift.yml'
   workflow_dispatch:
 
@@ -113,7 +115,9 @@ jobs:
         # The reference emitter introspects the live Click command tree, so the
         # non-vendored third-party runtime deps (click, rich) must be importable.
         # apothem itself runs straight from the source tree via PYTHONPATH=src.
-        run: python -m pip install click rich pyyaml jsonschema
+        # The versions come from scripts/ci/requirements-ci-runtime.txt, so the
+        # generated pages change when that lock changes (hence its path filter).
+        run: python -m pip install --require-hashes -r scripts/ci/requirements-ci-runtime.txt
       - name: Install docs dependencies
         working-directory: site
         run: npm ci

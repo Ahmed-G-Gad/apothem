@@ -61,7 +61,9 @@ jobs:
         run: |
           # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
           python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
-          python -m pip install -e ".[dev]"
+          # Hash-locked dependencies; the package installs editable without resolving.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-dev.txt
+          python -m pip install --no-deps -e .
 
       - name: Run harness-convention freshness check
         id: drift

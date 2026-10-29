@@ -58,6 +58,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   workflows' install lines instead of the per-workflow version setting, and
   `pip-audit.yml` audits the lock. The PowerShell steps that install it now
   stop on a failed install.
+- **CI installs its Python dependencies from hash-locked files.** The jobs
+  that install the project, the test tools or the engine's prerequisites now
+  use `--require-hashes` with `scripts/ci/requirements-ci-dev.txt`,
+  `requirements-ci-runtime.txt`, `requirements-ci-test.txt` or
+  `requirements-ci-prereqs.txt`, and install the package itself with
+  `--no-deps -e .`, so every download is checked against its published hash and
+  OpenSSF Scorecard counts the installs as pinned. CI therefore tests the
+  versions locked on the date written in each file (2026-10-29), not the
+  newest release on the day of a run; `python scripts/dev/refresh_ci_locks.py`
+  regenerates the locks, and `--check` compares them with a fresh compile.
+  `tests/scripts/test_ci_locks_fresh.py` fails when a lock no longer satisfies
+  `pyproject.toml`. `pip-audit.yml` still resolves the newest allowed versions
+  each week and now audits the locks too, `check_pip_pin_drift.py` fails on
+  any other workflow `pip install` that Scorecard counts as unpinned, and
+  Dependabot's version updates for `scripts/ci` are limited to the pip lock.
+  The single-tool pins (`ruff`, `bandit`, `pip-audit`, `pip-licenses`,
+  `pre-commit`) are unchanged.
 
 ### Fixed
 
