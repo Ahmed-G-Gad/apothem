@@ -2,7 +2,7 @@
 
 # Scripts
 
-Operator-, release-, install-, and dev-facing executables for the `apothem` repository — every standalone script lives here. Root-level entries are the operator / contributor utilities; `installer/` holds the install ceremonies, `release/` the release-engineering recipes, and `dev/` the internal CI/QA orchestration and audit / validation tooling. The tables below are the index: `dev/` has no README of its own, so a script that is not listed here is documented nowhere.
+Operator-, release-, install-, and dev-facing executables for the `apothem` repository — every standalone script lives here. Root-level entries are the operator / contributor utilities; `installer/` holds the install ceremonies, `release/` the release-engineering recipes, `ci/` the hash-locked requirement files CI installs, and `dev/` the internal CI/QA orchestration and audit / validation tooling. The tables below are the index: `dev/` has no README of its own, so a script that is not listed here is documented nowhere.
 
 ## Root-level scripts
 
@@ -19,7 +19,7 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | `rebuild-assets-resvg.py` | The single canonical asset generator: regenerate the raster brand assets in [`assets/`](../assets/) from the editable SVG sources in `assets/src/` via a `resvg` binary plus Pillow. Supports a `--check-only` mode; `tests/unit/test_assets_manifest_coverage.py` asserts it produces every icon the PWA manifest references. |
 | `regenerate-completions.sh` / `.ps1` | Re-emit the shell-completion scripts (`bash` / `zsh` / `fish` / `powershell`) into `src/apothem/cli/completions/` after a CLI surface change. Each golden is the SPDX header followed by `apothem completion <shell>`, run as `python -m apothem` from this checkout's `src/` and never through an `apothem` on `PATH`, which forwards to the installed engine. `APOTHEM_PYTHON` overrides the interpreter. Byte-identical regeneration is the verification check; `tests/scripts/test_regenerate_completions.py` runs both scripts against a sandbox checkout. |
 | `regen-behavior-goldens.py` | Regenerate the behavior-diff golden corpus under `tests/fixtures/behavior-diff/` from the deterministic HOME-isolated install-driver and CLI oracles after an intended behavior change. The capture is byte-identical on Windows and Linux, so a non-empty `git diff` is a real behavior change to review. It refuses a run whose output would depend on the machine (an interpreter started with `-OO` or `-v`, Click or Rich outside `pyproject.toml`, entries git ignores in the source directories the installer copies) and swaps a staged capture in by rename, so a failed run leaves the corpus as it was. |
-| `check_pip_pin_drift.py` | Assert every workflow's `PIP_PIN_VERSION` matches the canonical pin and no raw `pip==<version>` literal has been reintroduced. Invoked by CI. |
+| `check_pip_pin_drift.py` | Assert `ci/requirements-ci-pip.txt` pins one hashed `pip==X.Y.Z` at or above the CVE-2026-13346 floor (26.2), that no workflow mentions the retired `PIP_PIN_VERSION`, and that every workflow line installing pip itself uses `--require-hashes -r scripts/ci/requirements-ci-pip.txt`. Invoked by CI. |
 | `check_site_version_parity.py` | Assert `site/package.json`'s version matches `pyproject.toml`'s. Both are hand-maintained and the site renders its copy in the landing footer, so drift is silent — the site simply advertises a release that is no longer shipping. Invoked by CI beside the pin-drift check. |
 | `check_changelog_links.py` | Assert every `## [x.y.z]` heading in `CHANGELOG.md` has a link definition naming tag `vx.y.z`, that `[Unreleased]` compares from the latest heading, and that no version link is orphaned. Both are hand-kept: after 1.1.0 the `[1.1.0]` link was never added and `[Unreleased]` still compared from v1.0.2. Invoked by CI beside the site version parity check; `bump_version.py` leaves a changelog it accepts. |
 | `check_readme_file_coverage.py` | Report every git-tracked file a folder ships that the folder's own README never names. A per-folder README is that folder's operating contract, so its file table is load-bearing — a module missing from it reads as nonexistent. Advisory by default; `--strict` exits non-zero and is how CI invokes it. |
@@ -77,6 +77,10 @@ Invoked by the release engineer and by `.github/workflows/release.yml`. Each shi
 | `generate-sbom` | Thin `.sh` / `.ps1` wrappers that run `generate_sbom.py` on `dist/` (or a given directory) for the local asset matrix. |
 | `sign-assets` | Cosign keyless-OIDC `sign-blob` recipe for the release asset matrix: one `<asset>.cosign.bundle` (signature, Fulcio certificate and Rekor entry) per asset plus one for `SHA256SUMS`, the same naming `release.yml` publishes. |
 | `verify-provenance` | Verify a downloaded release asset set (default: the current directory): the `SHA256SUMS` manifest, every `<asset>.cosign.bundle` (or legacy `<asset>.sig`) against the exact identity `https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/<tag>`, and `provenance.intoto.jsonl` for the wheel and sdist via `slsa-verifier --source-uri github.com/Ahmed-G-Gad/apothem --source-tag <tag>`. The tag comes from the wheel name unless `--tag` / `-Tag` is given. Owner casing matters: the certificates say `Ahmed-G-Gad`. |
+
+## `ci/` — hash-locked CI requirements
+
+Requirement files that CI installs with `--require-hashes`. See [`ci/README.md`](ci/README.md) for the file index, how to regenerate a lock and who keeps it current.
 
 ## Conventions
 

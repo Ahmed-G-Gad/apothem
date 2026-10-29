@@ -31,7 +31,7 @@ top-level `.github/README.md` would, and none exists.
 | `markdown-lint.yml` | push (main), PR (main), dispatch | Runs the markdownlint pre-commit hook over every tracked Markdown file with the version `.pre-commit-config.yaml` pins and the policy in `.markdownlint.json`, so a Dependabot hooks update is linted before it merges. |
 | `pr-title.yml` | PR (main), including title edits | Checks that the squash-merge subject (`<title> (#<number>)`) fits the 72-character Conventional Commits cap, with `scripts/dev/check_pr_title_squash_length.py`. Retitling a pull request re-runs it, and the repository's squash default takes the PR title, so a long Dependabot title is fixed by a retitle before merging. |
 | `dependency-review.yml` | PR (main) | Blocks PRs that introduce dependencies with known vulnerabilities or disallowed licenses, evaluated against the manifest/lockfile diff. |
-| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, and the hash-locked release build tooling, plus a PR/push gate on changes to them. |
+| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, the hash-locked release build tooling, and the hash-locked CI pip, plus a PR/push gate on changes to them. |
 | `npm-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `npm audit` of the documentation site's dependency tree and the two tool lockfiles (`tools/vsce`, `tools/channel-smoke`), plus a PR/push gate on each. A pull request that changes a tool lockfile also installs it, and one that changes `tools/vsce` also packages the VS Code extension and runs the vsce release tests and the lockfile-location test (`tool-lockfile-tests` job), because such a pull request runs no `ci.yml` job. Sibling of `pip-audit.yml`, whose path filters cover the Python surface only — without this the npm tree is unaudited. Fails on high/critical. |
 | `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the resolved dependency tree for copyleft or otherwise MIT-incompatible licenses; mirrors the dependency-review allow-list. |
 | `reuse.yml` | push (main), PR, schedule (weekly), dispatch | `reuse lint` over the whole tree on every change: every file carries an SPDX license line or a `REUSE.toml` annotation, every `LICENSES/` text is used, and every SPDX expression parses. A release needs it green. |
@@ -101,9 +101,12 @@ top-level `.github/README.md` would, and none exists.
   declares none and runs inside its caller's group. Release and publish
   workflows set `cancel-in-progress: false` so a publication run is never
   cancelled mid-flight, while gate and scan workflows cancel superseded runs.
-- **Pip pin.** Workflows that install pip carry `env.PIP_PIN_VERSION` set to the
-  single canonical value; `scripts/dev/check_pip_pin_drift.py` fails the build if
-  any workflow's pin diverges.
+- **Pip pin.** Workflows that upgrade pip install it with
+  `python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt`,
+  a hash-locked file that pins pip 26.2 or later (CVE-2026-13346). Dependabot
+  proposes its upgrades; `scripts/dev/check_pip_pin_drift.py` fails the build if
+  the file loses its hashes or drops below the floor, or if a workflow installs
+  pip any other way.
 
 ## Working in this folder
 

@@ -46,11 +46,7 @@ on:
 
 permissions: {}
 
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
 env:
-  PIP_PIN_VERSION: "26.2.1"
   CLICK_VERSION: "8.4.2"
   RICH_VERSION: "15.0.0"
   VSCODE_VERSION: "1.140.0"
@@ -117,7 +113,8 @@ jobs:
         env:
           CHANNEL: ${{ matrix.channel }}
         run: |
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install "click==${CLICK_VERSION}" "rich==${RICH_VERSION}"
           case "$CHANNEL" in
             claude-code-plugin|gemini-cli-extension|qwen-code-extension|codex-plugin)
@@ -163,7 +160,8 @@ jobs:
       - name: Install the documented prerequisites
         shell: pwsh
         run: |
-          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install "click==$env:CLICK_VERSION" "rich==$env:RICH_VERSION"
       - name: Run the channel without credentials
         shell: pwsh

@@ -48,6 +48,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   smoke, so a Dependabot update to either lockfile is checked before it
   merges. The pull request runs these checks without the full `ci.yml`
   matrix.
+- **CI installs pip from a hash-locked file.** Every workflow upgrades pip
+  with `--require-hashes` from `scripts/ci/requirements-ci-pip.txt` instead
+  of a version pin, so the download is checked against its published hash,
+  and Dependabot proposes pip upgrades with their hashes. The same pip,
+  26.2.1, still runs in CI; the lock holds it at 26.2 or later, which fixes
+  CVE-2026-13346. `check_pip_pin_drift.py` now checks the lock file and the
+  workflows' install lines instead of the per-workflow version setting, and
+  `pip-audit.yml` audits the lock. The PowerShell steps that install it now
+  stop on a failed install.
 
 ### Fixed
 

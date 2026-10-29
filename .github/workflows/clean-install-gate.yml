@@ -39,12 +39,6 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
-# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
-# workflow's PIP_PIN_VERSION diverges from the canonical pin.
-env:
-  PIP_PIN_VERSION: "26.2.1"
-
 concurrency:
   group: clean-install-gate-${{ github.ref }}
   cancel-in-progress: true
@@ -118,7 +112,8 @@ jobs:
           APOTHEM_HARNESS: claude-code
         run: |
           set -euo pipefail
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # Hash-locked pip; see scripts/ci/requirements-ci-pip.txt.
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install click rich pyyaml jsonschema
           if command -v dash >/dev/null 2>&1; then SH='dash'; else SH='sh'; fi
           "$SH" scripts/installer/install.sh --dry-run --yes
@@ -154,7 +149,8 @@ jobs:
             }
             Write-Host "parse OK: $f"
           }
-          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install click rich pyyaml jsonschema
           powershell -NoProfile -File scripts/installer/install.ps1 -DryRun -Yes
 
@@ -170,7 +166,7 @@ jobs:
           APOTHEM_HARNESS: claude-code
         run: |
           set -euo pipefail
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           python -m pip install click rich pyyaml jsonschema
           mkdir -p "$HOME/.config/apothem"
           cp src/apothem/schemas/profile.example.yaml "$HOME/.config/apothem/profile.yaml"
@@ -197,7 +193,8 @@ jobs:
           APOTHEM_BIN_DIR: ${{ runner.temp }}\apothem-bin
         run: |
           $ErrorActionPreference = 'Stop'
-          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install click rich pyyaml jsonschema
           New-Item -ItemType Directory -Force -Path (Join-Path $HOME '.config\apothem') | Out-Null
           Copy-Item src/apothem/schemas/profile.example.yaml (Join-Path $HOME '.config\apothem\profile.yaml')
@@ -240,7 +237,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "::group::pip pin"
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           echo "::endgroup::"
           echo "::group::runtime prereqs + pytest (NOT apothem)"
           python -m pip install click rich pyyaml jsonschema pytest pytest-xdist
@@ -283,7 +280,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install --require-hashes -r scripts/ci/requirements-ci-pip.txt
           # build/pytest drive the gate; the apothem runtime deps let the outer
           # pytest import the source-tree test helpers (conftest) — the built
           # wheel is still installed into its own isolated venv inside the test.
