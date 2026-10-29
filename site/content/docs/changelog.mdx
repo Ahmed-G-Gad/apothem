@@ -41,6 +41,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   every Monday, like the website and the pre-commit hooks, because the
   Marketplace publish route depends on the vsce release: Trusted Publishing
   needs vsce 4.1.0 or later.
+- **Tool lockfile pull requests test themselves.** A pull request that
+  changes `tools/vsce` now packages the VS Code extension and runs the vsce
+  release tests, and one that changes `tools/channel-smoke` runs the channel
+  smoke, so a Dependabot update to either lockfile is checked before it
+  merges. The pull request runs these checks without the full `ci.yml`
+  matrix.
 
 ### Fixed
 

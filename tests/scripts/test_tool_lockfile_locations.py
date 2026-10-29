@@ -5,9 +5,15 @@
 The vsce packager and the channel-smoke harness CLIs are npm lockfiles under
 ``tools/``. They moved out of ``.github/`` because Dependabot never opened a
 pull request for them there. This module keeps the move from regressing and
-keeps three consumers of the directory list in step: ``.github/dependabot.yml``,
-the ``npm-audit.yml`` matrix, and the ``npm ci --prefix`` installs in the
-workflows.
+keeps the consumers of the directory list in step: ``.github/dependabot.yml``,
+the ``npm-audit.yml`` matrix, its ``paths:`` filters, and the ``npm ci --prefix``
+installs in the workflows.
+
+A pull request that changes only ``tools/`` runs no ``ci.yml`` job, so the
+checks that make such a pull request test itself are pinned here too:
+``npm-audit.yml`` runs the vsce release tests and this module, and packages the
+extension for ``tools/vsce``; ``channel-smoke.yml`` runs on a pull request that
+changes ``tools/channel-smoke``.
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ _REPO = Path(__file__).resolve().parents[2]
 _DEPENDABOT = _REPO / ".github" / "dependabot.yml"
 _WORKFLOWS = _REPO / ".github" / "workflows"
 _NPM_AUDIT = _WORKFLOWS / "npm-audit.yml"
+_CHANNEL_SMOKE = _WORKFLOWS / "channel-smoke.yml"
 
 _ACTIONS = "github-actions"
 _GLOB_CHARS = frozenset("*?[")
@@ -229,18 +236,75 @@ def test_npm_audit_matrix_covers_the_dependabot_npm_directories() -> None:
         f"the npm-audit.yml matrix `dir` audits {sorted(audited)}, but "
         f"Dependabot keeps {sorted(expected)} current (every npm directory "
         "except /site, which has its own steps). Make the matrix `dir` list in "
-        ".github/workflows/npm-audit.yml, and the two `paths:` filters, match "
-        "the npm directories in .github/dependabot.yml."
+        ".github/workflows/npm-audit.yml match the npm directories in "
+        ".github/dependabot.yml; the two `paths:` filters are checked by "
+        "test_npm_audit_paths_cover_the_dependabot_npm_directories."
     )
 
 
+def _on_block(workflow: Path) -> dict[str, Any]:
+    """Return a workflow's ``on:`` mapping.
+
+    PyYAML loads the bare key ``on`` as the boolean ``True``.
+    """
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+    block = data.get("on", data.get(True))
+    assert isinstance(block, dict), (
+        f"{workflow.name} has no `on:` mapping of triggers; restore it"
+    )
+    return block
+
+
+def _trigger_paths(workflow: Path, trigger: str) -> list[str]:
+    config = _on_block(workflow).get(trigger)
+    assert isinstance(config, dict), (
+        f"{workflow.name} declares no `{trigger}:` trigger with a `paths:` "
+        f"filter; add `on.{trigger}.paths` to .github/workflows/{workflow.name}"
+    )
+    return [str(item) for item in config.get("paths") or []]
+
+
+def test_npm_audit_paths_cover_the_dependabot_npm_directories() -> None:
+    expected = {
+        _normalize(directory)
+        for ecosystem, directory in _targets()
+        if ecosystem == "npm"
+    } - {"site"}
+    problems = [
+        f"`on.{trigger}.paths` lacks {directory}/**"
+        for trigger in ("push", "pull_request")
+        for directory in sorted(expected)
+        if f"{directory}/**" not in _trigger_paths(_NPM_AUDIT, trigger)
+    ]
+    assert not problems, (
+        f"npm-audit.yml does not run for a change to a tool lockfile: {problems}. "
+        "Add the missing `<dir>/**` entry to that `paths:` filter in "
+        ".github/workflows/npm-audit.yml, so a Dependabot lockfile pull request "
+        "is audited and tested."
+    )
+
+
+def _join_continuations(lines: list[str]) -> Iterator[str]:
+    """Join each line that ends in a backslash with the line after it."""
+    pending = ""
+    for line in lines:
+        if line.rstrip().endswith("\\"):
+            pending += line.rstrip()[:-1].strip() + " "
+            continue
+        yield pending + line.strip() if pending else line
+        pending = ""
+    if pending:
+        yield pending.rstrip()
+
+
 def _run_lines(workflow: Path) -> Iterator[str]:
+    """Yield each shell line of every ``run:`` step, continuations joined."""
     data = yaml.safe_load(workflow.read_text(encoding="utf-8"))
     for job in (data.get("jobs") or {}).values():
         for step in (job or {}).get("steps") or []:
             run = step.get("run") if isinstance(step, dict) else None
             if isinstance(run, str):
-                yield from run.splitlines()
+                yield from _join_continuations(run.splitlines())
 
 
 def _resolve_prefix(prefix: str) -> str:
@@ -283,4 +347,98 @@ def test_every_workflow_npm_ci_prefix_names_a_tracked_lockfile() -> None:
         f"workflow installs run `npm ci --prefix` on a directory with no tracked "
         f"package-lock.json: {broken}. Point `--prefix` at the directory that "
         "holds the lockfile (tools/vsce or tools/channel-smoke)."
+    )
+
+
+def _jobs(workflow: Path) -> dict[str, dict[str, Any]]:
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+    return {name: job for name, job in data["jobs"].items() if isinstance(job, dict)}
+
+
+def _job_run_lines(job: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    for step in job.get("steps") or []:
+        run = step.get("run") if isinstance(step, dict) else None
+        if isinstance(run, str):
+            lines.extend(_join_continuations(run.splitlines()))
+    return lines
+
+
+_TOOL_TESTS = (
+    "tests/scripts/test_tool_lockfile_locations.py",
+    "tests/scripts/test_release_vsix.py",
+)
+
+
+def test_npm_audit_runs_the_tool_lockfile_tests_and_packages_the_extension() -> None:
+    jobs = _jobs(_NPM_AUDIT)
+    test_jobs = [
+        name
+        for name, job in jobs.items()
+        if any(
+            "pytest" in line and all(path in line for path in _TOOL_TESTS)
+            for line in _job_run_lines(job)
+        )
+    ]
+    assert test_jobs, (
+        "no job in npm-audit.yml runs pytest on both "
+        f"{' and '.join(_TOOL_TESTS)}, so a Dependabot vsce pull request is "
+        "never tested. Restore the `tool-lockfile-tests` job with a run step "
+        "that runs `python -m pytest` on both files."
+    )
+    node_setups = [
+        job
+        for name, job in jobs.items()
+        if name in test_jobs
+        and any(
+            isinstance(step, dict)
+            and str(step.get("uses", "")).startswith("actions/setup-node@")
+            for step in job.get("steps") or []
+        )
+    ]
+    assert node_setups, (
+        "the npm-audit.yml job that runs the tool lockfile tests has no "
+        "`actions/setup-node` step, so the Trusted Publishing guard test runs "
+        "on the runner's preinstalled Node instead of the Node the vsce jobs "
+        'use. Restore the `Set up Node` step with `node-version: "24"`.'
+    )
+    lockfiles_job = jobs.get("tool-lockfiles")
+    assert lockfiles_job is not None, (
+        "npm-audit.yml has no `tool-lockfiles` job. Restore the matrix job "
+        "that audits and installs each tool lockfile and packages the "
+        "extension for tools/vsce."
+    )
+    packaging = [
+        step
+        for step in lockfiles_job.get("steps") or []
+        if isinstance(step, dict) and "vsce package" in str(step.get("run", ""))
+    ]
+    assert packaging, (
+        "the `tool-lockfiles` job in npm-audit.yml has no step that runs "
+        "`vsce package`. Add the extension package step from release.yml's "
+        "vsix job, guarded with `if: matrix.dir == 'tools/vsce'`."
+    )
+    assert all("tools/vsce" in str(step.get("if", "")) for step in packaging), (
+        "the `vsce package` step in npm-audit.yml must run only for the vsce "
+        "directory: guard it with `if: matrix.dir == 'tools/vsce'`, because "
+        "the other matrix directory installs no vsce."
+    )
+
+
+def test_channel_smoke_runs_on_a_channel_smoke_lockfile_pull_request() -> None:
+    directories = [
+        _normalize(directory)
+        for ecosystem, directory in _targets()
+        if ecosystem == "npm" and _normalize(directory).endswith("channel-smoke")
+    ]
+    assert directories == ["tools/channel-smoke"], (
+        f"expected one Dependabot npm entry for tools/channel-smoke, found "
+        f"{directories}; point the entry in .github/dependabot.yml at it"
+    )
+    paths = _trigger_paths(_CHANNEL_SMOKE, "pull_request")
+    assert f"{directories[0]}/**" in paths, (
+        f"channel-smoke.yml `on.pull_request.paths` is {paths} and lacks "
+        f"{directories[0]}/**, so a Dependabot update to the harness CLIs "
+        "merges without the channel smoke. Add that path to the "
+        "`pull_request` trigger in .github/workflows/channel-smoke.yml."
     )

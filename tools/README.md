@@ -14,9 +14,10 @@ Pinned third-party npm command-line tools that CI installs from a committed lock
 ## Keeping the lockfiles current
 
 - Dependabot opens the update pull requests (`.github/dependabot.yml`): `vsce/` weekly, `channel-smoke/` monthly, each with a 7-day cooldown.
-- `.github/workflows/npm-audit.yml` runs `npm audit` and a lockfile install on every pull request that touches either directory, and again weekly.
-- Before merging a `vsce/` bump, run `python -m pytest tests/scripts/test_release_vsix.py`. A pull request that changes only the lockfile runs the npm audit and no other job that installs it.
-- Before merging a `channel-smoke/` bump, dispatch `channel-smoke.yml` on the pull request branch.
+- A pull request that touches only `tools/` runs no `ci.yml` job, so these workflows check it:
+  - On a pull request that touches `vsce/`, `.github/workflows/npm-audit.yml` runs `npm audit`, installs the lockfile, packages the VS Code extension with the locked vsce, and runs `tests/scripts/test_release_vsix.py` and `tests/scripts/test_tool_lockfile_locations.py`.
+  - On a pull request that touches `channel-smoke/`, `npm-audit.yml` runs `npm audit` and installs the lockfile, and `.github/workflows/channel-smoke.yml` runs the channel smoke. Dispatch `channel-smoke.yml` by hand to run it on any other branch.
+  - `npm-audit.yml` also audits both lockfiles weekly.
 
 To bump a tool by hand, read the pins in the directory's `package.json` first. Both files pin exact versions, so install with `--save-exact`:
 
