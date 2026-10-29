@@ -176,9 +176,9 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **Apothem for VS Code** 拡張機能は [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode) に `ahmed-g-gad.apothem-vscode` として公開されています。拡張機能ビューから、または `code --install-extension ahmed-g-gad.apothem-vscode` でインストールできます。
 `apothem.vsix` パッケージからもインストールできます: `code --install-extension apothem.vsix`、またはエディターの *Install from VSIX…* コマンドを使います。
 リリースワークフローがパッケージに署名し、各 GitHub Release に添付します。
-ワークフローが拡張機能をパッケージ化するようになる前に公開されたリリースには、`.vsix` は含まれていません。最新のリリースにそれがない場合は、`.github/vsce/` にロックされた vsce リリース（その vsce リリースには Node.js 22 以降が必要です）を使って、チェックアウトからパッケージをビルドしてください。
-`npm ci --prefix .github/vsce --ignore-scripts` を実行し、続いて
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix` を実行します。
+ワークフローが拡張機能をパッケージ化するようになる前に公開されたリリースには、`.vsix` は含まれていません。最新のリリースにそれがない場合は、`tools/vsce/` にロックされた vsce リリース（その vsce リリースには Node.js 22 以降が必要です）を使って、チェックアウトからパッケージをビルドしてください。
+`npm ci --prefix tools/vsce --ignore-scripts` を実行し、続いて
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix` を実行します。
 以前の `apothem.vsix` からインストールしたコピーは、識別子 `ahmed-g-gad.apothem` を持ちます。両方のコピーが同じコマンドを登録しないように、`code --uninstall-extension ahmed-g-gad.apothem` で削除してください。
 1 つの拡張機能で、VS Code 系のエディターをカバーします。
 そのパレットコマンド（`Apothem: Install`、`Verify`、`Update`、`Uninstall`、`Doctor`）は、設定されたランナーを通して同じエンジンを実行します（デフォルトは `npx @ahmed-g-gad/apothem@<extension version>` で、拡張機能は自身とともに出荷されたバージョンのエンジンを実行します。ソースから実行するには、ユーザー設定 `apothem.runner` をローカルチェックアウトに向けます）。

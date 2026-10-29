@@ -67,7 +67,10 @@ DEFAULT_EXCLUDE_GLOBS: Final[tuple[str, ...]] = (
     ".DS_Store",
     "Thumbs.db",
 )
-ROOT_EXCLUDE_DIRS: Final[tuple[str, ...]] = (".github", "packaging")
+# Excluded only at the archive root, unlike DEFAULT_EXCLUDE_DIRS, which matches
+# at any depth: ".github" holds CI metadata, "packaging" the non-runtime build
+# specs, and "tools" the CI tool lockfiles (vsce and the channel-smoke CLIs).
+ROOT_EXCLUDE_DIRS: Final[tuple[str, ...]] = (".github", "packaging", "tools")
 PLATFORMS: Final[tuple[str, ...]] = ("darwin", "linux", "windows")
 SOURCE_DATE_EPOCH_DEFAULT: Final[int] = 0
 ZIP_EPOCH_FLOOR: Final[int] = 315532800

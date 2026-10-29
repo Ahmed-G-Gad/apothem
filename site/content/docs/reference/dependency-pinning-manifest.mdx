@@ -23,8 +23,8 @@ version comments and are bumped by Dependabot.
 | Release tooling | `scripts/release/requirements-build-linux.txt` for release workflows; the `release` extra in `[project.optional-dependencies]` for local builds | Hash-locked for release workflows; generated from the release tooling closure. The `release` extra is a lower-bound range |
 | CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`, `pre-commit`, `ruff`) |
 | Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
-| VS Code packager | `.github/vsce/package.json` | `.github/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
-| Channel-smoke harness CLIs | `.github/channel-smoke/package.json` | `.github/channel-smoke/package-lock.json` committed and consumed by `npm ci` |
+| VS Code packager | `tools/vsce/package.json` | `tools/vsce/package-lock.json` committed; release and publish jobs run `npm ci --ignore-scripts` |
+| Channel-smoke harness CLIs | `tools/channel-smoke/package.json` | `tools/channel-smoke/package-lock.json` committed and consumed by `npm ci` |
 | GitHub Actions | SHA-pinned `uses:` refs with version comments | Dependabot proposes weekly updates; exceptions carry `action-pinning-exempt:` markers |
 
 ## Release ratification
@@ -74,8 +74,8 @@ The website is different: `site/package-lock.json` is committed and CI uses
   gate records any intentional hold.
 - **What the update bot does not touch.** Dependabot version updates
   (`.github/dependabot.yml`) cover the GitHub Actions pins, the website
-  lockfile, the vsce packager lockfile (`.github/vsce`), the harness-CLI
-  lockfile the channel smoke installs (`.github/channel-smoke`) and the
+  lockfile, the vsce packager lockfile (`tools/vsce`), the harness-CLI
+  lockfile the channel smoke installs (`tools/channel-smoke`) and the
   pre-commit hooks. The runtime floors in `pyproject.toml`, the hash-locked
   release requirements, the vendored closure in `src/apothem/_vendor/vendor.txt`
   and the pre-commit hooks pinned in lockstep with `pyproject.toml` move by

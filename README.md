@@ -453,12 +453,12 @@ It also installs from an `apothem.vsix` package: run
 VSIX…* command. The release workflow signs the package and attaches it to each
 GitHub Release. Releases published before the workflow packaged the extension
 carry none; when the latest one lacks it, build the package from a checkout
-with the vsce release locked in `.github/vsce/`, as the release workflow does.
+with the vsce release locked in `tools/vsce/`, as the release workflow does.
 That vsce needs Node.js 22 or later:
 
 ```shell
-npm ci --prefix .github/vsce --ignore-scripts
-cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
+npm ci --prefix tools/vsce --ignore-scripts
+cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
 ```
 
 One extension covers VS Code and GitHub Copilot. A copy installed from an

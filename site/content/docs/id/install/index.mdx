@@ -263,9 +263,9 @@ milik editor. Alur kerja rilis menandatangani paket tersebut dan
 melampirkannya ke setiap GitHub Release. Rilis yang dipublikasikan sebelum alur
 kerja mengemas ekstensi tidak menyertakan `.vsix`; jika rilis terbaru tidak
 memilikinya, bangun paket dari checkout dengan rilis vsce yang dikunci di
-`.github/vsce/` (rilis vsce itu memerlukan Node.js 22 atau lebih baru):
-jalankan `npm ci --prefix .github/vsce --ignore-scripts`, lalu
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+`tools/vsce/` (rilis vsce itu memerlukan Node.js 22 atau lebih baru):
+jalankan `npm ci --prefix tools/vsce --ignore-scripts`, lalu
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Salinan yang dipasang dari `apothem.vsix` versi sebelumnya membawa pengenal
 `ahmed-g-gad.apothem`; hapus salinan tersebut (`code --uninstall-extension ahmed-g-gad.apothem`)
 agar kedua salinan tidak sama-sama mendaftarkan perintah yang sama. Satu ekstensi

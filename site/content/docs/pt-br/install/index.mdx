@@ -251,9 +251,9 @@ comando *Install from VSIX…* do editor. O fluxo de trabalho de lançamento ass
 o pacote e o anexa a cada GitHub Release. Os lançamentos publicados antes de o fluxo de trabalho
 empacotar a extensão não trazem nenhum `.vsix`; quando o lançamento mais recente
 não o traz, gere o pacote a partir de um checkout com a versão do vsce travada
-em `.github/vsce/` (essa versão do vsce exige Node.js 22 ou posterior): execute
-`npm ci --prefix .github/vsce --ignore-scripts` e depois
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+em `tools/vsce/` (essa versão do vsce exige Node.js 22 ou posterior): execute
+`npm ci --prefix tools/vsce --ignore-scripts` e depois
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Uma cópia instalada a partir de um `apothem.vsix` anterior tem o identificador
 `ahmed-g-gad.apothem`; desinstale-a (`code --uninstall-extension ahmed-g-gad.apothem`)
 para que as duas cópias não registrem os mesmos comandos. Uma única extensão

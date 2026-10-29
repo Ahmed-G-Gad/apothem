@@ -6,7 +6,7 @@ The README's VS Code channel installs ``apothem.vsix`` from the GitHub
 Release, so the build job places it in ``dist/`` where the existing steps hash
 it into the provenance, sign it, attest it, and upload it with the other
 assets. The packager itself runs in a separate job: vsce installs from the
-committed ``.github/vsce`` lockfile with ``npm ci --ignore-scripts``, never
+committed ``tools/vsce`` lockfile with ``npm ci --ignore-scripts``, never
 where the Python distributions are built, and only ``apothem.vsix`` leaves
 that job. The Marketplace workflow installs vsce the same way.
 """
@@ -27,7 +27,7 @@ import yaml
 
 _REPO = Path(__file__).resolve().parents[2]
 _WORKFLOWS = _REPO / ".github" / "workflows"
-_VSCE = _REPO / ".github" / "vsce"
+_VSCE = _REPO / "tools" / "vsce"
 _LOCKED_INSTALL = "npm ci --prefix {prefix} --ignore-scripts"
 
 
@@ -45,7 +45,7 @@ def _runs(job: dict[str, Any]) -> list[str]:
 def test_the_vsix_job_installs_vsce_from_the_lockfile_without_scripts() -> None:
     job = _job("release.yml", "vsix")
     runs = _runs(job)
-    assert any(_LOCKED_INSTALL.format(prefix=".github/vsce") in run for run in runs)
+    assert any(_LOCKED_INSTALL.format(prefix="tools/vsce") in run for run in runs)
     assert not any("npx" in run for run in runs)
     for step in job["steps"]:
         if str(step.get("uses", "")).startswith("actions/setup-node@"):
@@ -88,10 +88,10 @@ def test_the_build_job_runs_no_node_tooling() -> None:
 def test_the_marketplace_workflow_uses_the_same_lockfile() -> None:
     job = _job("publish-vscode.yml", "publish")
     runs = _runs(job)
-    prefix = "../vsce-tool/.github/vsce"
+    prefix = "../vsce-tool/tools/vsce"
     assert any(_LOCKED_INSTALL.format(prefix=prefix) in run for run in runs)
     # The lockfile comes from the workflow's own commit, not the tag being
-    # packaged, so a dispatch for a tag cut before .github/vsce still works.
+    # packaged, so a dispatch for a tag cut before tools/vsce still works.
     tool = [
         step["with"]
         for step in job["steps"]
@@ -103,7 +103,7 @@ def test_the_marketplace_workflow_uses_the_same_lockfile() -> None:
             "persist-credentials": False,
             "ref": "${{ github.sha }}",
             "path": "vsce-tool",
-            "sparse-checkout": ".github/vsce",
+            "sparse-checkout": "tools/vsce",
         }
     ]
     assert not any("npx" in run for run in runs)

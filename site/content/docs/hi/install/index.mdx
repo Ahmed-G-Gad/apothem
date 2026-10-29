@@ -258,10 +258,10 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 कमांड। रिलीज़ वर्कफ़्लो पैकेज पर हस्ताक्षर करता है और उसे हर GitHub Release से
 संलग्न करता है। जो रिलीज़ वर्कफ़्लो द्वारा एक्सटेंशन को पैकेज किए जाने से पहले प्रकाशित हुईं,
 उनमें कोई `.vsix` नहीं होता; जब नवीनतम रिलीज़ में यह न हो, तो किसी चेकआउट से
-`.github/vsce/` में लॉक की गई vsce रिलीज़ के साथ पैकेज बिल्ड करें (उस vsce रिलीज़ के लिए
+`tools/vsce/` में लॉक की गई vsce रिलीज़ के साथ पैकेज बिल्ड करें (उस vsce रिलीज़ के लिए
 Node.js 22 या उसके बाद का संस्करण चाहिए):
-`npm ci --prefix .github/vsce --ignore-scripts` चलाएँ, फिर
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`
+`npm ci --prefix tools/vsce --ignore-scripts` चलाएँ, फिर
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`
 चलाएँ। पहले के `apothem.vsix` से इंस्टॉल की गई प्रति पहचानकर्ता `ahmed-g-gad.apothem`
 रखती है; उसे अनइंस्टॉल करें (`code --uninstall-extension ahmed-g-gad.apothem`), ताकि
 दोनों प्रतियाँ एक साथ एक ही कमांड पंजीकृत न करें। एक ही एक्सटेंशन VS Code परिवार के संपादकों को कवर करता है।

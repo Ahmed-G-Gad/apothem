@@ -251,9 +251,9 @@ paquete `apothem.vsix`: `code --install-extension apothem.vsix`, o el comando
 paquete y lo adjunta a cada GitHub Release. Los lanzamientos publicados antes
 de que el flujo de trabajo empaquetara la extensión no incluyen ningún `.vsix`;
 cuando al último lanzamiento le falta, compila el paquete desde un checkout
-con la versión de vsce bloqueada en `.github/vsce/` (esa versión de vsce requiere Node.js 22 o
-posterior): ejecuta `npm ci --prefix .github/vsce --ignore-scripts` y luego
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+con la versión de vsce bloqueada en `tools/vsce/` (esa versión de vsce requiere Node.js 22 o
+posterior): ejecuta `npm ci --prefix tools/vsce --ignore-scripts` y luego
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Una copia instalada desde un `apothem.vsix` anterior lleva el identificador
 `ahmed-g-gad.apothem`; desinstálala (`code --uninstall-extension ahmed-g-gad.apothem`)
 para que las dos copias no registren los mismos comandos. Una sola extensión

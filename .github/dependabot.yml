@@ -6,10 +6,10 @@
 #
 # Version updates cover GitHub Actions (SHA pins; Dependabot moves the SHA and
 # rewrites the same-line "# vX.Y.Z" comment), the docs site, the vsce packager
-# lockfile, the harness-CLI lockfile the channel smoke installs, and the
-# pre-commit hooks. These stay hand edits for version updates, because a
-# single-pin bump would be wrong (a security update can still open a pull
-# request for one; adapt it by hand or close it):
+# lockfile (tools/vsce), the harness-CLI lockfile the channel smoke installs
+# (tools/channel-smoke), and the pre-commit hooks. These stay hand edits for
+# version updates, because a single-pin bump would be wrong (a security update
+# can still open a pull request for one; adapt it by hand or close it):
 #   - pyproject.toml: deliberate floors, and click is pinned exactly for the
 #     completion golden (comment beside it).
 #   - scripts/release/requirements-build-linux.txt: a hash-locked closure,
@@ -101,11 +101,17 @@ updates:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
+  # The two tool lockfiles live in tools/, outside .github/, because Dependabot
+  # cannot open a pull request for an npm manifest under .github/: only the
+  # github-actions ecosystem holds the workflows token scope that such a change
+  # needs (https://github.com/dependabot/dependabot-core/issues/15237).
+  # tests/scripts/test_tool_lockfile_locations.py keeps them out of .github/.
+  #
   # Weekly, unlike the channel-smoke lockfile: the Marketplace publish route
   # can depend on a vsce release (Trusted Publishing needs vsce 4.1.0 or
   # later), so a new vsce reaches a pull request within a week of its cooldown.
   - package-ecosystem: npm
-    directory: /.github/vsce
+    directory: /tools/vsce
     schedule:
       interval: weekly
       day: monday
@@ -122,7 +128,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: npm
-    directory: /.github/channel-smoke
+    directory: /tools/channel-smoke
     schedule:
       interval: monthly
       time: "06:00"

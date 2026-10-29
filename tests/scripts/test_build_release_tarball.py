@@ -73,10 +73,12 @@ class TestIsExcluded:
     def test_root_exclude_dir_at_top_level(self) -> None:
         assert brt._is_excluded(Path(".github/workflows/ci.yml")) is True
         assert brt._is_excluded(Path("packaging/spec.in")) is True
+        assert brt._is_excluded(Path("tools/vsce/package-lock.json")) is True
 
     def test_root_exclude_dir_only_at_top_level(self) -> None:
         # '.github' nested below the top level is NOT a root-exclude match.
         assert brt._is_excluded(Path("src/.github/x.py")) is False
+        assert brt._is_excluded(Path("src/tools/x.py")) is False
 
     def test_default_exclude_dir_anywhere_in_path(self) -> None:
         assert brt._is_excluded(Path("src/__pycache__/m.pyc")) is True

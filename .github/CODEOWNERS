@@ -23,6 +23,7 @@
 
 # CI / release / supply-chain surfaces.
 /.github/               @ahmed-g-gad
+/tools/                 @ahmed-g-gad
 
 # Project-governance + visibility surfaces.
 /.github/CODEOWNERS     @ahmed-g-gad

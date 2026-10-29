@@ -248,9 +248,9 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 пакет и прикладывает его к каждому GitHub Release. Релизы, опубликованные до того,
 как рабочий процесс начал упаковывать расширение, не содержат `.vsix`; если в последнем
 релизе его нет, соберите пакет из чекаута с версией vsce, зафиксированной в
-`.github/vsce/` (этой версии vsce нужен Node.js 22 или новее): выполните
-`npm ci --prefix .github/vsce --ignore-scripts`, затем
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+`tools/vsce/` (этой версии vsce нужен Node.js 22 или новее): выполните
+`npm ci --prefix tools/vsce --ignore-scripts`, затем
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Копия, установленная из более раннего `apothem.vsix`, имеет идентификатор
 `ahmed-g-gad.apothem`; удалите её (`code --uninstall-extension ahmed-g-gad.apothem`),
 чтобы обе копии не регистрировали одни и те же команды. Одно расширение охватывает

@@ -229,10 +229,10 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 패키지로도 설치합니다: `code --install-extension apothem.vsix`를 실행하거나 에디터의
 *Install from VSIX…* 명령을 사용하세요. 릴리스 워크플로가 패키지에 서명하고 각 GitHub
 Release에 첨부합니다. 워크플로가 확장을 패키징하기 전에 게시된 릴리스에는 `.vsix`가 없습니다.
-최신 릴리스에 없으면, `.github/vsce/`에 고정된 vsce 릴리스(이 vsce 릴리스에는
+최신 릴리스에 없으면, `tools/vsce/`에 고정된 vsce 릴리스(이 vsce 릴리스에는
 Node.js 22 이상이 필요합니다)로 체크아웃에서 패키지를 빌드하세요.
-`npm ci --prefix .github/vsce --ignore-scripts`를 실행한 다음
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`를
+`npm ci --prefix tools/vsce --ignore-scripts`를 실행한 다음
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`를
 실행합니다. 이전 `apothem.vsix`로 설치한 사본은 식별자 `ahmed-g-gad.apothem`을 가지므로,
 두 사본이 같은 명령을 모두 등록하지 않도록 `code --uninstall-extension ahmed-g-gad.apothem`으로
 제거하세요. 하나의 확장이 VS Code 계열의 에디터를 모두 다룹니다. 팔레트 명령(`Apothem: Install`, `Verify`,

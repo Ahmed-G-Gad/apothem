@@ -275,10 +275,10 @@ l'éditeur. Le flux de travail de publication signe le paquet et le joint à
 chaque GitHub Release. Les publications parues avant que le flux de travail
 n'empaquette l'extension ne contiennent aucun `.vsix` ; lorsque la dernière
 publication en est dépourvue, construisez le paquet depuis un checkout avec la
-version de vsce verrouillée dans `.github/vsce/` (cette version de vsce requiert
+version de vsce verrouillée dans `tools/vsce/` (cette version de vsce requiert
 Node.js 22 ou ultérieur) :
-exécutez `npm ci --prefix .github/vsce --ignore-scripts`, puis
-`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+exécutez `npm ci --prefix tools/vsce --ignore-scripts`, puis
+`cd vscode-extension && ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
 Une copie installée depuis un `apothem.vsix` antérieur porte l'identifiant
 `ahmed-g-gad.apothem` ; désinstallez-la (`code --uninstall-extension ahmed-g-gad.apothem`)
 afin que les deux copies n'enregistrent pas toutes deux les mêmes commandes. Une seule
