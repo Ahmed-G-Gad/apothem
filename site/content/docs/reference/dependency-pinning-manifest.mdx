@@ -90,7 +90,9 @@ The website is different: `site/package-lock.json` is committed and CI uses
   the PR title. Some Dependabot titles, mostly grouped ones that name a
   directory, run past the 72-character squash subject; the PR Title check
   names them, and a retitle fixes them. A pull request that changes a tool
-  lockfile is installed by the npm audit workflow. The Markdown Lint workflow
-  runs the markdownlint hook on a pre-commit hooks pull request; the other hooks
-  are not exercised in CI, so run `pre-commit run --all-files` on its branch
-  before merging it.
+  lockfile runs no `ci.yml` job, so the npm audit workflow audits and installs
+  it, packages the VS Code extension for the vsce lockfile and runs the vsce
+  release tests, and the channel smoke workflow runs for the channel-smoke
+  lockfile. The Markdown Lint workflow runs the markdownlint hook on a
+  pre-commit hooks pull request; the other hooks are not exercised in CI, so
+  run `pre-commit run --all-files` on its branch before merging it.

@@ -3,9 +3,15 @@
 # Weekly npm dependency audit for the documentation site and the two tool
 # lockfiles: the vsce packager (tools/vsce) and the harness CLIs the channel
 # smoke installs (tools/channel-smoke). A pull request that changes a tool
-# lockfile, such as a Dependabot update, also installs it here: a lockfile-only
-# pull request runs no other job that installs them, and ci.yml's release
-# tests read the vsce lockfile only when a gated path changes.
+# lockfile, such as a Dependabot update, is also checked here, because a
+# lockfile-only pull request runs no ci.yml job: tools/ is outside ci.yml's
+# gated paths. For each tool lockfile the workflow audits it and installs it
+# from the lockfile. For tools/vsce it also packages the VS Code extension the
+# way release.yml does. The tool-lockfile-tests job runs the vsce release tests
+# (tests/scripts/test_release_vsix.py) and the lockfile-location test
+# (tests/scripts/test_tool_lockfile_locations.py) on every trigger of this
+# workflow, so the weekly run also surfaces drift between those tests and the
+# workflows. A tools/channel-smoke pull request also runs channel-smoke.yml.
 #
 # Sibling of pip-audit.yml, which covers the Python surface only: its triggers
 # are scoped to pyproject.toml, requirements*.txt and src/apothem/_vendor/**.
@@ -43,6 +49,12 @@ on:
 
 permissions:
   contents: read
+
+# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.2.1"
 
 concurrency:
   group: npm-audit-${{ github.ref }}
@@ -116,7 +128,48 @@ jobs:
         # --ignore-scripts runs no dependency install script.
         working-directory: ${{ matrix.dir }}
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Load the vsce packager
+      - name: Package the VS Code extension
+        # The command release.yml's vsix job runs: it loads the locked vsce and
+        # packages vscode-extension/ with it, so a vsce bump that cannot package
+        # fails here instead of at the release.
         if: matrix.dir == 'tools/vsce'
-        working-directory: ${{ matrix.dir }}
-        run: ./node_modules/.bin/vsce --version
+        working-directory: vscode-extension
+        run: ../tools/vsce/node_modules/.bin/vsce package --no-dependencies --out "${RUNNER_TEMP}/apothem.vsix"
+
+  tool-lockfile-tests:
+    name: tool lockfile tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2  # v2.22.2
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Set up Node
+        # An explicit Node, so the Trusted Publishing guard test runs on the
+        # Node the vsce jobs use, not the runner's preinstalled one.
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Run the tool lockfile tests
+        # The vsce release tests (hash pins, engines against the Node the vsce
+        # jobs set up, the Trusted Publishing guard) and the lockfile-location
+        # test: ci.yml does not run them for a pull request that changes only
+        # tools/.
+        run: python -m pytest -q -p no:cacheprovider tests/scripts/test_tool_lockfile_locations.py tests/scripts/test_release_vsix.py

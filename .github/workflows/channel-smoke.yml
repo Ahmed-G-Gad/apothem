@@ -13,7 +13,11 @@
 # A channel fails here when a person outside the repository cannot follow it:
 # a private repository, an unpublished listing, a missing release asset, or a
 # signing key the installer cannot find. Run it after any change to repository
-# visibility, a release, or the install documentation.
+# visibility, a release, or the install documentation. It also runs on a pull
+# request that changes the harness-CLI lockfile (tools/channel-smoke), this
+# workflow or scripts/dev/channel_smoke.py, so a Dependabot update to that
+# lockfile is smoked before it merges. A pull request from Dependabot gets a
+# read-only token and no secrets, and this workflow uses neither.
 #
 # The job holds no secret and no write token (`permissions: {}` at the top
 # level, `contents: read` for checkout only). The harness CLIs install with
@@ -34,6 +38,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 1"
+  pull_request:
+    paths:
+      - "tools/channel-smoke/**"
+      - ".github/workflows/channel-smoke.yml"
+      - "scripts/dev/channel_smoke.py"
 
 permissions: {}
 
