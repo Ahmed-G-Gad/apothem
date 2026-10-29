@@ -265,6 +265,72 @@ def test_a_pat_dry_run_says_that_it_verified_nothing() -> None:
     assert "::warning" in notice["run"]
 
 
+def test_the_trusted_publishing_step_uses_oidc_and_no_stored_credential() -> None:
+    # --oidc exchanges the job's GitHub OIDC token, so the step needs no secret
+    # and no Azure variable; vsce's --pat defaults to VSCE_PAT, so it stays out.
+    job = _job("publish-vscode.yml", "publish")
+    oidc = _step(job, "Publish to Visual Studio Marketplace (Trusted Publishing)")
+    assert "--oidc" in oidc["run"]
+    assert "--no-dependencies" in oidc["run"]
+    assert "--azure-credential" not in oidc["run"]
+    assert "--pat" not in oidc["run"]
+    env = oidc.get("env", {})
+    for name in ("VSCE_PAT", "AZURE_CLIENT_ID", "AZURE_TENANT_ID"):
+        assert name not in env
+    assert "mode == 'oidc'" in oidc["if"]
+    assert "!inputs.dry_run" in oidc["if"]
+
+
+def test_the_vsce_version_guard_runs_before_the_trusted_publishing_step() -> None:
+    job = _job("publish-vscode.yml", "publish")
+    names = [str(step["name"]) for step in job["steps"]]
+    guard = _step(job, "Check vsce supports Trusted Publishing")
+    assert guard["if"] == "${{ steps.auth.outputs.mode == 'oidc' }}"
+    assert names.index("Check vsce supports Trusted Publishing") < names.index(
+        "Publish to Visual Studio Marketplace (Trusted Publishing)"
+    )
+    assert "::error" in guard["run"]
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+@pytest.mark.parametrize(
+    ("version", "supported"),
+    [
+        ("4.0.0", False),
+        ("4.0.1-6", False),
+        ("3.9.9", False),
+        ("4.1.0", True),
+        ("4.2.3", True),
+        ("5.0.0", True),
+    ],
+)
+def test_the_vsce_version_guard_accepts_only_4_1_or_later(
+    version: str, supported: bool
+) -> None:
+    # Run the guard's own comparison, so a change to it shows up here.
+    guard = _step(
+        _job("publish-vscode.yml", "publish"), "Check vsce supports Trusted Publishing"
+    )
+    match = re.search(r'node -e "([^"]+)" "\$\{version\}"', str(guard["run"]))
+    assert match is not None, guard["run"]
+    node = shutil.which("node")
+    assert node is not None
+    result = subprocess.run(
+        [node, "-e", match[1], version],
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    assert (result.returncode == 0) is supported
+
+
+def test_a_trusted_publishing_dry_run_says_that_it_verified_nothing() -> None:
+    job = _job("publish-vscode.yml", "publish")
+    notice = _step(job, "Dry run - Trusted Publishing has no dry run")
+    assert notice["if"] == "${{ steps.auth.outputs.mode == 'oidc' && inputs.dry_run }}"
+    assert "::warning" in notice["run"]
+
+
 def test_the_skip_notice_runs_only_when_no_credential_is_configured() -> None:
     job = _job("publish-vscode.yml", "publish")
     notice = _step(job, "Marketplace publish skipped (not yet enabled)")
@@ -349,6 +415,11 @@ _SELECTOR_CASES = [
         "pat",
         True,
     ),
+    ("ready-oidc", {**_READY, "VSCE_AUTH": "oidc"}, "oidc", False),
+    ("ready-oidc-with-pat", {**_READY, "VSCE_AUTH": "oidc", **_PAT}, "oidc", False),
+    ("ready-oidc-with-ids", {**_READY, "VSCE_AUTH": "oidc", **_IDS}, "oidc", False),
+    ("oidc-upper-case", {**_READY, "VSCE_AUTH": "OIDC"}, "oidc", False),
+    ("not-ready-oidc", {"VSCE_AUTH": "oidc", **_PAT}, "none", False),
 ]
 
 
@@ -394,3 +465,32 @@ def test_the_credential_selector_picks_the_documented_mode(
     assert (_INCOMPLETE in result.stdout) is warns, result.stdout
     # The mode is the only thing the step exports, and the token is never echoed.
     assert _TOKEN not in result.stdout + result.stderr
+
+
+@pytest.mark.skipif(
+    _SELECTOR_BASH is None, reason="needs a bash that can write $GITHUB_OUTPUT"
+)
+def test_an_unknown_selector_warns_without_echoing_its_value(tmp_path: Path) -> None:
+    # A workflow command must not carry text a repository variable supplies.
+    assert _SELECTOR_BASH is not None
+    step = _step(_job("publish-vscode.yml", "publish"), _SELECT)
+    output = tmp_path / "github-output"
+    value = "zz-unrecognised-selector"
+    env = {key: v for key, v in os.environ.items() if key not in set(step["env"])}
+    env.update(
+        {**_READY, "VSCE_AUTH": value, **_PAT, "GITHUB_OUTPUT": output.as_posix()}
+    )
+    result = subprocess.run(
+        [_SELECTOR_BASH, "--noprofile", "--norc", "-c", str(step["run"])],
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert output.read_text(encoding="utf-8").splitlines() == ["mode=pat"]
+    assert "Unknown VSCE_AUTH" in result.stdout
+    assert value not in result.stdout + result.stderr

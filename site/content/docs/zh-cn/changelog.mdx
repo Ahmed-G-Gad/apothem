@@ -20,6 +20,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **The Marketplace publish can use Trusted Publishing.** With the
+  repository variable `VSCE_AUTH=oidc`, the VS Code publish job runs
+  `vsce publish --oidc`, which exchanges the job's GitHub OIDC token for a
+  short-lived Marketplace credential: no stored secret and no Azure setup.
+  The publisher adds one Trusted Publishing policy for this repository, the
+  publish workflow and the `release` environment. The job first checks that
+  the vsce release locked in `.github/vsce` supports the final token
+  exchange, and stops with a plain error when it does not. The Entra route
+  and the `VSCE_PAT` token stay as alternatives. An unrecognised
+  `VSCE_AUTH` value now logs a warning, without echoing the value. The
+  release-cycle runbook gains the setup procedure.
+
+### Changed
+
+- **Dependabot checks the vsce packager weekly.** The `.github/vsce` lockfile
+  was checked monthly, so a new vsce release waited up to a month after its
+  seven-day cooldown before a pull request proposed it. It is now checked
+  every Monday, like the website and the pre-commit hooks, because the
+  Marketplace publish route depends on the vsce release: Trusted Publishing
+  needs vsce 4.1.0 or later.
+
 ## [1.5.0] - 2026-10-28
 
 ### Added
