@@ -10,22 +10,25 @@ Häufige Fragen, geordnet nach Häufigkeit.
 
 ## Was ist `apothem`?
 
-Eine portable, host-agnostische Konfiguration, die Ihr Home-
-Verzeichnis in ein Governance-, Ideenfindungs- und Automatisierungs-Framework
-für die durch Harnesses getriebene Entwicklung verwandelt. Sie vereint Verhaltensregeln,
+Apothem ist ein host-agnostischer Konfigurationsmanager für Programmierassistenz-Harnesses.
+Sie verfassen ein gemeinsames Profil, und Apothem materialisiert es in die native
+Konfigurationsoberfläche jedes Werkzeugs — und vereint dabei Verhaltensregeln,
 kreative Standards, Slash-Befehle, persistente delegierte Worker, Hooks und Skills
-zu einer einzigen kohärenten Oberfläche.
+zu einem einzigen geregelten Korpus, der über alle Harnesses hinweg konsistent bleibt.
 
-## Mit welchen Harness-CLIs funktioniert es?
+## Mit welchen Assistenz-Harnesses funktioniert es?
 
 Apothem ist harness-agnostisch. Adapter pro Harness unter
 `src/apothem/harnesses/<harness>/` projizieren das gemeinsame Profil in
-das native Konfigurationsverzeichnis jedes Werkzeugs; die kanonische Liste befindet sich unter
-[`site/content/docs/harnesses/`](/docs/harnesses) und deckt derzeit die folgenden unterstützten Harnesses ab:
+das native Konfigurationsverzeichnis jedes Werkzeugs. Die zur Laufzeit verwendete
+Harness-Registry ist die maßgebliche Quelle dafür, welche Harnesses unterstützt werden;
+die [Harness-Seiten](/docs/harnesses) dokumentieren jeden einzelnen. Die Registry deckt
+derzeit die folgenden unterstützten Harnesses ab:
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
-Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
 ```
 
 Der Adapter für Claude Code materialisiert nach `~/.claude/`; sein Hook-Dispatcher ist host-neutral — er löst den Ökosystem-Stamm zuerst über `$CLAUDE_PROJECT_DIR` auf, dann über `$LLM_PROJECT_DIR`, danach über Suchen relativ zum Skript und zum Arbeitsverzeichnis, und greift schließlich auf `$HOME/.claude` zurück.
@@ -65,8 +68,9 @@ Advisories und `me@ahmedgad.com`.
 
 Siehe [Mitwirken](/docs/developer-guide). Die Kurzfassung: Lesen Sie
 `CONTRIBUTING.md`, forken Sie das Repository, öffnen Sie einen PR mit dem
-ausgefüllten kanonischen PR-Template und stellen Sie sicher, dass die zehn CI-Prüf-
-klassen bestehen.
+ausgefüllten kanonischen PR-Template und stellen Sie sicher, dass die CI-Prüfungen
+bestehen — das [Entwicklerhandbuch](/docs/developer-guide) listet die Gates auf, die ein PR
+passieren muss.
 
 ## Wo befindet sich der Ökosystem-Zustand?
 

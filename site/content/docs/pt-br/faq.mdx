@@ -10,22 +10,26 @@ Perguntas comuns, em ordem de frequência.
 
 ## O que é o `apothem`?
 
-Uma configuração portátil e agnóstica de host que transforma seu diretório home
-em um framework de governança, ideação e automação para desenvolvimento
-guiado por harness. Ele combina regras comportamentais, padrões
-criativos, slash commands, trabalhadores delegados persistentes, hooks e skills
-em uma única superfície coerente.
+O Apothem é um gerenciador de configuração agnóstico de host para harnesses de
+assistentes de programação. Você escreve um único perfil compartilhado e o Apothem o
+materializa na superfície de configuração nativa de cada ferramenta — combinando
+regras comportamentais, padrões criativos, slash commands, trabalhadores delegados
+persistentes, hooks e skills em um único corpus governado que permanece consistente
+em todos os harnesses.
 
-## Com quais CLIs de harness ele funciona?
+## Com quais harnesses de assistentes ele funciona?
 
 O Apothem é agnóstico de harness. Adaptadores por harness sob
 `src/apothem/harnesses/<harness>/` projetam o perfil compartilhado para
-o diretório de configuração nativo de cada ferramenta; a lista canônica fica em
-[`site/content/docs/harnesses/`](/docs/harnesses) e atualmente abrange os seguintes harnesses suportados:
+o diretório de configuração nativo de cada ferramenta. O registro de harnesses usado em
+tempo de execução é a fonte autoritativa do conjunto de harnesses suportados; as
+[páginas de harnesses](/docs/harnesses) documentam cada um. Atualmente, o registro
+abrange os seguintes harnesses suportados:
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
-Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
 ```
 
 O adaptador do Claude Code se materializa em `~/.claude/`; seu despachante de hooks é
@@ -71,8 +75,9 @@ Advisories e `me@ahmedgad.com`.
 
 Consulte [Contribuindo](/docs/developer-guide). A versão curta: leia
 `CONTRIBUTING.md`, faça fork do repositório, abra um PR com o
-template canônico de PR preenchido e garanta que as dez classes de
-verificação de CI passem.
+template canônico de PR preenchido e garanta que as verificações de CI
+passem — o [guia do desenvolvedor](/docs/developer-guide) lista os portões que
+um PR precisa superar.
 
 ## Onde fica o estado do ecossistema?
 

@@ -10,15 +10,16 @@ sourceHash: "39f28c46787a7498"
 
 ## `apothem` 是什么？
 
-一种可移植、与宿主无关的配置，它将你的主目录变成一个面向工具驱动开发的治理、构思和自动化框架。它将行为规则、创意标准、斜杠命令、持久的委派工作者、钩子和技能整合到一个连贯统一的界面中。
+Apothem 是一个面向编码助手工具、与宿主无关的配置管理器。你编写一份共享配置档案，Apothem 会将其物化为每个工具的原生配置面——将行为规则、创意标准、斜杠命令、持久的委派工作者、钩子和技能整合为一套在所有工具中保持一致的受治理语料。
 
-## 它能与哪些工具 CLI 配合使用？
+## 它能与哪些助手工具配合使用？
 
-Apothem 与工具无关。`src/apothem/harnesses/<harness>/` 下按工具划分的适配器将共享配置档案投射到每个工具的原生配置目录；规范列表见[`site/content/docs/harnesses/`](/docs/harnesses)，目前涵盖以下受支持的工具：
+Apothem 与工具无关。`src/apothem/harnesses/<harness>/` 下按工具划分的适配器将共享配置档案投射到每个工具的原生配置目录。运行时工具注册表是受支持工具集合的权威来源；[工具页面](/docs/harnesses)分别记录了每个工具。该注册表目前涵盖以下受支持的工具：
 
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
-Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
 ```
 
 Claude Code 适配器物化到 `~/.claude/`；其钩子分派器与宿主无关——它首先从 `$CLAUDE_PROJECT_DIR` 解析生态系统根目录，然后是 `$LLM_PROJECT_DIR`，接着尝试相对于脚本与工作目录的查找，最后回退到 `$HOME/.claude`。
@@ -47,7 +48,7 @@ Claude Code 适配器物化到 `~/.claude/`；其钩子分派器与宿主无关�
 
 ## 如何参与贡献？
 
-参见[参与贡献](/docs/developer-guide)。简而言之：阅读 `CONTRIBUTING.md`，分叉仓库，使用填好的规范 PR 模板开启一个 PR，并确保十类 CI 检查全部通过。
+参见[参与贡献](/docs/developer-guide)。简而言之：阅读 `CONTRIBUTING.md`，分叉仓库，使用填好的规范 PR 模板开启一个 PR，并确保 CI 检查全部通过——[开发者指南](/docs/developer-guide)列出了 PR 必须通过的各道闸门。
 
 ## 生态系统状态保存在哪里？
 
